@@ -1,0 +1,146 @@
+TY  - JOUR
+TI  - Efficacy and safety of mRNA COVID-19 vaccines in immunocompromised patients: a systematic review and meta-analysis
+AU  - Chen, Wei L.
+AU  - Rodriguez, Maria A.
+AU  - Smith, John A.
+AU  - Patel, Ravi K.
+PY  - 2023
+JO  - The Lancet
+VL  - 401
+IS  - 10375
+SP  - 456
+EP  - 468
+AB  - Background: Immunocompromised patients have reduced immune responses to vaccines and increased risk of severe COVID-19. We assessed the efficacy and safety of mRNA COVID-19 vaccines in this population. Methods: We conducted a systematic review and meta-analysis of randomized controlled trials and observational studies. Results: mRNA vaccines demonstrated reduced but significant immunogenicity in immunocompromised patients with acceptable safety profiles.
+DO  - 10.1016/S0140-6736(23)00234-5
+KW  - COVID-19
+KW  - mRNA vaccines
+KW  - immunocompromised
+KW  - meta-analysis
+KW  - vaccine efficacy
+SN  - 0140-6736
+ER  -
+
+TY  - JOUR
+TI  - Machine learning approaches for early detection of sepsis in the intensive care unit
+AU  - Johnson, Sarah K.
+AU  - Williams, Michael R.
+AU  - Davis, Jennifer L.
+AU  - Thompson, David E.
+PY  - 2023
+JO  - Critical Care Medicine
+VL  - 51
+IS  - 8
+SP  - 1034
+EP  - 1045
+AB  - Objective: To develop and validate machine learning models for early sepsis detection using electronic health record data from ICU patients. Design: Retrospective cohort study using data from multiple ICUs. Results: Random forest and gradient boosting models achieved superior performance compared to traditional scoring systems with AUROC of 0.92 and 0.94, respectively.
+DO  - 10.1097/CCM.0000000000005123
+KW  - sepsis
+KW  - machine learning
+KW  - intensive care
+KW  - early detection
+KW  - electronic health records
+SN  - 0090-3493
+ER  -
+
+TY  - JOUR
+TI  - CRISPR-Cas9 gene editing for treating inherited retinal diseases: current progress and future directions
+AU  - Kim, Sung H.
+AU  - Anderson, Lisa M.
+AU  - Garcia, Carlos E.
+PY  - 2023
+JO  - Nature Medicine
+VL  - 29
+IS  - 7
+SP  - 1678
+EP  - 1690
+AB  - Inherited retinal diseases (IRDs) are a leading cause of blindness worldwide. CRISPR-Cas9 gene editing offers promising therapeutic potential for treating these conditions. This review summarizes current clinical trials, discusses delivery challenges, and outlines future research directions for gene editing therapies in ophthalmology.
+DO  - 10.1038/s41591-023-02456-1
+KW  - CRISPR-Cas9
+KW  - gene editing
+KW  - inherited retinal diseases
+KW  - ophthalmology
+KW  - gene therapy
+SN  - 1078-8956
+ER  -
+
+TY  - CHAP
+TI  - Precision medicine in oncology: biomarkers and targeted therapies
+AU  - Miller, Robert C.
+AU  - Brown, Jennifer K.
+AU  - Kumar, Raj S.
+PY  - 2023
+BT  - Advances in Cancer Treatment and Research
+ED  - Wilson, David P.
+ED  - Lee, Jennifer K.
+PB  - Springer
+CY  - New York
+SP  - 123
+EP  - 156
+AB  - This chapter explores the role of precision medicine in modern oncology, focusing on the identification and clinical application of biomarkers for targeted cancer therapies. We discuss current FDA-approved targeted treatments, companion diagnostics, and emerging therapeutic approaches including CAR-T cell therapy and immunotherapy combinations.
+IS  - 978-3-031-12345-6
+KW  - precision medicine
+KW  - oncology
+KW  - biomarkers
+KW  - targeted therapy
+KW  - cancer treatment
+ER  -
+
+TY  - CONF
+TI  - Artificial intelligence in medical imaging: improving diagnostic accuracy for diabetic retinopathy
+AU  - Patel, Arun K.
+AU  - Zhang, Li M.
+AU  - Taylor, James R.
+PY  - 2023
+BT  - Proceedings of the International Conference on Medical Imaging and AI
+ED  - Roberts, Sarah M.
+PB  - IEEE
+CY  - Boston, MA
+SP  - 245
+EP  - 252
+AB  - We present a deep learning model for automated detection of diabetic retinopathy from fundus photographs. Our convolutional neural network achieved 94.2% sensitivity and 95.8% specificity on a dataset of 50,000 retinal images, demonstrating superior performance compared to general ophthalmologists and approaching specialist-level accuracy.
+DO  - 10.1109/ICMIAI.2023.1234567
+KW  - artificial intelligence
+KW  - medical imaging
+KW  - diabetic retinopathy
+KW  - deep learning
+KW  - diagnostic accuracy
+ER  -
+
+TY  - JOUR
+TI  - Long COVID syndrome: pathophysiology, clinical manifestations, and therapeutic approaches
+AU  - Thompson, Emma L.
+AU  - Davis, Michael J.
+AU  - Wilson, Sarah K.
+AU  - Martinez, Carlos A.
+PY  - 2023
+JO  - The New England Journal of Medicine
+VL  - 389
+IS  - 12
+SP  - 1123
+EP  - 1135
+AB  - Long COVID, also known as post-acute sequelae of SARS-CoV-2 infection (PASC), affects millions of patients worldwide. This comprehensive review examines the current understanding of long COVID pathophysiology, including immune dysregulation, viral persistence, and autoimmune mechanisms. We discuss clinical manifestations across organ systems and evidence-based therapeutic approaches.
+DO  - 10.1056/NEJMra2300123
+KW  - long COVID
+KW  - SARS-CoV-2
+KW  - post-acute sequelae
+KW  - pathophysiology
+KW  - treatment
+SN  - 0028-4793
+ER  -
+
+TY  - BOOK
+TI  - Clinical Guidelines for Pediatric Emergency Medicine: Evidence-Based Approaches
+AU  - Rodriguez, Maria A.
+AU  - Kim, Sung H.
+AU  - Johnson, David R.
+PY  - 2023
+PB  - Wolters Kluwer
+CY  - Philadelphia, PA
+AB  - This comprehensive handbook provides evidence-based clinical guidelines for pediatric emergency medicine practitioners. Covering common and critical conditions in children, the book includes diagnostic algorithms, treatment protocols, and age-specific considerations for emergency care. Each chapter is supported by the latest research and clinical evidence.
+IS  - 978-1-4963-7890-1
+KW  - pediatric emergency medicine
+KW  - clinical guidelines
+KW  - evidence-based medicine
+KW  - pediatric care
+KW  - emergency protocols
+ER  -

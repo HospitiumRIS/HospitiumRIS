@@ -1,0 +1,73 @@
+[
+  {
+    "title": "Efficacy and safety of mRNA COVID-19 vaccines in immunocompromised patients: a systematic review and meta-analysis",
+    "authors": ["Smith, John A.", "Rodriguez, Maria A.", "Patel, Ravi K."],
+    "year": 2023,
+    "journal": "The Lancet",
+    "volume": "401",
+    "issue": "10375",
+    "pages": "456-468",
+    "doi": "10.1016/S0140-6736(23)00234-5",
+    "abstract": "Background: Immunocompromised patients have reduced immune responses to vaccines and increased risk of severe COVID-19. We assessed the efficacy and safety of mRNA COVID-19 vaccines in this population. Methods: We conducted a systematic review and meta-analysis of randomized controlled trials and observational studies. Results: mRNA vaccines demonstrated reduced but significant immunogenicity in immunocompromised patients with acceptable safety profiles.",
+    "keywords": ["COVID-19", "mRNA vaccines", "immunocompromised", "meta-analysis", "vaccine efficacy"],
+    "type": "article"
+  },
+  {
+    "title": "Machine learning approaches for early detection of sepsis in the intensive care unit",
+    "authors": ["Johnson, Sarah K.", "Williams, Michael R.", "Davis, Jennifer L.", "Thompson, David E."],
+    "year": 2023,
+    "journal": "Critical Care Medicine",
+    "volume": "51",
+    "issue": "8",
+    "pages": "1034-1045",
+    "doi": "10.1097/CCM.0000000000005123",
+    "abstract": "Objective: To develop and validate machine learning models for early sepsis detection using electronic health record data from ICU patients. Design: Retrospective cohort study using data from multiple ICUs. Results: Random forest and gradient boosting models achieved superior performance compared to traditional scoring systems with AUROC of 0.92 and 0.94, respectively.",
+    "keywords": ["sepsis", "machine learning", "intensive care", "early detection", "electronic health records"],
+    "type": "article"
+  },
+  {
+    "title": "CRISPR-Cas9 gene editing for treating inherited retinal diseases: current progress and future directions",
+    "authors": ["Kim, Sung H.", "Anderson, Lisa M.", "Garcia, Carlos E."],
+    "year": 2023,
+    "journal": "Nature Medicine",
+    "volume": "29",
+    "issue": "7", 
+    "pages": "1678-1690",
+    "doi": "10.1038/s41591-023-02456-1",
+    "abstract": "Inherited retinal diseases (IRDs) are a leading cause of blindness worldwide. CRISPR-Cas9 gene editing offers promising therapeutic potential for treating these conditions. This review summarizes current clinical trials, discusses delivery challenges, and outlines future research directions for gene editing therapies in ophthalmology.",
+    "keywords": ["CRISPR-Cas9", "gene editing", "inherited retinal diseases", "ophthalmology", "gene therapy"],
+    "type": "article"
+  },
+  {
+    "title": "Precision medicine in oncology: biomarkers and targeted therapies",
+    "authors": ["Miller, Robert C.", "Brown, Jennifer K.", "Kumar, Raj S."],
+    "year": 2023,
+    "journal": "Advances in Cancer Treatment and Research",
+    "pages": "123-156",
+    "doi": "10.1007/978-3-031-12345-6_6",
+    "abstract": "This chapter explores the role of precision medicine in modern oncology, focusing on the identification and clinical application of biomarkers for targeted cancer therapies. We discuss current FDA-approved targeted treatments, companion diagnostics, and emerging therapeutic approaches including CAR-T cell therapy and immunotherapy combinations.",
+    "keywords": ["precision medicine", "oncology", "biomarkers", "targeted therapy", "cancer treatment"],
+    "type": "book-chapter"
+  },
+  {
+    "title": "Artificial intelligence in medical imaging: improving diagnostic accuracy for diabetic retinopathy",
+    "authors": ["Patel, Arun K.", "Zhang, Li M.", "Taylor, James R."],
+    "year": 2023,
+    "journal": "Proceedings of the International Conference on Medical Imaging and AI",
+    "pages": "245-252",
+    "doi": "10.1109/ICMIAI.2023.1234567",
+    "abstract": "We present a deep learning model for automated detection of diabetic retinopathy from fundus photographs. Our convolutional neural network achieved 94.2% sensitivity and 95.8% specificity on a dataset of 50,000 retinal images, demonstrating superior performance compared to general ophthalmologists and approaching specialist-level accuracy.",
+    "keywords": ["artificial intelligence", "medical imaging", "diabetic retinopathy", "deep learning", "diagnostic accuracy"],
+    "type": "conference"
+  },
+  {
+    "title": "Clinical Guidelines for Pediatric Emergency Medicine: Evidence-Based Approaches", 
+    "authors": ["Rodriguez, Maria A.", "Kim, Sung H.", "Johnson, David R."],
+    "year": 2023,
+    "publisher": "Wolters Kluwer",
+    "isbn": "978-1-4963-7890-1",
+    "abstract": "This comprehensive handbook provides evidence-based clinical guidelines for pediatric emergency medicine practitioners. Covering common and critical conditions in children, the book includes diagnostic algorithms, treatment protocols, and age-specific considerations for emergency care. Each chapter is supported by the latest research and clinical evidence.",
+    "keywords": ["pediatric emergency medicine", "clinical guidelines", "evidence-based medicine", "pediatric care", "emergency protocols"],
+    "type": "book"
+  }
+]

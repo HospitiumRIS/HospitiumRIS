@@ -1,0 +1,421 @@
+{
+  "network_name": "Research Publication Collaboration Network",
+  "lead_investigator_id": "A_001",
+  "authors": [
+    {
+      "author_id": "A_001",
+      "name": "Stephen Gaita",
+      "specialization": "Oncology, Genomics",
+      "institution": "University of Nairobi, College of Health Sciences",
+      "role": "Lead Investigator/Current User",
+      "publications_count": 85,
+      "collaborations": [
+        "A_002",
+        "A_003",
+        "A_004",
+        "A_005",
+        "A_006",
+        "A_007",
+        "A_008",
+        "A_009",
+        "A_010",
+        "A_011",
+        "A_012",
+        "A_013"
+      ]
+    },
+    {
+      "author_id": "A_002",
+      "name": "Dr. Kipchoge Keino",
+      "specialization": "Cardiology, Epidemiology",
+      "institution": "Moi University, School of Medicine",
+      "role": "Senior Research Fellow",
+      "publications_count": 72,
+      "collaborations": [
+        "A_001",
+        "A_003",
+        "A_005",
+        "A_014",
+        "A_015"
+      ]
+    },
+    {
+      "author_id": "A_003",
+      "name": "Amina Hassan",
+      "specialization": "Neurology, Imaging",
+      "institution": "Kenyatta University, School of Medicine",
+      "role": "Research Scientist",
+      "publications_count": 58,
+      "collaborations": [
+        "A_001",
+        "A_002",
+        "A_006",
+        "A_016",
+        "A_017"
+      ]
+    },
+    {
+      "author_id": "A_004",
+      "name": "Dr. Odhiambo Ouma",
+      "specialization": "Immunology, Virology",
+      "institution": "Kenya Medical Research Institute (KEMRI)",
+      "role": "Principal Investigator",
+      "publications_count": 65,
+      "collaborations": [
+        "A_001",
+        "A_007",
+        "A_008",
+        "A_018"
+      ]
+    },
+    {
+      "author_id": "A_005",
+      "name": "Prof. Njeri Wanjiku",
+      "specialization": "Public Health, Biostatistics",
+      "institution": "Aga Khan University Hospital, Nairobi",
+      "role": "Research Director",
+      "publications_count": 91,
+      "collaborations": [
+        "A_001",
+        "A_002",
+        "A_009",
+        "A_019",
+        "A_020"
+      ]
+    },
+    {
+      "author_id": "A_006",
+      "name": "Mwangi Kariuki",
+      "specialization": "Pharmacology, Drug Discovery",
+      "institution": "Strathmore University, School of Medicine and Health Sciences",
+      "role": "Clinical Research Associate",
+      "publications_count": 45,
+      "collaborations": [
+        "A_001",
+        "A_003",
+        "A_010"
+      ]
+    },
+    {
+      "author_id": "A_007",
+      "name": "Dr. Akinyi Otieno",
+      "specialization": "Pediatrics, Rare Diseases",
+      "institution": "Gertrude's Children's Hospital",
+      "role": "Clinical Research Coordinator",
+      "publications_count": 50,
+      "collaborations": [
+        "A_001",
+        "A_004",
+        "A_011"
+      ]
+    },
+    {
+      "author_id": "A_008",
+      "name": "Prof. Mutua Kilonzo",
+      "specialization": "Bioinformatics, Systems Biology",
+      "institution": "Jomo Kenyatta University of Agriculture and Technology (JKUAT)",
+      "role": "Research Professor",
+      "publications_count": 78,
+      "collaborations": [
+        "A_001",
+        "A_004",
+        "A_012"
+      ]
+    },
+    {
+      "author_id": "A_009",
+      "name": "Fatuma Abdullahi",
+      "specialization": "Dermatology, Regenerative Medicine",
+      "institution": "Mount Kenya University, School of Clinical Medicine",
+      "role": "Research Fellow",
+      "publications_count": 39,
+      "collaborations": [
+        "A_001",
+        "A_005",
+        "A_013"
+      ]
+    },
+    {
+      "author_id": "A_010",
+      "name": "Dr. Kamau Gitau",
+      "specialization": "Gastroenterology, Microbiology",
+      "institution": "Kenya Medical Training College (KMTC) - Research Unit",
+      "role": "Senior Scientist",
+      "publications_count": 48,
+      "collaborations": [
+        "A_001",
+        "A_006",
+        "A_014"
+      ]
+    },
+    {
+      "author_id": "A_011",
+      "name": "Prof. Zainab Omar",
+      "specialization": "Endocrinology, Metabolic Disorders",
+      "institution": "Egerton University, Faculty of Health Sciences",
+      "role": "Department Head",
+      "publications_count": 68,
+      "collaborations": [
+        "A_001",
+        "A_007",
+        "A_015"
+      ]
+    },
+    {
+      "author_id": "A_012",
+      "name": "Kiprop Sang",
+      "specialization": "Orthopedics, Biomedical Engineering",
+      "institution": "Masinde Muliro University of Science and Technology (MMUST), School of Medicine",
+      "role": "Biomedical Researcher",
+      "publications_count": 42,
+      "collaborations": [
+        "A_001",
+        "A_008",
+        "A_016"
+      ]
+    },
+    {
+      "author_id": "A_013",
+      "name": "Dr. Nyambura Mwangi",
+      "specialization": "Ophthalmology, Neuro-ophthalmology",
+      "institution": "Pwani University, School of Health Sciences",
+      "role": "Research Consultant",
+      "publications_count": 35,
+      "collaborations": [
+        "A_001",
+        "A_009",
+        "A_017"
+      ]
+    },
+    {
+      "author_id": "A_014",
+      "name": "Prof. Otieno Masinde",
+      "specialization": "Nephrology, Transplant Medicine",
+      "institution": "Moi Teaching and Referral Hospital (MTRH)",
+      "role": "Clinical Researcher",
+      "publications_count": 55,
+      "collaborations": [
+        "A_002",
+        "A_010",
+        "A_018"
+      ]
+    },
+    {
+      "author_id": "A_015",
+      "name": "Rehema Abubakar",
+      "specialization": "Rheumatology, Autoimmune Diseases",
+      "institution": "National Spinal Injury Hospital",
+      "role": "Research Assistant",
+      "publications_count": 40,
+      "collaborations": [
+        "A_002",
+        "A_011",
+        "A_019"
+      ]
+    },
+    {
+      "author_id": "A_016",
+      "name": "Dr. Kipruto Kirui",
+      "specialization": "Anesthesiology, Pain Management",
+      "institution": "Tenwek Hospital Research Department",
+      "role": "Research Lead",
+      "publications_count": 30,
+      "collaborations": [
+        "A_003",
+        "A_012",
+        "A_020"
+      ]
+    },
+    {
+      "author_id": "A_017",
+      "name": "Halima Yusuf",
+      "specialization": "Psychiatry, Neurodevelopmental Disorders",
+      "institution": "Mathari National Teaching and Referral Hospital",
+      "role": "Clinical Research Specialist",
+      "publications_count": 38,
+      "collaborations": [
+        "A_003",
+        "A_013",
+        "A_018"
+      ]
+    },
+    {
+      "author_id": "A_018",
+      "name": "Prof. Omondi Okello",
+      "specialization": "Medical Ethics, Health Policy",
+      "institution": "Kirinyaga University, School of Health Sciences",
+      "role": "Ethics Committee Chair",
+      "publications_count": 60,
+      "collaborations": [
+        "A_004",
+        "A_014",
+        "A_017"
+      ]
+    },
+    {
+      "author_id": "A_019",
+      "name": "Wambui Njoroge",
+      "specialization": "Geriatrics, Age-Related Diseases",
+      "institution": "Kenya National Hospital",
+      "role": "Research Coordinator",
+      "publications_count": 47,
+      "collaborations": [
+        "A_005",
+        "A_015",
+        "A_020"
+      ]
+    },
+    {
+      "author_id": "A_020",
+      "name": "Dr. Juma Barasa",
+      "specialization": "Rehabilitation Medicine, Sports Injury",
+      "institution": "Kenya Orthopedic and Trauma Hospital",
+      "role": "Clinical Trials Manager",
+      "publications_count": 33,
+      "collaborations": [
+        "A_005",
+        "A_016",
+        "A_019"
+      ]
+    }
+  ],
+  "publications": [
+    {
+      "pub_id": "P001",
+      "title": "Novel Genomic Markers for Early Cancer Detection in Kenyan Populations",
+      "year": 2022,
+      "journal": "Journal of African Medical Research",
+      "co_authors": ["A_001", "A_002", "A_005"],
+      "abstract": "This study identified unique genomic markers that show promise for early detection of colorectal and breast cancers in Kenyan populations, with implications for developing targeted screening programs."
+    },
+    {
+      "pub_id": "P002",
+      "title": "Neurological Manifestations of Tropical Diseases: A Comprehensive Review",
+      "year": 2023,
+      "journal": "African Journal of Neurological Sciences",
+      "co_authors": ["A_001", "A_003", "A_017"],
+      "abstract": "A systematic review of neurological manifestations in tropical diseases endemic to East Africa, providing clinical guidelines for diagnosis and management."
+    },
+    {
+      "pub_id": "P003",
+      "title": "Immunological Response to COVID-19 Variants in HIV-Positive Patients",
+      "year": 2022,
+      "journal": "Infectious Disease Research",
+      "co_authors": ["A_001", "A_004", "A_008"],
+      "abstract": "This research evaluated the immunological response to various COVID-19 variants in HIV-positive patients in Kenya, revealing important considerations for vaccination strategies."
+    },
+    {
+      "pub_id": "P004",
+      "title": "Public Health Interventions to Reduce Maternal Mortality in Rural Kenya",
+      "year": 2023,
+      "journal": "East African Medical Journal",
+      "co_authors": ["A_001", "A_005", "A_019"],
+      "abstract": "Analysis of community-based interventions aimed at reducing maternal mortality in rural Kenyan settings, with statistical evaluation of effectiveness and implementation challenges."
+    },
+    {
+      "pub_id": "P005",
+      "title": "Novel Drug Delivery Systems for Tuberculosis Treatment",
+      "year": 2021,
+      "journal": "International Journal of Pharmaceutical Sciences",
+      "co_authors": ["A_001", "A_006", "A_010"],
+      "abstract": "Development and testing of innovative drug delivery systems to improve tuberculosis treatment adherence and efficacy in resource-limited settings."
+    },
+    {
+      "pub_id": "P006",
+      "title": "Pediatric Malaria: Clinical Presentation and Treatment Outcomes",
+      "year": 2022,
+      "journal": "Pediatric Infectious Disease Journal",
+      "co_authors": ["A_001", "A_007", "A_011"],
+      "abstract": "A longitudinal study of clinical presentations and treatment outcomes in pediatric malaria cases from three different ecological zones in Kenya."
+    },
+    {
+      "pub_id": "P007",
+      "title": "Bioinformatic Analysis of Antimicrobial Resistance Genes in Kenyan Hospitals",
+      "year": 2023,
+      "journal": "Genomics and Informatics",
+      "co_authors": ["A_001", "A_008", "A_012"],
+      "abstract": "Computational analysis of antimicrobial resistance gene patterns in samples collected from major Kenyan hospitals, identifying transmission patterns and resistance hotspots."
+    },
+    {
+      "pub_id": "P008",
+      "title": "Regenerative Approaches to Wound Healing in Diabetic Patients",
+      "year": 2022,
+      "journal": "Journal of Dermatological Science",
+      "co_authors": ["A_001", "A_009", "A_013"],
+      "abstract": "Investigation of novel regenerative medicine approaches to enhance wound healing in diabetic patients, with particular focus on locally available resources."
+    },
+    {
+      "pub_id": "P009",
+      "title": "Microbiome Analysis in Gastroenterological Diseases Endemic to East Africa",
+      "year": 2021,
+      "journal": "Gut Microbiome Research",
+      "co_authors": ["A_001", "A_010", "A_014"],
+      "abstract": "Comprehensive microbiome analysis of patients with gastroenterological diseases endemic to East Africa, identifying potential therapeutic targets and diagnostic markers."
+    },
+    {
+      "pub_id": "P010",
+      "title": "Metabolic Syndrome Prevalence in Urban vs. Rural Kenyan Populations",
+      "year": 2023,
+      "journal": "Journal of Endocrinology and Metabolism",
+      "co_authors": ["A_001", "A_011", "A_015"],
+      "abstract": "Comparative study of metabolic syndrome prevalence between urban and rural populations in Kenya, highlighting dietary and lifestyle factors driving the epidemic."
+    },
+    {
+      "pub_id": "P011",
+      "title": "3D-Printed Orthopedic Devices for Low-Resource Settings",
+      "year": 2022,
+      "journal": "Journal of Biomedical Engineering",
+      "co_authors": ["A_001", "A_012", "A_016"],
+      "abstract": "Design, testing, and implementation of low-cost 3D-printed orthopedic devices suitable for use in low-resource healthcare settings in Kenya."
+    },
+    {
+      "pub_id": "P012",
+      "title": "Visual Impairment Secondary to Neurodevelopmental Disorders in Children",
+      "year": 2021,
+      "journal": "Ophthalmology and Neurodevelopment",
+      "co_authors": ["A_001", "A_013", "A_017"],
+      "abstract": "Analysis of visual impairment patterns in children with neurodevelopmental disorders in Kenya, with recommendations for early intervention strategies."
+    },
+    {
+      "pub_id": "P013",
+      "title": "Cardiovascular Disease Risk Factors in Kenya: A 10-Year Retrospective Study",
+      "year": 2021,
+      "journal": "African Heart Journal",
+      "co_authors": ["A_002", "A_014", "A_015"],
+      "abstract": "Retrospective analysis of cardiovascular disease risk factors across different Kenyan populations over a 10-year period, identifying changing patterns and potential intervention targets."
+    },
+    {
+      "pub_id": "P014",
+      "title": "Neuroimaging Findings in Patients with Long-Term Malarial Infection",
+      "year": 2022,
+      "journal": "Neuroradiology",
+      "co_authors": ["A_003", "A_016", "A_017"],
+      "abstract": "Comprehensive analysis of neuroimaging findings in patients with history of long-term malarial infection, correlating with cognitive and neurological outcomes."
+    },
+    {
+      "pub_id": "P015",
+      "title": "Ethics of Medical Research in Vulnerable Populations",
+      "year": 2023,
+      "journal": "Journal of Medical Ethics",
+      "co_authors": ["A_004", "A_017", "A_018"],
+      "abstract": "Critical analysis of ethical frameworks for conducting medical research in vulnerable populations within Kenya, proposing guidelines for responsible research practices."
+    }
+  ],
+  "collaboration_levels": {
+    "A_001": {
+      "direct": ["A_002", "A_003", "A_004", "A_005", "A_006", "A_007", "A_008", "A_009", "A_010", "A_011", "A_012", "A_013"],
+      "secondary": ["A_014", "A_015", "A_016", "A_017", "A_018", "A_019", "A_020"],
+      "tertiary": []
+    },
+    "A_002": {
+      "direct": ["A_001", "A_003", "A_005", "A_014", "A_015"],
+      "secondary": ["A_004", "A_006", "A_007", "A_008", "A_009", "A_010", "A_011", "A_012", "A_013", "A_019"],
+      "tertiary": ["A_016", "A_017", "A_018", "A_020"]
+    },
+    "A_003": {
+      "direct": ["A_001", "A_002", "A_006", "A_016", "A_017"],
+      "secondary": ["A_004", "A_005", "A_007", "A_008", "A_009", "A_010", "A_011", "A_012", "A_013", "A_014", "A_015"],
+      "tertiary": ["A_018", "A_019", "A_020"]
+    }
+  }
+}
