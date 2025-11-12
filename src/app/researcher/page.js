@@ -21,6 +21,18 @@ import {
   Paper,
   IconButton,
   Tooltip,
+  Select,
+  MenuItem,
+  FormControl,
+  Tabs,
+  Tab,
+  LinearProgress,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Link,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -36,6 +48,18 @@ import {
   Timeline as TimelineIcon,
   Assessment as AssessmentIcon,
   Create as CreateIcon,
+  Visibility as VisibilityIcon,
+  Share as ShareIcon,
+  MoreVert as MoreVertIcon,
+  Description as DescriptionIcon,
+  CheckCircle as CheckCircleIcon,
+  Schedule as ScheduleIcon,
+  RateReview as RateReviewIcon,
+  Close as CloseIcon,
+  OpenInNew as OpenInNewIcon,
+  CalendarToday as CalendarTodayIcon,
+  Person as PersonIcon,
+  Business as BusinessIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../components/AuthProvider';
@@ -50,6 +74,20 @@ const ResearcherDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Analytics widget state
+  const [analyticsTimeRange, setAnalyticsTimeRange] = useState('6months'); // '1year', '6months', 'thismonth'
+  const [analyticsDataType, setAnalyticsDataType] = useState('publications'); // 'publications' or 'projects'
+  
+  // Recent work widget state
+  const [recentWorkTab, setRecentWorkTab] = useState('all'); // 'all', 'publications', 'projects'
+  
+  // Details dialog state
+  const [detailsDialog, setDetailsDialog] = useState({ open: false, item: null, type: null });
+  
+  // Current date for dropdowns (to avoid hydration mismatch)
+  const [currentDateLabel, setCurrentDateLabel] = useState('');
+  const [currentYear, setCurrentYear] = useState('');
 
   // Fetch real dashboard data from APIs
   useEffect(() => {
@@ -60,81 +98,60 @@ const ResearcherDashboard = () => {
         setDataLoading(true);
         setError(null);
         
-        // Fetch publications, proposals, and network data in parallel
-        const [publicationsRes, proposalsRes, networkRes] = await Promise.all([
-          fetch('/api/publications', { credentials: 'include' }),
+        // Fetch researcher stats, proposals, and network data in parallel
+        const [statsRes, proposalsRes, networkRes] = await Promise.all([
+          fetch('/api/researcher/stats', { credentials: 'include' }),
           fetch('/api/proposals', { credentials: 'include' }),
           fetch('/api/network', { credentials: 'include' })
         ]);
 
-        const publicationsData = publicationsRes.ok ? await publicationsRes.json() : { publications: [] };
+        const statsData = statsRes.ok ? await statsRes.json() : null;
         const proposalsData = proposalsRes.ok ? await proposalsRes.json() : { proposals: [] };
         const networkData = networkRes.ok ? await networkRes.json() : { authors: [], publications: [] };
 
-        // Calculate statistics from real data
-        const publications = publicationsData.publications || [];
+        // Extract data from responses
         const proposals = proposalsData.proposals || [];
         const networkAuthors = networkData.authors || [];
-        const networkPublications = networkData.publications || [];
 
-        // Calculate ongoing projects
-        const ongoingProjects = proposals.filter(p => 
-          ['UNDER_REVIEW', 'APPROVED', 'IN_PROGRESS'].includes(p.status)
-        ).length;
-
-        // Calculate collaborations from network data  
-        const directCollaborators = networkAuthors.filter(a => 
-          !a.isLead && a.collaborations && a.collaborations.length > 0
-        ).length;
-
-        // Calculate citation impact (mock for now - could be enhanced with real citation data)
-        const totalCitations = publications.reduce((sum, pub) => {
-          // Mock citation count based on publication age and journal
-          const yearsSincePublication = new Date().getFullYear() - (pub.year || new Date().getFullYear());
-          const baseCitations = Math.max(0, (5 - yearsSincePublication) * Math.random() * 20);
-          return sum + Math.floor(baseCitations);
-        }, 0);
-
-        // Build dashboard data
+        // Build dashboard stats using real data from stats API
         const stats = {
           totalPublications: { 
-            value: publications.length, 
-            change: publications.length > 0 ? `+${Math.floor(Math.random() * 15 + 5)}%` : '+0%', 
-            trend: publications.length > 0 ? 'up' : 'neutral' 
+            value: statsData?.stats?.publications?.total || 0,
+            change: statsData?.stats?.publications?.change || '+0%',
+            trend: statsData?.stats?.publications?.trend || 'neutral'
           },
           ongoingProjects: { 
-            value: ongoingProjects, 
-            change: ongoingProjects > 0 ? `+${Math.floor(Math.random() * 25 + 10)}%` : '+0%', 
-            trend: ongoingProjects > 0 ? 'up' : 'neutral' 
+            value: statsData?.stats?.projects?.ongoing || 0,
+            change: statsData?.stats?.projects?.change || '+0%',
+            trend: statsData?.stats?.projects?.trend || 'neutral'
           },
           collaborations: { 
-            value: directCollaborators, 
-            change: directCollaborators > 0 ? `+${Math.floor(Math.random() * 30 + 10)}%` : '+0%', 
-            trend: directCollaborators > 0 ? 'up' : 'neutral' 
+            value: statsData?.stats?.collaborations?.total || 0,
+            change: statsData?.stats?.collaborations?.change || '+0%',
+            trend: statsData?.stats?.collaborations?.trend || 'neutral'
           },
           networkSize: { 
-            value: networkAuthors.length, 
-            change: networkAuthors.length > 1 ? `+${Math.floor(Math.random() * 20 + 8)}%` : '+0%', 
-            trend: networkAuthors.length > 1 ? 'up' : 'neutral' 
+            value: statsData?.stats?.network?.total || 0,
+            change: statsData?.stats?.network?.change || '+0%',
+            trend: statsData?.stats?.network?.trend || 'neutral'
           },
           citationImpact: { 
-            value: totalCitations, 
-            change: totalCitations > 0 ? `+${Math.floor(Math.random() * 35 + 15)}%` : '+0%', 
-            trend: totalCitations > 0 ? 'up' : 'neutral' 
+            value: statsData?.stats?.citations?.total || 0,
+            change: statsData?.stats?.citations?.change || '+0%',
+            trend: statsData?.stats?.citations?.trend || 'neutral'
           }
         };
 
-        // Recent publications
-        const recentPublications = publications
-          .sort((a, b) => (b.year || 0) - (a.year || 0))
-          .slice(0, 5)
-          .map(pub => ({
-            id: pub.id,
-            title: pub.title,
-            journal: pub.journal || 'Unknown Journal',
-            year: pub.year || new Date().getFullYear(),
-            citations: Math.floor(Math.random() * 50 + 5) // Mock citations
-          }));
+        // Recent publications from stats API (with real citation counts)
+        const recentPublications = (statsData?.recentPublications || []).map(pub => ({
+          id: pub.id,
+          title: pub.title,
+          journal: pub.journal,
+          year: pub.year,
+          authors: pub.authors,
+          doi: pub.doi,
+          citations: pub.citations || 0 // Real citations from OpenAlex API
+        }));
 
         // Collaborative writings (manuscripts)
         const collaborativeWritings = proposals
@@ -148,20 +165,28 @@ const ResearcherDashboard = () => {
             status: proposal.status === 'DRAFT' ? 'Draft' : 'Review'
           }));
 
-        // Analytics data for chart
-        const monthlyData = Array.from({ length: 6 }, (_, i) => {
+        // Analytics data for chart from stats API - store both publications and projects data
+        const publicationsByMonth = statsData?.publicationsByMonth || Array.from({ length: 6 }, (_, i) => ({
+          month: new Date(0, i).toLocaleDateString('en-US', { month: 'short' }),
+          count: 0
+        }));
+
+        // Calculate projects by month from the stats data
+        const projectsByMonth = Array.from({ length: 6 }, (_, i) => {
           const date = new Date();
           date.setMonth(date.getMonth() - (5 - i));
           const monthName = date.toLocaleDateString('en-US', { month: 'short' });
           
-          // Count publications for this month (mock distribution)
-          const monthPublications = publications.filter(pub => {
-            if (!pub.publicationDate && !pub.year) return false;
-            const pubDate = pub.publicationDate ? new Date(pub.publicationDate) : new Date(pub.year, 0);
-            return pubDate.getMonth() === date.getMonth() && pubDate.getFullYear() === date.getFullYear();
-          }).length;
+          // Count projects created in this month
+          const monthProjects = (statsData?.recentProjects?.manuscripts || [])
+            .concat(statsData?.recentProjects?.proposals || [])
+            .filter(project => {
+              const createdDate = new Date(project.createdAt);
+              return createdDate.getMonth() === date.getMonth() && 
+                     createdDate.getFullYear() === date.getFullYear();
+            }).length;
           
-          return { month: monthName, count: monthPublications };
+          return { month: monthName, count: monthProjects };
         });
 
         setDashboardData({
@@ -169,12 +194,17 @@ const ResearcherDashboard = () => {
           collaborativeWritings,
           recentPublications,
     analyticsData: {
-            publicationsOverTime: monthlyData
+            publicationsOverTime: publicationsByMonth,
+            projectsOverTime: projectsByMonth,
+            publications6Months: publicationsByMonth,
+            projects6Months: projectsByMonth
           },
           rawData: {
-            publications,
+            publications: statsData?.recentPublications || [],
             proposals,
-            networkData
+            networkData,
+            allProjects: (statsData?.recentProjects?.manuscripts || [])
+              .concat(statsData?.recentProjects?.proposals || [])
           }
         });
         
@@ -232,6 +262,10 @@ const ResearcherDashboard = () => {
       };
       setCurrentDate(now.toLocaleDateString('en-US', options));
       setGreeting(getTimeBasedGreeting());
+      
+      // Set date labels for dropdowns
+      setCurrentDateLabel(now.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+      setCurrentYear(now.getFullYear().toString());
     };
 
     // Set initial values
@@ -259,6 +293,151 @@ const ResearcherDashboard = () => {
       return user.email.split('@')[0]; // Use email username as fallback
     }
     return 'User';
+  };
+
+  // Get analytics data based on selected time range and data type (CURRENT YEAR ONLY)
+  const getAnalyticsData = () => {
+    if (!dashboardData) return [];
+
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth(); // 0-11
+    const isPublications = analyticsDataType === 'publications';
+    const rawData = isPublications 
+      ? dashboardData.rawData.publications 
+      : dashboardData.rawData.allProjects;
+
+    if (analyticsTimeRange === 'thismonth') {
+      // For "this month", show weeks of current month
+      const weeksInMonth = 4;
+      const today = new Date();
+      const currentDay = today.getDate();
+      
+      return Array.from({ length: weeksInMonth }, (_, i) => {
+        const weekNumber = i + 1;
+        const weekLabel = `W${weekNumber}`;
+        const weekStart = (i * 7) + 1;
+        const weekEnd = Math.min((i + 1) * 7, currentDay);
+        
+        // Count items in this week of current month
+        const weekCount = rawData.filter(item => {
+          if (!item.createdAt && !item.year && !item.publicationDate) return false;
+          
+          const itemDate = isPublications
+            ? (item.publicationDate ? new Date(item.publicationDate) : item.year === currentYear ? new Date(item.year, currentMonth, 15) : new Date(item.createdAt))
+            : new Date(item.createdAt);
+          
+          if (itemDate.getFullYear() !== currentYear || itemDate.getMonth() !== currentMonth) return false;
+          
+          const itemDay = itemDate.getDate();
+          return itemDay >= weekStart && itemDay <= weekEnd;
+        }).length;
+        
+        return { month: weekLabel, count: weekCount };
+      });
+    } else if (analyticsTimeRange === '6months') {
+      // Show last 6 months of CURRENT YEAR only
+      const startMonth = Math.max(0, currentMonth - 5);
+      const monthsToShow = currentMonth - startMonth + 1;
+      
+      return Array.from({ length: monthsToShow }, (_, i) => {
+        const monthIndex = startMonth + i;
+        const date = new Date(currentYear, monthIndex, 1);
+        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+        
+        // Count items for this month in current year
+        const monthCount = rawData.filter(item => {
+          if (!item.createdAt && !item.year && !item.publicationDate) return false;
+          
+          const itemDate = isPublications
+            ? (item.publicationDate ? new Date(item.publicationDate) : item.year === currentYear ? new Date(item.year, 0) : new Date(item.createdAt))
+            : new Date(item.createdAt);
+          
+          return itemDate.getMonth() === monthIndex && 
+                 itemDate.getFullYear() === currentYear;
+        }).length;
+        
+        return { month: monthName, count: monthCount };
+      });
+    } else {
+      // Show all months of CURRENT YEAR (Jan to current month)
+      return Array.from({ length: currentMonth + 1 }, (_, i) => {
+        const date = new Date(currentYear, i, 1);
+        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+        
+        // Count items for this month in current year
+        const monthCount = rawData.filter(item => {
+          if (!item.createdAt && !item.year && !item.publicationDate) return false;
+          
+          const itemDate = isPublications
+            ? (item.publicationDate ? new Date(item.publicationDate) : item.year === currentYear ? new Date(item.year, 0) : new Date(item.createdAt))
+            : new Date(item.createdAt);
+          
+          return itemDate.getMonth() === i && 
+                 itemDate.getFullYear() === currentYear;
+        }).length;
+        
+        return { month: monthName, count: monthCount };
+      });
+    }
+  };
+
+  // Get color for analytics chart based on data type
+  const getAnalyticsColor = () => {
+    return analyticsDataType === 'publications' 
+      ? { primary: '#8b6cbc', secondary: '#a084d1' }
+      : { primary: '#FF6B6B', secondary: '#FF8E8E' };
+  };
+
+  // Handle opening details dialog
+  const handleViewDetails = (item, type) => {
+    setDetailsDialog({ open: true, item, type });
+  };
+
+  // Handle closing details dialog
+  const handleCloseDetails = () => {
+    setDetailsDialog({ open: false, item: null, type: null });
+  };
+
+  // Get tooltip content for chart bars (CURRENT YEAR ONLY)
+  const getTooltipContent = (item, index) => {
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+    const dataTypeName = analyticsDataType === 'publications' ? 'Publications' : 'Projects';
+    const total = getAnalyticsData().reduce((sum, d) => sum + d.count, 0);
+    const percentage = total > 0 ? Math.round((item.count / total) * 100) : 0;
+    
+    let timeLabel = item.month;
+    if (analyticsTimeRange === '1year') {
+      // Show months of current year
+      const date = new Date(currentYear, index, 1);
+      timeLabel = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    } else if (analyticsTimeRange === '6months') {
+      // Show last 6 months of current year
+      const startMonth = Math.max(0, currentMonth - 5);
+      const date = new Date(currentYear, startMonth + index, 1);
+      timeLabel = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    } else if (analyticsTimeRange === 'thismonth') {
+      timeLabel = `Week ${index + 1} of ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+    }
+
+    return (
+      <Box sx={{ p: 1 }}>
+        <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+          {timeLabel}
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 0.5 }}>
+          {dataTypeName}: <strong>{item.count}</strong>
+        </Typography>
+        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+          {percentage}% of total
+        </Typography>
+        {total > 0 && (
+          <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'rgba(255,255,255,0.8)' }}>
+            Total: {total} {dataTypeName.toLowerCase()}
+          </Typography>
+        )}
+      </Box>
+    );
   };
 
   const actionButtons = (
@@ -362,29 +541,26 @@ const ResearcherDashboard = () => {
                     transform: 'translateX(60%)'
                   }
                 }}>
-                  <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <ArticleIcon sx={{ fontSize: 28, opacity: 0.9 }} />
+                  <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                      <ArticleIcon sx={{ fontSize: 24, opacity: 0.9 }} />
                   <Chip 
                     label={dashboardData.stats.totalPublications.change}
                     size="small"
                     sx={{ 
                           backgroundColor: 'rgba(255,255,255,0.25)',
                       color: 'white',
-                          fontSize: '0.75rem',
+                          fontSize: '0.7rem',
                           fontWeight: 600,
                           border: '1px solid rgba(255,255,255,0.3)'
                     }}
                   />
                 </Box>
-                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2.5rem' }}>
+                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                   {dashboardData.stats.totalPublications.value}
                 </Typography>
-                    <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500 }}>
+                    <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                       Publications
-                </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.8, display: 'block', mt: 1 }}>
-                      Research outputs published
                 </Typography>
               </CardContent>
             </Card>
@@ -393,7 +569,7 @@ const ResearcherDashboard = () => {
           {/* Ongoing Projects */}
           <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
                 <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%)',
+              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
               color: 'white',
                   height: '100%',
                   position: 'relative',
@@ -410,29 +586,26 @@ const ResearcherDashboard = () => {
                     transform: 'translateX(60%)'
                   }
                 }}>
-                  <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <ProjectIcon sx={{ fontSize: 28, opacity: 0.9 }} />
+                  <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                      <ProjectIcon sx={{ fontSize: 24, opacity: 0.9 }} />
                   <Chip 
                     label={dashboardData.stats.ongoingProjects.change}
                     size="small"
                     sx={{ 
                           backgroundColor: 'rgba(255,255,255,0.25)',
                       color: 'white',
-                          fontSize: '0.75rem',
+                          fontSize: '0.7rem',
                           fontWeight: 600,
                           border: '1px solid rgba(255,255,255,0.3)'
                     }}
                   />
                 </Box>
-                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2.5rem' }}>
+                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                   {dashboardData.stats.ongoingProjects.value}
                 </Typography>
-                    <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500 }}>
+                    <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                       Active Projects
-                </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.8, display: 'block', mt: 1 }}>
-                      Proposals & research initiatives
                 </Typography>
               </CardContent>
             </Card>
@@ -441,7 +614,7 @@ const ResearcherDashboard = () => {
           {/* Collaborations */}
           <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
                 <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #4ECDC4 0%, #6ED4CC 100%)',
+              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
               color: 'white',
                   height: '100%',
                   position: 'relative',
@@ -458,29 +631,26 @@ const ResearcherDashboard = () => {
                     transform: 'translateX(60%)'
                   }
                 }}>
-                  <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <CollaborationIcon sx={{ fontSize: 28, opacity: 0.9 }} />
+                  <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                      <CollaborationIcon sx={{ fontSize: 24, opacity: 0.9 }} />
                   <Chip 
                     label={dashboardData.stats.collaborations.change}
                     size="small"
                     sx={{ 
                           backgroundColor: 'rgba(255,255,255,0.25)',
                       color: 'white',
-                          fontSize: '0.75rem',
+                          fontSize: '0.7rem',
                           fontWeight: 600,
                           border: '1px solid rgba(255,255,255,0.3)'
                     }}
                   />
                 </Box>
-                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2.5rem' }}>
+                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                   {dashboardData.stats.collaborations.value}
                 </Typography>
-                    <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500 }}>
+                    <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                       Collaborators
-                </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.8, display: 'block', mt: 1 }}>
-                      Research partnerships
                 </Typography>
               </CardContent>
             </Card>
@@ -489,7 +659,7 @@ const ResearcherDashboard = () => {
           {/* Network Size */}
           <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
                 <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #45B7D1 0%, #67C3D6 100%)',
+              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
               color: 'white',
                   height: '100%',
                   position: 'relative',
@@ -506,29 +676,26 @@ const ResearcherDashboard = () => {
                     transform: 'translateX(60%)'
                   }
                 }}>
-                  <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <NetworkIcon sx={{ fontSize: 28, opacity: 0.9 }} />
+                  <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                      <NetworkIcon sx={{ fontSize: 24, opacity: 0.9 }} />
                   <Chip 
                     label={dashboardData.stats.networkSize.change}
                     size="small"
                     sx={{ 
                           backgroundColor: 'rgba(255,255,255,0.25)',
                       color: 'white',
-                          fontSize: '0.75rem',
+                          fontSize: '0.7rem',
                           fontWeight: 600,
                           border: '1px solid rgba(255,255,255,0.3)'
                     }}
                   />
                 </Box>
-                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2.5rem' }}>
+                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                   {dashboardData.stats.networkSize.value}
                 </Typography>
-                    <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500 }}>
+                    <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                   Network Size
-                </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.8, display: 'block', mt: 1 }}>
-                      Connected researchers
                 </Typography>
               </CardContent>
             </Card>
@@ -537,7 +704,7 @@ const ResearcherDashboard = () => {
           {/* Citation Impact */}
           <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
                 <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #F7B731 0%, #F9CA24 100%)',
+              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
               color: 'white',
                   height: '100%',
                   position: 'relative',
@@ -554,29 +721,26 @@ const ResearcherDashboard = () => {
                     transform: 'translateX(60%)'
                   }
                 }}>
-                  <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <TrendingUpIcon sx={{ fontSize: 28, opacity: 0.9 }} />
+                  <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                      <TrendingUpIcon sx={{ fontSize: 24, opacity: 0.9 }} />
                   <Chip 
                     label={dashboardData.stats.citationImpact.change}
                     size="small"
                     sx={{ 
                           backgroundColor: 'rgba(255,255,255,0.25)',
                       color: 'white',
-                          fontSize: '0.75rem',
+                          fontSize: '0.7rem',
                           fontWeight: 600,
                           border: '1px solid rgba(255,255,255,0.3)'
                     }}
                   />
                 </Box>
-                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2.5rem' }}>
+                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                   {dashboardData.stats.citationImpact.value}
                 </Typography>
-                    <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500 }}>
+                    <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                   Citation Impact
-                </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.8, display: 'block', mt: 1 }}>
-                      Estimated total citations
                 </Typography>
               </CardContent>
             </Card>
@@ -592,19 +756,92 @@ const ResearcherDashboard = () => {
                   border: '1px solid rgba(139, 108, 188, 0.1)'
                 }}>
                   <CardContent sx={{ p: 4 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                       <Typography variant="h5" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, color: '#2d3748' }}>
                         <BarChartIcon sx={{ color: '#8b6cbc', fontSize: 28 }} />
                     Research Analytics
                 </Typography>
-                      <Box sx={{ display: 'flex', gap: 1.5 }}>
-                        <Chip label="Publications" size="small" sx={{ bgcolor: 'rgba(139, 108, 188, 0.1)', color: '#8b6cbc' }} />
-                        <Chip label="Projects" size="small" sx={{ bgcolor: 'rgba(255, 107, 107, 0.1)', color: '#FF6B6B' }} />
-                        <IconButton size="small" sx={{ color: '#8b6cbc', bgcolor: 'rgba(139, 108, 188, 0.1)' }}>
-                      <AssessmentIcon />
-                    </IconButton>
+                      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                        <Chip 
+                          label="Publications" 
+                          size="small" 
+                          onClick={() => setAnalyticsDataType('publications')}
+                          sx={{ 
+                            bgcolor: analyticsDataType === 'publications' ? 'rgba(139, 108, 188, 0.2)' : 'rgba(139, 108, 188, 0.1)', 
+                            color: '#8b6cbc',
+                            fontWeight: analyticsDataType === 'publications' ? 600 : 400,
+                            cursor: 'pointer',
+                            border: analyticsDataType === 'publications' ? '2px solid #8b6cbc' : 'none',
+                            '&:hover': {
+                              bgcolor: 'rgba(139, 108, 188, 0.25)'
+                            }
+                          }} 
+                        />
+                        <Chip 
+                          label="Projects" 
+                          size="small"
+                          onClick={() => setAnalyticsDataType('projects')}
+                          sx={{ 
+                            bgcolor: analyticsDataType === 'projects' ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255, 107, 107, 0.1)', 
+                            color: '#FF6B6B',
+                            fontWeight: analyticsDataType === 'projects' ? 600 : 400,
+                            cursor: 'pointer',
+                            border: analyticsDataType === 'projects' ? '2px solid #FF6B6B' : 'none',
+                            '&:hover': {
+                              bgcolor: 'rgba(255, 107, 107, 0.25)'
+                            }
+                          }} 
+                        />
                   </Box>
                 </Box>
+                
+                    {/* Time Range Selector */}
+                    <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="body2" sx={{ color: '#718096', fontWeight: 500 }}>
+                        Time Range:
+                      </Typography>
+                      <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <Select
+                          value={analyticsTimeRange}
+                          onChange={(e) => setAnalyticsTimeRange(e.target.value)}
+                          MenuProps={{
+                            disableScrollLock: true,
+                            PaperProps: {
+                              sx: {
+                                mt: 1,
+                                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                                borderRadius: 2
+                              }
+                            },
+                            anchorOrigin: {
+                              vertical: 'bottom',
+                              horizontal: 'left',
+                            },
+                            transformOrigin: {
+                              vertical: 'top',
+                              horizontal: 'left',
+                            },
+                          }}
+                          sx={{
+                            bgcolor: 'white',
+                            borderRadius: 2,
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: 'rgba(139, 108, 188, 0.3)'
+                            },
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#8b6cbc'
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#8b6cbc'
+                            }
+                          }}
+                        >
+                          <MenuItem value="thismonth">This Month{currentDateLabel && ` (${currentDateLabel})`}</MenuItem>
+                          <MenuItem value="6months">Last 6 Months{currentYear && ` (${currentYear})`}</MenuItem>
+                          <MenuItem value="1year">Year to Date{currentYear && ` (${currentYear})`}</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Box>
                 
                     {/* Enhanced Chart */}
                 <Box sx={{ 
@@ -612,27 +849,52 @@ const ResearcherDashboard = () => {
                   display: 'flex', 
                   alignItems: 'end', 
                   justifyContent: 'space-around',
-                      background: 'linear-gradient(135deg, rgba(139, 108, 188, 0.02) 0%, rgba(139, 108, 188, 0.05) 100%)',
+                      background: `linear-gradient(135deg, ${analyticsDataType === 'publications' ? 'rgba(139, 108, 188, 0.02)' : 'rgba(255, 107, 107, 0.02)'} 0%, ${analyticsDataType === 'publications' ? 'rgba(139, 108, 188, 0.05)' : 'rgba(255, 107, 107, 0.05)'} 100%)`,
                       borderRadius: 2,
                       p: 3,
                       mb: 3,
-                      border: '1px solid rgba(139, 108, 188, 0.1)'
+                      border: `1px solid ${analyticsDataType === 'publications' ? 'rgba(139, 108, 188, 0.1)' : 'rgba(255, 107, 107, 0.1)'}`
                 }}>
-                  {dashboardData.analyticsData.publicationsOverTime.map((item, index) => (
+                  {getAnalyticsData().map((item, index) => {
+                    const colors = getAnalyticsColor();
+                    return (
                         <Box key={index} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                      <Tooltip 
+                        title={getTooltipContent(item, index)}
+                        arrow
+                        placement="top"
+                        componentsProps={{
+                          tooltip: {
+                            sx: {
+                              bgcolor: colors.primary,
+                              color: 'white',
+                              fontSize: '0.875rem',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                              borderRadius: 2,
+                              p: 1.5
+                            }
+                          },
+                          arrow: {
+                            sx: {
+                              color: colors.primary
+                            }
+                          }
+                        }}
+                      >
                       <Box sx={{ 
-                            width: 48,
+                            width: analyticsTimeRange === '1year' ? 32 : 48,
                             height: Math.max(20, (item.count * 60) + 20),
                             background: item.count > 0 
-                              ? 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)' 
-                              : 'rgba(139, 108, 188, 0.2)',
+                              ? `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)` 
+                              : `${colors.primary}33`,
                             borderRadius: 2,
                             mb: 1.5,
                             position: 'relative',
                             transition: 'all 0.3s ease',
+                            cursor: 'pointer',
                             '&:hover': {
-                              transform: 'scale(1.05)',
-                              boxShadow: '0 4px 16px rgba(139, 108, 188, 0.3)'
+                              transform: 'scale(1.08)',
+                              boxShadow: `0 6px 20px ${colors.primary}66`
                             },
                             '&::before': {
                               content: `"${item.count}"`,
@@ -642,14 +904,16 @@ const ResearcherDashboard = () => {
                               transform: 'translateX(-50%)',
                               fontSize: '0.75rem',
                               fontWeight: 600,
-                              color: '#8b6cbc'
+                              color: colors.primary
                             }
                           }} />
-                          <Typography variant="body2" sx={{ color: '#4a5568', fontWeight: 500 }}>
+                      </Tooltip>
+                          <Typography variant="body2" sx={{ color: '#4a5568', fontWeight: 500, fontSize: analyticsTimeRange === '1year' ? '0.7rem' : '0.875rem' }}>
                         {item.month}
                       </Typography>
                     </Box>
-                  ))}
+                    );
+                  })}
                 </Box>
 
                     <Box sx={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
@@ -676,7 +940,7 @@ const ResearcherDashboard = () => {
             </Card>
                   </Grid>
 
-          {/* Active Work */}
+          {/* Recent Work - Enhanced */}
           <Grid size={{ xs: 12, md: 4 }}>
                 <Card elevation={4} sx={{ 
                   height: '100%',
@@ -684,13 +948,13 @@ const ResearcherDashboard = () => {
                   backdropFilter: 'blur(20px)',
                   border: '1px solid rgba(139, 108, 188, 0.1)'
                 }}>
-                  <CardContent sx={{ p: 4 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                  <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                       <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, color: '#2d3748' }}>
                         <TimelineIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
                         Recent Work
                   </Typography>
-                      <Tooltip title="Add new project">
+                      <Tooltip title="Add new item">
                         <IconButton size="small" sx={{ 
                           color: '#8b6cbc', 
                           bgcolor: 'rgba(139, 108, 188, 0.1)',
@@ -701,64 +965,210 @@ const ResearcherDashboard = () => {
                       </Tooltip>
                 </Box>
 
-                    {/* Recent Publications */}
-                    {dashboardData.recentPublications.length > 0 ? (
-                      <Box>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: '#4a5568' }}>
-                          Recent Publications
-                        </Typography>
-                        {dashboardData.recentPublications.slice(0, 3).map((pub, index) => (
-                          <Paper key={pub.id} elevation={1} sx={{ 
-                            p: 2, 
-                            mb: 2,
-                            bgcolor: 'rgba(139, 108, 188, 0.02)',
-                            border: '1px solid rgba(139, 108, 188, 0.1)',
-                            borderRadius: 2
-                          }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, color: '#2d3748' }}>
-                              {pub.title.length > 50 ? `${pub.title.substring(0, 50)}...` : pub.title}
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Typography variant="caption" sx={{ color: '#718096' }}>
-                                {pub.journal} • {pub.year}
-                    </Typography>
-                              <Chip 
-                                label={`${pub.citations} citations`}
-                                size="small"
-                                sx={{ 
-                                  fontSize: '0.7rem',
-                                  bgcolor: 'rgba(76, 175, 80, 0.1)',
-                                  color: '#2e7d32'
-                                }}
-                              />
-                            </Box>
-                          </Paper>
-                        ))}
-                  </Box>
-                    ) : (
-                  <Box sx={{ textAlign: 'center', py: 4 }}>
-                        <ArticleIcon sx={{ fontSize: 48, color: '#cbd5e0', mb: 1 }} />
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                          No publications found
-                    </Typography>
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      startIcon={<CreateIcon />}
-                          sx={{ 
-                            fontSize: '0.8rem',
-                            borderColor: '#8b6cbc',
+                    {/* Tabs */}
+                    <Tabs 
+                      value={recentWorkTab} 
+                      onChange={(e, newValue) => setRecentWorkTab(newValue)}
+                      sx={{
+                        mb: 2,
+                        minHeight: 40,
+                        '& .MuiTab-root': {
+                          minHeight: 40,
+                          textTransform: 'none',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          color: '#718096',
+                          '&.Mui-selected': {
                             color: '#8b6cbc',
-                            '&:hover': {
-                              bgcolor: 'rgba(139, 108, 188, 0.1)',
-                              borderColor: '#8b6cbc'
-                            }
-                          }}
-                        >
-                          Add Publication
-                    </Button>
-                  </Box>
-                    )}
+                            fontWeight: 600
+                          }
+                        },
+                        '& .MuiTabs-indicator': {
+                          bgcolor: '#8b6cbc',
+                          height: 3,
+                          borderRadius: '3px 3px 0 0'
+                        }
+                      }}
+                    >
+                      <Tab label="All" value="all" />
+                      <Tab label="Publications" value="publications" />
+                      <Tab label="Projects" value="projects" />
+                    </Tabs>
+
+                    <Box sx={{ maxHeight: 420, overflowY: 'auto', pr: 1 }}>
+                      {/* Publications */}
+                      {(recentWorkTab === 'all' || recentWorkTab === 'publications') && dashboardData.recentPublications.length > 0 && (
+                        <Box sx={{ mb: recentWorkTab === 'all' ? 3 : 0 }}>
+                          {recentWorkTab === 'all' && (
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#4a5568', display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <ArticleIcon sx={{ fontSize: 16 }} />
+                              Publications
+                            </Typography>
+                          )}
+                          {dashboardData.recentPublications.slice(0, recentWorkTab === 'all' ? 2 : 5).map((pub, index) => (
+                            <Paper key={pub.id} elevation={0} sx={{ 
+                              p: 2, 
+                              mb: 1.5,
+                              bgcolor: 'rgba(139, 108, 188, 0.02)',
+                              border: '1px solid rgba(139, 108, 188, 0.1)',
+                              borderRadius: 2,
+                              transition: 'all 0.2s',
+                              '&:hover': {
+                                bgcolor: 'rgba(139, 108, 188, 0.05)',
+                                boxShadow: '0 2px 8px rgba(139, 108, 188, 0.15)',
+                                transform: 'translateY(-2px)'
+                              }
+                            }}>
+                              <Box sx={{ display: 'flex', alignItems: 'start', gap: 1, mb: 1 }}>
+                                <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 18, mt: 0.2 }} />
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, color: '#2d3748', lineHeight: 1.4 }}>
+                                    {pub.title.length > 60 ? `${pub.title.substring(0, 60)}...` : pub.title}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ color: '#718096', display: 'block', mb: 0.5 }}>
+                                    {pub.journal} • {pub.year}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                                <Chip 
+                                  label={`${pub.citations} citations`}
+                                  size="small"
+                                  sx={{ 
+                                    fontSize: '0.7rem',
+                                    height: 20,
+                                    bgcolor: 'rgba(76, 175, 80, 0.1)',
+                                    color: '#2e7d32',
+                                    fontWeight: 600
+                                  }}
+                                />
+                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                  <Tooltip title="View details">
+                                    <IconButton 
+                                      size="small" 
+                                      sx={{ p: 0.5, color: '#8b6cbc' }}
+                                      onClick={() => handleViewDetails(pub, 'publication')}
+                                    >
+                                      <VisibilityIcon sx={{ fontSize: 16 }} />
+                                    </IconButton>
+                                  </Tooltip>
+                                </Box>
+                              </Box>
+                            </Paper>
+                          ))}
+                        </Box>
+                      )}
+
+                      {/* Projects */}
+                      {(recentWorkTab === 'all' || recentWorkTab === 'projects') && dashboardData.rawData?.allProjects && dashboardData.rawData.allProjects.length > 0 && (
+                        <Box>
+                          {recentWorkTab === 'all' && (
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#4a5568', display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <ProposalIcon sx={{ fontSize: 16 }} />
+                              Projects
+                            </Typography>
+                          )}
+                          {dashboardData.rawData.allProjects.slice(0, recentWorkTab === 'all' ? 2 : 5).map((project, index) => {
+                            const statusColor = {
+                              'DRAFT': '#FFA726',
+                              'UNDER_REVIEW': '#42A5F5',
+                              'APPROVED': '#66BB6A',
+                              'IN_PROGRESS': '#8b6cbc',
+                              'COMPLETED': '#26A69A',
+                              'REJECTED': '#EF5350'
+                            };
+                            const statusLabel = project.status?.replace('_', ' ');
+                            
+                            return (
+                              <Paper key={project.id} elevation={0} sx={{ 
+                                p: 2, 
+                                mb: 1.5,
+                                bgcolor: 'rgba(255, 107, 107, 0.02)',
+                                border: '1px solid rgba(255, 107, 107, 0.1)',
+                                borderRadius: 2,
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  bgcolor: 'rgba(255, 107, 107, 0.05)',
+                                  boxShadow: '0 2px 8px rgba(255, 107, 107, 0.15)',
+                                  transform: 'translateY(-2px)'
+                                }
+                              }}>
+                                <Box sx={{ display: 'flex', alignItems: 'start', gap: 1, mb: 1 }}>
+                                  <ProposalIcon sx={{ color: '#FF6B6B', fontSize: 18, mt: 0.2 }} />
+                                  <Box sx={{ flex: 1 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, color: '#2d3748', lineHeight: 1.4 }}>
+                                      {project.title.length > 60 ? `${project.title.substring(0, 60)}...` : project.title}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: '#718096', display: 'block', mb: 0.5 }}>
+                                      {project.type || 'Proposal'} • {new Date(project.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                                  <Chip 
+                                    label={statusLabel}
+                                    size="small"
+                                    icon={project.status === 'IN_PROGRESS' ? <ScheduleIcon /> : project.status === 'COMPLETED' ? <CheckCircleIcon /> : <RateReviewIcon />}
+                                    sx={{ 
+                                      fontSize: '0.7rem',
+                                      height: 20,
+                                      bgcolor: `${statusColor[project.status]}15`,
+                                      color: statusColor[project.status],
+                                      fontWeight: 600,
+                                      '& .MuiChip-icon': {
+                                        fontSize: 14,
+                                        color: statusColor[project.status]
+                                      }
+                                    }}
+                                  />
+                                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                    <Tooltip title="View details">
+                                      <IconButton 
+                                        size="small" 
+                                        sx={{ p: 0.5, color: '#FF6B6B' }}
+                                        onClick={() => handleViewDetails(project, 'project')}
+                                      >
+                                        <VisibilityIcon sx={{ fontSize: 16 }} />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </Box>
+                                </Box>
+                              </Paper>
+                            );
+                          })}
+                        </Box>
+                      )}
+
+                      {/* Empty State */}
+                      {((recentWorkTab === 'all' && dashboardData.recentPublications.length === 0 && (!dashboardData.rawData?.allProjects || dashboardData.rawData.allProjects.length === 0)) ||
+                        (recentWorkTab === 'publications' && dashboardData.recentPublications.length === 0) ||
+                        (recentWorkTab === 'projects' && (!dashboardData.rawData?.allProjects || dashboardData.rawData.allProjects.length === 0))) && (
+                        <Box sx={{ textAlign: 'center', py: 4 }}>
+                          {recentWorkTab === 'publications' ? (
+                            <>
+                              <ArticleIcon sx={{ fontSize: 48, color: '#cbd5e0', mb: 1 }} />
+                              <Typography variant="body2" color="text.secondary">
+                                No publications found
+                              </Typography>
+                            </>
+                          ) : recentWorkTab === 'projects' ? (
+                            <>
+                              <ProposalIcon sx={{ fontSize: 48, color: '#cbd5e0', mb: 1 }} />
+                              <Typography variant="body2" color="text.secondary">
+                                No projects found
+                              </Typography>
+                            </>
+                          ) : (
+                            <>
+                              <TimelineIcon sx={{ fontSize: 48, color: '#cbd5e0', mb: 1 }} />
+                              <Typography variant="body2" color="text.secondary">
+                                No recent work found
+                              </Typography>
+                            </>
+                          )}
+                        </Box>
+                      )}
+                    </Box>
               </CardContent>
             </Card>
           </Grid>
@@ -798,6 +1208,254 @@ const ResearcherDashboard = () => {
           </>
         )}
       </Container>
+
+      {/* Details Dialog */}
+      <Dialog
+        open={detailsDialog.open}
+        onClose={handleCloseDetails}
+        maxWidth="md"
+        fullWidth
+        disableScrollLock={true}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          pb: 2, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          borderBottom: '1px solid rgba(0,0,0,0.08)',
+          background: detailsDialog.type === 'publication' 
+            ? 'linear-gradient(135deg, rgba(139, 108, 188, 0.05) 0%, rgba(139, 108, 188, 0.02) 100%)'
+            : 'linear-gradient(135deg, rgba(255, 107, 107, 0.05) 0%, rgba(255, 107, 107, 0.02) 100%)'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            {detailsDialog.type === 'publication' ? (
+              <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 28 }} />
+            ) : (
+              <ProposalIcon sx={{ color: '#FF6B6B', fontSize: 28 }} />
+            )}
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#2d3748' }}>
+              {detailsDialog.type === 'publication' ? 'Publication Details' : 'Project Details'}
+            </Typography>
+          </Box>
+          <IconButton onClick={handleCloseDetails} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 3, mt: 2 }}>
+          {detailsDialog.item && detailsDialog.type === 'publication' && (
+            <Box>
+              {/* Publication Details */}
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2d3748', lineHeight: 1.4 }}>
+                {detailsDialog.item.title}
+              </Typography>
+
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+                <Chip
+                  icon={<CalendarTodayIcon />}
+                  label={`Year: ${detailsDialog.item.year}`}
+                  size="small"
+                  sx={{ bgcolor: 'rgba(139, 108, 188, 0.1)', color: '#8b6cbc', fontWeight: 600 }}
+                />
+                <Chip
+                  label={`${detailsDialog.item.citations || 0} citations`}
+                  size="small"
+                  sx={{ bgcolor: 'rgba(76, 175, 80, 0.1)', color: '#2e7d32', fontWeight: 600 }}
+                />
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Journal */}
+              {detailsDialog.item.journal && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <BusinessIcon sx={{ fontSize: 18 }} />
+                    Journal
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#718096' }}>
+                    {detailsDialog.item.journal}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Authors */}
+              {detailsDialog.item.authors && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PersonIcon sx={{ fontSize: 18 }} />
+                    Authors
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#718096' }}>
+                    {detailsDialog.item.authors}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* DOI */}
+              {detailsDialog.item.doi && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5 }}>
+                    DOI
+                  </Typography>
+                  <Link 
+                    href={`https://doi.org/${detailsDialog.item.doi}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    sx={{ 
+                      color: '#8b6cbc', 
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      '&:hover': { textDecoration: 'underline' }
+                    }}
+                  >
+                    {detailsDialog.item.doi}
+                    <OpenInNewIcon sx={{ fontSize: 16 }} />
+                  </Link>
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {detailsDialog.item && detailsDialog.type === 'project' && (
+            <Box>
+              {/* Project Details */}
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2d3748', lineHeight: 1.4 }}>
+                {detailsDialog.item.title}
+              </Typography>
+
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+                <Chip
+                  icon={detailsDialog.item.status === 'IN_PROGRESS' ? <ScheduleIcon /> : detailsDialog.item.status === 'COMPLETED' ? <CheckCircleIcon /> : <RateReviewIcon />}
+                  label={detailsDialog.item.status?.replace('_', ' ')}
+                  size="small"
+                  sx={{ 
+                    bgcolor: `${
+                      {
+                        'DRAFT': '#FFA726',
+                        'UNDER_REVIEW': '#42A5F5',
+                        'APPROVED': '#66BB6A',
+                        'IN_PROGRESS': '#8b6cbc',
+                        'COMPLETED': '#26A69A',
+                        'REJECTED': '#EF5350'
+                      }[detailsDialog.item.status]
+                    }15`,
+                    color: {
+                      'DRAFT': '#FFA726',
+                      'UNDER_REVIEW': '#42A5F5',
+                      'APPROVED': '#66BB6A',
+                      'IN_PROGRESS': '#8b6cbc',
+                      'COMPLETED': '#26A69A',
+                      'REJECTED': '#EF5350'
+                    }[detailsDialog.item.status],
+                    fontWeight: 600
+                  }}
+                />
+                {detailsDialog.item.type && (
+                  <Chip
+                    icon={<DescriptionIcon />}
+                    label={detailsDialog.item.type}
+                    size="small"
+                    sx={{ bgcolor: 'rgba(255, 107, 107, 0.1)', color: '#FF6B6B', fontWeight: 600 }}
+                  />
+                )}
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Principal Investigator */}
+              {detailsDialog.item.principalInvestigator && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PersonIcon sx={{ fontSize: 18 }} />
+                    Principal Investigator
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#718096' }}>
+                    {detailsDialog.item.principalInvestigator}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Dates */}
+              <Box sx={{ display: 'flex', gap: 3, mb: 2, flexWrap: 'wrap' }}>
+                {detailsDialog.item.startDate && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5 }}>
+                      Start Date
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#718096' }}>
+                      {new Date(detailsDialog.item.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </Typography>
+                  </Box>
+                )}
+                {detailsDialog.item.endDate && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5 }}>
+                      End Date
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#718096' }}>
+                      {new Date(detailsDialog.item.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
+              {/* Created Date */}
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5 }}>
+                  Created
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#718096' }}>
+                  {new Date(detailsDialog.item.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+          <Button onClick={handleCloseDetails} variant="outlined" sx={{ textTransform: 'none' }}>
+            Close
+          </Button>
+          {detailsDialog.type === 'publication' && detailsDialog.item?.doi && (
+            <Button 
+              variant="contained"
+              startIcon={<OpenInNewIcon />}
+              href={`https://doi.org/${detailsDialog.item.doi}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ 
+                textTransform: 'none',
+                bgcolor: '#8b6cbc',
+                '&:hover': { bgcolor: '#7a5caa' }
+              }}
+            >
+              Open Publication
+            </Button>
+          )}
+          {detailsDialog.type === 'project' && (
+            <Button 
+              variant="contained"
+              startIcon={<WriteIcon />}
+              sx={{ 
+                textTransform: 'none',
+                bgcolor: '#FF6B6B',
+                '&:hover': { bgcolor: '#EF5350' }
+              }}
+            >
+              Edit Project
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

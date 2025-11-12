@@ -247,6 +247,7 @@ export default function NotificationDropdown({ anchorEl, open, onClose }) {
       anchorEl={anchorEl}
       open={open}
       onClose={onClose}
+      disableScrollLock={true}
       anchorOrigin={{
         vertical: 'bottom',
         horizontal: 'right',
