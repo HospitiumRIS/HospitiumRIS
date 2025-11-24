@@ -23,7 +23,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Menu,
   MenuItem,
   Avatar,
   Badge,
@@ -51,7 +50,6 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Visibility as ViewIcon,
-  Share as ShareIcon,
   GetApp as DownloadIcon,
   Add as AddIcon,
   Sort as SortIcon,
@@ -71,7 +69,10 @@ import {
   LocalOffer as TagIcon,
   Assessment as MetricsIcon,
   ViewList as TableViewIcon,
-  ViewModule as CardViewIcon
+  ViewModule as CardViewIcon,
+  LibraryAdd as LibraryAddIcon,
+  Folder as FolderIcon,
+  FolderOpen as FolderOpenIcon
 } from '@mui/icons-material';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
@@ -87,13 +88,24 @@ export default function ManagePublications() {
   const [selectedPublication, setSelectedPublication] = useState(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [menuAnchor, setMenuAnchor] = useState(null);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [libraryDialogOpen, setLibraryDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [error, setError] = useState(null);
   const [viewType, setViewType] = useState('table'); // 'table' or 'cards'
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  
+  // Library folder management
+  const [folders, setFolders] = useState([
+    { id: 1, name: 'My Library', parent: null, expanded: true },
+    { id: 2, name: 'Research Papers', parent: 1, expanded: false },
+    { id: 3, name: 'Case Studies', parent: 1, expanded: false },
+    { id: 4, name: 'Reviews', parent: 1, expanded: false }
+  ]);
+  const [selectedFolder, setSelectedFolder] = useState(null);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+  const [newFolderParent, setNewFolderParent] = useState(null);
 
   // Transform database publication to UI format
   const transformPublicationForUI = (dbPublication) => {
@@ -264,37 +276,134 @@ export default function ManagePublications() {
     setSelectedPublication(null);
   };
 
-  const handleMenuClick = useCallback((event, publication) => {
-    event.preventDefault();
-    event.stopPropagation();
-    
-    console.log('Menu click:', event.currentTarget); // Debug log
-    
-    // Try multiple approaches to ensure we get the right anchor
-    const target = event.currentTarget || event.target;
-    
-    if (target) {
-      setMenuAnchor(target);
+  const handleAddToLibrary = (publication) => {
     setSelectedPublication(publication);
-      
-      // Also get position for debugging
-      const rect = target.getBoundingClientRect();
-      setMenuPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.right + window.scrollX
-      });
-      
-      console.log('Anchor element:', target);
-      console.log('Position:', { top: rect.bottom, left: rect.right });
-    } else {
-      console.error('No target element found');
-    }
-  }, []);
+    setLibraryDialogOpen(true);
+  };
 
-  const handleMenuClose = useCallback(() => {
-    setMenuAnchor(null);
-    setSelectedPublication(null);
-  }, []);
+  const handleCreateFolder = () => {
+    if (newFolderName.trim()) {
+      const newFolder = {
+        id: Date.now(),
+        name: newFolderName.trim(),
+        parent: newFolderParent,
+        expanded: false
+      };
+      setFolders([...folders, newFolder]);
+      setNewFolderName('');
+      setShowNewFolderInput(false);
+      setNewFolderParent(null);
+    }
+  };
+
+  const toggleFolder = (folderId) => {
+    setFolders(folders.map(folder => 
+      folder.id === folderId ? { ...folder, expanded: !folder.expanded } : folder
+    ));
+  };
+
+  const handleAddToSelectedFolder = () => {
+    if (selectedFolder && selectedPublication) {
+      // TODO: Implement actual logic to add publication to folder
+      console.log('Adding publication', selectedPublication.id, 'to folder', selectedFolder);
+      alert(`Added "${selectedPublication.title}" to "${folders.find(f => f.id === selectedFolder)?.name}"`);
+      setLibraryDialogOpen(false);
+      setSelectedFolder(null);
+    }
+  };
+
+  const renderFolderTree = (parentId = null, level = 0) => {
+    return folders
+      .filter(folder => folder.parent === parentId)
+      .map(folder => {
+        const hasChildren = folders.some(f => f.parent === folder.id);
+        const isSelected = selectedFolder === folder.id;
+        
+        return (
+          <Box key={folder.id}>
+            <Box
+              onClick={() => setSelectedFolder(folder.id)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                py: 1,
+                px: 2,
+                pl: 2 + level * 3,
+                cursor: 'pointer',
+                bgcolor: isSelected ? '#8b6cbc15' : 'transparent',
+                borderLeft: isSelected ? '3px solid #8b6cbc' : '3px solid transparent',
+                '&:hover': {
+                  bgcolor: '#8b6cbc08'
+                },
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {hasChildren && (
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFolder(folder.id);
+                  }}
+                  sx={{ mr: 0.5, p: 0.5 }}
+                >
+                  {folder.expanded ? '▼' : '▶'}
+                </IconButton>
+              )}
+              {!hasChildren && <Box sx={{ width: 28 }} />}
+              <Box sx={{ mr: 1, color: '#8b6cbc' }}>📁</Box>
+              <Typography variant="body2" sx={{ fontWeight: isSelected ? 600 : 400 }}>
+                {folder.name}
+              </Typography>
+              <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5 }}>
+                <Tooltip title="Add subfolder">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setNewFolderParent(folder.id);
+                      setShowNewFolderInput(true);
+                    }}
+                    sx={{ opacity: 0.6, '&:hover': { opacity: 1 } }}
+                  >
+                    <AddIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+            {folder.expanded && renderFolderTree(folder.id, level + 1)}
+            {showNewFolderInput && newFolderParent === folder.id && (
+              <Box sx={{ pl: 2 + (level + 1) * 3, pr: 2, py: 1 }}>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <TextField
+                    size="small"
+                    placeholder="Folder name"
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
+                    autoFocus
+                    sx={{ flex: 1 }}
+                  />
+                  <IconButton size="small" onClick={handleCreateFolder} color="primary">
+                    ✓
+                  </IconButton>
+                  <IconButton 
+                    size="small" 
+                    onClick={() => {
+                      setShowNewFolderInput(false);
+                      setNewFolderName('');
+                      setNewFolderParent(null);
+                    }}
+                  >
+                    ✕
+                  </IconButton>
+                </Box>
+              </Box>
+            )}
+          </Box>
+        );
+      });
+  };
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredPublications.length / itemsPerPage);
@@ -339,7 +448,14 @@ export default function ManagePublications() {
   const PublicationsCards = ({ publications }) => (
     <Box>
       {publications.map((publication) => (
-        <Card key={publication.id} sx={{ mb: 2, '&:hover': { boxShadow: 4 } }}>
+        <Card 
+          key={publication.id}
+          sx={{ 
+            mb: 2, 
+            '&:hover': { boxShadow: 4 },
+            transition: 'box-shadow 0.2s ease'
+          }}
+        >
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box sx={{ flex: 1 }}>
@@ -401,30 +517,77 @@ export default function ManagePublications() {
           </Box>
           
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, ml: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Chip 
-                label={publication.status.replace('-', ' ')} 
-                size="small"
-                sx={{ 
-                  bgcolor: getStatusColor(publication.status),
-                  color: 'white'
-                }}
-                icon={getStatusIcon(publication.status)}
-              />
-              <IconButton
-                size="small"
-                onClick={(e) => handleMenuClick(e, publication)}
-                title="More Actions"
-                sx={{ 
-                  ml: 0.5,
-                  color: '#666',
-                  '&:hover': { 
-                    bgcolor: '#8b6cbc10' 
-                  } 
-                }}
-              >
-                <MoreIcon />
-              </IconButton>
+            <Chip 
+              label={publication.status.replace('-', ' ')} 
+              size="small"
+              sx={{ 
+                bgcolor: getStatusColor(publication.status),
+                color: 'white'
+              }}
+              icon={getStatusIcon(publication.status)}
+            />
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 0.5
+            }}>
+              <Tooltip title="View" arrow>
+                <IconButton
+                  size="small"
+                  onClick={() => handleViewPublication(publication)}
+                  sx={{ 
+                    color: '#8b6cbc',
+                    '&:hover': { bgcolor: '#8b6cbc10' }
+                  }}
+                >
+                  <ViewIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Edit" arrow>
+                <IconButton
+                  size="small"
+                  sx={{ 
+                    color: '#666',
+                    '&:hover': { bgcolor: '#66666610' }
+                  }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Add to Library" arrow>
+                <IconButton
+                  size="small"
+                  onClick={() => handleAddToLibrary(publication)}
+                  sx={{ 
+                    color: '#4caf50',
+                    '&:hover': { bgcolor: '#4caf5010' }
+                  }}
+                >
+                  <LibraryAddIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Download" arrow>
+                <IconButton
+                  size="small"
+                  sx={{ 
+                    color: '#666',
+                    '&:hover': { bgcolor: '#66666610' }
+                  }}
+                >
+                  <DownloadIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete" arrow>
+                <IconButton
+                  size="small"
+                  onClick={() => handleDeletePublication(publication)}
+                  sx={{ 
+                    color: '#f44336',
+                    '&:hover': { bgcolor: '#f4433610' }
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
             </Box>
           </Box>
         </Box>
@@ -475,10 +638,11 @@ export default function ManagePublications() {
         <TableBody>
           {publications.map((publication, index) => (
             <TableRow 
-              key={publication.id} 
+              key={publication.id}
               sx={{ 
                 bgcolor: index % 2 === 0 ? '#fafafa' : 'white',
-                '&:hover': { backgroundColor: '#f0f0f0' } 
+                '&:hover': { backgroundColor: '#f0f0f0' },
+                transition: 'background-color 0.2s ease'
               }}
             >
               {/* Title */}
@@ -570,37 +734,71 @@ export default function ManagePublications() {
 
               {/* Actions */}
               <TableCell sx={{ py: 2, textAlign: 'center' }}>
-                <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                  <Tooltip title="View Details">
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 0.5, 
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  minHeight: '40px'
+                }}>
+                  <Tooltip title="View Details" arrow>
                     <IconButton 
                       size="small" 
                       onClick={() => handleViewPublication(publication)}
-                      sx={{ color: '#8b6cbc' }}
+                      sx={{ 
+                        color: '#8b6cbc',
+                        '&:hover': { bgcolor: '#8b6cbc10' }
+                      }}
                     >
                       <ViewIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Edit">
+                  <Tooltip title="Edit Publication" arrow>
                     <IconButton 
                       size="small" 
-                      sx={{ color: '#666' }}
+                      sx={{ 
+                        color: '#666',
+                        '&:hover': { bgcolor: '#66666610' }
+                      }}
                     >
                       <EditIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                    <IconButton
+                  <Tooltip title="Add to Library" arrow>
+                    <IconButton 
                       size="small"
-                      onClick={(e) => handleMenuClick(e, publication)}
-                    title="More Actions"
+                      onClick={() => handleAddToLibrary(publication)}
                       sx={{ 
-                        color: '#666',
-                        '&:hover': { 
-                          bgcolor: '#8b6cbc10' 
-                        } 
+                        color: '#4caf50',
+                        '&:hover': { bgcolor: '#4caf5010' }
                       }}
                     >
-                      <MoreIcon fontSize="small" />
+                      <LibraryAddIcon fontSize="small" />
                     </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Download Citation" arrow>
+                    <IconButton 
+                      size="small"
+                      sx={{ 
+                        color: '#666',
+                        '&:hover': { bgcolor: '#66666610' }
+                      }}
+                    >
+                      <DownloadIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete" arrow>
+                    <IconButton 
+                      size="small"
+                      onClick={() => handleDeletePublication(publication)}
+                      sx={{ 
+                        color: '#f44336',
+                        '&:hover': { bgcolor: '#f4433610' }
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
               </TableCell>
             </TableRow>
@@ -1054,65 +1252,111 @@ export default function ManagePublications() {
           </Box>
         </Paper>
 
-        {/* Action Menu */}
-        <Menu
-          anchorEl={menuAnchor}
-          open={Boolean(menuAnchor)}
-          onClose={handleMenuClose}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'right',
+        {/* Add to Library Dialog */}
+        <Dialog
+          open={libraryDialogOpen}
+          onClose={() => {
+            setLibraryDialogOpen(false);
+            setSelectedFolder(null);
+            setShowNewFolderInput(false);
+            setNewFolderName('');
+            setNewFolderParent(null);
           }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          sx={{
-            '& .MuiPaper-root': {
-                minWidth: 180,
-              mt: 0.5,
-              borderRadius: 2,
-              border: '1px solid rgba(0,0,0,0.08)',
-              boxShadow: '0px 2px 8px rgba(0,0,0,0.15)',
-                '& .MuiMenuItem-root': {
-                  px: 2,
-                py: 1.5,
-                borderRadius: 1,
-                mx: 1,
-                my: 0.5,
-                fontSize: '0.875rem',
-                  '&:hover': {
-                    bgcolor: '#8b6cbc10',
-                },
-              },
-            },
-          }}
+          maxWidth="sm"
+          fullWidth
         >
-          <MenuItem onClick={() => { handleViewPublication(selectedPublication); handleMenuClose(); }}>
-            <ViewIcon sx={{ mr: 1, fontSize: 18 }} /> View Details
-          </MenuItem>
-          <MenuItem onClick={() => { handleMenuClose(); }}>
-            <EditIcon sx={{ mr: 1, fontSize: 18 }} /> Edit Publication
-          </MenuItem>
-          <MenuItem onClick={() => { handleMenuClose(); }}>
-            <ShareIcon sx={{ mr: 1, fontSize: 18 }} /> Share
-          </MenuItem>
-          <MenuItem onClick={() => { handleMenuClose(); }}>
-            <DownloadIcon sx={{ mr: 1, fontSize: 18 }} /> Download Citation
-          </MenuItem>
-          <Divider sx={{ mx: 0.5 }} />
-          <MenuItem 
-            onClick={() => { handleDeletePublication(selectedPublication); handleMenuClose(); }} 
-            sx={{ 
-              color: 'error.main',
-              '&:hover': {
-                bgcolor: '#ff525210',
-              }
-            }}
-          >
-            <DeleteIcon sx={{ mr: 1, fontSize: 18 }} /> Delete
-          </MenuItem>
-        </Menu>
+          <DialogTitle sx={{ bgcolor: '#8b6cbc', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <LibraryAddIcon sx={{ mr: 1 }} />
+              Add to Library
+            </Box>
+            <Tooltip title="Create new folder at root">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setNewFolderParent(null);
+                  setShowNewFolderInput(true);
+                }}
+                sx={{ color: 'white' }}
+              >
+                <AddIcon />
+              </IconButton>
+            </Tooltip>
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 0 }}>
+            {selectedPublication && (
+              <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                  Selected Publication:
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {selectedPublication.title}
+                </Typography>
+              </Box>
+            )}
+            
+            <Box sx={{ minHeight: 300, maxHeight: 400, overflow: 'auto' }}>
+              <Typography variant="subtitle2" sx={{ p: 2, pb: 1, color: 'text.secondary' }}>
+                Select a folder or create a new one:
+              </Typography>
+              
+              {renderFolderTree()}
+              
+              {showNewFolderInput && newFolderParent === null && (
+                <Box sx={{ px: 2, py: 1 }}>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <TextField
+                      size="small"
+                      placeholder="New folder name"
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
+                      autoFocus
+                      sx={{ flex: 1 }}
+                    />
+                    <IconButton size="small" onClick={handleCreateFolder} color="primary">
+                      ✓
+                    </IconButton>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => {
+                        setShowNewFolderInput(false);
+                        setNewFolderName('');
+                      }}
+                    >
+                      ✕
+                    </IconButton>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button 
+              onClick={() => {
+                setLibraryDialogOpen(false);
+                setSelectedFolder(null);
+                setShowNewFolderInput(false);
+                setNewFolderName('');
+                setNewFolderParent(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handleAddToSelectedFolder}
+              disabled={!selectedFolder}
+              sx={{ 
+                bgcolor: '#8b6cbc', 
+                '&:hover': { bgcolor: '#7559a3' },
+                '&:disabled': { bgcolor: '#ccc' }
+              }}
+            >
+              Add to Folder
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {/* View Publication Dialog */}
         <Dialog

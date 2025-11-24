@@ -795,6 +795,39 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           {!isMobile && (
             <Stack direction="row" spacing={2} alignItems="center">
+              {/* Navigation Links */}
+              <Button
+                onClick={() => router.push('/')}
+                sx={{
+                  color: theme.palette.text.primary,
+                  fontWeight: 500,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  '&:hover': {
+                    backgroundColor: 'transparent',
+                    color: theme.palette.primary.main,
+                  },
+                }}
+              >
+                Home
+              </Button>
+              
+              <Button
+                onClick={() => router.push('/about')}
+                sx={{
+                  color: theme.palette.text.primary,
+                  fontWeight: 500,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  '&:hover': {
+                    backgroundColor: 'transparent',
+                    color: theme.palette.primary.main,
+                  },
+                }}
+              >
+                About HospitiumRIS
+              </Button>
+
               {/* Settings Button */}
               <IconButton
                 onClick={(event) => handleSettingsToggle(event)}

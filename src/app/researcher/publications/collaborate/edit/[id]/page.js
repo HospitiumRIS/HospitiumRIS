@@ -129,7 +129,8 @@ import {
   LibraryBooks as LibraryBooksIcon,
   AutoFixHigh as MagicWandIcon,
   History as HistoryIcon,
-  TrackChanges as TrackChangesIcon
+  TrackChanges as TrackChangesIcon,
+  ViewSidebar as ViewSidebarIcon
 } from '@mui/icons-material';
 
 import { useAuth } from '@/components/AuthProvider';
@@ -393,6 +394,7 @@ export default function ManuscriptEditor() {
   const [fontFamilyAnchor, setFontFamilyAnchor] = useState(null);
   const [fontSizeAnchor, setFontSizeAnchor] = useState(null);
   const [documentStructure, setDocumentStructure] = useState([]);
+  const [showDocumentStructure, setShowDocumentStructure] = useState(false);
   
   // Citation preferences
   const [citeAsYouWrite, setCiteAsYouWrite] = useState(true);
@@ -1888,33 +1890,47 @@ export default function ManuscriptEditor() {
         
         {/* Left Sidebar - Document Structure */}
         <Paper sx={{ 
-          width: 280, 
+          width: showDocumentStructure ? 300 : 0,
+          minWidth: showDocumentStructure ? 300 : 0,
           borderRadius: 0, 
-          borderRight: '1px solid #e0e0e0',
+          borderRight: showDocumentStructure ? '1px solid #e0e0e0' : 'none',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          overflow: 'hidden',
+          transition: 'width 0.3s ease-in-out, min-width 0.3s ease-in-out'
         }}>
-          <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: '#333', mb: 1 }}>
-              Document Structure
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              {manuscript?.wordCount || 0} words • {saving ? 'Saving...' : `Last saved ${lastSaved ? format(lastSaved, 'HH:mm') : 'Never'}`}
-            </Typography>
-          </Box>
+            <Box sx={{ 
+              p: 2, 
+              borderBottom: '1px solid #e0e0e0',
+              opacity: showDocumentStructure ? 1 : 0,
+              transition: 'opacity 0.3s ease-in-out'
+            }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: '#333', mb: 1 }}>
+                Document Structure
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                {manuscript?.wordCount || 0} words • {saving ? 'Saving...' : `Last saved ${lastSaved ? format(lastSaved, 'HH:mm') : 'Never'}`}
+              </Typography>
+            </Box>
 
-          <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
-            {documentStructure.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography variant="body2" color="textSecondary">
-                  No headings yet. Add headings to see document structure.
-                </Typography>
-              </Box>
-            ) : (
-              <HeadingStructureDisplay headings={documentStructure} onNavigate={navigateToHeading} />
-            )}
-          </Box>
-        </Paper>
+            <Box sx={{ 
+              flexGrow: 1, 
+              overflow: 'auto', 
+              p: 2,
+              opacity: showDocumentStructure ? 1 : 0,
+              transition: 'opacity 0.3s ease-in-out'
+            }}>
+              {documentStructure.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    No headings yet. Add headings to see document structure.
+                  </Typography>
+                </Box>
+              ) : (
+                <HeadingStructureDisplay headings={documentStructure} onNavigate={navigateToHeading} />
+              )}
+            </Box>
+          </Paper>
 
         {/* Center - Editor Area */}
         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -1930,6 +1946,17 @@ export default function ManuscriptEditor() {
             flexWrap: 'wrap'
           }}>
             
+            {/* Document Structure Toggle */}
+            <ToolbarButton
+              active={showDocumentStructure}
+              onClick={() => setShowDocumentStructure(!showDocumentStructure)}
+              title="Document Structure"
+            >
+              <ViewSidebarIcon fontSize="small" />
+            </ToolbarButton>
+
+            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+
             {/* Undo/Redo */}
             <ToolbarButton
               onClick={() => editor.chain().focus().undo().run()}

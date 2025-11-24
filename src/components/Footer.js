@@ -1,18 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Container,
-  Grid,
   Typography,
   Link,
   IconButton,
   Divider,
   useTheme,
-  TextField,
-  Button,
-  Stack,
 } from '@mui/material';
 import {
   Twitter as TwitterIcon,
@@ -23,13 +19,6 @@ import {
 
 const Footer = () => {
   const theme = useTheme();
-  const [email, setEmail] = useState('');
-
-  const handleSubscribe = () => {
-    console.log('Subscribe with email:', email);
-    // Add subscription logic here
-    setEmail('');
-  };
 
   const quickLinks = [
     { name: 'About Us', href: '#' },
@@ -43,8 +32,7 @@ const Footer = () => {
     { name: 'Help Center', href: '#' },
     { name: 'Terms of Service', href: '#' },
     { name: 'Privacy Policy', href: '#' },
-    { name: 'Security', href: '#' },
-    { name: 'Blog', href: '#' },
+    { name: 'Data Security', href: '#' },
   ];
 
   const socialLinks = [
@@ -66,76 +54,16 @@ const Footer = () => {
       }}
     >
       <Container maxWidth="lg">
-        <Grid container spacing={4}>
-          {/* Newsletter Section */}
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 'bold',
-                mb: 2,
-                color: 'white',
-              }}
-            >
-              Stay Updated
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                mb: 3,
-                color: '#a0aec0',
-                lineHeight: 1.6,
-              }}
-            >
-              Subscribe to our newsletter for the latest updates, research news, and community highlights.
-            </Typography>
-            
-            <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
-              <TextField
-                placeholder="Enter your email"
-                variant="outlined"
-                size="small"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                sx={{
-                  flexGrow: 1,
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    color: 'white',
-                    '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: theme.palette.primary.main,
-                    },
-                  },
-                  '& .MuiInputBase-input::placeholder': {
-                    color: '#a0aec0',
-                    opacity: 1,
-                  },
-                }}
-              />
-              <Button
-                variant="contained"
-                onClick={handleSubscribe}
-                sx={{
-                  backgroundColor: theme.palette.primary.main,
-                  '&:hover': {
-                    backgroundColor: theme.palette.primary.dark,
-                  },
-                  px: 3,
-                }}
-              >
-                Subscribe
-              </Button>
-            </Stack>
-          </Grid>
-
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 4,
+            justifyContent: 'space-between',
+          }}
+        >
           {/* Quick Links */}
-          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+          <Box sx={{ flex: '1 1 200px' }}>
             <Typography
               variant="h6"
               sx={{
@@ -168,10 +96,10 @@ const Footer = () => {
                 </Link>
               ))}
             </Box>
-          </Grid>
+          </Box>
 
           {/* Support & Legal */}
-          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+          <Box sx={{ flex: '1 1 200px' }}>
             <Typography
               variant="h6"
               sx={{
@@ -204,10 +132,10 @@ const Footer = () => {
                 </Link>
               ))}
             </Box>
-          </Grid>
+          </Box>
 
           {/* Company Info */}
-          <Grid size={{ xs: 12, md: 5 }}>
+          <Box sx={{ flex: '1 1 300px' }}>
             <Typography
               variant="h6"
               sx={{
@@ -249,8 +177,8 @@ const Footer = () => {
                 </IconButton>
               ))}
             </Box>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         <Divider sx={{ my: 4, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
 
