@@ -42,8 +42,6 @@ import {
   Badge,
   Tooltip,
   CardActions,
-  ToggleButton,
-  ToggleButtonGroup,
   List,
   ListItem,
   ListItemText,
@@ -73,8 +71,6 @@ import {
   TrendingUp as TrendingUpIcon,
   PlayArrow as PlayArrowIcon,
   MoreVert as MoreVertIcon,
-  ViewList as ViewListIcon,
-  ViewModule as ViewModuleIcon,
   FilterList as FilterListIcon,
   Groups as GroupsIcon,
   Timeline as TimelineIcon,
@@ -236,7 +232,6 @@ export default function CollaborativeWriting() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [typeFilter, setTypeFilter] = useState('All Types');
-  const [viewMode, setViewMode] = useState('grid');
   
   // Dialog states
   const [newManuscriptOpen, setNewManuscriptOpen] = useState(false);
@@ -1947,42 +1942,6 @@ export default function CollaborativeWriting() {
               </Select>
             </FormControl>
           </Grid>
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, alignItems: 'center' }}>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                View:
-              </Typography>
-              <ToggleButtonGroup
-                value={viewMode}
-                exclusive
-                onChange={(e, newMode) => newMode && setViewMode(newMode)}
-                size="small"
-                sx={{
-                  '& .MuiToggleButton-root': {
-                    border: '1px solid #8b6cbc40',
-                    color: '#8b6cbc',
-                    '&:hover': {
-                      backgroundColor: '#8b6cbc10',
-                    },
-                    '&.Mui-selected': {
-                      backgroundColor: '#8b6cbc',
-                      color: 'white',
-                      '&:hover': {
-                        backgroundColor: '#7b5ca7',
-                      },
-                    },
-                  },
-                }}
-              >
-                <ToggleButton value="grid">
-                  <ViewModuleIcon fontSize="small" />
-                </ToggleButton>
-                <ToggleButton value="table">
-                  <ViewListIcon fontSize="small" />
-                </ToggleButton>
-              </ToggleButtonGroup>
-            </Box>
-          </Grid>
         </Grid>
       </Paper>
 
@@ -2105,24 +2064,15 @@ export default function CollaborativeWriting() {
           </Button>
         </Paper>
       ) : (
-        // Manuscripts Grid/Table
+        // Manuscripts Table
         <>
-          {viewMode === 'grid' ? (
-            <Grid container spacing={3}>
-              {filteredManuscripts.map((manuscript) => (
-                <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={manuscript.id}>
-                  <ManuscriptCardComponent manuscript={manuscript} />
-                </Grid>
-              ))}
-            </Grid>
-          ) : (
-            <Paper sx={{ 
-              borderRadius: 3, 
-              overflow: 'hidden', 
-              boxShadow: '0 4px 16px rgba(139, 108, 188, 0.08)', 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'linear-gradient(135deg, #ffffff 0%, #fafbfd 100%)'
-            }}>
+          <Paper sx={{ 
+            borderRadius: 3, 
+            overflow: 'hidden', 
+            boxShadow: '0 4px 16px rgba(139, 108, 188, 0.08)', 
+            border: '1px solid rgba(139, 108, 188, 0.12)',
+            background: 'linear-gradient(135deg, #ffffff 0%, #fafbfd 100%)'
+          }}>
               <TableContainer>
                 <Table>
                   <TableHead>
@@ -2399,7 +2349,6 @@ export default function CollaborativeWriting() {
                 </Table>
               </TableContainer>
             </Paper>
-          )}
         </>
       )}
 

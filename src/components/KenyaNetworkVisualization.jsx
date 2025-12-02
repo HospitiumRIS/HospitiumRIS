@@ -1446,475 +1446,497 @@ const KenyaNetworkVisualization = () => {
         </Paper>
       </Slide>
 
-      {/* Enhanced Node Details Panel */}
+      {/* Enhanced Node Details Panel - Professional Design */}
       {selectedNode && (
-        <Fade in={true} timeout={500}>
-          <Card elevation={24} sx={{
+        <Fade in={true} timeout={400}>
+          <Card elevation={0} sx={{
             position: 'fixed',
-            top: 120,
-            right: 20,
+            top: 100,
+            right: 24,
             zIndex: 2000,
-            width: 400,
-            maxHeight: 'calc(100vh - 140px)',
-            overflow: 'auto',
-            borderRadius: 3,
-            background: KENYA_COLORS.surfaceElevated,
-            backdropFilter: 'blur(20px)',
-            border: '2px solid rgba(255, 255, 255, 0.3)',
-            boxShadow: '0 12px 48px rgba(0, 0, 0, 0.25)',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
-              borderRadius: 3,
-              pointerEvents: 'none'
-            }
+            width: 380,
+            maxHeight: 'calc(100vh - 120px)',
+            overflow: 'hidden',
+            borderRadius: 4,
+            background: '#ffffff',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           }}>
-            {/* Header with gradient background */}
-            <Box sx={{
-              background: `linear-gradient(135deg, ${getNodeColor(selectedNode)}25 0%, ${getNodeColor(selectedNode)}15 100%)`,
-              p: 3,
-              borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
-              position: 'relative'
-            }}>
-              {/* Close button */}
-              <IconButton
-                onClick={() => setSelectedNode(null)}
-                sx={{
-                  position: 'absolute',
-                  top: 8,
-                  right: 8,
-                  color: KENYA_COLORS.text.secondary,
-                  bgcolor: 'rgba(255, 255, 255, 0.8)',
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.9)',
-                    color: KENYA_COLORS.text.primary
-                  }
-                }}
-                size="small"
-              >
-                <Clear fontSize="small" />
-              </IconButton>
-              
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, pr: 4 }}>
-                <Avatar sx={{
-                  width: 56,
-                  height: 56,
-                  bgcolor: getNodeColor(selectedNode),
-                  fontSize: '1.4rem',
-                  fontWeight: 700,
-                  border: '3px solid rgba(255, 255, 255, 0.9)',
-                  boxShadow: '0 6px 16px rgba(0, 0, 0, 0.2)'
-                }}>
-                  {selectedNode.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                </Avatar>
+            {/* Scrollable Content */}
+            <Box sx={{ maxHeight: 'calc(100vh - 120px)', overflow: 'auto' }}>
+              {/* Header Section */}
+              <Box sx={{
+                position: 'relative',
+                background: selectedNode.isLead 
+                  ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
+                  : selectedNode.collaborationLevel === 'direct'
+                    ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
+                    : selectedNode.collaborationLevel === 'secondary'
+                      ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                      : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+                p: 3,
+                pb: 3,
+              }}>
+                {/* Close button */}
+                <IconButton
+                  onClick={() => setSelectedNode(null)}
+                  sx={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    bgcolor: 'rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(10px)',
+                    width: 32,
+                    height: 32,
+                    '&:hover': {
+                      bgcolor: 'rgba(255, 255, 255, 0.25)',
+                      color: '#ffffff'
+                    }
+                  }}
+                  size="small"
+                >
+                  <Clear sx={{ fontSize: 18 }} />
+                </IconButton>
                 
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="h6" sx={{ 
-                    fontWeight: 700, 
-                    color: KENYA_COLORS.text.primary,
-                    mb: 0.5,
-                    fontSize: '1.1rem'
+                {/* Avatar and Name */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, pr: 4 }}>
+                  <Avatar sx={{
+                    width: 56,
+                    height: 56,
+                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    color: '#ffffff',
+                    fontSize: '1.25rem',
+                    fontWeight: 600,
+                    border: '3px solid rgba(255, 255, 255, 0.4)',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                    letterSpacing: '-0.5px'
                   }}>
-                    {selectedNode.name}
-                  </Typography>
+                    {selectedNode.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </Avatar>
                   
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    {selectedNode.isLead && (
-                      <Chip 
-                        icon={<PersonPin fontSize="small" />}
-                        size="small" 
-                        label="Lead Investigator" 
-                        sx={{ 
-                          bgcolor: 'rgba(255, 215, 0, 0.2)', 
-                          color: KENYA_COLORS.lead,
-                          fontWeight: 700,
-                          fontSize: '0.75rem',
-                          border: '1px solid rgba(255, 215, 0, 0.3)'
-                        }} 
-                      />
-                    )}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ 
+                      fontWeight: 700, 
+                      color: '#ffffff',
+                      fontSize: '1.1rem',
+                      lineHeight: 1.3,
+                      mb: 0.5,
+                      textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                    }}>
+                      {selectedNode.name}
+                    </Typography>
                     
-                    {!selectedNode.isLead && (
-                      <>
-                      <Chip 
-                        size="small" 
-                        label={`${selectedNode.collaborationLevel?.charAt(0).toUpperCase() + selectedNode.collaborationLevel?.slice(1)} Collaborator`}
-                        sx={{ 
-                          bgcolor: (() => {
-                            switch (selectedNode.collaborationLevel) {
-                              case 'direct': return 'rgba(139, 108, 188, 0.2)';
-                              case 'secondary': return 'rgba(229, 57, 53, 0.2)';
-                              default: return 'rgba(120, 144, 156, 0.2)';
-                            }
-                          })(),
-                          color: getNodeColor(selectedNode),
-                          fontWeight: 700,
-                          fontSize: '0.75rem',
-                          border: `1px solid ${getNodeColor(selectedNode)}30`
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      {selectedNode.isLead ? (
+                        <Chip 
+                          icon={<PersonPin sx={{ fontSize: 14, color: '#ffffff !important' }} />}
+                          size="small" 
+                          label="Lead Investigator" 
+                          sx={{ 
+                            bgcolor: 'rgba(255, 255, 255, 0.25)', 
+                            color: '#ffffff',
+                            fontWeight: 600,
+                            fontSize: '0.7rem',
+                            height: 24,
+                            backdropFilter: 'blur(10px)',
+                            '& .MuiChip-icon': { color: '#ffffff' }
                           }} 
                         />
-                        {selectedNode.isPending && (
-                          <Chip 
-                            size="small" 
-                            label="Pending Invitation"
-                            sx={{ 
-                              bgcolor: 'rgba(255, 152, 0, 0.2)',
-                              color: '#e65100',
-                              fontWeight: 700,
-                              fontSize: '0.75rem',
-                              border: '1px dashed #e65100',
-                              ml: 1
-                            }} 
-                          />
-                        )}
-                      </>
-                    )}
+                      ) : (
+                        <Chip 
+                          size="small" 
+                          label={selectedNode.collaborationLevel === 'direct' ? 'Direct Collaborator' : 
+                                 selectedNode.collaborationLevel === 'secondary' ? 'Secondary Collaborator' : 
+                                 'Network Member'}
+                          sx={{ 
+                            bgcolor: 'rgba(255, 255, 255, 0.25)',
+                            color: '#ffffff',
+                            fontWeight: 600,
+                            fontSize: '0.7rem',
+                            height: 24,
+                            backdropFilter: 'blur(10px)'
+                          }} 
+                        />
+                      )}
+                      {selectedNode.isPending && (
+                        <Chip 
+                          size="small" 
+                          label="Pending"
+                          sx={{ 
+                            bgcolor: 'rgba(255, 255, 255, 0.2)',
+                            color: '#ffffff',
+                            fontWeight: 600,
+                            fontSize: '0.7rem',
+                            height: 24,
+                            border: '1px dashed rgba(255,255,255,0.5)'
+                          }} 
+                        />
+                      )}
+                    </Box>
                   </Box>
                 </Box>
               </Box>
               
-              {/* Research outputs prominently displayed */}
+              {/* Stats Cards - Below header */}
               <Box sx={{ 
                 display: 'flex', 
-                justifyContent: 'center',
                 gap: 1,
-                mt: 1,
-                flexWrap: 'wrap'
+                px: 2,
+                py: 2,
+                backgroundColor: '#f9fafb',
+                borderBottom: '1px solid #e5e7eb'
               }}>
-                <Chip 
-                  icon={<Article fontSize="small" />}
-                  label={`${selectedNode.publications_count} Publications`}
-                  sx={{ 
-                    bgcolor: 'rgba(76, 175, 80, 0.2)', 
-                    color: '#1b5e20',
-                    fontWeight: 700,
-                    fontSize: '0.8rem',
-                    px: 2,
-                    height: 32,
-                    border: '1px solid rgba(76, 175, 80, 0.3)'
-                  }} 
-                />
-                {selectedNode.manuscripts_count > 0 && (
-                  <Chip 
-                    icon={<PersonPin fontSize="small" />}
-                    label={`${selectedNode.manuscripts_count} Manuscripts`}
-                    sx={{ 
-                      bgcolor: 'rgba(139, 108, 188, 0.2)', 
-                      color: '#4a148c',
-                      fontWeight: 700,
-                      fontSize: '0.8rem',
-                      px: 2,
-                      height: 32,
-                      border: '1px solid rgba(139, 108, 188, 0.3)'
-                    }} 
-                  />
-                )}
-              </Box>
-            </Box>
-            
-            <CardContent sx={{ p: 3 }}>
-              {/* Enhanced Researcher Information */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" sx={{ 
-                  fontWeight: 700, 
-                  mb: 2.5,
-                  color: KENYA_COLORS.text.primary,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  fontSize: '1rem'
+                <Box sx={{ 
+                  flex: 1,
+                  py: 1.5,
+                  px: 1,
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 2,
+                  textAlign: 'center'
                 }}>
-                  <Info fontSize="small" />
-                  Researcher Information
-                </Typography>
+                  <Typography sx={{ 
+                    fontWeight: 700, 
+                    color: '#059669',
+                    fontSize: '1.25rem',
+                    lineHeight: 1
+                  }}>
+                    {selectedNode.publications_count}
+                  </Typography>
+                  <Typography sx={{ 
+                    color: '#6b7280',
+                    fontWeight: 500,
+                    fontSize: '0.65rem',
+                    mt: 0.5,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Publications
+                  </Typography>
+                </Box>
                 
-                {/* Information Grid */}
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1.5 }}>
-                  {/* Role */}
-                  <Card elevation={1} sx={{ 
-                    p: 2, 
-                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                    border: '1px solid rgba(0, 0, 0, 0.06)',
-                    borderRadius: 2
+                <Box sx={{ 
+                  flex: 1,
+                  py: 1.5,
+                  px: 1,
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 2,
+                  textAlign: 'center'
+                }}>
+                  <Typography sx={{ 
+                    fontWeight: 700, 
+                    color: '#7c3aed',
+                    fontSize: '1.25rem',
+                    lineHeight: 1
                   }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                      <PersonPin fontSize="small" sx={{ color: KENYA_COLORS.direct }} />
-                      <Typography variant="body2" sx={{ 
-                        fontWeight: 700, 
-                        color: KENYA_COLORS.text.secondary,
-                        fontSize: '0.85rem'
-                      }}>
-                        Role
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" sx={{ 
-                      color: KENYA_COLORS.text.primary,
-                      fontWeight: 600,
-                      fontSize: '0.9rem'
-                    }}>
-                      {selectedNode.role}
-                    </Typography>
-                  </Card>
-                  
-                  {/* Institution */}
-                  <Card elevation={1} sx={{ 
-                    p: 2, 
-                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                    border: '1px solid rgba(0, 0, 0, 0.06)',
-                    borderRadius: 2
+                    {selectedNode.manuscripts_count || 0}
+                  </Typography>
+                  <Typography sx={{ 
+                    color: '#6b7280',
+                    fontWeight: 500,
+                    fontSize: '0.65rem',
+                    mt: 0.5,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
                   }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                      <Groups fontSize="small" sx={{ color: KENYA_COLORS.secondary }} />
-                      <Typography variant="body2" sx={{ 
-                        fontWeight: 700, 
-                        color: KENYA_COLORS.text.secondary,
-                        fontSize: '0.85rem'
-                      }}>
-                        Institution
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" sx={{ 
-                      color: KENYA_COLORS.text.primary,
-                      fontWeight: 600,
-                      fontSize: '0.9rem',
-                      lineHeight: 1.3
-                    }}>
-                      {selectedNode.institution}
-                    </Typography>
-                  </Card>
-                  
-                  {/* Specialization */}
-                  <Card elevation={1} sx={{ 
-                    p: 2, 
-                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                    border: '1px solid rgba(0, 0, 0, 0.06)',
-                    borderRadius: 2
+                    Manuscripts
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ 
+                  flex: 1,
+                  py: 1.5,
+                  px: 1,
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 2,
+                  textAlign: 'center'
+                }}>
+                  <Typography sx={{ 
+                    fontWeight: 700, 
+                    color: '#0891b2',
+                    fontSize: '1.25rem',
+                    lineHeight: 1
                   }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                      <Article fontSize="small" sx={{ color: KENYA_COLORS.highlight }} />
-                      <Typography variant="body2" sx={{ 
-                        fontWeight: 700, 
-                        color: KENYA_COLORS.text.secondary,
-                        fontSize: '0.85rem'
-                      }}>
-                        Specialization
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" sx={{ 
-                      color: KENYA_COLORS.text.primary,
-                      fontWeight: 600,
-                      fontSize: '0.9rem'
-                    }}>
-                      {selectedNode.specialization}
-                    </Typography>
-                  </Card>
-                  
-                  {/* Statistics Row */}
-                  <Box sx={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: selectedNode.manuscripts_count > 0 ? 'repeat(3, 1fr)' : '1fr 1fr', 
-                    gap: 1.5 
+                    {Math.max(0, highlightNodes.size - 1)}
+                  </Typography>
+                  <Typography sx={{ 
+                    color: '#6b7280',
+                    fontWeight: 500,
+                    fontSize: '0.65rem',
+                    mt: 0.5,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
                   }}>
-                    {/* Total Publications */}
-                    <Card elevation={1} sx={{ 
-                      p: 2, 
-                      backgroundColor: 'rgba(76, 175, 80, 0.08)',
-                      border: '1px solid rgba(76, 175, 80, 0.2)',
-                      borderRadius: 2,
-                      textAlign: 'center'
-                    }}>
-                      <Typography variant="h6" sx={{ 
-                        fontWeight: 700, 
-                        color: '#2e7d32',
-                        mb: 0.5
-                      }}>
-                        {selectedNode.publications_count}
-                      </Typography>
-                      <Typography variant="caption" sx={{ 
-                        color: '#2e7d32',
-                        fontWeight: 600,
-                        fontSize: '0.75rem'
-                      }}>
-                        Publications
-                      </Typography>
-                    </Card>
-                    
-                    {/* Manuscripts */}
-                    {selectedNode.manuscripts_count > 0 && (
-                    <Card elevation={1} sx={{ 
-                      p: 2, 
-                      backgroundColor: 'rgba(139, 108, 188, 0.08)',
-                      border: '1px solid rgba(139, 108, 188, 0.2)',
-                      borderRadius: 2,
-                      textAlign: 'center'
-                    }}>
-                      <Typography variant="h6" sx={{ 
-                        fontWeight: 700, 
-                        color: KENYA_COLORS.direct,
-                        mb: 0.5
-                      }}>
-                          {selectedNode.manuscripts_count}
-                      </Typography>
-                      <Typography variant="caption" sx={{ 
-                        color: KENYA_COLORS.direct,
-                          fontWeight: 600,
-                          fontSize: '0.75rem'
-                        }}>
-                          Manuscripts
-                        </Typography>
-                      </Card>
-                    )}
-                    
-                    {/* Network Connections */}
-                    <Card elevation={1} sx={{ 
-                      p: 2, 
-                      backgroundColor: 'rgba(69, 183, 209, 0.08)',
-                      border: '1px solid rgba(69, 183, 209, 0.2)',
-                      borderRadius: 2,
-                      textAlign: 'center'
-                    }}>
-                      <Typography variant="h6" sx={{ 
-                        fontWeight: 700, 
-                        color: '#0277bd',
-                        mb: 0.5
-                      }}>
-                        {highlightNodes.size - 1}
-                      </Typography>
-                      <Typography variant="caption" sx={{ 
-                        color: '#0277bd',
-                        fontWeight: 600,
-                        fontSize: '0.75rem'
-                      }}>
-                        Collaborators
-                      </Typography>
-                    </Card>
-                  </Box>
+                    Collaborators
+                  </Typography>
                 </Box>
               </Box>
+              
+              <CardContent sx={{ p: 3, pt: 0 }}>
+                {/* Researcher Information Section */}
+                <Box sx={{ mb: 3 }}>
+                  <Typography sx={{ 
+                    fontWeight: 600, 
+                    mb: 2,
+                    color: '#111827',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    fontSize: '0.875rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    <Info sx={{ fontSize: 16, color: '#6b7280' }} />
+                    Researcher Information
+                  </Typography>
+                  
+                  {/* Info Items */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {/* Role */}
+                    <Box sx={{ 
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 1.5,
+                      p: 2,
+                      backgroundColor: '#f9fafb',
+                      borderRadius: 2,
+                      border: '1px solid #f3f4f6'
+                    }}>
+                      <Box sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 2,
+                        backgroundColor: '#ede9fe',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <PersonPin sx={{ fontSize: 18, color: '#7c3aed' }} />
+                      </Box>
+                      <Box>
+                        <Typography sx={{ 
+                          color: '#6b7280',
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.3px',
+                          mb: 0.25
+                        }}>
+                          Role
+                        </Typography>
+                        <Typography sx={{ 
+                          color: '#111827',
+                          fontWeight: 600,
+                          fontSize: '0.9rem'
+                        }}>
+                          {selectedNode.isLead ? 'Lead Investigator/Current User' : (selectedNode.role || 'Researcher')}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    
+                    {/* Institution */}
+                    <Box sx={{ 
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 1.5,
+                      p: 2,
+                      backgroundColor: '#f9fafb',
+                      borderRadius: 2,
+                      border: '1px solid #f3f4f6'
+                    }}>
+                      <Box sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 2,
+                        backgroundColor: '#fef3c7',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <Groups sx={{ fontSize: 18, color: '#d97706' }} />
+                      </Box>
+                      <Box>
+                        <Typography sx={{ 
+                          color: '#6b7280',
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.3px',
+                          mb: 0.25
+                        }}>
+                          Institution
+                        </Typography>
+                        <Typography sx={{ 
+                          color: '#111827',
+                          fontWeight: 600,
+                          fontSize: '0.9rem',
+                          lineHeight: 1.4
+                        }}>
+                          {selectedNode.institution || 'Independent Researcher'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    
+                    {/* Specialization */}
+                    <Box sx={{ 
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 1.5,
+                      p: 2,
+                      backgroundColor: '#f9fafb',
+                      borderRadius: 2,
+                      border: '1px solid #f3f4f6'
+                    }}>
+                      <Box sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 2,
+                        backgroundColor: '#dbeafe',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <Article sx={{ fontSize: 18, color: '#2563eb' }} />
+                      </Box>
+                      <Box>
+                        <Typography sx={{ 
+                          color: '#6b7280',
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.3px',
+                          mb: 0.25
+                        }}>
+                          Specialization
+                        </Typography>
+                        <Typography sx={{ 
+                          color: '#111827',
+                          fontWeight: 600,
+                          fontSize: '0.9rem'
+                        }}>
+                          {selectedNode.specialization || 'General Research'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
               
               {/* Publications Section */}
               {sharedPublications.length > 0 && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ 
-                    fontWeight: 700, 
+                <Box>
+                  <Divider sx={{ mb: 2.5, borderColor: '#f3f4f6' }} />
+                  
+                  <Typography sx={{ 
+                    fontWeight: 600, 
                     mb: 2,
-                    color: KENYA_COLORS.text.primary,
+                    color: '#111827',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1
+                    gap: 1,
+                    fontSize: '0.875rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
                   }}>
-                    <Article fontSize="small" />
+                    <Article sx={{ fontSize: 16, color: '#6b7280' }} />
                     Publications ({sharedPublications.length})
                   </Typography>
                   
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     {(showAllPublications ? sharedPublications : sharedPublications.slice(0, 3)).map((pub, index) => (
-                      <Card 
+                      <Box 
                         key={pub.pub_id} 
-                        elevation={2} 
                         sx={{ 
-                          p: 2.5, 
+                          p: 2,
                           borderRadius: 2,
-                          border: '1px solid rgba(0, 0, 0, 0.06)',
-                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                          border: '1px solid #e5e7eb',
+                          backgroundColor: '#fafafa',
                           cursor: 'pointer',
-                          transition: 'all 0.3s ease',
+                          transition: 'all 0.2s ease',
                           '&:hover': {
-                            elevation: 4,
-                            backgroundColor: 'rgba(255, 255, 255, 1)',
-                            transform: 'translateY(-2px)',
-                            boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)',
-                            borderColor: KENYA_COLORS.direct
+                            backgroundColor: '#f3f4f6',
+                            borderColor: '#d1d5db',
+                            transform: 'translateX(4px)'
                           }
                         }}
                         onClick={() => setSelectedPublication(selectedPublication?.pub_id === pub.pub_id ? null : pub)}
                       >
-                        <Typography variant="body1" sx={{ 
-                          fontWeight: 700, 
-                          mb: 2, 
+                        <Typography sx={{ 
+                          fontWeight: 600, 
+                          mb: 1, 
                           lineHeight: 1.4,
-                          color: KENYA_COLORS.text.primary,
-                          fontSize: '0.95rem'
+                          color: '#111827',
+                          fontSize: '0.875rem'
                         }}>
                           {pub.title}
                         </Typography>
                         
-                        <Typography variant="body2" sx={{ 
-                          color: '#2e7d32',
-                          fontWeight: 600,
-                          mb: 0.5,
-                          fontSize: '0.85rem'
-                        }}>
-                          {pub.journal}
-                        </Typography>
-                        
-                        <Typography variant="body2" sx={{ 
-                          color: '#1976d2',
-                          fontWeight: 600,
-                          mb: 1,
-                          fontSize: '0.85rem'
-                        }}>
-                          {pub.year}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                          <Typography sx={{ 
+                            color: '#059669',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            backgroundColor: '#ecfdf5',
+                            px: 1,
+                            py: 0.25,
+                            borderRadius: 1
+                          }}>
+                            {pub.journal}
+                          </Typography>
+                          
+                          <Typography sx={{ 
+                            color: '#2563eb',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            backgroundColor: '#eff6ff',
+                            px: 1,
+                            py: 0.25,
+                            borderRadius: 1
+                          }}>
+                            {pub.year}
+                          </Typography>
+                        </Box>
                         
                         {/* Co-Authors Section */}
                         {pub.coAuthors && pub.coAuthors.length > 0 && (
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="body2" sx={{ 
-                              color: KENYA_COLORS.text.secondary, 
+                          <Box sx={{ mt: 1.5 }}>
+                            <Typography sx={{ 
+                              color: '#6b7280', 
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 1,
-                              mb: 1,
-                              fontWeight: 600,
-                              fontSize: '0.85rem'
+                              gap: 0.5,
+                              mb: 0.75,
+                              fontWeight: 500,
+                              fontSize: '0.7rem',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.3px'
                             }}>
-                              <PersonPin fontSize="small" />
+                              <Groups sx={{ fontSize: 12 }} />
                               Co-Authors:
                             </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                               {pub.coAuthors.slice(0, 3).map((coAuthor, idx) => (
                                 <Chip
                                   key={coAuthor.id}
                                   label={coAuthor.name}
                                   size="small"
-                                  avatar={
-                                    <Avatar sx={{
-                                      width: 20,
-                                      height: 20,
-                                      fontSize: '0.7rem',
-                                      bgcolor: coAuthor.isLead 
-                                        ? KENYA_COLORS.lead
-                                        : getNodeColor(coAuthor),
-                                      fontWeight: 700
-                                    }}>
-                                      {coAuthor.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                                    </Avatar>
-                                  }
                                   sx={{
-                                    height: 28,
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    bgcolor: coAuthor.isLead 
-                                      ? 'rgba(255, 215, 0, 0.15)'
-                                      : 'rgba(139, 108, 188, 0.15)',
-                                    color: coAuthor.isLead 
-                                      ? KENYA_COLORS.lead
-                                      : KENYA_COLORS.direct,
+                                    height: 24,
+                                    fontSize: '0.7rem',
+                                    fontWeight: 500,
+                                    bgcolor: coAuthor.isLead ? '#fef3c7' : '#f3f4f6',
+                                    color: coAuthor.isLead ? '#92400e' : '#374151',
+                                    border: 'none',
                                     cursor: 'pointer',
-                                    transition: 'all 0.2s ease',
-                                    border: `1px solid ${coAuthor.isLead ? KENYA_COLORS.lead : KENYA_COLORS.direct}30`,
+                                    transition: 'all 0.15s ease',
                                     '&:hover': {
-                                      bgcolor: coAuthor.isLead 
-                                        ? 'rgba(255, 215, 0, 0.25)'
-                                        : 'rgba(139, 108, 188, 0.25)',
-                                      transform: 'scale(1.05)',
-                                      borderColor: coAuthor.isLead ? KENYA_COLORS.lead : KENYA_COLORS.direct
+                                      bgcolor: coAuthor.isLead ? '#fde68a' : '#e5e7eb',
+                                      transform: 'scale(1.02)'
                                     }
                                   }}
                                   onClick={(e) => {
@@ -1925,14 +1947,14 @@ const KenyaNetworkVisualization = () => {
                               ))}
                               {pub.coAuthors.length > 3 && (
                                 <Chip
-                                  label={`+${pub.coAuthors.length - 3} more`}
+                                  label={`+${pub.coAuthors.length - 3}`}
                                   size="small"
                                   sx={{
-                                    height: 28,
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    bgcolor: 'rgba(120, 144, 156, 0.15)',
-                                    color: KENYA_COLORS.neutral
+                                    height: 24,
+                                    fontSize: '0.7rem',
+                                    fontWeight: 500,
+                                    bgcolor: '#e5e7eb',
+                                    color: '#6b7280'
                                   }}
                                 />
                               )}
@@ -1941,72 +1963,65 @@ const KenyaNetworkVisualization = () => {
                         )}
                         
                         {/* Abstract - Show preview */}
-                        {pub.abstract && (
-                          <Box sx={{ mt: 2 }}>
-                            <Typography variant="body2" sx={{ 
-                              color: KENYA_COLORS.text.secondary,
+                        {pub.abstract && selectedPublication?.pub_id === pub.pub_id && (
+                          <Box sx={{ mt: 1.5 }}>
+                            <Typography sx={{ 
+                              color: '#4b5563',
                               fontStyle: 'italic',
-                              lineHeight: 1.5,
+                              lineHeight: 1.6,
                               fontSize: '0.8rem',
-                              backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                              backgroundColor: '#ffffff',
                               p: 1.5,
-                              borderRadius: 1,
-                              border: '1px solid rgba(0, 0, 0, 0.06)'
+                              borderRadius: 1.5,
+                              borderLeft: '3px solid #7c3aed'
                             }}>
-                              {selectedPublication?.pub_id === pub.pub_id 
-                                ? pub.abstract 
-                                : `${pub.abstract.substring(0, 80)}...`
-                              }
+                              {pub.abstract}
                             </Typography>
-                            
-                            {pub.abstract.length > 80 && (
-                              <Typography 
-                                variant="caption" 
-                                sx={{ 
-                                  color: KENYA_COLORS.direct,
-                                  cursor: 'pointer',
-                                  fontWeight: 600,
-                                  mt: 0.5,
-                                  display: 'block',
-                                  '&:hover': {
-                                    textDecoration: 'underline'
-                                  }
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedPublication(selectedPublication?.pub_id === pub.pub_id ? null : pub);
-                                }}
-                              >
-                                {selectedPublication?.pub_id === pub.pub_id ? 'Show less' : 'Read more'}
-                              </Typography>
-                            )}
                           </Box>
                         )}
-                      </Card>
+                      </Box>
                     ))}
                     
                     {/* Show More/Less Publications Button */}
                     {sharedPublications.length > 3 && (
-                      <Box sx={{ textAlign: 'center', mt: 2 }}>
-                        <Chip
-                          icon={showAllPublications ? <ExpandLess /> : <ExpandMore />}
-                          label={showAllPublications 
-                            ? 'Show fewer publications' 
-                            : `Show all ${sharedPublications.length} publications`
+                      <Box 
+                        sx={{ 
+                          textAlign: 'center', 
+                          mt: 1,
+                          py: 1.5,
+                          cursor: 'pointer',
+                          borderRadius: 2,
+                          border: '1px dashed #d1d5db',
+                          backgroundColor: '#fafafa',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            backgroundColor: '#f3f4f6',
+                            borderColor: '#9ca3af'
                           }
-                          onClick={() => setShowAllPublications(!showAllPublications)}
-                          sx={{
-                            bgcolor: KENYA_COLORS.direct,
-                            color: 'white',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease',
-                            '&:hover': {
-                              bgcolor: d3.color(KENYA_COLORS.direct).darker(0.5),
-                              transform: 'scale(1.05)'
-                            }
-                          }}
-                        />
+                        }}
+                        onClick={() => setShowAllPublications(!showAllPublications)}
+                      >
+                        <Typography sx={{
+                          color: '#6b7280',
+                          fontWeight: 600,
+                          fontSize: '0.8rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 0.5
+                        }}>
+                          {showAllPublications ? (
+                            <>
+                              <ExpandLess sx={{ fontSize: 18 }} />
+                              Show less
+                            </>
+                          ) : (
+                            <>
+                              <ExpandMore sx={{ fontSize: 18 }} />
+                              View all {sharedPublications.length} publications
+                            </>
+                          )}
+                        </Typography>
                       </Box>
                     )}
                   </Box>
@@ -2015,50 +2030,64 @@ const KenyaNetworkVisualization = () => {
               
               {/* Collaboration Network Summary for Lead */}
               {selectedNode.isLead && collaborationLevel.direct.size > 0 && (
-                <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid rgba(0, 0, 0, 0.08)' }}>
-                  <Typography variant="subtitle2" sx={{ 
-                    fontWeight: 700, 
+                <Box sx={{ mt: 2.5 }}>
+                  <Divider sx={{ mb: 2.5, borderColor: '#f3f4f6' }} />
+                  
+                  <Typography sx={{ 
+                    fontWeight: 600, 
                     mb: 2,
-                    color: KENYA_COLORS.text.primary,
+                    color: '#111827',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1
+                    gap: 1,
+                    fontSize: '0.875rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
                   }}>
-                    <Groups fontSize="small" />
+                    <Groups sx={{ fontSize: 16, color: '#6b7280' }} />
                     Network Summary
                   </Typography>
                   
-                  <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Box sx={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(3, 1fr)', 
+                    gap: 1.5,
+                    p: 2,
+                    backgroundColor: '#f9fafb',
+                    borderRadius: 2,
+                    border: '1px solid #f3f4f6'
+                  }}>
                     <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: KENYA_COLORS.direct }}>
+                      <Typography sx={{ fontWeight: 700, color: '#7c3aed', fontSize: '1.25rem' }}>
                         {collaborationLevel.direct.size}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: KENYA_COLORS.text.secondary }}>
+                      <Typography sx={{ color: '#6b7280', fontSize: '0.7rem', fontWeight: 500, textTransform: 'uppercase' }}>
                         Direct
                       </Typography>
                     </Box>
                     
                     <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: KENYA_COLORS.secondary }}>
+                      <Typography sx={{ fontWeight: 700, color: '#dc2626', fontSize: '1.25rem' }}>
                         {collaborationLevel.secondary.size}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: KENYA_COLORS.text.secondary }}>
+                      <Typography sx={{ color: '#6b7280', fontSize: '0.7rem', fontWeight: 500, textTransform: 'uppercase' }}>
                         Secondary
                       </Typography>
                     </Box>
                     
                     <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: KENYA_COLORS.highlight }}>
+                      <Typography sx={{ fontWeight: 700, color: '#0891b2', fontSize: '1.25rem' }}>
                         {highlightLinks.size}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: KENYA_COLORS.text.secondary }}>
-                        Connections
+                      <Typography sx={{ color: '#6b7280', fontSize: '0.7rem', fontWeight: 500, textTransform: 'uppercase' }}>
+                        Links
                       </Typography>
                     </Box>
                   </Box>
                 </Box>
               )}
             </CardContent>
+            </Box>
           </Card>
         </Fade>
       )}

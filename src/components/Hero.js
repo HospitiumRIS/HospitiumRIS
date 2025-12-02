@@ -61,7 +61,7 @@ const Hero = () => {
               color: 'white',
             }}
           >
-            Accelerate Research Output,
+           Transaforming Hospital Research Management
           </Typography>
           
           <Typography
@@ -77,7 +77,7 @@ const Hero = () => {
               lineHeight: 1.6,
             }}
           >
-            Connect researchers worldwide, share breakthrough findings, and amplify the impact of your research through seamless collaboration and knowledge dissemination.
+            An integrated, secure digital infrastructure that manages, tracks, and enhances the entire research lifecycle in hospitals, streamlining coordination from proposal to publication for clinicians, researchers, and committees.
           </Typography>
 
           <Stack
@@ -112,28 +112,7 @@ const Hero = () => {
               Get Started
             </Button>
             
-            <Button
-              variant="outlined"
-              size="large"
-              startIcon={<SearchIcon />}
-              sx={{
-                py: 1.5,
-                px: 4,
-                fontSize: '1.1rem',
-                borderColor: theme.palette.primary.light,
-                backgroundColor: alpha(theme.palette.primary.light, 0.1),
-                color: theme.palette.primary.light,
-                fontWeight: 'bold',
-                '&:hover': {
-                  borderColor: theme.palette.primary.light,
-                  backgroundColor: alpha(theme.palette.primary.light, 0.2),
-                  transform: 'translateY(-2px)',
-                },
-                transition: 'all 0.3s ease-in-out',
-              }}
-            >
-              Find Researchers
-            </Button>
+           
           </Stack>
         </Box>
       </Container>

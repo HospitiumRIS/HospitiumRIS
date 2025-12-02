@@ -3,6 +3,22 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { logApiActivity, logError, logInfo, logSuccess, getRequestMetadata } from '@/utils/activityLogger';
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     description: Logs in a user
+ *     responses:
+ *       200:
+ *         description: User logged in successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       500:
+ *         description: Internal server error
+ */
+
 export async function POST(request) {
   const requestMetadata = getRequestMetadata(request);
   let requestBody;

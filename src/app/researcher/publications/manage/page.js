@@ -1264,6 +1264,13 @@ export default function ManagePublications() {
           }}
           maxWidth="sm"
           fullWidth
+          scroll="paper"
+          disableScrollLock={true}
+          sx={{
+            '& .MuiDialog-paper': {
+              margin: 2,
+            }
+          }}
         >
           <DialogTitle sx={{ bgcolor: '#8b6cbc', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -1364,6 +1371,13 @@ export default function ManagePublications() {
           onClose={() => setViewDialogOpen(false)}
           maxWidth="md"
           fullWidth
+          scroll="paper"
+          disableScrollLock={true}
+          sx={{
+            '& .MuiDialog-paper': {
+              margin: 2,
+            }
+          }}
         >
           <DialogTitle sx={{ bgcolor: '#8b6cbc', color: 'white', display: 'flex', alignItems: 'center' }}>
             <ViewIcon sx={{ mr: 1 }} />
@@ -1539,6 +1553,13 @@ export default function ManagePublications() {
         <Dialog
           open={deleteDialogOpen}
           onClose={() => setDeleteDialogOpen(false)}
+          scroll="paper"
+          disableScrollLock={true}
+          sx={{
+            '& .MuiDialog-paper': {
+              margin: 2,
+            }
+          }}
         >
           <DialogTitle>Confirm Delete</DialogTitle>
           <DialogContent>

@@ -2,6 +2,24 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { isTokenExpired } from '@/lib/email';
 
+/**
+ * @swagger
+ * /api/auth/activate:
+ *   get:
+ *     description: Activates a user
+ *     responses:
+ *       200:
+ *         description: User activated successfully
+ */
+/**
+ * @swagger
+ * /api/auth/activate:
+ *   post:
+ *     description: Activates a user
+ *     responses:
+ *       200:
+ *         description: User activated successfully
+ */
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
