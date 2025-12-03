@@ -61,7 +61,7 @@ const Hero = () => {
               color: 'white',
             }}
           >
-           Transaforming Hospital Research Management
+           Transforming Hospital Research Management
           </Typography>
           
           <Typography
@@ -77,7 +77,10 @@ const Hero = () => {
               lineHeight: 1.6,
             }}
           >
-            An integrated, secure digital infrastructure that manages, tracks, and enhances the entire research lifecycle in hospitals, streamlining coordination from proposal to publication for clinicians, researchers, and committees.
+            Empowering Research
+ Excellence Through
+ Integrated Digital
+ Infrastructure
           </Typography>
 
           <Stack

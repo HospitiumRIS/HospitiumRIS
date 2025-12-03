@@ -15,17 +15,20 @@ import {
   LinkedIn as LinkedInIcon,
   GitHub as GitHubIcon,
   Email as EmailIcon,
+  LocationOn as LocationIcon,
+  Phone as PhoneIcon,
+  Language as WebIcon,
 } from '@mui/icons-material';
 
 const Footer = () => {
   const theme = useTheme();
 
   const quickLinks = [
-    { name: 'About Us', href: '#' },
+    { name: 'About Us', href: '/about' },
     { name: 'Features', href: '#' },
-    { name: 'Documentation', href: '#' },
-    { name: 'API Reference', href: '#' },
-    { name: 'Contact', href: '#' },
+    { name: 'Documentation', href: 'https://github.com/HospitiumRIS/HospitiumRIS' },
+    
+    
   ];
 
   const supportLinks = [
@@ -38,7 +41,7 @@ const Footer = () => {
   const socialLinks = [
     { icon: <TwitterIcon />, name: 'Twitter', url: '#' },
     { icon: <LinkedInIcon />, name: 'LinkedIn', url: '#' },
-    { icon: <GitHubIcon />, name: 'GitHub', url: '#' },
+    { icon: <GitHubIcon />, name: 'GitHub', url: 'https://github.com/HospitiumRIS/HospitiumRIS' },
     { icon: <EmailIcon />, name: 'Email', url: '#' },
   ];
 
@@ -54,6 +57,7 @@ const Footer = () => {
       }}
     >
       <Container maxWidth="lg">
+        
         <Box
           sx={{
             display: 'flex',
@@ -62,6 +66,55 @@ const Footer = () => {
             justifyContent: 'space-between',
           }}
         >
+
+           {/* Company Info */}
+           <Box sx={{ flex: '1 1 250px' }}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 'bold',
+                mb: 2,
+                color: 'white',
+              }}
+            >
+              HospitiumRIS
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                mb: 3,
+                color: '#a0aec0',
+                lineHeight: 1.6,
+              }}
+            >
+            Empowering Research
+ Excellence Through
+ Integrated Digital
+ Infrastructure
+            </Typography>
+
+            {/* Social Links */}
+            <Box>
+              {socialLinks.map((social) => (
+                <IconButton
+                  key={social.name}
+                  href={social.url}
+                  sx={{
+                    color: '#a0aec0',
+                    mr: 1,
+                    '&:hover': {
+                      color: theme.palette.primary.main,
+                      transform: 'translateY(-2px)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  {social.icon}
+                </IconButton>
+              ))}
+            </Box>
+          </Box>
+
           {/* Quick Links */}
           <Box sx={{ flex: '1 1 200px' }}>
             <Typography
@@ -134,8 +187,10 @@ const Footer = () => {
             </Box>
           </Box>
 
-          {/* Company Info */}
-          <Box sx={{ flex: '1 1 300px' }}>
+         
+
+          {/* Contact Us */}
+          <Box sx={{ flex: '1 1 280px' }}>
             <Typography
               variant="h6"
               sx={{
@@ -144,38 +199,97 @@ const Footer = () => {
                 color: 'white',
               }}
             >
-              Hospitium RIS
+              Contact Us
             </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                mb: 3,
-                color: '#a0aec0',
-                lineHeight: 1.6,
-              }}
-            >
-              Empowering researchers with comprehensive tools for managing research activities, collaborations, and academic workflows.
-            </Typography>
+            
+            {/* Address */}
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+              <LocationIcon sx={{ color: '#a0aec0', fontSize: 18, mr: 1, mt: 0.3 }} />
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#a0aec0',
+                  lineHeight: 1.6,
+                  fontSize: '0.85rem',
+                }}
+              >
+                Chiromo Campus, University of Nairobi,<br />
+                Gecaga Institute Bldg.<br />
+                P.O Box 21553-00100, Nairobi-Kenya
+              </Typography>
+            </Box>
 
-            {/* Social Links */}
-            <Box>
-              {socialLinks.map((social) => (
-                <IconButton
-                  key={social.name}
-                  href={social.url}
+            {/* Phone */}
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+              <PhoneIcon sx={{ color: '#a0aec0', fontSize: 18, mr: 1, mt: 0.3 }} />
+              <Box>
+                <Link
+                  href="tel:+254208086820"
                   sx={{
+                    display: 'block',
                     color: '#a0aec0',
-                    mr: 1,
+                    textDecoration: 'none',
+                    fontSize: '0.85rem',
                     '&:hover': {
-                      color: theme.palette.primary.main,
-                      transform: 'translateY(-2px)',
+                      color: theme.palette.primary.light,
                     },
-                    transition: 'all 0.3s ease',
                   }}
                 >
-                  {social.icon}
-                </IconButton>
-              ))}
+                  +254 (0)20 8086820
+                </Link>
+                <Link
+                  href="tel:+254202697401"
+                  sx={{
+                    display: 'block',
+                    color: '#a0aec0',
+                    textDecoration: 'none',
+                    fontSize: '0.85rem',
+                    '&:hover': {
+                      color: theme.palette.primary.light,
+                    },
+                  }}
+                >
+                  +254 (0)20 2697401
+                </Link>
+              </Box>
+            </Box>
+
+            {/* Email */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <EmailIcon sx={{ color: '#a0aec0', fontSize: 18, mr: 1 }} />
+              <Link
+                href="mailto:info@tcc-africa.org"
+                sx={{
+                  color: '#a0aec0',
+                  textDecoration: 'none',
+                  fontSize: '0.85rem',
+                  '&:hover': {
+                    color: theme.palette.primary.light,
+                  },
+                }}
+              >
+                info@tcc-africa.org
+              </Link>
+            </Box>
+
+            {/* Website */}
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <WebIcon sx={{ color: '#a0aec0', fontSize: 18, mr: 1 }} />
+              <Link
+                href="https://www.tcc-africa.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  color: '#a0aec0',
+                  textDecoration: 'none',
+                  fontSize: '0.85rem',
+                  '&:hover': {
+                    color: theme.palette.primary.light,
+                  },
+                }}
+              >
+                www.tcc-africa.org
+              </Link>
             </Box>
           </Box>
         </Box>
@@ -199,7 +313,7 @@ const Footer = () => {
               mb: { xs: 2, sm: 0 },
             }}
           >
-            © 2025 Hospitium RIS. All rights reserved.
+            © 2025 HospitiumRIS. All rights reserved.
           </Typography>
           
           <Box sx={{ display: 'flex', gap: 4 }}>
