@@ -42,7 +42,8 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
-  Checkbox
+  Checkbox,
+  Snackbar
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -72,7 +73,10 @@ import {
   ViewModule as CardViewIcon,
   LibraryAdd as LibraryAddIcon,
   Folder as FolderIcon,
-  FolderOpen as FolderOpenIcon
+  FolderOpen as FolderOpenIcon,
+  DriveFileMove as MoveIcon,
+  Check as CheckIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
@@ -96,16 +100,72 @@ export default function ManagePublications() {
   const [itemsPerPage] = useState(10);
   
   // Library folder management
-  const [folders, setFolders] = useState([
-    { id: 1, name: 'My Library', parent: null, expanded: true },
-    { id: 2, name: 'Research Papers', parent: 1, expanded: false },
-    { id: 3, name: 'Case Studies', parent: 1, expanded: false },
-    { id: 4, name: 'Reviews', parent: 1, expanded: false }
-  ]);
+  const [folders, setFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [newFolderName, setNewFolderName] = useState('');
   const [showNewFolderInput, setShowNewFolderInput] = useState(false);
   const [newFolderParent, setNewFolderParent] = useState(null);
+  const [libraryLoading, setLibraryLoading] = useState(true);
+  
+  // Folder management states
+  const [editingFolderId, setEditingFolderId] = useState(null);
+  const [editingFolderName, setEditingFolderName] = useState('');
+  const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false);
+  const [folderToDelete, setFolderToDelete] = useState(null);
+  const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false);
+  const [folderToMove, setFolderToMove] = useState(null);
+  const [moveTargetFolder, setMoveTargetFolder] = useState(null);
+  
+  // Track publications in folders: { folderId: [publicationId1, publicationId2, ...] }
+  const [folderPublications, setFolderPublications] = useState({});
+  
+  // View mode for library dialog: 'add' or 'browse'
+  const [libraryViewMode, setLibraryViewMode] = useState('add');
+  
+  // Move publication between folders
+  const [movePublicationDialogOpen, setMovePublicationDialogOpen] = useState(false);
+  const [publicationToMove, setPublicationToMove] = useState(null);
+  const [sourceFolderId, setSourceFolderId] = useState(null);
+  const [targetFolderForPub, setTargetFolderForPub] = useState(null);
+  
+  // Snackbar state for notifications
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' // 'success', 'error', 'warning', 'info'
+  });
+
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') return;
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  // Fetch library data (folders and publications)
+  const fetchLibrary = useCallback(async () => {
+    try {
+      setLibraryLoading(true);
+      const response = await fetch('/api/publications/library');
+      const data = await response.json();
+      
+      if (data.success) {
+        setFolders(data.folders || []);
+        setFolderPublications(data.folderPublications || {});
+      }
+    } catch (error) {
+      console.error('Error fetching library:', error);
+    } finally {
+      setLibraryLoading(false);
+    }
+  }, []);
+
+  // Load library on mount
+  useEffect(() => {
+    fetchLibrary();
+  }, [fetchLibrary]);
 
   // Transform database publication to UI format
   const transformPublicationForUI = (dbPublication) => {
@@ -278,37 +338,431 @@ export default function ManagePublications() {
 
   const handleAddToLibrary = (publication) => {
     setSelectedPublication(publication);
+    setLibraryViewMode('add');
     setLibraryDialogOpen(true);
   };
 
-  const handleCreateFolder = () => {
+  const handleCreateFolder = async () => {
     if (newFolderName.trim()) {
-      const newFolder = {
-        id: Date.now(),
-        name: newFolderName.trim(),
-        parent: newFolderParent,
-        expanded: false
-      };
-      setFolders([...folders, newFolder]);
-      setNewFolderName('');
-      setShowNewFolderInput(false);
-      setNewFolderParent(null);
+      try {
+        const response = await fetch('/api/publications/library', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'createFolder',
+            name: newFolderName.trim(),
+            parentId: newFolderParent
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          setFolders(prev => [...prev, data.folder]);
+          setFolderPublications(prev => ({
+            ...prev,
+            [data.folder.id]: []
+          }));
+          setNewFolderName('');
+          setShowNewFolderInput(false);
+          
+          // Expand parent folder if creating subfolder
+          if (newFolderParent) {
+            handleToggleFolderExpanded(newFolderParent, true);
+          }
+          setNewFolderParent(null);
+          showSnackbar(`Folder "${data.folder.name}" created`, 'success');
+        } else {
+          showSnackbar(data.error || 'Failed to create folder', 'error');
+        }
+      } catch (error) {
+        console.error('Error creating folder:', error);
+        showSnackbar('Failed to create folder', 'error');
+      }
     }
   };
 
-  const toggleFolder = (folderId) => {
+  const toggleFolder = async (folderId) => {
+    // Optimistically update UI
     setFolders(folders.map(folder => 
       folder.id === folderId ? { ...folder, expanded: !folder.expanded } : folder
     ));
+    
+    // Persist to database
+    try {
+      await fetch('/api/publications/library', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'toggleExpanded',
+          folderId
+        })
+      });
+    } catch (error) {
+      console.error('Error toggling folder:', error);
+    }
   };
 
-  const handleAddToSelectedFolder = () => {
+  // Helper to set folder expanded state
+  const handleToggleFolderExpanded = async (folderId, expanded) => {
+    setFolders(prev => prev.map(folder => 
+      folder.id === folderId ? { ...folder, expanded } : folder
+    ));
+  };
+
+  const handleAddToSelectedFolder = async () => {
     if (selectedFolder && selectedPublication) {
-      // TODO: Implement actual logic to add publication to folder
-      console.log('Adding publication', selectedPublication.id, 'to folder', selectedFolder);
-      alert(`Added "${selectedPublication.title}" to "${folders.find(f => f.id === selectedFolder)?.name}"`);
-      setLibraryDialogOpen(false);
-      setSelectedFolder(null);
+      const folderName = folders.find(f => f.id === selectedFolder)?.name || 'folder';
+      
+      try {
+        const response = await fetch('/api/publications/library', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'addPublication',
+            folderId: selectedFolder,
+            publicationId: selectedPublication.id
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // Update local state
+          setFolderPublications(prev => {
+            const currentPubs = prev[selectedFolder] || [];
+            if (currentPubs.includes(selectedPublication.id)) {
+              return prev;
+            }
+            return {
+              ...prev,
+              [selectedFolder]: [...currentPubs, selectedPublication.id]
+            };
+          });
+          setLibraryDialogOpen(false);
+          setSelectedFolder(null);
+          showSnackbar(`Added to "${folderName}" successfully`, 'success');
+          setSelectedPublication(null);
+        } else {
+          showSnackbar(data.error || 'Failed to add publication to folder', 'error');
+        }
+      } catch (error) {
+        console.error('Error adding publication to folder:', error);
+        showSnackbar('Failed to add publication to folder', 'error');
+      }
+    }
+  };
+
+  // Remove publication from folder
+  const handleRemoveFromFolder = async (folderId, publicationId) => {
+    try {
+      const response = await fetch('/api/publications/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'removePublication',
+          folderId,
+          publicationId
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setFolderPublications(prev => ({
+          ...prev,
+          [folderId]: (prev[folderId] || []).filter(id => id !== publicationId)
+        }));
+        showSnackbar('Removed from folder', 'success');
+      } else {
+        showSnackbar(data.error || 'Failed to remove publication', 'error');
+      }
+    } catch (error) {
+      console.error('Error removing publication from folder:', error);
+      showSnackbar('Failed to remove publication', 'error');
+    }
+  };
+
+  // Get subfolder count for a folder
+  const getSubfolderCount = (folderId) => {
+    return folders.filter(f => f.parent === folderId).length;
+  };
+
+  // Get total subfolder count (including nested)
+  const getTotalSubfolderCount = (folderId) => {
+    return getDescendantFolderIds(folderId).length;
+  };
+
+  // Get publication count for a folder (direct)
+  const getPublicationCount = (folderId) => {
+    return (folderPublications[folderId] || []).length;
+  };
+
+  // Get total publication count (including subfolders)
+  const getTotalPublicationCount = (folderId) => {
+    const descendantIds = getDescendantFolderIds(folderId);
+    const allFolderIds = [folderId, ...descendantIds];
+    return allFolderIds.reduce((total, id) => total + (folderPublications[id] || []).length, 0);
+  };
+
+  // Get publications in a folder
+  const getPublicationsInFolder = (folderId) => {
+    const pubIds = folderPublications[folderId] || [];
+    return publications.filter(pub => pubIds.includes(pub.id));
+  };
+
+  // Open library dialog in browse mode
+  const handleOpenLibraryBrowser = () => {
+    setSelectedPublication(null);
+    setLibraryViewMode('browse');
+    setLibraryDialogOpen(true);
+  };
+
+  // Open move publication dialog
+  const handleOpenMovePublication = (publication, currentFolderId) => {
+    setPublicationToMove(publication);
+    setSourceFolderId(currentFolderId);
+    setTargetFolderForPub(null);
+    setMovePublicationDialogOpen(true);
+  };
+
+  // Confirm move publication
+  const handleConfirmMovePublication = async () => {
+    if (publicationToMove && sourceFolderId && targetFolderForPub) {
+      const targetFolderName = folders.find(f => f.id === targetFolderForPub)?.name || 'folder';
+      
+      try {
+        const response = await fetch('/api/publications/library', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'movePublication',
+            sourceFolderId,
+            targetFolderId: targetFolderForPub,
+            publicationId: publicationToMove.id
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // Update local state
+          setFolderPublications(prev => {
+            const updated = { ...prev };
+            updated[sourceFolderId] = (updated[sourceFolderId] || []).filter(id => id !== publicationToMove.id);
+            const targetPubs = updated[targetFolderForPub] || [];
+            if (!targetPubs.includes(publicationToMove.id)) {
+              updated[targetFolderForPub] = [...targetPubs, publicationToMove.id];
+            }
+            return updated;
+          });
+          
+          setMovePublicationDialogOpen(false);
+          setPublicationToMove(null);
+          setSourceFolderId(null);
+          setTargetFolderForPub(null);
+          showSnackbar(`Moved to "${targetFolderName}" successfully`, 'success');
+        } else {
+          showSnackbar(data.error || 'Failed to move publication', 'error');
+        }
+      } catch (error) {
+        console.error('Error moving publication:', error);
+        showSnackbar('Failed to move publication', 'error');
+      }
+    }
+  };
+
+  // Copy publication to another folder (keep in both)
+  const handleCopyPublication = (publication, currentFolderId, targetFolderId) => {
+    if (targetFolderId && targetFolderId !== currentFolderId) {
+      setFolderPublications(prev => {
+        const targetPubs = prev[targetFolderId] || [];
+        if (!targetPubs.includes(publication.id)) {
+          return {
+            ...prev,
+            [targetFolderId]: [...targetPubs, publication.id]
+          };
+        }
+        return prev;
+      });
+    }
+  };
+
+  // Start editing a folder name
+  const handleStartEditFolder = (folder, e) => {
+    e.stopPropagation();
+    setEditingFolderId(folder.id);
+    setEditingFolderName(folder.name);
+  };
+
+  // Save edited folder name
+  const handleSaveEditFolder = async () => {
+    if (editingFolderName.trim() && editingFolderId) {
+      try {
+        const response = await fetch('/api/publications/library', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'rename',
+            folderId: editingFolderId,
+            name: editingFolderName.trim()
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          setFolders(folders.map(folder =>
+            folder.id === editingFolderId
+              ? { ...folder, name: editingFolderName.trim() }
+              : folder
+          ));
+          setEditingFolderId(null);
+          setEditingFolderName('');
+          showSnackbar('Folder renamed', 'success');
+        } else {
+          showSnackbar(data.error || 'Failed to rename folder', 'error');
+        }
+      } catch (error) {
+        console.error('Error renaming folder:', error);
+        showSnackbar('Failed to rename folder', 'error');
+      }
+    }
+  };
+
+  // Cancel editing folder
+  const handleCancelEditFolder = () => {
+    setEditingFolderId(null);
+    setEditingFolderName('');
+  };
+
+  // Open delete confirmation dialog
+  const handleOpenDeleteFolder = (folder, e) => {
+    e.stopPropagation();
+    setFolderToDelete(folder);
+    setDeleteFolderDialogOpen(true);
+  };
+
+  // Get all descendant folder IDs (for cascading delete)
+  const getDescendantFolderIds = (folderId) => {
+    const descendants = [];
+    const findDescendants = (parentId) => {
+      folders.forEach(folder => {
+        if (folder.parent === parentId) {
+          descendants.push(folder.id);
+          findDescendants(folder.id);
+        }
+      });
+    };
+    findDescendants(folderId);
+    return descendants;
+  };
+
+  // Confirm delete folder
+  const handleConfirmDeleteFolder = async () => {
+    if (folderToDelete) {
+      const folderName = folderToDelete.name;
+      
+      try {
+        const response = await fetch(`/api/publications/library?folderId=${folderToDelete.id}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          const descendantIds = getDescendantFolderIds(folderToDelete.id);
+          const idsToDelete = [folderToDelete.id, ...descendantIds];
+          
+          setFolders(folders.filter(folder => !idsToDelete.includes(folder.id)));
+          
+          // Clean up publications from deleted folders
+          setFolderPublications(prev => {
+            const updated = { ...prev };
+            idsToDelete.forEach(id => delete updated[id]);
+            return updated;
+          });
+          
+          // Clear selection if deleted folder was selected
+          if (idsToDelete.includes(selectedFolder)) {
+            setSelectedFolder(null);
+          }
+          
+          setDeleteFolderDialogOpen(false);
+          setFolderToDelete(null);
+          showSnackbar(`Folder "${folderName}" deleted`, 'success');
+        } else {
+          showSnackbar(data.error || 'Failed to delete folder', 'error');
+        }
+      } catch (error) {
+        console.error('Error deleting folder:', error);
+        showSnackbar('Failed to delete folder', 'error');
+      }
+    }
+  };
+
+  // Open move folder dialog
+  const handleOpenMoveFolder = (folder, e) => {
+    e.stopPropagation();
+    setFolderToMove(folder);
+    setMoveTargetFolder(null);
+    setMoveFolderDialogOpen(true);
+  };
+
+  // Check if a folder is a descendant of another (to prevent circular references)
+  const isDescendantOf = (folderId, potentialAncestorId) => {
+    const descendantIds = getDescendantFolderIds(potentialAncestorId);
+    return descendantIds.includes(folderId);
+  };
+
+  // Get valid move targets (exclude self, descendants, and current parent)
+  const getValidMoveTargets = (folder) => {
+    const descendantIds = getDescendantFolderIds(folder.id);
+    return folders.filter(f => 
+      f.id !== folder.id && // Not itself
+      !descendantIds.includes(f.id) && // Not a descendant
+      f.id !== folder.parent // Not current parent
+    );
+  };
+
+  // Confirm move folder
+  const handleConfirmMoveFolder = async () => {
+    if (folderToMove) {
+      const folderName = folderToMove.name;
+      const targetName = moveTargetFolder 
+        ? folders.find(f => f.id === moveTargetFolder)?.name 
+        : 'root';
+      
+      try {
+        const response = await fetch('/api/publications/library', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'move',
+            folderId: folderToMove.id,
+            parentId: moveTargetFolder
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          setFolders(folders.map(folder =>
+            folder.id === folderToMove.id
+              ? { ...folder, parent: moveTargetFolder }
+              : folder
+          ));
+          setMoveFolderDialogOpen(false);
+          setFolderToMove(null);
+          setMoveTargetFolder(null);
+          showSnackbar(`Folder "${folderName}" moved to ${targetName}`, 'success');
+        } else {
+          showSnackbar(data.error || 'Failed to move folder', 'error');
+        }
+      } catch (error) {
+        console.error('Error moving folder:', error);
+        showSnackbar('Failed to move folder', 'error');
+      }
     }
   };
 
@@ -318,22 +772,26 @@ export default function ManagePublications() {
       .map(folder => {
         const hasChildren = folders.some(f => f.parent === folder.id);
         const isSelected = selectedFolder === folder.id;
+        const isEditing = editingFolderId === folder.id;
         
         return (
           <Box key={folder.id}>
             <Box
-              onClick={() => setSelectedFolder(folder.id)}
+              onClick={() => !isEditing && setSelectedFolder(folder.id)}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 py: 1,
                 px: 2,
                 pl: 2 + level * 3,
-                cursor: 'pointer',
+                cursor: isEditing ? 'default' : 'pointer',
                 bgcolor: isSelected ? '#8b6cbc15' : 'transparent',
                 borderLeft: isSelected ? '3px solid #8b6cbc' : '3px solid transparent',
                 '&:hover': {
-                  bgcolor: '#8b6cbc08'
+                  bgcolor: isEditing ? 'transparent' : '#8b6cbc08',
+                  '& .folder-actions': {
+                    opacity: 1
+                  }
                 },
                 transition: 'all 0.2s ease'
               }}
@@ -352,24 +810,130 @@ export default function ManagePublications() {
               )}
               {!hasChildren && <Box sx={{ width: 28 }} />}
               <Box sx={{ mr: 1, color: '#8b6cbc' }}>📁</Box>
-              <Typography variant="body2" sx={{ fontWeight: isSelected ? 600 : 400 }}>
-                {folder.name}
-              </Typography>
-              <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5 }}>
-                <Tooltip title="Add subfolder">
-                  <IconButton
+              
+              {/* Editable folder name or display name */}
+              {isEditing ? (
+                <Box sx={{ display: 'flex', gap: 0.5, flex: 1, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                  <TextField
                     size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setNewFolderParent(folder.id);
-                      setShowNewFolderInput(true);
+                    value={editingFolderName}
+                    onChange={(e) => setEditingFolderName(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') handleSaveEditFolder();
+                      if (e.key === 'Escape') handleCancelEditFolder();
                     }}
-                    sx={{ opacity: 0.6, '&:hover': { opacity: 1 } }}
-                  >
-                    <AddIcon fontSize="small" />
+                    autoFocus
+                    sx={{ 
+                      flex: 1,
+                      '& .MuiInputBase-input': { py: 0.5, fontSize: '0.875rem' }
+                    }}
+                  />
+                  <IconButton size="small" onClick={handleSaveEditFolder} sx={{ color: '#4caf50', p: 0.5 }}>
+                    <CheckIcon fontSize="small" />
                   </IconButton>
-                </Tooltip>
-              </Box>
+                  <IconButton size="small" onClick={handleCancelEditFolder} sx={{ color: '#f44336', p: 0.5 }}>
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, gap: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: isSelected ? 600 : 400 }}>
+                    {folder.name}
+                  </Typography>
+                  {/* Folder stats badges */}
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    {getSubfolderCount(folder.id) > 0 && (
+                      <Tooltip title={`${getSubfolderCount(folder.id)} subfolder(s)`}>
+                        <Chip
+                          size="small"
+                          label={getSubfolderCount(folder.id)}
+                          icon={<FolderIcon sx={{ fontSize: '14px !important' }} />}
+                          sx={{ 
+                            height: 20, 
+                            fontSize: '0.7rem',
+                            bgcolor: '#e3f2fd',
+                            color: '#1976d2',
+                            '& .MuiChip-icon': { color: '#1976d2', ml: 0.5 },
+                            '& .MuiChip-label': { px: 0.5 }
+                          }}
+                        />
+                      </Tooltip>
+                    )}
+                    {getPublicationCount(folder.id) > 0 && (
+                      <Tooltip title={`${getPublicationCount(folder.id)} publication(s)`}>
+                        <Chip
+                          size="small"
+                          label={getPublicationCount(folder.id)}
+                          icon={<ArticleIcon sx={{ fontSize: '14px !important' }} />}
+                          sx={{ 
+                            height: 20, 
+                            fontSize: '0.7rem',
+                            bgcolor: '#f3e5f5',
+                            color: '#8b6cbc',
+                            '& .MuiChip-icon': { color: '#8b6cbc', ml: 0.5 },
+                            '& .MuiChip-label': { px: 0.5 }
+                          }}
+                        />
+                      </Tooltip>
+                    )}
+                  </Box>
+                </Box>
+              )}
+              
+              {/* Folder action buttons */}
+              {!isEditing && (
+                <Box 
+                  className="folder-actions"
+                  sx={{ 
+                    ml: 'auto', 
+                    display: 'flex', 
+                    gap: 0.25,
+                    opacity: 0,
+                    transition: 'opacity 0.2s ease'
+                  }}
+                >
+                  <Tooltip title="Add subfolder">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setNewFolderParent(folder.id);
+                        setShowNewFolderInput(true);
+                      }}
+                      sx={{ p: 0.5, '&:hover': { bgcolor: '#8b6cbc15', color: '#8b6cbc' } }}
+                    >
+                      <AddIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Rename folder">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleStartEditFolder(folder, e)}
+                      sx={{ p: 0.5, '&:hover': { bgcolor: '#2196f315', color: '#2196f3' } }}
+                    >
+                      <EditIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Move folder">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleOpenMoveFolder(folder, e)}
+                      sx={{ p: 0.5, '&:hover': { bgcolor: '#ff980015', color: '#ff9800' } }}
+                    >
+                      <MoveIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete folder">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleOpenDeleteFolder(folder, e)}
+                      sx={{ p: 0.5, '&:hover': { bgcolor: '#f4433615', color: '#f44336' } }}
+                    >
+                      <DeleteIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              )}
             </Box>
             {folder.expanded && renderFolderTree(folder.id, level + 1)}
             {showNewFolderInput && newFolderParent === folder.id && (
@@ -385,7 +949,7 @@ export default function ManagePublications() {
                     sx={{ flex: 1 }}
                   />
                   <IconButton size="small" onClick={handleCreateFolder} color="primary">
-                    ✓
+                    <CheckIcon fontSize="small" />
                   </IconButton>
                   <IconButton 
                     size="small" 
@@ -395,7 +959,7 @@ export default function ManagePublications() {
                       setNewFolderParent(null);
                     }}
                   >
-                    ✕
+                    <CloseIcon fontSize="small" />
                   </IconButton>
                 </Box>
               </Box>
@@ -823,7 +1387,7 @@ export default function ManagePublications() {
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
               variant="outlined"
-              startIcon={<SearchIcon />}
+              startIcon={<FolderOpenIcon />}
               sx={{ 
                 borderColor: 'white',
                 color: 'white',
@@ -832,8 +1396,9 @@ export default function ManagePublications() {
                   bgcolor: 'rgba(255,255,255,0.1)'
                 }
               }}
+              onClick={handleOpenLibraryBrowser}
             >
-              Refresh
+              View Library
             </Button>
             <Button
               variant="contained"
@@ -1261,40 +1826,60 @@ export default function ManagePublications() {
             setShowNewFolderInput(false);
             setNewFolderName('');
             setNewFolderParent(null);
+            setLibraryViewMode('add');
           }}
-          maxWidth="sm"
+          maxWidth="lg"
           fullWidth
           scroll="paper"
           disableScrollLock={true}
           sx={{
             '& .MuiDialog-paper': {
               margin: 2,
+              height: '80vh',
+              maxHeight: 700,
             }
           }}
         >
-          <DialogTitle sx={{ bgcolor: '#8b6cbc', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <DialogTitle sx={{ bgcolor: '#8b6cbc', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <LibraryAddIcon sx={{ mr: 1 }} />
-              Add to Library
+              {libraryViewMode === 'add' ? 'Add to Library' : 'Library Browser'}
             </Box>
-            <Tooltip title="Create new folder at root">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Tooltip title="Create new folder at root">
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setNewFolderParent(null);
+                    setShowNewFolderInput(true);
+                  }}
+                  sx={{ color: 'white' }}
+                >
+                  <AddIcon />
+                </IconButton>
+              </Tooltip>
               <IconButton
                 size="small"
                 onClick={() => {
+                  setLibraryDialogOpen(false);
+                  setSelectedFolder(null);
+                  setShowNewFolderInput(false);
+                  setNewFolderName('');
                   setNewFolderParent(null);
-                  setShowNewFolderInput(true);
+                  setLibraryViewMode('add');
                 }}
                 sx={{ color: 'white' }}
               >
-                <AddIcon />
+                <CloseIcon />
               </IconButton>
-            </Tooltip>
+            </Box>
           </DialogTitle>
-          <DialogContent dividers sx={{ p: 0 }}>
-            {selectedPublication && (
-              <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
+          <DialogContent dividers sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>
+            {/* Selected publication banner (only in add mode) */}
+            {libraryViewMode === 'add' && selectedPublication && (
+              <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                  Selected Publication:
+                  Adding publication:
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {selectedPublication.title}
@@ -1302,65 +1887,554 @@ export default function ManagePublications() {
               </Box>
             )}
             
-            <Box sx={{ minHeight: 300, maxHeight: 400, overflow: 'auto' }}>
-              <Typography variant="subtitle2" sx={{ p: 2, pb: 1, color: 'text.secondary' }}>
-                Select a folder or create a new one:
-              </Typography>
-              
-              {renderFolderTree()}
-              
-              {showNewFolderInput && newFolderParent === null && (
-                <Box sx={{ px: 2, py: 1 }}>
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                    <TextField
-                      size="small"
-                      placeholder="New folder name"
-                      value={newFolderName}
-                      onChange={(e) => setNewFolderName(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
-                      autoFocus
-                      sx={{ flex: 1 }}
-                    />
-                    <IconButton size="small" onClick={handleCreateFolder} color="primary">
-                      ✓
-                    </IconButton>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => {
-                        setShowNewFolderInput(false);
-                        setNewFolderName('');
-                      }}
-                    >
-                      ✕
-                    </IconButton>
-                  </Box>
+            {/* Split panel layout */}
+            <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+              {/* Left panel - Folder tree */}
+              <Box sx={{ 
+                width: '40%', 
+                borderRight: '1px solid #e0e0e0', 
+                display: 'flex', 
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}>
+                <Box sx={{ p: 1.5, bgcolor: '#fafafa', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#333' }}>
+                    Folders
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {folders.length} folder(s)
+                  </Typography>
                 </Box>
-              )}
+                <Box sx={{ flex: 1, overflow: 'auto', py: 1 }}>
+                  {renderFolderTree()}
+                  
+                  {showNewFolderInput && newFolderParent === null && (
+                    <Box sx={{ px: 2, py: 1 }}>
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                        <TextField
+                          size="small"
+                          placeholder="New folder name"
+                          value={newFolderName}
+                          onChange={(e) => setNewFolderName(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
+                          autoFocus
+                          sx={{ flex: 1 }}
+                        />
+                        <IconButton size="small" onClick={handleCreateFolder} sx={{ color: '#4caf50' }}>
+                          <CheckIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => {
+                            setShowNewFolderInput(false);
+                            setNewFolderName('');
+                          }}
+                          sx={{ color: '#f44336' }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+              
+              {/* Right panel - Folder contents */}
+              <Box sx={{ 
+                width: '60%', 
+                display: 'flex', 
+                flexDirection: 'column',
+                overflow: 'hidden',
+                bgcolor: '#fafafa'
+              }}>
+                <Box sx={{ p: 1.5, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
+                  {selectedFolder ? (
+                    <>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <FolderOpenIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#333' }}>
+                          {folders.find(f => f.id === selectedFolder)?.name}
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {getPublicationCount(selectedFolder)} publication(s) • {getSubfolderCount(selectedFolder)} subfolder(s)
+                      </Typography>
+                    </>
+                  ) : (
+                    <>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#333' }}>
+                        Folder Contents
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Select a folder to view its contents
+                      </Typography>
+                    </>
+                  )}
+                </Box>
+                
+                <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+                  {selectedFolder ? (
+                    getPublicationsInFolder(selectedFolder).length > 0 ? (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {getPublicationsInFolder(selectedFolder).map(pub => (
+                          <Paper
+                            key={pub.id}
+                            sx={{
+                              p: 2,
+                              bgcolor: 'white',
+                              borderRadius: 1,
+                              border: '1px solid #e0e0e0',
+                              '&:hover': {
+                                borderColor: '#8b6cbc',
+                                boxShadow: '0 2px 8px rgba(139, 108, 188, 0.1)'
+                              }
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <Box sx={{ flex: 1, pr: 2 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5, lineHeight: 1.3 }}>
+                                  {pub.title}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                  {pub.authors.slice(0, 3).join(', ')}{pub.authors.length > 3 ? ' et al.' : ''}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {pub.journal} {pub.year && `(${pub.year})`}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                <Tooltip title="Move to another folder">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleOpenMovePublication(pub, selectedFolder)}
+                                    sx={{ 
+                                      color: '#ff9800',
+                                      '&:hover': { bgcolor: '#ff980010' }
+                                    }}
+                                  >
+                                    <MoveIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Remove from folder">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleRemoveFromFolder(selectedFolder, pub.id)}
+                                    sx={{ 
+                                      color: '#f44336',
+                                      '&:hover': { bgcolor: '#f4433610' }
+                                    }}
+                                  >
+                                    <CloseIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            </Box>
+                          </Paper>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Box sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        height: '100%',
+                        color: 'text.secondary'
+                      }}>
+                        <ArticleIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 1 }} />
+                        <Typography variant="body2" color="text.secondary">
+                          No publications in this folder
+                        </Typography>
+                        {libraryViewMode === 'add' && (
+                          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                            Click "Add to Folder" to add the selected publication
+                          </Typography>
+                        )}
+                      </Box>
+                    )
+                  ) : (
+                    <Box sx={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      height: '100%',
+                      color: 'text.secondary'
+                    }}>
+                      <FolderOpenIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 1 }} />
+                      <Typography variant="body2">
+                        Select a folder from the left panel
+                      </Typography>
+                      <Typography variant="caption" sx={{ mt: 0.5 }}>
+                        to view its contents
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
             </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+              <Box>
+                {selectedFolder && (
+                  <Typography variant="body2" color="text.secondary">
+                    Selected: <strong>{folders.find(f => f.id === selectedFolder)?.name}</strong>
+                  </Typography>
+                )}
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button 
+                  onClick={() => {
+                    setLibraryDialogOpen(false);
+                    setSelectedFolder(null);
+                    setShowNewFolderInput(false);
+                    setNewFolderName('');
+                    setNewFolderParent(null);
+                    setLibraryViewMode('add');
+                  }}
+                >
+                  {libraryViewMode === 'add' ? 'Cancel' : 'Close'}
+                </Button>
+                {libraryViewMode === 'add' && (
+                  <Button 
+                    variant="contained" 
+                    onClick={handleAddToSelectedFolder}
+                    disabled={!selectedFolder}
+                    sx={{ 
+                      bgcolor: '#8b6cbc', 
+                      '&:hover': { bgcolor: '#7559a3' },
+                      '&:disabled': { bgcolor: '#ccc' }
+                    }}
+                  >
+                    Add to Folder
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete Folder Confirmation Dialog */}
+        <Dialog
+          open={deleteFolderDialogOpen}
+          onClose={() => {
+            setDeleteFolderDialogOpen(false);
+            setFolderToDelete(null);
+          }}
+          maxWidth="xs"
+          fullWidth
+          disableScrollLock={true}
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#f44336' }}>
+            <DeleteIcon />
+            Delete Folder
+          </DialogTitle>
+          <DialogContent>
+            {folderToDelete && (
+              <Box>
+                <Typography variant="body1" sx={{ mb: 2 }}>
+                  Are you sure you want to delete the folder <strong>"{folderToDelete.name}"</strong>?
+                </Typography>
+                {getDescendantFolderIds(folderToDelete.id).length > 0 && (
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    This folder contains {getDescendantFolderIds(folderToDelete.id).length} subfolder(s). 
+                    All subfolders will also be deleted.
+                  </Alert>
+                )}
+                <Typography variant="body2" color="text.secondary">
+                  This action cannot be undone.
+                </Typography>
+              </Box>
+            )}
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
             <Button 
               onClick={() => {
-                setLibraryDialogOpen(false);
-                setSelectedFolder(null);
-                setShowNewFolderInput(false);
-                setNewFolderName('');
-                setNewFolderParent(null);
+                setDeleteFolderDialogOpen(false);
+                setFolderToDelete(null);
               }}
             >
               Cancel
             </Button>
             <Button 
               variant="contained" 
-              onClick={handleAddToSelectedFolder}
-              disabled={!selectedFolder}
+              color="error"
+              onClick={handleConfirmDeleteFolder}
+              startIcon={<DeleteIcon />}
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Move Folder Dialog */}
+        <Dialog
+          open={moveFolderDialogOpen}
+          onClose={() => {
+            setMoveFolderDialogOpen(false);
+            setFolderToMove(null);
+            setMoveTargetFolder(null);
+          }}
+          maxWidth="sm"
+          fullWidth
+          disableScrollLock={true}
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#ff9800', color: 'white' }}>
+            <MoveIcon />
+            Move Folder
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 0 }}>
+            {folderToMove && (
+              <Box>
+                <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                    Moving folder:
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    📁 {folderToMove.name}
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ p: 2 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary' }}>
+                    Select destination folder:
+                  </Typography>
+                  
+                  {/* Root option */}
+                  <Box
+                    onClick={() => setMoveTargetFolder(null)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      py: 1.5,
+                      px: 2,
+                      cursor: 'pointer',
+                      bgcolor: moveTargetFolder === null ? '#ff980015' : 'transparent',
+                      borderLeft: moveTargetFolder === null ? '3px solid #ff9800' : '3px solid transparent',
+                      borderRadius: 1,
+                      mb: 1,
+                      '&:hover': {
+                        bgcolor: '#ff980008'
+                      }
+                    }}
+                  >
+                    <Box sx={{ mr: 1.5 }}>🏠</Box>
+                    <Typography variant="body2" sx={{ fontWeight: moveTargetFolder === null ? 600 : 400 }}>
+                      Root Level (No Parent)
+                    </Typography>
+                  </Box>
+                  
+                  <Divider sx={{ my: 1 }} />
+                  
+                  {/* Available folders */}
+                  <Box sx={{ maxHeight: 250, overflow: 'auto' }}>
+                    {getValidMoveTargets(folderToMove).length > 0 ? (
+                      getValidMoveTargets(folderToMove).map(folder => {
+                        const isSelected = moveTargetFolder === folder.id;
+                        // Calculate indent level
+                        let indent = 0;
+                        let currentFolder = folder;
+                        while (currentFolder.parent !== null) {
+                          indent++;
+                          currentFolder = folders.find(f => f.id === currentFolder.parent);
+                          if (!currentFolder) break;
+                        }
+                        
+                        return (
+                          <Box
+                            key={folder.id}
+                            onClick={() => setMoveTargetFolder(folder.id)}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              py: 1,
+                              px: 2,
+                              pl: 2 + indent * 2,
+                              cursor: 'pointer',
+                              bgcolor: isSelected ? '#ff980015' : 'transparent',
+                              borderLeft: isSelected ? '3px solid #ff9800' : '3px solid transparent',
+                              '&:hover': {
+                                bgcolor: '#ff980008'
+                              }
+                            }}
+                          >
+                            <Box sx={{ mr: 1, color: '#8b6cbc' }}>📁</Box>
+                            <Typography variant="body2" sx={{ fontWeight: isSelected ? 600 : 400 }}>
+                              {folder.name}
+                            </Typography>
+                          </Box>
+                        );
+                      })
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+                        No valid destinations available. 
+                        <br />
+                        <Typography variant="caption">
+                          Cannot move to self, descendants, or current parent.
+                        </Typography>
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button 
+              onClick={() => {
+                setMoveFolderDialogOpen(false);
+                setFolderToMove(null);
+                setMoveTargetFolder(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handleConfirmMoveFolder}
+              disabled={folderToMove && moveTargetFolder === folderToMove.parent}
+              startIcon={<MoveIcon />}
               sx={{ 
-                bgcolor: '#8b6cbc', 
-                '&:hover': { bgcolor: '#7559a3' },
+                bgcolor: '#ff9800', 
+                '&:hover': { bgcolor: '#f57c00' },
                 '&:disabled': { bgcolor: '#ccc' }
               }}
             >
-              Add to Folder
+              Move Here
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Move Publication Dialog */}
+        <Dialog
+          open={movePublicationDialogOpen}
+          onClose={() => {
+            setMovePublicationDialogOpen(false);
+            setPublicationToMove(null);
+            setSourceFolderId(null);
+            setTargetFolderForPub(null);
+          }}
+          maxWidth="sm"
+          fullWidth
+          disableScrollLock={true}
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#ff9800', color: 'white' }}>
+            <MoveIcon />
+            Move Publication
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 0 }}>
+            {publicationToMove && (
+              <Box>
+                <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                    Moving publication:
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {publicationToMove.title}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    From: <strong>{folders.find(f => f.id === sourceFolderId)?.name}</strong>
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ p: 2 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary' }}>
+                    Select destination folder:
+                  </Typography>
+                  
+                  {/* Available folders (excluding source folder) */}
+                  <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+                    {folders
+                      .filter(f => f.id !== sourceFolderId)
+                      .map(folder => {
+                        const isSelected = targetFolderForPub === folder.id;
+                        // Calculate indent level
+                        let indent = 0;
+                        let currentFolder = folder;
+                        while (currentFolder.parent !== null) {
+                          indent++;
+                          currentFolder = folders.find(f => f.id === currentFolder.parent);
+                          if (!currentFolder) break;
+                        }
+                        
+                        // Check if publication already exists in this folder
+                        const alreadyInFolder = (folderPublications[folder.id] || []).includes(publicationToMove.id);
+                        
+                        return (
+                          <Box
+                            key={folder.id}
+                            onClick={() => !alreadyInFolder && setTargetFolderForPub(folder.id)}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              py: 1,
+                              px: 2,
+                              pl: 2 + indent * 2,
+                              cursor: alreadyInFolder ? 'not-allowed' : 'pointer',
+                              bgcolor: isSelected ? '#ff980015' : 'transparent',
+                              borderLeft: isSelected ? '3px solid #ff9800' : '3px solid transparent',
+                              opacity: alreadyInFolder ? 0.5 : 1,
+                              '&:hover': {
+                                bgcolor: alreadyInFolder ? 'transparent' : '#ff980008'
+                              }
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Box sx={{ mr: 1, color: '#8b6cbc' }}>📁</Box>
+                              <Typography variant="body2" sx={{ fontWeight: isSelected ? 600 : 400 }}>
+                                {folder.name}
+                              </Typography>
+                            </Box>
+                            {alreadyInFolder && (
+                              <Chip 
+                                label="Already here" 
+                                size="small" 
+                                sx={{ 
+                                  height: 20, 
+                                  fontSize: '0.65rem',
+                                  bgcolor: '#e0e0e0',
+                                  color: '#666'
+                                }} 
+                              />
+                            )}
+                            {getPublicationCount(folder.id) > 0 && !alreadyInFolder && (
+                              <Typography variant="caption" color="text.secondary">
+                                {getPublicationCount(folder.id)} items
+                              </Typography>
+                            )}
+                          </Box>
+                        );
+                      })}
+                  </Box>
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button 
+              onClick={() => {
+                setMovePublicationDialogOpen(false);
+                setPublicationToMove(null);
+                setSourceFolderId(null);
+                setTargetFolderForPub(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handleConfirmMovePublication}
+              disabled={!targetFolderForPub}
+              startIcon={<MoveIcon />}
+              sx={{ 
+                bgcolor: '#ff9800', 
+                '&:hover': { bgcolor: '#f57c00' },
+                '&:disabled': { bgcolor: '#ccc' }
+              }}
+            >
+              Move Here
             </Button>
           </DialogActions>
         </Dialog>
@@ -1574,6 +2648,23 @@ export default function ManagePublications() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert 
+            onClose={handleCloseSnackbar} 
+            severity={snackbar.severity} 
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Container>
     </Box>
   );

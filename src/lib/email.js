@@ -39,226 +39,234 @@ export async function sendActivationEmail(user, activationToken, isResend = fals
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activate Your Hospitium RIS Account</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background: white;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #e0e0e0;
-        }
-        .logo {
-            max-width: 200px;
-            height: auto;
-            margin-bottom: 20px;
-        }
-        .welcome-text {
-            font-size: 24px;
-            font-weight: 600;
-            color: #8b6cbc;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            color: #666;
-            font-size: 16px;
-        }
-        .account-details {
-            background: #f8f9fa;
-            border-left: 4px solid #8b6cbc;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 0 8px 8px 0;
-        }
-        .account-details h3 {
-            margin-top: 0;
-            color: #8b6cbc;
-            font-size: 18px;
-        }
-        .detail-row {
-            margin: 8px 0;
-            display: flex;
-            justify-content: space-between;
-        }
-        .detail-label {
-            font-weight: 600;
-            color: #555;
-        }
-        .detail-value {
-            color: #333;
-        }
-        .activation-section {
-            text-align: center;
-            margin: 30px 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #8b6cbc 0%, #7a5ba8 100%);
-            border-radius: 12px;
-            color: white;
-        }
-        .activation-section h3 {
-            margin: 0 0 15px 0;
-            font-size: 20px;
-        }
-        .activation-section p {
-            margin: 0 0 20px 0;
-            opacity: 0.9;
-        }
-        .activate-button {
-            display: inline-block;
-            padding: 12px 30px;
-            background: white;
-            color: #8b6cbc;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 16px;
-            margin: 10px 0;
-            transition: all 0.3s ease;
-        }
-        .activate-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255,255,255,0.3);
-        }
-        .login-info {
-            background: #f3f0fc;
-            border: 1px solid #d2c3e8;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-        .login-info h4 {
-            margin: 0 0 10px 0;
-            color: #8b6cbc;
-        }
-        .login-url {
-            word-break: break-all;
-            color: #8b6cbc;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e0e0e0;
-            color: #666;
-            font-size: 14px;
-        }
-        .security-notice {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            font-size: 14px;
-        }
-        .security-notice strong {
-            color: #856404;
-        }
-    </style>
+    <title>Activate Your HospitiumRIS Account</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <img src="${baseUrl}/hospitium-logo.png" alt="Hospitium RIS" class="logo">
-            <div class="welcome-text">${isResend ? 'Activate Your Hospitium RIS Account' : 'Welcome to Hospitium RIS!'}</div>
-            <div class="subtitle">${isResend ? 'Here is your new activation link' : 'Your account has been created successfully'}</div>
-        </div>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff; -webkit-font-smoothing: antialiased;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%;">
+                    
+                    <!-- Logo Header -->
+                    <tr>
+                        <td align="center" style="padding: 0 0 32px 0;">
+                            <img src="${baseUrl}/hospitium-logo.png" alt="HospitiumRIS" style="max-width: 160px; height: auto;" />
+                        </td>
+                    </tr>
+                    
+                    <!-- Main Card -->
+                    <tr>
+                        <td>
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+                                
+                                <!-- Header -->
+                                <tr>
+                                    <td style="padding: 40px 40px 0 40px; border-bottom: 1px solid #f3f4f6;">
+                                        <h1 style="color: #111827; font-size: 24px; font-weight: 600; margin: 0 0 8px 0;">
+                                            ${isResend ? 'New Activation Link' : 'Welcome to HospitiumRIS'}
+                                        </h1>
+                                        <p style="color: #6b7280; font-size: 15px; margin: 0 0 24px 0;">
+                                            ${isResend ? 'A new activation link has been generated for your account.' : 'Your account has been created successfully.'}
+                                        </p>
+                                    </td>
+                                </tr>
 
-        <div class="account-details">
-            <h3>Account Details</h3>
-            <div class="detail-row">
-                <span class="detail-label">Name:</span>
-                <span class="detail-value">${user.givenName} ${user.familyName}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Email:</span>
-                <span class="detail-value">${user.email}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Account Type:</span>
-                <span class="detail-value">${accountTypeLabels[user.accountType]}</span>
-            </div>
+                                <!-- Greeting -->
+                                <tr>
+                                    <td style="padding: 32px 40px 0 40px;">
+                                        <p style="color: #374151; font-size: 15px; margin: 0 0 16px 0; line-height: 1.6;">
+                                            Hello ${user.givenName},
+                                        </p>
+                                        <p style="color: #4b5563; font-size: 15px; margin: 0; line-height: 1.7;">
+                                            ${isResend 
+                                              ? 'Your previous activation link has been invalidated for security reasons. Please use the link below to activate your account.' 
+                                              : 'Thank you for registering with HospitiumRIS. To complete your registration and access your account, please click the button below.'}
+                                        </p>
+                                    </td>
+                                </tr>
+
+                                <!-- Account Details -->
+                                <tr>
+                                    <td style="padding: 24px 40px;">
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #f9fafb; border-radius: 6px; border: 1px solid #e5e7eb;">
+                                            <tr>
+                                                <td style="padding: 20px 24px;">
+                                                    <p style="color: #374151; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 16px 0;">Account Details</p>
+                                                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                                        <tr>
+                                                            <td style="padding: 6px 0;">
+                                                                <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 120px;">Name</span>
+                                                                <span style="color: #111827; font-size: 14px;">${user.givenName} ${user.familyName}</span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding: 6px 0;">
+                                                                <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 120px;">Email</span>
+                                                                <span style="color: #111827; font-size: 14px;">${user.email}</span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding: 6px 0;">
+                                                                <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 120px;">Account Type</span>
+                                                                <span style="color: #111827; font-size: 14px;">${accountTypeLabels[user.accountType]}</span>
+                                                            </td>
+                                                        </tr>
             ${user.primaryInstitution ? `
-            <div class="detail-row">
-                <span class="detail-label">Primary Institution:</span>
-                <span class="detail-value">${user.primaryInstitution}</span>
-            </div>
+                                                        <tr>
+                                                            <td style="padding: 6px 0;">
+                                                                <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 120px;">Institution</span>
+                                                                <span style="color: #111827; font-size: 14px;">${user.primaryInstitution}</span>
+                                                            </td>
+                                                        </tr>
             ` : ''}
             ${user.orcidId ? `
-            <div class="detail-row">
-                <span class="detail-label">ORCID ID:</span>
-                <span class="detail-value">${user.orcidId}</span>
-            </div>
+                                                        <tr>
+                                                            <td style="padding: 6px 0;">
+                                                                <span style="color: #6b7280; font-size: 14px; display: inline-block; width: 120px;">ORCID iD</span>
+                                                                <span style="color: #111827; font-size: 14px;">${user.orcidId}</span>
+                                                            </td>
+                                                        </tr>
             ` : ''}
-        </div>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
 
-        <div class="activation-section">
-            <h3>Activate Your Account</h3>
-            <p>${isResend ? 'Your previous activation link has been replaced with this new one. Please click the button below to activate your account:' : 'To complete your registration and start using Hospitium RIS, please activate your account by clicking the button below:'}</p>
-            <a href="${activationUrl}" class="activate-button">Activate My Account</a>
-        </div>
+                                <!-- CTA Button -->
+                                <tr>
+                                    <td style="padding: 8px 40px 32px 40px; text-align: center;">
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td align="center">
+                                                    <a href="${activationUrl}" style="display: inline-block; background-color: #8b6cbc; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 14px 32px; border-radius: 6px;">
+                                                        Activate Account
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td align="center" style="padding-top: 16px;">
+                                                    <p style="color: #9ca3af; font-size: 13px; margin: 0;">
+                                                        Or copy and paste this URL into your browser:
+                                                    </p>
+                                                    <p style="color: #8b6cbc; font-size: 13px; margin: 8px 0 0 0; word-break: break-all;">
+                                                        ${activationUrl}
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
 
-        <div class="login-info">
-            <h4>After Activation - Login Here:</h4>
-            <p>Once your account is activated, you can login at:</p>
-            <a href="${baseUrl}/login" class="login-url">${baseUrl}/login</a>
-        </div>
+                                <!-- Divider -->
+                                <tr>
+                                    <td style="padding: 0 40px;">
+                                        <div style="height: 1px; background-color: #e5e7eb;"></div>
+                                    </td>
+                                </tr>
 
-        <div class="security-notice">
-            <strong>Security Notice:</strong> This activation link will expire in 24 hours for your security. 
-            If you didn't create this account, please ignore this email or contact our support team.
-        </div>
+                                <!-- Next Steps -->
+                                <tr>
+                                    <td style="padding: 24px 40px;">
+                                        <p style="color: #374151; font-size: 14px; font-weight: 600; margin: 0 0 12px 0;">Next Steps</p>
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td style="padding: 6px 0; color: #4b5563; font-size: 14px;">1. Click the activation button above</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 6px 0; color: #4b5563; font-size: 14px;">2. Log in at <a href="${baseUrl}/login" style="color: #8b6cbc; text-decoration: none;">${baseUrl}/login</a></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 6px 0; color: #4b5563; font-size: 14px;">3. Complete your profile and start using HospitiumRIS</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
 
-        <div class="footer">
-            <p>Thank you for joining Hospitium RIS!</p>
-            <p>If you have any questions, please contact our support team.</p>
-            <p style="font-size: 12px; color: #888;">
-                This email was sent to ${user.email} because you registered for a Hospitium RIS account.
-            </p>
-        </div>
-    </div>
+                                <!-- Security Notice -->
+                                <tr>
+                                    <td style="padding: 0 40px 32px 40px;">
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #fef3c7; border-radius: 6px; border: 1px solid #fde68a;">
+                                            <tr>
+                                                <td style="padding: 14px 16px;">
+                                                    <p style="color: #92400e; font-size: 13px; margin: 0; line-height: 1.5;">
+                                                        <strong>Security Notice:</strong> This activation link will expire in 24 hours. If you did not create this account, please disregard this email.
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 32px 20px; text-align: center;">
+                            <p style="color: #6b7280; font-size: 13px; margin: 0 0 4px 0;">
+                                HospitiumRIS
+                            </p>
+                            <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                                This email was sent to ${user.email} because you registered for an account.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>`;
 
   const textContent = `
-${isResend ? 'Activate Your Hospitium RIS Account' : 'Welcome to Hospitium RIS!'}
+${isResend ? 'NEW ACTIVATION LINK' : 'WELCOME TO HOSPITIUMRIS'}
+${'='.repeat(50)}
 
-${isResend ? 'Here is your new activation link.' : 'Your account has been created successfully.'}
+Hello ${user.givenName},
 
-Account Details:
-- Name: ${user.givenName} ${user.familyName}
-- Email: ${user.email}
-- Account Type: ${accountTypeLabels[user.accountType]}
-${user.primaryInstitution ? `- Primary Institution: ${user.primaryInstitution}` : ''}
-${user.orcidId ? `- ORCID ID: ${user.orcidId}` : ''}
+${isResend 
+  ? 'A new activation link has been generated for your account. Your previous link has been invalidated for security reasons.' 
+  : 'Thank you for registering with HospitiumRIS. Your account has been created successfully.'}
 
-ACTIVATE YOUR ACCOUNT:
-${isResend ? 'Your previous activation link has been replaced with this new one.' : 'To complete your registration, please visit the following link:'}
+ACCOUNT DETAILS
+${'-'.repeat(50)}
+Name:         ${user.givenName} ${user.familyName}
+Email:        ${user.email}
+Account Type: ${accountTypeLabels[user.accountType]}
+${user.primaryInstitution ? `Institution:  ${user.primaryInstitution}` : ''}
+${user.orcidId ? `ORCID iD:     ${user.orcidId}` : ''}
+
+ACTIVATE YOUR ACCOUNT
+${'-'.repeat(50)}
+Click or copy this link to activate your account:
 ${activationUrl}
 
-AFTER ACTIVATION - LOGIN HERE:
-${baseUrl}/login
+NEXT STEPS
+${'-'.repeat(50)}
+1. Click the activation link above
+2. Log in at: ${baseUrl}/login
+3. Complete your profile and start using HospitiumRIS
 
-SECURITY NOTICE:
-This activation link will expire in 24 hours for your security.
-If you didn't create this account, please ignore this email.
+SECURITY NOTICE
+${'-'.repeat(50)}
+This activation link will expire in 24 hours.
+If you did not create this account, please disregard this email.
 
-Thank you for ${isResend ? 'using' : 'joining'} Hospitium RIS!
+${'='.repeat(50)}
+HospitiumRIS
 `;
 
   try {
@@ -268,9 +276,9 @@ Thank you for ${isResend ? 'using' : 'joining'} Hospitium RIS!
     await transporter.verify();
     
     const mailOptions = {
-      from: process.env.FROM_EMAIL || 'Hospitium RIS <noreply@hospitiumris.com>',
+      from: process.env.FROM_EMAIL || 'HospitiumRIS <noreply@hospitiumris.com>',
       to: user.email,
-      subject: isResend ? 'Hospitium RIS - New Activation Link' : 'Welcome to Hospitium RIS - Activate Your Account',
+      subject: isResend ? 'HospitiumRIS - New Activation Link' : 'Welcome to HospitiumRIS - Activate Your Account',
       html: htmlContent,
       text: textContent,
     };
@@ -300,4 +308,159 @@ export function generateActivationToken() {
  */
 export function isTokenExpired(expiresAt) {
   return new Date() > new Date(expiresAt);
+}
+
+/**
+ * Send password reset email to user
+ * @param {Object} user - User object
+ * @param {string} resetToken - Password reset token
+ * @returns {Promise<Object>} - Email send result
+ */
+export async function sendPasswordResetEmail(user, resetToken) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Your HospitiumRIS Password</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff; -webkit-font-smoothing: antialiased;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%;">
+                    
+                    <!-- Logo Header -->
+                    <tr>
+                        <td align="center" style="padding: 0 0 32px 0;">
+                            <img src="${baseUrl}/hospitium-logo.png" alt="HospitiumRIS" style="max-width: 160px; height: auto;" />
+                        </td>
+                    </tr>
+                    
+                    <!-- Main Card -->
+                    <tr>
+                        <td>
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+                                
+                                <!-- Header -->
+                                <tr>
+                                    <td style="padding: 40px 40px 0 40px; border-bottom: 1px solid #f3f4f6;">
+                                        <h1 style="color: #111827; font-size: 24px; font-weight: 600; margin: 0 0 8px 0;">
+                                            Password Reset Request
+                                        </h1>
+                                        <p style="color: #6b7280; font-size: 15px; margin: 0 0 24px 0;">
+                                            We received a request to reset your password.
+                                        </p>
+                                    </td>
+                                </tr>
+
+                                <!-- Content -->
+                                <tr>
+                                    <td style="padding: 32px 40px;">
+                                        <p style="color: #374151; font-size: 15px; margin: 0 0 16px 0; line-height: 1.6;">
+                                            Hello ${user.givenName},
+                                        </p>
+                                        <p style="color: #4b5563; font-size: 15px; margin: 0 0 24px 0; line-height: 1.7;">
+                                            A password reset was requested for your HospitiumRIS account. If you made this request, click the button below to create a new password.
+                                        </p>
+                                        
+                                        <!-- CTA Button -->
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td align="center">
+                                                    <a href="${resetUrl}" style="display: inline-block; background-color: #dc2626; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 14px 32px; border-radius: 6px;">
+                                                        Reset Password
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td align="center" style="padding-top: 16px;">
+                                                    <p style="color: #9ca3af; font-size: 13px; margin: 0;">
+                                                        Or copy and paste this URL into your browser:
+                                                    </p>
+                                                    <p style="color: #8b6cbc; font-size: 13px; margin: 8px 0 0 0; word-break: break-all;">
+                                                        ${resetUrl}
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+
+                                <!-- Security Notice -->
+                                <tr>
+                                    <td style="padding: 0 40px 32px 40px;">
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca;">
+                                            <tr>
+                                                <td style="padding: 14px 16px;">
+                                                    <p style="color: #991b1b; font-size: 13px; margin: 0; line-height: 1.5;">
+                                                        <strong>Important:</strong> This link expires in 1 hour. If you did not request this password reset, please disregard this email. Your password will remain unchanged.
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 32px 20px; text-align: center;">
+                            <p style="color: #6b7280; font-size: 13px; margin: 0 0 4px 0;">
+                                HospitiumRIS
+                            </p>
+                            <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                                This email was sent to ${user.email}.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
+
+  const textContent = `
+PASSWORD RESET REQUEST
+${'='.repeat(50)}
+
+Hello ${user.givenName},
+
+A password reset was requested for your HospitiumRIS account.
+If you made this request, click the link below to create a new password:
+
+${resetUrl}
+
+IMPORTANT: This link expires in 1 hour.
+If you did not request this reset, please disregard this email.
+
+${'='.repeat(50)}
+HospitiumRIS
+`;
+
+  try {
+    const transporter = createTransporter();
+    await transporter.verify();
+    
+    const mailOptions = {
+      from: process.env.FROM_EMAIL || 'HospitiumRIS <noreply@hospitiumris.com>',
+      to: user.email,
+      subject: 'HospitiumRIS - Password Reset Request',
+      html: htmlContent,
+      text: textContent,
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Email send error:', error);
+    return { success: false, error: error.message };
+  }
 }

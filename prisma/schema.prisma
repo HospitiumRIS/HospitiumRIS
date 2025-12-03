@@ -210,6 +210,7 @@ model Publication {
   authorRelations PublicationAuthor[] @relation("authorRelations")
   manuscriptCitations ManuscriptCitation[]
   proposals ProposalPublication[]
+  libraryFolders LibraryFolderPublication[]
   
   @@map("publications")
 }
@@ -874,4 +875,45 @@ model ProposalManuscript {
   
   @@unique([proposalId, manuscriptId])
   @@map("proposal_manuscripts")
+}
+
+// Library Folder System for organizing publications
+model LibraryFolder {
+  id          String   @id @default(cuid())
+  userId      String   // Owner of the folder
+  
+  // Folder Details
+  name        String
+  parentId    String?  // Parent folder ID for nested structure (null = root folder)
+  expanded    Boolean  @default(false) // UI state for folder expansion
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Self-referential relation for parent-child folders
+  parent      LibraryFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    LibraryFolder[] @relation("FolderHierarchy")
+  
+  // Publications in this folder
+  publications LibraryFolderPublication[]
+  
+  @@map("library_folders")
+}
+
+// Junction table for Library Folder - Publication relationships
+model LibraryFolderPublication {
+  id            String @id @default(cuid())
+  folderId      String
+  publicationId String
+  
+  // When the publication was added to the folder
+  addedAt       DateTime @default(now())
+  
+  // Relations
+  folder        LibraryFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  publication   Publication   @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  
+  @@unique([folderId, publicationId])
+  @@map("library_folder_publications")
 }
