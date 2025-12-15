@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getUserId } from '../../../../lib/auth-server.js';
 import { searchResearchers, getResearcherEmails } from '../../../../utils/orcidService.js';
+import { sendCollaborationInviteEmail } from '../../../../lib/email.js';
 
 const prisma = new PrismaClient();
 
@@ -83,8 +84,9 @@ export async function POST(request) {
     let inviteeGivenName = givenName;
     let inviteeFamilyName = familyName;
     let inviteeAffiliation = affiliation;
+    let isExistingUser = false;
 
-    // If ORCID ID provided, check if user already exists in our system
+    // Check if user exists by ORCID ID
     if (orcidId) {
       const existingUser = await prisma.user.findFirst({
         where: { orcidId: orcidId }
@@ -93,9 +95,11 @@ export async function POST(request) {
       if (existingUser) {
         invitedUserId = existingUser.id;
         inviteeEmail = existingUser.email;
-        inviteeGivenName = existingUser.givenName || existingUser.orcidGivenNames;
-        inviteeFamilyName = existingUser.familyName || existingUser.orcidFamilyName;
+        inviteeGivenName = existingUser.givenName || existingUser.orcidGivenNames || givenName;
+        inviteeFamilyName = existingUser.familyName || existingUser.orcidFamilyName || familyName;
         inviteeAffiliation = existingUser.primaryInstitution || affiliation;
+        isExistingUser = true;
+        console.log(`✅ Found existing user by ORCID: ${existingUser.id} (${existingUser.email})`);
       } else {
         // If no email provided, try to get from ORCID
         if (!inviteeEmail) {
@@ -105,14 +109,30 @@ export async function POST(request) {
       }
     }
 
+    // If not found by ORCID, check by email
+    if (!invitedUserId && inviteeEmail) {
+      const existingUser = await prisma.user.findFirst({
+        where: { email: inviteeEmail }
+      });
+
+      if (existingUser) {
+        invitedUserId = existingUser.id;
+        inviteeGivenName = existingUser.givenName || existingUser.orcidGivenNames || givenName;
+        inviteeFamilyName = existingUser.familyName || existingUser.orcidFamilyName || familyName;
+        inviteeAffiliation = existingUser.primaryInstitution || affiliation;
+        isExistingUser = true;
+        console.log(`✅ Found existing user by email: ${existingUser.id} (${existingUser.email})`);
+      }
+    }
+
     // Check if invitation already exists
     const existingInvitation = await prisma.manuscriptInvitation.findFirst({
       where: {
         manuscriptId,
         OR: [
-          { orcidId: orcidId },
-          { email: inviteeEmail },
-          { invitedUserId: invitedUserId }
+          orcidId ? { orcidId: orcidId } : null,
+          inviteeEmail ? { email: inviteeEmail } : null,
+          invitedUserId ? { invitedUserId: invitedUserId } : null
         ].filter(Boolean),
         status: 'PENDING'
       }
@@ -125,32 +145,22 @@ export async function POST(request) {
       );
     }
 
-    // TEMPORARILY DISABLED FOR TESTING - Check if researcher is already a collaborator
-    /*
-    const existingCollaborator = await prisma.manuscriptCollaborator.findFirst({
-      where: {
-        manuscriptId,
-        OR: [
-          { userId: invitedUserId },
-          {
-            user: {
-              OR: [
-                { orcidId: orcidId },
-                { email: inviteeEmail }
-              ].filter(Boolean)
-            }
-          }
-        ].filter(Boolean)
-      }
-    });
+    // Check if researcher is already a collaborator
+    if (invitedUserId) {
+      const existingCollaborator = await prisma.manuscriptCollaborator.findFirst({
+        where: {
+          manuscriptId,
+          userId: invitedUserId
+        }
+      });
 
-    if (existingCollaborator) {
-      return NextResponse.json(
-        { error: 'Researcher is already a collaborator on this manuscript' },
-        { status: 409 }
-      );
+      if (existingCollaborator) {
+        return NextResponse.json(
+          { error: 'This researcher is already a collaborator on this manuscript' },
+          { status: 409 }
+        );
+      }
     }
-    */
 
     // Create invitation
     const invitation = await prisma.manuscriptInvitation.create({
@@ -169,49 +179,66 @@ export async function POST(request) {
       }
     });
 
-    // FOR TESTING: Create notification for both invitee (if exists) and inviter (for demo)
+    // Get inviter details
+    const inviter = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+    const inviterName = `${inviter.givenName} ${inviter.familyName}`;
+    const inviteeName = `${inviteeGivenName} ${inviteeFamilyName}`;
+
+    // Create notification for the invitee if they exist in the system
     if (invitedUserId) {
-      // Create notification for the actual invitee
+      // Determine if this is a proposal or manuscript based on type
+      const isProposal = manuscript.type?.toLowerCase().includes('proposal');
+      const documentType = isProposal ? 'research proposal' : 'manuscript';
+      
       await prisma.notification.create({
         data: {
           userId: invitedUserId,
           manuscriptId,
           type: 'COLLABORATION_INVITATION',
-          title: 'Manuscript Collaboration Invitation',
-          message: `${manuscript.creator.givenName} ${manuscript.creator.familyName} has invited you to collaborate on "${manuscript.title}"`,
+          title: isProposal ? 'Research Proposal Invitation' : 'Manuscript Collaboration Invitation',
+          message: `${inviterName} has invited you to collaborate on the ${documentType} "${manuscript.title}" as ${role}`,
           data: {
             invitationId: invitation.id,
-            inviterName: `${manuscript.creator.givenName} ${manuscript.creator.familyName}`,
+            inviterName: inviterName,
             manuscriptTitle: manuscript.title,
-            role: role
+            role: role,
+            action: 'pending', // Can be used to show accept/decline buttons
+            documentType: documentType
           }
         }
       });
+      console.log(`🔔 Created notification for existing user ${invitedUserId}`);
     }
 
-    // FOR TESTING: Also create a notification for the inviter (you) to test the notification system
-    const testNotification = await prisma.notification.create({
-      data: {
-        userId: userId, // This is you - the person sending the invitation
-        manuscriptId,
-        type: 'COLLABORATION_INVITATION',
-        title: 'Invitation Sent Successfully',
-        message: `You invited ${inviteeGivenName} ${inviteeFamilyName} to collaborate on "${manuscript.title}" as ${role}`,
-        data: {
-          invitationId: invitation.id,
-          invitedName: `${inviteeGivenName} ${inviteeFamilyName}`,
+    // Send email invitation if we have an email address
+    if (inviteeEmail) {
+      try {
+        // Determine if this is a proposal or manuscript based on type
+        const isProposal = manuscript.type?.toLowerCase().includes('proposal');
+        
+        const emailResult = await sendCollaborationInviteEmail({
+          inviteeEmail,
+          inviteeName,
+          inviterName,
           manuscriptTitle: manuscript.title,
-          role: role,
-          action: 'sent'
-        }
-      }
-    });
+          role,
+          message,
+          invitationToken: invitation.token,
+          type: isProposal ? 'proposal' : 'manuscript'
+        });
 
-    console.log(`🔔 Created test notification for user ${userId}:`, {
-      id: testNotification.id,
-      title: testNotification.title,
-      message: testNotification.message
-    });
+        if (emailResult.success) {
+          console.log(`📧 Invitation email sent to ${inviteeEmail}`);
+        } else {
+          console.error(`⚠️ Failed to send invitation email: ${emailResult.error}`);
+        }
+      } catch (emailError) {
+        // Don't fail the invitation if email fails - log and continue
+        console.error(`⚠️ Email sending failed:`, emailError);
+      }
+    }
 
     console.log(`📧 INVITATION SENT SUCCESSFULLY:`, {
       invitationId: invitation.id,
@@ -220,13 +247,11 @@ export async function POST(request) {
       inviteeDetails: {
         orcidId: orcidId,
         email: inviteeEmail,
-        name: `${inviteeGivenName} ${inviteeFamilyName}`
+        name: inviteeName,
+        isExistingUser
       },
-      notificationCreated: true
+      notificationCreated: !!invitedUserId
     });
-
-    // TODO: Send email notification
-    // This would be implemented with your email service
 
     return NextResponse.json({
       success: true,
@@ -241,9 +266,14 @@ export async function POST(request) {
           role: invitation.role,
           status: invitation.status,
           expiresAt: invitation.expiresAt,
-          isExistingUser: !!invitedUserId
+          isExistingUser
         }
-      }
+      },
+      message: isExistingUser 
+        ? `Invitation sent! ${inviteeName} will receive a notification when they log in.`
+        : inviteeEmail 
+          ? `Invitation sent to ${inviteeEmail}. They will need to create an account to accept.`
+          : 'Invitation created. The researcher will need to claim it when they join.'
     });
 
   } catch (error) {

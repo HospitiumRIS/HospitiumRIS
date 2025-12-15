@@ -27,10 +27,13 @@ import {
   NotificationsNone as NotificationsIcon,
   Person as PersonIcon,
   Description as DescriptionIcon,
-  Group as GroupIcon
+  Group as GroupIcon,
+  Check as CheckIcon,
+  Clear as ClearIcon
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
 import { useNotifications } from '../../hooks/useNotifications';
+import { useRouter } from 'next/navigation';
 
 const NOTIFICATION_TYPES = {
   COLLABORATION_INVITATION: {
@@ -56,6 +59,7 @@ const NOTIFICATION_TYPES = {
 };
 
 export default function NotificationDropdown({ anchorEl, open, onClose }) {
+  const router = useRouter();
   const {
     notifications,
     unreadCount,
@@ -69,6 +73,8 @@ export default function NotificationDropdown({ anchorEl, open, onClose }) {
   
   const [showAll, setShowAll] = useState(false);
   const [allNotifications, setAllNotifications] = useState([]);
+  const [processingIds, setProcessingIds] = useState(new Set());
+  const [respondingIds, setRespondingIds] = useState(new Set());
 
   // Debug logging
   console.log('🔔 NotificationDropdown render:', {
@@ -79,8 +85,6 @@ export default function NotificationDropdown({ anchorEl, open, onClose }) {
     isLoading,
     error
   });
-
-  const [processingIds, setProcessingIds] = useState(new Set());
 
   // Fetch all notifications when showAll is enabled
   useEffect(() => {
@@ -138,10 +142,70 @@ export default function NotificationDropdown({ anchorEl, open, onClose }) {
     }
   }, [deleteNotification]);
 
+  // Handle accepting or declining an invitation
+  const handleRespondToInvitation = useCallback(async (notification, action) => {
+    const invitationId = notification.data?.invitationId;
+    if (!invitationId) {
+      console.error('No invitation ID found in notification data');
+      return;
+    }
+
+    setRespondingIds(prev => new Set([...prev, notification.id]));
+
+    try {
+      const response = await fetch(`/api/manuscripts/invitations/${invitationId}/respond`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to ${action} invitation`);
+      }
+
+      // Mark the notification as read
+      await markAsRead([notification.id]);
+
+      // Refresh notifications
+      refresh();
+
+      // If accepted, optionally navigate to the manuscript
+      if (action === 'accept' && data.data?.manuscriptId) {
+        onClose();
+        router.push(`/researcher/publications/collaborate/edit/${data.data.manuscriptId}`);
+      }
+
+    } catch (error) {
+      console.error(`Failed to ${action} invitation:`, error);
+      // Could show a snackbar here for user feedback
+    } finally {
+      setRespondingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(notification.id);
+        return newSet;
+      });
+    }
+  }, [markAsRead, refresh, onClose, router]);
+
+  // Check if a notification is an actionable invitation
+  const isActionableInvitation = (notification) => {
+    return (
+      notification.type === 'COLLABORATION_INVITATION' &&
+      notification.data?.invitationId &&
+      notification.data?.action === 'pending'
+    );
+  };
+
   const renderNotification = (notification) => {
     const typeConfig = NOTIFICATION_TYPES[notification.type] || NOTIFICATION_TYPES.SYSTEM_NOTIFICATION;
     const Icon = typeConfig.icon;
     const isProcessing = processingIds.has(notification.id);
+    const isResponding = respondingIds.has(notification.id);
+    const canRespond = isActionableInvitation(notification) && !notification.isRead;
 
     return (
       <ListItem
@@ -153,24 +217,27 @@ export default function NotificationDropdown({ anchorEl, open, onClose }) {
           borderLeft: notification.isRead ? 'none' : `3px solid ${typeConfig.color}`,
           '&:hover': {
             bgcolor: 'rgba(0,0,0,0.04)'
-          }
+          },
+          flexDirection: 'column',
+          alignItems: 'stretch'
         }}
       >
-        <Avatar
-          sx={{
-            bgcolor: typeConfig.color,
-            color: 'white',
-            width: 40,
-            height: 40,
-            mr: 2
-          }}
-        >
-          <Icon sx={{ fontSize: 20 }} />
-        </Avatar>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
+          <Avatar
+            sx={{
+              bgcolor: typeConfig.color,
+              color: 'white',
+              width: 40,
+              height: 40,
+              mr: 2,
+              flexShrink: 0
+            }}
+          >
+            <Icon sx={{ fontSize: 20 }} />
+          </Avatar>
 
-        <ListItemText
-          primary={
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 0.5 }}>
               <Typography variant="body1" sx={{ fontWeight: notification.isRead ? 400 : 600, flex: 1 }}>
                 {notification.title}
               </Typography>
@@ -183,38 +250,36 @@ export default function NotificationDropdown({ anchorEl, open, onClose }) {
                     color: 'white',
                     fontSize: '0.7rem',
                     height: 20,
-                    '& .MuiChip-label': { px: 1 }
+                    '& .MuiChip-label': { px: 1 },
+                    flexShrink: 0
                   }}
                 />
               )}
             </Box>
-          }
-          secondary={
-            <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                {notification.message}
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              {notification.message}
+            </Typography>
+            
+            {notification.manuscript && (
+              <Typography variant="caption" color="text.secondary" sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 0.5,
+                mb: 0.5 
+              }}>
+                <DescriptionIcon sx={{ fontSize: 12 }} />
+                {notification.manuscript.title}
               </Typography>
-              {notification.manuscript && (
-                <Typography variant="caption" color="text.secondary" sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 0.5,
-                  mb: 0.5 
-                }}>
-                  <DescriptionIcon sx={{ fontSize: 12 }} />
-                  {notification.manuscript.title}
-                </Typography>
-              )}
-              <Typography variant="caption" color="text.secondary">
-                {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-              </Typography>
-            </Box>
-          }
-        />
+            )}
+            
+            <Typography variant="caption" color="text.secondary">
+              {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+            </Typography>
+          </Box>
 
-        <ListItemSecondaryAction>
-          <Stack direction="row" spacing={0.5}>
-            {!notification.isRead && (
+          <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0, ml: 1 }}>
+            {!notification.isRead && !canRespond && (
               <Tooltip title="Mark as read">
                 <IconButton
                   size="small"
@@ -230,14 +295,78 @@ export default function NotificationDropdown({ anchorEl, open, onClose }) {
               <IconButton
                 size="small"
                 onClick={() => handleDeleteNotification(notification.id)}
-                disabled={isProcessing}
+                disabled={isProcessing || isResponding}
                 sx={{ color: 'error.main' }}
               >
                 {isProcessing ? <CircularProgress size={16} /> : <DeleteIcon fontSize="small" />}
               </IconButton>
             </Tooltip>
           </Stack>
-        </ListItemSecondaryAction>
+        </Box>
+
+        {/* Accept/Decline buttons for pending invitations */}
+        {canRespond && (
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 1, 
+            mt: 2, 
+            pt: 2, 
+            borderTop: '1px solid rgba(0,0,0,0.08)' 
+          }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={isResponding ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+              onClick={() => handleRespondToInvitation(notification, 'accept')}
+              disabled={isResponding}
+              sx={{
+                bgcolor: '#4caf50',
+                '&:hover': { bgcolor: '#43a047' },
+                textTransform: 'none',
+                fontWeight: 600,
+                flex: 1
+              }}
+            >
+              {isResponding ? 'Processing...' : 'Accept'}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={isResponding ? <CircularProgress size={14} /> : <ClearIcon />}
+              onClick={() => handleRespondToInvitation(notification, 'decline')}
+              disabled={isResponding}
+              sx={{
+                borderColor: '#f44336',
+                color: '#f44336',
+                '&:hover': { 
+                  borderColor: '#d32f2f',
+                  bgcolor: 'rgba(244, 67, 54, 0.04)'
+                },
+                textTransform: 'none',
+                fontWeight: 600,
+                flex: 1
+              }}
+            >
+              Decline
+            </Button>
+          </Box>
+        )}
+
+        {/* Show role info for invitations */}
+        {notification.type === 'COLLABORATION_INVITATION' && notification.data?.role && (
+          <Box sx={{ mt: 1 }}>
+            <Chip
+              label={`Role: ${notification.data.role}`}
+              size="small"
+              sx={{
+                bgcolor: 'rgba(139, 108, 188, 0.1)',
+                color: '#8b6cbc',
+                fontSize: '0.7rem',
+                height: 22
+              }}
+            />
+          </Box>
+        )}
       </ListItem>
     );
   };

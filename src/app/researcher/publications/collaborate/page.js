@@ -2185,115 +2185,144 @@ export default function CollaborativeWriting() {
                             </Box>
                           </TableCell>
 
-                          {/* Enhanced Team Display */}
+                          {/* Enhanced Team Display - Show All Members */}
                           <TableCell sx={{ py: 3 }}>
-                            <Stack direction="row" spacing={-0.5} sx={{ alignItems: 'center' }}>
-                              {/* Active Collaborators */}
-                              {manuscript.collaborators.slice(0, 2).map((collaborator, idx) => (
-                                <Tooltip key={collaborator.id} title={`${collaborator.name} (${collaborator.role}) - Active`}>
-                                  <Avatar
-                                    sx={{
-                                      width: 28,
-                                      height: 28,
-                                      fontSize: '0.75rem',
-                                      backgroundColor: '#8b6cbc',
-                                      border: '2px solid white',
-                                      fontWeight: 600,
-                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                      zIndex: 10 - idx
-                                    }}
-                                  >
-                                    {collaborator.avatar}
-                                  </Avatar>
+                            {(() => {
+                              // Build complete team list
+                              const allMembers = [];
+                              
+                              // Add creator first if exists
+                              if (manuscript.creator) {
+                                const creatorName = manuscript.creator.name || 
+                                  `${manuscript.creator.givenName || ''} ${manuscript.creator.familyName || ''}`.trim();
+                                allMembers.push({
+                                  id: `creator-${manuscript.creator.id || 'unknown'}`,
+                                  name: creatorName,
+                                  initials: creatorName ? creatorName.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase() : '?',
+                                  role: 'Owner',
+                                  isCreator: true,
+                                  isPending: false
+                                });
+                              }
+                              
+                              // Add collaborators (excluding creator if already added)
+                              if (manuscript.collaborators && manuscript.collaborators.length > 0) {
+                                manuscript.collaborators.forEach(collaborator => {
+                                  // Skip if this is the creator we already added
+                                  if (manuscript.creator && collaborator.name === manuscript.creator.name) return;
+                                  allMembers.push({
+                                    id: collaborator.id,
+                                    name: collaborator.name,
+                                    initials: collaborator.avatar || (collaborator.name ? collaborator.name.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase() : '?'),
+                                    role: collaborator.role,
+                                    isCreator: collaborator.role === 'OWNER',
+                                    isPending: false
+                                  });
+                                });
+                              }
+                              
+                              // Add pending invitations
+                              if (manuscript.pendingInvitationsList && manuscript.pendingInvitationsList.length > 0) {
+                                manuscript.pendingInvitationsList.forEach((invitation, idx) => {
+                                  const name = `${invitation.givenName || ''} ${invitation.familyName || ''}`.trim();
+                                  allMembers.push({
+                                    id: `pending-${idx}`,
+                                    name: name || 'Pending',
+                                    initials: name ? name.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase() : '?',
+                                    role: invitation.role || 'Invited',
+                                    isCreator: false,
+                                    isPending: true
+                                  });
+                                });
+                              }
+                              
+                              // Display up to 5 avatars, then show +X
+                              const maxDisplay = 5;
+                              const displayedMembers = allMembers.slice(0, maxDisplay);
+                              const remainingCount = allMembers.length - displayedMembers.length;
+                              
+                              return (
+                                <Tooltip 
+                                  title={
+                                    <Box sx={{ p: 1 }}>
+                                      <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
+                                        Team Members ({allMembers.length})
+                                      </Typography>
+                                      {allMembers.map((member, idx) => (
+                                        <Box key={member.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
+                                          <Box sx={{
+                                            width: 8,
+                                            height: 8,
+                                            borderRadius: '50%',
+                                            backgroundColor: member.isPending ? '#f57c00' : member.isCreator ? '#8b6cbc' : '#4caf50'
+                                          }} />
+                                          <Typography variant="caption">
+                                            {member.name} ({member.isPending ? 'Pending' : member.role})
+                                          </Typography>
+                                        </Box>
+                                      ))}
+                                    </Box>
+                                  }
+                                  arrow
+                                  placement="top"
+                                >
+                                  <Stack direction="row" spacing={-0.5} sx={{ alignItems: 'center', cursor: 'pointer' }}>
+                                    {displayedMembers.map((member, idx) => (
+                                      <Avatar
+                                        key={member.id}
+                                        sx={{
+                                          width: 28,
+                                          height: 28,
+                                          fontSize: '0.7rem',
+                                          backgroundColor: member.isPending ? '#e0e0e0' : member.isCreator ? '#8b6cbc' : '#7c9abd',
+                                          color: member.isPending ? '#999' : 'white',
+                                          border: '2px solid white',
+                                          fontWeight: 600,
+                                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                          zIndex: 10 - idx,
+                                          opacity: member.isPending ? 0.7 : 1,
+                                          position: 'relative',
+                                          ...(member.isPending && {
+                                            '&::after': {
+                                              content: '""',
+                                              position: 'absolute',
+                                              top: -2,
+                                              right: -2,
+                                              width: 8,
+                                              height: 8,
+                                              backgroundColor: '#f57c00',
+                                              borderRadius: '50%',
+                                              border: '1.5px solid white'
+                                            }
+                                          })
+                                        }}
+                                      >
+                                        {member.initials}
+                                      </Avatar>
+                                    ))}
+                                    
+                                    {/* Remaining count */}
+                                    {remainingCount > 0 && (
+                                      <Avatar
+                                        sx={{
+                                          width: 28,
+                                          height: 28,
+                                          fontSize: '0.7rem',
+                                          backgroundColor: '#f5f5f5',
+                                          color: '#666',
+                                          border: '2px solid white',
+                                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                          zIndex: 5,
+                                          fontWeight: 600
+                                        }}
+                                      >
+                                        +{remainingCount}
+                                      </Avatar>
+                                    )}
+                                  </Stack>
                                 </Tooltip>
-                              ))}
-                              
-                              {/* Pending Invitations */}
-                              {manuscript.pendingInvitationsList && manuscript.pendingInvitationsList.length > 0 ? (
-                                manuscript.pendingInvitationsList.slice(0, 1).map((invitation, idx) => (
-                                  <Tooltip key={`pending-${idx}`} title={`${invitation.givenName} ${invitation.familyName} - Invitation Pending`}>
-                                <Avatar
-                                  sx={{
-                                        width: 28,
-                                        height: 28,
-                                        fontSize: '0.7rem',
-                                    backgroundColor: '#e0e0e0',
-                                        color: '#999',
-                                        border: '2px solid white',
-                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                        opacity: 0.6,
-                                        position: 'relative',
-                                        fontWeight: 500,
-                                        zIndex: 8,
-                                        '&::after': {
-                                          content: '""',
-                                          position: 'absolute',
-                                          top: 2,
-                                          right: 2,
-                                          width: 6,
-                                          height: 6,
-                                          backgroundColor: '#f57c00',
-                                          borderRadius: '50%',
-                                    border: '1px solid white'
-                                        }
-                                  }}
-                                >
-                                      {invitation.givenName?.charAt(0)}{invitation.familyName?.charAt(0)}
-                                </Avatar>
-                                  </Tooltip>
-                                ))
-                              ) : (
-                                manuscript.pendingInvitations > 0 && (
-                                  <Tooltip title={`${manuscript.pendingInvitations} pending invitation${manuscript.pendingInvitations > 1 ? 's' : ''}`}>
-                                    <Avatar
-                                sx={{
-                                        width: 28,
-                                        height: 28,
-                                        fontSize: '0.7rem',
-                                        backgroundColor: '#e0e0e0',
-                                        color: '#999',
-                                        border: '2px solid white',
-                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                        opacity: 0.6,
-                                        position: 'relative',
-                                        zIndex: 8,
-                                        '&::after': {
-                                          content: '""',
-                                          position: 'absolute',
-                                          top: 2,
-                                          right: 2,
-                                          width: 6,
-                                          height: 6,
-                                          backgroundColor: '#f57c00',
-                                          borderRadius: '50%',
-                                          border: '1px solid white'
-                                        }
-                                      }}
-                                    >
-                                      <PendingIcon sx={{ fontSize: '0.8rem' }} />
-                                    </Avatar>
-                                  </Tooltip>
-                                )
-                              )}
-                              
-                              {/* Remaining count */}
-                              {(manuscript.collaborators.length + manuscript.pendingInvitations) > 3 && (
-                                <Avatar
-                                  sx={{
-                                    width: 28,
-                                    height: 28,
-                                    fontSize: '0.7rem',
-                                    backgroundColor: '#f5f5f5',
-                                    color: '#666',
-                                    border: '2px solid white',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                    zIndex: 7
-                                  }}
-                                >
-                                  +{(manuscript.collaborators.length + manuscript.pendingInvitations) - 3}
-                                </Avatar>
-                              )}
-                            </Stack>
+                              );
+                            })()}
                           </TableCell>
 
                           {/* Last Updated */}

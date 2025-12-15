@@ -381,6 +381,7 @@ export default function ManuscriptEditor() {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [collaborators, setCollaborators] = useState([]);
+  const [pendingInvitations, setPendingInvitations] = useState([]);
   const [comments, setComments] = useState([]);
   const [showComments, setShowComments] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState(null);
@@ -644,9 +645,26 @@ export default function ManuscriptEditor() {
             email: collab.user.email,
             role: collab.role,
             avatar: collab.user.givenName.charAt(0).toUpperCase(),
-            color: getAvatarColor(collab.user.id),
-            online: Math.random() > 0.5 // Mock online status for now
+            color: getAvatarColor(collab.user.id)
           })));
+          
+          // Fetch pending invitations
+          try {
+            const invitationsResponse = await fetch(`/api/manuscripts/invitations?manuscriptId=${manuscriptId}`);
+            const invitationsData = await invitationsResponse.json();
+            if (invitationsData.success && invitationsData.data) {
+              setPendingInvitations(invitationsData.data.filter(inv => inv.status === 'PENDING').map(inv => ({
+                id: inv.id,
+                name: `${inv.givenName || ''} ${inv.familyName || ''}`.trim(),
+                givenName: inv.givenName,
+                familyName: inv.familyName,
+                email: inv.email,
+                role: inv.role
+              })));
+            }
+          } catch (invError) {
+            console.error('Error fetching invitations:', invError);
+          }
           
           // Mock document structure for now
           setDocumentStructure([
@@ -1811,6 +1829,8 @@ export default function ManuscriptEditor() {
       <DocumentHeader 
         manuscript={manuscript}
         collaborators={collaborators || []}
+        pendingInvitations={pendingInvitations || []}
+        currentUserId={user?.id}
         onBack={() => router.back()}
         onInvite={handleInvite}
         loading={loading}
