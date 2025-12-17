@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -28,7 +28,13 @@ import {
   Stack,
   Divider,
   Button,
-  Badge
+  Badge,
+  Tabs,
+  Tab,
+  Fade,
+  Collapse,
+  ButtonGroup,
+  Skeleton
 } from '@mui/material';
 import {
   School as InstitutionIcon,
@@ -51,7 +57,13 @@ import {
   Cancel as RejectedIcon,
   Visibility as ViewIcon,
   Edit as EditIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  OpenInNew as OpenInNewIcon,
+  MoreVert as MoreVertIcon,
+  AccessTime as AccessTimeIcon,
+  ArrowForward as ArrowForwardIcon,
+  Article as ArticleIcon,
+  Folder as FolderIcon
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
 
@@ -62,6 +74,18 @@ const InstitutionDashboard = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('overview');
+  
+  // Recent Activity state
+  const [activityFilter, setActivityFilter] = useState('all');
+  const [activitySearchTerm, setActivitySearchTerm] = useState('');
+  const [showAllActivities, setShowAllActivities] = useState(false);
+  const [hoveredActivityId, setHoveredActivityId] = useState(null);
+  
+  // Top Researchers state
+  const [researcherSearchTerm, setResearcherSearchTerm] = useState('');
+  const [showAllResearchers, setShowAllResearchers] = useState(false);
+  const [sortBy, setSortBy] = useState('totalOutput'); // totalOutput, manuscripts, proposals, publications
+  const [sortOrder, setSortOrder] = useState('desc');
 
   // Load analytics data
   useEffect(() => {
@@ -124,6 +148,148 @@ const InstitutionDashboard = () => {
 
   const handleExport = () => {
     console.log('Export institutional data');
+  };
+
+  // Format relative time (e.g., "2 hours ago", "3 days ago")
+  const getRelativeTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 604800)} weeks ago`;
+    return formatDate(dateString);
+  };
+
+  // Filter and search activities
+  const filteredActivities = useMemo(() => {
+    if (!analyticsData?.recentActivity) return [];
+    
+    let activities = [...analyticsData.recentActivity];
+    
+    // Filter by type
+    if (activityFilter !== 'all') {
+      activities = activities.filter(a => a.type === activityFilter);
+    }
+    
+    // Filter by search term
+    if (activitySearchTerm.trim()) {
+      const searchLower = activitySearchTerm.toLowerCase();
+      activities = activities.filter(a => 
+        a.title?.toLowerCase().includes(searchLower) ||
+        a.author?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return activities;
+  }, [analyticsData?.recentActivity, activityFilter, activitySearchTerm]);
+
+  // Get display activities (limited or all)
+  const displayActivities = showAllActivities 
+    ? filteredActivities 
+    : filteredActivities.slice(0, 5);
+
+  // Navigate to activity detail
+  const handleActivityClick = (activity) => {
+    if (activity.type === 'manuscript') {
+      router.push(`/researcher/manuscripts/${activity.id}`);
+    } else {
+      router.push(`/researcher/proposals/${activity.id}`);
+    }
+  };
+
+  // Get activity type configuration
+  const getActivityTypeConfig = (type) => {
+    if (type === 'manuscript') {
+      return {
+        icon: <ArticleIcon />,
+        color: '#8b6cbc',
+        bgColor: alpha('#8b6cbc', 0.1),
+        label: 'Manuscript'
+      };
+    }
+    return {
+      icon: <FolderIcon />,
+      color: '#e67e22',
+      bgColor: alpha('#e67e22', 0.1),
+      label: 'Proposal'
+    };
+  };
+
+  // Get counts for filter badges
+  const getActivityCounts = () => {
+    if (!analyticsData?.recentActivity) return { all: 0, manuscript: 0, proposal: 0 };
+    const activities = analyticsData.recentActivity;
+    return {
+      all: activities.length,
+      manuscript: activities.filter(a => a.type === 'manuscript').length,
+      proposal: activities.filter(a => a.type === 'proposal').length
+    };
+  };
+
+  // Filter and sort researchers
+  const filteredResearchers = useMemo(() => {
+    if (!analyticsData?.topResearchers) return [];
+    
+    let researchers = [...analyticsData.topResearchers];
+    
+    // Filter by search term
+    if (researcherSearchTerm.trim()) {
+      const searchLower = researcherSearchTerm.toLowerCase();
+      researchers = researchers.filter(r => 
+        r.name?.toLowerCase().includes(searchLower) ||
+        r.department?.toLowerCase().includes(searchLower) ||
+        r.email?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Sort researchers
+    researchers.sort((a, b) => {
+      let valueA, valueB;
+      switch (sortBy) {
+        case 'manuscriptCount':
+          valueA = a.manuscriptCount || 0;
+          valueB = b.manuscriptCount || 0;
+          break;
+        case 'proposalCount':
+          valueA = a.proposalCount || 0;
+          valueB = b.proposalCount || 0;
+          break;
+        case 'publicationCount':
+          valueA = a.publicationCount || 0;
+          valueB = b.publicationCount || 0;
+          break;
+        default:
+          valueA = a.totalOutput || 0;
+          valueB = b.totalOutput || 0;
+      }
+      return sortOrder === 'desc' ? valueB - valueA : valueA - valueB;
+    });
+    
+    return researchers;
+  }, [analyticsData?.topResearchers, researcherSearchTerm, sortBy, sortOrder]);
+
+  // Get display researchers (limited or all)
+  const displayResearchers = showAllResearchers 
+    ? filteredResearchers 
+    : filteredResearchers.slice(0, 5);
+
+  // Handle sort change
+  const handleSortChange = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
+  };
+
+  // Navigate to researcher profile (institution view)
+  const handleResearcherClick = (researcher) => {
+    router.push(`/institution/researcher/${researcher.id}`);
   };
 
   if (loading) {
@@ -601,144 +767,708 @@ const InstitutionDashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Top Researchers */}
-          <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
-            <CardContent sx={{ p: 4 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Top Researchers
-                </Typography>
-                <TextField
-                  size="small"
-                  placeholder="Search researchers..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ width: 200 }}
-                />
-              </Stack>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Most productive researchers by total output
-              </Typography>
+          {/* Enhanced Top Researchers */}
+          <Card sx={{ 
+            borderRadius: 3, 
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            overflow: 'hidden',
+            border: '1px solid',
+            borderColor: alpha('#8b6cbc', 0.1)
+          }}>
+            <CardContent sx={{ p: 0 }}>
+              {/* Header */}
+              <Box sx={{ 
+                p: 3, 
+                pb: 2,
+                background: `linear-gradient(135deg, ${alpha('#8b6cbc', 0.03)} 0%, ${alpha('#a084d1', 0.05)} 100%)`,
+                borderBottom: '1px solid',
+                borderColor: 'divider'
+              }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2}>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2d3748' }}>
+                      Top Researchers
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Most productive researchers by total output
+                    </Typography>
+                  </Box>
+                  <TextField
+                    size="small"
+                    placeholder="Search by name or department..."
+                    value={researcherSearchTerm}
+                    onChange={(e) => setResearcherSearchTerm(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{ 
+                      width: { xs: '100%', sm: 240 },
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        backgroundColor: 'white',
+                        fontSize: '0.875rem',
+                        '&:hover fieldset': { borderColor: '#8b6cbc' },
+                        '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
+                      }
+                    }}
+                  />
+                </Stack>
+              </Box>
 
-              <TableContainer sx={{ maxHeight: 400 }}>
-                <Table stickyHeader>
+              {/* Table */}
+              <TableContainer sx={{ maxHeight: showAllResearchers ? 600 : 380 }}>
+                <Table stickyHeader size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 600 }}>Researcher</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Output</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Breakdown</TableCell>
+                      <TableCell 
+                        sx={{ 
+                          fontWeight: 600, 
+                          backgroundColor: '#fafafa',
+                          borderBottom: '2px solid',
+                          borderColor: 'divider',
+                          py: 1.5,
+                          width: '35%'
+                        }}
+                      >
+                        Researcher
+                      </TableCell>
+                      <TableCell 
+                        onClick={() => handleSortChange('totalOutput')}
+                        sx={{ 
+                          fontWeight: 600, 
+                          backgroundColor: '#fafafa',
+                          borderBottom: '2px solid',
+                          borderColor: 'divider',
+                          py: 1.5,
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                          '&:hover': { backgroundColor: alpha('#8b6cbc', 0.05) },
+                          transition: 'background-color 0.2s ease'
+                        }}
+                      >
+                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                          <span>Total</span>
+                          {sortBy === 'totalOutput' && (
+                            <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>
+                              {sortOrder === 'desc' ? '↓' : '↑'}
+                            </span>
+                          )}
+                        </Stack>
+                      </TableCell>
+                      <TableCell 
+                        onClick={() => handleSortChange('manuscriptCount')}
+                        sx={{ 
+                          fontWeight: 600, 
+                          backgroundColor: '#fafafa',
+                          borderBottom: '2px solid',
+                          borderColor: 'divider',
+                          py: 1.5,
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                          '&:hover': { backgroundColor: alpha('#8b6cbc', 0.05) },
+                          transition: 'background-color 0.2s ease'
+                        }}
+                      >
+                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                          <span>Manuscripts</span>
+                          {sortBy === 'manuscriptCount' && (
+                            <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>
+                              {sortOrder === 'desc' ? '↓' : '↑'}
+                            </span>
+                          )}
+                        </Stack>
+                      </TableCell>
+                      <TableCell 
+                        onClick={() => handleSortChange('proposalCount')}
+                        sx={{ 
+                          fontWeight: 600, 
+                          backgroundColor: '#fafafa',
+                          borderBottom: '2px solid',
+                          borderColor: 'divider',
+                          py: 1.5,
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                          '&:hover': { backgroundColor: alpha('#8b6cbc', 0.05) },
+                          transition: 'background-color 0.2s ease'
+                        }}
+                      >
+                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                          <span>Proposals</span>
+                          {sortBy === 'proposalCount' && (
+                            <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>
+                              {sortOrder === 'desc' ? '↓' : '↑'}
+                            </span>
+                          )}
+                        </Stack>
+                      </TableCell>
+                      <TableCell 
+                        onClick={() => handleSortChange('publicationCount')}
+                        sx={{ 
+                          fontWeight: 600, 
+                          backgroundColor: '#fafafa',
+                          borderBottom: '2px solid',
+                          borderColor: 'divider',
+                          py: 1.5,
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                          '&:hover': { backgroundColor: alpha('#8b6cbc', 0.05) },
+                          transition: 'background-color 0.2s ease'
+                        }}
+                      >
+                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                          <span>Publications</span>
+                          {sortBy === 'publicationCount' && (
+                            <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>
+                              {sortOrder === 'desc' ? '↓' : '↑'}
+                            </span>
+                          )}
+                        </Stack>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {analyticsData.topResearchers
-                      .filter(researcher => 
-                        searchTerm === '' || 
-                        researcher.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        researcher.department?.toLowerCase().includes(searchTerm.toLowerCase())
-                      )
-                      .slice(0, 10)
-                      .map((researcher) => (
-                      <TableRow key={researcher.id} hover>
-                        <TableCell>
-                          <Stack direction="row" alignItems="center" spacing={2}>
-                            <Avatar sx={{ 
-                              bgcolor: '#8b6cbc', 
-                              width: 32, 
-                              height: 32,
-                              fontSize: '0.875rem'
-                            }}>
-                              {researcher.name?.charAt(0) || 'U'}
-                            </Avatar>
+                    {filteredResearchers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} sx={{ py: 6, textAlign: 'center' }}>
+                          <Typography variant="body2" color="text.secondary">
+                            {researcherSearchTerm 
+                              ? `No researchers found matching "${researcherSearchTerm}"`
+                              : 'No researchers to display'
+                            }
+                          </Typography>
+                          {researcherSearchTerm && (
+                            <Button 
+                              variant="text" 
+                              size="small"
+                              onClick={() => setResearcherSearchTerm('')}
+                              sx={{ mt: 1, color: '#8b6cbc', textTransform: 'none' }}
+                            >
+                              Clear search
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      displayResearchers.map((researcher, index) => (
+                        <TableRow 
+                          key={researcher.id} 
+                          onClick={() => handleResearcherClick(researcher)}
+                          sx={{ 
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            '&:hover': { 
+                              backgroundColor: alpha('#8b6cbc', 0.04)
+                            },
+                            '&:active': {
+                              backgroundColor: alpha('#8b6cbc', 0.08)
+                            },
+                            '& td': {
+                              borderBottom: index === displayResearchers.length - 1 && !showAllResearchers && filteredResearchers.length > 5 
+                                ? 'none' 
+                                : undefined
+                            }
+                          }}
+                        >
+                          <TableCell sx={{ py: 2 }}>
                             <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                  fontWeight: 600,
+                                  color: '#2d3748',
+                                  '&:hover': { color: '#8b6cbc' },
+                                  transition: 'color 0.15s ease'
+                                }}
+                              >
                                 {researcher.name || 'Unknown'}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
                                 {researcher.department || 'No Department'}
                               </Typography>
                             </Box>
-                          </Stack>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="h6" sx={{ fontWeight: 600, color: '#8b6cbc' }}>
-                            {researcher.totalOutput}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Stack spacing={0.5}>
-                            <Typography variant="caption">
-                              {researcher.manuscriptCount} manuscripts
+                          </TableCell>
+                          <TableCell sx={{ py: 2 }}>
+                            <Typography 
+                              variant="body2" 
+                              sx={{ 
+                                fontWeight: 700, 
+                                color: '#8b6cbc',
+                                fontSize: '1rem'
+                              }}
+                            >
+                              {researcher.totalOutput}
                             </Typography>
-                            <Typography variant="caption">
-                              {researcher.proposalCount} proposals
+                          </TableCell>
+                          <TableCell sx={{ py: 2 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500, color: '#4a5568' }}>
+                              {researcher.manuscriptCount}
                             </Typography>
-                            <Typography variant="caption">
-                              {researcher.publicationCount} publications
+                          </TableCell>
+                          <TableCell sx={{ py: 2 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500, color: '#4a5568' }}>
+                              {researcher.proposalCount}
                             </Typography>
-                          </Stack>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell sx={{ py: 2 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500, color: '#4a5568' }}>
+                              {researcher.publicationCount}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
-              </CardContent>
-            </Card>
+
+              {/* View More / View Less */}
+              {filteredResearchers.length > 5 && (
+                <Box sx={{ 
+                  p: 2, 
+                  textAlign: 'center',
+                  borderTop: '1px dashed',
+                  borderColor: 'divider',
+                  backgroundColor: alpha('#8b6cbc', 0.02)
+                }}>
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={() => setShowAllResearchers(!showAllResearchers)}
+                    sx={{
+                      color: '#8b6cbc',
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      '&:hover': {
+                        backgroundColor: alpha('#8b6cbc', 0.08)
+                      }
+                    }}
+                  >
+                    {showAllResearchers 
+                      ? 'Show Less' 
+                      : `View All ${filteredResearchers.length} Researchers`
+                    }
+                  </Button>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
         </Box>
 
-        {/* Recent Activity */}
-        <Card sx={{ borderRadius: 3, boxShadow: 2, mt: 4 }}>
-          <CardContent sx={{ p: 4 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+        {/* Enhanced Recent Activity Section */}
+        <Card sx={{ 
+          borderRadius: 3, 
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)', 
+          mt: 4,
+          overflow: 'hidden',
+          border: '1px solid',
+          borderColor: alpha('#8b6cbc', 0.1)
+        }}>
+          <CardContent sx={{ p: 0 }}>
+            {/* Header Section */}
+            <Box sx={{ 
+              p: 3, 
+              pb: 2,
+              background: `linear-gradient(135deg, ${alpha('#8b6cbc', 0.03)} 0%, ${alpha('#a084d1', 0.05)} 100%)`,
+              borderBottom: '1px solid',
+              borderColor: 'divider'
+            }}>
+              <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={2}>
+                <Box>
+                  <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <Box sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 2,
+                      background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
+                    }}>
+                      <AccessTimeIcon sx={{ color: 'white', fontSize: 22 }} />
+                    </Box>
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#2d3748' }}>
               Recent Research Activity
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                      <Typography variant="body2" color="text.secondary">
               Latest manuscripts, proposals, and research updates
             </Typography>
+                    </Box>
+                  </Stack>
+                </Box>
+                
+                {/* Search and Filter Controls */}
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <TextField
+                    size="small"
+                    placeholder="Search activities..."
+                    value={activitySearchTerm}
+                    onChange={(e) => setActivitySearchTerm(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{ 
+                      width: { xs: '100%', sm: 220 },
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        backgroundColor: 'white',
+                        '&:hover': {
+                          '& fieldset': { borderColor: '#8b6cbc' }
+                        },
+                        '&.Mui-focused': {
+                          '& fieldset': { borderColor: '#8b6cbc' }
+                        }
+                      }
+                    }}
+                  />
+                </Stack>
+              </Stack>
+              
+              {/* Filter Tabs */}
+              <Box sx={{ mt: 2 }}>
+                <ButtonGroup 
+                  variant="outlined" 
+                  size="small"
+                  sx={{
+                    '& .MuiButton-root': {
+                      textTransform: 'none',
+                      px: 2,
+                      py: 0.75,
+                      borderColor: alpha('#8b6cbc', 0.3),
+                      color: 'text.secondary',
+                      '&:hover': {
+                        borderColor: '#8b6cbc',
+                        backgroundColor: alpha('#8b6cbc', 0.05)
+                      }
+                    }
+                  }}
+                >
+                  <Button
+                    onClick={() => setActivityFilter('all')}
+                    sx={{
+                      ...(activityFilter === 'all' && {
+                        backgroundColor: '#8b6cbc',
+                        color: 'white',
+                        borderColor: '#8b6cbc',
+                        '&:hover': {
+                          backgroundColor: '#7b5cac',
+                          borderColor: '#7b5cac'
+                        }
+                      })
+                    }}
+                  >
+                    All
+                    <Chip 
+                      label={getActivityCounts().all} 
+                      size="small" 
+                      sx={{ 
+                        ml: 1, 
+                        height: 20, 
+                        fontSize: '0.7rem',
+                        backgroundColor: activityFilter === 'all' ? 'rgba(255,255,255,0.2)' : alpha('#8b6cbc', 0.1),
+                        color: activityFilter === 'all' ? 'white' : '#8b6cbc'
+                      }} 
+                    />
+                  </Button>
+                  <Button
+                    onClick={() => setActivityFilter('manuscript')}
+                    startIcon={<ArticleIcon sx={{ fontSize: 18 }} />}
+                    sx={{
+                      ...(activityFilter === 'manuscript' && {
+                        backgroundColor: '#8b6cbc',
+                        color: 'white',
+                        borderColor: '#8b6cbc',
+                        '&:hover': {
+                          backgroundColor: '#7b5cac',
+                          borderColor: '#7b5cac'
+                        }
+                      })
+                    }}
+                  >
+                    Manuscripts
+                    <Chip 
+                      label={getActivityCounts().manuscript} 
+                      size="small" 
+                      sx={{ 
+                        ml: 1, 
+                        height: 20, 
+                        fontSize: '0.7rem',
+                        backgroundColor: activityFilter === 'manuscript' ? 'rgba(255,255,255,0.2)' : alpha('#8b6cbc', 0.1),
+                        color: activityFilter === 'manuscript' ? 'white' : '#8b6cbc'
+                      }} 
+                    />
+                  </Button>
+                  <Button
+                    onClick={() => setActivityFilter('proposal')}
+                    startIcon={<FolderIcon sx={{ fontSize: 18 }} />}
+                    sx={{
+                      ...(activityFilter === 'proposal' && {
+                        backgroundColor: '#8b6cbc',
+                        color: 'white',
+                        borderColor: '#8b6cbc',
+                        '&:hover': {
+                          backgroundColor: '#7b5cac',
+                          borderColor: '#7b5cac'
+                        }
+                      })
+                    }}
+                  >
+                    Proposals
+                    <Chip 
+                      label={getActivityCounts().proposal} 
+                      size="small" 
+                      sx={{ 
+                        ml: 1, 
+                        height: 20, 
+                        fontSize: '0.7rem',
+                        backgroundColor: activityFilter === 'proposal' ? 'rgba(255,255,255,0.2)' : alpha('#e67e22', 0.1),
+                        color: activityFilter === 'proposal' ? 'white' : '#e67e22'
+                      }} 
+                    />
+                  </Button>
+                </ButtonGroup>
+              </Box>
+            </Box>
 
+            {/* Activity List */}
+            <Box sx={{ p: 3 }}>
+              {filteredActivities.length === 0 ? (
             <Box sx={{ 
+                  textAlign: 'center', 
+                  py: 6,
+                  px: 3,
+                  backgroundColor: alpha('#8b6cbc', 0.02),
+                  borderRadius: 2
+                }}>
+                  <Box sx={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: '50%',
+                    backgroundColor: alpha('#8b6cbc', 0.1),
               display: 'flex', 
-              flexDirection: 'column', 
-              gap: 2
-            }}>
-              {analyticsData.recentActivity.slice(0, 8).map((activity, index) => (
-                <Paper key={`${activity.type}-${activity.id}`} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mx: 'auto',
+                    mb: 2
+                  }}>
+                    <SearchIcon sx={{ fontSize: 32, color: '#8b6cbc' }} />
+                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748', mb: 1 }}>
+                    No activities found
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {activitySearchTerm 
+                      ? `No results for "${activitySearchTerm}". Try a different search term.`
+                      : `No ${activityFilter === 'all' ? '' : activityFilter + ' '}activities to display yet.`
+                    }
+                  </Typography>
+                  {activitySearchTerm && (
+                    <Button 
+                      variant="text" 
+                      onClick={() => setActivitySearchTerm('')}
+                      sx={{ mt: 2, color: '#8b6cbc' }}
+                    >
+                      Clear search
+                    </Button>
+                  )}
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {displayActivities.map((activity, index) => {
+                    const typeConfig = getActivityTypeConfig(activity.type);
+                    const isHovered = hoveredActivityId === `${activity.type}-${activity.id}`;
+                    
+                    return (
+                      <Fade in={true} timeout={300 + index * 100} key={`${activity.type}-${activity.id}`}>
+                        <Paper 
+                          onClick={() => handleActivityClick(activity)}
+                          onMouseEnter={() => setHoveredActivityId(`${activity.type}-${activity.id}`)}
+                          onMouseLeave={() => setHoveredActivityId(null)}
+                          sx={{ 
+                            p: 2.5, 
+                            borderRadius: 2.5, 
+                            border: '1px solid',
+                            borderColor: isHovered ? alpha(typeConfig.color, 0.3) : 'divider',
+                            cursor: 'pointer',
+                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                            backgroundColor: isHovered ? alpha(typeConfig.color, 0.02) : 'transparent',
+                            transform: isHovered ? 'translateX(4px)' : 'translateX(0)',
+                            boxShadow: isHovered ? `0 4px 12px ${alpha(typeConfig.color, 0.15)}` : 'none',
+                            '&:active': {
+                              transform: 'translateX(2px) scale(0.995)'
+                            }
+                          }}
+                        >
                   <Stack direction="row" alignItems="center" spacing={2}>
+                            {/* Activity Type Icon */}
+                            <Box sx={{
+                              position: 'relative'
+                            }}>
                     <Avatar sx={{ 
-                      bgcolor: activity.type === 'manuscript' ? '#8b6cbc' : '#a084d1',
-                      width: 40,
-                      height: 40
+                                bgcolor: typeConfig.bgColor,
+                                color: typeConfig.color,
+                                width: 48,
+                                height: 48,
+                                transition: 'all 0.25s ease',
+                                transform: isHovered ? 'scale(1.05)' : 'scale(1)'
                     }}>
-                      {activity.type === 'manuscript' ? <ManuscriptIcon /> : <ProposalIcon />}
+                                {typeConfig.icon}
                     </Avatar>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                              {/* Activity type indicator dot */}
+                              <Box sx={{
+                                position: 'absolute',
+                                bottom: 0,
+                                right: 0,
+                                width: 14,
+                                height: 14,
+                                borderRadius: '50%',
+                                backgroundColor: typeConfig.color,
+                                border: '2px solid white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}>
+                                {activity.type === 'manuscript' ? (
+                                  <ManuscriptIcon sx={{ fontSize: 8, color: 'white' }} />
+                                ) : (
+                                  <ProposalIcon sx={{ fontSize: 8, color: 'white' }} />
+                                )}
+                              </Box>
+                            </Box>
+                            
+                            {/* Activity Content */}
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+                                <Typography 
+                                  variant="subtitle1" 
+                                  sx={{ 
+                                    fontWeight: 600,
+                                    color: '#2d3748',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    transition: 'color 0.2s ease',
+                                    ...(isHovered && { color: typeConfig.color })
+                                  }}
+                                >
                         {activity.title}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {activity.type === 'manuscript' ? 'Manuscript' : 'Proposal'} by {activity.author}
+                              </Stack>
+                              <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap">
+                                <Chip
+                                  label={typeConfig.label}
+                                  size="small"
+                                  sx={{
+                                    height: 22,
+                                    fontSize: '0.7rem',
+                                    fontWeight: 600,
+                                    backgroundColor: typeConfig.bgColor,
+                                    color: typeConfig.color,
+                                    border: 'none'
+                                  }}
+                                />
+                                <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                                  by <Box component="span" sx={{ fontWeight: 500, ml: 0.5, color: '#4a5568' }}>{activity.author}</Box>
                       </Typography>
+                              </Stack>
                     </Box>
-                    <Stack alignItems="flex-end" spacing={1}>
+                            
+                            {/* Right Section: Status & Time */}
+                            <Stack alignItems="flex-end" spacing={1} sx={{ flexShrink: 0 }}>
                       <Chip
                         label={activity.status.replace('_', ' ')}
                         color={getStatusColor(activity.status)}
                         size="small"
-                      />
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDate(activity.createdAt)}
+                                sx={{
+                                  fontWeight: 500,
+                                  textTransform: 'capitalize'
+                                }}
+                              />
+                              <Stack direction="row" alignItems="center" spacing={0.5}>
+                                <AccessTimeIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                                  {getRelativeTime(activity.createdAt)}
                 </Typography>
+                              </Stack>
+                            </Stack>
+                            
+                            {/* Action Buttons */}
+                            <Stack direction="row" spacing={0.5} sx={{ 
+                              opacity: isHovered ? 1 : 0,
+                              transition: 'opacity 0.2s ease',
+                              ml: 1
+                            }}>
+                              <Tooltip title="View Details" arrow>
+                                <IconButton 
+                                  size="small" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleActivityClick(activity);
+                                  }}
+                                  sx={{ 
+                                    color: typeConfig.color,
+                                    backgroundColor: alpha(typeConfig.color, 0.1),
+                                    '&:hover': {
+                                      backgroundColor: alpha(typeConfig.color, 0.2)
+                                    }
+                                  }}
+                                >
+                                  <OpenInNewIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
                     </Stack>
                   </Stack>
                 </Paper>
-              ))}
+                      </Fade>
+                    );
+                  })}
+                </Box>
+              )}
+              
+              {/* View More / View Less Button */}
+              {filteredActivities.length > 5 && (
+                <Box sx={{ 
+                  mt: 3, 
+                  textAlign: 'center',
+                  pt: 2,
+                  borderTop: '1px dashed',
+                  borderColor: 'divider'
+                }}>
+                  <Button
+                    variant="text"
+                    onClick={() => setShowAllActivities(!showAllActivities)}
+                    endIcon={<ArrowForwardIcon sx={{ 
+                      transform: showAllActivities ? 'rotate(-90deg)' : 'rotate(90deg)',
+                      transition: 'transform 0.2s ease'
+                    }} />}
+                    sx={{
+                      color: '#8b6cbc',
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      px: 3,
+                      py: 1,
+                      borderRadius: 2,
+                      '&:hover': {
+                        backgroundColor: alpha('#8b6cbc', 0.08)
+                      }
+                    }}
+                  >
+                    {showAllActivities 
+                      ? 'Show Less' 
+                      : `View All ${filteredActivities.length} Activities`
+                    }
+                  </Button>
+                </Box>
+              )}
             </Box>
               </CardContent>
             </Card>

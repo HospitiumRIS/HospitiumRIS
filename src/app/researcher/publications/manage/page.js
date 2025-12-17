@@ -511,6 +511,15 @@ export default function ManagePublications() {
     return publications.filter(pub => pubIds.includes(pub.id));
   };
 
+  // Get folders that contain a specific publication
+  const getFoldersForPublication = (publicationId) => {
+    const folderIds = Object.entries(folderPublications)
+      .filter(([folderId, pubIds]) => pubIds.includes(publicationId))
+      .map(([folderId]) => folderId);
+    
+    return folders.filter(f => folderIds.includes(f.id));
+  };
+
   // Open library dialog in browse mode
   const handleOpenLibraryBrowser = () => {
     setSelectedPublication(null);
@@ -1196,6 +1205,8 @@ export default function ManagePublications() {
             <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Date</TableCell>
             <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Status</TableCell>
             <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Type</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Library</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Source</TableCell>
             <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2, textAlign: 'center' }}>Actions</TableCell>
           </TableRow>
         </TableHead>
@@ -1296,6 +1307,78 @@ export default function ManagePublications() {
                 </Typography>
               </TableCell>
 
+              {/* Library */}
+              <TableCell sx={{ py: 2 }}>
+                {(() => {
+                  const pubFolders = getFoldersForPublication(publication.id);
+                  if (pubFolders.length === 0) {
+                    return (
+                      <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                        —
+                      </Typography>
+                    );
+                  }
+                  return (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {pubFolders.slice(0, 2).map(folder => (
+                        <Chip
+                          key={folder.id}
+                          label={folder.name}
+                          size="small"
+                          icon={<FolderIcon sx={{ fontSize: '14px !important' }} />}
+                          sx={{
+                            height: 24,
+                            fontSize: '0.75rem',
+                            bgcolor: '#f3e5f5',
+                            color: '#8b6cbc',
+                            '& .MuiChip-icon': { color: '#8b6cbc', ml: 0.5 },
+                            '& .MuiChip-label': { px: 0.75 }
+                          }}
+                        />
+                      ))}
+                      {pubFolders.length > 2 && (
+                        <Tooltip title={pubFolders.slice(2).map(f => f.name).join(', ')}>
+                          <Chip
+                            label={`+${pubFolders.length - 2}`}
+                            size="small"
+                            sx={{
+                              height: 24,
+                              fontSize: '0.75rem',
+                              bgcolor: '#e0e0e0',
+                              color: '#666',
+                              '& .MuiChip-label': { px: 0.75 }
+                            }}
+                          />
+                        </Tooltip>
+                      )}
+                    </Box>
+                  );
+                })()}
+              </TableCell>
+
+              {/* Source / Imported From */}
+              <TableCell sx={{ py: 2 }}>
+                {publication.source ? (
+                  <Tooltip title={`Imported from ${publication.source}`} arrow>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 0.75,
+                      cursor: 'default'
+                    }}>
+                      {getSourceIcon(publication.source)}
+                      <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                        {publication.source}
+                      </Typography>
+                    </Box>
+                  </Tooltip>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                    —
+                  </Typography>
+                )}
+              </TableCell>
+
               {/* Actions */}
               <TableCell sx={{ py: 2, textAlign: 'center' }}>
                 <Box sx={{ 
@@ -1315,17 +1398,6 @@ export default function ManagePublications() {
                       }}
                     >
                       <ViewIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Edit Publication" arrow>
-                    <IconButton 
-                      size="small" 
-                      sx={{ 
-                        color: '#666',
-                        '&:hover': { bgcolor: '#66666610' }
-                      }}
-                    >
-                      <EditIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Add to Library" arrow>
@@ -1598,6 +1670,9 @@ export default function ManagePublications() {
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
                   label="Publication Type"
+                  MenuProps={{
+                    disableScrollLock: true
+                  }}
                   sx={{
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                       borderColor: '#8b6cbc',
@@ -1620,6 +1695,9 @@ export default function ManagePublications() {
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   label="Sort By"
+                  MenuProps={{
+                    disableScrollLock: true
+                  }}
                   sx={{
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                       borderColor: '#8b6cbc',
