@@ -1412,17 +1412,6 @@ export default function ManagePublications() {
                       <LibraryAddIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Download Citation" arrow>
-                    <IconButton 
-                      size="small"
-                      sx={{ 
-                        color: '#666',
-                        '&:hover': { bgcolor: '#66666610' }
-                      }}
-                    >
-                      <DownloadIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
                   <Tooltip title="Delete" arrow>
                     <IconButton 
                       size="small"

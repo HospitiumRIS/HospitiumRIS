@@ -320,6 +320,7 @@ const ImportPublications = ({ onImport }) => {
           onClose={handleCloseModal}
           maxWidth="md"
           fullWidth
+          disableScrollLock={true}
         >
           <DialogTitle sx={{ 
             display: 'flex', 

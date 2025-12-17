@@ -18,7 +18,9 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    const { manuscriptId, collaboratorId } = params;
+    // In Next.js 15+, params is a Promise
+    const resolvedParams = await params;
+    const { manuscriptId, collaboratorId } = resolvedParams;
     const updateData = await request.json();
 
     if (!manuscriptId || !collaboratorId) {
@@ -165,7 +167,9 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const { manuscriptId, collaboratorId } = params;
+    // In Next.js 15+, params is a Promise
+    const resolvedParams = await params;
+    const { manuscriptId, collaboratorId } = resolvedParams;
 
     if (!manuscriptId || !collaboratorId) {
       return NextResponse.json(

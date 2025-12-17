@@ -18,7 +18,9 @@ export async function GET(request, { params }) {
       );
     }
 
-    const { manuscriptId } = params;
+    // In Next.js 15+, params is a Promise
+    const resolvedParams = await params;
+    const { manuscriptId } = resolvedParams;
 
     if (!manuscriptId) {
       return NextResponse.json(
@@ -27,7 +29,7 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Verify user has permission to view collaborators
+    // Verify user has permission to view collaborators and get manuscript with creator
     const manuscript = await prisma.manuscript.findFirst({
       where: {
         id: manuscriptId,
@@ -41,6 +43,18 @@ export async function GET(request, { params }) {
             }
           }
         ]
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            givenName: true,
+            familyName: true,
+            email: true,
+            orcidId: true,
+            primaryInstitution: true
+          }
+        }
       }
     });
 
@@ -51,8 +65,8 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Get current collaborators
-    const collaborators = await prisma.manuscriptCollaborator.findMany({
+    // Get current collaborators from the collaborators table
+    const collaboratorsFromTable = await prisma.manuscriptCollaborator.findMany({
       where: {
         manuscriptId
       },
@@ -79,6 +93,31 @@ export async function GET(request, { params }) {
         joinedAt: 'asc'
       }
     });
+
+    // Check if creator is already in the collaborators list
+    const creatorInCollaborators = collaboratorsFromTable.some(
+      c => c.userId === manuscript.createdBy
+    );
+
+    // Build the final collaborators list, adding creator as owner if not already present
+    let collaborators = [...collaboratorsFromTable];
+    
+    if (!creatorInCollaborators && manuscript.creator) {
+      // Add creator as the first member (owner)
+      collaborators.unshift({
+        id: `creator-${manuscript.createdBy}`,
+        manuscriptId,
+        userId: manuscript.createdBy,
+        role: 'OWNER',
+        canEdit: true,
+        canInvite: true,
+        canDelete: true,
+        joinedAt: manuscript.createdAt,
+        user: manuscript.creator,
+        inviter: null,
+        isCreator: true
+      });
+    }
 
     // Get pending invitations
     const pendingInvitations = await prisma.manuscriptInvitation.findMany({

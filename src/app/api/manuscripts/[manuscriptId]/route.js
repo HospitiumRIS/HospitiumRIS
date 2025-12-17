@@ -18,7 +18,9 @@ export async function GET(request, { params }) {
       );
     }
 
-    const { manuscriptId } = params;
+    // In Next.js 15+, params is a Promise
+    const resolvedParams = await params;
+    const { manuscriptId } = resolvedParams;
 
     if (!manuscriptId) {
       return NextResponse.json(
@@ -128,7 +130,9 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    const { manuscriptId } = params;
+    // In Next.js 15+, params is a Promise
+    const resolvedParams = await params;
+    const { manuscriptId } = resolvedParams;
 
     if (!manuscriptId) {
       return NextResponse.json(
@@ -245,7 +249,9 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const { manuscriptId } = params;
+    // In Next.js 15+, params is a Promise
+    const resolvedParams = await params;
+    const { manuscriptId } = resolvedParams;
 
     if (!manuscriptId) {
       return NextResponse.json(

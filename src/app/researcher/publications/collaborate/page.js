@@ -301,6 +301,10 @@ export default function CollaborativeWriting() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [manuscriptToDelete, setManuscriptToDelete] = useState(null);
 
+  // View dialog state
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewingManuscript, setViewingManuscript] = useState(null);
+
   // Snackbar notifications
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -1211,6 +1215,11 @@ export default function CollaborativeWriting() {
     handleMenuClose();
   };
 
+  const handleViewManuscript = (manuscript) => {
+    setViewingManuscript(manuscript);
+    setViewDialogOpen(true);
+  };
+
 
   // Enhanced Manuscript Card Component
   const ManuscriptCardComponent = ({ manuscript }) => {
@@ -2076,25 +2085,20 @@ export default function CollaborativeWriting() {
               <TableContainer>
                 <Table>
                   <TableHead>
-                    <TableRow sx={{ 
-                      background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)',
-                      '& .MuiTableCell-root': {
-                        borderBottom: 'none'
-                      }
-                    }}>
-                      <TableCell sx={{ fontWeight: 600, color: 'white', py: 2.5, fontSize: '0.875rem' }}>
-                        Manuscript Details
+                    <TableRow sx={{ bgcolor: '#8b6cbc' }}>
+                      <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>
+                        Title
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'white', py: 2.5, fontSize: '0.875rem' }}>
-                        Status & Type
+                      <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>
+                        Status
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'white', py: 2.5, fontSize: '0.875rem' }}>
+                      <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>
                         Team
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'white', py: 2.5, fontSize: '0.875rem' }}>
+                      <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>
                         Last Updated
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: 'white', py: 2.5, fontSize: '0.875rem', textAlign: 'center' }}>
+                      <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2, textAlign: 'center' }}>
                         Actions
                       </TableCell>
                     </TableRow>
@@ -2107,86 +2111,98 @@ export default function CollaborativeWriting() {
                         <TableRow 
                           key={manuscript.id} 
                           sx={{ 
-                            bgcolor: index % 2 === 0 ? 'rgba(139, 108, 188, 0.02)' : 'white',
-                            '&:hover': { 
-                              backgroundColor: 'rgba(139, 108, 188, 0.06)',
-                              transform: 'scale(1.001)',
-                              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.1)'
-                            },
-                            transition: 'all 0.2s ease',
-                            borderBottom: '1px solid rgba(139, 108, 188, 0.08)'
+                            bgcolor: index % 2 === 0 ? '#fafafa' : 'white',
+                            '&:hover': { backgroundColor: '#f0f0f0' },
+                            transition: 'background-color 0.2s ease'
                           }}
                         >
-                          {/* Manuscript Details */}
-                          <TableCell sx={{ py: 3, maxWidth: 350 }}>
+                          {/* Title */}
+                          <TableCell sx={{ py: 2, maxWidth: 400 }}>
                             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                              {isProposal && (
-                                <Box sx={{
-                                  backgroundColor: '#8b6cbc',
-                                  color: 'white',
-                                  px: 1.5,
-                                  py: 0.5,
-                                  borderRadius: 1,
-                                  fontSize: '0.7rem',
-                                  fontWeight: 600,
-                                  flexShrink: 0
-                                }}>
-                                  PROPOSAL
-                                </Box>
-                              )}
+                              <Box sx={{ 
+                                color: '#8b6cbc',
+                                mt: 0.5
+                              }}>
+                                {isProposal ? <ProposalIcon /> : <DescriptionIcon />}
+                              </Box>
                               <Box sx={{ minWidth: 0, flex: 1 }}>
-                                <Typography variant="subtitle1" sx={{ 
-                                  fontWeight: 600, 
-                                  color: '#2D3748', 
-                                  mb: 0.5,
-                                  fontSize: '0.95rem',
-                                  lineHeight: 1.3,
-                                  display: '-webkit-box',
-                                  WebkitBoxOrient: 'vertical',
-                                  WebkitLineClamp: 2,
-                                  overflow: 'hidden'
-                                }}>
-                                  {manuscript.title}
-                            </Typography>
-                                <Chip
-                                  label={manuscript.field}
-                                  size="small"
-                                  sx={{
-                                    backgroundColor: 'rgba(139, 108, 188, 0.1)',
-                                    color: '#8b6cbc',
-                                    fontWeight: 500,
-                                    fontSize: '0.75rem',
-                                    height: 20,
-                                    borderRadius: 1
+                                <Typography 
+                                  variant="subtitle1" 
+                                  onClick={() => handleEditManuscript(manuscript)}
+                                  sx={{ 
+                                    fontWeight: 600, 
+                                    color: '#2D3748', 
+                                    mb: 0.5,
+                                    fontSize: '0.95rem',
+                                    lineHeight: 1.3,
+                                    display: '-webkit-box',
+                                    WebkitBoxOrient: 'vertical',
+                                    WebkitLineClamp: 2,
+                                    overflow: 'hidden',
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                      color: '#8b6cbc',
+                                      textDecoration: 'underline'
+                                    },
+                                    transition: 'color 0.2s ease'
                                   }}
-                                />
+                                >
+                                  {manuscript.title}
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                                  {isProposal && (
+                                    <Chip
+                                      label="PROPOSAL"
+                                      size="small"
+                                      sx={{
+                                        backgroundColor: '#8b6cbc',
+                                        color: 'white',
+                                        fontWeight: 600,
+                                        fontSize: '0.65rem',
+                                        height: 18,
+                                        borderRadius: 1
+                                      }}
+                                    />
+                                  )}
+                                  <Chip
+                                    label={manuscript.field}
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: 'rgba(139, 108, 188, 0.1)',
+                                      color: '#8b6cbc',
+                                      fontWeight: 500,
+                                      fontSize: '0.75rem',
+                                      height: 20,
+                                      borderRadius: 1
+                                    }}
+                                  />
+                                </Box>
                               </Box>
                             </Box>
                           </TableCell>
 
-                          {/* Status & Type */}
-                          <TableCell sx={{ py: 3 }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            <Chip
-                              label={manuscript.status}
-                              size="small"
-                              sx={{
-                                  backgroundColor: '#8b6cbc',
-                                color: 'white',
-                                fontWeight: 600,
+                          {/* Status */}
+                          <TableCell sx={{ py: 2 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                              <Chip
+                                label={manuscript.status}
+                                size="small"
+                                sx={{
+                                  backgroundColor: statusOption?.color || '#8b6cbc',
+                                  color: 'white',
+                                  fontWeight: 500,
                                   fontSize: '0.75rem',
-                                  height: 24,
-                                  borderRadius: 2
-                              }}
-                            />
-                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.8rem', fontWeight: 500 }}>
+                                  textTransform: 'capitalize'
+                                }}
+                              />
+                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                                 {manuscript.type}
                               </Typography>
                             </Box>
                           </TableCell>
 
-                          {/* Enhanced Team Display - Show All Members */}
-                          <TableCell sx={{ py: 3 }}>
+                          {/* Team */}
+                          <TableCell sx={{ py: 2 }}>
                             {(() => {
                               // Build complete team list
                               const allMembers = [];
@@ -2326,49 +2342,68 @@ export default function CollaborativeWriting() {
                           </TableCell>
 
                           {/* Last Updated */}
-                          <TableCell sx={{ py: 3 }}>
-                            <Typography variant="body2" color="text.secondary" sx={{ 
-                              fontSize: '0.85rem',
-                              fontWeight: 500
-                            }}>
+                          <TableCell sx={{ py: 2 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
                               {manuscript.lastUpdated}
                             </Typography>
                           </TableCell>
 
                           {/* Actions */}
-                          <TableCell sx={{ py: 3, textAlign: 'center' }}>
-                            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleEditManuscript(manuscript)}
-                                title="Edit manuscript"
-                                sx={{ 
-                                  color: '#8b6cbc',
-                                  backgroundColor: 'rgba(139, 108, 188, 0.08)',
-                                  '&:hover': { 
-                                    bgcolor: 'rgba(139, 108, 188, 0.15)',
-                                    transform: 'scale(1.1)'
-                                  },
-                                  transition: 'all 0.2s ease'
-                                }}
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => handleMenuClick(e, manuscript)}
-                              title="More actions"
-                              sx={{ 
-                                  color: '#8b6cbc',
-                                '&:hover': { 
-                                    bgcolor: 'rgba(139, 108, 188, 0.08)',
-                                    transform: 'scale(1.1)'
-                                  },
-                                  transition: 'all 0.2s ease'
-                              }}
-                            >
-                              <MoreVertIcon fontSize="small" />
-                            </IconButton>
+                          <TableCell sx={{ py: 2, textAlign: 'center' }}>
+                            <Box sx={{ 
+                              display: 'flex', 
+                              gap: 0.5, 
+                              justifyContent: 'center',
+                              alignItems: 'center'
+                            }}>
+                              <Tooltip title="View Details" arrow>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleViewManuscript(manuscript)}
+                                  sx={{ 
+                                    color: '#8b6cbc',
+                                    '&:hover': { bgcolor: '#8b6cbc10' }
+                                  }}
+                                >
+                                  <VisibilityIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Edit Manuscript" arrow>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleEditManuscript(manuscript)}
+                                  sx={{ 
+                                    color: '#666',
+                                    '&:hover': { bgcolor: '#66666610' }
+                                  }}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Manage Team" arrow>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleManageTeam(manuscript)}
+                                  sx={{ 
+                                    color: '#4caf50',
+                                    '&:hover': { bgcolor: '#4caf5010' }
+                                  }}
+                                >
+                                  <GroupsIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Delete" arrow>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteManuscript(manuscript)}
+                                  sx={{ 
+                                    color: '#f44336',
+                                    '&:hover': { bgcolor: '#f4433610' }
+                                  }}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
                             </Box>
                           </TableCell>
                         </TableRow>
@@ -2395,6 +2430,7 @@ export default function CollaborativeWriting() {
           horizontal: 'right',
         }}
         disablePortal={false}
+        disableScrollLock={true}
         sx={{
           zIndex: 1300,
           '& .MuiPaper-root': {
@@ -2506,6 +2542,7 @@ export default function CollaborativeWriting() {
         }}
         maxWidth="lg"
         fullWidth
+        disableScrollLock={true}
         PaperProps={{
           sx: {
             borderRadius: 3,
@@ -2878,6 +2915,7 @@ export default function CollaborativeWriting() {
         }}
         maxWidth="lg"
         fullWidth
+        disableScrollLock={true}
         PaperProps={{
           sx: {
             borderRadius: 3,
@@ -3005,13 +3043,13 @@ export default function CollaborativeWriting() {
                             
                     <ListItemText
                               primary={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Typography variant="subtitle1" component="span" sx={{ fontWeight: 600 }}>
                                     {collaborator.user.givenName} {collaborator.user.familyName}
                                   </Typography>
                                   {isOwner && (
                                     <Chip 
-                                      label="Owner" 
+                                      label="Creator" 
                                       size="small" 
                                       sx={{ 
                                         backgroundColor: '#8b6cbc', 
@@ -3024,16 +3062,19 @@ export default function CollaborativeWriting() {
                                 </Box>
                               }
                       secondary={
-                                <Box sx={{ mt: 0.5 }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
+                                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                           <RoleIcon sx={{ fontSize: 16, color: role?.color }} />
                           <Typography variant="caption" sx={{ color: role?.color, fontWeight: 600 }} component="span">
-                            {collaborator.role}
+                            {isOwner ? 'Creator' : collaborator.role}
                           </Typography>
                                   </Box>
-                                  <Typography variant="caption" color="textSecondary" component="span" sx={{ display: 'block' }}>
-                                    {collaborator.user.email}
-                                  </Typography>
+                                  {collaborator.user.orcidId && (
+                                    <Typography variant="caption" color="textSecondary" component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                      <img src="/orcid.svg" alt="ORCID" style={{ width: 12, height: 12 }} />
+                                      {collaborator.user.orcidId}
+                                    </Typography>
+                                  )}
                                   {collaborator.user.primaryInstitution && (
                                     <Typography variant="caption" color="textSecondary" component="span" sx={{ display: 'block' }}>
                                       {collaborator.user.primaryInstitution}
@@ -3044,27 +3085,92 @@ export default function CollaborativeWriting() {
                     />
                             
                     <ListItemSecondaryAction>
-                              <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                 {/* Permissions indicators */}
-                                {collaborator.canEdit && (
-                                  <Tooltip title="Can Edit">
-                                    <Chip size="small" label="Edit" sx={{ fontSize: '0.6rem', height: 20 }} />
+                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                  <Tooltip title={collaborator.canEdit ? "Can Edit Content" : "Cannot Edit"} arrow>
+                                    <Chip 
+                                      size="small" 
+                                      icon={<EditIcon sx={{ fontSize: '14px !important' }} />}
+                                      label="Edit" 
+                                      sx={{ 
+                                        fontSize: '0.65rem', 
+                                        height: 22,
+                                        bgcolor: collaborator.canEdit ? '#e8f5e9' : '#f5f5f5',
+                                        color: collaborator.canEdit ? '#2e7d32' : '#9e9e9e',
+                                        '& .MuiChip-icon': { 
+                                          color: collaborator.canEdit ? '#2e7d32' : '#9e9e9e' 
+                                        },
+                                        border: collaborator.canEdit ? '1px solid #a5d6a7' : '1px solid #e0e0e0'
+                                      }} 
+                                    />
                                   </Tooltip>
-                                )}
-                                {collaborator.canInvite && (
-                                  <Tooltip title="Can Invite">
-                                    <Chip size="small" label="Invite" sx={{ fontSize: '0.6rem', height: 20 }} />
+                                  <Tooltip title={collaborator.canInvite ? "Can Invite Members" : "Cannot Invite"} arrow>
+                                    <Chip 
+                                      size="small" 
+                                      icon={<PersonAddIcon sx={{ fontSize: '14px !important' }} />}
+                                      label="Invite" 
+                                      sx={{ 
+                                        fontSize: '0.65rem', 
+                                        height: 22,
+                                        bgcolor: collaborator.canInvite ? '#e3f2fd' : '#f5f5f5',
+                                        color: collaborator.canInvite ? '#1565c0' : '#9e9e9e',
+                                        '& .MuiChip-icon': { 
+                                          color: collaborator.canInvite ? '#1565c0' : '#9e9e9e' 
+                                        },
+                                        border: collaborator.canInvite ? '1px solid #90caf9' : '1px solid #e0e0e0'
+                                      }} 
+                                    />
                                   </Tooltip>
-                                )}
+                                  <Tooltip title={collaborator.canDelete ? "Can Delete Content" : "Cannot Delete"} arrow>
+                                    <Chip 
+                                      size="small" 
+                                      icon={<DeleteIcon sx={{ fontSize: '14px !important' }} />}
+                                      label="Delete" 
+                                      sx={{ 
+                                        fontSize: '0.65rem', 
+                                        height: 22,
+                                        bgcolor: collaborator.canDelete ? '#ffebee' : '#f5f5f5',
+                                        color: collaborator.canDelete ? '#c62828' : '#9e9e9e',
+                                        '& .MuiChip-icon': { 
+                                          color: collaborator.canDelete ? '#c62828' : '#9e9e9e' 
+                                        },
+                                        border: collaborator.canDelete ? '1px solid #ef9a9a' : '1px solid #e0e0e0'
+                                      }} 
+                                    />
+                                  </Tooltip>
+                                </Box>
                                 
+                                {/* Action buttons */}
                                 {!isOwner && (
-                                  <IconButton
-                                    size="small"
-                                    onClick={(e) => handleCollaboratorMenuClick(e, collaborator)}
-                                    sx={{ color: '#666' }}
-                                  >
-                                    <MoreHorizIcon fontSize="small" />
-                      </IconButton>
+                                  <Box sx={{ display: 'flex', gap: 0.5, ml: 1, borderLeft: '1px solid #e0e0e0', pl: 1.5 }}>
+                                    <Tooltip title="Edit Role & Permissions" arrow>
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => {
+                                          setEditingCollaborator(collaborator);
+                                        }}
+                                        sx={{ 
+                                          color: '#8b6cbc',
+                                          '&:hover': { bgcolor: '#8b6cbc10' }
+                                        }}
+                                      >
+                                        <EditIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Remove from Team" arrow>
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => handleRemoveCollaborator(collaborator.id)}
+                                        sx={{ 
+                                          color: '#f44336',
+                                          '&:hover': { bgcolor: '#f4433610' }
+                                        }}
+                                      >
+                                        <DeleteIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </Box>
                                 )}
                               </Box>
                     </ListItemSecondaryAction>
@@ -3193,7 +3299,8 @@ export default function CollaborativeWriting() {
         open={addCollaboratorOpen}
         onClose={() => setAddCollaboratorOpen(false)}
         maxWidth="md"
-            fullWidth
+        fullWidth
+        disableScrollLock={true}
         PaperProps={{
           sx: {
             borderRadius: 3,
@@ -3230,6 +3337,224 @@ export default function CollaborativeWriting() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Collaborator Role Dialog */}
+      <Dialog
+        open={Boolean(editingCollaborator)}
+        onClose={() => setEditingCollaborator(null)}
+        maxWidth="sm"
+        fullWidth
+        disableScrollLock={true}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          borderBottom: 1,
+          borderColor: 'divider',
+          background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <EditIcon />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Edit Role & Permissions
+            </Typography>
+          </Box>
+          <IconButton onClick={() => setEditingCollaborator(null)} sx={{ color: 'white' }}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        
+        <DialogContent sx={{ pt: 3 }}>
+          {editingCollaborator && (
+            <Box>
+              {/* Collaborator Info */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
+                <Avatar sx={{ bgcolor: '#8b6cbc', width: 48, height: 48 }}>
+                  {editingCollaborator.user?.givenName?.charAt(0)}{editingCollaborator.user?.familyName?.charAt(0)}
+                </Avatar>
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    {editingCollaborator.user?.givenName} {editingCollaborator.user?.familyName}
+                  </Typography>
+                  {editingCollaborator.user?.orcidId && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <img src="/orcid.svg" alt="ORCID" style={{ width: 12, height: 12 }} />
+                      {editingCollaborator.user.orcidId}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+
+              {/* Role Selection */}
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                Role
+              </Typography>
+              <FormControl fullWidth sx={{ mb: 3 }}>
+                <Select
+                  value={(() => {
+                    // Map the current role to match COLLABORATOR_ROLES values
+                    const currentRole = editingCollaborator.role;
+                    if (!currentRole) return 'Contributor';
+                    // Handle uppercase roles from API (e.g., ADMIN -> Admin)
+                    const normalizedRole = currentRole.charAt(0).toUpperCase() + currentRole.slice(1).toLowerCase();
+                    // Check if it matches any of our roles
+                    const matchedRole = COLLABORATOR_ROLES.find(r => 
+                      r.value.toLowerCase() === currentRole.toLowerCase()
+                    );
+                    return matchedRole ? matchedRole.value : 'Contributor';
+                  })()}
+                  onChange={(e) => setEditingCollaborator(prev => ({ ...prev, role: e.target.value }))}
+                  MenuProps={{ disableScrollLock: true }}
+                  renderValue={(selected) => {
+                    const selectedRole = COLLABORATOR_ROLES.find(r => r.value === selected);
+                    if (!selectedRole) return selected;
+                    const RoleIcon = selectedRole.icon;
+                    return (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <RoleIcon sx={{ color: selectedRole.color, fontSize: 20 }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedRole.label}</Typography>
+                      </Box>
+                    );
+                  }}
+                >
+                  {COLLABORATOR_ROLES.filter(r => r.value !== 'Owner').map((role) => {
+                    const RoleIcon = role.icon;
+                    return (
+                      <MenuItem key={role.value} value={role.value}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <RoleIcon sx={{ color: role.color, fontSize: 20 }} />
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{role.label}</Typography>
+                            <Typography variant="caption" color="text.secondary">{role.description}</Typography>
+                          </Box>
+                        </Box>
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+              </FormControl>
+
+              {/* Permissions */}
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+                Permissions
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Paper 
+                  sx={{ 
+                    p: 2, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    border: editingCollaborator.canEdit ? '1px solid #a5d6a7' : '1px solid #e0e0e0',
+                    bgcolor: editingCollaborator.canEdit ? '#e8f5e9' : 'white',
+                    borderRadius: 2
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <EditIcon sx={{ color: editingCollaborator.canEdit ? '#2e7d32' : '#9e9e9e' }} />
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>Can Edit</Typography>
+                      <Typography variant="caption" color="text.secondary">Allow editing manuscript content</Typography>
+                    </Box>
+                  </Box>
+                  <Checkbox
+                    checked={editingCollaborator.canEdit || false}
+                    onChange={(e) => setEditingCollaborator(prev => ({ ...prev, canEdit: e.target.checked }))}
+                    sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#2e7d32' } }}
+                  />
+                </Paper>
+
+                <Paper 
+                  sx={{ 
+                    p: 2, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    border: editingCollaborator.canInvite ? '1px solid #90caf9' : '1px solid #e0e0e0',
+                    bgcolor: editingCollaborator.canInvite ? '#e3f2fd' : 'white',
+                    borderRadius: 2
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <PersonAddIcon sx={{ color: editingCollaborator.canInvite ? '#1565c0' : '#9e9e9e' }} />
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>Can Invite</Typography>
+                      <Typography variant="caption" color="text.secondary">Allow inviting new team members</Typography>
+                    </Box>
+                  </Box>
+                  <Checkbox
+                    checked={editingCollaborator.canInvite || false}
+                    onChange={(e) => setEditingCollaborator(prev => ({ ...prev, canInvite: e.target.checked }))}
+                    sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#1565c0' } }}
+                  />
+                </Paper>
+
+                <Paper 
+                  sx={{ 
+                    p: 2, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    border: editingCollaborator.canDelete ? '1px solid #ef9a9a' : '1px solid #e0e0e0',
+                    bgcolor: editingCollaborator.canDelete ? '#ffebee' : 'white',
+                    borderRadius: 2
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <DeleteIcon sx={{ color: editingCollaborator.canDelete ? '#c62828' : '#9e9e9e' }} />
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>Can Delete</Typography>
+                      <Typography variant="caption" color="text.secondary">Allow deleting content and sections</Typography>
+                    </Box>
+                  </Box>
+                  <Checkbox
+                    checked={editingCollaborator.canDelete || false}
+                    onChange={(e) => setEditingCollaborator(prev => ({ ...prev, canDelete: e.target.checked }))}
+                    sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#c62828' } }}
+                  />
+                </Paper>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
+          <Button onClick={() => setEditingCollaborator(null)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="contained"
+            onClick={async () => {
+              if (editingCollaborator) {
+                await handleUpdateCollaboratorRole(
+                  editingCollaborator.id,
+                  editingCollaborator.role,
+                  {
+                    canEdit: editingCollaborator.canEdit,
+                    canInvite: editingCollaborator.canInvite,
+                    canDelete: editingCollaborator.canDelete
+                  }
+                );
+                setEditingCollaborator(null);
+              }
+            }}
+            sx={{ 
+              bgcolor: '#8b6cbc', 
+              '&:hover': { bgcolor: '#7559a3' } 
+            }}
+          >
+            Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Enhanced New Manuscript Modal */}
       <Dialog
         open={newPublicationOpen}
@@ -3240,6 +3565,7 @@ export default function CollaborativeWriting() {
         }}
         maxWidth="lg"
         fullWidth
+        disableScrollLock={true}
         PaperProps={{
           sx: {
             borderRadius: 4,
@@ -3582,6 +3908,7 @@ export default function CollaborativeWriting() {
         }}
         maxWidth="md"
         fullWidth
+        disableScrollLock={true}
         PaperProps={{
           sx: {
             borderRadius: 3,
@@ -3900,6 +4227,232 @@ export default function CollaborativeWriting() {
               {isSubmittingProposal ? 'Creating Proposal...' : 'Finish'}
             </Button>
           )}
+        </DialogActions>
+      </Dialog>
+
+      {/* View Manuscript Dialog */}
+      <Dialog
+        open={viewDialogOpen}
+        onClose={() => {
+          setViewDialogOpen(false);
+          setViewingManuscript(null);
+        }}
+        maxWidth="md"
+        fullWidth
+        disableScrollLock={true}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          bgcolor: '#8b6cbc', 
+          color: 'white', 
+          display: 'flex', 
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <VisibilityIcon />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Manuscript Details
+            </Typography>
+          </Box>
+          <IconButton 
+            onClick={() => {
+              setViewDialogOpen(false);
+              setViewingManuscript(null);
+            }}
+            sx={{ color: 'white' }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0 }}>
+          {viewingManuscript && (
+            <Box>
+              {/* Title Section */}
+              <Box sx={{ p: 3, bgcolor: '#fafafa', borderBottom: '1px solid #e0e0e0' }}>
+                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1, color: '#2D3748' }}>
+                  {viewingManuscript.title}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {viewingManuscript.type === 'Proposal' && (
+                    <Chip
+                      label="PROPOSAL"
+                      size="small"
+                      sx={{
+                        backgroundColor: '#8b6cbc',
+                        color: 'white',
+                        fontWeight: 600,
+                        fontSize: '0.7rem'
+                      }}
+                    />
+                  )}
+                  <Chip
+                    label={viewingManuscript.status}
+                    size="small"
+                    sx={{
+                      backgroundColor: STATUS_OPTIONS.find(s => s.value === viewingManuscript.status)?.color || '#9e9e9e',
+                      color: 'white',
+                      fontWeight: 500
+                    }}
+                  />
+                  <Chip
+                    label={viewingManuscript.field}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      borderColor: '#8b6cbc',
+                      color: '#8b6cbc'
+                    }}
+                  />
+                </Box>
+              </Box>
+
+              {/* Details Grid */}
+              <Box sx={{ p: 3 }}>
+                <Grid container spacing={3}>
+                  {/* Type */}
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      Publication Type
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {viewingManuscript.type}
+                    </Typography>
+                  </Grid>
+
+                  {/* Status */}
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      Status
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {viewingManuscript.status}
+                    </Typography>
+                  </Grid>
+
+                  {/* Field */}
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      Research Field
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {viewingManuscript.field}
+                    </Typography>
+                  </Grid>
+
+                  {/* Last Updated */}
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      Last Updated
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {viewingManuscript.lastUpdated}
+                    </Typography>
+                  </Grid>
+
+                  {/* Creator */}
+                  {viewingManuscript.creator && (
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                        Created By
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar sx={{ width: 28, height: 28, bgcolor: '#8b6cbc', fontSize: '0.75rem' }}>
+                          {(viewingManuscript.creator.name || 
+                            `${viewingManuscript.creator.givenName || ''} ${viewingManuscript.creator.familyName || ''}`.trim())
+                            .split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase() || '?'}
+                        </Avatar>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {viewingManuscript.creator.name || 
+                            `${viewingManuscript.creator.givenName || ''} ${viewingManuscript.creator.familyName || ''}`.trim() || 
+                            'Unknown'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  )}
+
+                  {/* Team Members Count */}
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                      Team Members
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {(viewingManuscript.collaborators?.length || 0) + 
+                       (viewingManuscript.pendingInvitations?.length || 0) + 1} member(s)
+                      {viewingManuscript.pendingInvitations?.length > 0 && (
+                        <Typography component="span" variant="body2" color="warning.main" sx={{ ml: 1 }}>
+                          ({viewingManuscript.pendingInvitations.length} pending)
+                        </Typography>
+                      )}
+                    </Typography>
+                  </Grid>
+
+                  {/* Description */}
+                  {viewingManuscript.description && (
+                    <Grid size={12}>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                        Description
+                      </Typography>
+                      <Paper sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
+                        <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+                          {viewingManuscript.description}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  )}
+
+                  {/* Sections */}
+                  {viewingManuscript.sections && viewingManuscript.sections.length > 0 && (
+                    <Grid size={12}>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                        Sections ({viewingManuscript.sections.length})
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {viewingManuscript.sections.map((section, idx) => (
+                          <Chip
+                            key={idx}
+                            label={section.title || section}
+                            size="small"
+                            variant="outlined"
+                            sx={{ borderColor: '#e0e0e0' }}
+                          />
+                        ))}
+                      </Box>
+                    </Grid>
+                  )}
+                </Grid>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
+          <Button 
+            onClick={() => {
+              setViewDialogOpen(false);
+              setViewingManuscript(null);
+            }}
+          >
+            Close
+          </Button>
+          <Button 
+            variant="contained" 
+            startIcon={<EditIcon />}
+            onClick={() => {
+              setViewDialogOpen(false);
+              handleEditManuscript(viewingManuscript);
+            }}
+            sx={{ 
+              bgcolor: '#8b6cbc', 
+              '&:hover': { bgcolor: '#7559a3' } 
+            }}
+          >
+            Edit Manuscript
+          </Button>
         </DialogActions>
       </Dialog>
 
