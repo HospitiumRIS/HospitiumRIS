@@ -435,7 +435,7 @@ const AboutPage = () => {
             }}
           >
             <strong>Training Centre in Communication - Africa (TCC-Africa)</strong>, in collaboration with 
-            African research institutions, open infrastructure partners, and funders.
+            Hospitals, open infrastructure partners, and funders.
           </Typography>
          
         
