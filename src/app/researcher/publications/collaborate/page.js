@@ -218,6 +218,13 @@ export default function CollaborativeWriting() {
   const { user } = useAuth();
   const router = useRouter();
   
+  // Hydration-safe client detection (must be at top with other hooks)
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
   // State management
   const [manuscripts, setManuscripts] = useState([]);
   const [stats, setStats] = useState({
@@ -1028,13 +1035,9 @@ export default function CollaborativeWriting() {
   };
 
   // Helper function to format dates (hydration-safe)
-  const [isClient, setIsClient] = useState(false);
-  
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown';
+    
     if (!isClient) {
       // Server-side: return simple format to avoid hydration mismatch
       const date = new Date(dateString);
@@ -1048,8 +1051,11 @@ export default function CollaborativeWriting() {
     // Client-side: return full relative format
     const date = new Date(dateString);
     const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Compare by calendar date (ignoring time) to properly determine today/yesterday
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffDays = Math.round((todayOnly - dateOnly) / (1000 * 60 * 60 * 24));
 
     const dateOptions = { 
       year: 'numeric', 
@@ -1059,10 +1065,12 @@ export default function CollaborativeWriting() {
       minute: '2-digit'
     };
 
+    const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
     if (diffDays === 0) {
-      return `Today at ${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+      return `Today at ${timeStr}`;
     } else if (diffDays === 1) {
-      return `Yesterday at ${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+      return `Yesterday at ${timeStr}`;
     } else if (diffDays < 7) {
       return `${diffDays} days ago`;
     } else {
@@ -2344,8 +2352,13 @@ export default function CollaborativeWriting() {
                           {/* Last Updated */}
                           <TableCell sx={{ py: 2 }}>
                             <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                              {manuscript.lastUpdated}
+                              {formatDate(manuscript.lastUpdated || manuscript.updatedAt)}
                             </Typography>
+                            {manuscript.lastUpdater && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                                by {manuscript.lastUpdater.name || `${manuscript.lastUpdater.givenName || ''} ${manuscript.lastUpdater.familyName || ''}`.trim()}
+                              </Typography>
+                            )}
                           </TableCell>
 
                           {/* Actions */}
@@ -4351,8 +4364,13 @@ export default function CollaborativeWriting() {
                       Last Updated
                     </Typography>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {viewingManuscript.lastUpdated}
+                      {formatDate(viewingManuscript.lastUpdated || viewingManuscript.updatedAt)}
                     </Typography>
+                    {viewingManuscript.lastUpdater && (
+                      <Typography variant="body2" color="text.secondary">
+                        by {viewingManuscript.lastUpdater.name || `${viewingManuscript.lastUpdater.givenName || ''} ${viewingManuscript.lastUpdater.familyName || ''}`.trim()}
+                      </Typography>
+                    )}
                   </Grid>
 
                   {/* Creator */}

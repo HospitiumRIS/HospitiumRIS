@@ -87,7 +87,7 @@ export async function GET(request, { params }) {
   }
 }
 
-// POST - Update presence (heartbeat)
+// POST - Update presence (heartbeat) and get latest document state
 export async function POST(request, { params }) {
   try {
     const resolvedParams = await params;
@@ -141,12 +141,75 @@ export async function POST(request, { params }) {
       });
     }
     
+    // Fetch latest manuscript data for real-time sync
+    let manuscriptData = null;
+    try {
+      // Try to include lastUpdater, fall back if not available
+      let manuscript;
+      try {
+        manuscript = await prisma.manuscript.findUnique({
+          where: { id: manuscriptId },
+          select: { 
+            title: true, 
+            content: true,
+            updatedAt: true,
+            lastSaved: true,
+            wordCount: true,
+            lastUpdater: {
+              select: {
+                id: true,
+                givenName: true,
+                familyName: true,
+                email: true
+              }
+            }
+          }
+        });
+      } catch (relationError) {
+        // Fallback without lastUpdater
+        manuscript = await prisma.manuscript.findUnique({
+          where: { id: manuscriptId },
+          select: { 
+            title: true, 
+            content: true,
+            updatedAt: true,
+            lastSaved: true,
+            wordCount: true
+          }
+        });
+      }
+      
+      if (manuscript) {
+        const lastUpdaterName = manuscript.lastUpdater ? 
+          `${manuscript.lastUpdater.givenName || ''} ${manuscript.lastUpdater.familyName || ''}`.trim() || manuscript.lastUpdater.email : 
+          null;
+        
+        manuscriptData = {
+          title: manuscript.title,
+          content: manuscript.content,
+          updatedAt: manuscript.updatedAt?.toISOString(),
+          lastSaved: manuscript.lastSaved?.toISOString(),
+          wordCount: manuscript.wordCount,
+          lastUpdater: manuscript.lastUpdater ? {
+            id: manuscript.lastUpdater.id,
+            name: lastUpdaterName,
+            givenName: manuscript.lastUpdater.givenName,
+            familyName: manuscript.lastUpdater.familyName
+          } : null
+        };
+      }
+    } catch (dbError) {
+      console.error('Error fetching manuscript data:', dbError);
+    }
+    
     return NextResponse.json({
       success: true,
       data: {
         manuscriptId,
         onlineUsers,
-        onlineCount: onlineUsers.length
+        onlineCount: onlineUsers.length,
+        // Include manuscript data for real-time sync
+        manuscript: manuscriptData
       }
     });
     

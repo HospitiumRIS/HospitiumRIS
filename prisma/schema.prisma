@@ -70,6 +70,7 @@ model User {
   sentInvitations ManuscriptInvitation[] @relation("SentInvitations")
   receivedInvitations ManuscriptInvitation[] @relation("ReceivedInvitations")
   manuscripts Manuscript[] @relation("CreatedManuscripts")
+  lastUpdatedManuscripts Manuscript[] @relation("LastUpdatedManuscripts")
   notifications Notification[] @relation("UserNotifications")
   comments ManuscriptComment[] @relation("CommentAuthor")
   
@@ -501,9 +502,11 @@ model Manuscript {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   lastSaved   DateTime? // Track when content was last saved
+  lastUpdatedBy String? // User ID of last person to update
   
   // Relations
   creator     User     @relation(fields: [createdBy], references: [id], onDelete: Cascade, name: "CreatedManuscripts")
+  lastUpdater User?    @relation(fields: [lastUpdatedBy], references: [id], onDelete: SetNull, name: "LastUpdatedManuscripts")
   collaborators ManuscriptCollaborator[]
   invitations ManuscriptInvitation[]
   notifications Notification[]

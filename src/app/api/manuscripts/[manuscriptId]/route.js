@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
  */
 export async function GET(request, { params }) {
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -83,6 +83,19 @@ export async function GET(request, { params }) {
       );
     }
 
+    // Determine current user's permissions
+    const isCreator = manuscript.createdBy === userId;
+    const currentUserCollaborator = manuscript.collaborators.find(c => c.userId === userId);
+    
+    // Creator has all permissions, collaborators have their specific permissions
+    const userPermissions = {
+      canEdit: isCreator || currentUserCollaborator?.canEdit || false,
+      canInvite: isCreator || currentUserCollaborator?.canInvite || false,
+      canDelete: isCreator || currentUserCollaborator?.canDelete || false,
+      isCreator: isCreator,
+      role: isCreator ? 'OWNER' : (currentUserCollaborator?.role || 'VIEWER')
+    };
+
     return NextResponse.json({
       success: true,
       data: {
@@ -98,9 +111,11 @@ export async function GET(request, { params }) {
         updatedAt: manuscript.updatedAt,
         lastSaved: manuscript.lastSaved,
         creator: manuscript.creator,
+        createdBy: manuscript.createdBy,
         collaborators: manuscript.collaborators,
         citationCount: manuscript._count.citations,
-        collaboratorCount: manuscript._count.collaborators
+        collaboratorCount: manuscript._count.collaborators,
+        userPermissions: userPermissions
       }
     });
 
@@ -122,7 +137,7 @@ export async function GET(request, { params }) {
  */
 export async function PATCH(request, { params }) {
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -180,30 +195,55 @@ export async function PATCH(request, { params }) {
     }
 
     // Prepare update data
-    const dataToUpdate = {
+    const baseUpdateData = {
       ...updateData,
       wordCount: wordCount,
       lastSaved: new Date(),
       updatedAt: new Date()
     };
 
-    // Update the manuscript
-    const updatedManuscript = await prisma.manuscript.update({
-      where: {
-        id: manuscriptId
-      },
-      data: dataToUpdate,
-      include: {
-        creator: {
-          select: {
-            id: true,
-            givenName: true,
-            familyName: true,
-            email: true
+    // Try to update with lastUpdatedBy, fall back without it if field doesn't exist
+    let updatedManuscript;
+    try {
+      updatedManuscript = await prisma.manuscript.update({
+        where: {
+          id: manuscriptId
+        },
+        data: {
+          ...baseUpdateData,
+          lastUpdatedBy: userId // Track who made this update
+        },
+        include: {
+          creator: {
+            select: {
+              id: true,
+              givenName: true,
+              familyName: true,
+              email: true
+            }
           }
         }
-      }
-    });
+      });
+    } catch (updateError) {
+      // If lastUpdatedBy field doesn't exist (Prisma not regenerated), try without it
+      console.warn('Failed to update with lastUpdatedBy, trying without:', updateError.message);
+      updatedManuscript = await prisma.manuscript.update({
+        where: {
+          id: manuscriptId
+        },
+        data: baseUpdateData,
+        include: {
+          creator: {
+            select: {
+              id: true,
+              givenName: true,
+              familyName: true,
+              email: true
+            }
+          }
+        }
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -241,7 +281,7 @@ export async function PATCH(request, { params }) {
  */
 export async function DELETE(request, { params }) {
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required' },

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -12,13 +13,19 @@ import {
   Button,
   Badge,
   Divider,
-  Chip
+  Chip,
+  TextField,
+  InputBase,
+  CircularProgress
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   Groups as GroupsIcon,
   Circle as CircleIcon,
-  PersonAdd as PersonAddIcon
+  PersonAdd as PersonAddIcon,
+  Edit as EditIcon,
+  Check as CheckIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 
@@ -75,10 +82,68 @@ export default function DocumentHeader({
   pendingInvitations = [],
   currentUserId,
   onlineUserIds = [], // Array of user IDs currently online from presence system
+  canInvite = false, // Whether current user can invite others
+  canEdit = false, // Whether current user can edit the document (including title)
   onBack, 
-  onInvite, 
+  onInvite,
+  onTitleChange, // Callback when title is changed
+  savingTitle = false, // Whether title is being saved
   loading = false 
 }) {
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
+  const titleInputRef = useRef(null);
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  // Update edited title when manuscript title changes (for real-time sync)
+  useEffect(() => {
+    if (!isEditingTitle && manuscript?.title) {
+      setEditedTitle(manuscript.title);
+    }
+  }, [manuscript?.title, isEditingTitle]);
+
+  // Start editing title
+  const handleStartEditTitle = () => {
+    if (canEdit) {
+      setEditedTitle(manuscript?.title || '');
+      setIsEditingTitle(true);
+    }
+  };
+
+  // Save title
+  const handleSaveTitle = async () => {
+    const trimmedTitle = editedTitle.trim();
+    if (trimmedTitle && trimmedTitle !== manuscript?.title) {
+      if (onTitleChange) {
+        await onTitleChange(trimmedTitle);
+      }
+    }
+    setIsEditingTitle(false);
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditedTitle(manuscript?.title || '');
+    setIsEditingTitle(false);
+  };
+
+  // Handle key press in title input
+  const handleTitleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveTitle();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
+
   // Check if a user is online based on presence data
   const isUserOnline = (userId) => {
     return onlineUserIds.includes(userId);
@@ -201,8 +266,8 @@ export default function DocumentHeader({
           Back
         </Typography>
 
-        {/* Document Title */}
-        <Box sx={{ flexGrow: 1, ml: 3 }}>
+        {/* Document Title - Editable */}
+        <Box sx={{ flexGrow: 1, ml: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
           {loading ? (
             <Skeleton 
               variant="text" 
@@ -210,20 +275,107 @@ export default function DocumentHeader({
               height={32}
               sx={{ fontSize: '1.25rem' }}
             />
+          ) : isEditingTitle ? (
+            // Editing mode
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+              <InputBase
+                inputRef={titleInputRef}
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                onKeyDown={handleTitleKeyDown}
+                onBlur={handleSaveTitle}
+                disabled={savingTitle}
+                placeholder="Enter document title..."
+                sx={{
+                  flex: 1,
+                  fontSize: '1.25rem',
+                  fontWeight: 600,
+                  color: '#333',
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1,
+                  bgcolor: 'rgba(139, 108, 188, 0.08)',
+                  border: '2px solid #8b6cbc',
+                  '& input': {
+                    padding: 0
+                  }
+                }}
+              />
+              {savingTitle ? (
+                <CircularProgress size={20} sx={{ color: '#8b6cbc' }} />
+              ) : (
+                <>
+                  <Tooltip title="Save (Enter)">
+                    <IconButton 
+                      size="small" 
+                      onClick={handleSaveTitle}
+                      sx={{ color: '#43a047' }}
+                    >
+                      <CheckIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Cancel (Esc)">
+                    <IconButton 
+                      size="small" 
+                      onMouseDown={(e) => e.preventDefault()} // Prevent blur before click
+                      onClick={handleCancelEdit}
+                      sx={{ color: '#e53935' }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </>
+              )}
+            </Box>
           ) : (
-            <Typography 
-              variant="h5" 
-              sx={{ 
-                fontWeight: 600,
-                fontSize: '1.25rem',
-                color: '#333',
-                textOverflow: 'ellipsis',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {manuscript?.title || 'Untitled Document'}
-            </Typography>
+            // Display mode
+            <Tooltip title={canEdit ? "Click to rename" : ""} placement="bottom">
+              <Box 
+                onClick={handleStartEditTitle}
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  cursor: canEdit ? 'pointer' : 'default',
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1,
+                  transition: 'all 0.2s ease',
+                  '&:hover': canEdit ? {
+                    bgcolor: 'rgba(139, 108, 188, 0.08)',
+                    '& .edit-icon': {
+                      opacity: 1
+                    }
+                  } : {}
+                }}
+              >
+                <Typography 
+                  variant="h5" 
+                  sx={{ 
+                    fontWeight: 600,
+                    fontSize: '1.25rem',
+                    color: '#333',
+                    textOverflow: 'ellipsis',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '500px'
+                  }}
+                >
+                  {manuscript?.title || 'Untitled Document'}
+                </Typography>
+                {canEdit && (
+                  <EditIcon 
+                    className="edit-icon"
+                    sx={{ 
+                      fontSize: 18, 
+                      color: '#8b6cbc',
+                      opacity: 0,
+                      transition: 'opacity 0.2s ease'
+                    }} 
+                  />
+                )}
+              </Box>
+            </Tooltip>
           )}
         </Box>
 
@@ -449,29 +601,31 @@ export default function DocumentHeader({
           )}
         </Stack>
 
-        {/* Invite Button */}
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<PersonAddIcon />}
-          onClick={onInvite}
-          sx={{ 
-            borderColor: '#8b6cbc', 
-            color: '#8b6cbc',
-            fontSize: '0.8rem',
-            py: 0.75,
-            px: 2,
-            borderRadius: 2,
-            textTransform: 'none',
-            fontWeight: 600,
-            '&:hover': {
-              borderColor: '#7a5ca7',
-              bgcolor: 'rgba(139, 108, 188, 0.08)'
-            }
-          }}
-        >
-          Invite
-        </Button>
+        {/* Invite Button - Only show if user has invite permissions */}
+        {canInvite && (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<PersonAddIcon />}
+            onClick={onInvite}
+            sx={{ 
+              borderColor: '#8b6cbc', 
+              color: '#8b6cbc',
+              fontSize: '0.8rem',
+              py: 0.75,
+              px: 2,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              '&:hover': {
+                borderColor: '#7a5ca7',
+                bgcolor: 'rgba(139, 108, 188, 0.08)'
+              }
+            }}
+          >
+            Invite
+          </Button>
+        )}
       </Stack>
     </Paper>
   );

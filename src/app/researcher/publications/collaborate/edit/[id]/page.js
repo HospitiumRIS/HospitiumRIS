@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
@@ -139,6 +139,7 @@ import { format } from 'date-fns';
 import DocumentHeader from './components/DocumentHeader';
 import DocumentMenuBar from './components/DocumentMenuBar';
 import CitationLibraryModal from './components/CitationLibraryModal';
+import InviteCollaboratorDialog from './components/InviteCollaboratorDialog';
 import ManageSourcesModal from './components/ManageSourcesModal';
 import InsertTableDialog from './components/InsertTableDialog';
 import TablePropertiesDialog from './components/TablePropertiesDialog';
@@ -379,10 +380,18 @@ export default function ManuscriptEditor() {
   const [manuscript, setManuscript] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingTitle, setSavingTitle] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [collaborators, setCollaborators] = useState([]);
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [onlineUserIds, setOnlineUserIds] = useState([]); // Track online users from presence system
+  const [userPermissions, setUserPermissions] = useState({ canEdit: false, canInvite: false, canDelete: false, isCreator: false });
+  
+  // Use refs for sync tracking to avoid useEffect dependency issues
+  const lastKnownServerUpdateRef = useRef(null);
+  const lastLocalSaveTimeRef = useRef(null);
+  const isSavingRef = useRef(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [comments, setComments] = useState([]);
   const [showComments, setShowComments] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState(null);
@@ -628,6 +637,16 @@ export default function ManuscriptEditor() {
           const manuscriptData = data.data;
           setManuscript(manuscriptData);
           
+          // Set user permissions from API response
+          if (manuscriptData.userPermissions) {
+            setUserPermissions(manuscriptData.userPermissions);
+          }
+          
+          // Initialize last known server update time to prevent immediate re-sync
+          if (manuscriptData.updatedAt) {
+            lastKnownServerUpdateRef.current = new Date(manuscriptData.updatedAt).getTime();
+          }
+          
           // Load content into editor if it exists
           if (editor && manuscriptData.content) {
             editor.commands.setContent(manuscriptData.content);
@@ -696,14 +715,14 @@ export default function ManuscriptEditor() {
     loadManuscript();
   }, [manuscriptId, editor]);
 
-  // Presence tracking - send heartbeat and receive online users
+  // Presence tracking - send heartbeat, receive online users, and sync document state
   useEffect(() => {
-    if (!manuscriptId || !user?.id) return;
+    if (!manuscriptId || !user?.id || !editor) return;
 
     let isActive = true;
     let heartbeatInterval = null;
 
-    // Function to update presence (heartbeat)
+    // Function to update presence (heartbeat) and sync document state
     const updatePresence = async () => {
       if (!isActive) return;
       
@@ -715,10 +734,89 @@ export default function ManuscriptEditor() {
         
         if (response.ok) {
           const data = await response.json();
-          if (data.success && data.data?.onlineUsers) {
+          if (data.success && data.data) {
             // Extract user IDs from online users
-            const onlineIds = data.data.onlineUsers.map(u => u.id);
-            setOnlineUserIds(onlineIds);
+            if (data.data.onlineUsers) {
+              const onlineIds = data.data.onlineUsers.map(u => u.id);
+              setOnlineUserIds(onlineIds);
+            }
+            
+            // Check for document updates from server
+            if (data.data.manuscript) {
+              const serverManuscript = data.data.manuscript;
+              const serverUpdateTime = serverManuscript.updatedAt ? new Date(serverManuscript.updatedAt).getTime() : null;
+              
+              // Sync title if changed
+              if (serverManuscript.title) {
+                setManuscript(prev => {
+                  if (prev && prev.title !== serverManuscript.title) {
+                    console.log('📝 Title synced from server:', serverManuscript.title);
+                    return { ...prev, title: serverManuscript.title };
+                  }
+                  return prev;
+                });
+              }
+              
+              // Sync content if server has newer changes
+              // Only sync if:
+              // 1. We have a server update time
+              // 2. Server update is newer than our last known update
+              // 3. We haven't saved in the last 3 seconds (to avoid sync conflicts)
+              // 4. We're not currently saving
+              if (serverUpdateTime && serverManuscript.content !== undefined) {
+                const lastKnown = lastKnownServerUpdateRef.current;
+                const lastSaveTime = lastLocalSaveTimeRef.current;
+                const currentlySaving = isSavingRef.current;
+                
+                const timeSinceLastSave = lastSaveTime ? Date.now() - lastSaveTime : Infinity;
+                const isNewerFromServer = !lastKnown || serverUpdateTime > lastKnown;
+                const notRecentlySaved = timeSinceLastSave > 3000;
+                
+                console.log('🔄 Sync check:', { 
+                  serverUpdateTime, 
+                  lastKnown, 
+                  isNewerFromServer, 
+                  timeSinceLastSave, 
+                  notRecentlySaved, 
+                  currentlySaving 
+                });
+                
+                if (isNewerFromServer && notRecentlySaved && !currentlySaving) {
+                  const currentContent = editor.getHTML();
+                  const serverContent = serverManuscript.content || '';
+                  
+                  // Only update if content actually changed
+                  if (currentContent !== serverContent) {
+                    console.log('📄 Content synced from server (another user made changes)');
+                    
+                    // Save cursor position
+                    const { from, to } = editor.state.selection;
+                    
+                    // Update content
+                    editor.commands.setContent(serverContent, false); // false = don't emit update event
+                    
+                    // Try to restore cursor position (may not be exact if content changed significantly)
+                    try {
+                      const docLength = editor.state.doc.content.size;
+                      const newFrom = Math.min(from, docLength);
+                      const newTo = Math.min(to, docLength);
+                      editor.commands.setTextSelection({ from: newFrom, to: newTo });
+                    } catch (e) {
+                      // If cursor restoration fails, just move to end
+                      editor.commands.focus('end');
+                    }
+                    
+                    // Update word count
+                    if (serverManuscript.wordCount !== undefined) {
+                      setManuscript(prev => prev ? { ...prev, wordCount: serverManuscript.wordCount } : prev);
+                    }
+                  }
+                  
+                  // Update our last known server time
+                  lastKnownServerUpdateRef.current = serverUpdateTime;
+                }
+              }
+            }
           }
         }
       } catch (error) {
@@ -729,8 +827,8 @@ export default function ManuscriptEditor() {
     // Initial presence update
     updatePresence();
 
-    // Set up heartbeat interval (every 10 seconds)
-    heartbeatInterval = setInterval(updatePresence, 10000);
+    // Set up heartbeat interval (every 3 seconds for better content sync responsiveness)
+    heartbeatInterval = setInterval(updatePresence, 3000);
 
     // Cleanup function - remove presence when leaving
     return () => {
@@ -745,7 +843,7 @@ export default function ManuscriptEditor() {
         headers: { 'Content-Type': 'application/json' },
       }).catch(() => {}); // Ignore errors on cleanup
     };
-  }, [manuscriptId, user?.id]);
+  }, [manuscriptId, user?.id, editor]); // Removed state dependencies - using refs instead
 
   // Configure TrackChanges extension when user data is available
   useEffect(() => {
@@ -975,6 +1073,11 @@ export default function ManuscriptEditor() {
     if (!editor || saving || !manuscriptId) return;
     
     setSaving(true);
+    isSavingRef.current = true;
+    // Track when we started saving to prevent sync conflicts
+    const saveStartTime = Date.now();
+    lastLocalSaveTimeRef.current = saveStartTime;
+    
     try {
       const content = editor.getHTML();
       
@@ -991,12 +1094,16 @@ export default function ManuscriptEditor() {
       const data = await response.json();
       
       if (data.success) {
-        setLastSaved(new Date(data.data.lastSaved));
+        const savedTime = new Date(data.data.lastSaved);
+        setLastSaved(savedTime);
+        // Update the last known server update to prevent re-syncing our own changes
+        lastKnownServerUpdateRef.current = new Date(data.data.updatedAt).getTime();
         setManuscript(prev => ({
           ...prev,
           wordCount: data.data.wordCount,
           updatedAt: data.data.updatedAt
         }));
+        console.log('💾 Document saved successfully');
       } else {
         console.error('Save failed:', data.error);
         // Could show a toast notification here
@@ -1006,14 +1113,58 @@ export default function ManuscriptEditor() {
       // Could show an error toast notification here
     } finally {
       setSaving(false);
+      isSavingRef.current = false;
     }
   }, [editor, saving, manuscriptId]);
 
+  // Handle title change
+  const handleTitleChange = useCallback(async (newTitle) => {
+    if (!manuscriptId || !newTitle.trim()) return;
+    
+    setSavingTitle(true);
+    try {
+      const response = await fetch(`/api/manuscripts/${manuscriptId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTitle.trim() })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update local manuscript state
+        setManuscript(prev => ({ ...prev, title: newTitle.trim() }));
+        console.log('Title updated successfully');
+      } else {
+        console.error('Failed to update title:', data.error);
+      }
+    } catch (error) {
+      console.error('Error updating title:', error);
+    } finally {
+      setSavingTitle(false);
+    }
+  }, [manuscriptId]);
+
   // Invite function
   const handleInvite = useCallback(() => {
-    // For now, we'll show a simple prompt. Later this could open a modal.
-    console.log('Opening invite dialog...');
-    // TODO: Open invite collaborators modal/dialog
+    setInviteDialogOpen(true);
+  }, []);
+
+  // Handle invitation sent
+  const handleInviteSent = useCallback((invitation) => {
+    // Add the new invitation to pending list
+    setPendingInvitations(prev => [
+      ...prev,
+      {
+        id: invitation.id,
+        name: `${invitation.givenName || ''} ${invitation.familyName || ''}`.trim(),
+        givenName: invitation.givenName,
+        familyName: invitation.familyName,
+        email: invitation.email,
+        role: invitation.role,
+        status: 'PENDING'
+      }
+    ]);
   }, []);
 
   // Handle text selection for commenting
@@ -1888,8 +2039,12 @@ export default function ManuscriptEditor() {
         pendingInvitations={pendingInvitations || []}
         currentUserId={user?.id}
         onlineUserIds={onlineUserIds}
+        canInvite={userPermissions.canInvite}
+        canEdit={userPermissions.canEdit}
         onBack={() => router.back()}
         onInvite={handleInvite}
+        onTitleChange={handleTitleChange}
+        savingTitle={savingTitle}
         loading={loading}
       />
 
@@ -2986,6 +3141,15 @@ export default function ManuscriptEditor() {
         open={tablePropertiesDialogOpen}
         onClose={() => setTablePropertiesDialogOpen(false)}
         onApply={handleTablePropertiesApply}
+      />
+
+      {/* Invite Collaborator Dialog */}
+      <InviteCollaboratorDialog
+        open={inviteDialogOpen}
+        onClose={() => setInviteDialogOpen(false)}
+        manuscriptId={manuscriptId}
+        manuscriptTitle={manuscript?.title || 'Untitled Document'}
+        onInviteSent={handleInviteSent}
       />
 
       {/* Citation Popup */}

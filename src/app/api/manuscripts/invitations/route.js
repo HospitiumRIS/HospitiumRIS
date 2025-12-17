@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
  */
 export async function POST(request) {
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -291,7 +291,7 @@ export async function POST(request) {
  */
 export async function GET(request) {
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required' },

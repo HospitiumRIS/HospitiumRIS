@@ -70,51 +70,103 @@ export async function GET(request) {
         }
 
         // Get manuscripts with filtering and pagination
-    const manuscripts = await prisma.manuscript.findMany({
-            where,
-            orderBy: {
-                updatedAt: 'desc'
-            },
-            take: limit,
-            skip: offset,
-            include: {
-                creator: {
-                    select: {
-                        id: true,
-                        givenName: true,
-                        familyName: true,
-                        email: true,
-                        orcidId: true
-                    }
-                },
-                collaborators: {
-                    select: {
-                        user: {
-                            select: {
-                                id: true,
-                                givenName: true,
-                                familyName: true,
-                                email: true,
-                                orcidId: true
-                            }
-                        },
-                        role: true
-                    }
-                },
-                invitations: {
-                    where: {
-                        status: 'PENDING'
+        // Try to include lastUpdater, fall back if relation doesn't exist yet
+        let manuscripts;
+        try {
+            manuscripts = await prisma.manuscript.findMany({
+                where,
+                orderBy: { updatedAt: 'desc' },
+                take: limit,
+                skip: offset,
+                include: {
+                    creator: {
+                        select: {
+                            id: true,
+                            givenName: true,
+                            familyName: true,
+                            email: true,
+                            orcidId: true
+                        }
                     },
-                    select: {
-                        id: true,
-                        givenName: true,
-                        familyName: true,
-                        email: true,
-                        role: true
+                    lastUpdater: {
+                        select: {
+                            id: true,
+                            givenName: true,
+                            familyName: true,
+                            email: true
+                        }
+                    },
+                    collaborators: {
+                        select: {
+                            user: {
+                                select: {
+                                    id: true,
+                                    givenName: true,
+                                    familyName: true,
+                                    email: true,
+                                    orcidId: true
+                                }
+                            },
+                            role: true
+                        }
+                    },
+                    invitations: {
+                        where: { status: 'PENDING' },
+                        select: {
+                            id: true,
+                            givenName: true,
+                            familyName: true,
+                            email: true,
+                            role: true
+                        }
                     }
                 }
-            }
-        });
+            });
+        } catch (includeError) {
+            // Fallback query without lastUpdater if the relation isn't available yet
+            console.log('lastUpdater relation not available, using fallback query');
+            manuscripts = await prisma.manuscript.findMany({
+                where,
+                orderBy: { updatedAt: 'desc' },
+                take: limit,
+                skip: offset,
+                include: {
+                    creator: {
+                        select: {
+                            id: true,
+                            givenName: true,
+                            familyName: true,
+                            email: true,
+                            orcidId: true
+                        }
+                    },
+                    collaborators: {
+                        select: {
+                            user: {
+                                select: {
+                                    id: true,
+                                    givenName: true,
+                                    familyName: true,
+                                    email: true,
+                                    orcidId: true
+                                }
+                            },
+                            role: true
+                        }
+                    },
+                    invitations: {
+                        where: { status: 'PENDING' },
+                        select: {
+                            id: true,
+                            givenName: true,
+                            familyName: true,
+                            email: true,
+                            role: true
+                        }
+                    }
+                }
+            });
+        }
 
         // Get total count for pagination
         const totalCount = await prisma.manuscript.count({ where });
@@ -151,6 +203,11 @@ export async function GET(request) {
             role: invitation.role || 'CONTRIBUTOR'
         }));
 
+        // Process last updater info
+        const lastUpdaterName = manuscript.lastUpdater ? 
+            `${manuscript.lastUpdater.givenName || ''} ${manuscript.lastUpdater.familyName || ''}`.trim() || manuscript.lastUpdater.email || 'Unknown' : 
+            null;
+
         return {
             ...manuscript,
             creator: {
@@ -160,6 +217,13 @@ export async function GET(request) {
                 familyName: manuscript.creator?.familyName,
                 email: manuscript.creator?.email
             },
+            lastUpdater: manuscript.lastUpdater ? {
+                id: manuscript.lastUpdater.id,
+                name: lastUpdaterName,
+                givenName: manuscript.lastUpdater.givenName,
+                familyName: manuscript.lastUpdater.familyName,
+                email: manuscript.lastUpdater.email
+            } : null,
             collaborators: processedCollaborators,
             pendingInvitationsList,
             pendingInvitations: pendingInvitationsList.length,

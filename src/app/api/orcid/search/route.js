@@ -3,28 +3,44 @@ import { NextResponse } from 'next/server';
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
+    const generalQuery = searchParams.get('q'); // General search query
     const givenNames = searchParams.get('givenNames');
     const familyName = searchParams.get('familyName');
+    const limit = parseInt(searchParams.get('limit')) || 10;
 
-    if (!givenNames && !familyName) {
+    if (!generalQuery && !givenNames && !familyName) {
       return NextResponse.json(
-        { error: 'At least one name parameter is required' },
+        { error: 'Search query is required (use q, givenNames, or familyName)' },
         { status: 400 }
       );
     }
 
     // Build ORCID search query
     let query = '';
-    if (givenNames) {
-      query += `given-names:${givenNames}`;
-    }
-    if (familyName) {
-      if (query) query += ' AND ';
-      query += `family-name:${familyName}`;
+    
+    if (generalQuery) {
+      // Check if it looks like an ORCID ID (format: 0000-0000-0000-0000)
+      const orcidPattern = /^\d{4}-\d{4}-\d{4}-\d{4}$/;
+      if (orcidPattern.test(generalQuery.trim())) {
+        query = `orcid:${generalQuery.trim()}`;
+      } else {
+        // General name search - search both given and family names
+        const searchTerm = generalQuery.trim();
+        query = `given-names:${searchTerm} OR family-name:${searchTerm}`;
+      }
+    } else {
+      // Specific name field search
+      if (givenNames) {
+        query += `given-names:${givenNames}`;
+      }
+      if (familyName) {
+        if (query) query += ' AND ';
+        query += `family-name:${familyName}`;
+      }
     }
 
     // ORCID Public API search endpoint
-    const orcidSearchUrl = `https://pub.orcid.org/v3.0/search/?q=${encodeURIComponent(query)}&rows=15`;
+    const orcidSearchUrl = `https://pub.orcid.org/v3.0/search/?q=${encodeURIComponent(query)}&rows=${Math.min(limit + 5, 20)}`;
     
     console.log('ORCID Search URL:', orcidSearchUrl);
 
@@ -128,13 +144,26 @@ export async function GET(request) {
       }) || []
     );
 
-    // Filter out null results and limit to 10
-    const validResearchers = researchers.filter(r => r !== null).slice(0, 10);
+    // Filter out null results and apply limit
+    const validResearchers = researchers.filter(r => r !== null).slice(0, limit);
+
+    // Transform to format expected by InviteCollaboratorDialog
+    const formattedResearchers = validResearchers.map(r => ({
+      orcidId: r.orcidId,
+      givenName: r.givenNames,
+      familyName: r.familyName,
+      name: r.creditName || `${r.givenNames} ${r.familyName}`.trim(),
+      affiliation: r.affiliations?.[0] || r.employmentSummary || '',
+      affiliations: r.affiliations,
+      email: null, // ORCID doesn't return public emails
+      profileUrl: r.profileUrl
+    }));
 
     return NextResponse.json({
       success: true,
-      count: validResearchers.length,
-      researchers: validResearchers
+      count: formattedResearchers.length,
+      data: formattedResearchers, // For InviteCollaboratorDialog
+      researchers: validResearchers // Keep backward compatibility
     });
 
   } catch (error) {
