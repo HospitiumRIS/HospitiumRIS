@@ -288,85 +288,200 @@ const ColorPicker = ({ editor, type = 'color' }) => {
   );
 };
 
-// Heading Structure Display Component
-const HeadingStructureDisplay = ({ headings, onNavigate }) => {
+// Professional Heading Structure Display Component with Tree View
+const HeadingStructureDisplay = ({ headings, onNavigate, activeHeadingId }) => {
+  // Group headings by their hierarchy
+  const getIndentLevel = (level) => level - 1;
+  
   return (
-    <>
-      {headings.map((heading) => (
-        <Box
-          key={heading.id}
-          onClick={() => onNavigate(heading)}
-          sx={{
-            pl: (heading.level - 1) * 2 + 1, // H1=1, H2=3, H3=5, H4=7, H5=9, H6=11
-            py: 1,
-            px: 1,
-            mb: 0.5,
-            borderRadius: 1,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            '&:hover': {
-              bgcolor: '#f5f5f5'
-            },
-            '&:active': {
-              bgcolor: '#8b6cbc20'
-            }
-          }}
-        >
+    <Box sx={{ position: 'relative' }}>
+      {headings.map((heading, index) => {
+        const indentLevel = getIndentLevel(heading.level);
+        const isActive = activeHeadingId === heading.id;
+        const hasChildren = headings.slice(index + 1).some(h => h.level > heading.level);
+        
+        // Check if this heading has a sibling after it at the same or lower level
+        const nextSameLevelOrLower = headings.slice(index + 1).findIndex(h => h.level <= heading.level);
+        const hasMoreSiblings = nextSameLevelOrLower !== -1;
+        
+        return (
           <Box
-            sx={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              bgcolor: getHeadingColor(heading.level),
-              mr: 1,
-              flexShrink: 0
-            }}
-          />
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              fontSize: getHeadingFontSize(heading.level),
-              fontWeight: getHeadingFontWeight(heading.level),
-              color: '#333',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flex: 1
-            }}
+            key={heading.id}
+            sx={{ position: 'relative' }}
           >
-            {heading.text}
-          </Typography>
-          <Typography 
-            variant="caption" 
-            sx={{ 
-              color: '#999',
-              fontSize: '0.7rem',
-              ml: 1,
-              flexShrink: 0
-            }}
-          >
-            H{heading.level}
-          </Typography>
-        </Box>
-      ))}
-    </>
+            {/* Tree connector lines */}
+            {indentLevel > 0 && (
+              <>
+                {/* Vertical line from parent */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    left: (indentLevel - 1) * 20 + 12,
+                    top: 0,
+                    bottom: hasMoreSiblings ? 0 : '50%',
+                    width: 1,
+                    bgcolor: '#e0e0e0',
+                  }}
+                />
+                {/* Horizontal connector to item */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    left: (indentLevel - 1) * 20 + 12,
+                    top: '50%',
+                    width: 12,
+                    height: 1,
+                    bgcolor: '#e0e0e0',
+                  }}
+                />
+              </>
+            )}
+            
+            {/* Heading item */}
+            <Box
+              onClick={() => onNavigate(heading)}
+              sx={{
+                pl: indentLevel * 2.5 + 0.5,
+                py: 0.75,
+                pr: 1,
+                ml: 0.5,
+                borderRadius: 1.5,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                position: 'relative',
+                transition: 'all 0.15s ease',
+                bgcolor: isActive ? 'rgba(139, 108, 188, 0.12)' : 'transparent',
+                borderLeft: isActive ? '3px solid #8b6cbc' : '3px solid transparent',
+                '&:hover': {
+                  bgcolor: isActive ? 'rgba(139, 108, 188, 0.15)' : 'rgba(0, 0, 0, 0.04)',
+                  '& .heading-badge': {
+                    opacity: 1,
+                  }
+                },
+              }}
+            >
+              {/* Level indicator dot/icon */}
+              <Box
+                sx={{
+                  width: getHeadingIconSize(heading.level),
+                  height: getHeadingIconSize(heading.level),
+                  borderRadius: heading.level === 1 ? 1 : '50%',
+                  bgcolor: getHeadingColor(heading.level),
+                  mr: 1.25,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: heading.level <= 2 ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+                }}
+              >
+                {heading.level === 1 && (
+                  <Typography sx={{ 
+                    fontSize: '0.6rem', 
+                    fontWeight: 700, 
+                    color: 'white',
+                    lineHeight: 1
+                  }}>
+                    §
+                  </Typography>
+                )}
+              </Box>
+              
+              {/* Heading text */}
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography 
+                  sx={{ 
+                    fontSize: getHeadingFontSize(heading.level),
+                    fontWeight: getHeadingFontWeight(heading.level),
+                    color: isActive ? '#5a4080' : getHeadingTextColor(heading.level),
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    lineHeight: 1.4,
+                    letterSpacing: heading.level === 1 ? '0.02em' : 'normal',
+                  }}
+                >
+                  {heading.text || `Untitled ${getHeadingLabel(heading.level)}`}
+                </Typography>
+              </Box>
+              
+              {/* Level badge */}
+              <Chip
+                label={getHeadingLabel(heading.level)}
+                size="small"
+                className="heading-badge"
+                sx={{
+                  height: 18,
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  bgcolor: `${getHeadingColor(heading.level)}15`,
+                  color: getHeadingColor(heading.level),
+                  border: `1px solid ${getHeadingColor(heading.level)}30`,
+                  ml: 1,
+                  opacity: isActive ? 1 : 0.6,
+                  transition: 'opacity 0.15s ease',
+                  '& .MuiChip-label': {
+                    px: 0.75,
+                  }
+                }}
+              />
+            </Box>
+          </Box>
+        );
+      })}
+    </Box>
   );
 };
 
 // Helper functions for heading display
 const getHeadingColor = (level) => {
-  const colors = ['#8b6cbc', '#2196f3', '#4caf50', '#ff9800', '#f44336', '#9c27b0'];
-  return colors[level - 1] || '#666';
+  const colors = {
+    1: '#6b4f9e', // Deep purple for H1
+    2: '#3498db', // Blue for H2
+    3: '#27ae60', // Green for H3
+    4: '#e67e22', // Orange for H4
+    5: '#9b59b6', // Light purple for H5
+    6: '#7f8c8d', // Gray for H6
+  };
+  return colors[level] || '#666';
+};
+
+const getHeadingTextColor = (level) => {
+  return level === 1 ? '#2c3e50' : level === 2 ? '#34495e' : '#555';
 };
 
 const getHeadingFontSize = (level) => {
-  const sizes = ['0.95rem', '0.9rem', '0.85rem', '0.8rem', '0.75rem', '0.7rem'];
-  return sizes[level - 1] || '0.7rem';
+  const sizes = {
+    1: '0.9rem',
+    2: '0.85rem', 
+    3: '0.82rem',
+    4: '0.8rem',
+    5: '0.78rem',
+    6: '0.75rem'
+  };
+  return sizes[level] || '0.75rem';
 };
 
 const getHeadingFontWeight = (level) => {
-  return level <= 2 ? 600 : level <= 4 ? 500 : 400;
+  return level === 1 ? 700 : level === 2 ? 600 : level <= 4 ? 500 : 400;
+};
+
+const getHeadingIconSize = (level) => {
+  const sizes = { 1: 18, 2: 10, 3: 8, 4: 7, 5: 6, 6: 5 };
+  return sizes[level] || 6;
+};
+
+const getHeadingLabel = (level) => {
+  const labels = {
+    1: 'H1',
+    2: 'H2',
+    3: 'H3',
+    4: 'H4',
+    5: 'H5',
+    6: 'H6'
+  };
+  return labels[level] || `H${level}`;
 };
 
 // Main Editor Component
@@ -391,6 +506,9 @@ export default function ManuscriptEditor() {
   const lastKnownServerUpdateRef = useRef(null);
   const lastLocalSaveTimeRef = useRef(null);
   const isSavingRef = useRef(false);
+  
+  // Ref to store editor selection when opening dropdown menus
+  const savedSelectionRef = useRef(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [comments, setComments] = useState([]);
   const [showComments, setShowComments] = useState(false);
@@ -915,6 +1033,33 @@ export default function ManuscriptEditor() {
     }, 0);
     return colors[Math.abs(hash) % colors.length];
   };
+
+  // Helper function to save editor selection before opening dropdown menus
+  const saveEditorSelection = useCallback(() => {
+    if (editor) {
+      const { from, to } = editor.state.selection;
+      savedSelectionRef.current = { from, to };
+    }
+  }, [editor]);
+
+  // Helper function to restore editor selection and apply a command
+  const restoreSelectionAndRun = useCallback((command) => {
+    if (editor && savedSelectionRef.current) {
+      const { from, to } = savedSelectionRef.current;
+      // First restore the selection, then run the command
+      editor.chain()
+        .focus()
+        .setTextSelection({ from, to })
+        .run();
+      // Now run the actual command
+      command();
+      savedSelectionRef.current = null;
+    } else if (editor) {
+      // Fallback: just run the command with focus
+      editor.chain().focus().run();
+      command();
+    }
+  }, [editor]);
 
   // Extract headings from editor content to build document structure
   const extractDocumentStructure = useCallback(() => {
@@ -2122,45 +2267,248 @@ export default function ManuscriptEditor() {
         
         {/* Left Sidebar - Document Structure */}
         <Paper sx={{ 
-          width: showDocumentStructure ? 300 : 0,
-          minWidth: showDocumentStructure ? 300 : 0,
+          width: showDocumentStructure ? 320 : 0,
+          minWidth: showDocumentStructure ? 320 : 0,
           borderRadius: 0, 
-          borderRight: showDocumentStructure ? '1px solid #e0e0e0' : 'none',
+          borderRight: showDocumentStructure ? '1px solid #e8e8e8' : 'none',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          transition: 'width 0.3s ease-in-out, min-width 0.3s ease-in-out'
+          transition: 'width 0.3s ease-in-out, min-width 0.3s ease-in-out',
+          bgcolor: '#fafbfc'
         }}>
+            {/* Header */}
             <Box sx={{ 
               p: 2, 
-              borderBottom: '1px solid #e0e0e0',
+              pb: 1.5,
+              borderBottom: '1px solid #e8e8e8',
+              bgcolor: 'white',
               opacity: showDocumentStructure ? 1 : 0,
               transition: 'opacity 0.3s ease-in-out'
             }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: '#333', mb: 1 }}>
-                Document Structure
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                {manuscript?.wordCount || 0} words • {saving ? 'Saving...' : `Last saved ${lastSaved ? format(lastSaved, 'HH:mm') : 'Never'}`}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                <Box sx={{ 
+                  width: 32, 
+                  height: 32, 
+                  borderRadius: 1.5, 
+                  bgcolor: '#8b6cbc15',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <ViewSidebarIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
+                </Box>
+                <Box>
+                  <Typography sx={{ 
+                    fontWeight: 700, 
+                    color: '#1a1a2e', 
+                    fontSize: '0.95rem',
+                    letterSpacing: '-0.01em'
+                  }}>
+                    Document Outline
+                  </Typography>
+                  <Typography sx={{ 
+                    fontSize: '0.72rem', 
+                    color: '#666',
+                    mt: 0.25
+                  }}>
+                    Navigate your document structure
+                  </Typography>
+                </Box>
+              </Box>
+              
+              {/* Stats row */}
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 1.5, 
+                mt: 1.5,
+                p: 1.25,
+                bgcolor: '#f8f9fa',
+                borderRadius: 1.5,
+                border: '1px solid #eee'
+              }}>
+                <Box sx={{ flex: 1, textAlign: 'center' }}>
+                  <Typography sx={{ 
+                    fontSize: '1.1rem', 
+                    fontWeight: 700, 
+                    color: '#8b6cbc',
+                    lineHeight: 1
+                  }}>
+                    {manuscript?.wordCount?.toLocaleString() || 0}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.65rem', color: '#888', mt: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Words
+                  </Typography>
+                </Box>
+                <Divider orientation="vertical" flexItem sx={{ borderColor: '#e0e0e0' }} />
+                <Box sx={{ flex: 1, textAlign: 'center' }}>
+                  <Typography sx={{ 
+                    fontSize: '1.1rem', 
+                    fontWeight: 700, 
+                    color: '#3498db',
+                    lineHeight: 1
+                  }}>
+                    {documentStructure.length}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.65rem', color: '#888', mt: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Sections
+                  </Typography>
+                </Box>
+                <Divider orientation="vertical" flexItem sx={{ borderColor: '#e0e0e0' }} />
+                <Box sx={{ flex: 1, textAlign: 'center' }}>
+                  <Typography sx={{ 
+                    fontSize: '1.1rem', 
+                    fontWeight: 700, 
+                    color: '#27ae60',
+                    lineHeight: 1
+                  }}>
+                    {documentStructure.filter(h => h.level === 1).length}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.65rem', color: '#888', mt: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Chapters
+                  </Typography>
+                </Box>
+              </Box>
             </Box>
 
+            {/* Headings list */}
             <Box sx={{ 
               flexGrow: 1, 
               overflow: 'auto', 
-              p: 2,
+              py: 1.5,
+              px: 1,
               opacity: showDocumentStructure ? 1 : 0,
               transition: 'opacity 0.3s ease-in-out'
             }}>
               {documentStructure.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="body2" color="textSecondary">
-                    No headings yet. Add headings to see document structure.
+                <Box sx={{ 
+                  textAlign: 'center', 
+                  py: 6, 
+                  px: 3 
+                }}>
+                  <Box sx={{ 
+                    width: 56, 
+                    height: 56, 
+                    borderRadius: 2, 
+                    bgcolor: '#f0f0f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mx: 'auto',
+                    mb: 2
+                  }}>
+                    <H1Icon sx={{ fontSize: 28, color: '#999' }} />
+                  </Box>
+                  <Typography sx={{ 
+                    fontWeight: 600, 
+                    color: '#444', 
+                    fontSize: '0.9rem',
+                    mb: 0.75
+                  }}>
+                    No headings found
                   </Typography>
+                  <Typography sx={{ 
+                    color: '#888', 
+                    fontSize: '0.8rem',
+                    lineHeight: 1.5
+                  }}>
+                    Add headings (H1-H6) to your document to see the structure here.
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<H1Icon sx={{ fontSize: 16 }} />}
+                    sx={{ 
+                      mt: 2,
+                      textTransform: 'none',
+                      borderColor: '#ddd',
+                      color: '#666',
+                      fontSize: '0.8rem',
+                      '&:hover': {
+                        borderColor: '#8b6cbc',
+                        color: '#8b6cbc',
+                        bgcolor: '#8b6cbc08'
+                      }
+                    }}
+                    onClick={() => {
+                      if (editor) {
+                        editor.chain().focus().toggleHeading({ level: 1 }).run();
+                      }
+                    }}
+                  >
+                    Add a Heading
+                  </Button>
                 </Box>
               ) : (
-                <HeadingStructureDisplay headings={documentStructure} onNavigate={navigateToHeading} />
+                <>
+                  {/* Quick legend */}
+                  <Box sx={{ 
+                    display: 'flex', 
+                    gap: 0.75, 
+                    mb: 1.5, 
+                    px: 1,
+                    flexWrap: 'wrap'
+                  }}>
+                    {[1, 2, 3].map(level => {
+                      const count = documentStructure.filter(h => h.level === level).length;
+                      if (count === 0) return null;
+                      return (
+                        <Chip
+                          key={level}
+                          label={`${count} H${level}`}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            fontSize: '0.68rem',
+                            fontWeight: 500,
+                            bgcolor: `${getHeadingColor(level)}12`,
+                            color: getHeadingColor(level),
+                            border: `1px solid ${getHeadingColor(level)}25`,
+                            '& .MuiChip-label': { px: 1 }
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                  <HeadingStructureDisplay 
+                    headings={documentStructure} 
+                    onNavigate={navigateToHeading}
+                    activeHeadingId={null}
+                  />
+                </>
               )}
+            </Box>
+            
+            {/* Footer with save status */}
+            <Box sx={{ 
+              p: 1.5, 
+              borderTop: '1px solid #e8e8e8',
+              bgcolor: 'white',
+              opacity: showDocumentStructure ? 1 : 0,
+              transition: 'opacity 0.3s ease-in-out'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                {saving ? (
+                  <>
+                    <CircularProgress size={12} sx={{ color: '#8b6cbc' }} />
+                    <Typography sx={{ fontSize: '0.72rem', color: '#8b6cbc', fontWeight: 500 }}>
+                      Saving changes...
+                    </Typography>
+                  </>
+                ) : (
+                  <>
+                    <Box sx={{ 
+                      width: 6, 
+                      height: 6, 
+                      borderRadius: '50%', 
+                      bgcolor: '#27ae60' 
+                    }} />
+                    <Typography sx={{ fontSize: '0.72rem', color: '#666' }}>
+                      Last saved {lastSaved ? format(lastSaved, 'HH:mm') : 'Never'}
+                    </Typography>
+                  </>
+                )}
+              </Box>
             </Box>
           </Paper>
 
@@ -2239,6 +2587,10 @@ export default function ManuscriptEditor() {
             {/* Heading Dropdown */}
             <Button
               size="small"
+              onMouseDown={(e) => {
+                e.preventDefault(); // Prevent focus loss
+                saveEditorSelection();
+              }}
               onClick={(e) => setHeadingDropdownAnchor(e.currentTarget)}
               endIcon={<ArrowDropDownIcon />}
               variant="outlined"
@@ -2269,6 +2621,10 @@ export default function ManuscriptEditor() {
             {/* Font Family Dropdown */}
             <Button
               size="small"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                saveEditorSelection();
+              }}
               onClick={(e) => setFontFamilyAnchor(e.currentTarget)}
               endIcon={<ArrowDropDownIcon />}
               variant="outlined"
@@ -2294,6 +2650,10 @@ export default function ManuscriptEditor() {
             {/* Font Size Dropdown */}
             <Button
               size="small"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                saveEditorSelection();
+              }}
               onClick={(e) => setFontSizeAnchor(e.currentTarget)}
               endIcon={<ArrowDropDownIcon />}
               variant="outlined"
@@ -2817,7 +3177,10 @@ export default function ManuscriptEditor() {
         </Box>
         
         <MuiMenuItem 
-          onClick={() => { editor.chain().focus().toggleHeading({ level: 1 }).run(); setHeadingDropdownAnchor(null); }}
+          onClick={() => { 
+            restoreSelectionAndRun(() => editor.chain().focus().toggleHeading({ level: 1 }).run()); 
+            setHeadingDropdownAnchor(null); 
+          }}
           className={editor?.isActive('heading', { level: 1 }) ? 'active' : ''}
           sx={{ pl: 3 }}
         >
@@ -2832,7 +3195,10 @@ export default function ManuscriptEditor() {
         </MuiMenuItem>
         
         <MuiMenuItem 
-          onClick={() => { editor.chain().focus().toggleHeading({ level: 2 }).run(); setHeadingDropdownAnchor(null); }}
+          onClick={() => { 
+            restoreSelectionAndRun(() => editor.chain().focus().toggleHeading({ level: 2 }).run()); 
+            setHeadingDropdownAnchor(null); 
+          }}
           className={editor?.isActive('heading', { level: 2 }) ? 'active' : ''}
           sx={{ pl: 3 }}
         >
@@ -2847,7 +3213,10 @@ export default function ManuscriptEditor() {
         </MuiMenuItem>
         
         <MuiMenuItem 
-          onClick={() => { editor.chain().focus().toggleHeading({ level: 3 }).run(); setHeadingDropdownAnchor(null); }}
+          onClick={() => { 
+            restoreSelectionAndRun(() => editor.chain().focus().toggleHeading({ level: 3 }).run()); 
+            setHeadingDropdownAnchor(null); 
+          }}
           className={editor?.isActive('heading', { level: 3 }) ? 'active' : ''}
           sx={{ pl: 3 }}
         >
@@ -2862,7 +3231,10 @@ export default function ManuscriptEditor() {
         </MuiMenuItem>
         
         <MuiMenuItem 
-          onClick={() => { editor.chain().focus().toggleHeading({ level: 4 }).run(); setHeadingDropdownAnchor(null); }}
+          onClick={() => { 
+            restoreSelectionAndRun(() => editor.chain().focus().toggleHeading({ level: 4 }).run()); 
+            setHeadingDropdownAnchor(null); 
+          }}
           className={editor?.isActive('heading', { level: 4 }) ? 'active' : ''}
           sx={{ pl: 3 }}
         >
@@ -2877,7 +3249,10 @@ export default function ManuscriptEditor() {
         </MuiMenuItem>
         
         <MuiMenuItem 
-          onClick={() => { editor.chain().focus().toggleHeading({ level: 5 }).run(); setHeadingDropdownAnchor(null); }}
+          onClick={() => { 
+            restoreSelectionAndRun(() => editor.chain().focus().toggleHeading({ level: 5 }).run()); 
+            setHeadingDropdownAnchor(null); 
+          }}
           className={editor?.isActive('heading', { level: 5 }) ? 'active' : ''}
           sx={{ pl: 3 }}
         >
@@ -2892,7 +3267,10 @@ export default function ManuscriptEditor() {
         </MuiMenuItem>
         
         <MuiMenuItem 
-          onClick={() => { editor.chain().focus().toggleHeading({ level: 6 }).run(); setHeadingDropdownAnchor(null); }}
+          onClick={() => { 
+            restoreSelectionAndRun(() => editor.chain().focus().toggleHeading({ level: 6 }).run()); 
+            setHeadingDropdownAnchor(null); 
+          }}
           className={editor?.isActive('heading', { level: 6 }) ? 'active' : ''}
           sx={{ pl: 3 }}
         >
@@ -2920,7 +3298,10 @@ export default function ManuscriptEditor() {
         </Box>
         
         <MuiMenuItem 
-          onClick={() => { editor.chain().focus().setParagraph().run(); setHeadingDropdownAnchor(null); }}
+          onClick={() => { 
+            restoreSelectionAndRun(() => editor.chain().focus().setParagraph().run()); 
+            setHeadingDropdownAnchor(null); 
+          }}
           className={!editor?.isActive('heading') ? 'active' : ''}
           sx={{ pl: 3 }}
         >
@@ -2998,7 +3379,7 @@ export default function ManuscriptEditor() {
           <MuiMenuItem 
             key={font}
             onClick={() => { 
-              editor.chain().focus().setFontFamily(font).run(); 
+              restoreSelectionAndRun(() => editor.chain().focus().setFontFamily(font).run()); 
               setFontFamilyAnchor(null); 
             }}
             className={editor?.getAttributes('textStyle')?.fontFamily === font ? 'active' : ''}
@@ -3030,7 +3411,7 @@ export default function ManuscriptEditor() {
           <MuiMenuItem 
             key={font}
             onClick={() => { 
-              editor.chain().focus().setFontFamily(font).run(); 
+              restoreSelectionAndRun(() => editor.chain().focus().setFontFamily(font).run()); 
               setFontFamilyAnchor(null); 
             }}
             className={editor?.getAttributes('textStyle')?.fontFamily === font ? 'active' : ''}
@@ -3062,7 +3443,7 @@ export default function ManuscriptEditor() {
           <MuiMenuItem 
             key={font}
             onClick={() => { 
-              editor.chain().focus().setFontFamily(font).run(); 
+              restoreSelectionAndRun(() => editor.chain().focus().setFontFamily(font).run()); 
               setFontFamilyAnchor(null); 
             }}
             className={editor?.getAttributes('textStyle')?.fontFamily === font ? 'active' : ''}
@@ -3118,7 +3499,7 @@ export default function ManuscriptEditor() {
             <MuiMenuItem 
               key={size}
               onClick={() => { 
-                editor.chain().focus().setMark('textStyle', { fontSize: sizeInPx }).run(); 
+                restoreSelectionAndRun(() => editor.chain().focus().setMark('textStyle', { fontSize: sizeInPx }).run()); 
                 setFontSizeAnchor(null); 
               }}
               className={currentSize === sizeInPx ? 'active' : ''}
