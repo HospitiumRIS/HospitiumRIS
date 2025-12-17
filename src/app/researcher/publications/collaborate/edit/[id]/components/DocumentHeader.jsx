@@ -23,7 +23,9 @@ import {
 import { styled } from '@mui/material/styles';
 
 // Styled Badge for online status indicator
-const OnlineStatusBadge = styled(Badge)(({ theme, isOnline }) => ({
+const OnlineStatusBadge = styled(Badge, {
+  shouldForwardProp: (prop) => prop !== 'isOnline'
+})(({ theme, isOnline }) => ({
   '& .MuiBadge-badge': {
     backgroundColor: isOnline ? '#44b700' : '#bdbdbd',
     color: isOnline ? '#44b700' : '#bdbdbd',
@@ -72,24 +74,61 @@ export default function DocumentHeader({
   collaborators = [], 
   pendingInvitations = [],
   currentUserId,
+  onlineUserIds = [], // Array of user IDs currently online from presence system
   onBack, 
   onInvite, 
   loading = false 
 }) {
+  // Check if a user is online based on presence data
+  const isUserOnline = (userId) => {
+    return onlineUserIds.includes(userId);
+  };
+
   // Build complete team list
   const buildTeamList = () => {
     const team = [];
     
+    // Add creator first if available and not already in collaborators
+    if (manuscript?.creator) {
+      const creator = manuscript.creator;
+      const creatorName = creator.name || `${creator.givenName || ''} ${creator.familyName || ''}`.trim();
+      const creatorId = creator.id || manuscript.createdBy;
+      
+      // Check if creator is already in collaborators list
+      const creatorInCollaborators = collaborators.some(c => c.userId === creatorId || c.id === creatorId);
+      
+      if (!creatorInCollaborators && creatorName) {
+        team.push({
+          id: `creator-${creatorId}`,
+          userId: creatorId,
+          name: creatorName,
+          email: creator.email,
+          role: 'OWNER',
+          avatar: creatorName.charAt(0).toUpperCase(),
+          initials: creatorName.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase(),
+          isOnline: isUserOnline(creatorId),
+          isCurrentUser: creatorId === currentUserId,
+          isPending: false,
+          isCreator: true,
+          color: '#8b6cbc'
+        });
+      }
+    }
+    
     // Add active collaborators
     collaborators.forEach(collab => {
+      const collabName = collab.name || `${collab.givenName || ''} ${collab.familyName || ''}`.trim();
+      const collabUserId = collab.userId || collab.id;
       team.push({
         id: collab.id,
-        name: collab.name || `${collab.givenName || ''} ${collab.familyName || ''}`.trim(),
+        userId: collabUserId,
+        name: collabName,
         email: collab.email,
         role: collab.role,
-        avatar: collab.avatar || (collab.name ? collab.name.charAt(0).toUpperCase() : '?'),
-        initials: collab.name ? collab.name.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase() : '?',
-        isOnline: collab.id === currentUserId, // Current user is "online"
+        avatar: collab.avatar || (collabName ? collabName.charAt(0).toUpperCase() : '?'),
+        initials: collabName ? collabName.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase() : '?',
+        isOnline: isUserOnline(collabUserId),
+        isCurrentUser: collabUserId === currentUserId,
         isPending: false,
         color: getRoleColor(collab.role)
       });
@@ -100,12 +139,14 @@ export default function DocumentHeader({
       const name = invitation.name || `${invitation.givenName || ''} ${invitation.familyName || ''}`.trim();
       team.push({
         id: `pending-${idx}`,
+        userId: null,
         name: name || 'Pending User',
         email: invitation.email,
         role: invitation.role || 'Invited',
         avatar: name ? name.charAt(0).toUpperCase() : '?',
         initials: name ? name.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase() : '?',
         isOnline: false,
+        isCurrentUser: false,
         isPending: true,
         color: '#9e9e9e'
       });
@@ -231,7 +272,7 @@ export default function DocumentHeader({
                             </Box>
                             <Box sx={{ flex: 1 }}>
                               <Typography variant="body2" sx={{ color: 'white', fontWeight: 500, fontSize: '0.8rem' }}>
-                                {member.name} {member.isOnline && '(You)'}
+                                {member.name} {member.isCurrentUser && '(You)'}
                               </Typography>
                               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7rem' }}>
                                 {member.role} • {member.isOnline ? 'Online' : 'Offline'}

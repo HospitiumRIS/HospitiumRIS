@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../../lib/prisma.js';
 import { getUserId } from '../../../lib/auth-server.js';
-
-const prisma = new PrismaClient();
 
 export async function GET(request) {
     try {
         // Get authenticated user ID
         const userId = await getUserId(request);
+        console.log('[Manuscripts API] Fetching manuscripts for user:', userId);
+        
         if (!userId) {
+            console.log('[Manuscripts API] No userId found, returning 401');
             return NextResponse.json(
                 { error: 'Authentication required' },
                 { status: 401 }
@@ -126,20 +127,23 @@ export async function GET(request) {
             'Unknown Creator';
 
         // Process collaborators (excluding creator if they're also in collaborators)
-        const processedCollaborators = manuscript.collaborators.map(collab => {
-            const user = collab.user;
-            const fullName = `${user.givenName || ''} ${user.familyName || ''}`.trim() || user.email || 'Unknown User';
-            return {
-                id: user.id,
-                name: fullName,
-                role: collab.role,
-                avatar: fullName.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2),
-                isCreator: user.id === manuscript.createdBy
-            };
-        });
+        // Filter out collaborators with null users (edge case when user is deleted)
+        const processedCollaborators = (manuscript.collaborators || [])
+            .filter(collab => collab && collab.user)
+            .map(collab => {
+                const user = collab.user;
+                const fullName = `${user.givenName || ''} ${user.familyName || ''}`.trim() || user.email || 'Unknown User';
+                return {
+                    id: user.id,
+                    name: fullName,
+                    role: collab.role,
+                    avatar: fullName.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2),
+                    isCreator: user.id === manuscript.createdBy
+                };
+            });
 
         // Process pending invitations
-        const pendingInvitationsList = manuscript.invitations.map(invitation => ({
+        const pendingInvitationsList = (manuscript.invitations || []).map(invitation => ({
             id: invitation.id,
             givenName: invitation.givenName,
             familyName: invitation.familyName,
@@ -160,7 +164,7 @@ export async function GET(request) {
             pendingInvitationsList,
             pendingInvitations: pendingInvitationsList.length,
             authors: [creatorName, ...processedCollaborators.map(c => c.name)].join(', '),
-            lastUpdated: manuscript.updatedAt.toISOString(),
+            lastUpdated: manuscript.updatedAt?.toISOString() || new Date().toISOString(),
             collaboratorCount: processedCollaborators.length,
             totalCollaborators: processedCollaborators.length
         };
@@ -179,12 +183,11 @@ export async function GET(request) {
 
   } catch (error) {
     console.error('Error fetching manuscripts:', error);
+    console.error('Error stack:', error.stack);
     return NextResponse.json(
-            { error: 'Failed to fetch manuscripts' },
+            { error: 'Failed to fetch manuscripts', details: error.message },
       { status: 500 }
     );
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
@@ -272,10 +275,8 @@ export async function POST(request) {
   } catch (error) {
     console.error('Error creating manuscript:', error);
     return NextResponse.json(
-      { error: 'Failed to create manuscript' },
+      { error: 'Failed to create manuscript', details: error.message },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

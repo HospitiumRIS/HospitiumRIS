@@ -382,6 +382,7 @@ export default function ManuscriptEditor() {
   const [lastSaved, setLastSaved] = useState(null);
   const [collaborators, setCollaborators] = useState([]);
   const [pendingInvitations, setPendingInvitations] = useState([]);
+  const [onlineUserIds, setOnlineUserIds] = useState([]); // Track online users from presence system
   const [comments, setComments] = useState([]);
   const [showComments, setShowComments] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState(null);
@@ -640,12 +641,16 @@ export default function ManuscriptEditor() {
           
           // Set collaborators data
           setCollaborators(manuscriptData.collaborators.map(collab => ({
-            id: collab.user.id,
-            name: `${collab.user.givenName} ${collab.user.familyName}`,
+            id: collab.id,
+            collaboratorId: collab.id,
+            name: `${collab.user.givenName || ''} ${collab.user.familyName || ''}`.trim(),
+            givenName: collab.user.givenName,
+            familyName: collab.user.familyName,
             email: collab.user.email,
             role: collab.role,
-            avatar: collab.user.givenName.charAt(0).toUpperCase(),
-            color: getAvatarColor(collab.user.id)
+            avatar: collab.user.givenName ? collab.user.givenName.charAt(0).toUpperCase() : '?',
+            color: getAvatarColor(collab.user.id),
+            userId: collab.user.id
           })));
           
           // Fetch pending invitations
@@ -690,6 +695,57 @@ export default function ManuscriptEditor() {
 
     loadManuscript();
   }, [manuscriptId, editor]);
+
+  // Presence tracking - send heartbeat and receive online users
+  useEffect(() => {
+    if (!manuscriptId || !user?.id) return;
+
+    let isActive = true;
+    let heartbeatInterval = null;
+
+    // Function to update presence (heartbeat)
+    const updatePresence = async () => {
+      if (!isActive) return;
+      
+      try {
+        const response = await fetch(`/api/manuscripts/${manuscriptId}/presence`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data?.onlineUsers) {
+            // Extract user IDs from online users
+            const onlineIds = data.data.onlineUsers.map(u => u.id);
+            setOnlineUserIds(onlineIds);
+          }
+        }
+      } catch (error) {
+        console.error('Presence update failed:', error);
+      }
+    };
+
+    // Initial presence update
+    updatePresence();
+
+    // Set up heartbeat interval (every 10 seconds)
+    heartbeatInterval = setInterval(updatePresence, 10000);
+
+    // Cleanup function - remove presence when leaving
+    return () => {
+      isActive = false;
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
+      
+      // Send leave signal
+      fetch(`/api/manuscripts/${manuscriptId}/presence`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      }).catch(() => {}); // Ignore errors on cleanup
+    };
+  }, [manuscriptId, user?.id]);
 
   // Configure TrackChanges extension when user data is available
   useEffect(() => {
@@ -1831,6 +1887,7 @@ export default function ManuscriptEditor() {
         collaborators={collaborators || []}
         pendingInvitations={pendingInvitations || []}
         currentUserId={user?.id}
+        onlineUserIds={onlineUserIds}
         onBack={() => router.back()}
         onInvite={handleInvite}
         loading={loading}
