@@ -57,129 +57,16 @@ const FoundationAnalyticsDashboard = () => {
 
   const loadAnalyticsData = async () => {
     try {
-    setLoading(true);
+      setLoading(true);
       setError(null);
       
-      // Simulate API calls for both donations and grants data
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/foundation/analytics');
+      if (!response.ok) {
+        throw new Error('Failed to fetch foundation analytics');
+      }
       
-      // Mock comprehensive analytics data
-      setAnalyticsData({
-        overview: {
-          totalRaised: 78500,
-          totalDonations: 45,
-          uniqueDonors: 32,
-          averageDonation: 1744,
-          activeCampaigns: 12,
-          retentionRate: 68.5,
-          totalGrants: 850000,
-          activeGrants: 8,
-          grantSuccess: 75.0,
-          avgGrantAmount: 106250
-        },
-        monthlyTrends: [
-          { month: 'Jan 2024', donations: 12500, grants: 125000, total: 137500 },
-          { month: 'Feb 2024', donations: 8300, grants: 75000, total: 83300 },
-          { month: 'Mar 2024', donations: 15200, grants: 200000, total: 215200 },
-          { month: 'Apr 2024', donations: 18700, grants: 150000, total: 168700 },
-          { month: 'May 2024', donations: 11800, grants: 100000, total: 111800 },
-          { month: 'Jun 2024', donations: 12000, grants: 200000, total: 212000 }
-        ],
-        campaignPerformance: [
-          {
-            id: 1,
-            name: 'Annual Golfing Event',
-            category: 'Fundraising',
-            target: 15000,
-            raised: 12500,
-            donors: 25,
-            progress: 83.3,
-            status: 'Active',
-            type: 'campaign'
-          },
-          {
-            id: 2,
-            name: 'Medical Research Grant',
-            category: 'Healthcare',
-            target: 250000,
-            raised: 250000,
-            donors: 1,
-            progress: 100,
-            status: 'Completed',
-            type: 'grant'
-          },
-          {
-            id: 3,
-            name: 'Education Initiative',
-            category: 'Education',
-            target: 50000,
-            raised: 35000,
-            donors: 18,
-            progress: 70,
-            status: 'Active',
-            type: 'campaign'
-          },
-          {
-            id: 4,
-            name: 'Technology Infrastructure Grant',
-            category: 'Technology',
-            target: 400000,
-            raised: 400000,
-            donors: 1,
-            progress: 100,
-            status: 'Completed',
-            type: 'grant'
-          }
-        ],
-        categoryDistribution: [
-          { category: 'Healthcare', amount: 275000, percentage: 35.1, color: '#8b6cbc' },
-          { category: 'Education', amount: 185000, percentage: 23.6, color: '#a084d1' },
-          { category: 'Technology', amount: 200000, percentage: 25.5, color: '#b794f4' },
-          { category: 'Fundraising', amount: 125000, percentage: 15.9, color: '#c8a8f6' }
-        ],
-        topDonors: [
-          {
-            id: 1,
-            name: 'NIH Foundation',
-            totalDonated: 250000,
-            donations: 1,
-            avgAmount: 250000,
-            firstGift: '2024-01-15',
-            recentGift: '2024-01-15',
-            type: 'Grant'
-          },
-          {
-            id: 2,
-            name: 'Tech Innovation Fund',
-            totalDonated: 200000,
-            donations: 1,
-            avgAmount: 200000,
-            firstGift: '2024-03-10',
-            recentGift: '2024-03-10',
-            type: 'Grant'
-          },
-          {
-            id: 3,
-            name: 'Dr. Sarah Johnson',
-            totalDonated: 15000,
-            donations: 5,
-            avgAmount: 3000,
-            firstGift: '2024-01-20',
-            recentGift: '2024-06-15',
-            type: 'Individual'
-          },
-          {
-            id: 4,
-            name: 'Community Foundation',
-            totalDonated: 8500,
-            donations: 3,
-            avgAmount: 2833,
-            firstGift: '2024-02-05',
-            recentGift: '2024-05-30',
-            type: 'Foundation'
-          }
-        ]
-      });
+      const data = await response.json();
+      setAnalyticsData(data);
     } catch (error) {
       console.error('Error loading analytics data:', error);
       setError('Failed to load analytics data');

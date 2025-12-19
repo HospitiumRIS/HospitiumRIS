@@ -9,7 +9,6 @@ import {
   CardContent,
   Button,
   Paper,
-  Grid,
   Avatar,
   LinearProgress,
   Chip,
@@ -68,117 +67,37 @@ const PublicationsReportPage = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // Mock data - replace with real API calls
   useEffect(() => {
     const fetchPublicationsData = async () => {
-      // Simulate API call
-      setTimeout(() => {
+      try {
+        const response = await fetch('/api/researcher/analytics/publications');
+        if (!response.ok) {
+          throw new Error('Failed to fetch publications data');
+        }
+        const data = await response.json();
+        setPublicationsData(data);
+      } catch (error) {
+        console.error('Error fetching publications data:', error);
         setPublicationsData({
           overview: {
-            totalPublications: 24,
-            totalCitations: 342,
-            averageCitationsPerPaper: 14.3,
-            hIndex: 12,
-            recentPublications: 8,
-            underReview: 3,
-            totalViews: 15420,
-            totalDownloads: 8765
+            totalPublications: 0,
+            totalCitations: 0,
+            averageCitationsPerPaper: 0,
+            hIndex: 0,
+            recentPublications: 0,
+            underReview: 0,
+            totalViews: 0,
+            totalDownloads: 0
           },
-          yearlyTrend: [
-            { year: 2020, publications: 3, citations: 45 },
-            { year: 2021, publications: 6, citations: 89 },
-            { year: 2022, publications: 8, citations: 124 },
-            { year: 2023, publications: 7, citations: 84 }
-          ],
-          publications: [
-            {
-              id: 1,
-              title: 'Machine Learning Applications in Healthcare Data Analysis',
-              authors: 'Smith, J., Johnson, A., Williams, B.',
-              journal: 'Nature Digital Medicine',
-              year: 2023,
-              type: 'Journal Article',
-              citations: 87,
-              views: 2340,
-              downloads: 1876,
-              status: 'Published',
-              doi: '10.1038/s41591-023-02455-z',
-              impactFactor: 12.4,
-              quartile: 'Q1'
-            },
-            {
-              id: 2,
-              title: 'Personalized Treatment Protocols for Chronic Diseases',
-              authors: 'Smith, J., Davis, C., Brown, D.',
-              journal: 'JAMA Network Open',
-              year: 2023,
-              type: 'Journal Article',
-              citations: 64,
-              views: 1890,
-              downloads: 1456,
-              status: 'Published',
-              doi: '10.1001/jamanetworkopen.2023.12345',
-              impactFactor: 8.9,
-              quartile: 'Q1'
-            },
-            {
-              id: 3,
-              title: 'AI-Driven Drug Discovery in Sub-Saharan Africa',
-              authors: 'Smith, J., Thompson, E., Wilson, F.',
-              journal: 'Science Translational Medicine',
-              year: 2022,
-              type: 'Journal Article',
-              citations: 52,
-              views: 1567,
-              downloads: 1234,
-              status: 'Published',
-              doi: '10.1126/scitranslmed.abcd1234',
-              impactFactor: 17.2,
-              quartile: 'Q1'
-            },
-            {
-              id: 4,
-              title: 'Telemedicine Implementation in Rural Healthcare Systems',
-              authors: 'Smith, J., Anderson, G.',
-              journal: 'The Lancet Digital Health',
-              year: 2022,
-              type: 'Journal Article',
-              citations: 41,
-              views: 1234,
-              downloads: 987,
-              status: 'Published',
-              doi: '10.1016/S2589-7500(22)00123-4',
-              impactFactor: 15.8,
-              quartile: 'Q1'
-            },
-            {
-              id: 5,
-              title: 'Blockchain Applications in Medical Record Management',
-              authors: 'Smith, J., Taylor, H., Clark, I.',
-              journal: 'IEEE Transactions on Biomedical Engineering',
-              year: 2023,
-              type: 'Conference Paper',
-              citations: 23,
-              views: 890,
-              downloads: 654,
-              status: 'Under Review',
-              impactFactor: 4.6,
-              quartile: 'Q2'
-            }
-          ],
-          topJournals: [
-            { journal: 'Nature Digital Medicine', publications: 4, avgCitations: 67.5, impactFactor: 12.4 },
-            { journal: 'JAMA Network Open', publications: 3, avgCitations: 52.3, impactFactor: 8.9 },
-            { journal: 'Science Translational Medicine', publications: 2, avgCitations: 48.5, impactFactor: 17.2 }
-          ],
-          collaborators: [
-            { name: 'Dr. Alice Johnson', publications: 8, institution: 'Harvard Medical School' },
-            { name: 'Dr. Bob Williams', publications: 6, institution: 'University of Oxford' },
-            { name: 'Dr. Carol Davis', publications: 5, institution: 'Stanford University' }
-          ]
+          yearlyTrend: [],
+          publications: [],
+          topJournals: [],
+          collaborators: [],
+          filters: { years: [], types: [] }
         });
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     };
 
     fetchPublicationsData();
@@ -382,10 +301,9 @@ const PublicationsReportPage = () => {
                         label="Year"
                       >
                         <MenuItem value="All">All Years</MenuItem>
-                        <MenuItem value="2023">2023</MenuItem>
-                        <MenuItem value="2022">2022</MenuItem>
-                        <MenuItem value="2021">2021</MenuItem>
-                        <MenuItem value="2020">2020</MenuItem>
+                        {publicationsData?.filters?.years?.map(year => (
+                          <MenuItem key={year} value={year.toString()}>{year}</MenuItem>
+                        ))}
                       </Select>
                     </FormControl>
                     <FormControl size="small" sx={{ minWidth: 150 }}>
@@ -396,10 +314,9 @@ const PublicationsReportPage = () => {
                         label="Type"
                       >
                         <MenuItem value="All">All Types</MenuItem>
-                        <MenuItem value="Journal Article">Journal Article</MenuItem>
-                        <MenuItem value="Conference Paper">Conference Paper</MenuItem>
-                        <MenuItem value="Book Chapter">Book Chapter</MenuItem>
-                        <MenuItem value="Review">Review</MenuItem>
+                        {publicationsData?.filters?.types?.map(type => (
+                          <MenuItem key={type} value={type}>{type}</MenuItem>
+                        ))}
                       </Select>
                     </FormControl>
                   </Box>
@@ -508,9 +425,9 @@ const PublicationsReportPage = () => {
                   Publication Performance Analytics
                 </Typography>
 
-                <Grid container spacing={3}>
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                   {/* Yearly Publications Trend */}
-                  <Grid item xs={12} md={8}>
+                  <Box sx={{ flex: '1 1 65%', minWidth: { xs: '100%', md: '300px' } }}>
                     <Card elevation={1} sx={{ p: 2, mb: 3 }}>
                       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
                         Publications & Citations by Year
@@ -538,10 +455,10 @@ const PublicationsReportPage = () => {
                         ))}
                       </Box>
                     </Card>
-                  </Grid>
+                  </Box>
 
                   {/* Key Performance Metrics */}
-                  <Grid item xs={12} md={4}>
+                  <Box sx={{ flex: '1 1 30%', minWidth: { xs: '100%', md: '250px' } }}>
                     <Card elevation={1} sx={{ p: 2, height: 'fit-content' }}>
                       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
                         Key Performance Metrics
@@ -569,8 +486,8 @@ const PublicationsReportPage = () => {
                         </Box>
                       </Box>
                     </Card>
-                  </Grid>
-                </Grid>
+                  </Box>
+                </Box>
               </Box>
             )}
 

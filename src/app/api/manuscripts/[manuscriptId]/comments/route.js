@@ -51,10 +51,12 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Get all comments for this manuscript
+    // Get only top-level comments (parent comments, not replies)
+    // Replies are included via the nested 'replies' relation
     const comments = await prisma.manuscriptComment.findMany({
       where: {
-        manuscriptId: manuscriptId
+        manuscriptId: manuscriptId,
+        parentCommentId: null  // Only get parent comments, not replies
       },
       include: {
         author: {

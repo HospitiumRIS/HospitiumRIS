@@ -26,7 +26,7 @@ const Footer = () => {
   const quickLinks = [
     { name: 'About Us', href: '/about' },
     { name: 'Features', href: '#' },
-    { name: 'Documentation', href: 'https://github.com/HospitiumRIS/HospitiumRIS' },
+    { name: 'Documentation', href: '/docs/build/index.html' },
     
     
   ];

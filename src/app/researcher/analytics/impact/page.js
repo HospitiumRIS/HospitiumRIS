@@ -9,7 +9,6 @@ import {
   CardContent,
   Button,
   Paper,
-  Grid,
   Avatar,
   LinearProgress,
   Chip,
@@ -53,69 +52,42 @@ const ResearchImpactPage = () => {
   const [loading, setLoading] = useState(true);
   const [impactData, setImpactData] = useState(null);
 
-  // Mock data - replace with real API calls
   useEffect(() => {
     const fetchImpactData = async () => {
-      // Simulate API call
-      setTimeout(() => {
+      try {
+        const response = await fetch('/api/researcher/analytics/impact');
+        if (!response.ok) {
+          throw new Error('Failed to fetch impact data');
+        }
+        const data = await response.json();
+        setImpactData(data);
+      } catch (error) {
+        console.error('Error fetching impact data:', error);
         setImpactData({
           overview: {
-            totalCitations: 342,
-            hIndex: 12,
-            i10Index: 8,
-            totalPublications: 24,
-            totalViews: 15420,
-            totalDownloads: 8765,
-            collaborators: 45,
-            researchScore: 85.7
+            totalCitations: 0,
+            hIndex: 0,
+            i10Index: 0,
+            totalPublications: 0,
+            totalViews: 0,
+            totalDownloads: 0,
+            collaborators: 0,
+            researchScore: 0
           },
-          citationTrend: [
-            { month: 'Jan', citations: 25 },
-            { month: 'Feb', citations: 28 },
-            { month: 'Mar', citations: 35 },
-            { month: 'Apr', citations: 42 },
-            { month: 'May', citations: 38 },
-            { month: 'Jun', citations: 45 }
-          ],
-          topPublications: [
-            {
-              title: 'Machine Learning Applications in Healthcare Data Analysis',
-              citations: 87,
-              year: 2023,
-              journal: 'Nature Digital Medicine',
-              impact: 'High'
-            },
-            {
-              title: 'Personalized Treatment Protocols for Chronic Diseases',
-              citations: 64,
-              year: 2022,
-              journal: 'JAMA Network Open',
-              impact: 'High'
-            },
-            {
-              title: 'AI-Driven Drug Discovery in Sub-Saharan Africa',
-              citations: 52,
-              year: 2023,
-              journal: 'Science Translational Medicine',
-              impact: 'Medium'
-            }
-          ],
-          collaborationNetwork: [
-            { institution: 'University of Nairobi', collaborations: 12, country: 'Kenya' },
-            { institution: 'Harvard Medical School', collaborations: 8, country: 'USA' },
-            { institution: 'Oxford University', collaborations: 6, country: 'UK' },
-            { institution: 'University of Cape Town', collaborations: 5, country: 'South Africa' }
-          ],
+          citationTrend: [],
+          topPublications: [],
+          collaborationNetwork: [],
           metrics: {
-            altmetricScore: 78,
-            socialMediaMentions: 156,
-            newsArticles: 23,
-            policyDocuments: 4,
-            blogPosts: 89
+            altmetricScore: 0,
+            socialMediaMentions: 0,
+            newsArticles: 0,
+            policyDocuments: 0,
+            blogPosts: 0
           }
         });
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     };
 
     fetchImpactData();
@@ -271,9 +243,9 @@ const ResearchImpactPage = () => {
                   Citation Analytics & Trends
                 </Typography>
 
-                <Grid container spacing={3}>
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                   {/* Citation Trend Chart */}
-                  <Grid item xs={12} md={8}>
+                  <Box sx={{ flex: '1 1 65%', minWidth: { xs: '100%', md: '300px' } }}>
                     <Card elevation={1} sx={{ p: 2, mb: 3 }}>
                       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
                         Citation Trend (Last 6 Months)
@@ -301,10 +273,10 @@ const ResearchImpactPage = () => {
                         ))}
                       </Box>
                     </Card>
-                  </Grid>
+                  </Box>
 
                   {/* Key Metrics */}
-                  <Grid item xs={12} md={4}>
+                  <Box sx={{ flex: '1 1 30%', minWidth: { xs: '100%', md: '250px' } }}>
                     <Card elevation={1} sx={{ p: 2, height: 'fit-content' }}>
                       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
                         Key Citation Metrics
@@ -327,13 +299,15 @@ const ResearchImpactPage = () => {
                         <Box>
                           <Typography variant="body2" color="text.secondary">Average Citations per Paper</Typography>
                           <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
-                            {Math.round(impactData.overview.totalCitations / impactData.overview.totalPublications)}
+                            {impactData.overview.totalPublications > 0 
+                              ? Math.round(impactData.overview.totalCitations / impactData.overview.totalPublications)
+                              : 0}
                           </Typography>
                         </Box>
                       </Box>
                     </Card>
-                  </Grid>
-                </Grid>
+                  </Box>
+                </Box>
               </Box>
             )}
 
@@ -402,8 +376,8 @@ const ResearchImpactPage = () => {
                   Research Collaboration Network
                 </Typography>
 
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={8}>
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                  <Box sx={{ flex: '1 1 65%', minWidth: { xs: '100%', md: '300px' } }}>
                     <Card elevation={1} sx={{ p: 2 }}>
                       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
                         Top Collaborative Institutions
@@ -448,9 +422,9 @@ const ResearchImpactPage = () => {
                         ))}
                       </List>
                     </Card>
-                  </Grid>
+                  </Box>
 
-                  <Grid item xs={12} md={4}>
+                  <Box sx={{ flex: '1 1 30%', minWidth: { xs: '100%', md: '250px' } }}>
                     <Card elevation={1} sx={{ p: 2 }}>
                       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
                         Collaboration Stats
@@ -475,8 +449,8 @@ const ResearchImpactPage = () => {
                         </Box>
                       </Box>
                     </Card>
-                  </Grid>
-                </Grid>
+                  </Box>
+                </Box>
               </Box>
             )}
 
@@ -487,8 +461,8 @@ const ResearchImpactPage = () => {
                   Alternative Impact Metrics
                 </Typography>
 
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                  <Box sx={{ flex: '1 1 45%', minWidth: { xs: '100%', md: '300px' } }}>
                     <Card elevation={1} sx={{ p: 2 }}>
                       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
                         Altmetric Score
@@ -517,9 +491,9 @@ const ResearchImpactPage = () => {
                         }}
                       />
                     </Card>
-                  </Grid>
+                  </Box>
 
-                  <Grid item xs={12} md={6}>
+                  <Box sx={{ flex: '1 1 45%', minWidth: { xs: '100%', md: '300px' } }}>
                     <Card elevation={1} sx={{ p: 2 }}>
                       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
                         Social & Media Impact
@@ -551,8 +525,8 @@ const ResearchImpactPage = () => {
                         </Box>
                       </Box>
                     </Card>
-                  </Grid>
-                </Grid>
+                  </Box>
+                </Box>
 
                 <Alert severity="info" sx={{ mt: 3 }}>
                   <Typography variant="body2">

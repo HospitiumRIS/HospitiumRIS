@@ -1,0 +1,300 @@
+/**
+ * HospitiumRIS Documentation Theme
+ * Custom CSS for Hospitium purple branding
+ */
+
+/* Hospitium Purple Theme Colors */
+:root {
+  --ifm-color-primary: #8b6cbc;
+  --ifm-color-primary-dark: #7b5cac;
+  --ifm-color-primary-darker: #7356a3;
+  --ifm-color-primary-darkest: #5f4786;
+  --ifm-color-primary-light: #9b7ccc;
+  --ifm-color-primary-lighter: #a384d1;
+  --ifm-color-primary-lightest: #b794f4;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(139, 108, 188, 0.1);
+  
+  /* Additional custom variables */
+  --hospitium-purple: #8b6cbc;
+  --hospitium-purple-light: #a084d1;
+  --hospitium-purple-dark: #6b4fa0;
+  --hospitium-accent: #4ECDC4;
+  --hospitium-success: #4caf50;
+  --hospitium-warning: #e67e22;
+  --hospitium-info: #3498db;
+  
+  /* Typography */
+  --ifm-font-family-base: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --ifm-heading-font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  
+  /* Navbar */
+  --ifm-navbar-background-color: #ffffff;
+  --ifm-navbar-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  
+  /* Footer */
+  --ifm-footer-background-color: #1a1a2e;
+}
+
+/* Dark mode - Lighter purple palette for readability */
+[data-theme='dark'] {
+  --ifm-color-primary: #b794f4;
+  --ifm-color-primary-dark: #a77bf0;
+  --ifm-color-primary-darker: #9d6cee;
+  --ifm-color-primary-darkest: #7d3fe9;
+  --ifm-color-primary-light: #c7adf8;
+  --ifm-color-primary-lighter: #d1b9f9;
+  --ifm-color-primary-lightest: #e5d8fc;
+  --docusaurus-highlighted-code-line-bg: rgba(183, 148, 244, 0.2);
+  
+  --ifm-background-color: #1a1a2e;
+  --ifm-background-surface-color: #16213e;
+  --ifm-navbar-background-color: #1a1a2e;
+  --ifm-footer-background-color: #0f0f1a;
+}
+
+/* Hero Section Styling */
+.hero {
+  background: linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  right: -100px;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: -50px;
+  left: -50px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.hero__title {
+  font-size: 3rem;
+  font-weight: 800;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.hero__subtitle {
+  font-size: 1.25rem;
+  opacity: 0.9;
+}
+
+/* Navbar Styling */
+.navbar {
+  box-shadow: var(--ifm-navbar-shadow);
+}
+
+.navbar__title {
+  font-weight: 700;
+  color: var(--hospitium-purple);
+}
+
+.navbar__link--active {
+  color: var(--hospitium-purple);
+}
+
+/* Sidebar Styling */
+.menu__link--active:not(.menu__link--sublist) {
+  background-color: rgba(139, 108, 188, 0.1);
+  border-left: 3px solid var(--hospitium-purple);
+}
+
+.menu__link:hover {
+  background-color: rgba(139, 108, 188, 0.05);
+}
+
+/* Button Styling */
+.button--primary {
+  background: linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%);
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.button--primary:hover {
+  background: linear-gradient(135deg, #7b5cac 0%, #8b6cbc 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 108, 188, 0.3);
+}
+
+.button--secondary {
+  border-color: var(--hospitium-purple);
+  color: var(--hospitium-purple);
+}
+
+.button--secondary:hover {
+  background-color: rgba(139, 108, 188, 0.1);
+}
+
+/* Card Styling */
+.card {
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(139, 108, 188, 0.15);
+}
+
+/* Table of Contents */
+.table-of-contents__link--active {
+  color: var(--hospitium-purple);
+  font-weight: 600;
+}
+
+.table-of-contents__link:hover {
+  color: var(--hospitium-purple-dark);
+}
+
+/* Admonitions */
+.alert--info {
+  --ifm-alert-background-color: rgba(52, 152, 219, 0.1);
+  --ifm-alert-border-color: #3498db;
+}
+
+.alert--warning {
+  --ifm-alert-background-color: rgba(230, 126, 34, 0.1);
+  --ifm-alert-border-color: #e67e22;
+}
+
+.alert--success {
+  --ifm-alert-background-color: rgba(76, 175, 80, 0.1);
+  --ifm-alert-border-color: #4caf50;
+}
+
+/* Code Blocks */
+.prism-code {
+  border-radius: 8px;
+}
+
+/* Footer Styling */
+.footer {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.footer__title {
+  color: #b794f4;
+  font-weight: 600;
+}
+
+.footer__link-item {
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 0.2s ease;
+}
+
+.footer__link-item:hover {
+  color: #b794f4;
+}
+
+/* Feature Cards on Homepage */
+.featureCard {
+  padding: 2rem;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid rgba(139, 108, 188, 0.1);
+  transition: all 0.3s ease;
+}
+
+.featureCard:hover {
+  border-color: var(--hospitium-purple);
+  box-shadow: 0 8px 24px rgba(139, 108, 188, 0.15);
+}
+
+[data-theme='dark'] .featureCard {
+  background: var(--ifm-background-surface-color);
+  border-color: rgba(183, 148, 244, 0.2);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge--purple {
+  background-color: rgba(139, 108, 188, 0.1);
+  color: var(--hospitium-purple);
+}
+
+.badge--success {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: var(--hospitium-success);
+}
+
+.badge--info {
+  background-color: rgba(52, 152, 219, 0.1);
+  color: var(--hospitium-info);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(139, 108, 188, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 108, 188, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 108, 188, 0.5);
+}
+
+/* Doc page improvements */
+.markdown h1 {
+  font-weight: 800;
+}
+
+.markdown h2 {
+  font-weight: 700;
+  border-bottom: 2px solid rgba(139, 108, 188, 0.2);
+  padding-bottom: 0.5rem;
+}
+
+.markdown h3 {
+  font-weight: 600;
+  color: var(--hospitium-purple-dark);
+}
+
+/* Custom icon styling */
+.featureIcon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(139, 108, 188, 0.1) 0%, rgba(160, 132, 209, 0.1) 100%);
+  margin-bottom: 1rem;
+}
+
+.featureIcon svg {
+  width: 32px;
+  height: 32px;
+  color: var(--hospitium-purple);
+}

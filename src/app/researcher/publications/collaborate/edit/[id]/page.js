@@ -305,8 +305,8 @@ const HeadingStructureDisplay = ({ headings, onNavigate, activeHeadingId }) => {
         const hasMoreSiblings = nextSameLevelOrLower !== -1;
         
         return (
-          <Box
-            key={heading.id}
+        <Box
+          key={heading.id}
             sx={{ position: 'relative' }}
           >
             {/* Tree connector lines */}
@@ -339,21 +339,21 @@ const HeadingStructureDisplay = ({ headings, onNavigate, activeHeadingId }) => {
             
             {/* Heading item */}
             <Box
-              onClick={() => onNavigate(heading)}
-              sx={{
+          onClick={() => onNavigate(heading)}
+          sx={{
                 pl: indentLevel * 2.5 + 0.5,
                 py: 0.75,
                 pr: 1,
                 ml: 0.5,
                 borderRadius: 1.5,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
                 position: 'relative',
                 transition: 'all 0.15s ease',
                 bgcolor: isActive ? 'rgba(139, 108, 188, 0.12)' : 'transparent',
                 borderLeft: isActive ? '3px solid #8b6cbc' : '3px solid transparent',
-                '&:hover': {
+            '&:hover': {
                   bgcolor: isActive ? 'rgba(139, 108, 188, 0.15)' : 'rgba(0, 0, 0, 0.04)',
                   '& .heading-badge': {
                     opacity: 1,
@@ -362,12 +362,12 @@ const HeadingStructureDisplay = ({ headings, onNavigate, activeHeadingId }) => {
               }}
             >
               {/* Level indicator dot/icon */}
-              <Box
-                sx={{
+          <Box
+            sx={{
                   width: getHeadingIconSize(heading.level),
                   height: getHeadingIconSize(heading.level),
                   borderRadius: heading.level === 1 ? 1 : '50%',
-                  bgcolor: getHeadingColor(heading.level),
+              bgcolor: getHeadingColor(heading.level),
                   mr: 1.25,
                   flexShrink: 0,
                   display: 'flex',
@@ -390,20 +390,20 @@ const HeadingStructureDisplay = ({ headings, onNavigate, activeHeadingId }) => {
               
               {/* Heading text */}
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography 
-                  sx={{ 
-                    fontSize: getHeadingFontSize(heading.level),
-                    fontWeight: getHeadingFontWeight(heading.level),
+          <Typography 
+            sx={{ 
+              fontSize: getHeadingFontSize(heading.level),
+              fontWeight: getHeadingFontWeight(heading.level),
                     color: isActive ? '#5a4080' : getHeadingTextColor(heading.level),
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
                     lineHeight: 1.4,
                     letterSpacing: heading.level === 1 ? '0.02em' : 'normal',
-                  }}
-                >
+            }}
+          >
                   {heading.text || `Untitled ${getHeadingLabel(heading.level)}`}
-                </Typography>
+          </Typography>
               </Box>
               
               {/* Level badge */}
@@ -411,14 +411,14 @@ const HeadingStructureDisplay = ({ headings, onNavigate, activeHeadingId }) => {
                 label={getHeadingLabel(heading.level)}
                 size="small"
                 className="heading-badge"
-                sx={{
+            sx={{ 
                   height: 18,
                   fontSize: '0.65rem',
                   fontWeight: 600,
                   bgcolor: `${getHeadingColor(heading.level)}15`,
                   color: getHeadingColor(heading.level),
                   border: `1px solid ${getHeadingColor(heading.level)}30`,
-                  ml: 1,
+              ml: 1,
                   opacity: isActive ? 1 : 0.6,
                   transition: 'opacity 0.15s ease',
                   '& .MuiChip-label': {
@@ -426,7 +426,7 @@ const HeadingStructureDisplay = ({ headings, onNavigate, activeHeadingId }) => {
                   }
                 }}
               />
-            </Box>
+        </Box>
           </Box>
         );
       })}
@@ -1347,33 +1347,47 @@ export default function ManuscriptEditor() {
     }
   }, [editor]);
 
-  // Add comment highlight to selected text
+  // Add comment highlight to selected text (preserves current selection for synced comments)
   const addCommentHighlight = useCallback((comment, selectedTextData) => {
     if (!editor || !selectedTextData) return;
 
     const { startOffset, endOffset } = selectedTextData;
+    const authorName = `${comment.author?.givenName || ''} ${comment.author?.familyName || ''}`.trim();
     
-    // Apply highlight to the selected range
-    editor.chain()
-      .focus()
-      .setTextSelection({ from: startOffset, to: endOffset })
-      .setCommentHighlight({
+    // Save current selection to restore after applying highlight
+    const currentSelection = editor.state.selection;
+    
+    // Apply highlight to the comment's text range without disrupting user's position
+    const { tr } = editor.state;
+    const markType = editor.schema.marks.commentHighlight;
+    
+    if (markType) {
+      // Apply the mark directly using a transaction (doesn't steal focus)
+      tr.addMark(
+        startOffset, 
+        endOffset, 
+        markType.create({
         commentId: comment.id,
-        commentType: comment.type,
-        authorName: `${comment.author.givenName} ${comment.author.familyName}`,
+          commentType: comment.type || 'COMMENT',
+          authorName: authorName,
         commentContent: comment.content
       })
-      .run();
+      );
+      
+      // Restore the original selection
+      tr.setSelection(currentSelection);
+      
+      // Dispatch the transaction
+      editor.view.dispatch(tr);
+    }
   }, [editor]);
 
-  // Remove comment highlight
+  // Remove comment highlight (preserves current selection)
   const removeCommentHighlight = useCallback((commentId) => {
     if (!editor) return;
     
-    editor.chain()
-      .focus()
-      .removeCommentHighlight(commentId)
-      .run();
+    // Use the editor command which handles the removal properly
+    editor.commands.removeCommentHighlight(commentId);
   }, [editor]);
 
   // Load existing comment highlights when manuscript loads
@@ -1392,22 +1406,32 @@ export default function ManuscriptEditor() {
           comment.endOffset !== null
         );
         
-        // Apply highlights for each comment
+        if (commentsWithSelection.length === 0) return;
+        
+        // Apply all highlights in a single transaction for better performance
+        const { tr } = editor.state;
+        const markType = editor.schema.marks.commentHighlight;
+        
+        if (markType) {
         commentsWithSelection.forEach(comment => {
-          const authorName = `${comment.author.givenName} ${comment.author.familyName}`;
-          
-          // Apply highlight to the text range
-          editor.chain()
-            .focus()
-            .setTextSelection({ from: comment.startOffset, to: comment.endOffset })
-            .setCommentHighlight({
+            const authorName = `${comment.author?.givenName || ''} ${comment.author?.familyName || ''}`.trim();
+            
+            // Add mark for each comment
+            tr.addMark(
+              comment.startOffset, 
+              comment.endOffset, 
+              markType.create({
               commentId: comment.id,
-              commentType: comment.type,
+                commentType: comment.type || 'COMMENT',
               authorName: authorName,
               commentContent: comment.content
             })
-            .run();
+            );
         });
+          
+          // Dispatch all changes at once
+          editor.view.dispatch(tr);
+        }
       }
     } catch (error) {
       console.error('Error loading comment highlights:', error);
@@ -2306,17 +2330,17 @@ export default function ManuscriptEditor() {
                     letterSpacing: '-0.01em'
                   }}>
                     Document Outline
-                  </Typography>
+              </Typography>
                   <Typography sx={{ 
                     fontSize: '0.72rem', 
                     color: '#666',
                     mt: 0.25
                   }}>
                     Navigate your document structure
-                  </Typography>
+              </Typography>
                 </Box>
-              </Box>
-              
+            </Box>
+
               {/* Stats row */}
               <Box sx={{ 
                 display: 'flex', 

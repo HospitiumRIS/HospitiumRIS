@@ -20,9 +20,6 @@
 # production
 /build
 
-# public documentation
-/public/docs/documentation
-
 # misc
 .DS_Store
 *.pem

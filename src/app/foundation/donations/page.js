@@ -692,7 +692,7 @@ export default function DonationManagement() {
               </Card>
             </Box>
             <Box sx={{ width: '25%' }}>
-              <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)' }}>
+              <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)' }}>
                 <CardContent sx={{ p: 2, textAlign: 'center' }}>
                   <CampaignIcon sx={{ fontSize: 24, color: 'white', mb: 1 }} />
                   <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', mb: 0.5 }}>
@@ -708,7 +708,7 @@ export default function DonationManagement() {
               </Card>
             </Box>
             <Box sx={{ width: '25%' }}>
-              <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #ff9800 0%, #ffb74d 100%)' }}>
+              <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)' }}>
                 <CardContent sx={{ p: 2, textAlign: 'center' }}>
                   <ReceiptIcon sx={{ fontSize: 24, color: 'white', mb: 1 }} />
                   <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', mb: 0.5 }}>
@@ -724,7 +724,7 @@ export default function DonationManagement() {
               </Card>
             </Box>
             <Box sx={{ width: '25%' }}>
-              <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #2196f3 0%, #42a5f5 100%)' }}>
+              <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)' }}>
                 <CardContent sx={{ p: 2, textAlign: 'center' }}>
                   <TrendingUpIcon sx={{ fontSize: 24, color: 'white', mb: 1 }} />
                   <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', mb: 0.5 }}>
@@ -740,7 +740,7 @@ export default function DonationManagement() {
               </Card>
             </Box>
             <Box sx={{ width: '25%' }}>
-              <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #9c27b0 0%, #ba68c8 100%)' }}>
+              <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)' }}>
                 <CardContent sx={{ p: 2, textAlign: 'center' }}>
                   <PeopleIcon sx={{ fontSize: 24, color: 'white', mb: 1 }} />
                   <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', mb: 0.5 }}>

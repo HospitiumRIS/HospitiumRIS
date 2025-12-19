@@ -9,7 +9,6 @@ import {
   CardContent,
   Button,
   Paper,
-  Grid,
   Avatar,
   LinearProgress,
   Chip,
@@ -586,9 +585,9 @@ const ProjectProgressPage = () => {
                   Project Performance Analytics
                 </Typography>
 
-                <Grid container spacing={3}>
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                   {/* Project Completion Timeline */}
-                  <Grid item xs={12} md={8}>
+                  <Box sx={{ flex: '1 1 65%', minWidth: { xs: '100%', md: '300px' } }}>
                     <Card elevation={1} sx={{ p: 2, mb: 3 }}>
                       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
                         Project Activity Timeline
@@ -616,10 +615,10 @@ const ProjectProgressPage = () => {
                         ))}
                       </Box>
                     </Card>
-                  </Grid>
+                  </Box>
 
                   {/* Key Performance Indicators */}
-                  <Grid item xs={12} md={4}>
+                  <Box sx={{ flex: '1 1 30%', minWidth: { xs: '100%', md: '250px' } }}>
                     <Card elevation={1} sx={{ p: 2, height: 'fit-content' }}>
                       <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
                         Performance KPIs
@@ -647,8 +646,8 @@ const ProjectProgressPage = () => {
                         </Box>
                       </Box>
                     </Card>
-                  </Grid>
-                </Grid>
+                  </Box>
+                </Box>
               </Box>
             )}
 

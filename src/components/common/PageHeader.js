@@ -31,6 +31,7 @@ const PageHeader = ({
             color: 'white',
             py: 4,
             px: { xs: 2, md: 4 },
+            mt: '50px',
             position: 'relative',
             overflow: 'hidden',
             width: '100%',
