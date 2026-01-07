@@ -61,9 +61,9 @@ const Hero = () => {
               color: 'white',
             }}
           >
-           Transforming Hospital Research Management
+            Transforming Hospital Research Management
           </Typography>
-          
+
           <Typography
             variant="h4"
             component="h2"
@@ -78,9 +78,9 @@ const Hero = () => {
             }}
           >
             Empowering Research
- Excellence Through
- Integrated Digital
- Infrastructure
+            Excellence Through
+            Integrated Digital
+            Infrastructure
           </Typography>
 
           <Stack
@@ -96,6 +96,7 @@ const Hero = () => {
               variant="contained"
               size="large"
               endIcon={<ArrowForwardIcon />}
+              onClick={() => window.location.href = '/login'}
               sx={{
                 py: 1.5,
                 px: 4,
@@ -114,8 +115,8 @@ const Hero = () => {
             >
               Get Started
             </Button>
-            
-           
+
+
           </Stack>
         </Box>
       </Container>
