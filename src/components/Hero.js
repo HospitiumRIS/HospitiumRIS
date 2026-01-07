@@ -19,9 +19,6 @@ const Hero = () => {
   const theme = useTheme();
 
 
-    const handleLoginClick = () => {
-    router.push('/login');
-  };
 
   return (
     <Box
@@ -101,7 +98,7 @@ const Hero = () => {
               variant="contained"
               size="large"
               endIcon={<ArrowForwardIcon />}
-              onClick={handleLoginClick}
+               onClick={() => window.location.href = '/login'}
               sx={{
                 py: 1.5,
                 px: 4,
