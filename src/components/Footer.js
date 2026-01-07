@@ -31,12 +31,6 @@ const Footer = () => {
     
   ];
 
-  const supportLinks = [
-    { name: 'Help Center', href: '#' },
-    { name: 'Terms of Service', href: '#' },
-    { name: 'Privacy Policy', href: '#' },
-    { name: 'Data Security', href: '#' },
-  ];
 
   const socialLinks = [
     { icon: <TwitterIcon />, name: 'Twitter', url: '#' },
@@ -151,43 +145,6 @@ const Footer = () => {
             </Box>
           </Box>
 
-          {/* Support & Legal */}
-          <Box sx={{ flex: '1 1 200px' }}>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 'bold',
-                mb: 2,
-                color: 'white',
-              }}
-            >
-              Support & Legal
-            </Typography>
-            <Box>
-              {supportLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  sx={{
-                    display: 'block',
-                    color: '#a0aec0',
-                    textDecoration: 'none',
-                    mb: 1,
-                    fontSize: '0.9rem',
-                    '&:hover': {
-                      color: theme.palette.primary.light,
-                      textDecoration: 'underline',
-                    },
-                    transition: 'color 0.3s ease',
-                  }}
-                >
-                  {link.name}
-                </Link>
-              ))}
-            </Box>
-          </Box>
-
-         
 
           {/* Contact Us */}
           <Box sx={{ flex: '1 1 280px' }}>
