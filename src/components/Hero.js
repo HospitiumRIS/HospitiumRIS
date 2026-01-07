@@ -18,6 +18,11 @@ import {
 const Hero = () => {
   const theme = useTheme();
 
+
+    const handleLoginClick = () => {
+    router.push('/login');
+  };
+
   return (
     <Box
       sx={{
@@ -96,7 +101,7 @@ const Hero = () => {
               variant="contained"
               size="large"
               endIcon={<ArrowForwardIcon />}
-              onClick={() => window.location.href = '/login'}
+              onClick={handleLoginClick}
               sx={{
                 py: 1.5,
                 px: 4,
