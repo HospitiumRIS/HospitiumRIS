@@ -1094,26 +1094,104 @@ const ProposalsListPage = () => {
                   </Typography>
                 </Alert>
 
-                {/* Feedback/Reason */}
+                {/* General Feedback/Reason */}
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#2c3e50' }}>
-                    {selectedProposal.status === 'REJECTED' ? 'Rejection Reason' : 'Revision Requirements'}
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#2c3e50', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {selectedProposal.status === 'REJECTED' ? (
+                      <>
+                        <ErrorIcon sx={{ fontSize: 20, color: '#dc2626' }} />
+                        Rejection Reason
+                      </>
+                    ) : (
+                      <>
+                        <WarningIcon sx={{ fontSize: 20, color: '#f59e0b' }} />
+                        General Feedback
+                      </>
+                    )}
                   </Typography>
-                  <Paper sx={{ p: 2.5, backgroundColor: '#f8f9fa', border: '1px solid #e5e7eb' }}>
-                    <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                  <Paper sx={{ p: 2.5, backgroundColor: '#f8f9fa', border: '1px solid #e5e7eb', borderRadius: 2 }}>
+                    <Typography variant="body2" sx={{ lineHeight: 1.8, color: '#374151' }}>
                       {selectedProposal.reviewFeedback || selectedProposal.rejectionReason || 'No specific feedback provided.'}
                     </Typography>
                   </Paper>
                 </Box>
 
-                {/* Reviewer Information */}
-                {selectedProposal.reviewedBy && (
+                {/* Specific Areas Requiring Action - Only for REVISION_REQUESTED */}
+                {selectedProposal.status === 'REVISION_REQUESTED' && selectedProposal.amendmentRequirements && (
                   <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Reviewed by: {selectedProposal.reviewedBy}
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#2c3e50', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CheckCircleIcon sx={{ fontSize: 20, color: '#f59e0b' }} />
+                      Areas Requiring Action
                     </Typography>
+                    <Paper sx={{ p: 2.5, backgroundColor: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 2 }}>
+                      <Typography variant="body2" sx={{ lineHeight: 1.8, color: '#92400e', whiteSpace: 'pre-line' }}>
+                        {selectedProposal.amendmentRequirements}
+                      </Typography>
+                    </Paper>
                   </Box>
                 )}
+
+                {/* Missing Files - Only for REVISION_REQUESTED */}
+                {selectedProposal.status === 'REVISION_REQUESTED' && selectedProposal.missingFiles && selectedProposal.missingFiles.length > 0 && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#2c3e50', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <ErrorIcon sx={{ fontSize: 20, color: '#dc2626' }} />
+                      Missing Required Files
+                    </Typography>
+                    <Paper sx={{ p: 2.5, backgroundColor: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 2 }}>
+                      <Stack spacing={1}>
+                        {selectedProposal.missingFiles.map((file, index) => (
+                          <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{ 
+                              width: 6, 
+                              height: 6, 
+                              borderRadius: '50%', 
+                              backgroundColor: '#dc2626' 
+                            }} />
+                            <Typography variant="body2" sx={{ color: '#991b1b', fontWeight: 500 }}>
+                              {file}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Stack>
+                    </Paper>
+                  </Box>
+                )}
+
+                {/* Reviewer Comments - Additional detailed comments */}
+                {selectedProposal.reviewerComments && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#2c3e50', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <PersonIcon sx={{ fontSize: 20, color: '#8b6cbc' }} />
+                      Reviewer Comments
+                    </Typography>
+                    <Paper sx={{ p: 2.5, backgroundColor: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 2 }}>
+                      <Typography variant="body2" sx={{ lineHeight: 1.8, color: '#374151', whiteSpace: 'pre-line' }}>
+                        {selectedProposal.reviewerComments}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                )}
+
+                {/* Review Date and Reviewer Information */}
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, pt: 1 }}>
+                  {selectedProposal.reviewedBy && (
+                    <Chip
+                      icon={<PersonIcon />}
+                      label={`Reviewed by: ${selectedProposal.reviewedBy}`}
+                      size="small"
+                      sx={{ bgcolor: 'rgba(139, 108, 188, 0.1)', color: '#8b6cbc' }}
+                    />
+                  )}
+                  {selectedProposal.reviewedAt && (
+                    <Chip
+                      icon={<CalendarIcon />}
+                      label={`Date: ${new Date(selectedProposal.reviewedAt).toLocaleDateString()}`}
+                      size="small"
+                      sx={{ bgcolor: 'rgba(107, 114, 128, 0.1)', color: '#6b7280' }}
+                    />
+                  )}
+                </Box>
 
                 {/* Revision Response Section - Only for REVISION_REQUESTED */}
                 {selectedProposal.status === 'REVISION_REQUESTED' && (

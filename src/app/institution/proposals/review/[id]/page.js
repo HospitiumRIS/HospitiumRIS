@@ -32,7 +32,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Snackbar
+  Snackbar,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from '@mui/material';
 import {
   RateReview as ReviewIcon,
@@ -51,7 +54,10 @@ import {
   PictureAsPdf as PdfIcon,
   InsertDriveFile as FileIcon,
   Close as CloseIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+  ExpandMore as ExpandMoreIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import PageHeader from '../../../../../components/common/PageHeader';
@@ -337,6 +343,12 @@ const ProposalDetailsPage = () => {
     }
   };
 
+  const getOrdinal = (n) => {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
+
   const renderTabContent = () => {
     if (!proposal) return null;
 
@@ -496,10 +508,23 @@ const ProposalDetailsPage = () => {
                   }
                 }}>
                   <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
-                      <BudgetIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
-                      Funding Information
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                      <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
+                        <BudgetIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
+                        Funding Information
+                      </Typography>
+                      <Chip 
+                        label="Compliant" 
+                        size="small"
+                        sx={{ 
+                          bgcolor: '#10b981', 
+                          color: 'white',
+                          fontWeight: 600,
+                          '& .MuiChip-icon': { color: 'white' }
+                        }}
+                        icon={<CheckCircleIcon />}
+                      />
+                    </Box>
                     <Grid container spacing={3}>
                       <Grid item xs={12} md={3}>
                         <Box sx={{ textAlign: 'center', py: 3, bgcolor: '#f3e5f5', borderRadius: 2 }}>
@@ -550,7 +575,20 @@ const ProposalDetailsPage = () => {
                 borderRadius: 2
               }}>
                 <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ mb: 2.5, fontWeight: 700, color: '#2c3e50' }}>Research Objectives</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>Research Objectives</Typography>
+                    <Chip 
+                      label="Compliant" 
+                      size="small"
+                      sx={{ 
+                        bgcolor: '#10b981', 
+                        color: 'white',
+                        fontWeight: 600,
+                        '& .MuiChip-icon': { color: 'white' }
+                      }}
+                      icon={<CheckCircleIcon />}
+                    />
+                  </Box>
                   <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#555' }}>
                     {proposal.researchObjectives || 'No research objectives provided.'}
                   </Typography>
@@ -563,7 +601,20 @@ const ProposalDetailsPage = () => {
                 borderRadius: 2
               }}>
                 <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ mb: 2.5, fontWeight: 700, color: '#2c3e50' }}>Methodology</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>Methodology</Typography>
+                    <Chip 
+                      label="Compliant" 
+                      size="small"
+                      sx={{ 
+                        bgcolor: '#10b981', 
+                        color: 'white',
+                        fontWeight: 600,
+                        '& .MuiChip-icon': { color: 'white' }
+                      }}
+                      icon={<CheckCircleIcon />}
+                    />
+                  </Box>
                   <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#555' }}>
                     {proposal.methodology || 'No methodology provided.'}
                   </Typography>
@@ -580,10 +631,23 @@ const ProposalDetailsPage = () => {
                     height: '100%'
                   }}>
                     <CardContent sx={{ p: 3 }}>
-                      <Typography variant="h6" sx={{ mb: 2.5, display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
-                        <TimelineIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
-                        Milestones
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+                        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
+                          <TimelineIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
+                          Milestones
+                        </Typography>
+                        <Chip 
+                          label="Compliant" 
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#10b981', 
+                            color: 'white',
+                            fontWeight: 600,
+                            '& .MuiChip-icon': { color: 'white' }
+                          }}
+                          icon={<CheckCircleIcon />}
+                        />
+                      </Box>
                       <List sx={{ p: 0 }}>
                         {proposal.milestones.map((milestone, index) => (
                           <ListItem key={index} divider={index < proposal.milestones.length - 1} sx={{ px: 0, py: 2 }}>
@@ -649,10 +713,23 @@ const ProposalDetailsPage = () => {
                     height: '100%'
                   }}>
                     <CardContent sx={{ p: 3 }}>
-                      <Typography variant="h6" sx={{ mb: 2.5, display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
-                        <AssignmentIcon sx={{ mr: 1.5, color: '#4caf50', fontSize: 24 }} />
-                        Deliverables
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+                        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
+                          <AssignmentIcon sx={{ mr: 1.5, color: '#4caf50', fontSize: 24 }} />
+                          Deliverables
+                        </Typography>
+                        <Chip 
+                          label="Compliant" 
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#10b981', 
+                            color: 'white',
+                            fontWeight: 600,
+                            '& .MuiChip-icon': { color: 'white' }
+                          }}
+                          icon={<CheckCircleIcon />}
+                        />
+                      </Box>
                       <List sx={{ p: 0 }}>
                         {proposal.deliverables.map((deliverable, index) => (
                           <ListItem key={index} divider={index < proposal.deliverables.length - 1} sx={{ px: 0, py: 2 }}>
@@ -720,10 +797,23 @@ const ProposalDetailsPage = () => {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Card sx={{ mb: 2 }}>
                   <CardContent>
-                    <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-                      <ReviewIcon sx={{ mr: 1, color: '#8b6cbc' }} />
-                      Ethics Approval Status
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                      <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+                        <ReviewIcon sx={{ mr: 1, color: '#8b6cbc' }} />
+                        Ethics Approval Status
+                      </Typography>
+                      <Chip 
+                        label={proposal.ethicsApproval === 'Approved' ? 'Compliant' : 'Non-Compliant'}
+                        size="small"
+                        sx={{ 
+                          bgcolor: proposal.ethicsApproval === 'Approved' ? '#10b981' : '#ef4444', 
+                          color: 'white',
+                          fontWeight: 600,
+                          '& .MuiChip-icon': { color: 'white' }
+                        }}
+                        icon={proposal.ethicsApproval === 'Approved' ? <CheckCircleIcon /> : <ErrorIcon />}
+                      />
+                    </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                       <Chip 
                         label={proposal.ethicsApproval} 
@@ -747,7 +837,20 @@ const ProposalDetailsPage = () => {
                   borderRadius: 2
                 }}>
                   <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h6" sx={{ mb: 2.5, fontWeight: 700, color: '#2c3e50' }}>Ethical Considerations</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>Ethical Considerations</Typography>
+                      <Chip 
+                        label="Compliant" 
+                        size="small"
+                        sx={{ 
+                          bgcolor: '#10b981', 
+                          color: 'white',
+                          fontWeight: 600,
+                          '& .MuiChip-icon': { color: 'white' }
+                        }}
+                        icon={<CheckCircleIcon />}
+                      />
+                    </Box>
                     <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#555' }}>
                       {proposal.ethicalConsiderations}
                     </Typography>
@@ -760,7 +863,20 @@ const ProposalDetailsPage = () => {
                   <Box sx={{ flex: 1 }}>
                   <Card>
                     <CardContent>
-                      <Typography variant="h6" sx={{ mb: 2 }}>Consent Procedures</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Typography variant="h6">Consent Procedures</Typography>
+                        <Chip 
+                          label="Compliant" 
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#10b981', 
+                            color: 'white',
+                            fontWeight: 600,
+                            '& .MuiChip-icon': { color: 'white' }
+                          }}
+                          icon={<CheckCircleIcon />}
+                        />
+                      </Box>
                       <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                         {proposal.consentProcedures}
                       </Typography>
@@ -772,7 +888,20 @@ const ProposalDetailsPage = () => {
                   <Box sx={{ flex: 1 }}>
                   <Card>
                     <CardContent>
-                      <Typography variant="h6" sx={{ mb: 2 }}>Data Security Measures</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Typography variant="h6">Data Security Measures</Typography>
+                        <Chip 
+                          label="Compliant" 
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#10b981', 
+                            color: 'white',
+                            fontWeight: 600,
+                            '& .MuiChip-icon': { color: 'white' }
+                          }}
+                          icon={<CheckCircleIcon />}
+                        />
+                      </Box>
                       <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                         {proposal.dataSecurityMeasures}
                       </Typography>
@@ -781,19 +910,37 @@ const ProposalDetailsPage = () => {
                   </Box>
                 )}
               </Box>
-              
-              {/* Documents Section */}
-              {proposal.documents && proposal.documents.length > 0 && (
-                <Card sx={{ 
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 2
-                }}>
+            </Box>
+          </Box>
+        );
+      
+      case 3: // Supporting Documents
+        return (
+          <Box>
+            {proposal.documents && proposal.documents.length > 0 ? (
+              <Card sx={{ 
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                border: '1px solid #e0e0e0',
+                borderRadius: 2
+              }}>
                   <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h6" sx={{ mb: 2.5, display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
-                      <AttachFileIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
-                      Supporting Documents
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
+                      <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
+                        <AttachFileIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
+                        Supporting Documents
+                      </Typography>
+                      <Chip 
+                        label="Compliant" 
+                        size="small"
+                        sx={{ 
+                          bgcolor: '#10b981', 
+                          color: 'white',
+                          fontWeight: 600,
+                          '& .MuiChip-icon': { color: 'white' }
+                        }}
+                        icon={<CheckCircleIcon />}
+                      />
+                    </Box>
                     <List sx={{ p: 0 }}>
                       {proposal.documents.map((doc, index) => {
                         const isPdf = doc.fileName?.toLowerCase().endsWith('.pdf') || doc.type === 'application/pdf';
@@ -828,14 +975,31 @@ const ProposalDetailsPage = () => {
                             </ListItemIcon>
                             <ListItemText
                               primary={
-                                <Typography variant="subtitle2" component="span" sx={{ fontWeight: 600, color: '#2c3e50', display: 'block' }}>
-                                  {doc.fileName || doc.name || 'Untitled Document'}
-                                </Typography>
+                                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                  <Typography variant="subtitle2" component="span" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                                    {doc.originalName || doc.fileName || doc.name || 'Untitled Document'}
+                                  </Typography>
+                                  {doc.category && (
+                                    <Chip 
+                                      label={doc.category}
+                                      size="small"
+                                      sx={{ 
+                                        height: 20,
+                                        fontSize: '0.7rem',
+                                        bgcolor: doc.category === 'Ethics Documents' ? '#fef3c7' : 
+                                                 doc.category === 'Data Management Plan' ? '#dbeafe' : '#f3f4f6',
+                                        color: doc.category === 'Ethics Documents' ? '#92400e' : 
+                                               doc.category === 'Data Management Plan' ? '#1e40af' : '#374151',
+                                        fontWeight: 600
+                                      }}
+                                    />
+                                  )}
+                                </Box>
                               }
                               secondary={
                                 <Box component="span" sx={{ display: 'block' }}>
                                   <Typography variant="caption" component="span" color="text.secondary" sx={{ display: 'block' }}>
-                                    {doc.type || 'Unknown type'} • {doc.size ? `${(doc.size / 1024).toFixed(2)} KB` : 'Size unknown'}
+                                    {doc.type || doc.mimeType || 'Unknown type'} • {doc.size ? `${(doc.size / 1024).toFixed(2)} KB` : 'Size unknown'}
                                   </Typography>
                                   {doc.uploadedAt && (
                                     <Typography variant="caption" component="span" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
@@ -873,49 +1037,67 @@ const ProposalDetailsPage = () => {
                     </List>
                   </CardContent>
                 </Card>
-              )}
-              
-              {(!proposal.documents || proposal.documents.length === 0) && (
-                <Card sx={{ 
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 2
-                }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
-                      <AttachFileIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
-                      Supporting Documents
-                    </Typography>
-                    <Alert severity="info" sx={{ mt: 2 }}>
-                      No documents have been uploaded for this proposal yet.
-                    </Alert>
-                  </CardContent>
-                </Card>
-              )}
-            </Box>
+            ) : (
+              <Card sx={{ 
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                border: '1px solid #e0e0e0',
+                borderRadius: 2
+              }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
+                    <AttachFileIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
+                    Supporting Documents
+                  </Typography>
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    No documents have been uploaded for this proposal yet.
+                  </Alert>
+                </CardContent>
+              </Card>
+            )}
           </Box>
         );
       
-      case 3: // Review History
+      case 4: // Review History
         return (
           <Box>
             {reviews.length > 0 ? (
-              <Stack spacing={3}>
+              <Stack spacing={2}>
                 {reviews.map((review, index) => (
-                  <Card key={review.id || index} sx={{ 
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                    border: '1px solid #e0e0e0',
-                    borderRadius: 2
-                  }}>
-                    <CardContent sx={{ p: 3 }}>
-                      {/* Review Header */}
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+                  <Accordion 
+                    key={review.id || index}
+                    defaultExpanded={index === 0}
+                    sx={{ 
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px !important',
+                      '&:before': { display: 'none' },
+                      '&.Mui-expanded': {
+                        margin: '0 !important',
+                        mb: 2
+                      }
+                    }}
+                  >
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon sx={{ color: '#8b6cbc' }} />}
+                      sx={{
+                        '&:hover': { bgcolor: '#f5f3f7' },
+                        borderRadius: '8px',
+                        '&.Mui-expanded': {
+                          borderBottomLeftRadius: 0,
+                          borderBottomRightRadius: 0
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                           <Avatar sx={{ bgcolor: '#8b6cbc', width: 48, height: 48 }}>
                             {review.reviewerName?.charAt(0) || 'R'}
                           </Avatar>
                           <Box>
                             <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
+                              {getOrdinal(reviews.length - index)} Review
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', mt: 0.5 }}>
                               {review.reviewerName || 'Anonymous Reviewer'}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
@@ -933,7 +1115,8 @@ const ProposalDetailsPage = () => {
                           sx={{ fontWeight: 700 }}
                         />
                       </Box>
-
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ p: 3, pt: 2 }}>
                       {/* Compliance Score */}
                       {review.complianceScore && (
                         <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
@@ -1038,8 +1221,8 @@ const ProposalDetailsPage = () => {
                           </Typography>
                         </Box>
                       )}
-                    </CardContent>
-                  </Card>
+                    </AccordionDetails>
+                  </Accordion>
                 ))}
               </Stack>
             ) : (
@@ -1273,6 +1456,7 @@ const ProposalDetailsPage = () => {
             <Tab icon={<ProposalIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Overview" />
             <Tab icon={<AssignmentIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Research Details" />
             <Tab icon={<ReviewIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Ethics & Compliance" />
+            <Tab icon={<AttachFileIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Supporting Documents" />
             <Tab icon={<HistoryIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Review History" />
           </Tabs>
           <Box sx={{ p: 4, bgcolor: '#fafafa', minHeight: '400px' }}>

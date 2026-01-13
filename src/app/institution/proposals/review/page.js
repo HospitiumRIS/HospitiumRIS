@@ -216,34 +216,134 @@ const ProposalReviewPage = () => {
     setReviewDialog(true);
   };
 
-  const handleDownload = (proposal) => {
-    // Create a comprehensive data object for download
-    const downloadData = {
-      id: proposal.id,
-      title: proposal.title,
-      principalInvestigator: proposal.principalInvestigator,
-      department: proposal.department,
-      status: proposal.status,
-      submittedDate: proposal.submittedDate,
-      budget: proposal.budget,
-      duration: proposal.duration,
-      researchArea: proposal.researchArea,
-      description: proposal.description
-    };
-
-    // Convert to JSON string with formatting
-    const jsonString = JSON.stringify(downloadData, null, 2);
-    
-    // Create blob and download
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `proposal-${proposal.id}-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleDownload = async (proposal) => {
+    try {
+      // Dynamically import jsPDF
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+      
+      // Set up document styling
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      const maxWidth = pageWidth - (margin * 2);
+      let yPosition = 20;
+      
+      // Header
+      doc.setFillColor(139, 108, 188);
+      doc.rect(0, 0, pageWidth, 40, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont(undefined, 'bold');
+      doc.text('Research Proposal', margin, 25);
+      
+      // Reset text color
+      doc.setTextColor(0, 0, 0);
+      yPosition = 50;
+      
+      // Title
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.text('Proposal Title:', margin, yPosition);
+      yPosition += 7;
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'normal');
+      const titleLines = doc.splitTextToSize(proposal.title || 'N/A', maxWidth);
+      doc.text(titleLines, margin, yPosition);
+      yPosition += (titleLines.length * 7) + 10;
+      
+      // Proposal ID
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('Proposal ID:', margin, yPosition);
+      doc.setFont(undefined, 'normal');
+      doc.text(proposal.id || 'N/A', margin + 35, yPosition);
+      yPosition += 10;
+      
+      // Principal Investigator
+      doc.setFont(undefined, 'bold');
+      doc.text('Principal Investigator:', margin, yPosition);
+      doc.setFont(undefined, 'normal');
+      doc.text(proposal.principalInvestigator || 'N/A', margin + 55, yPosition);
+      yPosition += 10;
+      
+      // Department
+      doc.setFont(undefined, 'bold');
+      doc.text('Department:', margin, yPosition);
+      doc.setFont(undefined, 'normal');
+      doc.text(proposal.department || 'N/A', margin + 35, yPosition);
+      yPosition += 10;
+      
+      // Status
+      doc.setFont(undefined, 'bold');
+      doc.text('Status:', margin, yPosition);
+      doc.setFont(undefined, 'normal');
+      doc.text(proposal.status || 'N/A', margin + 25, yPosition);
+      yPosition += 10;
+      
+      // Submitted Date
+      doc.setFont(undefined, 'bold');
+      doc.text('Submitted Date:', margin, yPosition);
+      doc.setFont(undefined, 'normal');
+      doc.text(formatDate(proposal.submittedDate) || 'N/A', margin + 45, yPosition);
+      yPosition += 10;
+      
+      // Budget
+      doc.setFont(undefined, 'bold');
+      doc.text('Budget:', margin, yPosition);
+      doc.setFont(undefined, 'normal');
+      doc.text(formatCurrency(proposal.budget) || 'N/A', margin + 25, yPosition);
+      yPosition += 10;
+      
+      // Duration
+      doc.setFont(undefined, 'bold');
+      doc.text('Duration:', margin, yPosition);
+      doc.setFont(undefined, 'normal');
+      doc.text(proposal.duration || 'N/A', margin + 28, yPosition);
+      yPosition += 10;
+      
+      // Research Area
+      doc.setFont(undefined, 'bold');
+      doc.text('Research Area:', margin, yPosition);
+      doc.setFont(undefined, 'normal');
+      doc.text(proposal.researchArea || 'N/A', margin + 42, yPosition);
+      yPosition += 15;
+      
+      // Description
+      if (proposal.description) {
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('Description:', margin, yPosition);
+        yPosition += 7;
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        const descLines = doc.splitTextToSize(proposal.description, maxWidth);
+        doc.text(descLines, margin, yPosition);
+        yPosition += (descLines.length * 5);
+      }
+      
+      // Footer
+      const pageCount = doc.internal.getNumberOfPages();
+      const today = new Date();
+      const formattedDate = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
+      
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(
+          `Generated by HOSPITIUMRIS on ${formattedDate} | Page ${i} of ${pageCount}`,
+          pageWidth / 2,
+          doc.internal.pageSize.getHeight() - 10,
+          { align: 'center' }
+        );
+      }
+      
+      // Save the PDF
+      doc.save(`proposal-${proposal.id}-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
   };
 
   const handleSubmitReview = async () => {

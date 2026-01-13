@@ -251,18 +251,40 @@ const ResearcherProfilePage = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        backgroundColor: theme.palette.background.default,
-        mt: 8,
+        backgroundColor: '#f8f9fa',
       }}
     >
-      <PageHeader
-        title="Researcher Profile"
-        description="Your professional research identity and credentials"
-        actionButton={actionButton}
-        gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)"
-      />
+      {/* Professional Header */}
+      <Box sx={{
+        background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
+        pt: 10,
+        pb: 8,
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+        }
+      }}>
+        <Container maxWidth="lg">
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            <Typography variant="h3" sx={{ fontWeight: 800, color: 'white', mb: 1.5 }}>
+              Researcher Profile
+            </Typography>
+            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 400, mb: 3 }}>
+              Your professional research identity and credentials
+            </Typography>
+            {actionButton}
+          </Box>
+        </Container>
+      </Box>
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="lg" sx={{ py: 4, mt: -6, position: 'relative', zIndex: 10 }}>
         {success && (
           <Alert severity="success" sx={{ mb: 3 }}>
             {success}
@@ -298,11 +320,12 @@ const ResearcherProfilePage = () => {
 
         {/* Profile Completeness Card */}
         <Card 
-          elevation={3} 
           sx={{ 
-            mb: 3, 
-            background: 'linear-gradient(135deg, rgba(139, 108, 188, 0.1) 0%, rgba(160, 132, 209, 0.1) 100%)',
-            border: '1px solid rgba(139, 108, 188, 0.2)',
+            mb: 3,
+            borderRadius: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            background: 'linear-gradient(135deg, rgba(139, 108, 188, 0.08) 0%, rgba(160, 132, 209, 0.08) 100%)',
+            border: '1px solid rgba(139, 108, 188, 0.15)',
           }}
         >
           <CardContent sx={{ p: 3 }}>
@@ -361,11 +384,11 @@ const ResearcherProfilePage = () => {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {/* Header Card with Avatar and Basic Info */}
           <Card 
-            elevation={4} 
             sx={{ 
               overflow: 'visible',
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
-              backdropFilter: 'blur(10px)',
+              borderRadius: 3,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              background: 'white',
             }}
           >
             <CardContent sx={{ p: 4 }}>
@@ -385,13 +408,13 @@ const ResearcherProfilePage = () => {
                   >
                     <Avatar
                       sx={{
-                        width: 140,
-                        height: 140,
+                        width: 160,
+                        height: 160,
                         bgcolor: '#8b6cbc',
-                        fontSize: '3rem',
+                        fontSize: '3.5rem',
                         fontWeight: 700,
-                        border: '4px solid white',
-                        boxShadow: '0 4px 20px rgba(139, 108, 188, 0.3)',
+                        border: '5px solid white',
+                        boxShadow: '0 8px 32px rgba(139, 108, 188, 0.25)',
                       }}
                     >
                       {getInitials()}
@@ -459,7 +482,7 @@ const ResearcherProfilePage = () => {
                   ) : (
                     <>
                       <Box>
-                        <Typography variant="h3" sx={{ fontWeight: 700, color: '#2d3748', mb: 1 }}>
+                        <Typography variant="h3" sx={{ fontWeight: 800, color: '#1a202c', mb: 1, fontSize: '2.5rem' }}>
                           {profile?.researchProfile?.academicTitle && `${profile.researchProfile.academicTitle} `}
                           {profile?.givenName} {profile?.familyName}
                         </Typography>
@@ -498,40 +521,103 @@ const ResearcherProfilePage = () => {
                       
                       {/* Quick Stats */}
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mt: 2 }}>
-                        <Paper elevation={0} sx={{ p: 2, bgcolor: 'rgba(139, 108, 188, 0.05)', borderRadius: 2 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
+                        <Paper elevation={0} sx={{ 
+                          p: 2.5, 
+                          bgcolor: 'rgba(139, 108, 188, 0.08)', 
+                          borderRadius: 2,
+                          border: '1px solid rgba(139, 108, 188, 0.15)',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            bgcolor: 'rgba(139, 108, 188, 0.12)',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 4px 12px rgba(139, 108, 188, 0.15)'
+                          }
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box sx={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: '12px',
+                              bgcolor: '#8b6cbc',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <ArticleIcon sx={{ color: 'white', fontSize: 24 }} />
+                            </Box>
                             <Box>
-                              <Typography variant="h6" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
+                              <Typography variant="h5" sx={{ fontWeight: 800, color: '#8b6cbc', lineHeight: 1 }}>
                                 {publications.length}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: '#718096' }}>
+                              <Typography variant="body2" sx={{ color: '#718096', fontWeight: 500, mt: 0.5 }}>
                                 Publications
                               </Typography>
                             </Box>
                           </Box>
                         </Paper>
-                        <Paper elevation={0} sx={{ p: 2, bgcolor: 'rgba(78, 205, 196, 0.05)', borderRadius: 2 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <TrendingUpIcon sx={{ color: '#4ECDC4', fontSize: 20 }} />
+                        <Paper elevation={0} sx={{ 
+                          p: 2.5, 
+                          bgcolor: 'rgba(78, 205, 196, 0.08)', 
+                          borderRadius: 2,
+                          border: '1px solid rgba(78, 205, 196, 0.15)',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            bgcolor: 'rgba(78, 205, 196, 0.12)',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 4px 12px rgba(78, 205, 196, 0.15)'
+                          }
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box sx={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: '12px',
+                              bgcolor: '#4ECDC4',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <TrendingUpIcon sx={{ color: 'white', fontSize: 24 }} />
+                            </Box>
                             <Box>
-                              <Typography variant="h6" sx={{ fontWeight: 700, color: '#4ECDC4' }}>
+                              <Typography variant="h5" sx={{ fontWeight: 800, color: '#4ECDC4', lineHeight: 1 }}>
                                 {profile?.researchProfile?.hIndex || 0}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: '#718096' }}>
+                              <Typography variant="body2" sx={{ color: '#718096', fontWeight: 500, mt: 0.5 }}>
                                 H-Index
                               </Typography>
                             </Box>
                           </Box>
                         </Paper>
-                        <Paper elevation={0} sx={{ p: 2, bgcolor: 'rgba(247, 183, 49, 0.05)', borderRadius: 2 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <StarIcon sx={{ color: '#F7B731', fontSize: 20 }} />
+                        <Paper elevation={0} sx={{ 
+                          p: 2.5, 
+                          bgcolor: 'rgba(247, 183, 49, 0.08)', 
+                          borderRadius: 2,
+                          border: '1px solid rgba(247, 183, 49, 0.15)',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            bgcolor: 'rgba(247, 183, 49, 0.12)',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 4px 12px rgba(247, 183, 49, 0.15)'
+                          }
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box sx={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: '12px',
+                              bgcolor: '#F7B731',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <StarIcon sx={{ color: 'white', fontSize: 24 }} />
+                            </Box>
                             <Box>
-                              <Typography variant="h6" sx={{ fontWeight: 700, color: '#F7B731' }}>
+                              <Typography variant="h5" sx={{ fontWeight: 800, color: '#F7B731', lineHeight: 1 }}>
                                 {profile?.researchProfile?.citationCount || 0}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: '#718096' }}>
+                              <Typography variant="body2" sx={{ color: '#718096', fontWeight: 500, mt: 0.5 }}>
                                 Citations
                               </Typography>
                             </Box>
@@ -622,7 +708,7 @@ const ResearcherProfilePage = () => {
             {/* Left Column */}
             <Box sx={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
               {/* Research Profile Card */}
-              <Card elevation={3}>
+              <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
                 <CardContent sx={{ p: 4 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <ArticleIcon sx={{ color: '#8b6cbc' }} />
@@ -744,7 +830,7 @@ const ResearcherProfilePage = () => {
               </Card>
 
               {/* Recent Publications Card */}
-              <Card elevation={3}>
+              <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
                 <CardContent sx={{ p: 4 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
                     <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748', display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -838,7 +924,7 @@ const ResearcherProfilePage = () => {
             {/* Right Column */}
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
               {/* Research Metrics Card */}
-              <Card elevation={3}>
+              <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
                 <CardContent sx={{ p: 3 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <TrendingUpIcon sx={{ color: '#8b6cbc' }} />
@@ -904,7 +990,7 @@ const ResearcherProfilePage = () => {
               </Card>
 
               {/* Professional Links Card */}
-              <Card elevation={3}>
+              <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
                 <CardContent sx={{ p: 3 }}>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <LinkIcon sx={{ color: '#8b6cbc' }} />
@@ -1039,7 +1125,12 @@ const ResearcherProfilePage = () => {
 
               {/* ORCID Data Card */}
               {orcidData && (
-                <Card elevation={3} sx={{ bgcolor: 'rgba(166, 206, 57, 0.05)', border: '1px solid rgba(166, 206, 57, 0.2)' }}>
+                <Card sx={{ 
+                  borderRadius: 3, 
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  bgcolor: 'rgba(166, 206, 57, 0.05)', 
+                  border: '1px solid rgba(166, 206, 57, 0.2)' 
+                }}>
                   <CardContent sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                       <Avatar sx={{ bgcolor: '#a6ce39', width: 36, height: 36 }}>

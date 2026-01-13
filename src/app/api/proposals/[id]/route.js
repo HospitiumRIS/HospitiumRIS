@@ -55,6 +55,54 @@ export async function GET(request, { params }) {
             );
         }
 
+        // Combine all documents into a single array
+        const allDocuments = [];
+        
+        // Add ethics documents
+        if (proposal.ethicsDocuments && Array.isArray(proposal.ethicsDocuments)) {
+            proposal.ethicsDocuments.forEach(doc => {
+                allDocuments.push({
+                    ...doc,
+                    category: 'Ethics Documents',
+                    fileName: doc.fileName || doc.originalName,
+                    type: doc.mimeType || 'application/pdf',
+                    size: doc.size,
+                    url: `/uploads/proposals/${doc.fileName}`,
+                    uploadedAt: proposal.createdAt
+                });
+            });
+        }
+        
+        // Add data management plan documents
+        if (proposal.dataManagementPlan && Array.isArray(proposal.dataManagementPlan)) {
+            proposal.dataManagementPlan.forEach(doc => {
+                allDocuments.push({
+                    ...doc,
+                    category: 'Data Management Plan',
+                    fileName: doc.fileName || doc.originalName,
+                    type: doc.mimeType || 'application/pdf',
+                    size: doc.size,
+                    url: `/uploads/proposals/${doc.fileName}`,
+                    uploadedAt: proposal.createdAt
+                });
+            });
+        }
+        
+        // Add other related files
+        if (proposal.otherRelatedFiles && Array.isArray(proposal.otherRelatedFiles)) {
+            proposal.otherRelatedFiles.forEach(doc => {
+                allDocuments.push({
+                    ...doc,
+                    category: 'Other Documents',
+                    fileName: doc.fileName || doc.originalName,
+                    type: doc.mimeType || 'application/pdf',
+                    size: doc.size,
+                    url: `/uploads/proposals/${doc.fileName}`,
+                    uploadedAt: proposal.createdAt
+                });
+            });
+        }
+
         // Transform dates to ISO strings for frontend
         const transformedProposal = {
             ...proposal,
@@ -64,7 +112,8 @@ export async function GET(request, { params }) {
             grantEndDate: proposal.grantEndDate?.toISOString(),
             approvalDate: proposal.approvalDate?.toISOString(),
             createdAt: proposal.createdAt.toISOString(),
-            updatedAt: proposal.updatedAt.toISOString()
+            updatedAt: proposal.updatedAt.toISOString(),
+            documents: allDocuments
         };
 
         return NextResponse.json({
