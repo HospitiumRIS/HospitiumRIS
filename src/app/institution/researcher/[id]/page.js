@@ -38,17 +38,23 @@ const InstitutionResearcherProfile = () => {
   const router = useRouter();
   const researcherId = params.id;
 
+  const [mounted, setMounted] = useState(false);
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [manuscripts, setManuscripts] = useState([]);
   const [publications, setPublications] = useState([]);
+  const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     const fetchProfile = async () => {
-      if (!researcherId) return;
+      if (!researcherId || !mounted) return;
 
       try {
         setLoading(true);
@@ -70,6 +76,7 @@ const InstitutionResearcherProfile = () => {
         setStats(data.stats);
         setManuscripts(data.manuscripts || []);
         setPublications(data.publications || []);
+        setProposals(data.proposals || []);
       } catch (err) {
         console.error('Error fetching profile:', err);
         setError(err.message);
@@ -79,7 +86,7 @@ const InstitutionResearcherProfile = () => {
     };
 
     fetchProfile();
-  }, [researcherId]);
+  }, [researcherId, mounted]);
 
   const getInitials = () => {
     if (profile?.givenName && profile?.familyName) {
@@ -116,13 +123,14 @@ const InstitutionResearcherProfile = () => {
       case 'SUBMITTED': return 'warning';
       case 'APPROVED': return 'success';
       case 'REJECTED': return 'error';
+      case 'REVISION_REQUESTED': return 'warning';
       case 'DRAFT': return 'default';
       default: return 'default';
     }
   };
 
   // Loading State
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <Box sx={{ 
         minHeight: '100vh', 
@@ -131,7 +139,7 @@ const InstitutionResearcherProfile = () => {
         alignItems: 'center',
         justifyContent: 'center'
       }}>
-        <CircularProgress size={48} sx={{ color: '#6b5b95' }} />
+        <CircularProgress size={48} sx={{ color: '#8b6cbc' }} />
       </Box>
     );
   }
@@ -155,8 +163,8 @@ const InstitutionResearcherProfile = () => {
               variant="contained"
               onClick={() => router.push('/institution')}
               sx={{
-                bgcolor: '#6b5b95',
-                '&:hover': { bgcolor: '#5a4a7a' },
+                bgcolor: '#8b6cbc',
+                '&:hover': { bgcolor: '#7b5cac' },
                 textTransform: 'none',
                 px: 4,
                 py: 1.5,
@@ -180,7 +188,7 @@ const InstitutionResearcherProfile = () => {
         top: 0,
         zIndex: 100,
       }}>
-        <Container maxWidth="lg">
+        <Box sx={{ px: 4, maxWidth: '100%' }}>
           <Box sx={{ 
             display: 'flex', 
             alignItems: 'center', 
@@ -191,10 +199,10 @@ const InstitutionResearcherProfile = () => {
               startIcon={<ArrowBackIcon />}
               onClick={() => router.push('/institution')}
               sx={{
-                color: '#6b5b95',
+                color: '#8b6cbc',
                 textTransform: 'none',
                 fontWeight: 500,
-                '&:hover': { backgroundColor: alpha('#6b5b95', 0.08) }
+                '&:hover': { backgroundColor: alpha('#8b6cbc', 0.08) }
               }}
             >
               Back to Dashboard
@@ -203,10 +211,10 @@ const InstitutionResearcherProfile = () => {
               Researcher Profile
             </Typography>
           </Box>
-        </Container>
+        </Box>
       </Box>
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box sx={{ px: 4, py: 4, maxWidth: '100%' }}>
         {/* Profile Header Section */}
         <Paper sx={{ 
           borderRadius: 2, 
@@ -217,7 +225,7 @@ const InstitutionResearcherProfile = () => {
           {/* Top Banner */}
           <Box sx={{ 
             height: 120, 
-            background: 'linear-gradient(135deg, #6b5b95 0%, #8b7cb3 100%)'
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)'
           }} />
           
           {/* Profile Info */}
@@ -241,7 +249,7 @@ const InstitutionResearcherProfile = () => {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 flexShrink: 0
               }}>
-                <Typography variant="h3" sx={{ fontWeight: 700, color: '#6b5b95' }}>
+                <Typography variant="h3" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
                   {getInitials()}
                 </Typography>
               </Box>
@@ -282,27 +290,6 @@ const InstitutionResearcherProfile = () => {
                   </Typography>
                 )}
               </Box>
-
-              {/* Contact Button */}
-              <Box sx={{ flexShrink: 0 }}>
-                <Button
-                  variant="outlined"
-                  href={`mailto:${profile?.email}`}
-                  sx={{
-                    borderColor: '#6b5b95',
-                    color: '#6b5b95',
-                    textTransform: 'none',
-                    fontWeight: 500,
-                    px: 3,
-                    '&:hover': {
-                      borderColor: '#5a4a7a',
-                      backgroundColor: alpha('#6b5b95', 0.05)
-                    }
-                  }}
-                >
-                  Contact Researcher
-                </Button>
-              </Box>
             </Box>
           </Box>
         </Paper>
@@ -315,7 +302,7 @@ const InstitutionResearcherProfile = () => {
           flexWrap: 'wrap'
         }}>
           {[
-            { label: 'Manuscripts', value: stats?.manuscripts || 0, color: '#6b5b95' },
+            { label: 'Manuscripts', value: stats?.manuscripts || 0, color: '#8b6cbc' },
             { label: 'Publications', value: stats?.publications || 0, color: '#2d8659' },
             { label: 'Proposals', value: stats?.proposals || 0, color: '#d97706' },
             { label: 'Collaborations', value: stats?.collaborations || 0, color: '#2563eb' },
@@ -395,7 +382,7 @@ const InstitutionResearcherProfile = () => {
                           display: 'flex',
                           alignItems: 'center',
                           gap: 0.5,
-                          color: '#6b5b95',
+                          color: '#8b6cbc',
                           fontWeight: 500,
                           fontSize: '0.875rem',
                           textDecoration: 'none',
@@ -558,11 +545,11 @@ const InstitutionResearcherProfile = () => {
                     minHeight: 52,
                     color: '#6b7280',
                     '&.Mui-selected': {
-                      color: '#6b5b95',
+                      color: '#8b6cbc',
                     },
                   },
                   '& .MuiTabs-indicator': {
-                    backgroundColor: '#6b5b95',
+                    backgroundColor: '#8b6cbc',
                     height: 2,
                   }
                 }}
@@ -570,6 +557,7 @@ const InstitutionResearcherProfile = () => {
                 <Tab label="About" />
                 <Tab label={`Publications (${publications.length})`} />
                 <Tab label={`Manuscripts (${manuscripts.length})`} />
+                <Tab label={`Proposals (${proposals.length})`} />
               </Tabs>
 
               <Box sx={{ p: 3 }}>
@@ -614,8 +602,8 @@ const InstitutionResearcherProfile = () => {
                                 label={keyword}
                                 size="small"
                                 sx={{
-                                  backgroundColor: alpha('#6b5b95', 0.08),
-                                  color: '#6b5b95',
+                                  backgroundColor: alpha('#8b6cbc', 0.08),
+                                  color: '#8b6cbc',
                                   fontWeight: 500,
                                   fontSize: '0.75rem',
                                   borderRadius: 1,
@@ -689,7 +677,7 @@ const InstitutionResearcherProfile = () => {
                                     </Typography>
                                   </TableCell>
                                   <TableCell sx={{ py: 2.5 }}>
-                                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#6b5b95' }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#8b6cbc' }}>
                                       {pub.citationCount || 0}
                                     </Typography>
                                   </TableCell>
@@ -776,11 +764,87 @@ const InstitutionResearcherProfile = () => {
                     </Box>
                   </Fade>
                 )}
+
+                {/* Proposals Tab */}
+                {activeTab === 3 && (
+                  <Fade in={activeTab === 3}>
+                    <Box>
+                      {proposals.length > 0 ? (
+                        <TableContainer>
+                          <Table>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5 }}>Proposal</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 140 }}>Status</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 120 }}>Budget</TableCell>
+                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 120 }}>Submitted</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {proposals.map((proposal) => (
+                                <TableRow 
+                                  key={proposal.id}
+                                  sx={{ 
+                                    '&:hover': { backgroundColor: '#f9fafb' },
+                                    '& td': { borderBottom: '1px solid #f3f4f6' }
+                                  }}
+                                >
+                                  <TableCell sx={{ py: 2.5 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#1a1a2e', mb: 0.5 }}>  
+                                      {proposal.title}
+                                    </Typography>
+                                    {proposal.abstract && (
+                                      <Typography variant="caption" sx={{ color: '#9ca3af', display: 'block', mt: 0.5 }}>
+                                        {proposal.abstract.length > 100 ? proposal.abstract.substring(0, 100) + '...' : proposal.abstract}
+                                      </Typography>
+                                    )}
+                                    {proposal.departments && proposal.departments.length > 0 && (
+                                      <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', mt: 0.5 }}>
+                                        {proposal.departments.join(', ')}
+                                      </Typography>
+                                    )}
+                                  </TableCell>
+                                  <TableCell sx={{ py: 2.5 }}>
+                                    <Chip
+                                      label={proposal.status?.replace('_', ' ') || 'Draft'}
+                                      size="small"
+                                      color={getStatusColor(proposal.status)}
+                                      sx={{ fontWeight: 500, textTransform: 'capitalize', fontSize: '0.7rem' }}
+                                    />
+                                  </TableCell>
+                                  <TableCell sx={{ py: 2.5 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151' }}>
+                                      {proposal.totalBudgetAmount ? `$${parseFloat(proposal.totalBudgetAmount).toLocaleString()}` : '—'}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell sx={{ py: 2.5 }}>
+                                    <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                                      {proposal.createdAt ? formatDate(proposal.createdAt) : '—'}
+                                    </Typography>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      ) : (
+                        <Box sx={{ textAlign: 'center', py: 8 }}>
+                          <Typography variant="body1" sx={{ color: '#9ca3af', mb: 1 }}>
+                            No proposals found
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            This researcher hasn't submitted any proposals yet.
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  </Fade>
+                )}
               </Box>
             </Paper>
           </Box>
         </Box>
-      </Container>
+      </Box>
     </Box>
   );
 };

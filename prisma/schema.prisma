@@ -838,12 +838,49 @@ model Proposal {
   // Relations
   publications ProposalPublication[]
   manuscripts ProposalManuscript[]
+  reviews ProposalReview[]
   
   // TODO: Add userId when authentication is implemented
   // userId      String
   // user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@map("proposals")
+}
+
+// Proposal Review Model for comprehensive reviews
+model ProposalReview {
+  id          String   @id @default(cuid())
+  proposalId  String
+  
+  // Reviewer Information
+  reviewerId  String   // User ID of reviewer
+  reviewerName String  // Name of reviewer
+  
+  // Review Decision
+  decision    String   // APPROVED, REJECTED, REQUIRES_REVISION
+  
+  // Review Content
+  overallComments String @db.Text
+  rejectionReason String? @db.Text
+  revisionRequirements String? @db.Text
+  recommendation String? @db.Text
+  
+  // Section-by-Section Reviews (stored as JSON)
+  sectionReviews Json   // Contains compliance ratings and comments for each section
+  complianceScore Json  // Contains total, compliant, and non-compliant counts
+  
+  // Review Metadata
+  reviewDate  DateTime
+  status      String   @default("COMPLETED") // COMPLETED, DRAFT
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  
+  @@map("proposal_reviews")
 }
 
 // Junction table for Proposal-Publication relationships

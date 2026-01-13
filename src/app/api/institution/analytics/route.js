@@ -23,10 +23,12 @@ export async function GET(request) {
       totalUsers,
       totalManuscripts,
       totalProposals,
+      draftProposals,
       submittedProposals,
       underReviewProposals,
       approvedProposals,
       rejectedProposals,
+      revisionRequestedProposals,
       totalPublications,
       manuscriptsWithCollaborators,
       proposalsWithDetails,
@@ -54,6 +56,13 @@ export async function GET(request) {
       // Proposals by status
       prisma.proposal.count({
         where: {
+          status: 'DRAFT',
+          ...dateFilter
+        }
+      }),
+
+      prisma.proposal.count({
+        where: {
           status: 'SUBMITTED',
           ...dateFilter
         }
@@ -76,6 +85,13 @@ export async function GET(request) {
       prisma.proposal.count({
         where: {
           status: 'REJECTED',
+          ...dateFilter
+        }
+      }),
+
+      prisma.proposal.count({
+        where: {
+          status: 'REVISION_REQUESTED',
           ...dateFilter
         }
       }),
@@ -297,10 +313,12 @@ export async function GET(request) {
         totalProposals,
         totalPublications,
         totalOutput,
+        draftProposals,
         submittedProposals,
         underReviewProposals,
         approvedProposals,
         rejectedProposals,
+        revisionRequestedProposals,
         proposalSuccessRate: parseFloat(proposalSuccessRate),
         avgOutputPerResearcher: totalUsers > 0 ? (totalOutput / totalUsers).toFixed(1) : 0
       },
@@ -310,10 +328,12 @@ export async function GET(request) {
         researcherCount: dept._count.id
       })),
       proposalStatus: {
+        draft: draftProposals,
         submitted: submittedProposals,
         underReview: underReviewProposals,
         approved: approvedProposals,
-        rejected: rejectedProposals
+        rejected: rejectedProposals,
+        revisionRequested: revisionRequestedProposals
       },
       recentManuscripts: manuscriptsWithCollaborators.map(manuscript => ({
         id: manuscript.id,

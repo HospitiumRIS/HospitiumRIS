@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Container,
@@ -53,6 +54,7 @@ import {
   Person as PrincipalInvestigatorIcon,
   School as DepartmentIcon,
   Assignment as ProposalIcon,
+  Assignment as AssignmentIcon,
   FilterList as FilterIcon,
   Search as SearchIcon,
   Refresh as RefreshIcon,
@@ -68,6 +70,7 @@ import { useAuth } from '../../../../components/AuthProvider';
 
 const ProposalReviewPage = () => {
   const { user } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [proposals, setProposals] = useState([]);
   const [filteredProposals, setFilteredProposals] = useState([]);
@@ -77,14 +80,12 @@ const ProposalReviewPage = () => {
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [reviewDialog, setReviewDialog] = useState(false);
-  const [detailsDialog, setDetailsDialog] = useState(false);
   const [reviewForm, setReviewForm] = useState({
     decision: '',
     comments: '',
     feedback: '',
     conditions: ''
   });
-  const [activeTab, setActiveTab] = useState(0);
   const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
@@ -201,8 +202,7 @@ const ProposalReviewPage = () => {
   };
 
   const handleViewDetails = (proposal) => {
-    setSelectedProposal(proposal);
-    setDetailsDialog(true);
+    router.push(`/institution/proposals/review/${proposal.id}`);
   };
 
   const handleReviewProposal = (proposal) => {
@@ -214,6 +214,36 @@ const ProposalReviewPage = () => {
       conditions: ''
     });
     setReviewDialog(true);
+  };
+
+  const handleDownload = (proposal) => {
+    // Create a comprehensive data object for download
+    const downloadData = {
+      id: proposal.id,
+      title: proposal.title,
+      principalInvestigator: proposal.principalInvestigator,
+      department: proposal.department,
+      status: proposal.status,
+      submittedDate: proposal.submittedDate,
+      budget: proposal.budget,
+      duration: proposal.duration,
+      researchArea: proposal.researchArea,
+      description: proposal.description
+    };
+
+    // Convert to JSON string with formatting
+    const jsonString = JSON.stringify(downloadData, null, 2);
+    
+    // Create blob and download
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `proposal-${proposal.id}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleSubmitReview = async () => {
@@ -324,384 +354,6 @@ const ProposalReviewPage = () => {
   const getUniqueDepartments = () => {
     const departments = [...new Set(proposals.map(p => p.department))];
     return departments.filter(dept => dept && dept !== 'Unknown');
-  };
-
-  const renderTabContent = () => {
-    if (!selectedProposal) return null;
-
-    switch (activeTab) {
-      case 0: // Overview
-        return (
-          <Box>
-            <Grid container spacing={3}>
-              {/* Basic Information */}
-              <Grid item xs={12} md={6}>
-                <Card sx={{ mb: 2 }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-                      <ProposalIcon sx={{ mr: 1, color: '#8b6cbc' }} />
-                      Proposal Details
-                    </Typography>
-                    <Stack spacing={2}>
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary">Title</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>{selectedProposal.title}</Typography>
-                      </Box>
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary">Research Areas</Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                          {selectedProposal.researchAreas.map((area, index) => (
-                            <Chip key={index} label={area} size="small" variant="outlined" />
-                          ))}
-                        </Box>
-                      </Box>
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary">Description</Typography>
-                        <Typography variant="body2">{selectedProposal.description}</Typography>
-                      </Box>
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary">Duration</Typography>
-                        <Typography variant="body1">{selectedProposal.duration}</Typography>
-                      </Box>
-                      {selectedProposal.startDate && selectedProposal.endDate && (
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary">Project Timeline</Typography>
-                          <Typography variant="body2">
-                            {formatDate(selectedProposal.startDate)} - {formatDate(selectedProposal.endDate)}
-                          </Typography>
-                        </Box>
-                      )}
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary">Status</Typography>
-                        <Chip 
-                          label={selectedProposal.status.replace('_', ' ')} 
-                          color={getStatusColor(selectedProposal.status)}
-                          icon={getStatusIcon(selectedProposal.status)}
-                        />
-                      </Box>
-                      {selectedProposal.status === 'UNDER_REVIEW' && (
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary">Days in Review</Typography>
-                          <Typography variant="body2" sx={{ color: selectedProposal.daysInReview > 30 ? 'error.main' : 'text.primary' }}>
-                            {selectedProposal.daysInReview} days
-                            {selectedProposal.daysInReview > 30 && ' (Review Overdue)'}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* Principal Investigator & Team */}
-              <Grid item xs={12} md={6}>
-                <Card sx={{ mb: 2 }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-                      <PrincipalInvestigatorIcon sx={{ mr: 1, color: '#8b6cbc' }} />
-                      Principal Investigator & Team
-                    </Typography>
-                    <Stack spacing={2}>
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary">Principal Investigator</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>{selectedProposal.principalInvestigator}</Typography>
-                      </Box>
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary">Department</Typography>
-                        <Typography variant="body1">{selectedProposal.department}</Typography>
-                      </Box>
-                      {selectedProposal.collaborators.length > 0 && (
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary">Co-Investigators</Typography>
-                          <List dense>
-                            {selectedProposal.collaborators.slice(0, 3).map((collaborator, index) => (
-                              <ListItem key={index} sx={{ px: 0 }}>
-                                <ListItemIcon>
-                                  <Avatar sx={{ bgcolor: '#8b6cbc', width: 24, height: 24, fontSize: '0.75rem' }}>
-                                    {collaborator?.name?.charAt(0) || collaborator?.charAt?.(0) || 'C'}
-                                  </Avatar>
-                                </ListItemIcon>
-                                <ListItemText 
-                                  primary={collaborator?.name || collaborator} 
-                                  secondary={collaborator?.email}
-                                />
-                              </ListItem>
-                            ))}
-                            {selectedProposal.collaborators.length > 3 && (
-                              <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
-                                +{selectedProposal.collaborators.length - 3} more
-                              </Typography>
-                            )}
-                          </List>
-                        </Box>
-                      )}
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* Funding Information */}
-              <Grid item xs={12}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-                      <BudgetIcon sx={{ mr: 1, color: '#8b6cbc' }} />
-                      Funding Information
-                    </Typography>
-                    <Grid container spacing={3}>
-                      <Grid item xs={12} md={3}>
-                        <Box sx={{ textAlign: 'center', py: 2 }}>
-                          <Typography variant="h4" sx={{ color: '#8b6cbc', fontWeight: 'bold' }}>
-                            {formatCurrency(selectedProposal.totalBudgetAmount)}
-                          </Typography>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Total Budget Requested
-                          </Typography>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={12} md={9}>
-                        <Stack spacing={2}>
-                          <Box>
-                            <Typography variant="subtitle2" color="text.secondary">Funding Source</Typography>
-                            <Typography variant="body1">{selectedProposal.fundingSource}</Typography>
-                          </Box>
-                          <Box>
-                            <Typography variant="subtitle2" color="text.secondary">Funding Institution</Typography>
-                            <Typography variant="body1">{selectedProposal.fundingInstitution}</Typography>
-                          </Box>
-                          {selectedProposal.grantNumber !== 'N/A' && (
-                            <Box>
-                              <Typography variant="subtitle2" color="text.secondary">Grant Number</Typography>
-                              <Typography variant="body1">{selectedProposal.grantNumber}</Typography>
-                            </Box>
-                          )}
-                        </Stack>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          </Box>
-        );
-      
-      case 1: // Research Details
-        return (
-          <Box>
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <Card sx={{ mb: 2 }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ mb: 2 }}>Research Objectives</Typography>
-                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                      {selectedProposal.researchObjectives || 'No research objectives provided.'}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12}>
-                <Card sx={{ mb: 2 }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ mb: 2 }}>Methodology</Typography>
-                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                      {selectedProposal.methodology || 'No methodology provided.'}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              {selectedProposal.milestones.length > 0 && (
-                <Grid item xs={12} md={6}>
-                  <Card>
-                    <CardContent>
-                      <Typography variant="h6" sx={{ mb: 2 }}>Milestones</Typography>
-                      <List>
-                        {selectedProposal.milestones.map((milestone, index) => (
-                          <ListItem key={index} divider>
-                            <ListItemIcon>
-                              <Typography variant="body2" sx={{ 
-                                bgcolor: '#8b6cbc', 
-                                color: 'white', 
-                                borderRadius: '50%', 
-                                width: 24, 
-                                height: 24, 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center',
-                                fontSize: '0.75rem'
-                              }}>
-                                {index + 1}
-                              </Typography>
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={milestone.title || `Milestone ${index + 1}`}
-                              secondary={milestone.description || milestone}
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              )}
-              {selectedProposal.deliverables.length > 0 && (
-                <Grid item xs={12} md={6}>
-                  <Card>
-                    <CardContent>
-                      <Typography variant="h6" sx={{ mb: 2 }}>Deliverables</Typography>
-                      <List>
-                        {selectedProposal.deliverables.map((deliverable, index) => (
-                          <ListItem key={index} divider>
-                            <ListItemIcon>
-                              <Typography variant="body2" sx={{ 
-                                bgcolor: '#4caf50', 
-                                color: 'white', 
-                                borderRadius: '50%', 
-                                width: 24, 
-                                height: 24, 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center',
-                                fontSize: '0.75rem'
-                              }}>
-                                {index + 1}
-                              </Typography>
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={deliverable.title || `Deliverable ${index + 1}`}
-                              secondary={deliverable.description || deliverable}
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              )}
-            </Grid>
-          </Box>
-        );
-
-      case 2: // Ethics & Compliance
-        return (
-          <Box>
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <Card sx={{ mb: 2 }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-                      <ReviewIcon sx={{ mr: 1, color: '#8b6cbc' }} />
-                      Ethics Approval Status
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Chip 
-                        label={selectedProposal.ethicsApproval} 
-                        size="medium"
-                        color={selectedProposal.ethicsApproval === 'Approved' ? 'success' : 'warning'}
-                        sx={{ mr: 2 }}
-                      />
-                      {selectedProposal.ethicsApproval !== 'Approved' && (
-                        <Alert severity="warning" sx={{ flex: 1 }}>
-                          Ethics approval required before final project approval
-                        </Alert>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-              {selectedProposal.ethicalConsiderations && (
-                <Grid item xs={12}>
-                  <Card sx={{ mb: 2 }}>
-                    <CardContent>
-                      <Typography variant="h6" sx={{ mb: 2 }}>Ethical Considerations</Typography>
-                      <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                        {selectedProposal.ethicalConsiderations}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              )}
-              {selectedProposal.consentProcedures && (
-                <Grid item xs={12} md={6}>
-                  <Card>
-                    <CardContent>
-                      <Typography variant="h6" sx={{ mb: 2 }}>Consent Procedures</Typography>
-                      <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                        {selectedProposal.consentProcedures}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              )}
-              {selectedProposal.dataSecurityMeasures && (
-                <Grid item xs={12} md={6}>
-                  <Card>
-                    <CardContent>
-                      <Typography variant="h6" sx={{ mb: 2 }}>Data Security Measures</Typography>
-                      <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                        {selectedProposal.dataSecurityMeasures}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              )}
-            </Grid>
-          </Box>
-        );
-      
-      case 3: // Review History
-        return (
-          <Card>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-                <HistoryIcon sx={{ mr: 1, color: '#8b6cbc' }} />
-                Review History
-              </Typography>
-              {selectedProposal.reviewHistory.length > 0 ? (
-                <List>
-                  {selectedProposal.reviewHistory.map((review, index) => (
-                    <ListItem key={review.id || index} divider>
-                      <ListItemIcon>
-                        <Avatar sx={{ bgcolor: '#8b6cbc', width: 32, height: 32 }}>
-                          {review.reviewer.charAt(0)}
-                        </Avatar>
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography variant="subtitle2">{review.reviewer}</Typography>
-                            <Chip 
-                              label={review.decision} 
-                              size="small" 
-                              color={getStatusColor(review.decision)}
-                            />
-                          </Stack>
-                        }
-                        secondary={
-                          <Box>
-                            <Typography variant="body2" sx={{ mt: 1 }}>
-                              {review.comments}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {formatDate(review.date)}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              ) : (
-                <Alert severity="info">
-                  No review history available for this proposal. This will be the first review.
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-        );
-      
-      default:
-        return null;
-    }
   };
 
   if (loading) {
@@ -925,118 +577,135 @@ const ProposalReviewPage = () => {
           </CardContent>
         </Card>
 
-        {/* Quick Actions Panel for Under Review Proposals */}
-        {filteredProposals.filter(p => p.status === 'UNDER_REVIEW').length > 0 && (
-          <Card sx={{ mb: 3, border: '2px solid #8b6cbc' }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', color: '#8b6cbc' }}>
-                <ReviewIcon sx={{ mr: 1 }} />
-                Priority Reviews Needed
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                {filteredProposals
-                  .filter(p => p.status === 'UNDER_REVIEW')
-                  .sort((a, b) => b.daysInReview - a.daysInReview)
-                  .slice(0, 3)
-                  .map((proposal) => (
-                    <Card key={proposal.id} sx={{ flex: '1 1 300px', minWidth: '280px', border: proposal.daysInReview > 30 ? '1px solid #f44336' : '1px solid #e0e0e0' }}>
-                      <CardContent sx={{ p: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }} noWrap>
-                          {proposal.title}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                          PI: {proposal.principalInvestigator}
-                        </Typography>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                          <Typography variant="body2" sx={{ color: proposal.daysInReview > 30 ? 'error.main' : 'text.primary' }}>
-                            {proposal.daysInReview} days in review
-                          </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {formatCurrency(proposal.totalBudgetAmount)}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => handleViewDetails(proposal)}
-                            sx={{ flex: 1, borderColor: '#8b6cbc', color: '#8b6cbc' }}
-                          >
-                            View
-                          </Button>
-                          <Button
-                            size="small"
-                            variant="contained"
-                            onClick={() => handleReviewProposal(proposal)}
-                            sx={{ flex: 1, bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7b5cac' } }}
-                          >
-                            Review
-                          </Button>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  ))}
-              </Box>
-              {filteredProposals.filter(p => p.status === 'UNDER_REVIEW').length > 3 && (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
-                  +{filteredProposals.filter(p => p.status === 'UNDER_REVIEW').length - 3} more proposals awaiting review
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
         {/* Proposals Table */}
-        <Card>
-          <CardContent sx={{ p: 4 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                All Research Proposals
-              </Typography>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Chip 
-                  label={`${filteredProposals.filter(p => p.status === 'UNDER_REVIEW').length} Under Review`}
-                  color="warning"
-                  size="small"
-                />
-                <Badge badgeContent={filteredProposals.filter(p => p.status === 'UNDER_REVIEW').length} color="error">
-                  <ReviewIcon sx={{ color: '#8b6cbc' }} />
-                </Badge>
+        <Card elevation={2}>
+          <CardContent sx={{ p: 0 }}>
+            <Box sx={{ 
+              px: 3, 
+              py: 2.5, 
+              borderBottom: '1px solid #e0e0e0',
+              background: 'linear-gradient(to right, #f8f9fa 0%, #ffffff 100%)'
+            }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                    Research Proposals
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {filteredProposals.length} {filteredProposals.length === 1 ? 'proposal' : 'proposals'} found
+                  </Typography>
+                </Box>
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Chip 
+                    icon={<ReviewIcon fontSize="small" />}
+                    label={`${filteredProposals.filter(p => p.status === 'UNDER_REVIEW').length} Under Review`}
+                    sx={{ 
+                      bgcolor: '#fff3e0',
+                      color: '#e65100',
+                      fontWeight: 600,
+                      border: '1px solid #ffb74d'
+                    }}
+                    size="small"
+                  />
+                  <Chip 
+                    icon={<ApproveIcon fontSize="small" />}
+                    label={`${filteredProposals.filter(p => p.status === 'APPROVED').length} Approved`}
+                    sx={{ 
+                      bgcolor: '#e8f5e9',
+                      color: '#2e7d32',
+                      fontWeight: 600,
+                      border: '1px solid #81c784'
+                    }}
+                    size="small"
+                  />
+                </Stack>
               </Stack>
-            </Stack>
+            </Box>
 
-            <TableContainer component={Paper} elevation={0}>
-              <Table>
+            <TableContainer>
+              <Table sx={{ minWidth: 1000 }}>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
-                    <TableCell sx={{ fontWeight: 600 }}>Proposal</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Principal Investigator</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Department</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Budget</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Review Time</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                  <TableRow sx={{ 
+                    backgroundColor: '#8b6cbc',
+                    '& th': { 
+                      color: 'white',
+                      fontWeight: 700,
+                      fontSize: '0.875rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      borderBottom: 'none',
+                      py: 2
+                    }
+                  }}>
+                    <TableCell width="30%">Proposal Title</TableCell>
+                    <TableCell width="15%">Principal Investigator</TableCell>
+                    <TableCell width="12%">Department</TableCell>
+                    <TableCell width="10%" align="right">Budget</TableCell>
+                    <TableCell width="10%">Status</TableCell>
+                    <TableCell width="10%">Submitted / Review Time</TableCell>
+                    <TableCell width="13%" align="center">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredProposals.map((proposal) => (
-                    <TableRow key={proposal.id} hover>
+                  {filteredProposals.map((proposal, index) => (
+                    <TableRow 
+                      key={proposal.id} 
+                      hover
+                      sx={{ 
+                        '&:hover': { 
+                          backgroundColor: '#f5f3f7',
+                          cursor: 'pointer'
+                        },
+                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#fafafa',
+                        borderLeft: proposal.status === 'UNDER_REVIEW' && proposal.daysInReview > 30 
+                          ? '4px solid #f44336' 
+                          : proposal.status === 'UNDER_REVIEW'
+                          ? '4px solid #ff9800'
+                          : 'none'
+                      }}
+                    >
                       <TableCell>
                         <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          <Typography 
+                            variant="subtitle2" 
+                            sx={{ 
+                              fontWeight: 600,
+                              color: '#2c3e50',
+                              mb: 0.5,
+                              lineHeight: 1.3
+                            }}
+                          >
                             {proposal.title}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary" noWrap>
+                          <Typography 
+                            variant="caption" 
+                            color="text.secondary"
+                            sx={{ 
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              lineHeight: 1.4
+                            }}
+                          >
                             {proposal.description}
                           </Typography>
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ bgcolor: '#8b6cbc', width: 32, height: 32, mr: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Avatar 
+                            sx={{ 
+                              bgcolor: '#8b6cbc', 
+                              width: 36, 
+                              height: 36,
+                              fontSize: '0.875rem',
+                              fontWeight: 600
+                            }}
+                          >
                             {proposal.principalInvestigator.charAt(0)}
                           </Avatar>
-                          <Typography variant="body2">
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
                             {proposal.principalInvestigator}
                           </Typography>
                         </Box>
@@ -1045,12 +714,23 @@ const ProposalReviewPage = () => {
                         <Chip 
                           label={proposal.department} 
                           size="small" 
-                          variant="outlined"
-                          sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}
+                          sx={{ 
+                            bgcolor: '#f3e5f5',
+                            color: '#7b1fa2',
+                            fontWeight: 600,
+                            fontSize: '0.75rem'
+                          }}
                         />
                       </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      <TableCell align="right">
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            fontWeight: 700,
+                            color: '#2c3e50',
+                            fontFamily: 'monospace'
+                          }}
+                        >
                           {formatCurrency(proposal.budget)}
                         </Typography>
                       </TableCell>
@@ -1060,6 +740,11 @@ const ProposalReviewPage = () => {
                           label={proposal.status.replace('_', ' ')}
                           color={getStatusColor(proposal.status)}
                           size="small"
+                          sx={{ 
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            textTransform: 'capitalize'
+                          }}
                         />
                       </TableCell>
                       <TableCell>
@@ -1068,49 +753,86 @@ const ProposalReviewPage = () => {
                             <Typography 
                               variant="body2" 
                               sx={{ 
-                                color: proposal.daysInReview > 30 ? 'error.main' : 'text.primary',
-                                fontWeight: proposal.daysInReview > 30 ? 600 : 400
+                                color: proposal.daysInReview > 30 ? '#d32f2f' : '#1976d2',
+                                fontWeight: 700,
+                                fontSize: '0.875rem'
                               }}
                             >
                               {proposal.daysInReview} days
                             </Typography>
                             {proposal.daysInReview > 30 && (
                               <Chip 
-                                label="Overdue" 
+                                label="OVERDUE" 
                                 size="small" 
-                                color="error" 
-                                sx={{ fontSize: '0.6rem', height: 16 }}
+                                sx={{ 
+                                  bgcolor: '#ffebee',
+                                  color: '#c62828',
+                                  fontSize: '0.65rem',
+                                  height: 18,
+                                  fontWeight: 700,
+                                  mt: 0.5
+                                }}
                               />
                             )}
                           </Box>
                         ) : (
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
                             {formatDate(proposal.submittedDate)}
                           </Typography>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={1}>
-                          <Tooltip title="View Details">
+                      <TableCell align="center">
+                        <Stack direction="row" spacing={0.5} justifyContent="center">
+                          <Tooltip title="View Details" arrow>
                             <IconButton 
                               size="small" 
                               onClick={() => handleViewDetails(proposal)}
-                              sx={{ color: '#8b6cbc' }}
+                              sx={{ 
+                                color: '#8b6cbc',
+                                '&:hover': {
+                                  bgcolor: '#f3e5f5',
+                                  transform: 'scale(1.1)'
+                                },
+                                transition: 'all 0.2s'
+                              }}
                             >
                               <ViewIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                           {proposal.status === 'UNDER_REVIEW' && (
-                            <Tooltip title="Review Proposal">
+                            <Tooltip title="Review Proposal" arrow>
                               <IconButton 
                                 size="small" 
                                 onClick={() => handleReviewProposal(proposal)}
-                                sx={{ color: '#4caf50' }}
+                                sx={{ 
+                                  color: '#4caf50',
+                                  '&:hover': {
+                                    bgcolor: '#e8f5e9',
+                                    transform: 'scale(1.1)'
+                                  },
+                                  transition: 'all 0.2s'
+                                }}
                               >
                                 <ReviewIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                           )}
+                          <Tooltip title="Download Proposal Data" arrow>
+                            <IconButton 
+                              size="small"
+                              onClick={() => handleDownload(proposal)}
+                              sx={{ 
+                                color: '#757575',
+                                '&:hover': {
+                                  bgcolor: '#f5f5f5',
+                                  transform: 'scale(1.1)'
+                                },
+                                transition: 'all 0.2s'
+                              }}
+                            >
+                              <DownloadIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </Stack>
                       </TableCell>
                     </TableRow>
@@ -1128,53 +850,6 @@ const ProposalReviewPage = () => {
             )}
           </CardContent>
         </Card>
-
-        {/* Proposal Details Dialog */}
-        <Dialog 
-          open={detailsDialog} 
-          onClose={() => setDetailsDialog(false)}
-          maxWidth="lg"
-          fullWidth
-          PaperProps={{
-            sx: { height: '90vh' }
-          }}
-        >
-          <DialogTitle sx={{ 
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <ProposalIcon sx={{ mr: 1 }} />
-              Proposal Details
-            </Box>
-            <IconButton 
-              onClick={() => setDetailsDialog(false)}
-              sx={{ color: 'white' }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent sx={{ p: 0 }}>
-            <Tabs 
-              value={activeTab} 
-              onChange={(e, newValue) => setActiveTab(newValue)}
-              sx={{ borderBottom: 1, borderColor: 'divider' }}
-              variant="scrollable"
-              scrollButtons="auto"
-            >
-              <Tab label="Overview" />
-              <Tab label="Research Details" />
-              <Tab label="Ethics & Compliance" />
-              <Tab label="Review History" />
-            </Tabs>
-            <Box sx={{ p: 3 }}>
-              {renderTabContent()}
-            </Box>
-          </DialogContent>
-        </Dialog>
 
         {/* Review Dialog */}
         <Dialog 

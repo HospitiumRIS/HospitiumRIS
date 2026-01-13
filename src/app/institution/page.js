@@ -643,8 +643,8 @@ const InstitutionDashboard = () => {
                   </Typography>
                   <Stack spacing={2}>
                     <Stack direction="row" alignItems="center" spacing={1}>
-                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#4caf50' }} />
-                      <Typography variant="body2">Approved: {analyticsData.overview.approvedProposals}</Typography>
+                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#9e9e9e' }} />
+                      <Typography variant="body2">Draft: {analyticsData.overview.draftProposals || 0}</Typography>
                     </Stack>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#ff9800' }} />
@@ -655,8 +655,16 @@ const InstitutionDashboard = () => {
                       <Typography variant="body2">Under Review: {analyticsData.overview.underReviewProposals}</Typography>
                     </Stack>
                     <Stack direction="row" alignItems="center" spacing={1}>
+                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#4caf50' }} />
+                      <Typography variant="body2">Approved: {analyticsData.overview.approvedProposals}</Typography>
+                    </Stack>
+                    <Stack direction="row" alignItems="center" spacing={1}>
                       <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#f44336' }} />
                       <Typography variant="body2">Rejected: {analyticsData.overview.rejectedProposals}</Typography>
+                    </Stack>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#ff5722' }} />
+                      <Typography variant="body2">Revision Requested: {analyticsData.overview.revisionRequestedProposals || 0}</Typography>
                     </Stack>
                   </Stack>
                 </Box>
@@ -706,64 +714,78 @@ const InstitutionDashboard = () => {
                 Recent proposals requiring administrative review
               </Typography>
 
-              <TableContainer sx={{ maxHeight: 400 }}>
-                <Table stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600 }}>Proposal</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {analyticsData.recentProposals
-                      .filter(proposal => ['SUBMITTED', 'UNDER_REVIEW'].includes(proposal.status))
-                      .slice(0, 10)
-                      .map((proposal) => (
-                      <TableRow key={proposal.id} hover>
-                        <TableCell>
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {proposal.title}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              by {proposal.author} • {proposal.department}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            icon={getStatusIcon(proposal.status)}
-                            label={proposal.status.replace('_', ' ')}
-                            color={getStatusColor(proposal.status)}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {formatDate(proposal.createdAt)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Stack direction="row" spacing={1}>
-                            <Tooltip title="View Details">
-                              <IconButton size="small" sx={{ color: '#8b6cbc' }}>
-                                <ViewIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Review">
-                              <IconButton size="small" sx={{ color: '#4caf50' }}>
-                                <ReviewIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </Stack>
-                        </TableCell>
+              {analyticsData.recentProposals
+                .filter(proposal => ['SUBMITTED', 'UNDER_REVIEW'].includes(proposal.status))
+                .length > 0 ? (
+                <TableContainer sx={{ maxHeight: 400 }}>
+                  <Table stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 600 }}>Proposal</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {analyticsData.recentProposals
+                        .filter(proposal => ['SUBMITTED', 'UNDER_REVIEW'].includes(proposal.status))
+                        .slice(0, 10)
+                        .map((proposal) => (
+                        <TableRow key={proposal.id} hover>
+                          <TableCell>
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {proposal.title}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                by {proposal.author} • {proposal.department}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              icon={getStatusIcon(proposal.status)}
+                              label={proposal.status.replace('_', ' ')}
+                              color={getStatusColor(proposal.status)}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {formatDate(proposal.createdAt)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Stack direction="row" spacing={1}>
+                              <Tooltip title="View Details">
+                                <IconButton size="small" sx={{ color: '#8b6cbc' }}>
+                                  <ViewIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Review">
+                                <IconButton size="small" sx={{ color: '#4caf50' }}>
+                                  <ReviewIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 6 }}>
+                  <ReviewIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 2 }} />
+                  <Typography variant="body1" sx={{ color: '#9ca3af', mb: 1, fontWeight: 500 }}>
+                    No proposals awaiting review
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    All proposals have been reviewed or there are no submitted proposals at this time.
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
 

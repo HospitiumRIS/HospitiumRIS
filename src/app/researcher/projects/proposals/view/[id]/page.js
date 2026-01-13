@@ -77,33 +77,31 @@ const SectionHeader = ({ icon, title, number }) => (
     alignItems: 'center', 
     gap: 2, 
     mb: 3,
-    p: 2,
-    borderRadius: 2,
-    background: 'linear-gradient(135deg, #8b6cbc 0%, #a855f7 100%)',
-    color: 'white'
+    pb: 2,
+    borderBottom: '2px solid #e5e7eb'
   }}>
     {number && (
       <Box sx={{
-        width: 40,
-        height: 40,
+        width: 36,
+        height: 36,
         borderRadius: '50%',
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        backgroundColor: '#8b6cbc',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         color: 'white',
-        fontWeight: 600,
-        fontSize: '1.1rem'
+        fontWeight: 700,
+        fontSize: '1rem'
       }}>
         {number}
       </Box>
     )}
     {icon && !number && (
       <Box sx={{
-        width: 40,
-        height: 40,
+        width: 36,
+        height: 36,
         borderRadius: '50%',
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        backgroundColor: '#8b6cbc',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -112,7 +110,7 @@ const SectionHeader = ({ icon, title, number }) => (
         {icon}
       </Box>
     )}
-    <Typography variant="h6" sx={{ fontWeight: 600, color: 'white' }}>
+    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1.1rem' }}>
       {title}
     </Typography>
   </Box>
@@ -293,71 +291,71 @@ const ProposalViewPage = () => {
   }
 
   return (
-    <Box sx={{ mt: '80px' }}>
-      {/* Page Header */}
-      <PageHeader
-        title={proposal.title}
-        subtitle="Proposal Details"
-        showBackButton={true}
-        backButtonText="Back to Proposals"
-        actions={
-          <Stack direction="row" spacing={2}>
+    <Box sx={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
+      {/* Header Bar */}
+      <Box sx={{ 
+        backgroundColor: 'white', 
+        borderBottom: '1px solid #e8e8e8',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+      }}>
+        <Box sx={{ px: 4, maxWidth: '100%' }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            py: 2,
+            gap: 2
+          }}>
             <Button
-              variant="outlined"
-              startIcon={<EditIcon />}
-              onClick={handleEdit}
-              sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}
+              startIcon={<ArrowBackIcon />}
+              onClick={handleBack}
+              sx={{
+                color: '#8b6cbc',
+                textTransform: 'none',
+                fontWeight: 500,
+                '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.08)' }
+              }}
             >
-              Edit
+              Back to Proposals
             </Button>
-            <Button
-              variant="outlined"
-              startIcon={<ShareIcon />}
-              sx={{ borderColor: '#22c55e', color: '#22c55e' }}
-            >
-              Share
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<PrintIcon />}
-              sx={{ borderColor: '#6b7280', color: '#6b7280' }}
-            >
-              Print
-            </Button>
-            {/* Demo Admin Actions - In real app, these would be in admin interface */}
-            {proposal?.status === 'DRAFT' && (
+            <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
               <Button
-                variant="contained"
-                onClick={() => simulateStatusUpdate('UNDER_REVIEW', 'Proposal submitted for review by Research Admin.')}
-                sx={{ backgroundColor: '#3b82f6', '&:hover': { backgroundColor: '#2563eb' } }}
+                variant="outlined"
+                startIcon={<EditIcon />}
+                onClick={handleEdit}
+                sx={{ 
+                  borderColor: '#8b6cbc', 
+                  color: '#8b6cbc',
+                  '&:hover': { 
+                    borderColor: '#7b5cac',
+                    backgroundColor: 'rgba(139, 108, 188, 0.08)'
+                  }
+                }}
               >
-                Submit for Review
+                Edit
               </Button>
-            )}
-            {proposal?.status === 'UNDER_REVIEW' && (
-              <>
-                <Button
-                  variant="contained"
-                  onClick={() => simulateStatusUpdate('APPROVED', 'Proposal approved. All requirements met and ready to proceed.')}
-                  sx={{ backgroundColor: '#22c55e', '&:hover': { backgroundColor: '#16a34a' } }}
-                >
-                  Approve
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={() => simulateStatusUpdate('REQUIRES_AMENDMENT', 'Amendments required before approval.', 'Please provide more detailed methodology section and update the budget breakdown.', ['Detailed Budget Spreadsheet', 'Ethics Approval Certificate'])}
-                  sx={{ backgroundColor: '#f59e0b', '&:hover': { backgroundColor: '#d97706' } }}
-                >
-                  Request Amendment
-                </Button>
-              </>
-            )}
-          </Stack>
-        }
-        onBack={handleBack}
-      />
+              <Button
+                variant="outlined"
+                startIcon={<PrintIcon />}
+                sx={{ 
+                  borderColor: '#6b7280', 
+                  color: '#6b7280',
+                  '&:hover': { 
+                    borderColor: '#4b5563',
+                    backgroundColor: 'rgba(107, 114, 128, 0.08)'
+                  }
+                }}
+              >
+                Print
+              </Button>
+            </Stack>
+          </Box>
+        </Box>
+      </Box>
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box sx={{ px: 4, py: 4, maxWidth: '100%' }}>
         {/* Two Column Layout from the top */}
         <Box sx={{ 
           display: 'flex', 
@@ -375,35 +373,128 @@ const ProposalViewPage = () => {
               width: '100%'
             }
           }}>
-            {/* Proposal Status Indicator */}
-            <Paper sx={{ p: 3, mb: 4, borderRadius: 3, border: '1px solid #e2e8f0' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                {getStatusIcon(proposal.status)}
-                <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#2D3748' }}>
-                    Proposal Status
-                  </Typography>
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
-                    <Chip
-                      label={proposal.status?.replace('_', ' ') || 'Draft'}
-                      color={getStatusColor(proposal.status)}
-                      variant="filled"
-                      sx={{ fontWeight: 600 }}
-                    />
-                    <Typography variant="body2" color="text.secondary">
-                      {proposal.status === 'DRAFT' && 'Draft saved. Submit to send to Research Admin for review.'}
-                      {proposal.status === 'SUBMITTED' && 'Submitted and awaiting review by Research Admin.'}
-                      {proposal.status === 'UNDER_REVIEW' && 'Currently under review by Research Admin.'}
-                      {proposal.status === 'APPROVED' && 'Approved by Research Admin. Proposal is ready to proceed.'}
-                      {proposal.status === 'REJECTED' && 'Rejected by Research Admin. Please review feedback.'}
-                      {proposal.status === 'REQUIRES_AMENDMENT' && 'Amendments required. Please address the feedback and resubmit.'}
+            {/* Proposal Header Card */}
+            <Paper sx={{ 
+              borderRadius: 2, 
+              overflow: 'hidden',
+              mb: 3,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+            }}>
+              {/* Top Banner */}
+              <Box sx={{ 
+                height: 100, 
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)'
+              }} />
+              
+              {/* Proposal Info */}
+              <Box sx={{ px: 4, pb: 4, mt: -4 }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: { xs: 'column', md: 'row' },
+                  alignItems: { xs: 'flex-start', md: 'flex-end' },
+                  gap: 3
+                }}>
+                  {/* Status Badge */}
+                  <Box sx={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 2,
+                    backgroundColor: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '4px solid white',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    flexShrink: 0
+                  }}>
+                    {getStatusIcon(proposal.status)}
+                  </Box>
+
+                  {/* Title & Status */}
+                  <Box sx={{ 
+                    flex: 1, 
+                    minWidth: 0
+                  }}>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1 }}>
+                      {proposal.title}
                     </Typography>
-                  </Stack>
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap' }}>
+                      <Chip
+                        label={proposal.status?.replace('_', ' ') || 'Draft'}
+                        color={getStatusColor(proposal.status)}
+                        variant="filled"
+                        sx={{ fontWeight: 600 }}
+                      />
+                      <Typography variant="body2" color="text.secondary">
+                        {proposal.status === 'DRAFT' && 'Draft saved'}
+                        {proposal.status === 'SUBMITTED' && 'Awaiting review'}
+                        {proposal.status === 'UNDER_REVIEW' && 'Currently under review'}
+                        {proposal.status === 'APPROVED' && 'Approved'}
+                        {proposal.status === 'REJECTED' && 'Rejected'}
+                        {proposal.status === 'REQUIRES_AMENDMENT' && 'Amendments required'}
+                      </Typography>
+                    </Stack>
+                  </Box>
                 </Box>
               </Box>
             </Paper>
+
+            {/* Status Alert */}
+            {proposal.status === 'REQUIRES_AMENDMENT' && (
+              <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  Amendments Required
+                </Typography>
+                <Typography variant="body2">
+                  Please review the feedback and make necessary changes before resubmitting.
+                </Typography>
+              </Alert>
+            )}
+
+            {/* Quick Stats */}
+            <Paper sx={{ p: 3, mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <CalendarIcon sx={{ fontSize: 32, color: '#8b6cbc', mb: 1 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
+                      {formatDate(proposal.createdAt)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">Created</Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <BudgetIcon sx={{ fontSize: 32, color: '#22c55e', mb: 1 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
+                      {formatCurrency(proposal.totalBudgetAmount)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">Total Budget</Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <ScheduleIcon sx={{ fontSize: 32, color: '#f59e0b', mb: 1 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
+                      {proposal.startDate && proposal.endDate ? 
+                        Math.ceil((new Date(proposal.endDate) - new Date(proposal.startDate)) / (1000 * 60 * 60 * 24 * 30)) : 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">Duration (months)</Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <SchoolIcon sx={{ fontSize: 32, color: '#3b82f6', mb: 1 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
+                      {proposal.departments?.length || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">Departments</Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Paper>
           {/* Core Information */}
-          <Card sx={{ mb: 4, borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+          <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
             <SectionHeader number="1" title="Core Information" />
             <CardContent sx={{ p: 4, pt: 0 }}>
 
@@ -471,7 +562,7 @@ const ProposalViewPage = () => {
           </Card>
 
           {/* Research Details */}
-          <Card sx={{ mb: 4, borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+          <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
             <SectionHeader icon={<ScienceIcon />} title="Research Details" />
             <CardContent sx={{ p: 4, pt: 0 }}>
 
@@ -499,7 +590,7 @@ const ProposalViewPage = () => {
 
           {/* Project Management */}
           {(proposal.milestones?.length > 0 || proposal.deliverables?.length > 0) && (
-            <Card sx={{ mb: 4, borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
               <SectionHeader icon={<TimelineIcon />} title="Project Management" />
               <CardContent sx={{ p: 4, pt: 0 }}>
 
@@ -573,7 +664,7 @@ const ProposalViewPage = () => {
           {/* Funding Information moved to sidebar */}
 
           {/* Ethical Considerations */}
-          <Card sx={{ mb: 4, borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+          <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
             <SectionHeader icon={<EthicsIcon />} title="Ethical Considerations" />
             <CardContent sx={{ p: 4, pt: 0 }}>
 
@@ -660,7 +751,7 @@ const ProposalViewPage = () => {
 
           {/* Files Section */}
           {(proposal.ethicsDocuments?.length > 0 || proposal.dataManagementPlan?.length > 0 || proposal.otherRelatedFiles?.length > 0) && (
-            <Card sx={{ mb: 4, borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
               <SectionHeader icon={<FilesIcon />} title="Attached Files" />
               <CardContent sx={{ p: 4, pt: 0 }}>
 
@@ -780,44 +871,51 @@ const ProposalViewPage = () => {
               width: '100%'
             }
           }}>
-            <Box sx={{ position: 'sticky', top: '20px' }}>
-              {/* Sidebar: Status Summary */}
-              <Card sx={{ mb: 4, borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <Box sx={{ position: 'sticky', top: '90px' }}>
+              {/* Sidebar: Key Information */}
+              <Card sx={{ mb: 3, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
                 <Box sx={{ 
-                  p: 2,
-                  background: 'linear-gradient(135deg, #8b6cbc 0%, #a855f7 100%)',
-                  color: 'white'
+                  p: 2.5,
+                  backgroundColor: '#f8f9fa',
+                  borderBottom: '2px solid #8b6cbc'
                 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'white' }}>
-                    Status Summary
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.95rem' }}>
+                    KEY INFORMATION
                   </Typography>
                 </Box>
                 <CardContent sx={{ p: 3 }}>
-                  <Stack spacing={2}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {getStatusIcon(proposal.status)}
-                      <Chip
-                        label={proposal.status?.replace('_', ' ') || 'Draft'}
-                        color={getStatusColor(proposal.status)}
-                        variant="filled"
-                        sx={{ fontWeight: 600 }}
-                      />
-                    </Box>
+                  <Stack spacing={2.5}>
                     <Box>
-                      <Typography variant="body2" color="text.secondary">Created</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      <Typography variant="caption" sx={{ color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.65rem' }}>
+                        Principal Investigator
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mt: 0.5 }}>
+                        {proposal.principalInvestigator || 'Not specified'}
+                      </Typography>
+                    </Box>
+                    <Divider />
+                    <Box>
+                      <Typography variant="caption" sx={{ color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.65rem' }}>
+                        Created
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#374151', mt: 0.5 }}>
                         {formatDate(proposal.createdAt)}
                       </Typography>
                     </Box>
                     <Box>
-                      <Typography variant="body2" color="text.secondary">Last Updated</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      <Typography variant="caption" sx={{ color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.65rem' }}>
+                        Last Updated
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#374151', mt: 0.5 }}>
                         {formatDate(proposal.updatedAt)}
                       </Typography>
                     </Box>
+                    <Divider />
                     <Box>
-                      <Typography variant="body2" color="text.secondary">Budget</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      <Typography variant="caption" sx={{ color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.65rem' }}>
+                        Total Budget
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#8b6cbc', mt: 0.5 }}>
                         {formatCurrency(proposal.totalBudgetAmount)}
                       </Typography>
                     </Box>
@@ -843,14 +941,14 @@ const ProposalViewPage = () => {
               </Card>
 
               {/* Funding Information */}
-              <Card sx={{ mb: 4, borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
                 <Box sx={{ 
-                  p: 2,
-                  background: 'linear-gradient(135deg, #8b6cbc 0%, #a855f7 100%)',
-                  color: 'white'
+                  p: 2.5,
+                  backgroundColor: '#f8f9fa',
+                  borderBottom: '2px solid #8b6cbc'
                 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'white' }}>
-                    Funding Information
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.95rem' }}>
+                    FUNDING INFORMATION
                   </Typography>
                 </Box>
                 <CardContent sx={{ p: 3 }}>
@@ -896,14 +994,14 @@ const ProposalViewPage = () => {
               </Card>
 
               {/* Team Information */}
-              <Card sx={{ mb: 4, borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
                 <Box sx={{ 
-                  p: 2,
-                  background: 'linear-gradient(135deg, #8b6cbc 0%, #a855f7 100%)',
-                  color: 'white'
+                  p: 2.5,
+                  backgroundColor: '#f8f9fa',
+                  borderBottom: '2px solid #8b6cbc'
                 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'white' }}>
-                    Team Information
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.95rem' }}>
+                    TEAM INFORMATION
                   </Typography>
                 </Box>
                 <CardContent sx={{ p: 3 }}>
@@ -1044,14 +1142,14 @@ const ProposalViewPage = () => {
 
               {/* Related Publications */}
               {proposal.selectedPublications?.length > 0 && (
-                <Card sx={{ borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                <Card sx={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
                   <Box sx={{ 
-                    p: 2,
-                    background: 'linear-gradient(135deg, #8b6cbc 0%, #a855f7 100%)',
-                    color: 'white'
+                    p: 2.5,
+                    backgroundColor: '#f8f9fa',
+                    borderBottom: '2px solid #8b6cbc'
                   }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'white' }}>
-                      Related Publications ({proposal.selectedPublications.length})
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.95rem' }}>
+                      RELATED PUBLICATIONS ({proposal.selectedPublications.length})
                     </Typography>
                   </Box>
                   <CardContent sx={{ p: 3 }}>
@@ -1084,7 +1182,7 @@ const ProposalViewPage = () => {
             </Box>
           </Box>
         </Box>
-      </Container>
+      </Box>
 
       {/* Review History Modal */}
       <Dialog 
@@ -1097,7 +1195,7 @@ const ProposalViewPage = () => {
           display: 'flex', 
           alignItems: 'center', 
           gap: 2,
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #a855f7 100%)',
+          backgroundColor: '#8b6cbc',
           color: 'white'
         }}>
           <HistoryIcon />

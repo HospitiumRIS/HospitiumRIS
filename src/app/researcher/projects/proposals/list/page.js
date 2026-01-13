@@ -23,7 +23,18 @@ import {
   Divider,
   Paper,
   Stack,
-  Tooltip
+  Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -43,7 +54,11 @@ import {
   Clear as ClearIcon,
   Sort as SortIcon,
   PlayArrow as ContinueIcon,
-  DeleteOutline as DiscardIcon
+  DeleteOutline as DiscardIcon,
+  Close as CloseIcon,
+  Warning as WarningIcon,
+  Error as ErrorIcon,
+  Send as SendIcon
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import PageHeader from '../../../../../components/common/PageHeader';
@@ -60,6 +75,9 @@ const ProposalsListPage = () => {
   const [sortBy, setSortBy] = useState('Recent');
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [selectedProposal, setSelectedProposal] = useState(null);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [revisionResponse, setRevisionResponse] = useState('');
+  const [submittingRevision, setSubmittingRevision] = useState(false);
 
   // Statistics state
   const [stats, setStats] = useState({
@@ -181,6 +199,54 @@ const ProposalsListPage = () => {
         console.error('Error discarding proposal:', error);
         alert('Failed to discard proposal. Please try again.');
       }
+    }
+  };
+
+  const handleOpenStatusDialog = (proposal) => {
+    setSelectedProposal(proposal);
+    setStatusDialogOpen(true);
+    setRevisionResponse('');
+  };
+
+  const handleCloseStatusDialog = () => {
+    setStatusDialogOpen(false);
+    setSelectedProposal(null);
+    setRevisionResponse('');
+  };
+
+  const handleSubmitRevision = async () => {
+    if (!revisionResponse.trim()) {
+      alert('Please provide a response to the revision request.');
+      return;
+    }
+
+    try {
+      setSubmittingRevision(true);
+      
+      // Update proposal with revision response
+      const response = await fetch(`/api/proposals/${selectedProposal.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          revisionResponse: revisionResponse,
+          status: 'UNDER_REVIEW' // Change status back to under review
+        })
+      });
+
+      if (response.ok) {
+        alert('Revision response submitted successfully!');
+        handleCloseStatusDialog();
+        fetchProposals(); // Refresh the list
+      } else {
+        alert('Failed to submit revision response. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting revision:', error);
+      alert('Failed to submit revision response. Please try again.');
+    } finally {
+      setSubmittingRevision(false);
     }
   };
 
@@ -716,318 +782,206 @@ const ProposalsListPage = () => {
             </Button>
           </Paper>
         ) : (
-          <Box sx={{ 
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(3, 1fr)',
-              lg: 'repeat(3, 1fr)'
-            },
-            gap: 3,
-            alignItems: 'stretch'
+          <Paper sx={{ 
+            borderRadius: 4,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            overflow: 'hidden'
           }}>
-            {filteredProposals.map((proposal) => (
-              <Card key={proposal.id} sx={{
-                borderRadius: 3,
-                boxShadow: '0 2px 8px rgba(139, 108, 188, 0.08)',
-                border: '1px solid rgba(139, 108, 188, 0.12)',
-                background: 'linear-gradient(135deg, #ffffff 0%, #fafbfd 100%)',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                  '&:hover': {
-                    transform: 'translateY(-6px)',
-                  boxShadow: '0 12px 32px rgba(139, 108, 188, 0.15)',
-                  borderColor: 'rgba(139, 108, 188, 0.25)'
-                  },
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 4,
-                  background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)'
-                  }
-                }}>
-                <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    {/* Header */}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2.5 }}>
-                      <Chip
-                        icon={getStatusIcon(proposal.status)}
-                        label={proposal.status.replace('_', ' ')}
-                        size="small"
-                        sx={{
-                        backgroundColor: '#8b6cbc',
-                          color: 'white',
-                          fontWeight: 600,
-                          fontSize: '0.75rem',
-                        height: 24,
-                        borderRadius: 2,
-                          '& .MuiChip-icon': {
-                            color: 'white'
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
+                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Title</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Principal Investigator</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Fields</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Date Range</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem', textAlign: 'center' }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredProposals.map((proposal) => (
+                    <TableRow 
+                      key={proposal.id}
+                      sx={{ 
+                        '&:hover': { 
+                          backgroundColor: 'rgba(139, 108, 188, 0.04)'
+                        },
+                        transition: 'background-color 0.2s ease'
+                      }}
+                    >
+                      <TableCell 
+                        sx={{ 
+                          py: 2,
+                          cursor: (proposal.status === 'REJECTED' || proposal.status === 'REVISION_REQUESTED') ? 'pointer' : 'default',
+                          '&:hover': (proposal.status === 'REJECTED' || proposal.status === 'REVISION_REQUESTED') ? {
+                            backgroundColor: 'rgba(139, 108, 188, 0.04)'
+                          } : {}
+                        }}
+                        onClick={() => {
+                          if (proposal.status === 'REJECTED' || proposal.status === 'REVISION_REQUESTED') {
+                            handleOpenStatusDialog(proposal);
                           }
                         }}
-                      />
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuClick(e, proposal)}
-                      sx={{
-                        color: '#8b6cbc',
-                        '&:hover': {
-                          backgroundColor: 'rgba(139, 108, 188, 0.08)',
-                          transform: 'scale(1.1)'
-                        },
-                        transition: 'all 0.2s ease'
-                      }}
                       >
-                        <MoreVertIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-
-                    {/* Title */}
-                  <Typography variant="h6" sx={{ 
-                    fontWeight: 600, 
-                    mb: 2.5, 
-                    lineHeight: 1.3,
-                    color: '#2D3748',
-                    fontSize: '1.1rem',
-                    display: '-webkit-box',
-                    WebkitBoxOrient: 'vertical',
-                    WebkitLineClamp: 2,
-                    overflow: 'hidden',
-                    minHeight: '2.6rem'
-                    }}>
-                      {proposal.title}
-                    </Typography>
-
-                    {/* Author */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
-                      <Avatar sx={{ 
-                      width: 28, 
-                      height: 28, 
-                      backgroundColor: '#8b6cbc',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                      }}>
-                        {proposal.author.split(' ').map(n => n[0]).join('')}
-                      </Avatar>
-                    <Box sx={{ minWidth: 0, flex: 1 }}>
-                      <Typography variant="body2" sx={{ 
-                        color: '#2D3748', 
-                        fontWeight: 600,
-                        fontSize: '0.85rem',
-                        lineHeight: 1.2,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }}>
-                          {proposal.author}
-                        </Typography>
-                      <Typography variant="caption" sx={{ 
-                        color: '#8b6cbc',
-                        fontSize: '0.7rem',
-                        fontWeight: 500
-                      }}>
-                          Principal Investigator
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {/* Fields */}
-                  <Box sx={{ mb: 2.5, flex: '0 0 auto' }}>
-                    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                      {proposal.fields.slice(0, 2).map((field, index) => (
-                          <Chip
-                            key={index}
-                            label={field}
-                            size="small"
-                            sx={{
-                            backgroundColor: 'rgba(139, 108, 188, 0.1)',
-                            color: '#8b6cbc',
-                              fontWeight: 500,
-                            fontSize: '0.7rem',
-                            height: 20,
-                            borderRadius: 1,
-                            '& .MuiChip-label': {
-                              px: 1
-                              }
-                            }}
-                          />
-                        ))}
-                      {proposal.fields.length > 2 && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50', mb: 0.5 }}>
+                            {proposal.title}
+                          </Typography>
+                          {(proposal.status === 'REJECTED' || proposal.status === 'REVISION_REQUESTED') && (
+                            <Tooltip title="Click to view details">
+                              <WarningIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
+                            </Tooltip>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ py: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Avatar sx={{ 
+                            width: 32, 
+                            height: 32, 
+                            backgroundColor: '#8b6cbc',
+                            fontSize: '0.75rem',
+                            fontWeight: 600
+                          }}>
+                            {proposal.author.split(' ').map(n => n[0]).join('')}
+                          </Avatar>
+                          <Typography variant="body2" sx={{ fontWeight: 500, color: '#2c3e50' }}>
+                            {proposal.author}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ py: 2 }}>
                         <Chip
-                          label={`+${proposal.fields.length - 2}`}
+                          icon={getStatusIcon(proposal.status)}
+                          label={proposal.status.replace('_', ' ')}
                           size="small"
-                        sx={{
-                            backgroundColor: 'rgba(139, 108, 188, 0.05)',
-                            color: '#8b6cbc',
-                            fontWeight: 500,
-                            fontSize: '0.7rem',
-                            height: 20,
-                            borderRadius: 1
+                          sx={{
+                            backgroundColor: '#8b6cbc',
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            '& .MuiChip-icon': {
+                              color: 'white'
+                            }
                           }}
                         />
-                      )}
-                    </Stack>
-                    </Box>
-
-                  {/* Date Range - Compact */}
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                    gap: 1, 
-                    mb: 2.5,
-                    p: 1.5,
-                      borderRadius: 2,
-                    backgroundColor: 'rgba(139, 108, 188, 0.04)',
-                    border: '1px solid rgba(139, 108, 188, 0.08)'
-                  }}>
-                    <CalendarIcon sx={{ fontSize: 16, color: '#8b6cbc' }} />
-                    <Box sx={{ minWidth: 0, flex: 1 }}>
-                      <Typography variant="caption" sx={{ 
-                        fontWeight: 600, 
-                        color: '#2D3748',
-                        fontSize: '0.75rem',
-                        display: 'block',
-                        lineHeight: 1.2
-                      }}>
-                          {formatDateRange(proposal.startDate, proposal.endDate)}
-                        </Typography>
-                      {proposal.status === 'APPROVED' && proposal.daysOverdue > 0 && (
-                        <Typography variant="caption" sx={{ 
-                          color: '#e74c3c', 
-                          fontWeight: 600,
-                          fontSize: '0.7rem'
-                        }}>
-                            {proposal.daysOverdue} days overdue
+                      </TableCell>
+                      <TableCell sx={{ py: 2 }}>
+                        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                          {proposal.fields.slice(0, 2).map((field, index) => (
+                            <Chip
+                              key={index}
+                              label={field}
+                              size="small"
+                              sx={{
+                                backgroundColor: 'rgba(139, 108, 188, 0.1)',
+                                color: '#8b6cbc',
+                                fontWeight: 500,
+                                fontSize: '0.7rem',
+                                height: 20
+                              }}
+                            />
+                          ))}
+                          {proposal.fields.length > 2 && (
+                            <Chip
+                              label={`+${proposal.fields.length - 2}`}
+                              size="small"
+                              sx={{
+                                backgroundColor: 'rgba(139, 108, 188, 0.05)',
+                                color: '#8b6cbc',
+                                fontWeight: 500,
+                                fontSize: '0.7rem',
+                                height: 20
+                              }}
+                            />
+                          )}
+                        </Stack>
+                      </TableCell>
+                      <TableCell sx={{ py: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <CalendarIcon sx={{ fontSize: 16, color: '#8b6cbc' }} />
+                          <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#2c3e50' }}>
+                            {formatDateRange(proposal.startDate, proposal.endDate)}
                           </Typography>
-                      )}
-                      </Box>
-                    </Box>
-
-                  {/* Spacer to push actions to bottom */}
-                  <Box sx={{ flex: 1 }} />
-
-                    {/* Actions */}
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: 1.5, 
-                    pt: 2, 
-                    borderTop: '1px solid rgba(139, 108, 188, 0.08)',
-                    mt: 'auto'
-                  }}>
-                      <Button
-                        variant="outlined"
-                      size="small"
-                        startIcon={<ViewIcon fontSize="small" />}
-                        onClick={() => handleViewProposal(proposal)}
-                        sx={{ 
-                          flex: 1,
-                        borderColor: '#8b6cbc',
-                        color: '#8b6cbc',
-                        fontWeight: 500,
-                          textTransform: 'none',
-                        fontSize: '0.8rem',
-                        py: 1,
-                        borderRadius: 2,
-                          '&:hover': {
-                          borderColor: '#8b6cbc',
-                          backgroundColor: 'rgba(139, 108, 188, 0.08)',
-                          transform: 'translateY(-1px)'
-                        },
-                        transition: 'all 0.2s ease'
-                        }}
-                      >
-                        View
-                      </Button>
-                      {proposal.status === 'DRAFT' ? (
-                        <>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<ContinueIcon fontSize="small" />}
-                            onClick={() => handleContinueProposal(proposal)}
-                            sx={{ 
-                              flex: 1,
-                              backgroundColor: '#22c55e',
-                              fontWeight: 600,
-                              textTransform: 'none',
-                              fontSize: '0.8rem',
-                              py: 1,
-                              borderRadius: 2,
-                              boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)',
-                              '&:hover': {
-                                backgroundColor: '#16a34a',
-                                boxShadow: '0 4px 12px rgba(34, 197, 94, 0.4)',
-                                transform: 'translateY(-1px)'
-                              },
-                              transition: 'all 0.2s ease'
-                            }}
-                          >
-                            Continue
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<DiscardIcon fontSize="small" />}
-                            onClick={() => handleDiscardProposal(proposal)}
-                            sx={{ 
-                              flex: 1,
-                              borderColor: '#ef4444',
-                              color: '#ef4444',
-                              fontWeight: 500,
-                              textTransform: 'none',
-                              fontSize: '0.8rem',
-                              py: 1,
-                              borderRadius: 2,
-                              '&:hover': {
-                                borderColor: '#dc2626',
-                                backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                                transform: 'translateY(-1px)'
-                              },
-                              transition: 'all 0.2s ease'
-                            }}
-                          >
-                            Discard
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          variant="contained"
-                          size="small"
-                          startIcon={<EditIcon fontSize="small" />}
-                          onClick={() => handleEditProposal(proposal)}
-                          sx={{ 
-                            flex: 1,
-                            backgroundColor: '#8b6cbc',
-                            fontWeight: 600,
-                            textTransform: 'none',
-                            fontSize: '0.8rem',
-                            py: 1,
-                            borderRadius: 2,
-                            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.3)',
-                            '&:hover': {
-                              backgroundColor: '#7b5ca7',
-                              boxShadow: '0 4px 12px rgba(139, 108, 188, 0.4)',
-                              transform: 'translateY(-1px)'
-                            },
-                            transition: 'all 0.2s ease'
-                          }}
-                        >
-                          Edit
-                        </Button>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-            ))}
-          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ py: 2 }}>
+                        <Stack direction="row" spacing={1} justifyContent="center">
+                          <Tooltip title="View">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleViewProposal(proposal)}
+                              sx={{ 
+                                color: '#8b6cbc',
+                                '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.08)' }
+                              }}
+                            >
+                              <ViewIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          {proposal.status === 'DRAFT' ? (
+                            <>
+                              <Tooltip title="Continue">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleContinueProposal(proposal)}
+                                  sx={{ 
+                                    color: '#22c55e',
+                                    '&:hover': { backgroundColor: 'rgba(34, 197, 94, 0.08)' }
+                                  }}
+                                >
+                                  <ContinueIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Discard">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDiscardProposal(proposal)}
+                                  sx={{ 
+                                    color: '#ef4444',
+                                    '&:hover': { backgroundColor: 'rgba(239, 68, 68, 0.08)' }
+                                  }}
+                                >
+                                  <DiscardIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          ) : (
+                            <Tooltip title="Edit">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleEditProposal(proposal)}
+                                sx={{ 
+                                  color: '#8b6cbc',
+                                  '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.08)' }
+                                }}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <Tooltip title="More">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleMenuClick(e, proposal)}
+                              sx={{ 
+                                color: '#8b6cbc',
+                                '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.08)' }
+                              }}
+                            >
+                              <MoreVertIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
         )}
 
         {/* Context Menu */}
@@ -1076,6 +1030,166 @@ const ProposalsListPage = () => {
               </MenuItem>
             ]}
         </Menu>
+
+        {/* Status Details Dialog */}
+        <Dialog
+          open={statusDialogOpen}
+          onClose={handleCloseStatusDialog}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle sx={{
+            backgroundColor: selectedProposal?.status === 'REJECTED' ? '#fee2e2' : '#fef3c7',
+            color: selectedProposal?.status === 'REJECTED' ? '#991b1b' : '#92400e',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2
+          }}>
+            {selectedProposal?.status === 'REJECTED' ? (
+              <>
+                <ErrorIcon />
+                Proposal Rejected
+              </>
+            ) : (
+              <>
+                <WarningIcon />
+                Revision Requested
+              </>
+            )}
+            <Box sx={{ flexGrow: 1 }} />
+            <IconButton
+              onClick={handleCloseStatusDialog}
+              sx={{ color: 'inherit' }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ p: 3, mt: 2 }}>
+            {selectedProposal && (
+              <Stack spacing={3}>
+                {/* Proposal Title */}
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    Proposal Title
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    {selectedProposal.title}
+                  </Typography>
+                </Box>
+
+                {/* Status Alert */}
+                <Alert 
+                  severity={selectedProposal.status === 'REJECTED' ? 'error' : 'warning'}
+                  sx={{ borderRadius: 2 }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                    {selectedProposal.status === 'REJECTED' 
+                      ? 'This proposal has been rejected' 
+                      : 'This proposal requires revisions before approval'}
+                  </Typography>
+                  <Typography variant="body2">
+                    {selectedProposal.status === 'REJECTED'
+                      ? 'Please review the feedback below. You may need to create a new proposal addressing the concerns.'
+                      : 'Please review the feedback below and provide your response addressing the requested changes.'}
+                  </Typography>
+                </Alert>
+
+                {/* Feedback/Reason */}
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#2c3e50' }}>
+                    {selectedProposal.status === 'REJECTED' ? 'Rejection Reason' : 'Revision Requirements'}
+                  </Typography>
+                  <Paper sx={{ p: 2.5, backgroundColor: '#f8f9fa', border: '1px solid #e5e7eb' }}>
+                    <Typography variant="body2" sx={{ lineHeight: 1.8 }}>
+                      {selectedProposal.reviewFeedback || selectedProposal.rejectionReason || 'No specific feedback provided.'}
+                    </Typography>
+                  </Paper>
+                </Box>
+
+                {/* Reviewer Information */}
+                {selectedProposal.reviewedBy && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Reviewed by: {selectedProposal.reviewedBy}
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* Revision Response Section - Only for REVISION_REQUESTED */}
+                {selectedProposal.status === 'REVISION_REQUESTED' && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: '#2c3e50' }}>
+                      Your Response
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      placeholder="Describe how you will address the revision requirements..."
+                      value={revisionResponse}
+                      onChange={(e) => setRevisionResponse(e.target.value)}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2
+                        }
+                      }}
+                    />
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                      After submitting your response, you can edit the proposal to make the necessary changes.
+                    </Typography>
+                  </Box>
+                )}
+              </Stack>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 0 }}>
+            <Button
+              onClick={handleCloseStatusDialog}
+              variant="outlined"
+              sx={{ borderRadius: 2 }}
+            >
+              Close
+            </Button>
+            {selectedProposal?.status === 'REVISION_REQUESTED' && (
+              <>
+                <Button
+                  onClick={() => {
+                    handleCloseStatusDialog();
+                    handleEditProposal(selectedProposal);
+                  }}
+                  variant="outlined"
+                  startIcon={<EditIcon />}
+                  sx={{ 
+                    borderRadius: 2,
+                    borderColor: '#8b6cbc',
+                    color: '#8b6cbc',
+                    '&:hover': {
+                      borderColor: '#7b5cac',
+                      backgroundColor: 'rgba(139, 108, 188, 0.08)'
+                    }
+                  }}
+                >
+                  Edit Proposal
+                </Button>
+                <Button
+                  onClick={handleSubmitRevision}
+                  variant="contained"
+                  startIcon={<SendIcon />}
+                  disabled={submittingRevision || !revisionResponse.trim()}
+                  sx={{
+                    borderRadius: 2,
+                    backgroundColor: '#8b6cbc',
+                    '&:hover': {
+                      backgroundColor: '#7b5cac'
+                    }
+                  }}
+                >
+                  {submittingRevision ? 'Submitting...' : 'Submit Response'}
+                </Button>
+              </>
+            )}
+          </DialogActions>
+        </Dialog>
       </Container>
     </>
   );

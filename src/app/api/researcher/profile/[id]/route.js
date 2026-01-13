@@ -75,6 +75,8 @@ export async function GET(request, { params }) {
         id: true,
         title: true,
         status: true,
+        abstract: true,
+        departments: true,
         researchAreas: true,
         totalBudgetAmount: true,
         fundingSource: true,
