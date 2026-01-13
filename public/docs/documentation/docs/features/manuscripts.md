@@ -13,13 +13,13 @@ The manuscript editor combines the functionality of professional word processors
 
 ### Key Capabilities
 
-- ✍️ Rich text editing with academic formatting
-- 👥 Real-time multi-user collaboration
-- 📝 Track changes with accept/reject workflow
-- 📚 Version history with restore capability
-- 💬 Inline comments and threaded discussions
-- 📖 Citation management with multiple formats
-- 🔄 Auto-save and conflict resolution
+-  Rich text editing with academic formatting
+-  Real-time multi-user collaboration
+-  Track changes with accept/reject workflow
+-  Version history with restore capability
+-  Inline comments and threaded discussions
+-  Citation management with multiple formats
+-  Auto-save and conflict resolution
 
 ## Creating a Manuscript
 

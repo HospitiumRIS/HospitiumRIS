@@ -35,11 +35,8 @@ Researchers can build comprehensive profiles including:
 
 Connect external profiles for enhanced visibility:
 
-- 🔗 **Personal Website**
-- 💼 **LinkedIn Profile**
-- 🐦 **Twitter/X Account**
-- 📚 **Google Scholar Profile**
-- 🆔 **ORCID iD** (verified)
+- **Google Scholar Profile**
+- **ORCID iD** (verified)
 
 ### Research Metrics
 

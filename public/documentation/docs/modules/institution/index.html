@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-modules/institution" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.9.2">
+<title data-rh="true">Institution Portal | HospitiumRIS Documentation</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://hospitiumris.example.com/documentation/img/hospitiumris-social-card.jpg"><meta data-rh="true" name="twitter:image" content="https://hospitiumris.example.com/documentation/img/hospitiumris-social-card.jpg"><meta data-rh="true" property="og:url" content="https://hospitiumris.example.com/documentation/docs/modules/institution/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Institution Portal | HospitiumRIS Documentation"><meta data-rh="true" name="description" content="The Institution Portal is designed for Research Administrators who oversee research activities within academic institutions, hospitals, or research centers."><meta data-rh="true" property="og:description" content="The Institution Portal is designed for Research Administrators who oversee research activities within academic institutions, hospitals, or research centers."><link data-rh="true" rel="icon" href="/documentation/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://hospitiumris.example.com/documentation/docs/modules/institution/"><link data-rh="true" rel="alternate" href="https://hospitiumris.example.com/documentation/docs/modules/institution/" hreflang="en"><link data-rh="true" rel="alternate" href="https://hospitiumris.example.com/documentation/docs/modules/institution/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Institution Portal","item":"https://hospitiumris.example.com/documentation/docs/modules/institution"}]}</script><link rel="stylesheet" href="/documentation/assets/css/styles.1e9ba4e3.css">
+<script src="/documentation/assets/js/runtime~main.0ed3a691.js" defer="defer"></script>
+<script src="/documentation/assets/js/main.2cb63c7a.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/documentation/img/hospitium-logo.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/documentation/"><div class="navbar__logo"><img src="/documentation/img/hospitium-logo.png" alt="HospitiumRIS Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/documentation/img/hospitium-logo.png" alt="HospitiumRIS Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/documentation/docs/intro/">Documentation</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/hospitiumris/hospitiumris" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/documentation/docs/intro/"><span title="Introduction" class="linkLabel_WmDU">Introduction</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/documentation/docs/getting-started/requirements/"><span title="Getting Started" class="categoryLinkLabel_W154">Getting Started</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/documentation/docs/database/schema/"><span title="Database" class="categoryLinkLabel_W154">Database</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret menu__link--active" role="button" aria-expanded="true" href="/documentation/docs/modules/researcher/"><span title="Modules" class="categoryLinkLabel_W154">Modules</span></a></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/documentation/docs/modules/researcher/"><span title="Researcher Portal" class="linkLabel_WmDU">Researcher Portal</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/documentation/docs/modules/institution/"><span title="Institution Portal" class="linkLabel_WmDU">Institution Portal</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/documentation/docs/modules/foundation/"><span title="Foundation Portal" class="linkLabel_WmDU">Foundation Portal</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/documentation/docs/modules/super-admin/"><span title="Super Admin Portal" class="linkLabel_WmDU">Super Admin Portal</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/documentation/docs/features/manuscripts/"><span title="Features" class="categoryLinkLabel_W154">Features</span></a></div></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/documentation/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><span class="breadcrumbs__link">Modules</span></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">Institution Portal</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Institution Portal</h1></header>
+<p>The Institution Portal is designed for Research Administrators who oversee research activities within academic institutions, hospitals, or research centers.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="dashboard-overview">Dashboard Overview<a href="#dashboard-overview" class="hash-link" aria-label="Direct link to Dashboard Overview" title="Direct link to Dashboard Overview" translate="no">​</a></h2>
+<p>The institutional dashboard provides:</p>
+<ul>
+<li class=""><strong>Researcher Overview</strong> - Total researchers, active projects</li>
+<li class=""><strong>Proposal Summary</strong> - Pending reviews, approved, rejected</li>
+<li class=""><strong>Institutional Metrics</strong> - Publication output, grant success rates</li>
+<li class=""><strong>Recent Activity</strong> - Latest submissions and updates</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="researcher-management">Researcher Management<a href="#researcher-management" class="hash-link" aria-label="Direct link to Researcher Management" title="Direct link to Researcher Management" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="researcher-directory">Researcher Directory<a href="#researcher-directory" class="hash-link" aria-label="Direct link to Researcher Directory" title="Direct link to Researcher Directory" translate="no">​</a></h3>
+<p>View and manage all researchers affiliated with the institution:</p>
+<table><thead><tr><th>Column</th><th>Description</th></tr></thead><tbody><tr><td><strong>Name</strong></td><td>Researcher full name with academic title</td></tr><tr><td><strong>Department</strong></td><td>Primary department</td></tr><tr><td><strong>ORCID</strong></td><td>ORCID iD (verified badge)</td></tr><tr><td><strong>Publications</strong></td><td>Total publication count</td></tr><tr><td><strong>H-Index</strong></td><td>Research impact metric</td></tr><tr><td><strong>Status</strong></td><td>Active, Inactive, On Leave</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="researcher-profiles">Researcher Profiles<a href="#researcher-profiles" class="hash-link" aria-label="Direct link to Researcher Profiles" title="Direct link to Researcher Profiles" translate="no">​</a></h3>
+<p>Access detailed researcher profiles including:</p>
+<ul>
+<li class="">Complete publication history</li>
+<li class="">Active manuscripts and collaborations</li>
+<li class="">Submitted proposals</li>
+<li class="">Research metrics and trends</li>
+<li class="">Professional links and contact information</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="filtering--search">Filtering &amp; Search<a href="#filtering--search" class="hash-link" aria-label="Direct link to Filtering &amp; Search" title="Direct link to Filtering &amp; Search" translate="no">​</a></h3>
+<p>Find researchers by:</p>
+<ul>
+<li class="">Name or email</li>
+<li class="">Department</li>
+<li class="">Research area</li>
+<li class="">Publication count</li>
+<li class="">ORCID status</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="proposal-review">Proposal Review<a href="#proposal-review" class="hash-link" aria-label="Direct link to Proposal Review" title="Direct link to Proposal Review" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="review-queue">Review Queue<a href="#review-queue" class="hash-link" aria-label="Direct link to Review Queue" title="Direct link to Review Queue" translate="no">​</a></h3>
+<p>Manage incoming proposals with:</p>
+<ul>
+<li class=""><strong>Pending Review</strong> - New submissions awaiting review</li>
+<li class=""><strong>Under Review</strong> - Currently being evaluated</li>
+<li class=""><strong>Action Required</strong> - Awaiting responses or revisions</li>
+<li class=""><strong>Completed</strong> - Approved or rejected proposals</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="proposal-details-view">Proposal Details View<a href="#proposal-details-view" class="hash-link" aria-label="Direct link to Proposal Details View" title="Direct link to Proposal Details View" translate="no">​</a></h3>
+<p>Review comprehensive proposal information:</p>
+<ol>
+<li class="">
+<p><strong>Summary Overview</strong></p>
+<ul>
+<li class="">Title and abstract</li>
+<li class="">Principal Investigator details</li>
+<li class="">Co-investigators list</li>
+<li class="">Timeline and milestones</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Research Details</strong></p>
+<ul>
+<li class="">Research objectives</li>
+<li class="">Methodology description</li>
+<li class="">Expected outcomes</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Budget Information</strong></p>
+<ul>
+<li class="">Funding source</li>
+<li class="">Budget breakdown</li>
+<li class="">Cost justification</li>
+</ul>
+</li>
+<li class="">
+<p><strong>Ethics Documentation</strong></p>
+<ul>
+<li class="">Ethics approval status</li>
+<li class="">Consent procedures</li>
+<li class="">Data management plans</li>
+<li class="">Attached documents</li>
+</ul>
+</li>
+</ol>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="review-actions">Review Actions<a href="#review-actions" class="hash-link" aria-label="Direct link to Review Actions" title="Direct link to Review Actions" translate="no">​</a></h3>
+<table><thead><tr><th>Action</th><th>Description</th></tr></thead><tbody><tr><td><strong>Approve</strong></td><td>Accept the proposal</td></tr><tr><td><strong>Reject</strong></td><td>Decline with feedback</td></tr><tr><td><strong>Request Revision</strong></td><td>Return for modifications</td></tr><tr><td><strong>Assign Reviewer</strong></td><td>Delegate to another admin</td></tr><tr><td><strong>Add Comment</strong></td><td>Internal notes</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="review-workflow">Review Workflow<a href="#review-workflow" class="hash-link" aria-label="Direct link to Review Workflow" title="Direct link to Review Workflow" translate="no">​</a></h3>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">┌─────────────┐     ┌──────────────┐     ┌─────────────────┐</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│  Submitted  │────&gt;│ Under Review │────&gt;│     Decision    │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">└─────────────┘     └──────────────┘     └────────┬────────┘</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">                                                   │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">                    ┌──────────────────────────────┼──────────────┐</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">                    │                              │              │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">                    ▼                              ▼              ▼</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">            ┌───────────┐              ┌───────────────┐  ┌───────────┐</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">            │  Approved │              │Revision Needed│  │ Rejected  │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">            └───────────┘              └───────┬───────┘  └───────────┘</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">                                               │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">                                               ▼</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">                                       ┌───────────────┐</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">                                       │   Resubmit    │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">                                       └───────────────┘</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="institutional-analytics">Institutional Analytics<a href="#institutional-analytics" class="hash-link" aria-label="Direct link to Institutional Analytics" title="Direct link to Institutional Analytics" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="research-output">Research Output<a href="#research-output" class="hash-link" aria-label="Direct link to Research Output" title="Direct link to Research Output" translate="no">​</a></h3>
+<p>Track institutional research performance:</p>
+<ul>
+<li class=""><strong>Publications by Year</strong> - Trend analysis</li>
+<li class=""><strong>Publications by Department</strong> - Comparative view</li>
+<li class=""><strong>Top Researchers</strong> - Most productive members</li>
+<li class=""><strong>Citation Impact</strong> - Institutional citation metrics</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="proposal-analytics">Proposal Analytics<a href="#proposal-analytics" class="hash-link" aria-label="Direct link to Proposal Analytics" title="Direct link to Proposal Analytics" translate="no">​</a></h3>
+<ul>
+<li class="">Submission trends</li>
+<li class="">Success rates by department</li>
+<li class="">Funding sources breakdown</li>
+<li class="">Average review time</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="collaboration-metrics">Collaboration Metrics<a href="#collaboration-metrics" class="hash-link" aria-label="Direct link to Collaboration Metrics" title="Direct link to Collaboration Metrics" translate="no">​</a></h3>
+<ul>
+<li class="">Internal collaborations</li>
+<li class="">External partnerships</li>
+<li class="">Inter-departmental projects</li>
+<li class="">Industry connections</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="department-management">Department Management<a href="#department-management" class="hash-link" aria-label="Direct link to Department Management" title="Direct link to Department Management" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="department-overview">Department Overview<a href="#department-overview" class="hash-link" aria-label="Direct link to Department Overview" title="Direct link to Department Overview" translate="no">​</a></h3>
+<ul>
+<li class="">Active researchers per department</li>
+<li class="">Research output by department</li>
+<li class="">Proposal success rates</li>
+<li class="">Funding allocation</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="department-comparison">Department Comparison<a href="#department-comparison" class="hash-link" aria-label="Direct link to Department Comparison" title="Direct link to Department Comparison" translate="no">​</a></h3>
+<p>Compare departments by:</p>
+<ul>
+<li class="">Publication volume</li>
+<li class="">Citation impact</li>
+<li class="">Grant success</li>
+<li class="">Active projects</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="compliance--reporting">Compliance &amp; Reporting<a href="#compliance--reporting" class="hash-link" aria-label="Direct link to Compliance &amp; Reporting" title="Direct link to Compliance &amp; Reporting" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="ethics-compliance">Ethics Compliance<a href="#ethics-compliance" class="hash-link" aria-label="Direct link to Ethics Compliance" title="Direct link to Ethics Compliance" translate="no">​</a></h3>
+<p>Monitor ethics-related activities:</p>
+<ul>
+<li class="">Pending ethics reviews</li>
+<li class="">Approved protocols</li>
+<li class="">Expiring approvals</li>
+<li class="">Compliance alerts</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="reports-generation">Reports Generation<a href="#reports-generation" class="hash-link" aria-label="Direct link to Reports Generation" title="Direct link to Reports Generation" translate="no">​</a></h3>
+<p>Generate institutional reports:</p>
+<table><thead><tr><th>Report Type</th><th>Contents</th></tr></thead><tbody><tr><td><strong>Annual Research Report</strong></td><td>Publications, grants, metrics</td></tr><tr><td><strong>Department Summary</strong></td><td>Per-department breakdown</td></tr><tr><td><strong>Researcher Activity</strong></td><td>Individual performance</td></tr><tr><td><strong>Proposal Summary</strong></td><td>Submission and success stats</td></tr><tr><td><strong>Funding Report</strong></td><td>Grant allocations and utilization</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="export-formats">Export Formats<a href="#export-formats" class="hash-link" aria-label="Direct link to Export Formats" title="Direct link to Export Formats" translate="no">​</a></h3>
+<ul>
+<li class="">PDF reports</li>
+<li class="">Excel spreadsheets</li>
+<li class="">CSV data exports</li>
+<li class="">API access</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="user-management">User Management<a href="#user-management" class="hash-link" aria-label="Direct link to User Management" title="Direct link to User Management" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="account-administration">Account Administration<a href="#account-administration" class="hash-link" aria-label="Direct link to Account Administration" title="Direct link to Account Administration" translate="no">​</a></h3>
+<p>Manage researcher accounts:</p>
+<ul>
+<li class="">Approve new registrations</li>
+<li class="">Update account status</li>
+<li class="">Reset passwords</li>
+<li class="">Assign departments</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="access-control">Access Control<a href="#access-control" class="hash-link" aria-label="Direct link to Access Control" title="Direct link to Access Control" translate="no">​</a></h3>
+<table><thead><tr><th>Status</th><th>Description</th></tr></thead><tbody><tr><td><strong>Pending</strong></td><td>Awaiting approval/verification</td></tr><tr><td><strong>Active</strong></td><td>Full access granted</td></tr><tr><td><strong>Inactive</strong></td><td>Temporarily disabled</td></tr><tr><td><strong>Suspended</strong></td><td>Administratively blocked</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="notifications--alerts">Notifications &amp; Alerts<a href="#notifications--alerts" class="hash-link" aria-label="Direct link to Notifications &amp; Alerts" title="Direct link to Notifications &amp; Alerts" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="system-notifications">System Notifications<a href="#system-notifications" class="hash-link" aria-label="Direct link to System Notifications" title="Direct link to System Notifications" translate="no">​</a></h3>
+<ul>
+<li class="">New proposal submissions</li>
+<li class="">Review deadline reminders</li>
+<li class="">Ethics approval expirations</li>
+<li class="">System announcements</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="email-alerts">Email Alerts<a href="#email-alerts" class="hash-link" aria-label="Direct link to Email Alerts" title="Direct link to Email Alerts" translate="no">​</a></h3>
+<p>Configure alerts for:</p>
+<ul>
+<li class="">Proposal status changes</li>
+<li class="">New researcher registrations</li>
+<li class="">Compliance deadlines</li>
+<li class="">Weekly activity summaries</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="workflow-summary">Workflow Summary<a href="#workflow-summary" class="hash-link" aria-label="Direct link to Workflow Summary" title="Direct link to Workflow Summary" translate="no">​</a></h2>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">┌─────────────────────────────────────────────────────────────────┐</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                   INSTITUTION ADMIN WORKFLOW                     │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">├─────────────────────────────────────────────────────────────────┤</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                                                                  │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│  │   Monitor    │────&gt;│   Review     │────&gt;│   Approve/   │     │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│  │  Dashboard   │     │  Proposals   │     │   Reject     │     │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│  └──────────────┘     └──────────────┘     └──────────────┘     │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│          │                                         │             │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│          ▼                                         ▼             │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│  ┌──────────────┐                         ┌──────────────┐      │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│  │   Manage     │                         │   Generate   │      │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│  │ Researchers  │                         │   Reports    │      │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│  └──────────────┘                         └──────────────┘      │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│          │                                         │             │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│          ▼                                         ▼             │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│  │   Track      │────&gt;│   Ensure     │────&gt;│   Export     │     │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│  │  Analytics   │     │  Compliance  │     │   Data       │     │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│  └──────────────┘     └──────────────┘     └──────────────┘     │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">│                                                                  │</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">└─────────────────────────────────────────────────────────────────┘</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="best-practices">Best Practices<a href="#best-practices" class="hash-link" aria-label="Direct link to Best Practices" title="Direct link to Best Practices" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="proposal-review-1">Proposal Review<a href="#proposal-review-1" class="hash-link" aria-label="Direct link to Proposal Review" title="Direct link to Proposal Review" translate="no">​</a></h3>
+<ol>
+<li class="">Review within 5 business days</li>
+<li class="">Provide constructive feedback on rejections</li>
+<li class="">Check ethics documentation completeness</li>
+<li class="">Verify budget reasonableness</li>
+<li class="">Confirm co-investigator availability</li>
+</ol>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="researcher-support">Researcher Support<a href="#researcher-support" class="hash-link" aria-label="Direct link to Researcher Support" title="Direct link to Researcher Support" translate="no">​</a></h3>
+<ol>
+<li class="">Respond to queries promptly</li>
+<li class="">Provide onboarding resources</li>
+<li class="">Facilitate inter-departmental collaborations</li>
+<li class="">Share funding opportunities</li>
+<li class="">Recognize research achievements</li>
+</ol></div></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/documentation/docs/modules/researcher/"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Researcher Portal</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/documentation/docs/modules/foundation/"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Foundation Portal</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#dashboard-overview" class="table-of-contents__link toc-highlight">Dashboard Overview</a></li><li><a href="#researcher-management" class="table-of-contents__link toc-highlight">Researcher Management</a><ul><li><a href="#researcher-directory" class="table-of-contents__link toc-highlight">Researcher Directory</a></li><li><a href="#researcher-profiles" class="table-of-contents__link toc-highlight">Researcher Profiles</a></li><li><a href="#filtering--search" class="table-of-contents__link toc-highlight">Filtering &amp; Search</a></li></ul></li><li><a href="#proposal-review" class="table-of-contents__link toc-highlight">Proposal Review</a><ul><li><a href="#review-queue" class="table-of-contents__link toc-highlight">Review Queue</a></li><li><a href="#proposal-details-view" class="table-of-contents__link toc-highlight">Proposal Details View</a></li><li><a href="#review-actions" class="table-of-contents__link toc-highlight">Review Actions</a></li><li><a href="#review-workflow" class="table-of-contents__link toc-highlight">Review Workflow</a></li></ul></li><li><a href="#institutional-analytics" class="table-of-contents__link toc-highlight">Institutional Analytics</a><ul><li><a href="#research-output" class="table-of-contents__link toc-highlight">Research Output</a></li><li><a href="#proposal-analytics" class="table-of-contents__link toc-highlight">Proposal Analytics</a></li><li><a href="#collaboration-metrics" class="table-of-contents__link toc-highlight">Collaboration Metrics</a></li></ul></li><li><a href="#department-management" class="table-of-contents__link toc-highlight">Department Management</a><ul><li><a href="#department-overview" class="table-of-contents__link toc-highlight">Department Overview</a></li><li><a href="#department-comparison" class="table-of-contents__link toc-highlight">Department Comparison</a></li></ul></li><li><a href="#compliance--reporting" class="table-of-contents__link toc-highlight">Compliance &amp; Reporting</a><ul><li><a href="#ethics-compliance" class="table-of-contents__link toc-highlight">Ethics Compliance</a></li><li><a href="#reports-generation" class="table-of-contents__link toc-highlight">Reports Generation</a></li><li><a href="#export-formats" class="table-of-contents__link toc-highlight">Export Formats</a></li></ul></li><li><a href="#user-management" class="table-of-contents__link toc-highlight">User Management</a><ul><li><a href="#account-administration" class="table-of-contents__link toc-highlight">Account Administration</a></li><li><a href="#access-control" class="table-of-contents__link toc-highlight">Access Control</a></li></ul></li><li><a href="#notifications--alerts" class="table-of-contents__link toc-highlight">Notifications &amp; Alerts</a><ul><li><a href="#system-notifications" class="table-of-contents__link toc-highlight">System Notifications</a></li><li><a href="#email-alerts" class="table-of-contents__link toc-highlight">Email Alerts</a></li></ul></li><li><a href="#workflow-summary" class="table-of-contents__link toc-highlight">Workflow Summary</a></li><li><a href="#best-practices" class="table-of-contents__link toc-highlight">Best Practices</a><ul><li><a href="#proposal-review-1" class="table-of-contents__link toc-highlight">Proposal Review</a></li><li><a href="#researcher-support" class="table-of-contents__link toc-highlight">Researcher Support</a></li></ul></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Documentation</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/documentation/docs/intro/">Getting Started</a></li><li class="footer__item"><a class="footer__link-item" href="/documentation/docs/getting-started/installation/">Installation</a></li><li class="footer__item"><a class="footer__link-item" href="/documentation/docs/database/schema/">Database Schema</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Modules</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/documentation/docs/modules/researcher/">Researcher Portal</a></li><li class="footer__item"><a class="footer__link-item" href="/documentation/docs/modules/institution/">Institution Portal</a></li><li class="footer__item"><a class="footer__link-item" href="/documentation/docs/modules/foundation/">Foundation Portal</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Features</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/documentation/docs/features/manuscripts/">Manuscripts</a></li><li class="footer__item"><a class="footer__link-item" href="/documentation/docs/features/publications/">Publications</a></li><li class="footer__item"><a class="footer__link-item" href="/documentation/docs/features/proposals/">Proposals</a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 HospitiumRIS. Built with Docusaurus.</div></div></div></footer></div>
+</body>
+</html>

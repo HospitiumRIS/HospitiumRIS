@@ -33,12 +33,9 @@ The foundation dashboard displays:
 
 Organize campaigns by category:
 
-- 🏌️ **Golf Events** - Golf tournaments and outings
-- 🏃 **Running Events** - Marathons, fun runs
-- 🎉 **Special Events** - Galas, auctions, celebrations
-- 📧 **Direct Mail** - Mail-based fundraising
-- 🌐 **Online Campaigns** - Digital fundraising initiatives
-- 🎓 **Educational** - Scholarship and educational funding
+-  **Golf Events** - Golf tournaments and outings
+-  **Running Events** - Marathons, fun runs
+-  **Special Events** - Galas, auctions, celebrations
 
 ### Creating Campaigns
 

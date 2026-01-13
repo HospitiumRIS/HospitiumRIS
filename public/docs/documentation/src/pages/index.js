@@ -18,7 +18,7 @@ function HomepageHeader() {
         <div className={styles.buttons}>
           <Link
             className="button button--primary button--lg"
-            to="/docs/">
+            to="/docs/intro">
             Get Started →
           </Link>
           <Link
@@ -121,22 +121,22 @@ function ModuleCards() {
   const modules = [
     {
       title: 'Researcher Portal',
-      description: 'Manage profiles, publications, manuscripts, and research analytics.',
+      description: 'Manage Researcher Profile, Publications, Manuscripts, and Research Analytics.',
       link: '/docs/modules/researcher',
     },
     {
       title: 'Institution Portal',
-      description: 'Oversee researchers, review proposals, and track institutional metrics.',
+      description: 'Oversee Researchers, Review Proposals, and Track Institutional Metrics.',
       link: '/docs/modules/institution',
     },
     {
       title: 'Foundation Portal',
-      description: 'Manage campaigns, track donations, and discover grant opportunities.',
+      description: 'Manage Campaigns, Track Donations, and Discover Grant Opportunities.',
       link: '/docs/modules/foundation',
     },
     {
       title: 'Super Admin',
-      description: 'System-wide user management, database operations, and configuration.',
+      description: 'System-Wide User Management, Database Operations, and Configuration.',
       link: '/docs/modules/super-admin',
     },
   ];
@@ -162,34 +162,6 @@ function ModuleCards() {
   );
 }
 
-function TechStack() {
-  const technologies = [
-    { name: 'Next.js 16', category: 'Frontend Framework' },
-    { name: 'React 19', category: 'UI Library' },
-    { name: 'Material UI 7', category: 'Component Library' },
-    { name: 'PostgreSQL', category: 'Database' },
-    { name: 'Prisma ORM', category: 'Data Layer' },
-    { name: 'TipTap', category: 'Rich Text Editor' },
-  ];
-
-  return (
-    <section className={styles.techStack}>
-      <div className="container">
-        <Heading as="h2" className="text--center margin-bottom--lg">
-          Built with Modern Technology
-        </Heading>
-        <div className={styles.techGrid}>
-          {technologies.map((tech, idx) => (
-            <div key={idx} className={styles.techItem}>
-              <strong>{tech.name}</strong>
-              <span>{tech.category}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 export default function Home() {
   const {siteConfig} = useDocusaurusContext();
@@ -201,7 +173,6 @@ export default function Home() {
       <main>
         <HomepageFeatures />
         <ModuleCards />
-        <TechStack />
       </main>
     </Layout>
   );

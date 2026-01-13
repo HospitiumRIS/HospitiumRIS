@@ -24,10 +24,10 @@ HospitiumRIS is an integrated Research Information System that brings together r
 ## Who is HospitiumRIS For?
 
 ### Researchers
-Manage your research profile, collaborate on manuscripts, track publications, submit proposals, and monitor your research impact with integrated metrics like H-Index and citation counts.
+Manage your research profile, collaborate on manuscripts, track publications, submit proposals, monitor your research impact with integrated metrics like H-Index and citation counts, and build your collaboration network.
 
 ### Research Administrators
-Oversee institutional research activities, manage researcher profiles, review proposals, and access institutional analytics.
+Oversee institutional research activities, manage researcher profiles, review proposals, ensure regulatory compliance, and access institutional analytics.
 
 ### Foundation Administrators
 Manage fundraising campaigns, track donations, discover grant opportunities, and oversee foundation-wide research funding.
@@ -84,11 +84,9 @@ A powerful real-time collaborative editor built with TipTap, featuring:
 
 HospitiumRIS is built with modern, production-ready technologies:
 
-- **Frontend**: Next.js 16, React 19, Material UI 7
+- **Frontend**: Next.js 16, React 19
 - **Backend**: Next.js API Routes, Prisma ORM
 - **Database**: PostgreSQL
-- **Rich Text Editor**: TipTap
-- **Visualizations**: D3.js, Chart.js, React Force Graph
 - **Authentication**: Custom auth with ORCID OAuth integration
 
 ## Getting Started
@@ -103,5 +101,5 @@ Ready to get started with HospitiumRIS? Check out our guides:
 ---
 
 :::tip Need Help?
-If you encounter any issues or have questions, please open an issue on our GitHub repository or contact the system administrator.
+If you encounter any issues or have questions, please open an issue on our [GitHub repository](https://github.com/hospitiumris/hospitiumris).
 :::

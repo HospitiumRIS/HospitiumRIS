@@ -11,7 +11,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'HospitiumRIS Documentation',
-  tagline: 'Research Information System for Academic & Healthcare Institutions',
+  tagline: 'Transforming Hospital Research Management',
   favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -22,7 +22,10 @@ const config = {
   // Set the production url of your site here
   url: 'https://hospitiumris.example.com',
   // Set the /<baseUrl>/ pathname under which your site is served
-  baseUrl: '/docs/build/',
+  baseUrl: '/documentation/',
+  
+  // Ensure trailing slashes for proper index.html routing
+  trailingSlash: true,
 
   // GitHub pages deployment config.
   organizationName: 'hospitiumris',
@@ -65,7 +68,7 @@ const config = {
         respectPrefersColorScheme: true,
       },
       navbar: {
-        title: 'Docs',
+        
         logo: {
           alt: 'HospitiumRIS Logo',
           src: 'img/hospitium-logo.png',
