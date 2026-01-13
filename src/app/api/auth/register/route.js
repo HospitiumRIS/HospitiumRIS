@@ -4,8 +4,9 @@ import { hashPassword, validateEmail, validatePassword } from '@/lib/auth';
 import { sendActivationEmail, generateActivationToken } from '@/lib/email';
 
 export async function POST(request) {
+  let body = {};
   try {
-    const body = await request.json();
+    body = await request.json();
     
     // Check for ORCID data from secure cookie
     let orcidData = null;
@@ -298,28 +299,38 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Registration error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', body);
 
     // Log failed registration attempt
     try {
+      // Ensure accountType is a valid enum value, default to RESEARCHER if invalid
+      const validAccountTypes = ['RESEARCHER', 'RESEARCH_ADMIN', 'FOUNDATION_ADMIN', 'SUPER_ADMIN'];
+      const logAccountType = validAccountTypes.includes(body?.accountType) 
+        ? body.accountType 
+        : 'RESEARCHER'; // Default to RESEARCHER for logging purposes
+      
       await prisma.registrationLog.create({
         data: {
           email: body?.email || 'unknown',
-          accountType: body?.accountType || 'UNKNOWN',
+          accountType: logAccountType,
           ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
           userAgent: request.headers.get('user-agent') || null,
           success: false,
-          errorMessage: error.message,
+          errorMessage: error.message || 'Unknown error',
         }
       });
     } catch (logError) {
       console.error('Failed to log registration attempt:', logError);
+      console.error('Log error details:', logError.message);
     }
 
     return NextResponse.json(
       {
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Registration failed'
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Registration failed',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }
     );
