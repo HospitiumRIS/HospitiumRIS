@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Schema - HospitiumRIS Documentation</title>
+    <link rel="stylesheet" href="../../../styles.css">
+    <link rel="stylesheet" href="../../intro/intro.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="https://hospitium.hospitiumris.org/" class="logo">
+                <img src="../../../img/hospitium-logo.png" alt="HospitiumRIS Logo">
+            </a>
+           <a href="../../intro/index.html" class="nav-link">Documentation</a>
+        </div>
+        <div class="navbar-right">
+            <a href="https://github.com/hospitiumris/hospitiumris" target="_blank" class="github-link">GitHub ↗</a>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Getting Started
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../intro/index.html">Introduction</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <!-- <li><a href="../../getting-started/installation/index.html">Installation Guide</a></li> -->
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Database
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="#" class="active">Schema Overview</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Modules
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../modules/researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../../modules/institution/index.html">Institution Portal</a></li>
+                    <li><a href="../../modules/foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../../modules/super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Features
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../features/manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../../features/publications/index.html">Publications</a></li>
+                    <li><a href="../../features/proposals/index.html">Proposals</a></li>
+                    <li><a href="../../features/orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="content">
+            <h1>Database Schema</h1>
+            <p>HospitiumRIS uses PostgreSQL with Prisma ORM for data management. This document provides a comprehensive overview of the data models and their relationships.</p>
+
+            <section class="doc-section">
+                <h2 id="schema-overview">Schema Overview</h2>
+                <p>The database is organized into several logical domains:</p>
+                <pre><code>┌─────────────────────────────────────────────────────────────────────────┐
+│                           HospitiumRIS Database                          │
+├─────────────────┬─────────────────┬─────────────────┬──────────────────┤
+│  User & Auth    │   Research      │   Foundation    │   Collaboration  │
+├─────────────────┼─────────────────┼─────────────────┼──────────────────┤
+│ • User          │ • Publication   │ • Campaign      │ • Manuscript     │
+│ • Institution   │ • Proposal      │ • Donation      │ • Collaborator   │
+│ • Foundation    │ • ResearchProfile│ • Grantor      │ • Invitation     │
+│ • UserSettings  │ • LibraryFolder │ • GrantOpportunity│ • Comment      │
+│ • RegistrationLog│               │ • CampaignActivity│ • Version       │
+└─────────────────┴─────────────────┴─────────────────┴──────────────────┘</code></pre>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="core-models">Core Models</h2>
+
+                <h3 id="user">User</h3>
+                <p>The central model for all user accounts in the system.</p>
+                <pre><code class="language-prisma">model User {
+  id              String      @id @default(cuid())
+  accountType     AccountType // RESEARCHER, RESEARCH_ADMIN, FOUNDATION_ADMIN, SUPER_ADMIN
+  status          UserStatus  @default(PENDING)
+  
+  // Personal Information
+  givenName       String
+  familyName      String
+  email           String      @unique
+  passwordHash    String
+  
+  // Email Verification
+  emailVerified   Boolean     @default(false)
+  
+  // ORCID Information
+  orcidId         String?
+  
+  // Research Information
+  primaryInstitution String?
+  
+  // Relations
+  institution     Institution?
+  foundation      Foundation?
+  researchProfile ResearchProfile?
+  publications    PublicationAuthor[]
+  manuscripts     Manuscript[]
+  // ... other relations
+}</code></pre>
+
+                <p><strong>Account Types:</strong></p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>RESEARCHER</code></td>
+                            <td>Individual researchers</td>
+                        </tr>
+                        <tr>
+                            <td><code>RESEARCH_ADMIN</code></td>
+                            <td>Institutional research administrators</td>
+                        </tr>
+                        <tr>
+                            <td><code>FOUNDATION_ADMIN</code></td>
+                            <td>Foundation/funding organization admins</td>
+                        </tr>
+                        <tr>
+                            <td><code>SUPER_ADMIN</code></td>
+                            <td>System-wide administrators</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p><strong>User Statuses:</strong></p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>PENDING</code></td>
+                            <td>Awaiting email verification</td>
+                        </tr>
+                        <tr>
+                            <td><code>ACTIVE</code></td>
+                            <td>Verified and active</td>
+                        </tr>
+                        <tr>
+                            <td><code>INACTIVE</code></td>
+                            <td>Temporarily disabled</td>
+                        </tr>
+                        <tr>
+                            <td><code>SUSPENDED</code></td>
+                            <td>Administratively suspended</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="research-profile">Research Profile</h3>
+                <p>Extended researcher information linked to User.</p>
+                <pre><code class="language-prisma">model ResearchProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  
+  // Research Information
+  specialization  String[]
+  keywords        String[]
+  researchInterests String?
+  biography       String?
+  
+  // Academic Information
+  academicTitle   String?  // Professor, Dr., etc.
+  department      String?
+  
+  // Professional Links
+  website         String?
+  linkedin        String?
+  twitter         String?
+  googleScholar   String?
+  
+  // Research Metrics
+  hIndex          Int?
+  citationCount   Int?
+  
+  user            User     @relation(...)
+}</code></pre>
+
+                <h3 id="institution">Institution</h3>
+                <p>Research institution details for RESEARCH_ADMIN accounts.</p>
+                <pre><code class="language-prisma">model Institution {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  
+  name        String
+  type        String   // University, Hospital, Research Institute
+  country     String
+  website     String?
+  
+  user        User     @relation(...)
+}</code></pre>
+
+                <h3 id="foundation">Foundation</h3>
+                <p>Foundation details for FOUNDATION_ADMIN accounts.</p>
+                <pre><code class="language-prisma">model Foundation {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  
+  institutionName String
+  foundationName  String
+  type            String   // Private Foundation, Public Foundation
+  country         String
+  website         String?
+  focusArea       String?
+  description     String?
+  
+  user            User     @relation(...)
+}</code></pre>
+            </section>
+
+            <hr>
+
+            <section class="doc-section">
+                <h2 id="publication-management">Publication Management</h2>
+
+                <h3 id="publication">Publication</h3>
+                <p>Stores research publications imported from external sources or manually entered.</p>
+                <pre><code class="language-prisma">model Publication {
+  id              String            @id @default(cuid())
+  
+  title           String
+  type            String?           // Article, Review, Conference
+  field           String?
+  journal         String?
+  abstract        String?
+  authors         String[]
+  
+  // Identifiers
+  doi             String?
+  isbn            String?
+  url             String?
+  
+  // Metadata
+  keywords        String[]
+  pages           String?
+  volume          String?
+  publicationDate DateTime?
+  year            Int?
+  
+  status          PublicationStatus @default(PUBLISHED)
+  source          String?           // PubMed, CrossRef, OpenAlex, Manual
+  
+  authorRelations PublicationAuthor[]
+  manuscriptCitations ManuscriptCitation[]
+  proposals       ProposalPublication[]
+  libraryFolders  LibraryFolderPublication[]
+}</code></pre>
+
+                <h3 id="library-folder">Library Folder</h3>
+                <p>Hierarchical folder system for organizing publications.</p>
+                <pre><code class="language-prisma">model LibraryFolder {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  parentId    String?  // For nested folders
+  expanded    Boolean  @default(false)
+  
+  parent      LibraryFolder?  @relation("FolderHierarchy", ...)
+  children    LibraryFolder[] @relation("FolderHierarchy")
+  publications LibraryFolderPublication[]
+}</code></pre>
+            </section>
+
+            <hr>
+
+            <section class="doc-section">
+                <h2 id="manuscript-collaboration">Manuscript Collaboration</h2>
+
+                <h3 id="manuscript">Manuscript</h3>
+                <p>Core model for collaborative document editing.</p>
+                <pre><code class="language-prisma">model Manuscript {
+  id          String           @id @default(cuid())
+  
+  title       String
+  type        String           // Article, Review, Proposal
+  field       String?
+  description String?
+  status      ManuscriptStatus @default(DRAFT)
+  
+  // Document Content
+  content     String?          @db.Text  // HTML/JSON from TipTap
+  wordCount   Int?             @default(0)
+  
+  createdBy   String
+  lastUpdatedBy String?
+  
+  collaborators ManuscriptCollaborator[]
+  invitations   ManuscriptInvitation[]
+  citations     ManuscriptCitation[]
+  comments      ManuscriptComment[]
+  versions      ManuscriptVersion[]
+  trackedChanges TrackedChange[]
+}</code></pre>
+
+                <p><strong>Manuscript Statuses:</strong></p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>DRAFT</code></td>
+                            <td>Initial editing phase</td>
+                        </tr>
+                        <tr>
+                            <td><code>IN_REVIEW</code></td>
+                            <td>Under peer review</td>
+                        </tr>
+                        <tr>
+                            <td><code>UNDER_REVISION</code></td>
+                            <td>Being revised based on feedback</td>
+                        </tr>
+                        <tr>
+                            <td><code>PUBLISHED</code></td>
+                            <td>Finalized and published</td>
+                        </tr>
+                        <tr>
+                            <td><code>ARCHIVED</code></td>
+                            <td>No longer active</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="manuscript-collaborator">Manuscript Collaborator</h3>
+                <p>Tracks user access and permissions for manuscripts.</p>
+                <pre><code class="language-prisma">model ManuscriptCollaborator {
+  id           String          @id @default(cuid())
+  manuscriptId String
+  userId       String
+  
+  role         CollaboratorRole  // OWNER, ADMIN, EDITOR, CONTRIBUTOR, REVIEWER
+  invitedBy    String
+  
+  // Permissions
+  canEdit      Boolean         @default(true)
+  canInvite    Boolean         @default(false)
+  canDelete    Boolean         @default(false)
+  
+  manuscript   Manuscript      @relation(...)
+  user         User            @relation(...)
+}</code></pre>
+
+                <h3 id="manuscript-version">Manuscript Version</h3>
+                <p>Stores version snapshots for history and rollback.</p>
+                <pre><code class="language-prisma">model ManuscriptVersion {
+  id            String      @id @default(cuid())
+  manuscriptId  String
+  versionNumber Int
+  
+  title         String
+  content       String      @db.Text
+  changes       String?     @db.Text  // JSON tracked changes data
+  
+  createdBy     String
+  versionType   VersionType @default(AUTO)  // AUTO, MANUAL, MILESTONE
+  description   String?
+  wordCount     Int?
+  
+  manuscript    Manuscript  @relation(...)
+  creator       User        @relation(...)
+}</code></pre>
+
+                <h3 id="tracked-change">Tracked Change</h3>
+                <p>Individual change tracking for accept/reject workflow.</p>
+                <pre><code class="language-prisma">model TrackedChange {
+  id           String       @id @default(cuid())
+  manuscriptId String
+  changeId     String
+  
+  type         ChangeType   // INSERT, DELETE, FORMAT, REPLACE
+  operation    String
+  content      String?      @db.Text
+  oldContent   String?      @db.Text
+  
+  startOffset  Int
+  endOffset    Int
+  nodeType     String?
+  
+  authorId     String
+  status       ChangeStatus @default(PENDING)  // PENDING, ACCEPTED, REJECTED
+  
+  acceptedAt   DateTime?
+  rejectedAt   DateTime?
+  acceptedBy   String?
+  
+  manuscript   Manuscript   @relation(...)
+  author       User         @relation(...)
+}</code></pre>
+
+                <h3 id="manuscript-comment">Manuscript Comment</h3>
+                <p>Inline comments and threaded discussions.</p>
+                <pre><code class="language-prisma">model ManuscriptComment {
+  id              String        @id @default(cuid())
+  manuscriptId    String
+  authorId        String
+  parentCommentId String?
+  
+  content         String        @db.Text
+  type            CommentType   @default(COMMENT)  // COMMENT, SUGGESTION, QUESTION
+  status          CommentStatus @default(ACTIVE)   // ACTIVE, RESOLVED, DELETED
+  
+  // Text Selection Context
+  selectedText    String?
+  startOffset     Int?
+  endOffset       Int?
+  
+  manuscript      Manuscript         @relation(...)
+  author          User               @relation(...)
+  parentComment   ManuscriptComment? @relation(...)
+  replies         ManuscriptComment[]
+}</code></pre>
+            </section>
+
+            <hr>
+
+            <section class="doc-section">
+                <h2 id="proposal-management">Proposal Management</h2>
+
+                <h3 id="proposal">Proposal</h3>
+                <p>Research proposal with full lifecycle tracking.</p>
+                <pre><code class="language-prisma">model Proposal {
+  id          String         @id @default(cuid())
+  
+  // Core Information
+  title       String
+  principalInvestigator String
+  principalInvestigatorOrcid String?
+  coInvestigators Json[]
+  departments String[]
+  startDate   DateTime?
+  endDate     DateTime?
+  
+  // Research Details
+  researchAreas String[]
+  researchObjectives String?
+  methodology String?
+  abstract    String?
+  
+  // Project Management
+  milestones  Json[]
+  deliverables Json[]
+  
+  // Funding
+  fundingSource String?
+  grantNumber String?
+  fundingInstitution String?
+  totalBudgetAmount Decimal?
+  
+  // Ethical Considerations
+  ethicalConsiderationsOverview String?
+  consentProcedures String?
+  dataSecurityMeasures String?
+  ethicsApprovalStatus String?
+  
+  // File uploads (metadata)
+  ethicsDocuments Json[]
+  dataManagementPlan Json[]
+  otherRelatedFiles Json[]
+  
+  status      ProposalStatus @default(DRAFT)
+  
+  publications ProposalPublication[]
+  manuscripts  ProposalManuscript[]
+}</code></pre>
+
+                <p><strong>Proposal Statuses:</strong></p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>DRAFT</code></td>
+                            <td>Being prepared</td>
+                        </tr>
+                        <tr>
+                            <td><code>SUBMITTED</code></td>
+                            <td>Submitted for review</td>
+                        </tr>
+                        <tr>
+                            <td><code>UNDER_REVIEW</code></td>
+                            <td>Being evaluated</td>
+                        </tr>
+                        <tr>
+                            <td><code>APPROVED</code></td>
+                            <td>Accepted</td>
+                        </tr>
+                        <tr>
+                            <td><code>REJECTED</code></td>
+                            <td>Not approved</td>
+                        </tr>
+                        <tr>
+                            <td><code>REVISION_REQUESTED</code></td>
+                            <td>Needs changes</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <hr>
+
+            <section class="doc-section">
+                <h2 id="foundation-grants">Foundation & Grants</h2>
+
+                <h3 id="campaign">Campaign</h3>
+                <p>Fundraising campaign management.</p>
+                <pre><code class="language-prisma">model Campaign {
+  id          String   @id @default(cuid())
+  categoryId  String
+  
+  name        String
+  description String?
+  targetAmount Decimal?
+  raisedAmount Decimal  @default(0)
+  
+  startDate   DateTime?
+  endDate     DateTime?
+  status      String   @default("Planning")
+  
+  donorCount      Int @default(0)
+  donationCount   Int @default(0)
+  
+  category    CampaignCategory @relation(...)
+  activities  CampaignActivity[]
+  donations   Donation[]
+}</code></pre>
+
+                <h3 id="donation">Donation</h3>
+                <p>Individual donation records.</p>
+                <pre><code class="language-prisma">model Donation {
+  id              String   @id @default(cuid())
+  campaignId      String?
+  
+  donorName       String
+  donorEmail      String?
+  donorPhone      String?
+  donorType       String?
+  
+  amount          Decimal
+  donationDate    DateTime @default(now())
+  paymentMethod   String?
+  transactionId   String?
+  
+  status          String   @default("Completed")
+  message         String?
+  isAnonymous     Boolean  @default(false)
+  taxDeductible   Boolean  @default(true)
+  
+  campaign        Campaign? @relation(...)
+}</code></pre>
+
+                <h3 id="grantor">Grantor</h3>
+                <p>Grant funding organizations.</p>
+                <pre><code class="language-prisma">model Grantor {
+  id              String   @id @default(cuid())
+  
+  name            String   @unique
+  type            String   // federal, private, nonprofit, corporate
+  focus           String[]
+  
+  contactPerson   String?
+  email           String?
+  phone           String?
+  country         String
+  
+  status          String   @default("active")
+  
+  opportunities   GrantOpportunity[]
+}</code></pre>
+
+                <h3 id="grant-opportunity">Grant Opportunity</h3>
+                <p>Available grant opportunities from grantors.</p>
+                <pre><code class="language-prisma">model GrantOpportunity {
+  id              String   @id @default(cuid())
+  grantorId       String
+  
+  title           String
+  amount          Decimal
+  deadline        DateTime
+  
+  category        String[]
+  eligibility     String[]
+  notes           String?
+  status          String   @default("open")
+  
+  grantor         Grantor  @relation(...)
+}</code></pre>
+            </section>
+
+            <hr>
+
+            <section class="doc-section">
+                <h2 id="entity-relationship-diagram">Entity Relationship Diagram</h2>
+                <pre><code>┌──────────────┐     ┌───────────────┐     ┌──────────────────┐
+│     User     │────<│ ResearchProfile│     │   Institution    │
+└──────┬───────┘     └───────────────┘     └────────┬─────────┘
+       │                                            │
+       │ 1:N                                        │ 1:1
+       │                                            │
+       ├────────────────────────────────────────────┘
+       │
+       │     ┌─────────────────┐
+       ├────<│ PublicationAuthor│>────┬──────────────────┐
+       │     └─────────────────┘      │                  │
+       │                              │                  │
+       │     ┌─────────────────────┐  │    ┌─────────────┴───┐
+       ├────<│ManuscriptCollaborator│>─┼───<│   Manuscript    │
+       │     └─────────────────────┘  │    └────────┬────────┘
+       │                              │             │
+       │                              │    ┌────────┴────────┐
+       │                              └────│   Publication   │
+       │                                   └─────────────────┘
+       │
+       │     ┌──────────────┐     ┌──────────────┐
+       └────<│  Notification │────<│   Proposal   │
+             └──────────────┘     └──────────────┘</code></pre>
+            </section>
+
+            <hr>
+
+            <section class="doc-section">
+                <h2 id="database-commands">Database Commands</h2>
+
+                <h3 id="common-prisma-commands">Common Prisma Commands</h3>
+                <pre><code class="language-bash"># Generate client after schema changes
+npm run db:generate
+
+# Create a migration
+npm run db:migrate
+
+# Push changes without migration (development)
+npm run db:push
+
+# Reset database (⚠️ destroys all data)
+npm run db:reset
+
+# Seed sample data
+npm run db:seed
+
+# Open Prisma Studio (GUI)
+npm run db:studio</code></pre>
+
+                <h3 id="direct-database-access">Direct Database Access</h3>
+                <pre><code class="language-bash"># Connect via psql
+psql -U hospitiumuser -d hospitiumris
+
+# Common queries
+SELECT * FROM users WHERE "accountType" = 'RESEARCHER';
+SELECT COUNT(*) FROM manuscripts WHERE status = 'PUBLISHED';</code></pre>
+            </section>
+
+            <hr>
+
+            <section class="doc-section">
+                <h2 id="indexing-performance">Indexing & Performance</h2>
+                <p>The schema includes automatic indexes on:</p>
+                <ul>
+                    <li>Primary keys (<code>@id</code>)</li>
+                    <li>Unique constraints (<code>@unique</code>)</li>
+                    <li>Foreign key relationships</li>
+                </ul>
+                <p>For large deployments, consider adding indexes on frequently queried fields:</p>
+                <pre><code class="language-prisma">@@index([status])
+@@index([createdAt])
+@@index([userId, status])</code></pre>
+            </section>
+
+            <div class="page-nav">
+                <a href="../../getting-started/installation/index.html" class="page-nav-prev">
+                    <span class="page-nav-label">← Previous</span>
+                    <span class="page-nav-title">Installation Guide</span>
+                </a>
+                <a href="#" class="page-nav-next">
+                    <span class="page-nav-label">Next →</span>
+                    <span class="page-nav-title">Researcher Portal</span>
+                </a>
+            </div>
+        </main>
+
+        <aside class="toc">
+            <h4>On this page</h4>
+            <ul>
+                <li><a href="#schema-overview">Schema Overview</a></li>
+                <li>
+                    <a href="#core-models">Core Models</a>
+                    <ul>
+                        <li><a href="#user">User</a></li>
+                        <li><a href="#research-profile">Research Profile</a></li>
+                        <li><a href="#institution">Institution</a></li>
+                        <li><a href="#foundation">Foundation</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#publication-management">Publication Management</a>
+                    <ul>
+                        <li><a href="#publication">Publication</a></li>
+                        <li><a href="#library-folder">Library Folder</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#manuscript-collaboration">Manuscript Collaboration</a>
+                    <ul>
+                        <li><a href="#manuscript">Manuscript</a></li>
+                        <li><a href="#manuscript-collaborator">Manuscript Collaborator</a></li>
+                        <li><a href="#manuscript-version">Manuscript Version</a></li>
+                        <li><a href="#tracked-change">Tracked Change</a></li>
+                        <li><a href="#manuscript-comment">Manuscript Comment</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#proposal-management">Proposal Management</a>
+                    <ul>
+                        <li><a href="#proposal">Proposal</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#foundation-grants">Foundation & Grants</a>
+                    <ul>
+                        <li><a href="#campaign">Campaign</a></li>
+                        <li><a href="#donation">Donation</a></li>
+                        <li><a href="#grantor">Grantor</a></li>
+                        <li><a href="#grant-opportunity">Grant Opportunity</a></li>
+                    </ul>
+                </li>
+                <li><a href="#entity-relationship-diagram">Entity Relationship Diagram</a></li>
+                <li>
+                    <a href="#database-commands">Database Commands</a>
+                    <ul>
+                        <li><a href="#common-prisma-commands">Common Prisma Commands</a></li>
+                        <li><a href="#direct-database-access">Direct Database Access</a></li>
+                    </ul>
+                </li>
+                <li><a href="#indexing-performance">Indexing & Performance</a></li>
+            </ul>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../../intro/index.html">Getting Started</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <li><a href="#">Database Schema</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Modules</h4>
+                <ul>
+                    <li><a href="../../modules/researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../../modules/institution/index.html">Institution Portal</a></li>
+                    <li><a href="../../modules/foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../../modules/super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Features</h4>
+                <ul>
+                    <li><a href="../../features/manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../../features/publications/index.html">Publications</a></li>
+                    <li><a href="../../features/proposals/index.html">Proposals</a></li>
+                    <li><a href="../../features/orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright 2026 HospitiumRIS. Built with Docusaurus.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll('.sidebar-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const section = this.parentElement;
+                const content = section.querySelector('.sidebar-content');
+                const icon = this.querySelector('.toggle-icon');
+                
+                section.classList.toggle('collapsed');
+                
+                if (section.classList.contains('collapsed')) {
+                    content.style.display = 'none';
+                    icon.textContent = '▶';
+                } else {
+                    content.style.display = 'block';
+                    icon.textContent = '▼';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

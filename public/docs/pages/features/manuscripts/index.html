@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborative Manuscripts - HospitiumRIS Documentation</title>
+    <link rel="stylesheet" href="../../../styles.css">
+    <link rel="stylesheet" href="../../intro/intro.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="https://hospitium.hospitiumris.org/" class="logo">
+                <img src="../../../img/hospitium-logo.png" alt="HospitiumRIS Logo">
+            </a>
+           <a href="../../intro/index.html" class="nav-link">Documentation</a>
+        </div>
+        <div class="navbar-right">
+            <a href="https://github.com/hospitiumris/hospitiumris" target="_blank" class="github-link">GitHub ↗</a>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Getting Started
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../intro/index.html">Introduction</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <!-- <li><a href="../../getting-started/installation/index.html">Installation Guide</a></li> -->
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Database
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../database/schema/index.html">Schema Overview</a></li>
+                    
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Modules
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../modules/researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../../modules/institution/index.html">Institution Portal</a></li>
+                    <li><a href="../../modules/foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../../modules/super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Features
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="#" class="active">Manuscripts</a></li>
+                    <li><a href="../publications/index.html">Publications</a></li>
+                    <li><a href="../proposals/index.html">Proposals</a></li>
+                    <li><a href="../orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="content">
+            <h1>Collaborative Manuscripts</h1>
+            <p>HospitiumRIS provides a powerful collaborative manuscript editing system built on TipTap, enabling researchers to work together in real-time on academic documents.</p>
+
+            <section class="doc-section">
+                <h2 id="overview">Overview</h2>
+                <p>The manuscript editor combines the functionality of professional word processors with real-time collaboration features designed specifically for academic writing.</p>
+
+                <h3 id="key-capabilities">Key Capabilities</h3>
+                <ul>
+                    <li>Rich text editing with academic formatting</li>
+                    <li>Real-time multi-user collaboration</li>
+                    <li>Track changes with accept/reject workflow</li>
+                    <li>Version history with restore capability</li>
+                    <li>Inline comments and threaded discussions</li>
+                    <li>Citation management with multiple formats</li>
+                    <li>Auto-save and conflict resolution</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="creating-a-manuscript">Creating a Manuscript</h2>
+
+                <h3 id="new-manuscript">New Manuscript</h3>
+                <ol>
+                    <li>Navigate to <strong>Publications → Collaborate</strong></li>
+                    <li>Click <strong>New Manuscript</strong></li>
+                    <li>Fill in manuscript details:
+                        <ul>
+                            <li><strong>Title</strong> - Manuscript title</li>
+                            <li><strong>Type</strong> - Article, Review, Conference Paper, etc.</li>
+                            <li><strong>Field</strong> - Research field or domain</li>
+                            <li><strong>Description</strong> - Brief summary</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h3 id="manuscript-types">Manuscript Types</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Research Article</strong></td>
+                            <td>Original research findings</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Review Paper</strong></td>
+                            <td>Literature review or meta-analysis</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Conference Paper</strong></td>
+                            <td>Conference proceedings</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Technical Report</strong></td>
+                            <td>Technical documentation</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Grant Proposal</strong></td>
+                            <td>Funding application</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Thesis/Dissertation</strong></td>
+                            <td>Academic degree work</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="the-editor-interface">The Editor Interface</h2>
+                <pre><code>┌─────────────────────────────────────────────────────────────────┐
+│ 📄 Manuscript Title                              👥 3 Online    │
+├─────────────────────────────────────────────────────────────────┤
+│ [B] [I] [U] [S] | [H1] [H2] [H3] | [🔗] [📷] | [📚 Cite]       │
+├───────────────────────────────────────┬─────────────────────────┤
+│                                       │                         │
+│                                       │    💬 Comments (5)      │
+│         Document Editor               │    ──────────────       │
+│                                       │    [Comment thread 1]   │
+│         (TipTap Rich Text)            │    [Comment thread 2]   │
+│                                       │                         │
+│                                       │    📝 Track Changes     │
+│                                       │    ──────────────       │
+│                                       │    [Pending changes]    │
+│                                       │                         │
+├───────────────────────────────────────┴─────────────────────────┤
+│ Word Count: 2,450 | Last saved: 2 minutes ago | Version: 12    │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+
+                <h3 id="toolbar-features">Toolbar Features</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tool</th>
+                            <th>Shortcut</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Bold</strong></td>
+                            <td><code>Ctrl+B</code></td>
+                            <td>Bold text</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Italic</strong></td>
+                            <td><code>Ctrl+I</code></td>
+                            <td>Italic text</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Underline</strong></td>
+                            <td><code>Ctrl+U</code></td>
+                            <td>Underline text</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Strikethrough</strong></td>
+                            <td><code>Ctrl+Shift+S</code></td>
+                            <td>Strikethrough</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Heading 1</strong></td>
+                            <td><code>Ctrl+Alt+1</code></td>
+                            <td>Main heading</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Heading 2</strong></td>
+                            <td><code>Ctrl+Alt+2</code></td>
+                            <td>Sub-heading</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Heading 3</strong></td>
+                            <td><code>Ctrl+Alt+3</code></td>
+                            <td>Section heading</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Link</strong></td>
+                            <td><code>Ctrl+K</code></td>
+                            <td>Insert hyperlink</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Image</strong></td>
+                            <td>-</td>
+                            <td>Insert image</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Table</strong></td>
+                            <td>-</td>
+                            <td>Insert table</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Citation</strong></td>
+                            <td>-</td>
+                            <td>Insert citation</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Highlight</strong></td>
+                            <td>-</td>
+                            <td>Highlight text</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="text-alignment">Text Alignment</h3>
+                <ul>
+                    <li>Left align</li>
+                    <li>Center align</li>
+                    <li>Right align</li>
+                    <li>Justify</li>
+                </ul>
+
+                <h3 id="lists">Lists</h3>
+                <ul>
+                    <li>Bullet lists</li>
+                    <li>Numbered lists</li>
+                    <li>Task lists (checkboxes)</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="real-time-collaboration">Real-Time Collaboration</h2>
+
+                <h3 id="presence-awareness">Presence Awareness</h3>
+                <p>See who's currently editing:</p>
+                <ul>
+                    <li>Online collaborators shown in header</li>
+                    <li>Colored cursors indicate editor positions</li>
+                    <li>Names displayed at cursor locations</li>
+                </ul>
+
+                <h3 id="conflict-resolution">Conflict Resolution</h3>
+                <p>When multiple users edit simultaneously:</p>
+                <ol>
+                    <li>Changes are merged in real-time</li>
+                    <li>Conflicting edits are flagged</li>
+                    <li>Users can review and resolve conflicts</li>
+                    <li>History preserves all versions</li>
+                </ol>
+
+                <h3 id="collaboration-roles">Collaboration Roles</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Role</th>
+                            <th>Edit</th>
+                            <th>Comment</th>
+                            <th>Invite</th>
+                            <th>Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Owner</strong></td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Admin</strong></td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>❌</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Editor</strong></td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Contributor</strong></td>
+                            <td>Suggest</td>
+                            <td>✅</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reviewer</strong></td>
+                            <td>❌</td>
+                            <td>✅</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="track-changes">Track Changes</h2>
+
+                <h3 id="enabling-track-changes">Enabling Track Changes</h3>
+                <ol>
+                    <li>Click <strong>Track Changes</strong> toggle in toolbar</li>
+                    <li>All subsequent edits are tracked</li>
+                    <li>Changes appear with author attribution</li>
+                </ol>
+
+                <h3 id="change-types">Change Types</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Appearance</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Insert</strong></td>
+                            <td>Green underline</td>
+                            <td>New text added</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Delete</strong></td>
+                            <td>Red strikethrough</td>
+                            <td>Text removed</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Format</strong></td>
+                            <td>Blue highlight</td>
+                            <td>Formatting changed</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="reviewing-changes">Reviewing Changes</h3>
+                <p>For each tracked change:</p>
+                <ul>
+                    <li><strong>Accept</strong> - Apply the change permanently</li>
+                    <li><strong>Reject</strong> - Discard the change</li>
+                    <li><strong>View Author</strong> - See who made the change</li>
+                    <li><strong>View Timestamp</strong> - When the change was made</li>
+                </ul>
+
+                <h3 id="bulk-actions">Bulk Actions</h3>
+                <ul>
+                    <li>Accept all changes</li>
+                    <li>Reject all changes</li>
+                    <li>Accept changes by author</li>
+                    <li>Filter changes by type</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="version-history">Version History</h2>
+
+                <h3 id="automatic-versioning">Automatic Versioning</h3>
+                <p>Versions are created automatically:</p>
+                <ul>
+                    <li>Every 50 changes</li>
+                    <li>Before major edits</li>
+                    <li>On manual save</li>
+                    <li>Before session ends</li>
+                </ul>
+
+                <h3 id="manual-versions">Manual Versions</h3>
+                <p>Create milestone versions:</p>
+                <ol>
+                    <li>Click <strong>Save Version</strong></li>
+                    <li>Add version description</li>
+                    <li>Version is saved with timestamp</li>
+                </ol>
+
+                <h3 id="version-types">Version Types</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Auto</strong></td>
+                            <td>Automatic periodic saves</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Manual</strong></td>
+                            <td>User-created checkpoints</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Milestone</strong></td>
+                            <td>Significant project milestones</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="comparing-versions">Comparing Versions</h3>
+                <ol>
+                    <li>Open version history panel</li>
+                    <li>Select two versions</li>
+                    <li>View side-by-side comparison</li>
+                    <li>Changes highlighted between versions</li>
+                </ol>
+
+                <h3 id="restoring-versions">Restoring Versions</h3>
+                <ol>
+                    <li>Select the version to restore</li>
+                    <li>Click <strong>Restore</strong></li>
+                    <li>Confirm restoration</li>
+                    <li>Current state becomes new version</li>
+                </ol>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="comments-discussions">Comments & Discussions</h2>
+
+                <h3 id="adding-comments">Adding Comments</h3>
+                <ol>
+                    <li>Select text to comment on</li>
+                    <li>Click <strong>Add Comment</strong> or use context menu</li>
+                    <li>Type your comment</li>
+                    <li>Submit</li>
+                </ol>
+
+                <h3 id="comment-types">Comment Types</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Comment</strong></td>
+                            <td>General feedback</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Suggestion</strong></td>
+                            <td>Proposed changes</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Question</strong></td>
+                            <td>Clarification needed</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="comment-features">Comment Features</h3>
+                <ul>
+                    <li><strong>Threaded Replies</strong> - Nested discussions</li>
+                    <li><strong>@Mentions</strong> - Notify specific collaborators</li>
+                    <li><strong>Resolve</strong> - Mark as addressed</li>
+                    <li><strong>Delete</strong> - Remove comment</li>
+                </ul>
+
+                <h3 id="comment-workflow">Comment Workflow</h3>
+                <pre><code>Comment Created → Discussion → Resolved/Deleted
+       ↓              ↓
+   Notify Author   Replies Added</code></pre>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="citation-management">Citation Management</h2>
+
+                <h3 id="inserting-citations">Inserting Citations</h3>
+                <ol>
+                    <li>Place cursor at citation point</li>
+                    <li>Click <strong>Insert Citation</strong></li>
+                    <li>Search your publication library</li>
+                    <li>Select publication(s)</li>
+                    <li>Citation inserted with reference</li>
+                </ol>
+
+                <h3 id="citation-sources">Citation Sources</h3>
+                <p>Import citations from:</p>
+                <ul>
+                    <li>Personal publication library</li>
+                    <li>PubMed search</li>
+                    <li>DOI lookup</li>
+                    <li>BibTeX import</li>
+                    <li>Manual entry</li>
+                </ul>
+
+                <h3 id="citation-styles">Citation Styles</h3>
+                <p>Supported formats:</p>
+                <ul>
+                    <li>APA (7th Edition)</li>
+                    <li>MLA</li>
+                    <li>Chicago</li>
+                    <li>Harvard</li>
+                    <li>IEEE</li>
+                    <li>Vancouver</li>
+                </ul>
+
+                <h3 id="bibliography-generation">Bibliography Generation</h3>
+                <ul>
+                    <li>Auto-generated from citations</li>
+                    <li>Sorted alphabetically or by appearance</li>
+                    <li>Formatted per style guide</li>
+                    <li>Updates dynamically</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="inviting-collaborators">Inviting Collaborators</h2>
+
+                <h3 id="invitation-methods">Invitation Methods</h3>
+                <ol>
+                    <li>
+                        <strong>ORCID Search</strong>
+                        <ul>
+                            <li>Search by name or ORCID iD</li>
+                            <li>View researcher profile</li>
+                            <li>Send invitation with role</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Email Invitation</strong>
+                        <ul>
+                            <li>Enter email address</li>
+                            <li>System sends invitation link</li>
+                            <li>Works for non-registered users</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>System Users</strong>
+                        <ul>
+                            <li>Search registered users</li>
+                            <li>Quick invitation with role selection</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h3 id="invitation-process">Invitation Process</h3>
+                <pre><code>Send Invitation → Email Notification → Accept/Decline → Access Granted
+                        ↓
+                  Expiration (7 days)</code></pre>
+
+                <h3 id="managing-collaborators">Managing Collaborators</h3>
+                <ul>
+                    <li>View all collaborators</li>
+                    <li>Change roles</li>
+                    <li>Remove access</li>
+                    <li>Resend invitations</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="export-options">Export Options</h2>
+
+                <h3 id="document-formats">Document Formats</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Format</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>HTML</strong></td>
+                            <td>Web-ready format</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PDF</strong></td>
+                            <td>Print-ready document</td>
+                        </tr>
+                        <tr>
+                            <td><strong>DOCX</strong></td>
+                            <td>Microsoft Word</td>
+                        </tr>
+                        <tr>
+                            <td><strong>LaTeX</strong></td>
+                            <td>Academic typesetting</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Markdown</strong></td>
+                            <td>Plain text markup</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="export-settings">Export Settings</h3>
+                <ul>
+                    <li>Include comments</li>
+                    <li>Include track changes</li>
+                    <li>Include version history</li>
+                    <li>Bibliography format</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
+
+                <h3 id="text-formatting">Text Formatting</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Shortcut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>Ctrl+B</code></td>
+                            <td>Bold</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+I</code></td>
+                            <td>Italic</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+U</code></td>
+                            <td>Underline</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+Shift+S</code></td>
+                            <td>Strikethrough</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+Shift+H</code></td>
+                            <td>Highlight</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="document-actions">Document Actions</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Shortcut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>Ctrl+S</code></td>
+                            <td>Save</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+Z</code></td>
+                            <td>Undo</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+Y</code></td>
+                            <td>Redo</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+A</code></td>
+                            <td>Select all</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+F</code></td>
+                            <td>Find</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="navigation">Navigation</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Shortcut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>Ctrl+Home</code></td>
+                            <td>Go to beginning</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+End</code></td>
+                            <td>Go to end</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+G</code></td>
+                            <td>Go to page</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="best-practices">Best Practices</h2>
+
+                <h3 id="collaborative-writing">Collaborative Writing</h3>
+                <ol>
+                    <li>Establish writing conventions early</li>
+                    <li>Use track changes for major revisions</li>
+                    <li>Comment rather than overwrite</li>
+                    <li>Create milestone versions regularly</li>
+                    <li>Resolve comments promptly</li>
+                </ol>
+
+                <h3 id="document-structure">Document Structure</h3>
+                <ol>
+                    <li>Use headings consistently</li>
+                    <li>Apply styles rather than manual formatting</li>
+                    <li>Keep paragraphs focused</li>
+                    <li>Use lists for clarity</li>
+                </ol>
+
+                <h3 id="citation-management-best">Citation Management</h3>
+                <ol>
+                    <li>Add citations as you write</li>
+                    <li>Verify citation accuracy</li>
+                    <li>Keep library organized</li>
+                    <li>Choose style early</li>
+                </ol>
+
+                <h3 id="version-control">Version Control</h3>
+                <ol>
+                    <li>Create versions at logical points</li>
+                    <li>Add descriptive version notes</li>
+                    <li>Don't fear experimentation - you can restore</li>
+                    <li>Review history before final submission</li>
+                </ol>
+            </section>
+
+            <div class="page-nav">
+                <a href="../../modules/super-admin/index.html" class="page-nav-prev">
+                    <span class="page-nav-label">← Previous</span>
+                    <span class="page-nav-title">Super Admin Portal</span>
+                </a>
+                <a href="../publications/index.html" class="page-nav-next">
+                    <span class="page-nav-label">Next →</span>
+                    <span class="page-nav-title">Publication Management</span>
+                </a>
+            </div>
+        </main>
+
+        <aside class="toc">
+            <h4>On this page</h4>
+            <ul>
+                <li>
+                    <a href="#overview">Overview</a>
+                    <ul>
+                        <li><a href="#key-capabilities">Key Capabilities</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#creating-a-manuscript">Creating a Manuscript</a>
+                    <ul>
+                        <li><a href="#new-manuscript">New Manuscript</a></li>
+                        <li><a href="#manuscript-types">Manuscript Types</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#the-editor-interface">The Editor Interface</a>
+                    <ul>
+                        <li><a href="#toolbar-features">Toolbar Features</a></li>
+                        <li><a href="#text-alignment">Text Alignment</a></li>
+                        <li><a href="#lists">Lists</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#real-time-collaboration">Real-Time Collaboration</a>
+                    <ul>
+                        <li><a href="#presence-awareness">Presence Awareness</a></li>
+                        <li><a href="#conflict-resolution">Conflict Resolution</a></li>
+                        <li><a href="#collaboration-roles">Collaboration Roles</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#track-changes">Track Changes</a>
+                    <ul>
+                        <li><a href="#enabling-track-changes">Enabling Track Changes</a></li>
+                        <li><a href="#change-types">Change Types</a></li>
+                        <li><a href="#reviewing-changes">Reviewing Changes</a></li>
+                        <li><a href="#bulk-actions">Bulk Actions</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#version-history">Version History</a>
+                    <ul>
+                        <li><a href="#automatic-versioning">Automatic Versioning</a></li>
+                        <li><a href="#manual-versions">Manual Versions</a></li>
+                        <li><a href="#version-types">Version Types</a></li>
+                        <li><a href="#comparing-versions">Comparing Versions</a></li>
+                        <li><a href="#restoring-versions">Restoring Versions</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#comments-discussions">Comments & Discussions</a>
+                    <ul>
+                        <li><a href="#adding-comments">Adding Comments</a></li>
+                        <li><a href="#comment-types">Comment Types</a></li>
+                        <li><a href="#comment-features">Comment Features</a></li>
+                        <li><a href="#comment-workflow">Comment Workflow</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#citation-management">Citation Management</a>
+                    <ul>
+                        <li><a href="#inserting-citations">Inserting Citations</a></li>
+                        <li><a href="#citation-sources">Citation Sources</a></li>
+                        <li><a href="#citation-styles">Citation Styles</a></li>
+                        <li><a href="#bibliography-generation">Bibliography Generation</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#inviting-collaborators">Inviting Collaborators</a>
+                    <ul>
+                        <li><a href="#invitation-methods">Invitation Methods</a></li>
+                        <li><a href="#invitation-process">Invitation Process</a></li>
+                        <li><a href="#managing-collaborators">Managing Collaborators</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#export-options">Export Options</a>
+                    <ul>
+                        <li><a href="#document-formats">Document Formats</a></li>
+                        <li><a href="#export-settings">Export Settings</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#keyboard-shortcuts">Keyboard Shortcuts</a>
+                    <ul>
+                        <li><a href="#text-formatting">Text Formatting</a></li>
+                        <li><a href="#document-actions">Document Actions</a></li>
+                        <li><a href="#navigation">Navigation</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#best-practices">Best Practices</a>
+                    <ul>
+                        <li><a href="#collaborative-writing">Collaborative Writing</a></li>
+                        <li><a href="#document-structure">Document Structure</a></li>
+                        <li><a href="#citation-management-best">Citation Management</a></li>
+                        <li><a href="#version-control">Version Control</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../../intro/index.html">Getting Started</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <li><a href="../../database/schema/index.html">Database Schema</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Modules</h4>
+                <ul>
+                    <li><a href="../../modules/researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../../modules/institution/index.html">Institution Portal</a></li>
+                    <li><a href="../../modules/foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../../modules/super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Features</h4>
+                <ul>
+                    <li><a href="#">Manuscripts</a></li>
+                    <li><a href="../publications/index.html">Publications</a></li>
+                    <li><a href="../proposals/index.html">Proposals</a></li>
+                    <li><a href="../orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright 2026 HospitiumRIS. Built with Docusaurus.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll('.sidebar-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const section = this.parentElement;
+                const content = section.querySelector('.sidebar-content');
+                const icon = this.querySelector('.toggle-icon');
+                
+                section.classList.toggle('collapsed');
+                
+                if (section.classList.contains('collapsed')) {
+                    content.style.display = 'none';
+                    icon.textContent = '▶';
+                } else {
+                    content.style.display = 'block';
+                    icon.textContent = '▼';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

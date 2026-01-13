@@ -1,9 +1,0 @@
-{
-  "label": "Database",
-  "position": 3,
-  "link": {
-    "type": "generated-index",
-    "description": "Explore the HospitiumRIS database schema and data models."
-  }
-}
-

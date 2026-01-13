@@ -491,6 +491,9 @@ export default function ManuscriptEditor() {
   const router = useRouter();
   const manuscriptId = params.id;
 
+  // Prevent hydration mismatch by only rendering on client
+  const [mounted, setMounted] = useState(false);
+
   // State management
   const [manuscript, setManuscript] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -644,22 +647,39 @@ export default function ManuscriptEditor() {
     
     // Automatically add citation to manuscript library
     try {
-      console.log('Adding citation to manuscript library:', {
-        manuscriptId,
-        citationId: citation.id,
-        citationTitle: citation.title
-      });
+      console.log('=== Citation Insertion Debug ===');
+      console.log('Full citation object:', citation);
+      console.log('manuscriptId:', manuscriptId);
+      console.log('citation.id:', citation?.id);
+      
+      // Validate required data
+      if (!manuscriptId) {
+        console.error('❌ Cannot add citation: manuscriptId is missing');
+        return;
+      }
+      
+      if (!citation || !citation.id) {
+        console.error('❌ Cannot add citation: citation or citation.id is missing', citation);
+        return;
+      }
+      
+      const requestBody = {
+        publicationId: citation.id
+      };
+      
+      console.log('✓ Validation passed');
+      console.log('Request URL:', `/api/manuscripts/${manuscriptId}/citations`);
+      console.log('Request body:', requestBody);
       
       const response = await fetch(`/api/manuscripts/${manuscriptId}/citations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          publicationId: citation.id
-        })
+        body: JSON.stringify(requestBody)
       });
       
+      console.log('Response status:', response.status);
       const result = await response.json();
       console.log('API Response:', result);
       
@@ -683,26 +703,38 @@ export default function ManuscriptEditor() {
 
   // Citation detection logic (doesn't depend on editor)
   const detectCitationTrigger = useCallback((text, cursorPos) => {
-    // Look for patterns like "@smith" or "cite:" or "[" that might indicate citation intent
+    // Look for patterns like "@smith" or "cite:" that indicate citation intent
     const beforeCursor = text.slice(0, cursorPos);
-    const citationTriggers = [
-      /@(\w+)$/,           // @author pattern
-      /cite:\s*(\w*)$/i,   // cite: pattern  
-      /\[\s*(\w*)$/,       // [ pattern for citation brackets
-      /\(\s*(\w+)\s*$/     // ( pattern for parenthetical citations
-    ];
     
-    for (const trigger of citationTriggers) {
-      const match = beforeCursor.match(trigger);
-      if (match) {
+    // Pattern 1: @author - triggers when typing @ followed by letters
+    const atMatch = beforeCursor.match(/@([\w\s]*)$/);
+    if (atMatch) {
+      const query = atMatch[1].trim();
+      // Only trigger if we have @ or @ followed by at least 1 character
+      if (query.length >= 0) {
+        console.log('Citation trigger detected: @', query);
         return {
           found: true,
-          query: match[1] || '',
-          startPos: cursorPos - match[0].length,
+          query: query,
+          startPos: cursorPos - atMatch[0].length,
           endPos: cursorPos
         };
       }
     }
+    
+    // Pattern 2: cite: - triggers when typing cite: followed by optional text
+    const citeMatch = beforeCursor.match(/cite:\s*([\w\s]*)$/i);
+    if (citeMatch) {
+      const query = citeMatch[1].trim();
+      console.log('Citation trigger detected: cite:', query);
+      return {
+        found: true,
+        query: query,
+        startPos: cursorPos - citeMatch[0].length,
+        endPos: cursorPos
+      };
+    }
+    
     return { found: false };
   }, []);
 
@@ -740,6 +772,11 @@ export default function ManuscriptEditor() {
     },
     // Auto-save is now handled by useEffect with autosave toggle
   });
+
+  // Set mounted state on client side only
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Load manuscript data from API
   useEffect(() => {
@@ -1143,7 +1180,12 @@ export default function ManuscriptEditor() {
 
   // Citation detection useEffect
   useEffect(() => {
-    if (!editor || !citeAsYouWrite) return;
+    if (!editor || !citeAsYouWrite) {
+      console.log('Citation detection disabled:', { editor: !!editor, citeAsYouWrite });
+      return;
+    }
+
+    console.log('Citation detection enabled');
 
     const handleEditorUpdate = async () => {
       if (!editor.isFocused) return;
@@ -1157,6 +1199,7 @@ export default function ManuscriptEditor() {
       const detection = detectCitationTrigger(text, from);
       
       if (detection.found) {
+        console.log('Citation trigger found, fetching citations for:', detection.query);
         // Get cursor position for popup placement
         const coords = editor.view.coordsAtPos(from);
         setCitationSearch(detection.query);
@@ -2199,6 +2242,11 @@ export default function ManuscriptEditor() {
     });
   }, []);
 
+  // Prevent hydration mismatch - only render on client
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#fafafa' }}>
       {/* Document Header Component - Always Visible */}
@@ -3045,14 +3093,29 @@ export default function ManuscriptEditor() {
             setCitationMenuAnchor(null);
           }}
           className={citeAsYouWrite ? 'checked' : ''}
+          sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 1.5 }}
         >
-          <ListItemIcon sx={{ minWidth: 36 }}>
-            <MagicWandIcon fontSize="small" sx={{ color: citeAsYouWrite ? '#8b6cbc' : '#666' }} />
-          </ListItemIcon>
-          <Box sx={{ flexGrow: 1 }}>Cite as You Write</Box>
-          {citeAsYouWrite && (
-            <CheckBoxIcon fontSize="small" sx={{ color: '#8b6cbc', ml: 1 }} />
-          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <MagicWandIcon fontSize="small" sx={{ color: citeAsYouWrite ? '#8b6cbc' : '#666' }} />
+            </ListItemIcon>
+            <Box sx={{ flexGrow: 1 }}>Cite as You Write</Box>
+            {citeAsYouWrite && (
+              <CheckBoxIcon fontSize="small" sx={{ color: '#8b6cbc', ml: 1 }} />
+            )}
+          </Box>
+          <Typography 
+            variant="caption" 
+            sx={{ 
+              color: 'text.secondary', 
+              fontSize: '0.7rem',
+              mt: 0.5,
+              ml: 4.5,
+              lineHeight: 1.3
+            }}
+          >
+            Type <strong>@</strong> followed by author name, or <strong>cite:</strong> to search citations
+          </Typography>
         </MuiMenuItem>
 
         <Divider sx={{ my: 0.5 }} />

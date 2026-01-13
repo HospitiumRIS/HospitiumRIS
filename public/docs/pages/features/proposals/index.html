@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Proposals - HospitiumRIS Documentation</title>
+    <link rel="stylesheet" href="../../../styles.css">
+    <link rel="stylesheet" href="../../intro/intro.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="https://hospitium.hospitiumris.org/" class="logo">
+                <img src="../../../img/hospitium-logo.png" alt="HospitiumRIS Logo">
+            </a>
+            <a href="../../intro/index.html" class="nav-link">Documentation</a>
+        </div>
+        <div class="navbar-right">
+            <a href="https://github.com/hospitiumris/hospitiumris" target="_blank" class="github-link">GitHub ↗</a>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Getting Started
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../intro/index.html">Introduction</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <!-- <li><a href="../../getting-started/installation/index.html">Installation Guide</a></li> -->
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Database
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../database/schema/index.html">Schema Overview</a></li>
+                    
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Modules
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../modules/researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../../modules/institution/index.html">Institution Portal</a></li>
+                    <li><a href="../../modules/foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../../modules/super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Features
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../publications/index.html">Publications</a></li>
+                    <li><a href="#" class="active">Proposals</a></li>
+                    <li><a href="../orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="content">
+            <h1>Research Proposals</h1>
+            <p>HospitiumRIS provides a structured system for creating, managing, and tracking research proposals through the entire lifecycle from draft to approval.</p>
+
+            <section class="doc-section">
+                <h2 id="overview">Overview</h2>
+                <p>The proposal management system enables:</p>
+                <ul>
+                    <li>Structured proposal creation with templates</li>
+                    <li>Co-investigator management with ORCID lookup</li>
+                    <li>Milestone and deliverable tracking</li>
+                    <li>Budget and funding management</li>
+                    <li>Ethics documentation</li>
+                    <li>Review workflow integration</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="creating-a-proposal">Creating a Proposal</h2>
+
+                <h3 id="starting-a-new-proposal">Starting a New Proposal</h3>
+                <ol>
+                    <li>Navigate to <strong>Projects → Proposals → Create</strong></li>
+                    <li>Complete sections step-by-step</li>
+                    <li>Save as draft at any point</li>
+                    <li>Submit when complete</li>
+                </ol>
+
+                <h3 id="proposal-sections">Proposal Sections</h3>
+                <p>The proposal form is organized into logical sections:</p>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="section-1-basic-information">Section 1: Basic Information</h2>
+
+                <h3 id="core-details">Core Details</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Title</strong></td>
+                            <td>✅</td>
+                            <td>Proposal title</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Principal Investigator</strong></td>
+                            <td>✅</td>
+                            <td>Lead researcher name</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PI ORCID</strong></td>
+                            <td>❌</td>
+                            <td>ORCID iD for verification</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Abstract</strong></td>
+                            <td>✅</td>
+                            <td>Brief project summary</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="timeline">Timeline</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Start Date</strong></td>
+                            <td>Proposed project start</td>
+                        </tr>
+                        <tr>
+                            <td><strong>End Date</strong></td>
+                            <td>Projected completion</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Duration</strong></td>
+                            <td>Auto-calculated</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="departments">Departments</h3>
+                <p>Add all participating departments:</p>
+                <ul>
+                    <li>Primary department</li>
+                    <li>Collaborating departments</li>
+                    <li>External partners</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="section-2-research-team">Section 2: Research Team</h2>
+
+                <h3 id="principal-investigator">Principal Investigator</h3>
+                <p>The PI is automatically populated from your profile:</p>
+                <ul>
+                    <li>Name</li>
+                    <li>ORCID iD</li>
+                    <li>Institution</li>
+                    <li>Department</li>
+                    <li>Contact information</li>
+                </ul>
+
+                <h3 id="co-investigators">Co-Investigators</h3>
+                <p>Add team members with ORCID lookup:</p>
+                <ol>
+                    <li>Click <strong>Add Co-Investigator</strong></li>
+                    <li>Search by name or ORCID</li>
+                    <li>Select from results</li>
+                    <li>Assign role</li>
+                </ol>
+
+                <h4 id="orcid-search-modal">ORCID Search Modal</h4>
+                <pre><code>┌─────────────────────────────────────────────────────────────────┐
+│ 🔍 Search Researchers                                           │
+├─────────────────────────────────────────────────────────────────┤
+│ Search: [John Smith                              ] [Search]     │
+├─────────────────────────────────────────────────────────────────┤
+│ Results:                                                         │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ 👤 John Smith                                                │ │
+│ │    ORCID: 0000-0002-1234-5678                               │ │
+│ │    Harvard Medical School                                    │ │
+│ │    Keywords: oncology, clinical trials                       │ │
+│ │                                         [Add to Team]        │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ 👤 Jonathan Smith                                            │ │
+│ │    ORCID: 0000-0001-9876-5432                               │ │
+│ │    Stanford University                                       │ │
+│ │    Keywords: neuroscience, imaging                          │ │
+│ │                                         [Add to Team]        │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+
+                <h3 id="team-roles">Team Roles</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Role</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Co-PI</strong></td>
+                            <td>Equal leadership with PI</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Co-Investigator</strong></td>
+                            <td>Senior team member</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Collaborator</strong></td>
+                            <td>Contributing researcher</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Consultant</strong></td>
+                            <td>Expert advisor</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Research Assistant</strong></td>
+                            <td>Support role</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="section-3-research-details">Section 3: Research Details</h2>
+
+                <h3 id="research-areas">Research Areas</h3>
+                <p>Select applicable research areas:</p>
+                <ul>
+                    <li>Basic Science</li>
+                    <li>Clinical Research</li>
+                    <li>Translational Research</li>
+                    <li>Public Health</li>
+                    <li>Epidemiology</li>
+                    <li>Health Services</li>
+                    <li>Behavioral Science</li>
+                </ul>
+
+                <h3 id="research-objectives">Research Objectives</h3>
+                <p>Document specific objectives:</p>
+                <pre><code>1. Primary Objective
+   - Determine the efficacy of treatment X in population Y
+
+2. Secondary Objectives
+   - Evaluate safety profile
+   - Assess quality of life outcomes
+   - Analyze cost-effectiveness</code></pre>
+
+                <h3 id="methodology">Methodology</h3>
+                <p>Describe research methods:</p>
+                <ul>
+                    <li>Study design</li>
+                    <li>Sample size and selection</li>
+                    <li>Data collection methods</li>
+                    <li>Analysis approach</li>
+                    <li>Tools and technologies</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="section-4-project-management">Section 4: Project Management</h2>
+
+                <h3 id="milestones">Milestones</h3>
+                <p>Track major project checkpoints:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Milestone</th>
+                            <th>Target Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Protocol finalization</td>
+                            <td>Month 3</td>
+                            <td>Pending</td>
+                        </tr>
+                        <tr>
+                            <td>Ethics approval</td>
+                            <td>Month 4</td>
+                            <td>Pending</td>
+                        </tr>
+                        <tr>
+                            <td>Recruitment start</td>
+                            <td>Month 5</td>
+                            <td>Pending</td>
+                        </tr>
+                        <tr>
+                            <td>Data collection complete</td>
+                            <td>Month 18</td>
+                            <td>Pending</td>
+                        </tr>
+                        <tr>
+                            <td>Analysis complete</td>
+                            <td>Month 21</td>
+                            <td>Pending</td>
+                        </tr>
+                        <tr>
+                            <td>Final report</td>
+                            <td>Month 24</td>
+                            <td>Pending</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4 id="adding-milestones">Adding Milestones</h4>
+                <ol>
+                    <li>Click <strong>Add Milestone</strong></li>
+                    <li>Enter milestone name</li>
+                    <li>Set target date</li>
+                    <li>Add description (optional)</li>
+                    <li>Save</li>
+                </ol>
+
+                <h3 id="deliverables">Deliverables</h3>
+                <p>Define project outputs:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Deliverable</th>
+                            <th>Type</th>
+                            <th>Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Literature Review</td>
+                            <td>Report</td>
+                            <td>Month 2</td>
+                        </tr>
+                        <tr>
+                            <td>Protocol Document</td>
+                            <td>Document</td>
+                            <td>Month 3</td>
+                        </tr>
+                        <tr>
+                            <td>Interim Report</td>
+                            <td>Report</td>
+                            <td>Month 12</td>
+                        </tr>
+                        <tr>
+                            <td>Publication Draft</td>
+                            <td>Manuscript</td>
+                            <td>Month 20</td>
+                        </tr>
+                        <tr>
+                            <td>Final Report</td>
+                            <td>Report</td>
+                            <td>Month 24</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="section-5-funding-budget">Section 5: Funding & Budget</h2>
+
+                <h3 id="funding-information">Funding Information</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Funding Source</strong></td>
+                            <td>Organization providing funds</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Grant Number</strong></td>
+                            <td>Grant identifier (if known)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Funding Institution</strong></td>
+                            <td>Administering institution</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Grant Start Date</strong></td>
+                            <td>Funding period start</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Grant End Date</strong></td>
+                            <td>Funding period end</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Budget</strong></td>
+                            <td>Total funding amount</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="budget-categories">Budget Categories</h3>
+                <p>Typical budget breakdown:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Personnel</td>
+                            <td>$250,000</td>
+                            <td>50%</td>
+                        </tr>
+                        <tr>
+                            <td>Equipment</td>
+                            <td>$75,000</td>
+                            <td>15%</td>
+                        </tr>
+                        <tr>
+                            <td>Supplies</td>
+                            <td>$50,000</td>
+                            <td>10%</td>
+                        </tr>
+                        <tr>
+                            <td>Travel</td>
+                            <td>$25,000</td>
+                            <td>5%</td>
+                        </tr>
+                        <tr>
+                            <td>Other Direct</td>
+                            <td>$50,000</td>
+                            <td>10%</td>
+                        </tr>
+                        <tr>
+                            <td>Indirect</td>
+                            <td>$50,000</td>
+                            <td>10%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total</strong></td>
+                            <td><strong>$500,000</strong></td>
+                            <td><strong>100%</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="section-6-ethical-considerations">Section 6: Ethical Considerations</h2>
+
+                <h3 id="ethics-overview">Ethics Overview</h3>
+                <p>Describe ethical aspects:</p>
+                <ul>
+                    <li>Human subjects involvement</li>
+                    <li>Animal research</li>
+                    <li>Data privacy concerns</li>
+                    <li>Risk mitigation</li>
+                </ul>
+
+                <h3 id="consent-procedures">Consent Procedures</h3>
+                <p>Document informed consent:</p>
+                <ul>
+                    <li>Consent form description</li>
+                    <li>Consent process</li>
+                    <li>Special populations (minors, vulnerable)</li>
+                    <li>Waiver requests (if applicable)</li>
+                </ul>
+
+                <h3 id="data-security">Data Security</h3>
+                <p>Outline data protection:</p>
+                <ul>
+                    <li>Data storage methods</li>
+                    <li>Access controls</li>
+                    <li>Encryption</li>
+                    <li>Retention policy</li>
+                    <li>Destruction procedures</li>
+                </ul>
+
+                <h3 id="ethics-approval">Ethics Approval</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Status</strong></td>
+                            <td>Pending, Approved, Exempt</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reference Number</strong></td>
+                            <td>IRB/Ethics committee number</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Committee</strong></td>
+                            <td>Reviewing committee name</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Approval Date</strong></td>
+                            <td>Date approved</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="section-7-documents">Section 7: Documents</h2>
+
+                <h3 id="required-attachments">Required Attachments</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Document Type</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Ethics Documents</strong></td>
+                            <td>IRB approval, consent forms</td>
+                            <td>Upload</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Data Management Plan</strong></td>
+                            <td>Data handling procedures</td>
+                            <td>Upload</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Budget Justification</strong></td>
+                            <td>Detailed budget explanation</td>
+                            <td>Upload</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CV/Biosketch</strong></td>
+                            <td>PI and key personnel CVs</td>
+                            <td>Upload</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Letters of Support</strong></td>
+                            <td>Collaborator commitments</td>
+                            <td>Upload</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="upload-process">Upload Process</h3>
+                <ol>
+                    <li>Click <strong>Add Document</strong></li>
+                    <li>Select document type</li>
+                    <li>Upload file (PDF, DOC, DOCX)</li>
+                    <li>Add description</li>
+                    <li>Save</li>
+                </ol>
+
+                <h3 id="document-management">Document Management</h3>
+                <ul>
+                    <li>View uploaded files</li>
+                    <li>Replace documents</li>
+                    <li>Download documents</li>
+                    <li>Delete documents</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="section-8-summary">Section 8: Summary</h2>
+
+                <h3 id="impact-statement">Impact Statement</h3>
+                <p>Describe potential impact:</p>
+                <ul>
+                    <li>Scientific contribution</li>
+                    <li>Clinical implications</li>
+                    <li>Public health benefit</li>
+                    <li>Training opportunities</li>
+                </ul>
+
+                <h3 id="dissemination-plan">Dissemination Plan</h3>
+                <p>Outline results sharing:</p>
+                <ul>
+                    <li>Publication targets</li>
+                    <li>Conference presentations</li>
+                    <li>Community engagement</li>
+                    <li>Data sharing plans</li>
+                </ul>
+
+                <h3 id="related-publications">Related Publications</h3>
+                <p>Link existing publications:</p>
+                <ol>
+                    <li>Click <strong>Link Publication</strong></li>
+                    <li>Search library</li>
+                    <li>Select relevant publications</li>
+                    <li>Explain relevance</li>
+                </ol>
+
+                <h3 id="related-manuscripts">Related Manuscripts</h3>
+                <p>Link ongoing manuscripts:</p>
+                <ul>
+                    <li>Collaborative manuscripts in progress</li>
+                    <li>Related working papers</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="proposal-status">Proposal Status</h2>
+
+                <h3 id="status-workflow">Status Workflow</h3>
+                <pre><code>┌─────────┐     ┌───────────┐     ┌──────────────┐
+│  DRAFT  │────>│ SUBMITTED │────>│ UNDER_REVIEW │
+└─────────┘     └───────────┘     └──────┬───────┘
+                                         │
+           ┌─────────────────────────────┼─────────────────────┐
+           │                             │                     │
+           ▼                             ▼                     ▼
+    ┌──────────┐              ┌───────────────────┐     ┌──────────┐
+    │ APPROVED │              │ REVISION_REQUESTED│     │ REJECTED │
+    └──────────┘              └─────────┬─────────┘     └──────────┘
+                                        │
+                                        ▼
+                              ┌───────────────────┐
+                              │  Revise & Resubmit │
+                              └───────────────────┘</code></pre>
+
+                <h3 id="status-descriptions">Status Descriptions</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>DRAFT</strong></td>
+                            <td>Being prepared, not submitted</td>
+                        </tr>
+                        <tr>
+                            <td><strong>SUBMITTED</strong></td>
+                            <td>Sent for institutional review</td>
+                        </tr>
+                        <tr>
+                            <td><strong>UNDER_REVIEW</strong></td>
+                            <td>Being evaluated</td>
+                        </tr>
+                        <tr>
+                            <td><strong>APPROVED</strong></td>
+                            <td>Accepted, proceed with project</td>
+                        </tr>
+                        <tr>
+                            <td><strong>REJECTED</strong></td>
+                            <td>Not approved</td>
+                        </tr>
+                        <tr>
+                            <td><strong>REVISION_REQUESTED</strong></td>
+                            <td>Revisions required</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="viewing-editing-proposals">Viewing & Editing Proposals</h2>
+
+                <h3 id="proposal-list">Proposal List</h3>
+                <p>View all your proposals:</p>
+                <ul>
+                    <li>Filter by status</li>
+                    <li>Sort by date, title</li>
+                    <li>Quick actions</li>
+                </ul>
+
+                <h3 id="proposal-detail-view">Proposal Detail View</h3>
+                <p>Comprehensive view of proposal:</p>
+                <ul>
+                    <li>All sections displayed</li>
+                    <li>Attachment downloads</li>
+                    <li>Status history</li>
+                    <li>Reviewer feedback</li>
+                </ul>
+
+                <h3 id="editing-draft-proposals">Editing Draft Proposals</h3>
+                <ol>
+                    <li>Open proposal</li>
+                    <li>Click <strong>Edit</strong></li>
+                    <li>Modify sections</li>
+                    <li>Save changes</li>
+                </ol>
+
+                <div class="info-box" style="background: #fef3c7; border-left: 4px solid #f59e0b;">
+                    <strong>⚠️ Submitted Proposals</strong>
+                    <p>Submitted proposals cannot be edited. Contact admin if changes needed.</p>
+                </div>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="liaison-communication">Liaison Communication</h2>
+
+                <h3 id="email-thread-system">Email Thread System</h3>
+                <p>Communicate with reviewers:</p>
+                <ol>
+                    <li>Navigate to <strong>Proposals → Liaison</strong></li>
+                    <li>View active threads</li>
+                    <li>Compose responses</li>
+                    <li>Track communication history</li>
+                </ol>
+
+                <h3 id="thread-features">Thread Features</h3>
+                <ul>
+                    <li>Threaded conversations</li>
+                    <li>Attachment support</li>
+                    <li>Read receipts</li>
+                    <li>Notification alerts</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="best-practices">Best Practices</h2>
+
+                <h3 id="writing-proposals">Writing Proposals</h3>
+                <ol>
+                    <li>Start with clear objectives</li>
+                    <li>Ensure methodology matches goals</li>
+                    <li>Justify budget thoroughly</li>
+                    <li>Address ethics proactively</li>
+                    <li>Review before submission</li>
+                </ol>
+
+                <h3 id="team-building">Team Building</h3>
+                <ol>
+                    <li>Identify expertise gaps</li>
+                    <li>Use ORCID search for collaborators</li>
+                    <li>Define roles clearly</li>
+                    <li>Document contributions</li>
+                </ol>
+
+                <h3 id="timeline-management">Timeline Management</h3>
+                <ol>
+                    <li>Set realistic milestones</li>
+                    <li>Include buffer time</li>
+                    <li>Consider dependencies</li>
+                    <li>Update regularly</li>
+                </ol>
+
+                <h3 id="document-preparation">Document Preparation</h3>
+                <ol>
+                    <li>Prepare documents early</li>
+                    <li>Follow formatting guidelines</li>
+                    <li>Get all required signatures</li>
+                    <li>Keep copies organized</li>
+                </ol>
+            </section>
+
+            <div class="page-nav">
+                <a href="../publications/index.html" class="page-nav-prev">
+                    <span class="page-nav-label">← Previous</span>
+                    <span class="page-nav-title">Publication Management</span>
+                </a>
+                <a href="../orcid/index.html" class="page-nav-next">
+                    <span class="page-nav-label">Next →</span>
+                    <span class="page-nav-title">ORCID Integration</span>
+                </a>
+            </div>
+        </main>
+
+        <aside class="toc">
+            <h4>On this page</h4>
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li>
+                    <a href="#creating-a-proposal">Creating a Proposal</a>
+                    <ul>
+                        <li><a href="#starting-a-new-proposal">Starting a New Proposal</a></li>
+                        <li><a href="#proposal-sections">Proposal Sections</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-1-basic-information">Section 1: Basic Information</a>
+                    <ul>
+                        <li><a href="#core-details">Core Details</a></li>
+                        <li><a href="#timeline">Timeline</a></li>
+                        <li><a href="#departments">Departments</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-2-research-team">Section 2: Research Team</a>
+                    <ul>
+                        <li><a href="#principal-investigator">Principal Investigator</a></li>
+                        <li><a href="#co-investigators">Co-Investigators</a></li>
+                        <li><a href="#team-roles">Team Roles</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-3-research-details">Section 3: Research Details</a>
+                    <ul>
+                        <li><a href="#research-areas">Research Areas</a></li>
+                        <li><a href="#research-objectives">Research Objectives</a></li>
+                        <li><a href="#methodology">Methodology</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-4-project-management">Section 4: Project Management</a>
+                    <ul>
+                        <li><a href="#milestones">Milestones</a></li>
+                        <li><a href="#deliverables">Deliverables</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-5-funding-budget">Section 5: Funding & Budget</a>
+                    <ul>
+                        <li><a href="#funding-information">Funding Information</a></li>
+                        <li><a href="#budget-categories">Budget Categories</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-6-ethical-considerations">Section 6: Ethical Considerations</a>
+                    <ul>
+                        <li><a href="#ethics-overview">Ethics Overview</a></li>
+                        <li><a href="#consent-procedures">Consent Procedures</a></li>
+                        <li><a href="#data-security">Data Security</a></li>
+                        <li><a href="#ethics-approval">Ethics Approval</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-7-documents">Section 7: Documents</a>
+                    <ul>
+                        <li><a href="#required-attachments">Required Attachments</a></li>
+                        <li><a href="#upload-process">Upload Process</a></li>
+                        <li><a href="#document-management">Document Management</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#section-8-summary">Section 8: Summary</a>
+                    <ul>
+                        <li><a href="#impact-statement">Impact Statement</a></li>
+                        <li><a href="#dissemination-plan">Dissemination Plan</a></li>
+                        <li><a href="#related-publications">Related Publications</a></li>
+                        <li><a href="#related-manuscripts">Related Manuscripts</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#proposal-status">Proposal Status</a>
+                    <ul>
+                        <li><a href="#status-workflow">Status Workflow</a></li>
+                        <li><a href="#status-descriptions">Status Descriptions</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#viewing-editing-proposals">Viewing & Editing Proposals</a>
+                    <ul>
+                        <li><a href="#proposal-list">Proposal List</a></li>
+                        <li><a href="#proposal-detail-view">Proposal Detail View</a></li>
+                        <li><a href="#editing-draft-proposals">Editing Draft Proposals</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#liaison-communication">Liaison Communication</a>
+                    <ul>
+                        <li><a href="#email-thread-system">Email Thread System</a></li>
+                        <li><a href="#thread-features">Thread Features</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#best-practices">Best Practices</a>
+                    <ul>
+                        <li><a href="#writing-proposals">Writing Proposals</a></li>
+                        <li><a href="#team-building">Team Building</a></li>
+                        <li><a href="#timeline-management">Timeline Management</a></li>
+                        <li><a href="#document-preparation">Document Preparation</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../../intro/index.html">Getting Started</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <li><a href="../../database/schema/index.html">Database Schema</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Modules</h4>
+                <ul>
+                    <li><a href="../../modules/researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../../modules/institution/index.html">Institution Portal</a></li>
+                    <li><a href="../../modules/foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../../modules/super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Features</h4>
+                <ul>
+                    <li><a href="../manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../publications/index.html">Publications</a></li>
+                    <li><a href="#">Proposals</a></li>
+                    <li><a href="../orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright 2026 HospitiumRIS. Built with Docusaurus.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll('.sidebar-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const section = this.parentElement;
+                const content = section.querySelector('.sidebar-content');
+                const icon = this.querySelector('.toggle-icon');
+                
+                section.classList.toggle('collapsed');
+                
+                if (section.classList.contains('collapsed')) {
+                    content.style.display = 'none';
+                    icon.textContent = '▶';
+                } else {
+                    content.style.display = 'block';
+                    icon.textContent = '▼';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

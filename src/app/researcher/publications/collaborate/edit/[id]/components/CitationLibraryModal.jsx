@@ -33,7 +33,13 @@ import {
   Book as BookIcon,
   Article as ArticleIcon,
   School as ConferenceIcon,
-  MenuBook as ChapterIcon
+  MenuBook as ChapterIcon,
+  Folder as FolderIcon,
+  FolderOpen as FolderOpenIcon,
+  ChevronRight as ChevronRightIcon,
+  ExpandMore as ExpandMoreIcon,
+  ViewList as ViewListIcon,
+  AccountTree as AccountTreeIcon
 } from '@mui/icons-material';
 
 const CitationLibraryModal = ({ 
@@ -49,11 +55,43 @@ const CitationLibraryModal = ({
   const [sortBy, setSortBy] = useState('title');
   const [sortOrder, setSortOrder] = useState('asc');
   
+  // View mode: 'all' or 'folders'
+  const [viewMode, setViewMode] = useState('all');
+  
+  // Folder state
+  const [folders, setFolders] = useState([]);
+  const [selectedFolder, setSelectedFolder] = useState(null);
+  const [folderPublications, setFolderPublications] = useState({});
+  const [expandedFolders, setExpandedFolders] = useState(new Set());
+  
   // Database state
   const [citations, setCitations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [totalCount, setTotalCount] = useState(0);
+
+  // Fetch library folders
+  useEffect(() => {
+    const fetchLibrary = async () => {
+      if (!open) return;
+      
+      try {
+        const response = await fetch('/api/publications/library');
+        const data = await response.json();
+        
+        if (data.success) {
+          setFolders(data.folders || []);
+          setFolderPublications(data.folderPublications || {});
+          console.log('Loaded folders:', data.folders);
+          console.log('Folder publications mapping:', data.folderPublications);
+        }
+      } catch (err) {
+        console.error('Error fetching library:', err);
+      }
+    };
+
+    fetchLibrary();
+  }, [open]);
 
   // Fetch citations from database
   useEffect(() => {
@@ -91,11 +129,40 @@ const CitationLibraryModal = ({
     fetchCitations();
   }, [open, searchTerm, selectedFilter]); // Refetch when search or filter changes
 
+  // Get publications in selected folder
+  const getPublicationsInFolder = (folderId) => {
+    const pubIds = folderPublications[folderId] || [];
+    return citations.filter(cit => pubIds.includes(cit.id));
+  };
+
+  // Toggle folder expansion
+  const toggleFolder = (folderId) => {
+    setExpandedFolders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(folderId)) {
+        newSet.delete(folderId);
+      } else {
+        newSet.add(folderId);
+      }
+      return newSet;
+    });
+  };
+
   // Filter and sort citations (now works with real database data)
   const filteredAndSortedCitations = useMemo(() => {
     if (!citations || citations.length === 0) return [];
     
     let filtered = [...citations];
+    
+    // Filter by folder if in folder view mode
+    if (viewMode === 'folders' && selectedFolder) {
+      const pubIds = folderPublications[selectedFolder] || [];
+      console.log('Selected folder:', selectedFolder);
+      console.log('Publication IDs in this folder:', pubIds);
+      console.log('Total citations available:', citations.length);
+      filtered = filtered.filter(cit => pubIds.includes(cit.id));
+      console.log('Filtered citations count:', filtered.length);
+    }
 
     // Client-side sorting (since we get pre-filtered data from API)
     filtered.sort((a, b) => {
@@ -177,6 +244,87 @@ const CitationLibraryModal = ({
     onClose();
   };
 
+  // Render folder tree recursively
+  const renderFolderTree = (folder, level = 0) => {
+    const hasChildren = folders.some(f => f.parent === folder.id);
+    const isExpanded = expandedFolders.has(folder.id);
+    const isSelected = selectedFolder === folder.id;
+    const pubCount = (folderPublications[folder.id] || []).length;
+
+    return (
+      <Box key={folder.id}>
+        <Box
+          onClick={() => setSelectedFolder(folder.id)}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            py: 1,
+            px: 1.5,
+            pl: 1.5 + level * 2,
+            cursor: 'pointer',
+            bgcolor: isSelected ? '#8b6cbc15' : 'transparent',
+            borderLeft: isSelected ? '3px solid #8b6cbc' : '3px solid transparent',
+            borderRadius: 1,
+            mb: 0.5,
+            '&:hover': {
+              bgcolor: isSelected ? '#8b6cbc15' : '#8b6cbc08'
+            }
+          }}
+        >
+          {hasChildren && (
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleFolder(folder.id);
+              }}
+              sx={{ p: 0, mr: 0.5 }}
+            >
+              {isExpanded ? (
+                <ExpandMoreIcon fontSize="small" />
+              ) : (
+                <ChevronRightIcon fontSize="small" />
+              )}
+            </IconButton>
+          )}
+          {!hasChildren && <Box sx={{ width: 24, mr: 0.5 }} />}
+          {isSelected ? (
+            <FolderOpenIcon sx={{ fontSize: 18, color: '#8b6cbc', mr: 1 }} />
+          ) : (
+            <FolderIcon sx={{ fontSize: 18, color: '#8b6cbc', mr: 1 }} />
+          )}
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              flex: 1,
+              fontWeight: isSelected ? 600 : 400,
+              fontSize: '0.875rem'
+            }}
+          >
+            {folder.name}
+          </Typography>
+          <Chip
+            label={pubCount}
+            size="small"
+            sx={{
+              height: 18,
+              fontSize: '0.7rem',
+              bgcolor: isSelected ? '#8b6cbc' : '#e0e0e0',
+              color: isSelected ? 'white' : '#666'
+            }}
+          />
+        </Box>
+        {hasChildren && isExpanded && (
+          <Box>
+            {folders
+              .filter(f => f.parent === folder.id)
+              .map(childFolder => renderFolderTree(childFolder, level + 1))}
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
   return (
     <Dialog
       open={open}
@@ -238,6 +386,51 @@ const CitationLibraryModal = ({
                 <CloseIcon />
               </IconButton>
             </Box>
+          </Box>
+
+          {/* View Mode Toggle */}
+          <Box sx={{ px: 3, pt: 2, pb: 1, borderBottom: '1px solid #f0f0f0' }}>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant={viewMode === 'all' ? 'contained' : 'outlined'}
+                startIcon={<ViewListIcon />}
+                onClick={() => {
+                  setViewMode('all');
+                  setSelectedFolder(null);
+                }}
+                sx={{
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  ...(viewMode === 'all' ? {
+                    bgcolor: '#8b6cbc',
+                    '&:hover': { bgcolor: '#7a5ba8' }
+                  } : {
+                    borderColor: '#ddd',
+                    color: '#666'
+                  })
+                }}
+              >
+                All Citations
+              </Button>
+              <Button
+                variant={viewMode === 'folders' ? 'contained' : 'outlined'}
+                startIcon={<AccountTreeIcon />}
+                onClick={() => setViewMode('folders')}
+                sx={{
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  ...(viewMode === 'folders' ? {
+                    bgcolor: '#8b6cbc',
+                    '&:hover': { bgcolor: '#7a5ba8' }
+                  } : {
+                    borderColor: '#ddd',
+                    color: '#666'
+                  })
+                }}
+              >
+                My Libraries ({folders.length})
+              </Button>
+            </Stack>
           </Box>
 
           {/* Search and Controls */}
@@ -310,8 +503,49 @@ const CitationLibraryModal = ({
             </Stack>
           </Box>
 
-          {/* Citations List */}
-          <Box sx={{ flexGrow: 1, overflow: 'auto', p: 3 }}>
+          {/* Main Content Area */}
+          <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex' }}>
+            {/* Folder Sidebar (only in folder view) */}
+            {viewMode === 'folders' && (
+              <Box sx={{ 
+                width: '280px', 
+                borderRight: '1px solid #e0e0e0',
+                display: 'flex',
+                flexDirection: 'column',
+                bgcolor: '#fafafa'
+              }}>
+                <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#333' }}>
+                    My Libraries
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {folders.length} folder(s)
+                  </Typography>
+                </Box>
+                <Box sx={{ flex: 1, overflow: 'auto', p: 1 }}>
+                  {folders.length === 0 ? (
+                    <Box sx={{ p: 2, textAlign: 'center' }}>
+                      <FolderIcon sx={{ fontSize: 40, color: '#ddd', mb: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        No folders yet
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Create folders in Manage Publications
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Box>
+                      {folders
+                        .filter(f => f.parent === null)
+                        .map(folder => renderFolderTree(folder))}
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            )}
+
+            {/* Citations List */}
+            <Box sx={{ flexGrow: 1, overflow: 'auto', p: 3 }}>
             {/* Error State */}
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
@@ -345,12 +579,17 @@ const CitationLibraryModal = ({
               }}>
                 <BookIcon sx={{ fontSize: 48, color: '#ddd', mb: 2 }} />
                 <Typography variant="h6" sx={{ mb: 1 }}>
-                  No citations found
+                  {viewMode === 'folders' && selectedFolder 
+                    ? 'No citations in this folder'
+                    : 'No citations found'
+                  }
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
-                  {searchTerm || selectedFilter !== 'all' 
-                    ? 'Try adjusting your search or filter criteria'
-                    : 'Your citation library is empty. Import some publications to get started.'
+                  {viewMode === 'folders' && !selectedFolder
+                    ? 'Select a folder from the left to view its citations'
+                    : searchTerm || selectedFilter !== 'all' 
+                      ? 'Try adjusting your search or filter criteria'
+                      : 'Your citation library is empty. Import some publications to get started.'
                   }
                 </Typography>
               </Box>
@@ -498,6 +737,7 @@ const CitationLibraryModal = ({
               ))}
               </Stack>
             )}
+            </Box>
           </Box>
 
           {/* Footer */}
@@ -510,7 +750,10 @@ const CitationLibraryModal = ({
             bgcolor: '#fafafa'
           }}>
             <Typography variant="body2" color="textSecondary">
-              {loading ? 'Loading...' : `${totalCount} citations in database • ${filteredAndSortedCitations.length} shown`}
+              {loading ? 'Loading...' : viewMode === 'folders' && selectedFolder
+                ? `${filteredAndSortedCitations.length} citation(s) in ${folders.find(f => f.id === selectedFolder)?.name || 'folder'}`
+                : `${totalCount} citations in database • ${filteredAndSortedCitations.length} shown`
+              }
             </Typography>
             <Button 
               onClick={onClose}

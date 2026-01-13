@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin Portal - HospitiumRIS Documentation</title>
+    <link rel="stylesheet" href="../../../styles.css">
+    <link rel="stylesheet" href="../../intro/intro.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="https://hospitium.hospitiumris.org/" class="logo">
+                <img src="../../../img/hospitium-logo.png" alt="HospitiumRIS Logo">
+            </a>
+           <a href="../../intro/index.html" class="nav-link">Documentation</a>
+        </div>
+        <div class="navbar-right">
+            <a href="https://github.com/hospitiumris/hospitiumris" target="_blank" class="github-link">GitHub ↗</a>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Getting Started
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../intro/index.html">Introduction</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <!-- <li><a href="../../getting-started/installation/index.html">Installation Guide</a></li> -->
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Database
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../database/schema/index.html">Schema Overview</a></li>
+                    
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Modules
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../institution/index.html">Institution Portal</a></li>
+                    <li><a href="../foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="#" class="active">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Features
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../features/manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../../features/publications/index.html">Publications</a></li>
+                    <li><a href="../../features/proposals/index.html">Proposals</a></li>
+                    <li><a href="../../features/orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="content">
+            <h1>Super Admin Portal</h1>
+            <p>The Super Admin Portal provides system-wide administrative capabilities for managing users, database operations, and platform configuration.</p>
+
+            <section class="doc-section">
+                <h2 id="dashboard-overview">Dashboard Overview</h2>
+                <p>The super admin dashboard displays:</p>
+                <ul>
+                    <li><strong>System Health</strong> - Server status, database connectivity</li>
+                    <li><strong>User Statistics</strong> - Total users by type and status</li>
+                    <li><strong>Recent Registrations</strong> - New user signups</li>
+                    <li><strong>System Alerts</strong> - Warnings and critical notifications</li>
+                    <li><strong>Quick Actions</strong> - Common administrative tasks</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="user-management">User Management</h2>
+
+                <h3 id="user-directory">User Directory</h3>
+                <p>Comprehensive view of all system users:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Name</strong></td>
+                            <td>User's full name</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Email</strong></td>
+                            <td>Email address</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Account Type</strong></td>
+                            <td>RESEARCHER, RESEARCH_ADMIN, FOUNDATION_ADMIN, SUPER_ADMIN</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status</strong></td>
+                            <td>PENDING, ACTIVE, INACTIVE, SUSPENDED</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ORCID</strong></td>
+                            <td>ORCID iD if linked</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Institution</strong></td>
+                            <td>Primary affiliation</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Created</strong></td>
+                            <td>Registration date</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Last Active</strong></td>
+                            <td>Last login timestamp</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="user-filtering">User Filtering</h3>
+                <p>Filter users by:</p>
+                <ul>
+                    <li>Account type</li>
+                    <li>Status</li>
+                    <li>Institution</li>
+                    <li>Registration date range</li>
+                    <li>ORCID verification status</li>
+                </ul>
+
+                <h3 id="user-actions">User Actions</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>View Details</strong></td>
+                            <td>Full user profile</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Edit User</strong></td>
+                            <td>Modify user information</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Change Status</strong></td>
+                            <td>Activate, deactivate, suspend</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reset Password</strong></td>
+                            <td>Send password reset</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Impersonate</strong></td>
+                            <td>Login as user (audit logged)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Delete User</strong></td>
+                            <td>Permanently remove (with confirmation)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="account-types">Account Types</h3>
+                <pre><code>┌─────────────────────────────────────────────────────────────┐
+│                     ACCOUNT HIERARCHY                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌─────────────────┐                                        │
+│  │   SUPER_ADMIN   │  ← Full system access                  │
+│  └────────┬────────┘                                        │
+│           │                                                  │
+│  ┌────────┴────────────────────────────────────┐            │
+│  │                                             │            │
+│  ▼                                             ▼            │
+│  ┌─────────────────┐              ┌─────────────────┐       │
+│  │ RESEARCH_ADMIN  │              │FOUNDATION_ADMIN │       │
+│  │ (Institution)   │              │  (Foundation)   │       │
+│  └────────┬────────┘              └────────┬────────┘       │
+│           │                                │                 │
+│           ▼                                ▼                 │
+│  ┌─────────────────┐              ┌─────────────────┐       │
+│  │   RESEARCHER    │              │   (Donors, etc) │       │
+│  └─────────────────┘              └─────────────────┘       │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+
+                <h3 id="bulk-operations">Bulk Operations</h3>
+                <p>Perform actions on multiple users:</p>
+                <ul>
+                    <li>Bulk status change</li>
+                    <li>Bulk email notification</li>
+                    <li>Export user list</li>
+                    <li>Bulk delete (with safeguards)</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="database-management">Database Management</h2>
+
+                <h3 id="database-statistics">Database Statistics</h3>
+                <p>View database health and metrics:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Total Tables</strong></td>
+                            <td>Number of database tables</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Records</strong></td>
+                            <td>Sum of all records</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Database Size</strong></td>
+                            <td>Storage utilization</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Connection Pool</strong></td>
+                            <td>Active connections</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="table-level-stats">Table-Level Stats</h3>
+                <p>Per-table information:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Table</th>
+                            <th>Records</th>
+                            <th>Size</th>
+                            <th>Last Modified</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>users</td>
+                            <td>1,234</td>
+                            <td>5.2 MB</td>
+                            <td>2 hours ago</td>
+                        </tr>
+                        <tr>
+                            <td>manuscripts</td>
+                            <td>567</td>
+                            <td>45.1 MB</td>
+                            <td>10 minutes ago</td>
+                        </tr>
+                        <tr>
+                            <td>publications</td>
+                            <td>8,901</td>
+                            <td>12.3 MB</td>
+                            <td>1 hour ago</td>
+                        </tr>
+                        <tr>
+                            <td>proposals</td>
+                            <td>234</td>
+                            <td>8.7 MB</td>
+                            <td>3 hours ago</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="database-backup">Database Backup</h3>
+                <p>Create and manage backups:</p>
+                <ol>
+                    <li>
+                        <strong>Manual Backup</strong>
+                        <ul>
+                            <li>On-demand full backup</li>
+                            <li>Table-specific backups</li>
+                            <li>Download backup files</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Scheduled Backups</strong>
+                        <ul>
+                            <li>Daily automatic backups</li>
+                            <li>Weekly full backups</li>
+                            <li>Retention policy configuration</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Backup Storage</strong>
+                        <ul>
+                            <li>Local storage</li>
+                            <li>Cloud storage integration</li>
+                            <li>Off-site replication</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h3 id="backup-history">Backup History</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Backup</th>
+                            <th>Date</th>
+                            <th>Size</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>backup_20241217_0300.sql</td>
+                            <td>Dec 17, 2024</td>
+                            <td>125 MB</td>
+                            <td>Scheduled</td>
+                            <td>Complete</td>
+                        </tr>
+                        <tr>
+                            <td>backup_20241216_0300.sql</td>
+                            <td>Dec 16, 2024</td>
+                            <td>124 MB</td>
+                            <td>Scheduled</td>
+                            <td>Complete</td>
+                        </tr>
+                        <tr>
+                            <td>backup_manual_20241215.sql</td>
+                            <td>Dec 15, 2024</td>
+                            <td>123 MB</td>
+                            <td>Manual</td>
+                            <td>Complete</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="data-export">Data Export</h3>
+                <p>Export data for analysis or migration:</p>
+                <ul>
+                    <li><strong>Format Options</strong>: SQL, CSV, JSON</li>
+                    <li><strong>Scope Options</strong>: Full database, selected tables, filtered data</li>
+                    <li><strong>Compression</strong>: Gzip, Zip, None</li>
+                </ul>
+
+                <h3 id="database-maintenance">Database Maintenance</h3>
+                <p>Routine maintenance operations:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Operation</th>
+                            <th>Description</th>
+                            <th>Frequency</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Vacuum</strong></td>
+                            <td>Reclaim storage</td>
+                            <td>Weekly</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Analyze</strong></td>
+                            <td>Update statistics</td>
+                            <td>Daily</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reindex</strong></td>
+                            <td>Rebuild indexes</td>
+                            <td>Monthly</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Health Check</strong></td>
+                            <td>Verify integrity</td>
+                            <td>Daily</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="info-box" style="background: #fef3c7; border-left: 4px solid #f59e0b;">
+                    <strong>⚠️ Maintenance Windows</strong>
+                    <p>Schedule maintenance during low-usage periods to minimize disruption.</p>
+                </div>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="system-configuration">System Configuration</h2>
+
+                <h3 id="application-settings">Application Settings</h3>
+                <p>Configure system-wide settings:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Setting</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Site Name</strong></td>
+                            <td>Application display name</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Site URL</strong></td>
+                            <td>Base URL for links</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Admin Email</strong></td>
+                            <td>System admin contact</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Session Timeout</strong></td>
+                            <td>Auto-logout duration</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Max Upload Size</strong></td>
+                            <td>File upload limit</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="email-configuration">Email Configuration</h3>
+                <p>SMTP and notification settings:</p>
+                <pre><code>SMTP Host: smtp.example.com
+SMTP Port: 587
+SMTP User: notifications@hospitiumris.com
+From Name: HospitiumRIS
+From Email: noreply@hospitiumris.com</code></pre>
+
+                <h3 id="orcid-integration">ORCID Integration</h3>
+                <p>Manage ORCID API settings:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Setting</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Client ID</strong></td>
+                            <td>ORCID API client identifier</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Client Secret</strong></td>
+                            <td>API secret (masked)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Redirect URI</strong></td>
+                            <td>OAuth callback URL</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Environment</strong></td>
+                            <td>Sandbox or Production</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="security-settings">Security Settings</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Setting</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Password Policy</strong></td>
+                            <td>Minimum requirements</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Session Duration</strong></td>
+                            <td>Login session length</td>
+                        </tr>
+                        <tr>
+                            <td><strong>2FA Requirement</strong></td>
+                            <td>Two-factor authentication</td>
+                        </tr>
+                        <tr>
+                            <td><strong>IP Whitelist</strong></td>
+                            <td>Allowed admin IPs</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Rate Limiting</strong></td>
+                            <td>API request limits</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="audit-logs">Audit Logs</h2>
+
+                <h3 id="activity-logging">Activity Logging</h3>
+                <p>Track all administrative actions:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Log Entry</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Timestamp</strong></td>
+                            <td>When the action occurred</td>
+                        </tr>
+                        <tr>
+                            <td><strong>User</strong></td>
+                            <td>Who performed the action</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Action</strong></td>
+                            <td>What was done</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Target</strong></td>
+                            <td>Affected resource</td>
+                        </tr>
+                        <tr>
+                            <td><strong>IP Address</strong></td>
+                            <td>Origin IP</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Details</strong></td>
+                            <td>Additional context</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="log-types">Log Types</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Examples</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Authentication</strong></td>
+                            <td>Login, logout, failed attempts</td>
+                        </tr>
+                        <tr>
+                            <td><strong>User Management</strong></td>
+                            <td>Create, update, delete users</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Data Access</strong></td>
+                            <td>View, export, download</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Configuration</strong></td>
+                            <td>Settings changes</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Database</strong></td>
+                            <td>Backup, restore, maintenance</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="log-search-filter">Log Search & Filter</h3>
+                <p>Query logs by:</p>
+                <ul>
+                    <li>Date range</li>
+                    <li>User</li>
+                    <li>Action type</li>
+                    <li>Target resource</li>
+                    <li>IP address</li>
+                </ul>
+
+                <h3 id="log-retention">Log Retention</h3>
+                <ul>
+                    <li><strong>Default</strong>: 90 days</li>
+                    <li><strong>Extended</strong>: 1 year (configurable)</li>
+                    <li><strong>Archived</strong>: Compressed long-term storage</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="system-monitoring">System Monitoring</h2>
+
+                <h3 id="health-dashboard">Health Dashboard</h3>
+                <p>Real-time system monitoring:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Indicator</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>🟢 <strong>Application</strong></td>
+                            <td>Healthy</td>
+                            <td>v0.1.0 running</td>
+                        </tr>
+                        <tr>
+                            <td>🟢 <strong>Database</strong></td>
+                            <td>Connected</td>
+                            <td>PostgreSQL 14</td>
+                        </tr>
+                        <tr>
+                            <td>🟢 <strong>Email Service</strong></td>
+                            <td>Available</td>
+                            <td>SMTP connected</td>
+                        </tr>
+                        <tr>
+                            <td>🟡 <strong>Storage</strong></td>
+                            <td>Warning</td>
+                            <td>75% utilized</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="performance-metrics">Performance Metrics</h3>
+                <ul>
+                    <li>Request response times</li>
+                    <li>API endpoint latency</li>
+                    <li>Database query performance</li>
+                    <li>Memory utilization</li>
+                    <li>CPU usage</li>
+                </ul>
+
+                <h3 id="alerts-notifications">Alerts & Notifications</h3>
+                <p>Configure alerts for:</p>
+                <ul>
+                    <li>Server downtime</li>
+                    <li>Database connection failures</li>
+                    <li>High error rates</li>
+                    <li>Storage thresholds</li>
+                    <li>Unusual activity patterns</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="workflow-summary">Workflow Summary</h2>
+                <pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                    SUPER ADMIN WORKFLOW                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     │
+│  │   Monitor    │────>│   Manage     │────>│   Configure  │     │
+│  │   System     │     │    Users     │     │   Settings   │     │
+│  └──────────────┘     └──────────────┘     └──────────────┘     │
+│          │                    │                    │             │
+│          ▼                    ▼                    ▼             │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     │
+│  │    Check     │     │   Review     │     │   Perform    │     │
+│  │    Health    │     │    Logs      │     │  Maintenance │     │
+│  └──────────────┘     └──────────────┘     └──────────────┘     │
+│          │                    │                    │             │
+│          ▼                    ▼                    ▼             │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     │
+│  │   Respond    │     │   Backup     │     │   Update     │     │
+│  │  to Alerts   │     │   Database   │     │   System     │     │
+│  └──────────────┘     └──────────────┘     └──────────────┘     │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="security-best-practices">Security Best Practices</h2>
+
+                <h3 id="access-control">Access Control</h3>
+                <ol>
+                    <li>Limit super admin accounts</li>
+                    <li>Use strong, unique passwords</li>
+                    <li>Enable two-factor authentication</li>
+                    <li>Review access regularly</li>
+                    <li>Revoke unused accounts promptly</li>
+                </ol>
+
+                <h3 id="data-protection">Data Protection</h3>
+                <ol>
+                    <li>Regular backup verification</li>
+                    <li>Encrypt sensitive data</li>
+                    <li>Secure backup storage</li>
+                    <li>Test restore procedures</li>
+                    <li>Document recovery plans</li>
+                </ol>
+
+                <h3 id="monitoring">Monitoring</h3>
+                <ol>
+                    <li>Review audit logs daily</li>
+                    <li>Set up automated alerts</li>
+                    <li>Monitor for unusual patterns</li>
+                    <li>Track failed login attempts</li>
+                    <li>Regular security audits</li>
+                </ol>
+
+                <h3 id="incident-response">Incident Response</h3>
+                <ol>
+                    <li>Documented response procedures</li>
+                    <li>Escalation paths defined</li>
+                    <li>Communication templates ready</li>
+                    <li>Regular drills conducted</li>
+                    <li>Post-incident reviews</li>
+                </ol>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="emergency-procedures">Emergency Procedures</h2>
+
+                <h3 id="database-recovery">Database Recovery</h3>
+                <pre><code class="language-bash"># Stop the application
+npm run stop
+
+# Restore from backup
+pg_restore -U hospitiumuser -d hospitiumris backup_file.sql
+
+# Restart the application
+npm start</code></pre>
+
+                <h3 id="user-lockout-recovery">User Lockout Recovery</h3>
+                <ol>
+                    <li>Access database directly</li>
+                    <li>Reset user status to ACTIVE</li>
+                    <li>Clear failed login attempts</li>
+                    <li>Reset password if needed</li>
+                    <li>Notify user of restoration</li>
+                </ol>
+
+                <h3 id="system-recovery">System Recovery</h3>
+                <ol>
+                    <li>Check server status</li>
+                    <li>Verify database connectivity</li>
+                    <li>Review error logs</li>
+                    <li>Restart services if needed</li>
+                    <li>Verify functionality</li>
+                    <li>Communicate status to users</li>
+                </ol>
+            </section>
+
+            <div class="page-nav">
+                <a href="../foundation/index.html" class="page-nav-prev">
+                    <span class="page-nav-label">← Previous</span>
+                    <span class="page-nav-title">Foundation Portal</span>
+                </a>
+                <a href="../../features/manuscripts/index.html" class="page-nav-next">
+                    <span class="page-nav-label">Next →</span>
+                    <span class="page-nav-title">Collaborative Manuscripts</span>
+                </a>
+            </div>
+        </main>
+
+        <aside class="toc">
+            <h4>On this page</h4>
+            <ul>
+                <li><a href="#dashboard-overview">Dashboard Overview</a></li>
+                <li>
+                    <a href="#user-management">User Management</a>
+                    <ul>
+                        <li><a href="#user-directory">User Directory</a></li>
+                        <li><a href="#user-filtering">User Filtering</a></li>
+                        <li><a href="#user-actions">User Actions</a></li>
+                        <li><a href="#account-types">Account Types</a></li>
+                        <li><a href="#bulk-operations">Bulk Operations</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#database-management">Database Management</a>
+                    <ul>
+                        <li><a href="#database-statistics">Database Statistics</a></li>
+                        <li><a href="#table-level-stats">Table-Level Stats</a></li>
+                        <li><a href="#database-backup">Database Backup</a></li>
+                        <li><a href="#backup-history">Backup History</a></li>
+                        <li><a href="#data-export">Data Export</a></li>
+                        <li><a href="#database-maintenance">Database Maintenance</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#system-configuration">System Configuration</a>
+                    <ul>
+                        <li><a href="#application-settings">Application Settings</a></li>
+                        <li><a href="#email-configuration">Email Configuration</a></li>
+                        <li><a href="#orcid-integration">ORCID Integration</a></li>
+                        <li><a href="#security-settings">Security Settings</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#audit-logs">Audit Logs</a>
+                    <ul>
+                        <li><a href="#activity-logging">Activity Logging</a></li>
+                        <li><a href="#log-types">Log Types</a></li>
+                        <li><a href="#log-search-filter">Log Search & Filter</a></li>
+                        <li><a href="#log-retention">Log Retention</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#system-monitoring">System Monitoring</a>
+                    <ul>
+                        <li><a href="#health-dashboard">Health Dashboard</a></li>
+                        <li><a href="#performance-metrics">Performance Metrics</a></li>
+                        <li><a href="#alerts-notifications">Alerts & Notifications</a></li>
+                    </ul>
+                </li>
+                <li><a href="#workflow-summary">Workflow Summary</a></li>
+                <li>
+                    <a href="#security-best-practices">Security Best Practices</a>
+                    <ul>
+                        <li><a href="#access-control">Access Control</a></li>
+                        <li><a href="#data-protection">Data Protection</a></li>
+                        <li><a href="#monitoring">Monitoring</a></li>
+                        <li><a href="#incident-response">Incident Response</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#emergency-procedures">Emergency Procedures</a>
+                    <ul>
+                        <li><a href="#database-recovery">Database Recovery</a></li>
+                        <li><a href="#user-lockout-recovery">User Lockout Recovery</a></li>
+                        <li><a href="#system-recovery">System Recovery</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../../intro/index.html">Getting Started</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <li><a href="../../database/schema/index.html">Database Schema</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Modules</h4>
+                <ul>
+                    <li><a href="../researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../institution/index.html">Institution Portal</a></li>
+                    <li><a href="../foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="#">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Features</h4>
+                <ul>
+                    <li><a href="../../features/manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../../features/publications/index.html">Publications</a></li>
+                    <li><a href="../../features/proposals/index.html">Proposals</a></li>
+                    <li><a href="../../features/orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright 2026 HospitiumRIS. Built with Docusaurus.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll('.sidebar-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const section = this.parentElement;
+                const content = section.querySelector('.sidebar-content');
+                const icon = this.querySelector('.toggle-icon');
+                
+                section.classList.toggle('collapsed');
+                
+                if (section.classList.contains('collapsed')) {
+                    content.style.display = 'none';
+                    icon.textContent = '▶';
+                } else {
+                    content.style.display = 'block';
+                    icon.textContent = '▼';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

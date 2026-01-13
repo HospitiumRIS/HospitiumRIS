@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Requirements - HospitiumRIS Documentation</title>
+    <link rel="stylesheet" href="../../../styles.css">
+    <link rel="stylesheet" href="../../intro/intro.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="https://hospitium.hospitiumris.org/" class="logo">
+                <img src="../../../img/hospitium-logo.png" alt="HospitiumRIS Logo">
+            </a>
+           <a href="../../intro/index.html" class="nav-link">Documentation</a>
+        </div>
+        <div class="navbar-right">
+            <a href="https://github.com/hospitiumris/hospitiumris" target="_blank" class="github-link">GitHub ↗</a>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Getting Started
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../intro/index.html">Introduction</a></li>
+                    <li><a href="#" class="active">System Requirements</a></li>
+                    <!-- <li><a href="../installation/index.html">Installation Guide</a></li> -->
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Database
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../database/schema/index.html">Schema Overview</a></li>
+                    
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Modules
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../modules/researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../../modules/institution/index.html">Institution Portal</a></li>
+                    <li><a href="../../modules/foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../../modules/super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Features
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../features/manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../../features/publications/index.html">Publications</a></li>
+                    <li><a href="../../features/proposals/index.html">Proposals</a></li>
+                    <li><a href="../../features/orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="docs-content">
+            <div class="content-wrapper">
+                <h1>System Requirements</h1>
+                <p>Before installing HospitiumRIS, ensure your environment meets the following minimum requirements.</p>
+
+                <section class="doc-section">
+                    <h2 id="hardware-requirements">Hardware Requirements</h2>
+                    
+                    <h3 id="minimum-developmenttesting">Minimum (Development/Testing)</h3>
+                    <table class="feature-table">
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Requirement</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>CPU</strong></td>
+                                <td>2 cores</td>
+                            </tr>
+                            <tr>
+                                <td><strong>RAM</strong></td>
+                                <td>4 GB</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Storage</strong></td>
+                                <td>20 GB SSD</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Network</strong></td>
+                                <td>Stable internet connection</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 id="recommended-production">Recommended (Production)</h3>
+                    <table class="feature-table">
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Requirement</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>CPU</strong></td>
+                                <td>4+ cores</td>
+                            </tr>
+                            <tr>
+                                <td><strong>RAM</strong></td>
+                                <td>8 GB or more</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Storage</strong></td>
+                                <td>50+ GB SSD</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Network</strong></td>
+                                <td>1 Gbps connection</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="info-box" style="background: #eff6ff; border-left-color: #3b82f6;">
+                        <strong>ℹ️ Scaling Considerations</strong>
+                        <p>For large institutions with 100+ active researchers, consider:</p>
+                        <ul>
+                            <li>8+ CPU cores</li>
+                            <li>16+ GB RAM</li>
+                            <li>Load balancing for high availability</li>
+                            <li>Dedicated database server</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section class="doc-section">
+                    <h2 id="software-requirements">Software Requirements</h2>
+                    
+                    <h3 id="operating-system">Operating System</h3>
+                    <p>HospitiumRIS is compatible with:</p>
+                    <ul>
+                        <li><strong>Windows</strong> 10/11 or Windows Server 2019+</li>
+                        <li><strong>Linux</strong> Ubuntu 20.04+, Debian 11+, CentOS 8+, RHEL 8+</li>
+                        <li><strong>macOS</strong> 12 (Monterey) or later</li>
+                    </ul>
+
+                    <h3 id="runtime-environment">Runtime Environment</h3>
+                    <table class="feature-table">
+                        <thead>
+                            <tr>
+                                <th>Software</th>
+                                <th>Version</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Node.js</strong></td>
+                                <td>18.x or 20.x LTS</td>
+                                <td>Required - <a href="https://nodejs.org" target="_blank">Download</a></td>
+                            </tr>
+                            <tr>
+                                <td><strong>npm</strong></td>
+                                <td>9.x or later</td>
+                                <td>Comes with Node.js</td>
+                            </tr>
+                            <tr>
+                                <td><strong>PostgreSQL</strong></td>
+                                <td>14 or later</td>
+                                <td>Primary database</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 id="nodejs-installation">Node.js Installation</h3>
+                    <p><strong>Windows:</strong></p>
+                    <pre><code># Using winget
+winget install OpenJS.NodeJS.LTS
+
+# Or download from nodejs.org</code></pre>
+
+                    <p><strong>Linux (Ubuntu/Debian):</strong></p>
+                    <pre><code>curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs</code></pre>
+
+                    <p><strong>macOS:</strong></p>
+                    <pre><code># Using Homebrew
+brew install node@20</code></pre>
+
+                    <h3 id="postgresql-installation">PostgreSQL Installation</h3>
+                    <p><strong>Windows:</strong></p>
+                    <pre><code># Using winget
+winget install PostgreSQL.PostgreSQL
+
+# Or download from postgresql.org</code></pre>
+
+                    <p><strong>Linux (Ubuntu/Debian):</strong></p>
+                    <pre><code>sudo apt update
+sudo apt install postgresql postgresql-contrib
+sudo systemctl start postgresql
+sudo systemctl enable postgresql</code></pre>
+
+                    <p><strong>macOS:</strong></p>
+                    <pre><code>brew install postgresql@14
+brew services start postgresql@14</code></pre>
+                </section>
+
+                <section class="doc-section">
+                    <h2 id="browser-compatibility">Browser Compatibility</h2>
+                    <p>HospitiumRIS is tested and supported on:</p>
+                    <table class="feature-table">
+                        <thead>
+                            <tr>
+                                <th>Browser</th>
+                                <th>Minimum Version</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Google Chrome</strong></td>
+                                <td>100+</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Mozilla Firefox</strong></td>
+                                <td>100+</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Microsoft Edge</strong></td>
+                                <td>100+</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Safari</strong></td>
+                                <td>15+</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="info-box" style="background: #fef3c7; border-left-color: #f59e0b;">
+                        <strong>⚠️ Internet Explorer</strong>
+                        <p>Internet Explorer is <strong>not supported</strong>. Please use a modern browser.</p>
+                    </div>
+                </section>
+
+                <section class="doc-section">
+                    <h2 id="network-requirements">Network Requirements</h2>
+                    
+                    <h3 id="ports">Ports</h3>
+                    <table class="feature-table">
+                        <thead>
+                            <tr>
+                                <th>Port</th>
+                                <th>Service</th>
+                                <th>Required</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>3000</strong></td>
+                                <td>Next.js Development Server</td>
+                                <td>Development only</td>
+                            </tr>
+                            <tr>
+                                <td><strong>5432</strong></td>
+                                <td>PostgreSQL Database</td>
+                                <td>Yes</td>
+                            </tr>
+                            <tr>
+                                <td><strong>80</strong></td>
+                                <td>HTTP (Production)</td>
+                                <td>Production only</td>
+                            </tr>
+                            <tr>
+                                <td><strong>443</strong></td>
+                                <td>HTTPS (Production)</td>
+                                <td>Production only</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 id="external-services">External Services</h3>
+                    <p>HospitiumRIS integrates with external services that require internet access:</p>
+                    <table class="feature-table">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Purpose</th>
+                                <th>Required</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>ORCID API</strong></td>
+                                <td>Researcher authentication & profile sync</td>
+                                <td>Optional but recommended</td>
+                            </tr>
+                            <tr>
+                                <td><strong>PubMed/CrossRef/OpenAlex</strong></td>
+                                <td>Publication import</td>
+                                <td>Optional</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Zotero</strong></td>
+                                <td>Reference management integration</td>
+                                <td>Optional</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="doc-section">
+                    <h2 id="orcid-api-setup-optional">ORCID API Setup (Optional)</h2>
+                    <p>For ORCID integration, you'll need:</p>
+                    <ol>
+                        <li>Register for an ORCID Member API account at <a href="https://orcid.org" target="_blank">orcid.org</a></li>
+                        <li>Create an API application to obtain:
+                            <ul>
+                                <li>Client ID</li>
+                                <li>Client Secret</li>
+                            </ul>
+                        </li>
+                        <li>Configure redirect URIs for your deployment</li>
+                    </ol>
+
+                    <div class="info-box">
+                        <strong>💡 Sandbox vs Production</strong>
+                        <p>Use ORCID Sandbox credentials for development/testing and Production credentials for live deployments.</p>
+                    </div>
+                </section>
+
+                <section class="doc-section">
+                    <h2 id="email-service-optional">Email Service (Optional)</h2>
+                    <p>For email notifications (activation emails, invitations), configure one of:</p>
+                    <ul>
+                        <li>SMTP server credentials</li>
+                        <li>SendGrid API</li>
+                        <li>Amazon SES</li>
+                        <li>Other transactional email service</li>
+                    </ul>
+                </section>
+
+                <section class="doc-section">
+                    <h2 id="pre-installation-checklist">Pre-Installation Checklist</h2>
+                    <p>Before proceeding to installation, verify:</p>
+                    <ul style="list-style: none; padding-left: 0;">
+                        <li>☐ Node.js 18+ is installed (<code>node --version</code>)</li>
+                        <li>☐ npm 9+ is installed (<code>npm --version</code>)</li>
+                        <li>☐ PostgreSQL 14+ is running</li>
+                        <li>☐ You have database admin credentials</li>
+                        <li>☐ Ports 3000 (dev) or 80/443 (prod) are available</li>
+                        <li>☐ (Optional) ORCID API credentials are ready</li>
+                        <li>☐ (Optional) SMTP/Email service credentials are ready</li>
+                    </ul>
+
+                    <hr>
+
+                    <p>Ready to install? Continue to the <a href="../installation/index.html">Installation Guide</a>.</p>
+                </section>
+
+                <nav class="page-nav">
+                    <a href="../../intro/index.html" class="page-nav-prev">
+                        <span class="page-nav-label">← Previous</span>
+                        <span class="page-nav-title">Introduction</span>
+                    </a>
+                    <a href="../installation/index.html" class="page-nav-next">
+                        <span class="page-nav-label">Next →</span>
+                        <span class="page-nav-title">Installation Guide</span>
+                    </a>
+                </nav>
+            </div>
+
+            <aside class="toc">
+                <h4>On this page</h4>
+                <ul>
+                    <li><a href="#hardware-requirements">Hardware Requirements</a>
+                        <ul>
+                            <li><a href="#minimum-developmenttesting">Minimum (Development/Testing)</a></li>
+                            <li><a href="#recommended-production">Recommended (Production)</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#software-requirements">Software Requirements</a>
+                        <ul>
+                            <li><a href="#operating-system">Operating System</a></li>
+                            <li><a href="#runtime-environment">Runtime Environment</a></li>
+                            <li><a href="#nodejs-installation">Node.js Installation</a></li>
+                            <li><a href="#postgresql-installation">PostgreSQL Installation</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#browser-compatibility">Browser Compatibility</a></li>
+                    <li><a href="#network-requirements">Network Requirements</a>
+                        <ul>
+                            <li><a href="#ports">Ports</a></li>
+                            <li><a href="#external-services">External Services</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#orcid-api-setup-optional">ORCID API Setup (Optional)</a></li>
+                    <li><a href="#email-service-optional">Email Service (Optional)</a></li>
+                    <li><a href="#pre-installation-checklist">Pre-Installation Checklist</a></li>
+                </ul>
+            </aside>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../../intro/index.html">Getting Started</a></li>
+                    <li><a href="#">System Requirements</a></li>
+                    <li><a href="../../database/schema/index.html">Database Schema</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Modules</h4>
+                <ul>
+                    <li><a href="../../modules/researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../../modules/institution/index.html">Institution Portal</a></li>
+                    <li><a href="../../modules/foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../../modules/super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Features</h4>
+                <ul>
+                    <li><a href="../../features/manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../../features/publications/index.html">Publications</a></li>
+                    <li><a href="../../features/proposals/index.html">Proposals</a></li>
+                    <li><a href="../../features/orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            Copyright 2026 HospitiumRIS. Built with <a href="#">Docusaurus</a>.
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggles = document.querySelectorAll('.sidebar-toggle');
+            
+            toggles.forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    const section = this.parentElement;
+                    const content = section.querySelector('.sidebar-content');
+                    const icon = this.querySelector('.toggle-icon');
+                    
+                    section.classList.toggle('collapsed');
+                    
+                    if (section.classList.contains('collapsed')) {
+                        content.style.maxHeight = '0';
+                        icon.textContent = '▶';
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                        icon.textContent = '▼';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

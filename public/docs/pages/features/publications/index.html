@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publication Management - HospitiumRIS Documentation</title>
+    <link rel="stylesheet" href="../../../styles.css">
+    <link rel="stylesheet" href="../../intro/intro.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="https://hospitium.hospitiumris.org/" class="logo">
+                <img src="../../../img/hospitium-logo.png" alt="HospitiumRIS Logo">
+            </a>
+           <a href="../../intro/index.html" class="nav-link">Documentation</a>
+        </div>
+        <div class="navbar-right">
+            <a href="https://github.com/hospitiumris/hospitiumris" target="_blank" class="github-link">GitHub ↗</a>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Getting Started
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../intro/index.html">Introduction</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <!-- <li><a href="../../getting-started/installation/index.html">Installation Guide</a></li> -->
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Database
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../database/schema/index.html">Schema Overview</a></li>
+                    
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Modules
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../modules/researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../../modules/institution/index.html">Institution Portal</a></li>
+                    <li><a href="../../modules/foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../../modules/super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Features
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="#" class="active">Publications</a></li>
+                    <li><a href="../proposals/index.html">Proposals</a></li>
+                    <li><a href="../orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="content">
+            <h1>Publication Management</h1>
+            <p>HospitiumRIS provides comprehensive tools for importing, organizing, and managing research publications from multiple sources.</p>
+
+            <section class="doc-section">
+                <h2 id="overview">Overview</h2>
+                <p>The publication management system helps researchers:</p>
+                <ul>
+                    <li>Import publications from external databases</li>
+                    <li>Organize with a folder-based library</li>
+                    <li>Track citations and impact metrics</li>
+                    <li>Generate bibliographies for manuscripts</li>
+                    <li>Share publications on researcher profiles</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="importing-publications">Importing Publications</h2>
+
+                <h3 id="supported-sources">Supported Sources</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Description</th>
+                            <th>Auto-Update</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>PubMed</strong></td>
+                            <td>NIH biomedical literature</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CrossRef</strong></td>
+                            <td>DOI-based metadata</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><strong>OpenAlex</strong></td>
+                            <td>Open scholarly data</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Zotero</strong></td>
+                            <td>Personal reference manager</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><strong>BibTeX</strong></td>
+                            <td>Standard bibliography format</td>
+                            <td>❌</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Manual</strong></td>
+                            <td>Manual entry</td>
+                            <td>❌</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="pubmed-import">PubMed Import</h3>
+                <ol>
+                    <li>Go to <strong>Publications → Import</strong></li>
+                    <li>Select <strong>PubMed</strong> source</li>
+                    <li>Search by:
+                        <ul>
+                            <li>Author name</li>
+                            <li>Title keywords</li>
+                            <li>PMID</li>
+                            <li>Date range</li>
+                        </ul>
+                    </li>
+                    <li>Review results</li>
+                    <li>Select publications to import</li>
+                    <li>Click <strong>Import Selected</strong></li>
+                </ol>
+
+                <h3 id="crossref-import">CrossRef Import</h3>
+                <ol>
+                    <li>Select <strong>CrossRef</strong> source</li>
+                    <li>Search by:
+                        <ul>
+                            <li>DOI</li>
+                            <li>Title</li>
+                            <li>Author</li>
+                        </ul>
+                    </li>
+                    <li>Metadata retrieved automatically</li>
+                    <li>Import selected publications</li>
+                </ol>
+
+                <h3 id="openalex-import">OpenAlex Import</h3>
+                <ol>
+                    <li>Select <strong>OpenAlex</strong> source</li>
+                    <li>Search by:
+                        <ul>
+                            <li>ORCID iD</li>
+                            <li>Author name</li>
+                            <li>Institution</li>
+                        </ul>
+                    </li>
+                    <li>Import comprehensive publication data</li>
+                </ol>
+
+                <h3 id="zotero-integration">Zotero Integration</h3>
+                <p>Connect your Zotero library:</p>
+                <ol>
+                    <li>Go to <strong>Settings → Zotero</strong></li>
+                    <li>Enter Zotero API Key</li>
+                    <li>Enter User ID</li>
+                    <li>Save connection</li>
+                    <li>Sync publications from Zotero</li>
+                </ol>
+
+                <h4 id="getting-zotero-api-key">Getting Zotero API Key</h4>
+                <ol>
+                    <li>Log in to <a href="https://www.zotero.org" target="_blank">zotero.org</a></li>
+                    <li>Go to <strong>Settings → Feeds/API</strong></li>
+                    <li>Create new API key</li>
+                    <li>Copy key to HospitiumRIS</li>
+                </ol>
+
+                <h3 id="bibtex-import">BibTeX Import</h3>
+                <p>Import from BibTeX files:</p>
+                <ol>
+                    <li>Select <strong>BibTeX</strong> source</li>
+                    <li>Upload <code>.bib</code> file or paste content</li>
+                    <li>Parse entries</li>
+                    <li>Review and map fields</li>
+                    <li>Import publications</li>
+                </ol>
+
+                <h3 id="manual-entry">Manual Entry</h3>
+                <p>Create publications manually:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Title</strong></td>
+                            <td>✅</td>
+                            <td>Publication title</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Authors</strong></td>
+                            <td>✅</td>
+                            <td>Author list</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Year</strong></td>
+                            <td>✅</td>
+                            <td>Publication year</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Type</strong></td>
+                            <td>✅</td>
+                            <td>Article, Review, etc.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Journal</strong></td>
+                            <td>❌</td>
+                            <td>Journal name</td>
+                        </tr>
+                        <tr>
+                            <td><strong>DOI</strong></td>
+                            <td>❌</td>
+                            <td>Digital Object Identifier</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Abstract</strong></td>
+                            <td>❌</td>
+                            <td>Publication abstract</td>
+                        </tr>
+                        <tr>
+                            <td><strong>URL</strong></td>
+                            <td>❌</td>
+                            <td>Link to publication</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Keywords</strong></td>
+                            <td>❌</td>
+                            <td>Subject keywords</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="publication-library">Publication Library</h2>
+
+                <h3 id="library-structure">Library Structure</h3>
+                <pre><code>📁 My Library
+├── 📁 Research Projects
+│   ├── 📁 Project Alpha
+│   │   ├── 📄 Publication 1
+│   │   └── 📄 Publication 2
+│   └── 📁 Project Beta
+│       └── 📄 Publication 3
+├── 📁 Reviews
+│   └── 📄 Review Paper 1
+└── 📁 Collaborations
+    └── 📄 Collab Publication 1</code></pre>
+
+                <h3 id="creating-folders">Creating Folders</h3>
+                <ol>
+                    <li>Click <strong>New Folder</strong> in library</li>
+                    <li>Enter folder name</li>
+                    <li>Choose parent folder (or root)</li>
+                    <li>Folders can be nested</li>
+                </ol>
+
+                <h3 id="managing-folders">Managing Folders</h3>
+                <ul>
+                    <li><strong>Rename</strong> - Change folder name</li>
+                    <li><strong>Move</strong> - Relocate to different parent</li>
+                    <li><strong>Delete</strong> - Remove folder (publications moved to root)</li>
+                    <li><strong>Expand/Collapse</strong> - Toggle folder visibility</li>
+                </ul>
+
+                <h3 id="moving-publications">Moving Publications</h3>
+                <ol>
+                    <li>Select publication(s)</li>
+                    <li>Drag to target folder, or</li>
+                    <li>Use <strong>Move to Folder</strong> action</li>
+                    <li>Publications can exist in one folder</li>
+                </ol>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="publication-details">Publication Details</h2>
+
+                <h3 id="viewing-details">Viewing Details</h3>
+                <p>Click any publication to see:</p>
+                <pre><code>┌─────────────────────────────────────────────────────────────────┐
+│ Title: Machine Learning in Healthcare                          │
+├─────────────────────────────────────────────────────────────────┤
+│ Authors: Smith, J., Johnson, A., Williams, B.                   │
+│ Journal: Nature Medicine                                        │
+│ Year: 2024        Volume: 30        Pages: 145-156              │
+│ DOI: 10.1038/nm.12345                                           │
+├─────────────────────────────────────────────────────────────────┤
+│ Abstract:                                                        │
+│ This study presents a novel approach to...                       │
+├─────────────────────────────────────────────────────────────────┤
+│ Keywords: machine learning, healthcare, AI, diagnostics         │
+├─────────────────────────────────────────────────────────────────┤
+│ 📊 Citations: 45    📅 Added: Jan 15, 2024                      │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+
+                <h3 id="editing-publications">Editing Publications</h3>
+                <ol>
+                    <li>Click publication</li>
+                    <li>Click <strong>Edit</strong></li>
+                    <li>Modify fields</li>
+                    <li>Save changes</li>
+                </ol>
+
+                <h3 id="deleting-publications">Deleting Publications</h3>
+                <ol>
+                    <li>Select publication(s)</li>
+                    <li>Click <strong>Delete</strong></li>
+                    <li>Confirm deletion</li>
+                    <li>Publication removed from library</li>
+                </ol>
+
+                <div class="info-box" style="background: #fef3c7; border-left: 4px solid #f59e0b;">
+                    <strong>⚠️ Citation Impact</strong>
+                    <p>Deleting publications removes them from manuscripts. Consider archiving instead.</p>
+                </div>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="search-filter">Search & Filter</h2>
+
+                <h3 id="search-options">Search Options</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Title</strong></td>
+                            <td>Search in titles</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Author</strong></td>
+                            <td>Search by author name</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Keywords</strong></td>
+                            <td>Search by keywords</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Abstract</strong></td>
+                            <td>Search in abstracts</td>
+                        </tr>
+                        <tr>
+                            <td><strong>DOI</strong></td>
+                            <td>Exact DOI match</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Year</strong></td>
+                            <td>Publication year</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="filters">Filters</h3>
+                <ul>
+                    <li><strong>Publication Type</strong> - Article, Review, Conference, etc.</li>
+                    <li><strong>Year Range</strong> - From year to year</li>
+                    <li><strong>Source</strong> - Import source</li>
+                    <li><strong>Folder</strong> - Specific folder only</li>
+                    <li><strong>Has DOI</strong> - With/without DOI</li>
+                </ul>
+
+                <h3 id="sorting">Sorting</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sort By</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Date Added</strong></td>
+                            <td>When imported (default)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Title</strong></td>
+                            <td>Alphabetical</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Year</strong></td>
+                            <td>Publication year</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Citations</strong></td>
+                            <td>Citation count</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Author</strong></td>
+                            <td>First author name</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="citation-tracking">Citation Tracking</h2>
+
+                <h3 id="citation-sources">Citation Sources</h3>
+                <p>Citation counts retrieved from:</p>
+                <ul>
+                    <li>CrossRef</li>
+                    <li>OpenAlex</li>
+                    <li>Google Scholar (manual)</li>
+                </ul>
+
+                <h3 id="citation-metrics">Citation Metrics</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Total Citations</strong></td>
+                            <td>Sum of all citations</td>
+                        </tr>
+                        <tr>
+                            <td><strong>H-Index</strong></td>
+                            <td>Impact indicator</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Average Citations</strong></td>
+                            <td>Mean per publication</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Citation Velocity</strong></td>
+                            <td>Citations per year</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="citation-updates">Citation Updates</h3>
+                <ul>
+                    <li>Automatic refresh weekly</li>
+                    <li>Manual refresh available</li>
+                    <li>Historical tracking</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="export-options">Export Options</h2>
+
+                <h3 id="export-formats">Export Formats</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Format</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>BibTeX</strong></td>
+                            <td>LaTeX, reference managers</td>
+                        </tr>
+                        <tr>
+                            <td><strong>RIS</strong></td>
+                            <td>EndNote, Zotero</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CSV</strong></td>
+                            <td>Spreadsheets</td>
+                        </tr>
+                        <tr>
+                            <td><strong>JSON</strong></td>
+                            <td>API, data analysis</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="export-scope">Export Scope</h3>
+                <ul>
+                    <li>Single publication</li>
+                    <li>Selected publications</li>
+                    <li>Entire folder</li>
+                    <li>Full library</li>
+                </ul>
+
+                <h3 id="export-fields">Export Fields</h3>
+                <p>Select fields to export:</p>
+                <ul>
+                    <li>Title</li>
+                    <li>Authors</li>
+                    <li>Year</li>
+                    <li>Journal</li>
+                    <li>DOI</li>
+                    <li>Abstract</li>
+                    <li>Keywords</li>
+                    <li>URL</li>
+                    <li>Citation count</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="using-publications-in-manuscripts">Using Publications in Manuscripts</h2>
+
+                <h3 id="citing-publications">Citing Publications</h3>
+                <ol>
+                    <li>Open manuscript editor</li>
+                    <li>Click <strong>Insert Citation</strong></li>
+                    <li>Search library</li>
+                    <li>Select publication</li>
+                    <li>Citation inserted</li>
+                </ol>
+
+                <h3 id="citation-linking">Citation Linking</h3>
+                <pre><code>[1] Smith et al., 2024   →   References section
+      ↓
+Auto-generated bibliography entry</code></pre>
+
+                <h3 id="citation-styles">Citation Styles</h3>
+                <p>Choose from:</p>
+                <ul>
+                    <li>APA 7th Edition</li>
+                    <li>MLA 9th Edition</li>
+                    <li>Chicago 17th Edition</li>
+                    <li>Harvard</li>
+                    <li>IEEE</li>
+                    <li>Vancouver</li>
+                    <li>Custom styles</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="public-profile-display">Public Profile Display</h2>
+
+                <h3 id="visibility-settings">Visibility Settings</h3>
+                <p>Control which publications appear on public profile:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Setting</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Show All</strong></td>
+                            <td>Display complete list</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Published Only</strong></td>
+                            <td>Only published status</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Selected</strong></td>
+                            <td>Manually curated list</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Hide All</strong></td>
+                            <td>No publications shown</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="profile-display">Profile Display</h3>
+                <p>Publications on profile show:</p>
+                <ul>
+                    <li>Title (linked)</li>
+                    <li>Authors</li>
+                    <li>Journal</li>
+                    <li>Year</li>
+                    <li>DOI link</li>
+                    <li>Citation count</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="deduplication">Deduplication</h2>
+
+                <h3 id="automatic-detection">Automatic Detection</h3>
+                <p>System detects duplicates by:</p>
+                <ul>
+                    <li>DOI matching</li>
+                    <li>Title similarity</li>
+                    <li>Author matching</li>
+                    <li>Year comparison</li>
+                </ul>
+
+                <h3 id="merge-duplicates">Merge Duplicates</h3>
+                <ol>
+                    <li>Review detected duplicates</li>
+                    <li>Choose master record</li>
+                    <li>Merge metadata</li>
+                    <li>Remove duplicate</li>
+                </ol>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="best-practices">Best Practices</h2>
+
+                <h3 id="import-strategy">Import Strategy</h3>
+                <ol>
+                    <li>Start with ORCID-linked sources</li>
+                    <li>Import by project/topic</li>
+                    <li>Review metadata accuracy</li>
+                    <li>Organize immediately</li>
+                </ol>
+
+                <h3 id="library-organization">Library Organization</h3>
+                <ol>
+                    <li>Create logical folder structure</li>
+                    <li>Use consistent naming</li>
+                    <li>Regular cleanup</li>
+                    <li>Archive old projects</li>
+                </ol>
+
+                <h3 id="metadata-quality">Metadata Quality</h3>
+                <ol>
+                    <li>Verify imported data</li>
+                    <li>Add missing abstracts</li>
+                    <li>Correct author names</li>
+                    <li>Update citation counts</li>
+                </ol>
+
+                <h3 id="citation-management">Citation Management</h3>
+                <ol>
+                    <li>Import before writing</li>
+                    <li>Cite as you write</li>
+                    <li>Verify citations</li>
+                    <li>Update before submission</li>
+                </ol>
+            </section>
+
+            <div class="page-nav">
+                <a href="../manuscripts/index.html" class="page-nav-prev">
+                    <span class="page-nav-label">← Previous</span>
+                    <span class="page-nav-title">Collaborative Manuscripts</span>
+                </a>
+                <a href="../proposals/index.html" class="page-nav-next">
+                    <span class="page-nav-label">Next →</span>
+                    <span class="page-nav-title">Research Proposals</span>
+                </a>
+            </div>
+        </main>
+
+        <aside class="toc">
+            <h4>On this page</h4>
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li>
+                    <a href="#importing-publications">Importing Publications</a>
+                    <ul>
+                        <li><a href="#supported-sources">Supported Sources</a></li>
+                        <li><a href="#pubmed-import">PubMed Import</a></li>
+                        <li><a href="#crossref-import">CrossRef Import</a></li>
+                        <li><a href="#openalex-import">OpenAlex Import</a></li>
+                        <li><a href="#zotero-integration">Zotero Integration</a></li>
+                        <li><a href="#bibtex-import">BibTeX Import</a></li>
+                        <li><a href="#manual-entry">Manual Entry</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#publication-library">Publication Library</a>
+                    <ul>
+                        <li><a href="#library-structure">Library Structure</a></li>
+                        <li><a href="#creating-folders">Creating Folders</a></li>
+                        <li><a href="#managing-folders">Managing Folders</a></li>
+                        <li><a href="#moving-publications">Moving Publications</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#publication-details">Publication Details</a>
+                    <ul>
+                        <li><a href="#viewing-details">Viewing Details</a></li>
+                        <li><a href="#editing-publications">Editing Publications</a></li>
+                        <li><a href="#deleting-publications">Deleting Publications</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#search-filter">Search & Filter</a>
+                    <ul>
+                        <li><a href="#search-options">Search Options</a></li>
+                        <li><a href="#filters">Filters</a></li>
+                        <li><a href="#sorting">Sorting</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#citation-tracking">Citation Tracking</a>
+                    <ul>
+                        <li><a href="#citation-sources">Citation Sources</a></li>
+                        <li><a href="#citation-metrics">Citation Metrics</a></li>
+                        <li><a href="#citation-updates">Citation Updates</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#export-options">Export Options</a>
+                    <ul>
+                        <li><a href="#export-formats">Export Formats</a></li>
+                        <li><a href="#export-scope">Export Scope</a></li>
+                        <li><a href="#export-fields">Export Fields</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#using-publications-in-manuscripts">Using Publications in Manuscripts</a>
+                    <ul>
+                        <li><a href="#citing-publications">Citing Publications</a></li>
+                        <li><a href="#citation-linking">Citation Linking</a></li>
+                        <li><a href="#citation-styles">Citation Styles</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#public-profile-display">Public Profile Display</a>
+                    <ul>
+                        <li><a href="#visibility-settings">Visibility Settings</a></li>
+                        <li><a href="#profile-display">Profile Display</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#deduplication">Deduplication</a>
+                    <ul>
+                        <li><a href="#automatic-detection">Automatic Detection</a></li>
+                        <li><a href="#merge-duplicates">Merge Duplicates</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#best-practices">Best Practices</a>
+                    <ul>
+                        <li><a href="#import-strategy">Import Strategy</a></li>
+                        <li><a href="#library-organization">Library Organization</a></li>
+                        <li><a href="#metadata-quality">Metadata Quality</a></li>
+                        <li><a href="#citation-management">Citation Management</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../../intro/index.html">Getting Started</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <li><a href="../../database/schema/index.html">Database Schema</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Modules</h4>
+                <ul>
+                    <li><a href="../../modules/researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../../modules/institution/index.html">Institution Portal</a></li>
+                    <li><a href="../../modules/foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../../modules/super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Features</h4>
+                <ul>
+                    <li><a href="../manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="#">Publications</a></li>
+                    <li><a href="../proposals/index.html">Proposals</a></li>
+                    <li><a href="../orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright 2026 HospitiumRIS. Built with Docusaurus.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll('.sidebar-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const section = this.parentElement;
+                const content = section.querySelector('.sidebar-content');
+                const icon = this.querySelector('.toggle-icon');
+                
+                section.classList.toggle('collapsed');
+                
+                if (section.classList.contains('collapsed')) {
+                    content.style.display = 'none';
+                    icon.textContent = '▶';
+                } else {
+                    content.style.display = 'block';
+                    icon.textContent = '▼';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

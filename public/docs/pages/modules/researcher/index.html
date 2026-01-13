@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Researcher Portal - HospitiumRIS Documentation</title>
+    <link rel="stylesheet" href="../../../styles.css">
+    <link rel="stylesheet" href="../../intro/intro.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="https://hospitium.hospitiumris.org/" class="logo">
+                <img src="../../../img/hospitium-logo.png" alt="HospitiumRIS Logo">
+            </a>
+            <a href="../../intro/index.html" class="nav-link">Documentation</a>
+        </div>
+        <div class="navbar-right">
+            <a href="https://github.com/hospitiumris/hospitiumris" target="_blank" class="github-link">GitHub ↗</a>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Getting Started
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../intro/index.html">Introduction</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <!-- <li><a href="../../getting-started/installation/index.html">Installation Guide</a></li> -->
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Database
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../database/schema/index.html">Schema Overview</a></li>
+                   
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Modules
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="#" class="active">Researcher Portal</a></li>
+                    <li><a href="../institution/index.html">Institution Portal</a></li>
+                    <li><a href="../foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Features
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../features/manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../../features/publications/index.html">Publications</a></li>
+                    <li><a href="../../features/proposals/index.html">Proposals</a></li>
+                    <li><a href="../../features/orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="content">
+            <h1>Researcher Portal</h1>
+            <p>The Researcher Portal is the primary workspace for individual researchers. It provides comprehensive tools for managing research activities, publications, manuscripts, proposals, and analytics.</p>
+
+            <section class="doc-section">
+                <h2 id="dashboard-overview">Dashboard Overview</h2>
+                <p>Upon login, researchers are greeted with a personalized dashboard displaying:</p>
+                <ul>
+                    <li><strong>Quick Stats</strong> - Publications, manuscripts, proposals, collaborations</li>
+                    <li><strong>Recent Activity</strong> - Latest updates on manuscripts and collaborations</li>
+                    <li><strong>Research Metrics</strong> - H-Index, citation counts, publication trends</li>
+                    <li><strong>Notifications</strong> - Collaboration invitations, comment mentions, updates</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="research-profile">Research Profile</h2>
+
+                <h3 id="profile-management">Profile Management</h3>
+                <p>Researchers can build comprehensive profiles including:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Academic Title</strong></td>
+                            <td>Professor, Dr., PhD Candidate, etc.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Department</strong></td>
+                            <td>Primary department affiliation</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Biography</strong></td>
+                            <td>Research background and experience</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Research Interests</strong></td>
+                            <td>Areas of focus and expertise</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Specializations</strong></td>
+                            <td>Specific research specializations (tags)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Keywords</strong></td>
+                            <td>Research keywords for discoverability</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="professional-links">Professional Links</h3>
+                <p>Connect external profiles for enhanced visibility:</p>
+                <ul>
+                    <li><strong>Google Scholar Profile</strong></li>
+                    <li><strong>ORCID iD</strong> (verified)</li>
+                </ul>
+
+                <h3 id="research-metrics">Research Metrics</h3>
+                <p>The profile displays key metrics automatically calculated from publications:</p>
+                <ul>
+                    <li><strong>H-Index</strong> - Research impact indicator</li>
+                    <li><strong>Total Citations</strong> - Cumulative citation count</li>
+                    <li><strong>Publications Count</strong> - Total publications</li>
+                    <li><strong>Collaboration Count</strong> - Active collaborations</li>
+                </ul>
+
+                <h3 id="public-profile">Public Profile</h3>
+                <p>Each researcher has a shareable public profile at:</p>
+                <pre><code>/researcher/profile/[user-id]</code></pre>
+                <p>The public profile displays:</p>
+                <ul>
+                    <li>Professional avatar with initials</li>
+                    <li>ORCID verification badge</li>
+                    <li>Department and institution</li>
+                    <li>Research biography and interests</li>
+                    <li>Specializations and keywords</li>
+                    <li>Publication list with citations</li>
+                    <li>Manuscript status overview</li>
+                    <li>Research metrics sidebar</li>
+                    <li>Professional links</li>
+                    <li>ORCID employment and education history</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="publications-module">Publications Module</h2>
+
+                <h3 id="import-publications">Import Publications</h3>
+                <p>Import publications from multiple sources:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>PubMed</strong></td>
+                            <td>NIH biomedical literature database</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CrossRef</strong></td>
+                            <td>DOI-based publication metadata</td>
+                        </tr>
+                        <tr>
+                            <td><strong>OpenAlex</strong></td>
+                            <td>Open scholarly metadata</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Zotero</strong></td>
+                            <td>Personal reference library sync</td>
+                        </tr>
+                        <tr>
+                            <td><strong>BibTeX</strong></td>
+                            <td>Manual .bib file import</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Manual Entry</strong></td>
+                            <td>Create publications manually</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="publication-library">Publication Library</h3>
+                <p>Organize publications with:</p>
+                <ul>
+                    <li><strong>Folder System</strong> - Create hierarchical folders</li>
+                    <li><strong>Search & Filter</strong> - Find publications by title, author, year</li>
+                    <li><strong>Bulk Actions</strong> - Move, delete, or export multiple items</li>
+                    <li><strong>Citation Export</strong> - Generate citations in various formats</li>
+                </ul>
+
+                <h3 id="publication-details">Publication Details</h3>
+                <p>Each publication record includes:</p>
+                <ul>
+                    <li>Title and abstract</li>
+                    <li>Authors list</li>
+                    <li>Journal/Conference name</li>
+                    <li>DOI and URL links</li>
+                    <li>Publication year and date</li>
+                    <li>Citation count</li>
+                    <li>Keywords and field</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="manuscripts-module">Manuscripts Module</h2>
+
+                <h3 id="collaborative-editing">Collaborative Editing</h3>
+                <p>Create and collaborate on manuscripts with:</p>
+                <ul>
+                    <li><strong>Rich Text Editor</strong> - Full-featured TipTap editor</li>
+                    <li><strong>Real-time Collaboration</strong> - Multiple editors simultaneously</li>
+                    <li><strong>Track Changes</strong> - Accept/reject changes workflow</li>
+                    <li><strong>Version History</strong> - Restore previous versions</li>
+                    <li><strong>Inline Comments</strong> - Contextual feedback and discussions</li>
+                </ul>
+
+                <h3 id="manuscript-types">Manuscript Types</h3>
+                <p>Support for various document types:</p>
+                <ul>
+                    <li>Research Articles</li>
+                    <li>Review Papers</li>
+                    <li>Conference Papers</li>
+                    <li>Grant Proposals</li>
+                    <li>Technical Reports</li>
+                </ul>
+
+                <h3 id="collaboration-roles">Collaboration Roles</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Role</th>
+                            <th>Permissions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Owner</strong></td>
+                            <td>Full control, can delete manuscript</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Admin</strong></td>
+                            <td>Can manage collaborators, edit, comment</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Editor</strong></td>
+                            <td>Can edit content, track changes</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Contributor</strong></td>
+                            <td>Can suggest changes, comment</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reviewer</strong></td>
+                            <td>Read-only with commenting</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="inviting-collaborators">Inviting Collaborators</h3>
+                <p>Invite collaborators via:</p>
+                <ol>
+                    <li><strong>ORCID Search</strong> - Find researchers by ORCID iD</li>
+                    <li><strong>Email Invitation</strong> - Invite by email address</li>
+                    <li><strong>System Users</strong> - Search registered users</li>
+                </ol>
+
+                <h3 id="citation-management">Citation Management</h3>
+                <p>Manage references within manuscripts:</p>
+                <ul>
+                    <li>Insert citations from library</li>
+                    <li>Import new references inline</li>
+                    <li>Auto-format bibliography</li>
+                    <li>Multiple citation styles (APA, MLA, Chicago, etc.)</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="proposals-module">Proposals Module</h2>
+
+                <h3 id="create-proposals">Create Proposals</h3>
+                <p>Structured proposal creation with sections for:</p>
+                <ol>
+                    <li>
+                        <strong>Basic Information</strong>
+                        <ul>
+                            <li>Title and abstract</li>
+                            <li>Principal Investigator (with ORCID lookup)</li>
+                            <li>Co-Investigators</li>
+                            <li>Departments involved</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Research Details</strong>
+                        <ul>
+                            <li>Research areas and objectives</li>
+                            <li>Methodology</li>
+                            <li>Timeline (start/end dates)</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Project Management</strong>
+                        <ul>
+                            <li>Milestones with deadlines</li>
+                            <li>Deliverables list</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Funding Information</strong>
+                        <ul>
+                            <li>Funding source</li>
+                            <li>Grant number</li>
+                            <li>Budget amount</li>
+                            <li>Funding institution</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Ethical Considerations</strong>
+                        <ul>
+                            <li>Ethics overview</li>
+                            <li>Consent procedures</li>
+                            <li>Data security measures</li>
+                            <li>Ethics approval status</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>File Attachments</strong>
+                        <ul>
+                            <li>Ethics documents</li>
+                            <li>Data management plans</li>
+                            <li>Supporting files</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h3 id="proposal-statuses">Proposal Statuses</h3>
+                <p>Track proposals through the lifecycle:</p>
+                <pre><code>DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED/REJECTED/REVISION_REQUESTED</code></pre>
+
+                <h3 id="liaison-communication">Liaison Communication</h3>
+                <p>Email thread system for proposal-related communications with reviewers and administrators.</p>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="analytics-module">Analytics Module</h2>
+
+                <h3 id="publication-analytics">Publication Analytics</h3>
+                <ul>
+                    <li>Publication trends over time</li>
+                    <li>Citations per year</li>
+                    <li>Top cited publications</li>
+                    <li>Co-author network visualization</li>
+                </ul>
+
+                <h3 id="impact-analytics">Impact Analytics</h3>
+                <ul>
+                    <li>H-Index progression</li>
+                    <li>Citation velocity</li>
+                    <li>Field impact comparison</li>
+                    <li>Collaboration metrics</li>
+                </ul>
+
+                <h3 id="progress-tracking">Progress Tracking</h3>
+                <ul>
+                    <li>Manuscript completion status</li>
+                    <li>Proposal success rates</li>
+                    <li>Research output trends</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="settings">Settings</h2>
+
+                <h3 id="account-settings">Account Settings</h3>
+                <ul>
+                    <li>Password management</li>
+                    <li>Email notifications preferences</li>
+                    <li>Profile visibility settings</li>
+                </ul>
+
+                <h3 id="integration-settings">Integration Settings</h3>
+                <ul>
+                    <li><strong>Zotero Connection</strong> - API key configuration</li>
+                    <li><strong>ORCID Sync</strong> - Refresh profile data</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="workflow-summary">Workflow Summary</h2>
+                <pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                     RESEARCHER WORKFLOW                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────┐     ┌──────────┐     ┌──────────┐                 │
+│  │  Import  │────>│  Manage  │────>│   Cite   │                 │
+│  │Publications│   │  Library │     │in Manuscript│              │
+│  └──────────┘     └──────────┘     └──────────┘                 │
+│                                           │                      │
+│                                           ▼                      │
+│  ┌──────────┐     ┌──────────┐     ┌──────────┐                 │
+│  │  Create  │<────│  Invite  │<────│Collaborate│                │
+│  │Manuscript│     │ Authors  │     │ & Edit   │                 │
+│  └──────────┘     └──────────┘     └──────────┘                 │
+│                                           │                      │
+│                                           ▼                      │
+│  ┌──────────┐     ┌──────────┐     ┌──────────┐                 │
+│  │  Track   │────>│  Review  │────>│ Publish  │                 │
+│  │ Changes  │     │ Versions │     │ Submit   │                 │
+│  └──────────┘     └──────────┘     └──────────┘                 │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Shortcut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>Ctrl+S</code></td>
+                            <td>Save manuscript</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+Z</code></td>
+                            <td>Undo</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+Y</code></td>
+                            <td>Redo</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+B</code></td>
+                            <td>Bold</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+I</code></td>
+                            <td>Italic</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+U</code></td>
+                            <td>Underline</td>
+                        </tr>
+                        <tr>
+                            <td><code>Ctrl+K</code></td>
+                            <td>Insert link</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <div class="page-nav">
+                <a href="../../database/schema/index.html" class="page-nav-prev">
+                    <span class="page-nav-label">← Previous</span>
+                    <span class="page-nav-title">Database Schema</span>
+                </a>
+                <a href="../institution/index.html" class="page-nav-next">
+                    <span class="page-nav-label">Next →</span>
+                    <span class="page-nav-title">Institution Portal</span>
+                </a>
+            </div>
+        </main>
+
+        <aside class="toc">
+            <h4>On this page</h4>
+            <ul>
+                <li><a href="#dashboard-overview">Dashboard Overview</a></li>
+                <li>
+                    <a href="#research-profile">Research Profile</a>
+                    <ul>
+                        <li><a href="#profile-management">Profile Management</a></li>
+                        <li><a href="#professional-links">Professional Links</a></li>
+                        <li><a href="#research-metrics">Research Metrics</a></li>
+                        <li><a href="#public-profile">Public Profile</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#publications-module">Publications Module</a>
+                    <ul>
+                        <li><a href="#import-publications">Import Publications</a></li>
+                        <li><a href="#publication-library">Publication Library</a></li>
+                        <li><a href="#publication-details">Publication Details</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#manuscripts-module">Manuscripts Module</a>
+                    <ul>
+                        <li><a href="#collaborative-editing">Collaborative Editing</a></li>
+                        <li><a href="#manuscript-types">Manuscript Types</a></li>
+                        <li><a href="#collaboration-roles">Collaboration Roles</a></li>
+                        <li><a href="#inviting-collaborators">Inviting Collaborators</a></li>
+                        <li><a href="#citation-management">Citation Management</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#proposals-module">Proposals Module</a>
+                    <ul>
+                        <li><a href="#create-proposals">Create Proposals</a></li>
+                        <li><a href="#proposal-statuses">Proposal Statuses</a></li>
+                        <li><a href="#liaison-communication">Liaison Communication</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#analytics-module">Analytics Module</a>
+                    <ul>
+                        <li><a href="#publication-analytics">Publication Analytics</a></li>
+                        <li><a href="#impact-analytics">Impact Analytics</a></li>
+                        <li><a href="#progress-tracking">Progress Tracking</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#settings">Settings</a>
+                    <ul>
+                        <li><a href="#account-settings">Account Settings</a></li>
+                        <li><a href="#integration-settings">Integration Settings</a></li>
+                    </ul>
+                </li>
+                <li><a href="#workflow-summary">Workflow Summary</a></li>
+                <li><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+            </ul>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../../intro/index.html">Getting Started</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <li><a href="../../database/schema/index.html">Database Schema</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Modules</h4>
+                <ul>
+                    <li><a href="#">Researcher Portal</a></li>
+                    <li><a href="../institution/index.html">Institution Portal</a></li>
+                    <li><a href="../foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Features</h4>
+                <ul>
+                    <li><a href="../../features/manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../../features/publications/index.html">Publications</a></li>
+                    <li><a href="../../features/proposals/index.html">Proposals</a></li>
+                    <li><a href="../../features/orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright 2026 HospitiumRIS. Built with Docusaurus.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll('.sidebar-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const section = this.parentElement;
+                const content = section.querySelector('.sidebar-content');
+                const icon = this.querySelector('.toggle-icon');
+                
+                section.classList.toggle('collapsed');
+                
+                if (section.classList.contains('collapsed')) {
+                    content.style.display = 'none';
+                    icon.textContent = '▶';
+                } else {
+                    content.style.display = 'block';
+                    icon.textContent = '▼';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

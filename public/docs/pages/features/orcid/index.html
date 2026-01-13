@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORCID Integration - HospitiumRIS Documentation</title>
+    <link rel="stylesheet" href="../../../styles.css">
+    <link rel="stylesheet" href="../../intro/intro.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="https://hospitium.hospitiumris.org/" class="logo">
+                <img src="../../../img/hospitium-logo.png" alt="HospitiumRIS Logo">
+            </a>
+            <a href="../../intro/index.html" class="nav-link">Documentation</a>
+        </div>
+        <div class="navbar-right">
+            <a href="https://github.com/hospitiumris/hospitiumris" target="_blank" class="github-link">GitHub ↗</a>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Getting Started
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../intro/index.html">Introduction</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <!-- <li><a href="../../getting-started/installation/index.html">Installation Guide</a></li> -->
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Database
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../database/schema/index.html">Schema Overview</a></li>
+                    
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Modules
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../modules/researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../../modules/institution/index.html">Institution Portal</a></li>
+                    <li><a href="../../modules/foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../../modules/super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Features
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../publications/index.html">Publications</a></li>
+                    <li><a href="../proposals/index.html">Proposals</a></li>
+                    <li><a href="#" class="active">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="content">
+            <h1>ORCID Integration</h1>
+            <p>HospitiumRIS provides deep integration with ORCID (Open Researcher and Contributor ID) for researcher authentication, profile enrichment, and collaborator discovery.</p>
+
+            <section class="doc-section">
+                <h2 id="what-is-orcid">What is ORCID?</h2>
+                <p>ORCID provides a persistent digital identifier that distinguishes researchers from every other researcher. It connects research to researchers by linking ORCID iDs to professional information, affiliations, grants, publications, and more.</p>
+
+                <div class="info-box" style="background: #dbeafe; border-left: 4px solid #3b82f6;">
+                    <strong>ℹ️ ORCID Benefits</strong>
+                    <ul>
+                        <li>🆔 Unique researcher identification</li>
+                        <li>📊 Automatic profile data sync</li>
+                        <li>🔍 Easy collaborator discovery</li>
+                        <li>✅ Verified credentials</li>
+                        <li>🌐 Global research community</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="registration-with-orcid">Registration with ORCID</h2>
+
+                <h3 id="creating-an-account">Creating an Account</h3>
+                <p>During registration, researchers can:</p>
+                <ol>
+                    <li><strong>Connect ORCID</strong> - Link existing ORCID iD</li>
+                    <li><strong>Create ORCID</strong> - Register new ORCID iD</li>
+                    <li><strong>Skip</strong> - Register without ORCID (limited features)</li>
+                </ol>
+
+                <h3 id="oauth-flow">OAuth Flow</h3>
+                <pre><code>┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│ HospitiumRIS │────>│    ORCID     │────>│   User       │
+│  Registration │     │   OAuth      │     │  Authorizes  │
+└──────────────┘     └──────────────┘     └──────┬───────┘
+                                                  │
+       ┌──────────────────────────────────────────┘
+       │
+       ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Profile    │<────│   Callback   │<────│   ORCID      │
+│   Created    │     │   Handler    │     │   Response   │
+└──────────────┘     └──────────────┘     └──────────────┘</code></pre>
+
+                <h3 id="permissions-requested">Permissions Requested</h3>
+                <p>HospitiumRIS requests:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Scope</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>/read-public</code></td>
+                            <td>Access public ORCID data</td>
+                        </tr>
+                        <tr>
+                            <td><code>/read-limited</code></td>
+                            <td>Access limited visibility data</td>
+                        </tr>
+                        <tr>
+                            <td><code>/authenticate</code></td>
+                            <td>Verify identity</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="profile-data-sync">Profile Data Sync</h2>
+
+                <h3 id="automatic-sync">Automatic Sync</h3>
+                <p>When connecting ORCID, the following data is imported:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Given Names</strong></td>
+                            <td>First/middle names</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Family Name</strong></td>
+                            <td>Surname</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Biography</strong></td>
+                            <td>Researcher bio</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Employments</strong></td>
+                            <td>Work history</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Education</strong></td>
+                            <td>Academic degrees</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Works</strong></td>
+                            <td>Publications</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Keywords</strong></td>
+                            <td>Research keywords</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="synced-fields">Synced Fields</h3>
+                <pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                    ORCID → HospitiumRIS Sync                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ORCID Profile                    HospitiumRIS Profile          │
+│  ─────────────                    ────────────────────          │
+│  Given Names        →             Given Name                    │
+│  Family Name        →             Family Name                   │
+│  Biography          →             Biography                     │
+│  Employments        →             Work History                  │
+│  Education          →             Education History             │
+│  Keywords           →             Research Keywords             │
+│  Works (DOIs)       →             Publication Links             │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+
+                <h3 id="manual-refresh">Manual Refresh</h3>
+                <p>Refresh ORCID data anytime:</p>
+                <ol>
+                    <li>Go to <strong>Settings → ORCID</strong></li>
+                    <li>Click <strong>Refresh Data</strong></li>
+                    <li>New data imported from ORCID</li>
+                    <li>Profile updated</li>
+                </ol>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="public-profile-display">Public Profile Display</h2>
+
+                <h3 id="orcid-verification-badge">ORCID Verification Badge</h3>
+                <p>Verified researchers display:</p>
+                <ul>
+                    <li>✅ Green ORCID badge</li>
+                    <li>🔗 Clickable ORCID link</li>
+                    <li>📋 Full ORCID profile access</li>
+                </ul>
+
+                <h3 id="profile-elements">Profile Elements</h3>
+                <p>On public researcher profiles:</p>
+                <pre><code>┌─────────────────────────────────────────────────────────────────┐
+│ 👤 Dr. Jane Smith                                    ✅ ORCID   │
+├─────────────────────────────────────────────────────────────────┤
+│ 🆔 ORCID: 0000-0002-1234-5678                                   │
+│ 🏛️ Harvard Medical School                                       │
+│ 📅 Member since January 2024                                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  📚 Employment History (from ORCID)                             │
+│  ─────────────────────────────────                              │
+│  • Professor, Harvard Medical School (2020-present)            │
+│  • Associate Professor, MIT (2015-2020)                        │
+│  • Postdoc Fellow, Stanford (2012-2015)                        │
+│                                                                  │
+│  🎓 Education (from ORCID)                                      │
+│  ────────────────────────                                       │
+│  • PhD, Biomedical Engineering, Stanford (2012)                │
+│  • MS, Biomedical Engineering, UCLA (2008)                     │
+│  • BS, Biology, UC Berkeley (2006)                             │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="collaborator-discovery">Collaborator Discovery</h2>
+
+                <h3 id="orcid-search">ORCID Search</h3>
+                <p>Find researchers by ORCID:</p>
+                <ol>
+                    <li>Go to <strong>Search Researchers</strong></li>
+                    <li>Enter name or ORCID iD</li>
+                    <li>View matching researchers</li>
+                    <li>See profile details</li>
+                </ol>
+
+                <h3 id="search-results">Search Results</h3>
+                <pre><code>┌─────────────────────────────────────────────────────────────────┐
+│ 🔍 Search: "machine learning healthcare"                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ 👤 Dr. John Chen                                ✅ Verified │ │
+│ │    ORCID: 0000-0003-5678-1234                               │ │
+│ │    Stanford University | Computer Science                   │ │
+│ │    Keywords: machine learning, AI, healthcare               │ │
+│ │    Publications: 45 | H-Index: 12                           │ │
+│ │                                                              │ │
+│ │    [View Profile] [Add to Manuscript] [Send Invitation]     │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ 👤 Dr. Sarah Williams                           ✅ Verified │ │
+│ │    ORCID: 0000-0001-2345-6789                               │ │
+│ │    MIT | Health Informatics                                  │ │
+│ │    Keywords: NLP, clinical, machine learning                 │ │
+│ │    Publications: 32 | H-Index: 9                            │ │
+│ │                                                              │ │
+│ │    [View Profile] [Add to Manuscript] [Send Invitation]     │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+
+                <h3 id="manuscript-invitations">Manuscript Invitations</h3>
+                <p>Invite collaborators using ORCID:</p>
+                <ol>
+                    <li>Open manuscript</li>
+                    <li>Click <strong>Add Collaborator</strong></li>
+                    <li>Search by ORCID</li>
+                    <li>Select researcher</li>
+                    <li>Assign role</li>
+                    <li>Send invitation</li>
+                </ol>
+
+                <h3 id="proposal-co-investigators">Proposal Co-Investigators</h3>
+                <p>Add co-investigators via ORCID:</p>
+                <ol>
+                    <li>Open proposal editor</li>
+                    <li>Click <strong>Add Co-Investigator</strong></li>
+                    <li>Search ORCID registry</li>
+                    <li>Select and add to team</li>
+                    <li>ORCID data auto-populated</li>
+                </ol>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="orcid-api-configuration">ORCID API Configuration</h2>
+
+                <h3 id="admin-setup">Admin Setup</h3>
+                <p>Super admins configure ORCID integration:</p>
+                <ol>
+                    <li>Go to <strong>Super Admin → Settings</strong></li>
+                    <li>Configure ORCID settings:</li>
+                </ol>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Setting</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Client ID</strong></td>
+                            <td>ORCID API client identifier</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Client Secret</strong></td>
+                            <td>API secret key</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Redirect URI</strong></td>
+                            <td>OAuth callback URL</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Environment</strong></td>
+                            <td>Sandbox or Production</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="sandbox-vs-production">Sandbox vs Production</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Environment</th>
+                            <th>Use Case</th>
+                            <th>Registry</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Sandbox</strong></td>
+                            <td>Development, testing</td>
+                            <td>sandbox.orcid.org</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Production</strong></td>
+                            <td>Live deployment</td>
+                            <td>orcid.org</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="api-endpoints">API Endpoints</h3>
+                <pre><code>Sandbox:
+  - Auth: https://sandbox.orcid.org/oauth/authorize
+  - Token: https://sandbox.orcid.org/oauth/token
+  - API: https://pub.sandbox.orcid.org/v3.0
+
+Production:
+  - Auth: https://orcid.org/oauth/authorize
+  - Token: https://orcid.org/oauth/token
+  - API: https://pub.orcid.org/v3.0</code></pre>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="troubleshooting">Troubleshooting</h2>
+
+                <h3 id="common-issues">Common Issues</h3>
+
+                <h4 id="orcid-connection-failed">ORCID Connection Failed</h4>
+                <p><strong>Symptoms:</strong> OAuth flow doesn't complete</p>
+                <p><strong>Solutions:</strong></p>
+                <ol>
+                    <li>Check ORCID credentials in settings</li>
+                    <li>Verify redirect URI matches configuration</li>
+                    <li>Ensure ORCID service is available</li>
+                    <li>Check browser allows popups</li>
+                </ol>
+
+                <h4 id="data-not-syncing">Data Not Syncing</h4>
+                <p><strong>Symptoms:</strong> Profile data outdated</p>
+                <p><strong>Solutions:</strong></p>
+                <ol>
+                    <li>Use manual refresh</li>
+                    <li>Check ORCID profile visibility settings</li>
+                    <li>Verify API permissions</li>
+                    <li>Check for API rate limits</li>
+                </ol>
+
+                <h4 id="researcher-not-found">Researcher Not Found</h4>
+                <p><strong>Symptoms:</strong> ORCID search returns no results</p>
+                <p><strong>Solutions:</strong></p>
+                <ol>
+                    <li>Verify ORCID iD format (0000-0000-0000-0000)</li>
+                    <li>Check researcher has public profile</li>
+                    <li>Try alternative search terms</li>
+                    <li>Search directly on orcid.org</li>
+                </ol>
+
+                <h3 id="error-messages">Error Messages</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Error</th>
+                            <th>Cause</th>
+                            <th>Solution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>Invalid ORCID format</code></td>
+                            <td>Malformed ORCID iD</td>
+                            <td>Use format 0000-0000-0000-0000</td>
+                        </tr>
+                        <tr>
+                            <td><code>ORCID not found</code></td>
+                            <td>iD doesn't exist</td>
+                            <td>Verify ORCID on orcid.org</td>
+                        </tr>
+                        <tr>
+                            <td><code>Authorization denied</code></td>
+                            <td>User rejected OAuth</td>
+                            <td>User must authorize access</td>
+                        </tr>
+                        <tr>
+                            <td><code>API rate limited</code></td>
+                            <td>Too many requests</td>
+                            <td>Wait and retry</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="privacy-considerations">Privacy Considerations</h2>
+
+                <h3 id="data-visibility">Data Visibility</h3>
+                <p>ORCID data visibility levels:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Level</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Everyone</strong></td>
+                            <td>Public, visible to all</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Trusted parties</strong></td>
+                            <td>Only authorized apps</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Only me</strong></td>
+                            <td>Not accessible via API</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="user-control">User Control</h3>
+                <p>Researchers control:</p>
+                <ul>
+                    <li>Which data to sync</li>
+                    <li>Profile visibility settings</li>
+                    <li>ORCID connection status</li>
+                    <li>Data refresh timing</li>
+                </ul>
+
+                <h3 id="disconnecting-orcid">Disconnecting ORCID</h3>
+                <p>Users can disconnect ORCID:</p>
+                <ol>
+                    <li>Go to <strong>Settings → ORCID</strong></li>
+                    <li>Click <strong>Disconnect ORCID</strong></li>
+                    <li>Confirm disconnection</li>
+                    <li>ORCID data removed (local data retained)</li>
+                </ol>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="best-practices">Best Practices</h2>
+
+                <h3 id="for-researchers">For Researchers</h3>
+                <ol>
+                    <li>Keep ORCID profile updated</li>
+                    <li>Use public visibility for discoverability</li>
+                    <li>Link all publications to ORCID</li>
+                    <li>Sync regularly with HospitiumRIS</li>
+                </ol>
+
+                <h3 id="for-administrators">For Administrators</h3>
+                <ol>
+                    <li>Use production API for live systems</li>
+                    <li>Monitor API usage</li>
+                    <li>Handle rate limits gracefully</li>
+                    <li>Maintain secure credential storage</li>
+                </ol>
+
+                <h3 id="for-organizations">For Organizations</h3>
+                <ol>
+                    <li>Encourage ORCID adoption</li>
+                    <li>Integrate ORCID in workflows</li>
+                    <li>Validate researcher identities</li>
+                    <li>Track ORCID-linked outputs</li>
+                </ol>
+            </section>
+
+            <div class="page-nav">
+                <a href="../proposals/index.html" class="page-nav-prev">
+                    <span class="page-nav-label">← Previous</span>
+                    <span class="page-nav-title">Research Proposals</span>
+                </a>
+            </div>
+        </main>
+
+        <aside class="toc">
+            <h4>On this page</h4>
+            <ul>
+                <li><a href="#what-is-orcid">What is ORCID?</a></li>
+                <li>
+                    <a href="#registration-with-orcid">Registration with ORCID</a>
+                    <ul>
+                        <li><a href="#creating-an-account">Creating an Account</a></li>
+                        <li><a href="#oauth-flow">OAuth Flow</a></li>
+                        <li><a href="#permissions-requested">Permissions Requested</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#profile-data-sync">Profile Data Sync</a>
+                    <ul>
+                        <li><a href="#automatic-sync">Automatic Sync</a></li>
+                        <li><a href="#synced-fields">Synced Fields</a></li>
+                        <li><a href="#manual-refresh">Manual Refresh</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#public-profile-display">Public Profile Display</a>
+                    <ul>
+                        <li><a href="#orcid-verification-badge">ORCID Verification Badge</a></li>
+                        <li><a href="#profile-elements">Profile Elements</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#collaborator-discovery">Collaborator Discovery</a>
+                    <ul>
+                        <li><a href="#orcid-search">ORCID Search</a></li>
+                        <li><a href="#search-results">Search Results</a></li>
+                        <li><a href="#manuscript-invitations">Manuscript Invitations</a></li>
+                        <li><a href="#proposal-co-investigators">Proposal Co-Investigators</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#orcid-api-configuration">ORCID API Configuration</a>
+                    <ul>
+                        <li><a href="#admin-setup">Admin Setup</a></li>
+                        <li><a href="#sandbox-vs-production">Sandbox vs Production</a></li>
+                        <li><a href="#api-endpoints">API Endpoints</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#troubleshooting">Troubleshooting</a>
+                    <ul>
+                        <li><a href="#common-issues">Common Issues</a></li>
+                        <li><a href="#error-messages">Error Messages</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#privacy-considerations">Privacy Considerations</a>
+                    <ul>
+                        <li><a href="#data-visibility">Data Visibility</a></li>
+                        <li><a href="#user-control">User Control</a></li>
+                        <li><a href="#disconnecting-orcid">Disconnecting ORCID</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#best-practices">Best Practices</a>
+                    <ul>
+                        <li><a href="#for-researchers">For Researchers</a></li>
+                        <li><a href="#for-administrators">For Administrators</a></li>
+                        <li><a href="#for-organizations">For Organizations</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../../intro/index.html">Getting Started</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <li><a href="../../database/schema/index.html">Database Schema</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Modules</h4>
+                <ul>
+                    <li><a href="../../modules/researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../../modules/institution/index.html">Institution Portal</a></li>
+                    <li><a href="../../modules/foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../../modules/super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Features</h4>
+                <ul>
+                    <li><a href="../manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../publications/index.html">Publications</a></li>
+                    <li><a href="../proposals/index.html">Proposals</a></li>
+                    <li><a href="#">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright 2026 HospitiumRIS. Built with Docusaurus.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll('.sidebar-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const section = this.parentElement;
+                const content = section.querySelector('.sidebar-content');
+                const icon = this.querySelector('.toggle-icon');
+                
+                section.classList.toggle('collapsed');
+                
+                if (section.classList.contains('collapsed')) {
+                    content.style.display = 'none';
+                    icon.textContent = '▶';
+                } else {
+                    content.style.display = 'block';
+                    icon.textContent = '▼';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

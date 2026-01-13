@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foundation Portal - HospitiumRIS Documentation</title>
+    <link rel="stylesheet" href="../../../styles.css">
+    <link rel="stylesheet" href="../../intro/intro.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="https://hospitium.hospitiumris.org/" class="logo">
+                <img src="../../../img/hospitium-logo.png" alt="HospitiumRIS Logo">
+            </a>
+            <a href="../../intro/index.html" class="nav-link">Documentation</a>
+        </div>
+        <div class="navbar-right">
+            <a href="https://github.com/hospitiumris/hospitiumris" target="_blank" class="github-link">GitHub ↗</a>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Getting Started
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../intro/index.html">Introduction</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <!-- <li><a href="../../getting-started/installation/index.html">Installation Guide</a></li> -->
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Database
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../database/schema/index.html">Schema Overview</a></li>
+                    
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Modules
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../institution/index.html">Institution Portal</a></li>
+                    <li><a href="#" class="active">Foundation Portal</a></li>
+                    <li><a href="../super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Features
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../features/manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../../features/publications/index.html">Publications</a></li>
+                    <li><a href="../../features/proposals/index.html">Proposals</a></li>
+                    <li><a href="../../features/orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="content">
+            <h1>Foundation Portal</h1>
+            <p>The Foundation Portal serves administrators of research foundations, funding organizations, and philanthropic institutions. It provides comprehensive tools for campaign management, donation tracking, and grant administration.</p>
+
+            <section class="doc-section">
+                <h2 id="dashboard-overview">Dashboard Overview</h2>
+                <p>The foundation dashboard displays:</p>
+                <ul>
+                    <li><strong>Funding Metrics</strong> - Total raised, active campaigns, donors</li>
+                    <li><strong>Campaign Overview</strong> - Status of ongoing fundraising campaigns</li>
+                    <li><strong>Recent Donations</strong> - Latest contribution activity</li>
+                    <li><strong>Upcoming Activities</strong> - Scheduled events and deadlines</li>
+                    <li><strong>Grant Opportunities</strong> - Open funding opportunities</li>
+                    <li><strong>Quick Actions</strong> - Common tasks and shortcuts</li>
+                </ul>
+
+                <h3 id="key-metrics-cards">Key Metrics Cards</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Total Raised</strong></td>
+                            <td>Sum of all completed donations</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Active Campaigns</strong></td>
+                            <td>Currently running campaigns</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Donors</strong></td>
+                            <td>Unique donor count</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Grant Opportunities</strong></td>
+                            <td>Available funding opportunities</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="campaign-management">Campaign Management</h2>
+
+                <h3 id="campaign-categories">Campaign Categories</h3>
+                <p>Organize campaigns by category:</p>
+                <ul>
+                    <li><strong>Golf Events</strong> - Golf tournaments and outings</li>
+                    <li><strong>Running Events</strong> - Marathons, fun runs</li>
+                    <li><strong>Special Events</strong> - Galas, auctions, celebrations</li>
+                </ul>
+
+                <h3 id="creating-campaigns">Creating Campaigns</h3>
+                <p>Set up campaigns with:</p>
+                <ol>
+                    <li>
+                        <strong>Basic Information</strong>
+                        <ul>
+                            <li>Campaign name</li>
+                            <li>Category selection</li>
+                            <li>Description</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Funding Goals</strong>
+                        <ul>
+                            <li>Target amount</li>
+                            <li>Minimum goal</li>
+                            <li>Stretch goals</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Timeline</strong>
+                        <ul>
+                            <li>Start date</li>
+                            <li>End date</li>
+                            <li>Key milestones</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Campaign Status</strong>
+                        <ul>
+                            <li>Planning</li>
+                            <li>Active</li>
+                            <li>Paused</li>
+                            <li>Completed</li>
+                            <li>Cancelled</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h3 id="campaign-calendar">Campaign Calendar</h3>
+                <p>Visual calendar view showing:</p>
+                <ul>
+                    <li>Campaign start/end dates</li>
+                    <li>Scheduled activities</li>
+                    <li>Key milestones</li>
+                    <li>Donation deadlines</li>
+                </ul>
+
+                <h3 id="campaign-analytics">Campaign Analytics</h3>
+                <p>Track campaign performance:</p>
+                <ul>
+                    <li><strong>Progress to Goal</strong> - Visual progress bar</li>
+                    <li><strong>Daily/Weekly Donations</strong> - Trend charts</li>
+                    <li><strong>Donor Demographics</strong> - Donor type breakdown</li>
+                    <li><strong>Average Donation</strong> - Mean contribution amount</li>
+                    <li><strong>Conversion Rates</strong> - Visitor to donor ratio</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="campaign-activities">Campaign Activities</h2>
+
+                <h3 id="activity-types">Activity Types</h3>
+                <p>Schedule and track campaign-related activities:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Meeting</strong></td>
+                            <td>Planning and coordination meetings</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Event</strong></td>
+                            <td>Fundraising events</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Mailing</strong></td>
+                            <td>Direct mail campaigns</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Call</strong></td>
+                            <td>Phone outreach</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Email</strong></td>
+                            <td>Email campaigns</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Site Visit</strong></td>
+                            <td>Donor or site visits</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="activity-management">Activity Management</h3>
+                <p>For each activity, track:</p>
+                <ul>
+                    <li>Title and description</li>
+                    <li>Date and time</li>
+                    <li>Location (physical or virtual)</li>
+                    <li>Attendees</li>
+                    <li>Status (Planned, In Progress, Completed, Cancelled)</li>
+                    <li>Phase (Pre-Campaign, Active, Post-Campaign)</li>
+                    <li>Notes and outcomes</li>
+                </ul>
+
+                <h3 id="activity-calendar">Activity Calendar</h3>
+                <p>Visual scheduling with:</p>
+                <ul>
+                    <li>Day, week, month views</li>
+                    <li>Color-coded by activity type</li>
+                    <li>Drag-and-drop rescheduling</li>
+                    <li>Conflict detection</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="donation-management">Donation Management</h2>
+
+                <h3 id="recording-donations">Recording Donations</h3>
+                <p>Capture donation details:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Donor Name</strong></td>
+                            <td>Individual or organization name</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Donor Email</strong></td>
+                            <td>Contact email</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Donor Phone</strong></td>
+                            <td>Contact phone</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Donor Type</strong></td>
+                            <td>Individual, Corporate, Foundation</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Amount</strong></td>
+                            <td>Donation amount</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Date</strong></td>
+                            <td>Donation date</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Payment Method</strong></td>
+                            <td>Credit Card, Check, Bank Transfer, etc.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Transaction ID</strong></td>
+                            <td>Payment reference</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Campaign</strong></td>
+                            <td>Associated campaign (optional)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Message</strong></td>
+                            <td>Donor message or dedication</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Anonymous</strong></td>
+                            <td>Hide donor identity</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tax Deductible</strong></td>
+                            <td>Tax-deductible status</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="donation-status">Donation Status</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Pending</strong></td>
+                            <td>Awaiting processing</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Completed</strong></td>
+                            <td>Successfully processed</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Failed</strong></td>
+                            <td>Transaction failed</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Refunded</strong></td>
+                            <td>Donation refunded</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="donation-analytics">Donation Analytics</h3>
+                <p>Comprehensive donation insights:</p>
+                <ul>
+                    <li><strong>Donations by Month</strong> - Trend analysis</li>
+                    <li><strong>Donations by Source</strong> - Channel performance</li>
+                    <li><strong>Donor Retention</strong> - Repeat donor analysis</li>
+                    <li><strong>Average Gift Size</strong> - Contribution patterns</li>
+                    <li><strong>Peak Giving Times</strong> - Optimal outreach windows</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="grants-module">Grants Module</h2>
+
+                <h3 id="grantor-management">Grantor Management</h3>
+                <p>Maintain a database of funding organizations:</p>
+                <p><strong>Grantor Details:</strong></p>
+                <ul>
+                    <li>Organization name</li>
+                    <li>Type (Federal, Private, Nonprofit, Corporate)</li>
+                    <li>Focus areas</li>
+                    <li>Contact information</li>
+                    <li>Country</li>
+                    <li>Status (Active, Inactive)</li>
+                </ul>
+
+                <h3 id="grant-opportunities">Grant Opportunities</h3>
+                <p>Track available funding opportunities:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Title</strong></td>
+                            <td>Opportunity name</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Grantor</strong></td>
+                            <td>Funding organization</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Amount</strong></td>
+                            <td>Available funding</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Deadline</strong></td>
+                            <td>Application deadline</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Categories</strong></td>
+                            <td>Eligible research areas</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Eligibility</strong></td>
+                            <td>Requirements and criteria</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status</strong></td>
+                            <td>Open, Closed</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="opportunity-discovery">Opportunity Discovery</h3>
+                <ul>
+                    <li>Filter by category, amount, deadline</li>
+                    <li>Search by grantor or keyword</li>
+                    <li>Save favorite opportunities</li>
+                    <li>Set deadline reminders</li>
+                </ul>
+
+                <h3 id="grant-tracking">Grant Tracking</h3>
+                <p>For awarded grants, track:</p>
+                <ul>
+                    <li>Award amount</li>
+                    <li>Grant period</li>
+                    <li>Reporting requirements</li>
+                    <li>Utilization status</li>
+                    <li>Renewal dates</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="financial-management">Financial Management</h2>
+
+                <h3 id="central-fund-pool">Central Fund Pool</h3>
+                <p>Overview of foundation finances:</p>
+                <ul>
+                    <li>Total available funds</li>
+                    <li>Allocated vs. unallocated</li>
+                    <li>Fund restrictions</li>
+                    <li>Investment returns</li>
+                </ul>
+
+                <h3 id="budget-management">Budget Management</h3>
+                <ul>
+                    <li>Campaign budgets</li>
+                    <li>Expense tracking</li>
+                    <li>Cost per dollar raised</li>
+                    <li>ROI analysis</li>
+                </ul>
+
+                <h3 id="financial-reports">Financial Reports</h3>
+                <p>Generate financial reports:</p>
+                <ul>
+                    <li>Income statements</li>
+                    <li>Donation summaries</li>
+                    <li>Campaign profitability</li>
+                    <li>Grant utilization</li>
+                    <li>Annual financial reports</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="donations-analytics-dashboard">Donations Analytics Dashboard</h2>
+
+                <h3 id="overview-metrics">Overview Metrics</h3>
+                <ul>
+                    <li>Total donations (all time, YTD, MTD)</li>
+                    <li>Number of donors</li>
+                    <li>Average donation size</li>
+                    <li>Donation frequency</li>
+                </ul>
+
+                <h3 id="visualization-charts">Visualization Charts</h3>
+                <ul>
+                    <li><strong>Donations Over Time</strong> - Line chart of donation trends</li>
+                    <li><strong>Donations by Type</strong> - Pie chart of donor types</li>
+                    <li><strong>Campaigns Performance</strong> - Bar chart comparison</li>
+                    <li><strong>Geographic Distribution</strong> - Map of donor locations</li>
+                </ul>
+
+                <h3 id="donor-insights">Donor Insights</h3>
+                <ul>
+                    <li>New vs. returning donors</li>
+                    <li>Donor lifecycle analysis</li>
+                    <li>Lapsed donor identification</li>
+                    <li>Major donor tracking</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="workflow-summary">Workflow Summary</h2>
+                <pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                   FOUNDATION ADMIN WORKFLOW                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     │
+│  │   Create     │────>│   Schedule   │────>│   Launch     │     │
+│  │  Campaign    │     │  Activities  │     │  Campaign    │     │
+│  └──────────────┘     └──────────────┘     └──────────────┘     │
+│                                                   │              │
+│                                                   ▼              │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     │
+│  │   Analyze    │<────│    Track     │<────│   Record     │     │
+│  │   Results    │     │   Progress   │     │  Donations   │     │
+│  └──────────────┘     └──────────────┘     └──────────────┘     │
+│          │                                                       │
+│          ▼                                                       │
+│  ┌──────────────┐     ┌──────────────┐                          │
+│  │   Discover   │────>│    Apply     │                          │
+│  │ Grant Opps   │     │  for Grants  │                          │
+│  └──────────────┘     └──────────────┘                          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="reporting-export">Reporting & Export</h2>
+
+                <h3 id="report-types">Report Types</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Report</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Campaign Summary</strong></td>
+                            <td>Per-campaign performance</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Donation Report</strong></td>
+                            <td>All donations with filters</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Donor Report</strong></td>
+                            <td>Donor list with giving history</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Grant Report</strong></td>
+                            <td>Grant opportunities and awards</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Financial Summary</strong></td>
+                            <td>Overall financial status</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="export-formats">Export Formats</h3>
+                <ul>
+                    <li>PDF for formal reports</li>
+                    <li>Excel for data analysis</li>
+                    <li>CSV for system integration</li>
+                    <li>API for automation</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="best-practices">Best Practices</h2>
+
+                <h3 id="campaign-management-best">Campaign Management</h3>
+                <ol>
+                    <li>Set realistic but motivating goals</li>
+                    <li>Plan activities well in advance</li>
+                    <li>Track progress daily during active campaigns</li>
+                    <li>Communicate regularly with donors</li>
+                    <li>Document lessons learned</li>
+                </ol>
+
+                <h3 id="donor-relations">Donor Relations</h3>
+                <ol>
+                    <li>Acknowledge donations promptly</li>
+                    <li>Provide regular impact updates</li>
+                    <li>Recognize major donors appropriately</li>
+                    <li>Maintain accurate contact information</li>
+                    <li>Respect donor preferences</li>
+                </ol>
+
+                <h3 id="grant-applications">Grant Applications</h3>
+                <ol>
+                    <li>Monitor deadlines proactively</li>
+                    <li>Match opportunities to capabilities</li>
+                    <li>Prepare strong proposals</li>
+                    <li>Track submission status</li>
+                    <li>Follow up on pending applications</li>
+                </ol>
+            </section>
+
+            <div class="page-nav">
+                <a href="../institution/index.html" class="page-nav-prev">
+                    <span class="page-nav-label">← Previous</span>
+                    <span class="page-nav-title">Institution Portal</span>
+                </a>
+                <a href="../super-admin/index.html" class="page-nav-next">
+                    <span class="page-nav-label">Next →</span>
+                    <span class="page-nav-title">Super Admin Portal</span>
+                </a>
+            </div>
+        </main>
+
+        <aside class="toc">
+            <h4>On this page</h4>
+            <ul>
+                <li>
+                    <a href="#dashboard-overview">Dashboard Overview</a>
+                    <ul>
+                        <li><a href="#key-metrics-cards">Key Metrics Cards</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#campaign-management">Campaign Management</a>
+                    <ul>
+                        <li><a href="#campaign-categories">Campaign Categories</a></li>
+                        <li><a href="#creating-campaigns">Creating Campaigns</a></li>
+                        <li><a href="#campaign-calendar">Campaign Calendar</a></li>
+                        <li><a href="#campaign-analytics">Campaign Analytics</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#campaign-activities">Campaign Activities</a>
+                    <ul>
+                        <li><a href="#activity-types">Activity Types</a></li>
+                        <li><a href="#activity-management">Activity Management</a></li>
+                        <li><a href="#activity-calendar">Activity Calendar</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#donation-management">Donation Management</a>
+                    <ul>
+                        <li><a href="#recording-donations">Recording Donations</a></li>
+                        <li><a href="#donation-status">Donation Status</a></li>
+                        <li><a href="#donation-analytics">Donation Analytics</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#grants-module">Grants Module</a>
+                    <ul>
+                        <li><a href="#grantor-management">Grantor Management</a></li>
+                        <li><a href="#grant-opportunities">Grant Opportunities</a></li>
+                        <li><a href="#opportunity-discovery">Opportunity Discovery</a></li>
+                        <li><a href="#grant-tracking">Grant Tracking</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#financial-management">Financial Management</a>
+                    <ul>
+                        <li><a href="#central-fund-pool">Central Fund Pool</a></li>
+                        <li><a href="#budget-management">Budget Management</a></li>
+                        <li><a href="#financial-reports">Financial Reports</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#donations-analytics-dashboard">Donations Analytics Dashboard</a>
+                    <ul>
+                        <li><a href="#overview-metrics">Overview Metrics</a></li>
+                        <li><a href="#visualization-charts">Visualization Charts</a></li>
+                        <li><a href="#donor-insights">Donor Insights</a></li>
+                    </ul>
+                </li>
+                <li><a href="#workflow-summary">Workflow Summary</a></li>
+                <li>
+                    <a href="#reporting-export">Reporting & Export</a>
+                    <ul>
+                        <li><a href="#report-types">Report Types</a></li>
+                        <li><a href="#export-formats">Export Formats</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#best-practices">Best Practices</a>
+                    <ul>
+                        <li><a href="#campaign-management-best">Campaign Management</a></li>
+                        <li><a href="#donor-relations">Donor Relations</a></li>
+                        <li><a href="#grant-applications">Grant Applications</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../../intro/index.html">Getting Started</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <li><a href="../../database/schema/index.html">Database Schema</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Modules</h4>
+                <ul>
+                    <li><a href="../researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="../institution/index.html">Institution Portal</a></li>
+                    <li><a href="#">Foundation Portal</a></li>
+                    <li><a href="../super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Features</h4>
+                <ul>
+                    <li><a href="../../features/manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../../features/publications/index.html">Publications</a></li>
+                    <li><a href="../../features/proposals/index.html">Proposals</a></li>
+                    <li><a href="../../features/orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright 2026 HospitiumRIS. Built with Docusaurus.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll('.sidebar-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const section = this.parentElement;
+                const content = section.querySelector('.sidebar-content');
+                const icon = this.querySelector('.toggle-icon');
+                
+                section.classList.toggle('collapsed');
+                
+                if (section.classList.contains('collapsed')) {
+                    content.style.display = 'none';
+                    icon.textContent = '▶';
+                } else {
+                    content.style.display = 'block';
+                    icon.textContent = '▼';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Institution Portal - HospitiumRIS Documentation</title>
+    <link rel="stylesheet" href="../../../styles.css">
+    <link rel="stylesheet" href="../../intro/intro.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="https://hospitium.hospitiumris.org/" class="logo">
+                <img src="../../../img/hospitium-logo.png" alt="HospitiumRIS Logo">
+            </a>
+            <a href="../../intro/index.html" class="nav-link">Documentation</a>
+        </div>
+        <div class="navbar-right">
+            <a href="https://github.com/hospitiumris/hospitiumris" target="_blank" class="github-link">GitHub ↗</a>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Getting Started
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../intro/index.html">Introduction</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <!-- <li><a href="../../getting-started/installation/index.html">Installation Guide</a></li> -->
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Database
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../database/schema/index.html">Schema Overview</a></li>
+                    
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Modules
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="#" class="active">Institution Portal</a></li>
+                    <li><a href="../foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3 class="sidebar-toggle">
+                    <span class="toggle-icon">▼</span>
+                    Features
+                </h3>
+                <ul class="sidebar-content">
+                    <li><a href="../../features/manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../../features/publications/index.html">Publications</a></li>
+                    <li><a href="../../features/proposals/index.html">Proposals</a></li>
+                    <li><a href="../../features/orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="content">
+            <h1>Institution Portal</h1>
+            <p>The Institution Portal is designed for Research Administrators who oversee research activities within academic institutions, hospitals, or research centers.</p>
+
+            <section class="doc-section">
+                <h2 id="dashboard-overview">Dashboard Overview</h2>
+                <p>The institutional dashboard provides:</p>
+                <ul>
+                    <li><strong>Researcher Overview</strong> - Total researchers, active projects</li>
+                    <li><strong>Proposal Summary</strong> - Pending reviews, approved, rejected</li>
+                    <li><strong>Institutional Metrics</strong> - Publication output, grant success rates</li>
+                    <li><strong>Recent Activity</strong> - Latest submissions and updates</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="researcher-management">Researcher Management</h2>
+
+                <h3 id="researcher-directory">Researcher Directory</h3>
+                <p>View and manage all researchers affiliated with the institution:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Name</strong></td>
+                            <td>Researcher full name with academic title</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Department</strong></td>
+                            <td>Primary department</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ORCID</strong></td>
+                            <td>ORCID iD (verified badge)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Publications</strong></td>
+                            <td>Total publication count</td>
+                        </tr>
+                        <tr>
+                            <td><strong>H-Index</strong></td>
+                            <td>Research impact metric</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status</strong></td>
+                            <td>Active, Inactive, On Leave</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="researcher-profiles">Researcher Profiles</h3>
+                <p>Access detailed researcher profiles including:</p>
+                <ul>
+                    <li>Complete publication history</li>
+                    <li>Active manuscripts and collaborations</li>
+                    <li>Submitted proposals</li>
+                    <li>Research metrics and trends</li>
+                    <li>Professional links and contact information</li>
+                </ul>
+
+                <h3 id="filtering-search">Filtering & Search</h3>
+                <p>Find researchers by:</p>
+                <ul>
+                    <li>Name or email</li>
+                    <li>Department</li>
+                    <li>Research area</li>
+                    <li>Publication count</li>
+                    <li>ORCID status</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="proposal-review">Proposal Review</h2>
+
+                <h3 id="review-queue">Review Queue</h3>
+                <p>Manage incoming proposals with:</p>
+                <ul>
+                    <li><strong>Pending Review</strong> - New submissions awaiting review</li>
+                    <li><strong>Under Review</strong> - Currently being evaluated</li>
+                    <li><strong>Action Required</strong> - Awaiting responses or revisions</li>
+                    <li><strong>Completed</strong> - Approved or rejected proposals</li>
+                </ul>
+
+                <h3 id="proposal-details-view">Proposal Details View</h3>
+                <p>Review comprehensive proposal information:</p>
+                <ol>
+                    <li>
+                        <strong>Summary Overview</strong>
+                        <ul>
+                            <li>Title and abstract</li>
+                            <li>Principal Investigator details</li>
+                            <li>Co-investigators list</li>
+                            <li>Timeline and milestones</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Research Details</strong>
+                        <ul>
+                            <li>Research objectives</li>
+                            <li>Methodology description</li>
+                            <li>Expected outcomes</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Budget Information</strong>
+                        <ul>
+                            <li>Funding source</li>
+                            <li>Budget breakdown</li>
+                            <li>Cost justification</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Ethics Documentation</strong>
+                        <ul>
+                            <li>Ethics approval status</li>
+                            <li>Consent procedures</li>
+                            <li>Data management plans</li>
+                            <li>Attached documents</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h3 id="review-actions">Review Actions</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Approve</strong></td>
+                            <td>Accept the proposal</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reject</strong></td>
+                            <td>Decline with feedback</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Request Revision</strong></td>
+                            <td>Return for modifications</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Assign Reviewer</strong></td>
+                            <td>Delegate to another admin</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Add Comment</strong></td>
+                            <td>Internal notes</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="review-workflow">Review Workflow</h3>
+                <pre><code>┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
+│  Submitted  │────>│ Under Review │────>│     Decision    │
+└─────────────┘     └──────────────┘     └────────┬────────┘
+                                                   │
+                    ┌──────────────────────────────┼──────────────┐
+                    │                              │              │
+                    ▼                              ▼              ▼
+            ┌───────────┐              ┌───────────────┐  ┌───────────┐
+            │  Approved │              │Revision Needed│  │ Rejected  │
+            └───────────┘              └───────┬───────┘  └───────────┘
+                                               │
+                                               ▼
+                                       ┌───────────────┐
+                                       │   Resubmit    │
+                                       └───────────────┘</code></pre>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="institutional-analytics">Institutional Analytics</h2>
+
+                <h3 id="research-output">Research Output</h3>
+                <p>Track institutional research performance:</p>
+                <ul>
+                    <li><strong>Publications by Year</strong> - Trend analysis</li>
+                    <li><strong>Publications by Department</strong> - Comparative view</li>
+                    <li><strong>Top Researchers</strong> - Most productive members</li>
+                    <li><strong>Citation Impact</strong> - Institutional citation metrics</li>
+                </ul>
+
+                <h3 id="proposal-analytics">Proposal Analytics</h3>
+                <ul>
+                    <li>Submission trends</li>
+                    <li>Success rates by department</li>
+                    <li>Funding sources breakdown</li>
+                    <li>Average review time</li>
+                </ul>
+
+                <h3 id="collaboration-metrics">Collaboration Metrics</h3>
+                <ul>
+                    <li>Internal collaborations</li>
+                    <li>External partnerships</li>
+                    <li>Inter-departmental projects</li>
+                    <li>Industry connections</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="department-management">Department Management</h2>
+
+                <h3 id="department-overview">Department Overview</h3>
+                <ul>
+                    <li>Active researchers per department</li>
+                    <li>Research output by department</li>
+                    <li>Proposal success rates</li>
+                    <li>Funding allocation</li>
+                </ul>
+
+                <h3 id="department-comparison">Department Comparison</h3>
+                <p>Compare departments by:</p>
+                <ul>
+                    <li>Publication volume</li>
+                    <li>Citation impact</li>
+                    <li>Grant success</li>
+                    <li>Active projects</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="compliance-reporting">Compliance & Reporting</h2>
+
+                <h3 id="ethics-compliance">Ethics Compliance</h3>
+                <p>Monitor ethics-related activities:</p>
+                <ul>
+                    <li>Pending ethics reviews</li>
+                    <li>Approved protocols</li>
+                    <li>Expiring approvals</li>
+                    <li>Compliance alerts</li>
+                </ul>
+
+                <h3 id="reports-generation">Reports Generation</h3>
+                <p>Generate institutional reports:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Report Type</th>
+                            <th>Contents</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Annual Research Report</strong></td>
+                            <td>Publications, grants, metrics</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Department Summary</strong></td>
+                            <td>Per-department breakdown</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Researcher Activity</strong></td>
+                            <td>Individual performance</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Proposal Summary</strong></td>
+                            <td>Submission and success stats</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Funding Report</strong></td>
+                            <td>Grant allocations and utilization</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 id="export-formats">Export Formats</h3>
+                <ul>
+                    <li>PDF reports</li>
+                    <li>Excel spreadsheets</li>
+                    <li>CSV data exports</li>
+                    <li>API access</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="user-management">User Management</h2>
+
+                <h3 id="account-administration">Account Administration</h3>
+                <p>Manage researcher accounts:</p>
+                <ul>
+                    <li>Approve new registrations</li>
+                    <li>Update account status</li>
+                    <li>Reset passwords</li>
+                    <li>Assign departments</li>
+                </ul>
+
+                <h3 id="access-control">Access Control</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Pending</strong></td>
+                            <td>Awaiting approval/verification</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Active</strong></td>
+                            <td>Full access granted</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Inactive</strong></td>
+                            <td>Temporarily disabled</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Suspended</strong></td>
+                            <td>Administratively blocked</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="notifications-alerts">Notifications & Alerts</h2>
+
+                <h3 id="system-notifications">System Notifications</h3>
+                <ul>
+                    <li>New proposal submissions</li>
+                    <li>Review deadline reminders</li>
+                    <li>Ethics approval expirations</li>
+                    <li>System announcements</li>
+                </ul>
+
+                <h3 id="email-alerts">Email Alerts</h3>
+                <p>Configure alerts for:</p>
+                <ul>
+                    <li>Proposal status changes</li>
+                    <li>New researcher registrations</li>
+                    <li>Compliance deadlines</li>
+                    <li>Weekly activity summaries</li>
+                </ul>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="workflow-summary">Workflow Summary</h2>
+                <pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                   INSTITUTION ADMIN WORKFLOW                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     │
+│  │   Monitor    │────>│   Review     │────>│   Approve/   │     │
+│  │  Dashboard   │     │  Proposals   │     │   Reject     │     │
+│  └──────────────┘     └──────────────┘     └──────────────┘     │
+│          │                                         │             │
+│          ▼                                         ▼             │
+│  ┌──────────────┐                         ┌──────────────┐      │
+│  │   Manage     │                         │   Generate   │      │
+│  │ Researchers  │                         │   Reports    │      │
+│  └──────────────┘                         └──────────────┘      │
+│          │                                         │             │
+│          ▼                                         ▼             │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     │
+│  │   Track      │────>│   Ensure     │────>│   Export     │     │
+│  │  Analytics   │     │  Compliance  │     │   Data       │     │
+│  └──────────────┘     └──────────────┘     └──────────────┘     │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+            </section>
+
+            <section class="doc-section">
+                <h2 id="best-practices">Best Practices</h2>
+
+                <h3 id="proposal-review-best">Proposal Review</h3>
+                <ol>
+                    <li>Review within 5 business days</li>
+                    <li>Provide constructive feedback on rejections</li>
+                    <li>Check ethics documentation completeness</li>
+                    <li>Verify budget reasonableness</li>
+                    <li>Confirm co-investigator availability</li>
+                </ol>
+
+                <h3 id="researcher-support">Researcher Support</h3>
+                <ol>
+                    <li>Respond to queries promptly</li>
+                    <li>Provide onboarding resources</li>
+                    <li>Facilitate inter-departmental collaborations</li>
+                    <li>Share funding opportunities</li>
+                    <li>Recognize research achievements</li>
+                </ol>
+            </section>
+
+            <div class="page-nav">
+                <a href="../researcher/index.html" class="page-nav-prev">
+                    <span class="page-nav-label">← Previous</span>
+                    <span class="page-nav-title">Researcher Portal</span>
+                </a>
+                <a href="../foundation/index.html" class="page-nav-next">
+                    <span class="page-nav-label">Next →</span>
+                    <span class="page-nav-title">Foundation Portal</span>
+                </a>
+            </div>
+        </main>
+
+        <aside class="toc">
+            <h4>On this page</h4>
+            <ul>
+                <li><a href="#dashboard-overview">Dashboard Overview</a></li>
+                <li>
+                    <a href="#researcher-management">Researcher Management</a>
+                    <ul>
+                        <li><a href="#researcher-directory">Researcher Directory</a></li>
+                        <li><a href="#researcher-profiles">Researcher Profiles</a></li>
+                        <li><a href="#filtering-search">Filtering & Search</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#proposal-review">Proposal Review</a>
+                    <ul>
+                        <li><a href="#review-queue">Review Queue</a></li>
+                        <li><a href="#proposal-details-view">Proposal Details View</a></li>
+                        <li><a href="#review-actions">Review Actions</a></li>
+                        <li><a href="#review-workflow">Review Workflow</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#institutional-analytics">Institutional Analytics</a>
+                    <ul>
+                        <li><a href="#research-output">Research Output</a></li>
+                        <li><a href="#proposal-analytics">Proposal Analytics</a></li>
+                        <li><a href="#collaboration-metrics">Collaboration Metrics</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#department-management">Department Management</a>
+                    <ul>
+                        <li><a href="#department-overview">Department Overview</a></li>
+                        <li><a href="#department-comparison">Department Comparison</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#compliance-reporting">Compliance & Reporting</a>
+                    <ul>
+                        <li><a href="#ethics-compliance">Ethics Compliance</a></li>
+                        <li><a href="#reports-generation">Reports Generation</a></li>
+                        <li><a href="#export-formats">Export Formats</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#user-management">User Management</a>
+                    <ul>
+                        <li><a href="#account-administration">Account Administration</a></li>
+                        <li><a href="#access-control">Access Control</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#notifications-alerts">Notifications & Alerts</a>
+                    <ul>
+                        <li><a href="#system-notifications">System Notifications</a></li>
+                        <li><a href="#email-alerts">Email Alerts</a></li>
+                    </ul>
+                </li>
+                <li><a href="#workflow-summary">Workflow Summary</a></li>
+                <li>
+                    <a href="#best-practices">Best Practices</a>
+                    <ul>
+                        <li><a href="#proposal-review-best">Proposal Review</a></li>
+                        <li><a href="#researcher-support">Researcher Support</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../../intro/index.html">Getting Started</a></li>
+                    <li><a href="../../getting-started/requirements/index.html">System Requirements</a></li>
+                    <li><a href="../../database/schema/index.html">Database Schema</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Modules</h4>
+                <ul>
+                    <li><a href="../researcher/index.html">Researcher Portal</a></li>
+                    <li><a href="#">Institution Portal</a></li>
+                    <li><a href="../foundation/index.html">Foundation Portal</a></li>
+                    <li><a href="../super-admin/index.html">Super Admin Portal</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Features</h4>
+                <ul>
+                    <li><a href="../../features/manuscripts/index.html">Manuscripts</a></li>
+                    <li><a href="../../features/publications/index.html">Publications</a></li>
+                    <li><a href="../../features/proposals/index.html">Proposals</a></li>
+                    <li><a href="../../features/orcid/index.html">ORCID Integration</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright 2026 HospitiumRIS. Built with Docusaurus.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.querySelectorAll('.sidebar-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const section = this.parentElement;
+                const content = section.querySelector('.sidebar-content');
+                const icon = this.querySelector('.toggle-icon');
+                
+                section.classList.toggle('collapsed');
+                
+                if (section.classList.contains('collapsed')) {
+                    content.style.display = 'none';
+                    icon.textContent = '▶';
+                } else {
+                    content.style.display = 'block';
+                    icon.textContent = '▼';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
