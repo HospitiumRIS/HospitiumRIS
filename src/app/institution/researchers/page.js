@@ -51,6 +51,7 @@ import PageHeader from '@/components/common/PageHeader';
 
 const ManageResearchers = () => {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [researchers, setResearchers] = useState([]);
   const [filteredResearchers, setFilteredResearchers] = useState([]);
@@ -58,14 +59,19 @@ const ManageResearchers = () => {
   const [error, setError] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedResearcher, setSelectedResearcher] = useState(null);
+  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [filterMenuAnchor, setFilterMenuAnchor] = useState(null);
 
   useEffect(() => {
+    setMounted(true);
     fetchResearchers();
   }, []);
 
   useEffect(() => {
     filterResearchers();
-  }, [searchTerm, researchers]);
+  }, [searchTerm, researchers, departmentFilter, sortBy, sortOrder]);
 
   const fetchResearchers = async () => {
     try {
@@ -90,22 +96,62 @@ const ManageResearchers = () => {
   };
 
   const filterResearchers = () => {
-    if (!searchTerm.trim()) {
-      setFilteredResearchers(researchers);
-      return;
+    let filtered = [...researchers];
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(researcher => {
+        const fullName = `${researcher.givenName || ''} ${researcher.familyName || ''}`.toLowerCase();
+        const email = (researcher.email || '').toLowerCase();
+        const department = (researcher.researchProfile?.department || '').toLowerCase();
+        const institution = (researcher.primaryInstitution || '').toLowerCase();
+        
+        return fullName.includes(term) || 
+               email.includes(term) || 
+               department.includes(term) ||
+               institution.includes(term);
+      });
     }
 
-    const term = searchTerm.toLowerCase();
-    const filtered = researchers.filter(researcher => {
-      const fullName = `${researcher.givenName || ''} ${researcher.familyName || ''}`.toLowerCase();
-      const email = (researcher.email || '').toLowerCase();
-      const department = (researcher.researchProfile?.department || '').toLowerCase();
-      const institution = (researcher.primaryInstitution || '').toLowerCase();
+    // Apply department filter
+    if (departmentFilter !== 'all') {
+      filtered = filtered.filter(researcher => 
+        (researcher.researchProfile?.department || researcher.primaryInstitution) === departmentFilter
+      );
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
       
-      return fullName.includes(term) || 
-             email.includes(term) || 
-             department.includes(term) ||
-             institution.includes(term);
+      switch (sortBy) {
+        case 'name':
+          aValue = `${a.givenName || ''} ${a.familyName || ''}`.toLowerCase();
+          bValue = `${b.givenName || ''} ${b.familyName || ''}`.toLowerCase();
+          break;
+        case 'publications':
+          aValue = a.stats?.totalPublications || 0;
+          bValue = b.stats?.totalPublications || 0;
+          break;
+        case 'citations':
+          aValue = a.stats?.totalCitations || 0;
+          bValue = b.stats?.totalCitations || 0;
+          break;
+        case 'hindex':
+          aValue = a.stats?.hIndex || 0;
+          bValue = b.stats?.hIndex || 0;
+          break;
+        default:
+          aValue = 0;
+          bValue = 0;
+      }
+
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
     });
 
     setFilteredResearchers(filtered);
@@ -138,6 +184,24 @@ const ManageResearchers = () => {
     return title ? `${title} ${name}` : name;
   };
 
+  const getDepartments = () => {
+    const depts = new Set();
+    researchers.forEach(r => {
+      const dept = r.researchProfile?.department || r.primaryInstitution;
+      if (dept) depts.add(dept);
+    });
+    return Array.from(depts).sort();
+  };
+
+  const handleSortChange = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -146,7 +210,7 @@ const ManageResearchers = () => {
     });
   };
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
@@ -223,121 +287,243 @@ const ManageResearchers = () => {
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Stats Cards */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
-          <Card sx={{ flex: '1 1 200px', minWidth: 200 }}>
-            <CardContent>
+        <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
+          <Card sx={{ 
+            flex: '1 1 200px', 
+            minWidth: 200,
+            borderRadius: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 30px rgba(139,108,188,0.15)'
+            }
+          }}>
+            <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 0.5 }}>
+                  <Typography variant="h3" sx={{ fontWeight: 800, color: '#8b6cbc', mb: 0.5, lineHeight: 1 }}>
                     {researchers.length}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mt: 1 }}>
                     Total Researchers
                   </Typography>
                 </Box>
-                <GroupIcon sx={{ fontSize: 40, color: alpha('#8b6cbc', 0.2) }} />
+                <Box sx={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: '12px',
+                  bgcolor: 'rgba(139, 108, 188, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <GroupIcon sx={{ fontSize: 32, color: '#8b6cbc' }} />
+                </Box>
               </Box>
             </CardContent>
           </Card>
 
-          <Card sx={{ flex: '1 1 200px', minWidth: 200 }}>
-            <CardContent>
+          <Card sx={{ 
+            flex: '1 1 200px', 
+            minWidth: 200,
+            borderRadius: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 30px rgba(45,134,89,0.15)'
+            }
+          }}>
+            <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#2d8659', mb: 0.5 }}>
+                  <Typography variant="h3" sx={{ fontWeight: 800, color: '#2d8659', mb: 0.5, lineHeight: 1 }}>
                     {researchers.reduce((sum, r) => sum + (r.stats?.totalManuscripts || 0), 0)}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mt: 1 }}>
                     Total Manuscripts
                   </Typography>
                 </Box>
-                <ManuscriptIcon sx={{ fontSize: 40, color: alpha('#2d8659', 0.2) }} />
+                <Box sx={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: '12px',
+                  bgcolor: 'rgba(45, 134, 89, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <ManuscriptIcon sx={{ fontSize: 32, color: '#2d8659' }} />
+                </Box>
               </Box>
             </CardContent>
           </Card>
 
-          <Card sx={{ flex: '1 1 200px', minWidth: 200 }}>
-            <CardContent>
+          <Card sx={{ 
+            flex: '1 1 200px', 
+            minWidth: 200,
+            borderRadius: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 30px rgba(217,119,6,0.15)'
+            }
+          }}>
+            <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#d97706', mb: 0.5 }}>
+                  <Typography variant="h3" sx={{ fontWeight: 800, color: '#d97706', mb: 0.5, lineHeight: 1 }}>
                     {researchers.reduce((sum, r) => sum + (r.stats?.totalPublications || 0), 0)}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mt: 1 }}>
                     Total Publications
                   </Typography>
                 </Box>
-                <ArticleIcon sx={{ fontSize: 40, color: alpha('#d97706', 0.2) }} />
+                <Box sx={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: '12px',
+                  bgcolor: 'rgba(217, 119, 6, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <ArticleIcon sx={{ fontSize: 32, color: '#d97706' }} />
+                </Box>
               </Box>
             </CardContent>
           </Card>
 
-          <Card sx={{ flex: '1 1 200px', minWidth: 200 }}>
-            <CardContent>
+          <Card sx={{ 
+            flex: '1 1 200px', 
+            minWidth: 200,
+            borderRadius: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 30px rgba(37,99,235,0.15)'
+            }
+          }}>
+            <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#2563eb', mb: 0.5 }}>
+                  <Typography variant="h3" sx={{ fontWeight: 800, color: '#2563eb', mb: 0.5, lineHeight: 1 }}>
                     {researchers.reduce((sum, r) => sum + (r.stats?.totalCitations || 0), 0)}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mt: 1 }}>
                     Total Citations
                   </Typography>
                 </Box>
-                <CitationIcon sx={{ fontSize: 40, color: alpha('#2563eb', 0.2) }} />
+                <Box sx={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: '12px',
+                  bgcolor: 'rgba(37, 99, 235, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <CitationIcon sx={{ fontSize: 32, color: '#2563eb' }} />
+                </Box>
               </Box>
             </CardContent>
           </Card>
         </Box>
 
         {/* Search and Actions */}
-        <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField
-              placeholder="Search researchers by name, email, or department..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{ flex: 1, minWidth: 300 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#9ca3af' }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <Button
-              variant="outlined"
-              startIcon={<FilterIcon />}
-              sx={{
-                borderColor: '#e5e7eb',
-                color: '#6b7280',
-                '&:hover': {
-                  borderColor: '#8b6cbc',
-                  backgroundColor: alpha('#8b6cbc', 0.05)
-                }
-              }}
-            >
-              Filter
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<ExportIcon />}
-              sx={{
-                borderColor: '#e5e7eb',
-                color: '#6b7280',
-                '&:hover': {
-                  borderColor: '#8b6cbc',
-                  backgroundColor: alpha('#8b6cbc', 0.05)
-                }
-              }}
-            >
-              Export
-            </Button>
-          </Box>
+        <Paper sx={{ p: 3, mb: 3, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+          <Stack spacing={2}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+              <TextField
+                placeholder="Search researchers by name, email, or department..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                sx={{ flex: 1, minWidth: 300 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: '#9ca3af' }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Button
+                variant="outlined"
+                startIcon={<ExportIcon />}
+                sx={{
+                  borderColor: '#e5e7eb',
+                  color: '#6b7280',
+                  '&:hover': {
+                    borderColor: '#8b6cbc',
+                    backgroundColor: alpha('#8b6cbc', 0.05)
+                  }
+                }}
+              >
+                Export
+              </Button>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+              <TextField
+                select
+                label="Department"
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+                sx={{ minWidth: 200 }}
+                size="small"
+              >
+                <MenuItem value="all">All Departments</MenuItem>
+                {getDepartments().map((dept) => (
+                  <MenuItem key={dept} value={dept}>{dept}</MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                label="Sort By"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                sx={{ minWidth: 180 }}
+                size="small"
+              >
+                <MenuItem value="name">Name</MenuItem>
+                <MenuItem value="publications">Publications</MenuItem>
+                <MenuItem value="citations">Citations</MenuItem>
+                <MenuItem value="hindex">H-Index</MenuItem>
+              </TextField>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                sx={{
+                  borderColor: '#e5e7eb',
+                  color: '#6b7280',
+                  minWidth: 100,
+                  '&:hover': {
+                    borderColor: '#8b6cbc',
+                    backgroundColor: alpha('#8b6cbc', 0.05)
+                  }
+                }}
+              >
+                {sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}
+              </Button>
+              {(searchTerm || departmentFilter !== 'all') && (
+                <Chip
+                  label="Clear Filters"
+                  onDelete={() => {
+                    setSearchTerm('');
+                    setDepartmentFilter('all');
+                  }}
+                  sx={{ ml: 'auto' }}
+                />
+              )}
+            </Box>
+          </Stack>
         </Paper>
 
         {/* Researchers Table */}
-        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Paper sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
           {filteredResearchers.length === 0 ? (
             <Box sx={{ p: 8, textAlign: 'center' }}>
               <GroupIcon sx={{ fontSize: 64, color: '#e5e7eb', mb: 2 }} />
@@ -355,26 +541,26 @@ const ManageResearchers = () => {
             <TableContainer>
               <Table>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: '#f9fafb' }}>
-                    <TableCell sx={{ fontWeight: 600, color: '#374151', py: 2 }}>
+                  <TableRow sx={{ backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, fontSize: '0.875rem' }}>
                       Researcher
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#374151', py: 2 }}>
+                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, fontSize: '0.875rem' }}>
                       Department
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#374151', py: 2, textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, textAlign: 'center', fontSize: '0.875rem' }}>
                       Manuscripts
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#374151', py: 2, textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, textAlign: 'center', fontSize: '0.875rem' }}>
                       Publications
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#374151', py: 2, textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, textAlign: 'center', fontSize: '0.875rem' }}>
                       Citations
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#374151', py: 2, textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, textAlign: 'center', fontSize: '0.875rem' }}>
                       H-Index
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#374151', py: 2, textAlign: 'center' }}>
+                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, textAlign: 'center', fontSize: '0.875rem' }}>
                       Actions
                     </TableCell>
                   </TableRow>
@@ -384,8 +570,15 @@ const ManageResearchers = () => {
                     <TableRow
                       key={researcher.id}
                       sx={{
-                        '&:hover': { backgroundColor: '#f9fafb' },
+                        '&:hover': { 
+                          backgroundColor: '#f5f3f7',
+                          '& .researcher-avatar': {
+                            transform: 'scale(1.1)',
+                            boxShadow: '0 4px 12px rgba(139,108,188,0.3)'
+                          }
+                        },
                         cursor: 'pointer',
+                        transition: 'all 0.2s ease',
                         '& td': { borderBottom: '1px solid #f3f4f6' }
                       }}
                       onClick={() => handleViewProfile(researcher.id)}
@@ -393,47 +586,58 @@ const ManageResearchers = () => {
                       <TableCell sx={{ py: 2.5 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                           <Avatar
+                            className="researcher-avatar"
                             sx={{
-                              width: 40,
-                              height: 40,
+                              width: 44,
+                              height: 44,
                               bgcolor: '#8b6cbc',
                               fontSize: '0.875rem',
-                              fontWeight: 600
+                              fontWeight: 700,
+                              transition: 'all 0.2s ease',
+                              boxShadow: '0 2px 8px rgba(139,108,188,0.2)'
                             }}
                           >
                             {getInitials(researcher)}
                           </Avatar>
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#1a1a2e' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827', fontSize: '0.9rem' }}>
                                 {getFullName(researcher)}
                               </Typography>
                               {researcher.orcidId && (
-                                <Tooltip title="ORCID Verified">
-                                  <VerifiedIcon sx={{ fontSize: 16, color: '#a6ce39' }} />
+                                <Tooltip title="ORCID Verified" arrow>
+                                  <VerifiedIcon sx={{ fontSize: 18, color: '#a6ce39' }} />
                                 </Tooltip>
                               )}
                             </Box>
-                            <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                            <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.8rem' }}>
                               {researcher.email}
                             </Typography>
                           </Box>
                         </Box>
                       </TableCell>
                       <TableCell sx={{ py: 2.5 }}>
-                        <Typography variant="body2" sx={{ color: '#374151' }}>
-                          {researcher.researchProfile?.department || researcher.primaryInstitution || '—'}
-                        </Typography>
+                        <Chip
+                          label={researcher.researchProfile?.department || researcher.primaryInstitution || 'N/A'}
+                          size="small"
+                          sx={{
+                            bgcolor: 'rgba(139, 108, 188, 0.08)',
+                            color: '#8b6cbc',
+                            fontWeight: 600,
+                            fontSize: '0.75rem'
+                          }}
+                        />
                       </TableCell>
                       <TableCell sx={{ py: 2.5, textAlign: 'center' }}>
                         <Chip
                           label={researcher.stats?.totalManuscripts || 0}
                           size="small"
                           sx={{
-                            backgroundColor: alpha('#2d8659', 0.1),
+                            backgroundColor: alpha('#2d8659', 0.12),
                             color: '#2d8659',
-                            fontWeight: 600,
-                            minWidth: 40
+                            fontWeight: 700,
+                            minWidth: 45,
+                            fontSize: '0.8rem'
                           }}
                         />
                       </TableCell>
@@ -442,31 +646,41 @@ const ManageResearchers = () => {
                           label={researcher.stats?.totalPublications || 0}
                           size="small"
                           sx={{
-                            backgroundColor: alpha('#d97706', 0.1),
+                            backgroundColor: alpha('#d97706', 0.12),
                             color: '#d97706',
-                            fontWeight: 600,
-                            minWidth: 40
+                            fontWeight: 700,
+                            minWidth: 45,
+                            fontSize: '0.8rem'
                           }}
                         />
                       </TableCell>
                       <TableCell sx={{ py: 2.5, textAlign: 'center' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#2563eb' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#2563eb', fontSize: '0.9rem' }}>
                           {researcher.stats?.totalCitations || 0}
                         </Typography>
                       </TableCell>
                       <TableCell sx={{ py: 2.5, textAlign: 'center' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#7c3aed' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#7c3aed', fontSize: '0.9rem' }}>
                           {researcher.stats?.hIndex || 0}
                         </Typography>
                       </TableCell>
                       <TableCell sx={{ py: 2.5, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleMenuOpen(e, researcher)}
-                          sx={{ color: '#6b7280' }}
-                        >
-                          <MoreVertIcon fontSize="small" />
-                        </IconButton>
+                        <Tooltip title="View Profile" arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleViewProfile(researcher.id)}
+                            sx={{ 
+                              color: '#8b6cbc',
+                              '&:hover': {
+                                bgcolor: 'rgba(139, 108, 188, 0.1)',
+                                transform: 'scale(1.1)'
+                              },
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <ViewIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   ))}

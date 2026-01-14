@@ -6,7 +6,6 @@ import {
   Container,
   Paper,
   Typography,
-  Grid,
   Card,
   CardContent,
   CardActions,
@@ -71,6 +70,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../../components/AuthProvider';
 import { useRouter } from 'next/navigation';
+import SuperAdminLayout from '../../../components/SuperAdmin/SuperAdminLayout';
 
 const DatabaseManagementPage = () => {
   const theme = useTheme();
@@ -428,141 +428,110 @@ const DatabaseManagementPage = () => {
 
   if (loading && Object.keys(dbStats).length === 0) {
     return (
-      <Box sx={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        background: `linear-gradient(135deg, ${theme.palette.primary.main}05 0%, ${theme.palette.secondary.main}05 100%)`
-      }}>
-        <Box sx={{ textAlign: 'center' }}>
-          <CircularProgress size={60} sx={{ mb: 3 }} />
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            Loading Database Management
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Fetching real-time statistics...
-          </Typography>
+      <SuperAdminLayout>
+        <Box sx={{ 
+          minHeight: '100vh', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}05 0%, ${theme.palette.secondary.main}05 100%)`
+        }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <CircularProgress size={60} sx={{ mb: 3 }} />
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+              Loading Database Management
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Fetching real-time statistics...
+            </Typography>
+          </Box>
         </Box>
-      </Box>
+      </SuperAdminLayout>
     );
   }
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh', 
-      background: `linear-gradient(135deg, ${theme.palette.primary.main}03 0%, ${theme.palette.secondary.main}03 50%, ${theme.palette.background.default} 100%)`,
-      py: 3
-    }}>
-      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
-        {/* Professional Header with Gradient */}
+    <SuperAdminLayout>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: 'background.default', minHeight: '100vh' }}>
+        {/* Professional Header */}
         <Box sx={{ 
-          background: `linear-gradient(135deg, ${theme.palette.primary.main}15 0%, ${theme.palette.secondary.main}15 100%)`,
-          borderRadius: 3,
-          p: 4,
           mb: 4,
-          border: `1px solid ${theme.palette.primary.main}20`,
-          position: 'relative',
-          overflow: 'hidden'
+          pb: 3,
+          borderBottom: '2px solid',
+          borderColor: 'divider'
         }}>
-          {/* Background Pattern */}
-          <Box sx={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '200px',
-            height: '200px',
-            background: `radial-gradient(circle, ${theme.palette.primary.main}10 0%, transparent 70%)`,
-            borderRadius: '50%',
-            transform: 'translate(50%, -50%)'
-          }} />
-          
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            position: 'relative',
-            zIndex: 1
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <Avatar sx={{ 
-                bgcolor: 'primary.main', 
-                width: 56, 
-                height: 56,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
-              }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar sx={{ bgcolor: '#8b6cbc', width: 56, height: 56, boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)' }}>
                 <DatabaseIcon fontSize="large" />
               </Avatar>
               <Box>
-                <Typography variant="h4" component="h1" sx={{ 
-                  fontWeight: 700, 
-                  mb: 1,
-                  background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  letterSpacing: '-0.02em'
-                }}>
+                <Typography 
+                  variant="h3" 
+                  sx={{ 
+                    fontWeight: 700,
+                    mb: 0.5,
+                    letterSpacing: '-0.02em'
+                  }}
+                >
                   Database Management
                 </Typography>
-                <Typography variant="h6" sx={{ 
-                  color: 'text.secondary',
-                  fontWeight: 400,
-                  opacity: 0.8
-                }}>
-                  Enterprise-grade backup, restore & maintenance operations
+                <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Backup, restore & maintenance operations
                 </Typography>
               </Box>
             </Box>
             
-            <Stack direction="row" spacing={2}>
-              <Button
-                variant="contained"
-                startIcon={<RefreshIcon />}
-                onClick={() => window.location.reload()}
-                sx={{
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  px: 3,
-                  py: 1.5,
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                  '&:hover': {
-                    boxShadow: '0 6px 24px rgba(0,0,0,0.15)'
-                  }
-                }}
-              >
-                Refresh Data
-              </Button>
-            </Stack>
+            <Button
+              variant="contained"
+              startIcon={<RefreshIcon />}
+              onClick={() => window.location.reload()}
+              sx={{
+                bgcolor: '#8b6cbc',
+                '&:hover': {
+                  bgcolor: '#7a5caa'
+                },
+                boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
+              }}
+            >
+              Refresh Data
+            </Button>
           </Box>
         </Box>
 
-        {/* Professional Database Health Overview */}
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+        {/* Database Health Overview */}
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
               Database Health & Performance
             </Typography>
             <Chip 
               label="Real-time" 
-              color="success" 
               size="small" 
-              sx={{ fontWeight: 600 }}
-              icon={<CheckIcon />}
+              sx={{ 
+                bgcolor: '#f3e5f5',
+                color: '#8b6cbc',
+                border: '1px solid #e1bee7',
+                fontWeight: 600
+              }}
+              icon={<CheckIcon sx={{ color: '#8b6cbc' }} />}
             />
           </Box>
           
-          <Grid container spacing={3}>
-            <Grid item xs={12} lg={8}>
-              <Paper sx={{ 
-                p: 4, 
-                borderRadius: 3,
-                background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-                border: `1px solid ${theme.palette.divider}`
-              }}>
-                <Grid container spacing={4}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ flex: '1 1 calc(66% - 8px)', minWidth: '300px' }}>
+              <Paper 
+                elevation={0}
+                sx={{ 
+                  p: 3, 
+                  height: '100%',
+                  borderRadius: 3,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  background: 'linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(249,250,251,1) 100%)'
+                }}
+              >
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                   {[
                     { 
                       value: dbStats.dbSize, 
@@ -593,66 +562,55 @@ const DatabaseManagementPage = () => {
                       bgColor: dbStats.slowQueries > 0 ? 'error.main' : 'success.main'
                     }
                   ].map((stat, index) => (
-                    <Grid item xs={6} sm={3} key={index}>
-                      <Box sx={{ textAlign: 'center', position: 'relative' }}>
-                        <Box sx={{ 
-                          position: 'relative',
-                          mb: 2
+                    <Box key={index} sx={{ flex: '1 1 calc(25% - 18px)', minWidth: '120px', textAlign: 'center' }}>
+                      <Box sx={{ 
+                        p: 2,
+                        bgcolor: '#f3e5f5',
+                        borderRadius: 2,
+                        border: '1px solid #e1bee7'
+                      }}>
+                        <Avatar sx={{ 
+                          bgcolor: '#8b6cbc',
+                          mx: 'auto',
+                          width: 48,
+                          height: 48,
+                          mb: 1.5,
+                          boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
                         }}>
-                          <Avatar sx={{ 
-                            bgcolor: stat.bgColor,
-                            mx: 'auto',
-                            width: 64,
-                            height: 64,
-                            boxShadow: `0 8px 24px ${stat.bgColor}30`,
-                            border: '3px solid',
-                            borderColor: 'background.paper'
-                          }}>
-                            {React.cloneElement(stat.icon, { fontSize: 'large' })}
-                          </Avatar>
-                          <Box sx={{
-                            position: 'absolute',
-                            top: -8,
-                            right: '50%',
-                            transform: 'translateX(50%)',
-                            width: 16,
-                            height: 16,
-                            borderRadius: '50%',
-                            bgcolor: 'success.main',
-                            border: '3px solid',
-                            borderColor: 'background.paper',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-                          }} />
-                        </Box>
+                          {React.cloneElement(stat.icon, { fontSize: 'medium' })}
+                        </Avatar>
                         <Typography variant="h4" sx={{ 
-                          fontWeight: 800, 
-                          color: stat.color,
+                          fontWeight: 700, 
+                          color: '#8b6cbc',
                           mb: 0.5,
                           letterSpacing: '-0.02em'
                         }}>
                           {stat.value}
                         </Typography>
-                        <Typography variant="body2" sx={{ 
+                        <Typography variant="caption" sx={{ 
                           color: 'text.secondary',
-                          fontWeight: 500,
+                          fontWeight: 600,
                           textTransform: 'uppercase',
-                          fontSize: '0.75rem',
-                          letterSpacing: '0.5px'
+                          fontSize: '0.7rem'
                         }}>
                           {stat.label}
                         </Typography>
                       </Box>
-                    </Grid>
+                    </Box>
                   ))}
-                </Grid>
+                </Box>
               </Paper>
-            </Grid>
+            </Box>
             
-            <Grid item xs={12} lg={4}>
-              <Paper sx={{ 
-                p: 4, 
-                height: '100%',
-                borderRadius: 3,
+            <Box sx={{ flex: '1 1 calc(34% - 8px)', minWidth: '300px' }}>
+              <Paper 
+                elevation={0}
+                sx={{ 
+                  p: 3, 
+                  height: '100%',
+                  borderRadius: 3,
+                  border: '1px solid',
+                  borderColor: 'divider',
                 background: `linear-gradient(145deg, ${theme.palette.success.main}08 0%, ${theme.palette.success.main}03 100%)`,
                 boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
                 border: `1px solid ${theme.palette.success.main}20`
@@ -692,9 +650,14 @@ const DatabaseManagementPage = () => {
                       </Box>
                       <Chip 
                         label={item.status}
-                        color={item.color}
                         size="small"
-                        sx={{ fontWeight: 600, fontSize: '0.7rem' }}
+                        sx={{ 
+                          bgcolor: '#f3e5f5',
+                          color: '#8b6cbc',
+                          border: '1px solid #e1bee7',
+                          fontWeight: 600,
+                          fontSize: '0.7rem'
+                        }}
                       />
                     </Box>
                   ))}
@@ -711,13 +674,12 @@ const DatabaseManagementPage = () => {
                   </Typography>
                 </Box>
               </Paper>
-            </Grid>
-          </Grid>
-        </Box>
+            </Box>
+          </Box>
 
-        {/* Professional Data Statistics */}
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {/* Data Statistics */}
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
                 Data Overview
@@ -729,64 +691,76 @@ const DatabaseManagementPage = () => {
             <Button
               variant="outlined"
               startIcon={<AnalyticsIcon />}
-              sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+              sx={{ 
+                borderColor: '#8b6cbc',
+                color: '#8b6cbc',
+                '&:hover': {
+                  borderColor: '#7a5caa',
+                  bgcolor: '#f3e5f5'
+                }
+              }}
             >
               View Analytics
             </Button>
           </Box>
           
-          <Grid container spacing={3}>
-            {dataStats.map((stat, index) => {
-              const colors = ['primary', 'secondary', 'success', 'warning'];
-              const color = colors[index % colors.length];
-              
-              return (
-                <Grid item xs={12} sm={6} lg={3} key={index}>
-                  <Card sx={{ 
-                    height: '100%',
-                    borderRadius: 3,
-                    background: `linear-gradient(145deg, ${theme.palette[color].main}08 0%, ${theme.palette[color].main}03 100%)`,
-                    border: `2px solid ${theme.palette[color].main}15`,
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': { 
-                      transform: 'translateY(-4px)',
-                      boxShadow: `0 12px 40px ${theme.palette[color].main}25`,
-                      border: `2px solid ${theme.palette[color].main}30`
-                    }
-                  }}>
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
-                        <Avatar sx={{ 
-                          bgcolor: `${color}.main`, 
-                          width: 48, 
-                          height: 48,
-                          boxShadow: `0 8px 24px ${theme.palette[color].main}40`
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            {dataStats.map((stat, index) => (
+              <Box key={index} sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
+                <Card sx={{ 
+                  height: '100%',
+                  background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+                  '&:hover': { 
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 8px 24px rgba(139, 108, 188, 0.3)'
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: '100px',
+                    height: '100px',
+                    background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    transform: 'translate(40%, -40%)'
+                  }
+                }}>
+                  <CardContent sx={{ position: 'relative', zIndex: 1, p: 2.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+                      <Avatar sx={{ 
+                        bgcolor: 'rgba(255,255,255,0.2)', 
+                        width: 44, 
+                        height: 44
+                      }}>
+                        {React.cloneElement(stat.icon, { fontSize: 'medium' })}
+                      </Avatar>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="caption" sx={{ 
+                          opacity: 0.9,
+                          fontWeight: 500,
+                          textTransform: 'uppercase',
+                          fontSize: '0.7rem'
                         }}>
-                          {React.cloneElement(stat.icon, { fontSize: 'medium' })}
-                        </Avatar>
-                        <Box sx={{ textAlign: 'right' }}>
-                          <Typography variant="caption" sx={{ 
-                            color: 'text.secondary', 
-                            fontWeight: 500,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px'
-                          }}>
-                            Total
-                          </Typography>
-                          <Typography variant="h3" sx={{ 
-                            fontWeight: 800, 
-                            color: `${color}.main`,
-                            lineHeight: 1,
-                            letterSpacing: '-0.02em'
-                          }}>
-                            {stat.count}
-                          </Typography>
+                          Total
+                        </Typography>
+                        <Typography variant="h4" sx={{ 
+                          fontWeight: 700, 
+                          lineHeight: 1,
+                          letterSpacing: '-0.02em'
+                        }}>
+                          {stat.count}
+                        </Typography>
                         </Box>
                       </Box>
                       
-                      <Typography variant="h6" sx={{ 
-                        fontWeight: 600, 
-                        color: 'text.primary',
+                      <Typography variant="body1" sx={{ 
+                        fontWeight: 600,
+                        opacity: 0.9,
                         mb: 1
                       }}>
                         {stat.label}
@@ -796,20 +770,19 @@ const DatabaseManagementPage = () => {
                         display: 'flex', 
                         alignItems: 'center', 
                         justifyContent: 'space-between',
-                        mt: 2,
-                        p: 1.5,
-                        bgcolor: 'background.paper',
-                        borderRadius: 2,
-                        border: `1px solid ${theme.palette.divider}`
+                        mt: 1.5,
+                        pt: 1.5,
+                        borderTop: '1px solid rgba(255,255,255,0.2)'
                       }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 500 }}>
                           Table: {stat.table}
                         </Typography>
                         <IconButton 
                           size="small" 
                           sx={{ 
-                            color: `${color}.main`,
-                            '&:hover': { bgcolor: `${color}.main`, color: 'white' }
+                            color: 'white',
+                            bgcolor: 'rgba(255,255,255,0.2)',
+                            '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
                           }}
                         >
                           <ViewIcon fontSize="small" />
@@ -817,10 +790,10 @@ const DatabaseManagementPage = () => {
                       </Box>
                     </CardContent>
                   </Card>
-                </Grid>
-              );
-            })}
-          </Grid>
+                </Box>
+              ))}
+            </Box>
+          </Box>
         </Box>
 
         {/* Professional Database Operations */}
@@ -834,9 +807,9 @@ const DatabaseManagementPage = () => {
             </Typography>
           </Box>
           
-          <Grid container spacing={3}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
             {dbOperations.map((operation, index) => (
-              <Grid item xs={12} sm={6} lg={4} key={index}>
+              <Box key={index} sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: '280px' }}>
                 <Card sx={{ 
                   height: '100%',
                   borderRadius: 3,
@@ -947,14 +920,14 @@ const DatabaseManagementPage = () => {
                     </Button>
                   </CardActions>
                 </Card>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Box>
 
-        {/* Professional Backup History & Maintenance */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} lg={8}>
+        {/* Backup History & Maintenance */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+          <Box sx={{ flex: '1 1 calc(66% - 8px)', minWidth: '300px' }}>
             <Paper sx={{ 
               borderRadius: 3,
               background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
@@ -1092,9 +1065,9 @@ const DatabaseManagementPage = () => {
                 </Box>
               )}
             </Paper>
-          </Grid>
+          </Box>
           
-          <Grid item xs={12} lg={4}>
+          <Box sx={{ flex: '1 1 calc(34% - 8px)', minWidth: '300px' }}>
             <Stack spacing={3}>
               {/* Quick Maintenance */}
               <Paper sx={{ 
@@ -1214,8 +1187,8 @@ const DatabaseManagementPage = () => {
                 </Alert>
               </Paper>
             </Stack>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Operation Dialog */}
         {renderOperationDialog()}
@@ -1225,7 +1198,8 @@ const DatabaseManagementPage = () => {
           mt: 6, 
           p: 3,
           textAlign: 'center',
-          borderTop: `1px solid ${theme.palette.divider}`,
+          borderTop: '1px solid',
+          borderColor: 'divider',
           bgcolor: 'background.paper',
           borderRadius: 3
         }}>
@@ -1233,8 +1207,8 @@ const DatabaseManagementPage = () => {
             Database Management System • Last refreshed: {new Date().toLocaleString()} • All operations logged
           </Typography>
         </Box>
-      </Container>
-    </Box>
+      </Box>
+    </SuperAdminLayout>
   );
 };
 

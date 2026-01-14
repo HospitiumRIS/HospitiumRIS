@@ -542,88 +542,78 @@ const ProposalReviewPage = () => {
       />
       
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Overview Cards */}
-        <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
+        {/* Statistics Cards */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          mb: 4, 
+          flexWrap: 'wrap',
+          '& > *': {
+            transition: 'all 0.2s ease'
+          }
+        }}>
           <Card sx={{ 
-            flex: '1 1 calc(25% - 18px)', 
-            minWidth: '200px',
+            flex: '1 1 calc(33.333% - 14px)', 
+            minWidth: '180px',
             background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
             color: 'white',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
             '&:hover': {
-              transform: 'translateY(-3px)',
-              boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 12px rgba(139, 108, 188, 0.25)'
             }
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <ProposalIcon sx={{ fontSize: 28, mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold">
+            <CardContent sx={{ textAlign: 'center', py: 2 }}>
+              <ProposalIcon sx={{ fontSize: 24, mb: 0.5 }} />
+              <Typography variant="h5" fontWeight="bold">
                 {proposals.length}
               </Typography>
-              <Typography variant="subtitle2">
+              <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
                 Total Proposals
               </Typography>
             </CardContent>
           </Card>
 
           <Card sx={{ 
-            flex: '1 1 calc(25% - 18px)', 
-            minWidth: '200px',
+            flex: '1 1 calc(33.333% - 14px)', 
+            minWidth: '180px',
             background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
             color: 'white',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
             '&:hover': {
-              transform: 'translateY(-3px)',
-              boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 12px rgba(139, 108, 188, 0.25)'
             }
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <ReviewIcon sx={{ fontSize: 28, mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold">
+            <CardContent sx={{ textAlign: 'center', py: 2 }}>
+              <ReviewIcon sx={{ fontSize: 24, mb: 0.5 }} />
+              <Typography variant="h5" fontWeight="bold">
                 {proposals.filter(p => p.status === 'UNDER_REVIEW').length}
               </Typography>
-              <Typography variant="subtitle2">
+              <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
                 Under Review
               </Typography>
             </CardContent>
           </Card>
 
           <Card sx={{ 
-            flex: '1 1 calc(25% - 18px)', 
-            minWidth: '200px',
+            flex: '1 1 calc(33.333% - 14px)', 
+            minWidth: '180px',
             background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
             color: 'white',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
             '&:hover': {
-              transform: 'translateY(-3px)',
-              boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 12px rgba(139, 108, 188, 0.25)'
             }
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <ApproveIcon sx={{ fontSize: 28, mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold">
+            <CardContent sx={{ textAlign: 'center', py: 2 }}>
+              <ApproveIcon sx={{ fontSize: 24, mb: 0.5 }} />
+              <Typography variant="h5" fontWeight="bold">
                 {proposals.filter(p => p.status === 'APPROVED').length}
               </Typography>
-              <Typography variant="subtitle2">
+              <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
                 Approved
-              </Typography>
-            </CardContent>
-          </Card>
-
-          <Card sx={{ 
-            flex: '1 1 calc(25% - 18px)', 
-            minWidth: '200px',
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            '&:hover': {
-              transform: 'translateY(-3px)',
-              boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
-            }
-          }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <BudgetIcon sx={{ fontSize: 28, mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold">
-                {formatCurrency(proposals.reduce((sum, p) => sum + p.budget, 0))}
-              </Typography>
-              <Typography variant="subtitle2">
-                Total Requested
               </Typography>
             </CardContent>
           </Card>

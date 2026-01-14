@@ -357,6 +357,17 @@ const Navbar = () => {
                 ]
               },
               {
+                title: 'PROJECT TRACKING',
+                items: [
+                  {
+                    label: 'Track Projects',
+                    description: 'Monitor all ongoing projects and their progress',
+                    icon: <AssessmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/projects'
+                  }
+                ]
+              },
+              {
                 title: 'RESEARCHER MANAGEMENT',
                 items: [
                   {

@@ -229,6 +229,38 @@ export async function GET(request) {
       ? ((proposalsWithConsent / allProposals) * 100).toFixed(1)
       : 0;
 
+    // Calculate documentation compliance
+    const proposalsWithDocumentation = proposalsWithEthics.filter(p => 
+      p.ethicsDocuments && p.ethicsDocuments.length > 0
+    ).length;
+    const documentationRate = proposalsWithEthics.length > 0
+      ? ((proposalsWithDocumentation / proposalsWithEthics.length) * 100).toFixed(1)
+      : 0;
+
+    // Calculate review timeline metrics
+    const approvedWithDates = proposalsWithEthics.filter(p => 
+      p.ethicsApprovalStatus === 'Approved' && p.approvalDate && p.createdAt
+    );
+    
+    let averageReviewTime = 0;
+    let fastestReview = 0;
+    if (approvedWithDates.length > 0) {
+      const reviewTimes = approvedWithDates.map(p => {
+        const created = new Date(p.createdAt);
+        const approved = new Date(p.approvalDate);
+        return Math.floor((approved - created) / (1000 * 60 * 60 * 24)); // days
+      });
+      averageReviewTime = Math.round(reviewTimes.reduce((sum, time) => sum + time, 0) / reviewTimes.length);
+      fastestReview = Math.min(...reviewTimes);
+    }
+
+    // Calculate overdue reviews (pending for more than 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const overdueReviews = proposalsWithEthics.filter(p => 
+      p.ethicsApprovalStatus === 'Pending' && new Date(p.createdAt) < thirtyDaysAgo
+    ).length;
+
     const analyticsData = {
       overview: {
         totalProposals: allProposals,
@@ -242,6 +274,18 @@ export async function GET(request) {
         approvalRate: parseFloat(approvalRate),
         dataComplianceRate: parseFloat(dataComplianceRate),
         consentComplianceRate: parseFloat(consentComplianceRate)
+      },
+      complianceRequirements: {
+        ethicsApproval: parseFloat(((approvedEthics / allProposals) * 100).toFixed(1)),
+        dataManagement: parseFloat(dataComplianceRate),
+        informedConsent: parseFloat(consentComplianceRate),
+        consentCount: proposalsWithConsent,
+        documentation: parseFloat(documentationRate)
+      },
+      reviewMetrics: {
+        averageReviewTime,
+        fastestReview,
+        overdueReviews
       },
       ethicsCommittees: Object.values(ethicsCommittees).sort((a, b) => b.totalProposals - a.totalProposals),
       complianceByDepartment: Object.values(complianceByDepartment).sort((a, b) => b.complianceRate - a.complianceRate),

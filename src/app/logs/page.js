@@ -245,50 +245,44 @@ const LogsPage = () => {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: theme.palette.background.default, py: 2 }}>
-      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
-        {/* Compact Header */}
+    <Box sx={{ minHeight: '100vh', backgroundColor: '#fafafa', py: 4 }}>
+      <Container maxWidth="xl">
+        {/* Header */}
         <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          mb: 3,
-          p: 2,
-          bgcolor: 'background.paper',
-          borderRadius: 2,
-          border: `1px solid ${theme.palette.divider}`
+          mb: 4
         }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: 'primary.main', width: 36, height: 36 }}>
-              <FilterIcon fontSize="small" />
-            </Avatar>
-            <Box>
-              <Typography variant="h5" component="h1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                Activity Logs Monitor
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                System activity tracking & analysis
-              </Typography>
-            </Box>
-          </Box>
-          
-          <Stack direction="row" spacing={1}>
-            <Chip 
-              label={`${pagination.total} Total Logs`}
-              color="primary" 
-              variant="outlined"
-              size="small"
-            />
-            {autoRefresh && (
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: '#1f2937', mb: 1 }}>
+            Activity Logs
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+            <Typography variant="body1" color="text.secondary">
+              Monitor system activity and track all operations
+            </Typography>
+            <Stack direction="row" spacing={1.5}>
               <Chip 
-                label="Auto-refresh ON"
-                color="success" 
-                variant="outlined"
-                size="small"
-                icon={<RefreshIcon />}
+                label={`${pagination.total.toLocaleString()} Total Logs`}
+                sx={{ 
+                  bgcolor: 'white',
+                  border: '1px solid #e5e7eb',
+                  fontWeight: 600,
+                  fontSize: '0.875rem'
+                }}
               />
-            )}
-          </Stack>
+              {autoRefresh && (
+                <Chip 
+                  label="Auto-refresh"
+                  icon={<RefreshIcon />}
+                  sx={{ 
+                    bgcolor: '#dcfce7',
+                    color: '#166534',
+                    border: '1px solid #bbf7d0',
+                    fontWeight: 600,
+                    fontSize: '0.875rem'
+                  }}
+                />
+              )}
+            </Stack>
+          </Box>
         </Box>
 
         {/* Error Alert */}
@@ -298,84 +292,94 @@ const LogsPage = () => {
           </Alert>
         )}
 
-        {/* Compact Statistics Cards */}
+        {/* Statistics Cards */}
         {stats.total > 0 && (
-          <Box sx={{ 
-            display: 'flex', 
-            flexWrap: 'wrap', 
-            gap: 2, 
-            mb: 3 
-          }}>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
             {/* Total Logs Card */}
-            <Card sx={{ 
-              flex: '1 1 200px',
-              minWidth: 200,
-              bgcolor: 'background.paper',
-              border: `1px solid ${theme.palette.divider}`,
-              '&:hover': { boxShadow: 2 }
-            }}>
-              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-                    <ApiIcon fontSize="small" />
-                  </Avatar>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                      {stats.total?.toLocaleString() || 0}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Logs
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-
-            {/* Level-specific cards */}
-            {Object.entries(stats.levels || {}).map(([level, count]) => (
-              <Card key={level} sx={{ 
-                flex: '1 1 180px',
-                minWidth: 180,
-                bgcolor: 'background.paper',
-                border: `1px solid ${theme.palette.divider}`,
-                '&:hover': { boxShadow: 2 }
+            <Grid item xs={12} sm={6} md={3}>
+              <Card sx={{ 
+                bgcolor: 'white',
+                borderRadius: 2,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                border: '1px solid #f3f4f6',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  borderColor: '#e5e7eb'
+                }
               }}>
-                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 32 }}>
-                      {LOG_LEVEL_CONFIG[level]?.icon && React.cloneElement(LOG_LEVEL_CONFIG[level].icon, { 
-                        fontSize: 'small',
-                        color: LOG_LEVEL_CONFIG[level].color === 'error' ? 'error.main' : 
-                               LOG_LEVEL_CONFIG[level].color === 'warning' ? 'warning.main' :
-                               LOG_LEVEL_CONFIG[level].color === 'success' ? 'success.main' : 'primary.main'
-                      })}
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        {count.toLocaleString()}
+                <CardContent sx={{ p: 2.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 0.5, lineHeight: 1 }}>
+                        {stats.total?.toLocaleString() || 0}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {LOG_LEVEL_CONFIG[level]?.label || level}
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
+                        Total Logs
                       </Typography>
                     </Box>
+                    <ApiIcon sx={{ fontSize: 28, color: '#8b6cbc', opacity: 0.3 }} />
                   </Box>
                 </CardContent>
               </Card>
-            ))}
-          </Box>
+            </Grid>
+
+            {/* Level-specific cards */}
+            {Object.entries(stats.levels || {}).slice(0, 3).map(([level, count]) => {
+              const colorMap = {
+                ERROR: '#ef4444',
+                WARNING: '#f59e0b',
+                INFO: '#3b82f6',
+                SUCCESS: '#10b981',
+                API_CALL: '#8b6cbc',
+                DB_OPERATION: '#6366f1'
+              };
+              const color = colorMap[level] || '#6b7280';
+              
+              return (
+                <Grid item xs={12} sm={6} md={3} key={level}>
+                  <Card sx={{ 
+                    bgcolor: 'white',
+                    borderRadius: 2,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                    border: '1px solid #f3f4f6',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      borderColor: '#e5e7eb'
+                    }
+                  }}>
+                    <CardContent sx={{ p: 2.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box>
+                          <Typography variant="h4" sx={{ fontWeight: 700, color, mb: 0.5, lineHeight: 1 }}>
+                            {count.toLocaleString()}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
+                            {LOG_LEVEL_CONFIG[level]?.label || level}
+                          </Typography>
+                        </Box>
+                        {LOG_LEVEL_CONFIG[level]?.icon && React.cloneElement(LOG_LEVEL_CONFIG[level].icon, { 
+                          sx: { fontSize: 28, color, opacity: 0.3 }
+                        })}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              );
+            })}
+          </Grid>
         )}
 
-        {/* Compact Controls and Filters */}
+        {/* Controls and Filters */}
         <Paper sx={{ 
-          p: 2.5, 
+          p: 3, 
           mb: 3,
-          border: `1px solid ${theme.palette.divider}`
+          bgcolor: 'white',
+          borderRadius: 2,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid #f3f4f6'
         }}>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1.5 }}>
-              Filters & Controls
-            </Typography>
-          </Box>
           
           {/* Filters Row */}
           <Box sx={{ 
@@ -503,18 +507,24 @@ const LogsPage = () => {
           </Box>
         </Paper>
 
-        {/* Compact Logs Table */}
-        <Paper sx={{ border: `1px solid ${theme.palette.divider}` }}>
+        {/* Logs Table */}
+        <Paper sx={{ 
+          bgcolor: 'white',
+          borderRadius: 2,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          border: '1px solid #f3f4f6',
+          overflow: 'hidden'
+        }}>
           <TableContainer>
             <Table size="small">
               <TableHead>
-                <TableRow sx={{ bgcolor: 'background.default' }}>
-                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Timestamp</TableCell>
-                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Level</TableCell>
-                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Message</TableCell>
-                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>User/Email</TableCell>
-                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>IP Address</TableCell>
-                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>Details</TableCell>
+                <TableRow sx={{ bgcolor: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+                  <TableCell sx={{ fontWeight: 700, py: 2.5, fontSize: '0.875rem', color: '#1f2937' }}>Timestamp</TableCell>
+                  <TableCell sx={{ fontWeight: 700, py: 2.5, fontSize: '0.875rem', color: '#1f2937' }}>Level</TableCell>
+                  <TableCell sx={{ fontWeight: 700, py: 2.5, fontSize: '0.875rem', color: '#1f2937' }}>Message</TableCell>
+                  <TableCell sx={{ fontWeight: 700, py: 2.5, fontSize: '0.875rem', color: '#1f2937' }}>User/Email</TableCell>
+                  <TableCell sx={{ fontWeight: 700, py: 2.5, fontSize: '0.875rem', color: '#1f2937' }}>IP Address</TableCell>
+                  <TableCell sx={{ fontWeight: 700, py: 2.5, fontSize: '0.875rem', color: '#1f2937', textAlign: 'center' }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -535,26 +545,27 @@ const LogsPage = () => {
                 ) : (
                   logs.map((log, index) => (
                     <TableRow 
-                      key={`${log.timestamp}-${index}`} 
-                      hover 
+                      key={`${log.timestamp}-${index}`}
                       sx={{ 
-                        '&:nth-of-type(odd)': { bgcolor: 'action.hover' },
-                        '&:hover': { bgcolor: 'action.selected' }
+                        '&:hover': { bgcolor: '#f5f3f7' },
+                        transition: 'all 0.2s ease',
+                        '& td': { borderBottom: '1px solid #f3f4f6' }
                       }}
                     >
-                      <TableCell sx={{ py: 1 }}>
-                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                      <TableCell sx={{ py: 2 }}>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#6b7280' }}>
                           {formatTimestamp(log.timestamp)}
                         </Typography>
                       </TableCell>
-                      <TableCell sx={{ py: 1 }}>
-                        {React.cloneElement(getLogLevelChip(log.level), { size: 'small' })}
+                      <TableCell sx={{ py: 2 }}>
+                        {getLogLevelChip(log.level)}
                       </TableCell>
-                      <TableCell sx={{ py: 1, maxWidth: 300 }}>
+                      <TableCell sx={{ py: 2, maxWidth: 400 }}>
                         <Typography 
                           variant="body2" 
                           sx={{ 
-                            fontSize: '0.8rem',
+                            fontSize: '0.875rem',
+                            color: '#374151',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap'
@@ -563,32 +574,30 @@ const LogsPage = () => {
                           {log.message}
                         </Typography>
                       </TableCell>
-                      <TableCell sx={{ py: 1 }}>
-                        <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                          {log.metadata?.email || log.metadata?.userId || '-'}
+                      <TableCell sx={{ py: 2 }}>
+                        <Typography variant="body2" sx={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                          {log.metadata?.email || log.metadata?.userId || '—'}
                         </Typography>
                       </TableCell>
-                      <TableCell sx={{ py: 1 }}>
-                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
-                          {log.metadata?.ip || '-'}
+                      <TableCell sx={{ py: 2 }}>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#6b7280' }}>
+                          {log.metadata?.ip || '—'}
                         </Typography>
                       </TableCell>
-                      <TableCell sx={{ py: 1 }}>
-                        <Tooltip title={JSON.stringify(log.metadata || {}, null, 2)}>
-                          <Chip
+                      <TableCell sx={{ py: 2, textAlign: 'center' }}>
+                        <Tooltip title={<pre style={{ margin: 0, fontSize: '0.75rem' }}>{JSON.stringify(log.metadata || {}, null, 2)}</pre>} arrow>
+                          <IconButton
                             size="small"
-                            variant="outlined"
-                            label="Details"
-                            onClick={() => {
-                              // Could open a detail dialog
-                              console.log('Log details:', log);
-                            }}
+                            onClick={() => console.log('Log details:', log)}
                             sx={{ 
-                              fontSize: '0.7rem',
-                              height: 24,
-                              '& .MuiChip-label': { px: 1 }
+                              color: '#8b6cbc',
+                              '&:hover': {
+                                bgcolor: 'rgba(139, 108, 188, 0.1)'
+                              }
                             }}
-                          />
+                          >
+                            <InfoIcon fontSize="small" />
+                          </IconButton>
                         </Tooltip>
                       </TableCell>
                     </TableRow>

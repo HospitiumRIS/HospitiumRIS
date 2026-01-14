@@ -46,7 +46,11 @@ import {
   BarChart as BarChartIcon,
   Policy as PolicyIcon,
   Shield as ShieldIcon,
-  FactCheck as FactCheckIcon
+  FactCheck as FactCheckIcon,
+  Warning as WarningIcon,
+  AccessTime as TimeIcon,
+  Folder as FolderIcon,
+  CheckCircleOutline as CheckIcon
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
 
@@ -641,6 +645,272 @@ const ComplianceAnalytics = () => {
           </Box>
         </Box>
 
+        {/* Compliance Status Breakdown */}
+        <Box sx={{ mb: 4 }}>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              fontWeight: 700, 
+              mb: 3,
+              color: '#2d3748',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}
+          >
+            <PolicyIcon sx={{ color: '#8b6cbc' }} />
+            Compliance Requirements Status
+          </Typography>
+          
+          <Box sx={{ 
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
+            gap: 2
+          }}>
+            <Card sx={{ 
+              borderRadius: 2,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid #f3f4f6',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                borderColor: '#e5e7eb',
+                transform: 'translateY(-2px)'
+              }
+            }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    Ethics Approval
+                  </Typography>
+                  <CheckIcon sx={{ fontSize: 20, color: '#10b981' }} />
+                </Box>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#10b981', mb: 0.5, lineHeight: 1 }}>
+                  {analyticsData.complianceRequirements?.ethicsApproval || 0}%
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {analyticsData.overview.approvedEthics} of {analyticsData.overview.totalProposals} proposals
+                </Typography>
+                <LinearProgress
+                  variant="determinate"
+                  value={analyticsData.complianceRequirements?.ethicsApproval || 0}
+                  sx={{
+                    mt: 1.5,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: alpha('#10b981', 0.1),
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: '#10b981',
+                      borderRadius: 2
+                    }
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            <Card sx={{ 
+              borderRadius: 2,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid #f3f4f6',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                borderColor: '#e5e7eb',
+                transform: 'translateY(-2px)'
+              }
+            }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    Data Management
+                  </Typography>
+                  <ShieldIcon sx={{ fontSize: 20, color: '#3b82f6' }} />
+                </Box>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#3b82f6', mb: 0.5, lineHeight: 1 }}>
+                  {analyticsData.complianceRequirements?.dataManagement || 0}%
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {analyticsData.overview.proposalsWithDataPlan} with DMP
+                </Typography>
+                <LinearProgress
+                  variant="determinate"
+                  value={analyticsData.complianceRequirements?.dataManagement || 0}
+                  sx={{
+                    mt: 1.5,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: alpha('#3b82f6', 0.1),
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: '#3b82f6',
+                      borderRadius: 2
+                    }
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            <Card sx={{ 
+              borderRadius: 2,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid #f3f4f6',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                borderColor: '#e5e7eb',
+                transform: 'translateY(-2px)'
+              }
+            }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    Informed Consent
+                  </Typography>
+                  <FactCheckIcon sx={{ fontSize: 20, color: '#f59e0b' }} />
+                </Box>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#f59e0b', mb: 0.5, lineHeight: 1 }}>
+                  {analyticsData.complianceRequirements?.informedConsent || 0}%
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {analyticsData.complianceRequirements?.consentCount || 0} proposals with consent
+                </Typography>
+                <LinearProgress
+                  variant="determinate"
+                  value={analyticsData.complianceRequirements?.informedConsent || 0}
+                  sx={{
+                    mt: 1.5,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: alpha('#f59e0b', 0.1),
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: '#f59e0b',
+                      borderRadius: 2
+                    }
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            <Card sx={{ 
+              borderRadius: 2,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid #f3f4f6',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                borderColor: '#e5e7eb',
+                transform: 'translateY(-2px)'
+              }
+            }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    Documentation
+                  </Typography>
+                  <FolderIcon sx={{ fontSize: 20, color: '#8b5cf6' }} />
+                </Box>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b5cf6', mb: 0.5, lineHeight: 1 }}>
+                  {analyticsData.complianceRequirements?.documentation || 0}%
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Complete documentation
+                </Typography>
+                <LinearProgress
+                  variant="determinate"
+                  value={analyticsData.complianceRequirements?.documentation || 0}
+                  sx={{
+                    mt: 1.5,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: alpha('#8b5cf6', 0.1),
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: '#8b5cf6',
+                      borderRadius: 2
+                    }
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </Box>
+        </Box>
+
+        {/* Review Timeline Metrics */}
+        <Box sx={{ mb: 4 }}>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              fontWeight: 700, 
+              mb: 3,
+              color: '#2d3748',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}
+          >
+            <TimeIcon sx={{ color: '#8b6cbc' }} />
+            Review Timeline Performance
+          </Typography>
+          
+          <Box sx={{ 
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+            gap: 2
+          }}>
+            <Card sx={{ 
+              borderRadius: 2,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid #f3f4f6'
+            }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontWeight: 600 }}>
+                  Average Review Time
+                </Typography>
+                <Typography variant="h3" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 0.5 }}>
+                  {analyticsData.reviewMetrics?.averageReviewTime || 0}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  days to approval
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ 
+              borderRadius: 2,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid #f3f4f6'
+            }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontWeight: 600 }}>
+                  Fastest Review
+                </Typography>
+                <Typography variant="h3" sx={{ fontWeight: 700, color: '#10b981', mb: 0.5 }}>
+                  {analyticsData.reviewMetrics?.fastestReview || 0}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  days (best time)
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ 
+              borderRadius: 2,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid #f3f4f6'
+            }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontWeight: 600 }}>
+                  Overdue Reviews
+                </Typography>
+                <Typography variant="h3" sx={{ fontWeight: 700, color: '#ef4444', mb: 0.5 }}>
+                  {analyticsData.reviewMetrics?.overdueReviews || 0}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  require attention
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
+        </Box>
+
         {/* Charts Section */}
         <Box sx={{ 
           display: 'flex', 
@@ -852,56 +1122,75 @@ const ComplianceAnalytics = () => {
                 </Stack>
               </Box>
 
-              <TableContainer sx={{ maxHeight: 400 }}>
-                <Table stickyHeader size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600, backgroundColor: '#fafafa', borderBottom: '2px solid', borderColor: 'divider', py: 1.5 }}>
-                        Proposal
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, backgroundColor: '#fafafa', borderBottom: '2px solid', borderColor: 'divider', py: 1.5 }}>
-                        Committee
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, backgroundColor: '#fafafa', borderBottom: '2px solid', borderColor: 'divider', py: 1.5 }}>
-                        Date
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredProposals.slice(0, 10).map((proposal) => (
-                      <TableRow 
-                        key={proposal.id} 
-                        hover
-                        sx={{ 
-                          cursor: 'pointer',
-                          '&:hover': { backgroundColor: alpha('#8b6cbc', 0.05) }
-                        }}
-                      >
-                        <TableCell>
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {proposal.title}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {proposal.principalInvestigator} • {proposal.department}
-                            </Typography>
-                          </Box>
+              {filteredProposals.length === 0 ? (
+                <Box sx={{ 
+                  p: 6, 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  minHeight: 300
+                }}>
+                  <ApprovedIcon sx={{ fontSize: 64, color: alpha('#8b6cbc', 0.2), mb: 2 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#6b7280', mb: 1 }}>
+                    No Recent Approvals
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 400 }}>
+                    {proposalSearchTerm ? 'No approvals match your search criteria. Try adjusting your search terms.' : 'There are no recent ethics approvals to display at this time.'}
+                  </Typography>
+                </Box>
+              ) : (
+                <TableContainer sx={{ maxHeight: 400 }}>
+                  <Table stickyHeader size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 600, backgroundColor: '#fafafa', borderBottom: '2px solid', borderColor: 'divider', py: 1.5 }}>
+                          Proposal
                         </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {proposal.ethicsCommittee || 'N/A'}
-                          </Typography>
+                        <TableCell sx={{ fontWeight: 600, backgroundColor: '#fafafa', borderBottom: '2px solid', borderColor: 'divider', py: 1.5 }}>
+                          Committee
                         </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {formatDate(proposal.approvalDate)}
-                          </Typography>
+                        <TableCell sx={{ fontWeight: 600, backgroundColor: '#fafafa', borderBottom: '2px solid', borderColor: 'divider', py: 1.5 }}>
+                          Date
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {filteredProposals.slice(0, 10).map((proposal) => (
+                        <TableRow 
+                          key={proposal.id} 
+                          hover
+                          sx={{ 
+                            cursor: 'pointer',
+                            '&:hover': { backgroundColor: alpha('#8b6cbc', 0.05) }
+                          }}
+                        >
+                          <TableCell>
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {proposal.title}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {proposal.principalInvestigator} • {proposal.department}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {proposal.ethicsCommittee || 'N/A'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {formatDate(proposal.approvalDate)}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
             </CardContent>
           </Card>
 
@@ -955,68 +1244,87 @@ const ComplianceAnalytics = () => {
               </Box>
 
               <Box sx={{ p: 3, maxHeight: 400, overflowY: 'auto' }}>
-                <Stack spacing={2}>
-                  {filteredPending.slice(0, 10).map((proposal) => (
-                    <Box
-                      key={proposal.id}
-                      sx={{
-                        p: 2,
-                        borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: alpha('#8b6cbc', 0.1),
-                        transition: 'all 0.2s ease',
-                        cursor: 'pointer',
-                        '&:hover': {
-                          borderColor: '#8b6cbc',
-                          backgroundColor: alpha('#8b6cbc', 0.02),
-                          transform: 'translateX(4px)'
-                        }
-                      }}
-                    >
-                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1 }}>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                            {proposal.title}
+                {filteredPending.length === 0 ? (
+                  <Box sx={{ 
+                    py: 6, 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    minHeight: 250
+                  }}>
+                    <PendingIcon sx={{ fontSize: 64, color: alpha('#f59e0b', 0.2), mb: 2 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#6b7280', mb: 1 }}>
+                      No Pending Reviews
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 400 }}>
+                      {pendingSearchTerm ? 'No pending reviews match your search criteria. Try adjusting your search terms.' : 'There are no proposals currently awaiting ethics review.'}
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Stack spacing={2}>
+                    {filteredPending.slice(0, 10).map((proposal) => (
+                      <Box
+                        key={proposal.id}
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          border: '1px solid',
+                          borderColor: alpha('#8b6cbc', 0.1),
+                          transition: 'all 0.2s ease',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            borderColor: '#8b6cbc',
+                            backgroundColor: alpha('#8b6cbc', 0.02),
+                            transform: 'translateX(4px)'
+                          }
+                        }}
+                      >
+                        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1 }}>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                              {proposal.title}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                              {proposal.principalInvestigator} • {proposal.department}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                        <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+                          {proposal.hasDataPlan && (
+                            <Chip
+                              icon={<ShieldIcon sx={{ fontSize: 14 }} />}
+                              label="Data Plan"
+                              size="small"
+                              sx={{ 
+                                height: 20, 
+                                fontSize: '0.65rem',
+                                bgcolor: alpha('#8b6cbc', 0.1),
+                                color: '#8b6cbc'
+                              }}
+                            />
+                          )}
+                          {proposal.hasConsent && (
+                            <Chip
+                              icon={<FactCheckIcon sx={{ fontSize: 14 }} />}
+                              label="Consent"
+                              size="small"
+                              sx={{ 
+                                height: 20, 
+                                fontSize: '0.65rem',
+                                bgcolor: alpha('#4caf50', 0.1),
+                                color: '#4caf50'
+                              }}
+                            />
+                          )}
+                          <Typography variant="caption" color="text.secondary">
+                            Submitted: {formatDate(proposal.submittedDate)}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                            {proposal.principalInvestigator} • {proposal.department}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                      <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
-                        {proposal.hasDataPlan && (
-                          <Chip
-                            icon={<ShieldIcon sx={{ fontSize: 14 }} />}
-                            label="Data Plan"
-                            size="small"
-                            sx={{ 
-                              height: 20, 
-                              fontSize: '0.65rem',
-                              bgcolor: alpha('#8b6cbc', 0.1),
-                              color: '#8b6cbc'
-                            }}
-                          />
-                        )}
-                        {proposal.hasConsent && (
-                          <Chip
-                            icon={<FactCheckIcon sx={{ fontSize: 14 }} />}
-                            label="Consent"
-                            size="small"
-                            sx={{ 
-                              height: 20, 
-                              fontSize: '0.65rem',
-                              bgcolor: alpha('#4caf50', 0.1),
-                              color: '#4caf50'
-                            }}
-                          />
-                        )}
-                        <Typography variant="caption" color="text.secondary">
-                          Submitted: {formatDate(proposal.submittedDate)}
-                        </Typography>
-                      </Stack>
-                    </Box>
-                  ))}
-                </Stack>
+                        </Stack>
+                      </Box>
+                    ))}
+                  </Stack>
+                )}
               </Box>
             </CardContent>
           </Card>

@@ -136,6 +136,7 @@ const transformProposalToProject = (proposal) => {
 
 const ProjectStatusPage = () => {
   const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [currentTab, setCurrentTab] = useState(0);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -170,6 +171,7 @@ const ProjectStatusPage = () => {
 
   // Fetch proposals from database
   useEffect(() => {
+    setMounted(true);
     const fetchProposals = async () => {
       try {
         setLoading(true);
@@ -885,13 +887,9 @@ const ProjectStatusPage = () => {
       />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Loading State */}
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-            <CircularProgress size={40} sx={{ color: '#8b6cbc' }} />
-            <Typography variant="h6" sx={{ ml: 2 }}>
-              Loading project data...
-            </Typography>
+        {(!mounted || loading) ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+            <CircularProgress size={60} sx={{ color: '#8b6cbc' }} />
           </Box>
         ) : (
           <>

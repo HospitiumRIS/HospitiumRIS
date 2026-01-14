@@ -50,6 +50,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   MoreVert as MoreIcon,
+  MoreVert as MoreVertIcon,
   Person as PersonIcon,
   Email as EmailIcon,
   Business as BusinessIcon,
@@ -68,6 +69,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../../components/AuthProvider';
 import { useRouter } from 'next/navigation';
+import SuperAdminLayout from '../../../components/SuperAdmin/SuperAdminLayout';
 
 const UserManagementPage = () => {
   const theme = useTheme();
@@ -327,50 +329,70 @@ const UserManagementPage = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Button
-          startIcon={<BackIcon />}
-          onClick={() => router.push('/super-admin')}
-          sx={{ mb: 2 }}
-        >
-          Back to Super Admin Dashboard
-        </Button>
-        
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 56, height: 56 }}>
-              <UsersIcon fontSize="large" />
-            </Avatar>
-            <Box>
-              <Typography variant="h4" gutterBottom>
-                User Management
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Manage user accounts, permissions, and settings
-              </Typography>
+    <SuperAdminLayout>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: 'background.default', minHeight: '100vh' }}>
+        {/* Professional Header */}
+        <Box sx={{ 
+          mb: 4,
+          pb: 3,
+          borderBottom: '2px solid',
+          borderColor: 'divider'
+        }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar sx={{ bgcolor: '#8b6cbc', width: 56, height: 56, boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)' }}>
+                <UsersIcon fontSize="large" />
+              </Avatar>
+              <Box>
+                <Typography 
+                  variant="h3" 
+                  sx={{ 
+                    fontWeight: 700,
+                    mb: 0.5,
+                    letterSpacing: '-0.02em'
+                  }}
+                >
+                  User Management
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Manage user accounts, permissions, and settings
+                </Typography>
+              </Box>
             </Box>
+            
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="outlined"
+                startIcon={<ExportIcon />}
+                onClick={handleExportUsers}
+                sx={{
+                  borderColor: '#8b6cbc',
+                  color: '#8b6cbc',
+                  '&:hover': {
+                    borderColor: '#7a5caa',
+                    bgcolor: '#f3e5f5'
+                  }
+                }}
+              >
+                Export Users
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<RefreshIcon />}
+                onClick={fetchUsers}
+                sx={{
+                  bgcolor: '#8b6cbc',
+                  '&:hover': {
+                    bgcolor: '#7a5caa'
+                  },
+                  boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
+                }}
+              >
+                Refresh
+              </Button>
+            </Stack>
           </Box>
-          
-          <Stack direction="row" spacing={2}>
-            <Button
-              variant="outlined"
-              startIcon={<ExportIcon />}
-              onClick={handleExportUsers}
-            >
-              Export Users
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<RefreshIcon />}
-              onClick={fetchUsers}
-            >
-              Refresh
-            </Button>
-          </Stack>
         </Box>
-      </Box>
 
       {/* Alert */}
       {alert.show && (
@@ -381,102 +403,192 @@ const UserManagementPage = () => {
 
       {/* Statistics Cards */}
       <Box sx={{ 
-        display: 'grid',
-        gridTemplateColumns: {
-          xs: '1fr',
-          sm: 'repeat(2, 1fr)',
-          md: 'repeat(4, 1fr)'
-        },
-        gap: 3,
-        mb: 4
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 2,
+        mb: 3
       }}>
-        <Card sx={{ 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white'
-        }}>
-          <CardContent>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }}>
-                <CheckIcon sx={{ color: 'white' }} />
-              </Avatar>
-              <Box>
-                <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-                  {stats.byStatus?.active || 0}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                  Active Users
-                </Typography>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
+        <Box sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
+          <Card sx={{ 
+            height: '100%',
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
+            color: 'white',
+            position: 'relative',
+            overflow: 'hidden',
+            transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 24px rgba(139, 108, 188, 0.3)'
+            },
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '100px',
+              height: '100px',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+              borderRadius: '50%',
+              transform: 'translate(40%, -40%)'
+            }
+          }}>
+            <CardContent sx={{ position: 'relative', zIndex: 1, p: 2.5 }}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', width: 44, height: 44 }}>
+                  <CheckIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+                    {stats.byStatus?.active || 0}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
+                    Active Users
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
         
-        <Card sx={{ 
-          background: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)',
-          color: 'white'
-        }}>
-          <CardContent>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }}>
-                <PendingIcon sx={{ color: 'white' }} />
-              </Avatar>
-              <Box>
-                <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-                  {stats.byStatus?.pending || 0}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                  Pending Users
-                </Typography>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
+        <Box sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
+          <Card sx={{ 
+            height: '100%',
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
+            color: 'white',
+            position: 'relative',
+            overflow: 'hidden',
+            transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 24px rgba(139, 108, 188, 0.3)'
+            },
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '100px',
+              height: '100px',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+              borderRadius: '50%',
+              transform: 'translate(40%, -40%)'
+            }
+          }}>
+            <CardContent sx={{ position: 'relative', zIndex: 1, p: 2.5 }}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', width: 44, height: 44 }}>
+                  <PendingIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+                    {stats.byStatus?.pending || 0}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
+                    Pending Users
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
         
-        <Card sx={{ 
-          background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-          color: 'white'
-        }}>
-          <CardContent>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }}>
-                <BlockIcon sx={{ color: 'white' }} />
-              </Avatar>
-              <Box>
-                <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-                  {stats.byStatus?.suspended || 0}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                  Suspended
-                </Typography>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
+        <Box sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
+          <Card sx={{ 
+            height: '100%',
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
+            color: 'white',
+            position: 'relative',
+            overflow: 'hidden',
+            transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 24px rgba(139, 108, 188, 0.3)'
+            },
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '100px',
+              height: '100px',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+              borderRadius: '50%',
+              transform: 'translate(40%, -40%)'
+            }
+          }}>
+            <CardContent sx={{ position: 'relative', zIndex: 1, p: 2.5 }}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', width: 44, height: 44 }}>
+                  <BlockIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+                    {stats.byStatus?.suspended || 0}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
+                    Suspended
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
         
-        <Card sx={{ 
-          background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-          color: 'white'
-        }}>
-          <CardContent>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }}>
-                <UsersIcon sx={{ color: 'white' }} />
-              </Avatar>
-              <Box>
-                <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-                  {totalUsers}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                  Total Users
-                </Typography>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
+        <Box sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
+          <Card sx={{ 
+            height: '100%',
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
+            color: 'white',
+            position: 'relative',
+            overflow: 'hidden',
+            transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 24px rgba(139, 108, 188, 0.3)'
+            },
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '100px',
+              height: '100px',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+              borderRadius: '50%',
+              transform: 'translate(40%, -40%)'
+            }
+          }}>
+            <CardContent sx={{ position: 'relative', zIndex: 1, p: 2.5 }}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', width: 44, height: 44 }}>
+                  <UsersIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+                    {totalUsers}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
+                    Total Users
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
       </Box>
 
       {/* Filters and Search */}
-      <Paper sx={{ p: 3, mb: 3 }}>
+      <Paper 
+        elevation={0}
+        sx={{ 
+          p: 3, 
+          mb: 3,
+          borderRadius: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          background: 'linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(249,250,251,1) 100%)'
+        }}
+      >
         <Box sx={{ 
           display: 'grid',
           gridTemplateColumns: {
@@ -547,7 +659,16 @@ const UserManagementPage = () => {
       </Paper>
 
       {/* Users Table */}
-      <Paper>
+      <Paper 
+        elevation={0}
+        sx={{ 
+          borderRadius: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          background: 'linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(249,250,251,1) 100%)',
+          overflow: 'hidden'
+        }}
+      >
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
@@ -557,22 +678,35 @@ const UserManagementPage = () => {
             <TableContainer>
               <Table>
                 <TableHead>
-                  <TableRow>
-                    <TableCell>User</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Account Type</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Verified</TableCell>
-                    <TableCell>Joined</TableCell>
-                    <TableCell align="center">Actions</TableCell>
+                  <TableRow sx={{ bgcolor: 'grey.50' }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>User</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>Email</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>Account Type</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>Verified</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>Joined</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {users.map((userData) => (
-                    <TableRow key={userData.id} hover>
+                    <TableRow 
+                      key={userData.id} 
+                      sx={{ 
+                        '&:hover': { 
+                          bgcolor: 'action.hover',
+                          cursor: 'pointer'
+                        },
+                        transition: 'all 0.2s ease-in-out'
+                      }}
+                    >
                       <TableCell>
                         <Stack direction="row" spacing={2} alignItems="center">
-                          <Avatar>
+                          <Avatar sx={{ 
+                            bgcolor: '#8b6cbc',
+                            fontWeight: 600,
+                            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)'
+                          }}>
                             {getInitials(userData.givenName, userData.familyName)}
                           </Avatar>
                           <Box>
@@ -623,9 +757,19 @@ const UserManagementPage = () => {
                               <IconButton
                                 size="small"
                                 color="error"
-                                onClick={() => handleDeleteUser(userData)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMenuOpen(e, userData.id);
+                                }}
+                                sx={{
+                                  bgcolor: '#8b6cbc',
+                                  color: 'white',
+                                  '&:hover': {
+                                    bgcolor: '#7a5caa'
+                                  }
+                                }}
                               >
-                                <DeleteIcon />
+                                <MoreVertIcon />
                               </IconButton>
                             </Tooltip>
                           )}
@@ -659,176 +803,232 @@ const UserManagementPage = () => {
         onClose={() => setDialogOpen(false)}
         maxWidth="md"
         fullWidth
+        disableScrollLock
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
+          }
+        }}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
+          color: 'white',
+          pb: 3
+        }}>
           <Stack direction="row" spacing={2} alignItems="center">
-            <Avatar>
+            <Avatar sx={{ 
+              width: 56, 
+              height: 56,
+              bgcolor: 'rgba(255,255,255,0.2)',
+              fontSize: '1.5rem',
+              fontWeight: 700,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+            }}>
               {selectedUser && getInitials(selectedUser.givenName, selectedUser.familyName)}
             </Avatar>
             <Box>
-              <Typography variant="h6">
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
                 {selectedUser?.givenName} {selectedUser?.familyName}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="body2" sx={{ opacity: 0.95 }}>
                 {selectedUser?.email}
               </Typography>
             </Box>
           </Stack>
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent sx={{ p: 3, bgcolor: '#fafafa' }}>
           {selectedUser && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <Stack direction="row" spacing={1}>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
                 {getAccountTypeChip(selectedUser.accountType)}
                 {getStatusChip(selectedUser.status)}
                 {selectedUser.emailVerified && (
-                  <Chip icon={<CheckIcon />} label="Email Verified" color="success" size="small" />
+                  <Chip 
+                    icon={<CheckIcon />} 
+                    label="Email Verified" 
+                    sx={{ 
+                      bgcolor: '#f3e5f5',
+                      color: '#8b6cbc',
+                      border: '1px solid #e1bee7',
+                      fontWeight: 600
+                    }}
+                    size="small" 
+                  />
                 )}
               </Stack>
 
-              <Divider />
+              <Paper elevation={0} sx={{ p: 3, borderRadius: 2, bgcolor: 'white' }}>
 
-              <Box sx={{ 
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
-                gap: 3
-              }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">User ID</Typography>
-                  <Typography variant="body1">{selectedUser.id}</Typography>
-                </Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 2 }}>
+                  Basic Information
+                </Typography>
+                <Box sx={{ 
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
+                  gap: 2.5
+                }}>
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>User ID</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.id}</Typography>
+                  </Box>
 
-                <Box>
-                  <Typography variant="caption" color="text.secondary">ORCID ID</Typography>
-                  <Typography variant="body1">{selectedUser.orcidId || 'N/A'}</Typography>
-                </Box>
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>ORCID ID</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.orcidId || 'N/A'}</Typography>
+                  </Box>
 
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Primary Institution</Typography>
-                  <Typography variant="body1">{selectedUser.primaryInstitution || 'N/A'}</Typography>
-                </Box>
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Primary Institution</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.primaryInstitution || 'N/A'}</Typography>
+                  </Box>
 
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Research Start</Typography>
-                  <Typography variant="body1">
-                    {selectedUser.startMonth && selectedUser.startYear
-                      ? `${selectedUser.startMonth} ${selectedUser.startYear}`
-                      : 'N/A'}
-                  </Typography>
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Research Start</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>
+                      {selectedUser.startMonth && selectedUser.startYear
+                        ? `${selectedUser.startMonth} ${selectedUser.startYear}`
+                        : 'N/A'}
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
+              </Paper>
 
               {selectedUser.institution && (
-                <>
-                  <Divider><Chip label="Institution Details" size="small" /></Divider>
+                <Paper elevation={0} sx={{ p: 3, borderRadius: 2, bgcolor: 'white' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 2 }}>
+                    Institution Details
+                  </Typography>
                   <Box sx={{ 
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
-                    gap: 3
+                    gap: 2.5
                   }}>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Institution Name</Typography>
-                      <Typography variant="body1">{selectedUser.institution.name}</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Institution Name</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.institution.name}</Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Institution Type</Typography>
-                      <Typography variant="body1">{selectedUser.institution.type}</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Institution Type</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.institution.type}</Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Country</Typography>
-                      <Typography variant="body1">{selectedUser.institution.country}</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Country</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.institution.country}</Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Website</Typography>
-                      <Typography variant="body1">{selectedUser.institution.website || 'N/A'}</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Website</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.institution.website || 'N/A'}</Typography>
                     </Box>
                   </Box>
-                </>
+                </Paper>
               )}
 
               {selectedUser.foundation && (
-                <>
-                  <Divider><Chip label="Foundation Details" size="small" /></Divider>
+                <Paper elevation={0} sx={{ p: 3, borderRadius: 2, bgcolor: 'white' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 2 }}>
+                    Foundation Details
+                  </Typography>
                   <Box sx={{ 
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
-                    gap: 3
+                    gap: 2.5
                   }}>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Foundation Name</Typography>
-                      <Typography variant="body1">{selectedUser.foundation.foundationName}</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Foundation Name</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.foundation.foundationName}</Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Institution Name</Typography>
-                      <Typography variant="body1">{selectedUser.foundation.institutionName}</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Institution Name</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.foundation.institutionName}</Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Type</Typography>
-                      <Typography variant="body1">{selectedUser.foundation.type}</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Type</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.foundation.type}</Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Country</Typography>
-                      <Typography variant="body1">{selectedUser.foundation.country}</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Country</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.foundation.country}</Typography>
                     </Box>
                   </Box>
-                </>
+                </Paper>
               )}
 
-              <Divider><Chip label="Activity Stats" size="small" /></Divider>
+              <Paper elevation={0} sx={{ p: 3, borderRadius: 2, bgcolor: 'white' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 2 }}>
+                  Activity Stats
+                </Typography>
 
-              <Box sx={{ 
-                display: 'grid',
-                gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
-                gap: 3
-              }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Manuscripts</Typography>
-                  <Typography variant="h6">{selectedUser._count?.manuscripts || 0}</Typography>
+                <Box sx={{ 
+                  display: 'grid',
+                  gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
+                  gap: 3
+                }}>
+                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f3e5f5', borderRadius: 2 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 0.5 }}>{selectedUser._count?.manuscripts || 0}</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase' }}>Manuscripts</Typography>
+                  </Box>
+
+                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f3e5f5', borderRadius: 2 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 0.5 }}>{selectedUser._count?.publications || 0}</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase' }}>Publications</Typography>
+                  </Box>
+
+                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f3e5f5', borderRadius: 2 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 0.5 }}>{selectedUser._count?.notifications || 0}</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase' }}>Notifications</Typography>
+                  </Box>
                 </Box>
+              </Paper>
 
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Publications</Typography>
-                  <Typography variant="h6">{selectedUser._count?.publications || 0}</Typography>
+              <Paper elevation={0} sx={{ p: 3, borderRadius: 2, bgcolor: 'white' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 2 }}>
+                  Account Timeline
+                </Typography>
+                <Box sx={{ 
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
+                  gap: 2.5
+                }}>
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Account Created</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>
+                      {new Date(selectedUser.createdAt).toLocaleString()}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Last Updated</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>
+                      {new Date(selectedUser.updatedAt).toLocaleString()}
+                    </Typography>
+                  </Box>
                 </Box>
-
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Notifications</Typography>
-                  <Typography variant="h6">{selectedUser._count?.notifications || 0}</Typography>
-                </Box>
-              </Box>
-
-              <Divider />
-
-              <Box sx={{ 
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
-                gap: 3
-              }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Account Created</Typography>
-                  <Typography variant="body1">
-                    {new Date(selectedUser.createdAt).toLocaleString()}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="caption" color="text.secondary">Last Updated</Typography>
-                  <Typography variant="body1">
-                    {new Date(selectedUser.updatedAt).toLocaleString()}
-                  </Typography>
-                </Box>
-              </Box>
+              </Paper>
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Close</Button>
+        <DialogActions sx={{ p: 2.5, bgcolor: '#fafafa', borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button 
+            onClick={() => setDialogOpen(false)}
+            sx={{ 
+              color: 'text.secondary',
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+          >
+            Close
+          </Button>
           <Button
-            variant="outlined"
+            variant="contained"
             startIcon={<EditIcon />}
             onClick={() => {
               setDialogOpen(false);
               handleEditUser(selectedUser);
+            }}
+            sx={{
+              bgcolor: '#8b6cbc',
+              '&:hover': { bgcolor: '#7a5caa' },
+              boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
             }}
           >
             Edit User
@@ -842,54 +1042,139 @@ const UserManagementPage = () => {
         onClose={() => setEditDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        disableScrollLock
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
+          }
+        }}
       >
-        <DialogTitle>Edit User</DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ mt: 2 }}>
-            <TextField
-              fullWidth
-              label="Given Name"
-              value={editForm.givenName}
-              onChange={(e) => setEditForm({ ...editForm, givenName: e.target.value })}
-            />
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
+          color: 'white',
+          pb: 2
+        }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Avatar sx={{ 
+              bgcolor: 'rgba(255,255,255,0.2)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            }}>
+              <EditIcon />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                Edit User
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.95 }}>
+                Update user information and settings
+              </Typography>
+            </Box>
+          </Stack>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3, bgcolor: '#fafafa' }}>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, bgcolor: 'white' }}>
+              <TextField
+                fullWidth
+                label="Given Name"
+                value={editForm.givenName}
+                onChange={(e) => setEditForm({ ...editForm, givenName: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#8b6cbc'
+                    }
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: '#8b6cbc'
+                  }
+                }}
+              />
+            </Paper>
             
-            <TextField
-              fullWidth
-              label="Family Name"
-              value={editForm.familyName}
-              onChange={(e) => setEditForm({ ...editForm, familyName: e.target.value })}
-            />
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, bgcolor: 'white' }}>
+              <TextField
+                fullWidth
+                label="Family Name"
+                value={editForm.familyName}
+                onChange={(e) => setEditForm({ ...editForm, familyName: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#8b6cbc'
+                    }
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: '#8b6cbc'
+                  }
+                }}
+              />
+            </Paper>
             
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={editForm.status}
-                label="Status"
-                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-              >
-                <MenuItem value="ACTIVE">Active</MenuItem>
-                <MenuItem value="PENDING">Pending</MenuItem>
-                <MenuItem value="INACTIVE">Inactive</MenuItem>
-                <MenuItem value="SUSPENDED">Suspended</MenuItem>
-              </Select>
-            </FormControl>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, bgcolor: 'white' }}>
+              <FormControl fullWidth>
+                <InputLabel sx={{ '&.Mui-focused': { color: '#8b6cbc' } }}>Status</InputLabel>
+                <Select
+                  value={editForm.status}
+                  label="Status"
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                  sx={{
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#8b6cbc'
+                    }
+                  }}
+                >
+                  <MenuItem value="ACTIVE">Active</MenuItem>
+                  <MenuItem value="PENDING">Pending</MenuItem>
+                  <MenuItem value="INACTIVE">Inactive</MenuItem>
+                  <MenuItem value="SUSPENDED">Suspended</MenuItem>
+                </Select>
+              </FormControl>
+            </Paper>
             
-            <FormControl fullWidth>
-              <InputLabel>Email Verified</InputLabel>
-              <Select
-                value={editForm.emailVerified}
-                label="Email Verified"
-                onChange={(e) => setEditForm({ ...editForm, emailVerified: e.target.value })}
-              >
-                <MenuItem value={true}>Yes</MenuItem>
-                <MenuItem value={false}>No</MenuItem>
-              </Select>
-            </FormControl>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, bgcolor: 'white' }}>
+              <FormControl fullWidth>
+                <InputLabel sx={{ '&.Mui-focused': { color: '#8b6cbc' } }}>Email Verified</InputLabel>
+                <Select
+                  value={editForm.emailVerified}
+                  label="Email Verified"
+                  onChange={(e) => setEditForm({ ...editForm, emailVerified: e.target.value })}
+                  sx={{
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#8b6cbc'
+                    }
+                  }}
+                >
+                  <MenuItem value={true}>Yes</MenuItem>
+                  <MenuItem value={false}>No</MenuItem>
+                </Select>
+              </FormControl>
+            </Paper>
           </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmitEdit}>Save Changes</Button>
+        <DialogActions sx={{ p: 2.5, bgcolor: '#fafafa', borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button 
+            onClick={() => setEditDialogOpen(false)}
+            sx={{ 
+              color: 'text.secondary',
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={handleSubmitEdit}
+            startIcon={<CheckIcon />}
+            sx={{
+              bgcolor: '#8b6cbc',
+              '&:hover': { bgcolor: '#7a5caa' },
+              boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
+            }}
+          >
+            Save Changes
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -915,7 +1200,8 @@ const UserManagementPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+      </Box>
+    </SuperAdminLayout>
   );
 };
 

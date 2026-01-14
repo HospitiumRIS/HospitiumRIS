@@ -1,10 +1,28 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getAuthenticatedUser } from '@/lib/auth-server';
 
 const prisma = new PrismaClient();
 
-export async function GET() {
+export async function GET(request) {
   try {
+    // Check authentication
+    const user = await getAuthenticatedUser(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    if (user.accountType !== 'SUPER_ADMIN') {
+      return NextResponse.json(
+        { success: false, message: 'Insufficient privileges' },
+        { status: 403 }
+      );
+    }
+
     // Get database statistics
     const [
       totalUsers,

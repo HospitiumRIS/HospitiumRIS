@@ -33,7 +33,8 @@ export async function GET(request, { params }) {
       );
     }
 
-    const userId = params.id;
+    const resolvedParams = await params;
+    const userId = resolvedParams.id;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -90,7 +91,8 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    const userId = params.id;
+    const resolvedParams = await params;
+    const userId = resolvedParams.id;
     const body = await request.json();
 
     // Validate user exists
@@ -166,7 +168,8 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const userId = params.id;
+    const resolvedParams = await params;
+    const userId = resolvedParams.id;
 
     // Validate user exists
     const existingUser = await prisma.user.findUnique({

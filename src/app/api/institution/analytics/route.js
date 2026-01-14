@@ -306,6 +306,135 @@ export async function GET(request) {
       .sort((a, b) => b.totalOutput - a.totalOutput)
       .slice(0, 10);
 
+    // Enhanced department statistics with detailed metrics
+    let enhancedDepartmentStats = [];
+    try {
+      enhancedDepartmentStats = await Promise.all(
+        departmentStats.slice(0, 6).map(async (dept) => {
+          try {
+            const deptName = dept.primaryInstitution || 'Unspecified';
+            
+            // Get researchers in this department
+            const deptResearchers = await prisma.user.findMany({
+              where: {
+                accountType: 'RESEARCHER',
+                primaryInstitution: deptName
+              },
+              include: {
+                manuscripts: { select: { id: true } },
+                publications: { select: { id: true } }
+              }
+            });
+
+            // Get proposals for this department - handle both array and string
+            const deptProposals = await prisma.proposal.findMany({
+              where: {
+                OR: [
+                  {
+                    departments: {
+                      has: deptName
+                    }
+                  },
+                  {
+                    principalInvestigator: {
+                      contains: deptName
+                    }
+                  }
+                ]
+              }
+            });
+
+            const approvedDeptProposals = deptProposals.filter(p => p.status === 'APPROVED').length;
+            const totalDeptProposals = deptProposals.length;
+            
+            return {
+              name: deptName,
+              researcherCount: dept._count.id,
+              publicationCount: deptResearchers.reduce((sum, r) => sum + r.publications.length, 0),
+              manuscriptCount: deptResearchers.reduce((sum, r) => sum + r.manuscripts.length, 0),
+              proposalCount: totalDeptProposals,
+              successRate: totalDeptProposals > 0 ? Math.round((approvedDeptProposals / totalDeptProposals) * 100) : 0
+            };
+          } catch (deptError) {
+            console.error('Error processing department:', dept.primaryInstitution, deptError);
+            return {
+              name: dept.primaryInstitution || 'Unknown',
+              researcherCount: dept._count.id,
+              publicationCount: 0,
+              manuscriptCount: 0,
+              proposalCount: 0,
+              successRate: 0
+            };
+          }
+        })
+      );
+    } catch (statsError) {
+      console.error('Error calculating department stats:', statsError);
+      enhancedDepartmentStats = departmentStats.slice(0, 6).map(dept => ({
+        name: dept.primaryInstitution || 'Unknown',
+        researcherCount: dept._count.id,
+        publicationCount: 0,
+        manuscriptCount: 0,
+        proposalCount: 0,
+        successRate: 0
+      }));
+    }
+
+    // Calculate impact metrics with error handling
+    let totalCitations = 0;
+    let averageHIndex = 0;
+    let activeCollaborations = 0;
+    let totalFunding = { _sum: { totalBudgetAmount: 0 } };
+
+    try {
+      const allResearchers = await prisma.user.findMany({
+        where: { accountType: 'RESEARCHER' },
+        select: {
+          researchProfile: {
+            select: {
+              hIndex: true,
+              totalCitations: true
+            }
+          },
+          publications: { select: { id: true } }
+        }
+      });
+
+      totalCitations = allResearchers.reduce((sum, r) => sum + (r.researchProfile?.totalCitations || 0), 0);
+      averageHIndex = allResearchers.length > 0 
+        ? Math.round(allResearchers.reduce((sum, r) => sum + (r.researchProfile?.hIndex || 0), 0) / allResearchers.length)
+        : 0;
+    } catch (researcherError) {
+      console.error('Error calculating researcher metrics:', researcherError);
+    }
+
+    try {
+      // Count active collaborations (manuscripts with multiple collaborators)
+      activeCollaborations = await prisma.manuscript.count({
+        where: {
+          collaborators: {
+            some: {}
+          }
+        }
+      });
+    } catch (collabError) {
+      console.error('Error counting collaborations:', collabError);
+    }
+
+    try {
+      // Calculate total funding from approved proposals
+      totalFunding = await prisma.proposal.aggregate({
+        where: {
+          status: 'APPROVED'
+        },
+        _sum: {
+          totalBudgetAmount: true
+        }
+      });
+    } catch (fundingError) {
+      console.error('Error calculating funding:', fundingError);
+    }
+
     const analyticsData = {
       overview: {
         totalResearchers: totalUsers,
@@ -323,10 +452,13 @@ export async function GET(request) {
         avgOutputPerResearcher: totalUsers > 0 ? (totalOutput / totalUsers).toFixed(1) : 0
       },
       monthlyTrends,
-      departmentStats: departmentStats.map(dept => ({
-        department: dept.primaryInstitution || 'Unspecified',
-        researcherCount: dept._count.id
-      })),
+      departmentStats: enhancedDepartmentStats,
+      impactMetrics: {
+        totalCitations,
+        averageHIndex,
+        activeCollaborations,
+        totalFunding: totalFunding._sum.totalBudgetAmount || 0
+      },
       proposalStatus: {
         draft: draftProposals,
         submitted: submittedProposals,

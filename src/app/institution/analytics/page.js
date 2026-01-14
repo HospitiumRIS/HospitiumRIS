@@ -51,7 +51,13 @@ import {
   Visibility as ViewIcon,
   Article as ArticleIcon,
   Folder as FolderIcon,
-  InfoOutlined as InfoIcon
+  InfoOutlined as InfoIcon,
+  FormatQuote as CitationIcon,
+  Group as CollaborationIcon,
+  AttachMoney as FundingIcon,
+  Business as DepartmentIcon,
+  EmojiEvents as AchievementIcon,
+  Timeline as TimelineIcon
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
 
@@ -749,6 +755,188 @@ const InstitutionAnalytics = () => {
               </Box>
             </CardContent>
           </Card>
+        </Box>
+
+        {/* Department Performance Section */}
+        <Box sx={{ mb: 4 }}>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              fontWeight: 700, 
+              mb: 3,
+              color: '#2d3748',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}
+          >
+            <DepartmentIcon sx={{ color: '#8b6cbc' }} />
+            Department Performance
+          </Typography>
+          
+          <Box sx={{ 
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
+            gap: 2
+          }}>
+            {analyticsData.departmentStats?.slice(0, 6).map((dept) => (
+              <Card key={dept.name} sx={{ 
+                borderRadius: 2,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                border: '1px solid #f3f4f6',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  borderColor: '#e5e7eb',
+                  transform: 'translateY(-2px)'
+                }
+              }}>
+                <CardContent sx={{ p: 2.5 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1f2937', mb: 2 }}>
+                    {dept.name}
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                        Researchers
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
+                        {dept.researcherCount || 0}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                        Publications
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#10b981' }}>
+                        {dept.publicationCount || 0}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                        Proposals
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#f59e0b' }}>
+                        {dept.proposalCount || 0}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                        Success Rate
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#3b82f6' }}>
+                        {dept.successRate || 0}%
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+        </Box>
+
+        {/* Research Impact Metrics */}
+        <Box sx={{ mb: 4 }}>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              fontWeight: 700, 
+              mb: 3,
+              color: '#2d3748',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}
+          >
+            <AchievementIcon sx={{ color: '#8b6cbc' }} />
+            Research Impact & Collaboration
+          </Typography>
+          
+          <Box sx={{ 
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
+            gap: 2
+          }}>
+            <Card sx={{ 
+              borderRadius: 2,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid #f3f4f6'
+            }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#3b82f6', mb: 0.5, lineHeight: 1 }}>
+                      {analyticsData.impactMetrics?.totalCitations || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
+                      Total Citations
+                    </Typography>
+                  </Box>
+                  <CitationIcon sx={{ fontSize: 28, color: '#3b82f6', opacity: 0.3 }} />
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ 
+              borderRadius: 2,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid #f3f4f6'
+            }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#10b981', mb: 0.5, lineHeight: 1 }}>
+                      {analyticsData.impactMetrics?.averageHIndex || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
+                      Average H-Index
+                    </Typography>
+                  </Box>
+                  <TrendingUpIcon sx={{ fontSize: 28, color: '#10b981', opacity: 0.3 }} />
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ 
+              borderRadius: 2,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid #f3f4f6'
+            }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#f59e0b', mb: 0.5, lineHeight: 1 }}>
+                      {analyticsData.impactMetrics?.activeCollaborations || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
+                      Collaborations
+                    </Typography>
+                  </Box>
+                  <CollaborationIcon sx={{ fontSize: 28, color: '#f59e0b', opacity: 0.3 }} />
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card sx={{ 
+              borderRadius: 2,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              border: '1px solid #f3f4f6'
+            }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#059669', mb: 0.5, lineHeight: 1 }}>
+                      ${(analyticsData.impactMetrics?.totalFunding || 0) / 1000}K
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
+                      Total Funding
+                    </Typography>
+                  </Box>
+                  <FundingIcon sx={{ fontSize: 28, color: '#059669', opacity: 0.3 }} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
         </Box>
 
         {/* Data Tables Section */}
