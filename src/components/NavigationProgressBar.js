@@ -78,7 +78,7 @@ const NavigationProgressBar = () => {
     <Box
       sx={{
         position: 'fixed',
-        top: { xs: 56, sm: 64 }, // Height of AppBar
+        top: { xs: 99, sm: 107 }, // Height of AppBar + 43px offset
         left: 0,
         right: 0,
         zIndex: theme.zIndex.appBar + 1,

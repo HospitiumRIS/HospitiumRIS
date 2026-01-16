@@ -645,9 +645,9 @@ const Navbar = () => {
             borderBottom: `1px solid ${theme.palette.divider}`,
           }}
         >
-          <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, sm: 3 } }}>
+          <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, sm: 3 }, minHeight: { xs: 64, sm: 80 } }}>
             {/* Logo */}
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <NoSSR
                 fallback={
                   <Image
@@ -671,6 +671,15 @@ const Navbar = () => {
                   priority
                 />
               </NoSSR>
+              {/* KHCC Logo */}
+              <Image
+                src="/khcc.jpeg"
+                alt="King Hussein Cancer Center"
+                width={isMobile ? 41 : 110}
+                height={isMobile ? 41 : 110}
+                style={{ objectFit: 'contain' }}
+                priority
+              />
             </Box>
 
             {/* Desktop Navigation Menu */}
@@ -763,9 +772,9 @@ const Navbar = () => {
           zIndex: theme.zIndex.appBar,
         }}
       >
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, sm: 3 } }}>
+        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, sm: 3 }, minHeight: { xs: 64, sm: 70 } }}>
           {/* Logo */}
-          <Box sx={{ flexGrow: 1 }}>
+          <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
             <NoSSR
               fallback={
               <Image
@@ -795,6 +804,15 @@ const Navbar = () => {
                 priority
               />
             </NoSSR>
+            {/* KHCC Logo */}
+            <Image
+              src="/khcc.jpeg"
+              alt="King Hussein Cancer Center"
+              width={isMobile ? 37 : 105}
+              height={isMobile ? 37 : 105}
+              style={{ objectFit: 'contain' }}
+              priority
+            />
           </Box>
 
           {/* Desktop Navigation */}
