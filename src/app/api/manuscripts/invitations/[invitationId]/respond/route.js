@@ -19,7 +19,9 @@ export async function POST(request, { params }) {
       );
     }
 
-    const { invitationId } = params;
+    // In Next.js 15+, params is a Promise
+    const resolvedParams = await params;
+    const { invitationId } = resolvedParams;
     const { action } = await request.json();
 
     if (!invitationId) {

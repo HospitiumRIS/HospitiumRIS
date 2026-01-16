@@ -470,16 +470,9 @@ const RegisterPage = () => {
       if (data.success) {
         console.log('Registration successful:', data);
         
-        // Show success message with email verification instructions
-        if (data.emailSent) {
-          // Registration successful and email sent
-          setFormError('');
-          // You can either redirect to a success page or show inline message
-          router.push('/register/success?email=' + encodeURIComponent(formData.email));
-        } else {
-          // Registration successful but email failed
-          setFormError(data.message + ' Please contact support to resend your activation email.');
-        }
+        // Redirect to success page with login prompt
+        setFormError('');
+        router.push('/register/success?email=' + encodeURIComponent(formData.email));
       } else {
         // Handle validation errors from server
         if (data.errors) {

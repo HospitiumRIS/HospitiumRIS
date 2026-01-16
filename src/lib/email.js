@@ -24,6 +24,26 @@ const createTransporter = () => {
  * @returns {Promise<Object>} - Email send result
  */
 export async function sendActivationEmail(user, activationToken, isResend = false) {
+  const requiredEnvVars = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS'];
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    const error = `Missing required SMTP environment variables: ${missingVars.join(', ')}`;
+    console.error('❌ Email Configuration Error:', error);
+    console.error('Available env vars:', {
+      SMTP_HOST: process.env.SMTP_HOST ? 'SET' : 'MISSING',
+      SMTP_PORT: process.env.SMTP_PORT ? 'SET' : 'MISSING',
+      SMTP_USER: process.env.SMTP_USER ? 'SET' : 'MISSING',
+      SMTP_PASS: process.env.SMTP_PASS ? 'SET' : 'MISSING',
+      FROM_EMAIL: process.env.FROM_EMAIL ? 'SET' : 'MISSING',
+    });
+    return { 
+      success: false, 
+      error: error,
+      details: 'SMTP configuration is incomplete. Please check environment variables.'
+    };
+  }
+
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
   const activationUrl = `${baseUrl}/activate?token=${activationToken}`;
   
@@ -270,10 +290,13 @@ HospitiumRIS
 `;
 
   try {
+    console.log('🔧 Creating email transporter with SMTP configuration');
     const transporter = createTransporter();
     
+    console.log('🔍 Verifying SMTP connection...');
     // Verify transporter configuration
     await transporter.verify();
+    console.log('✅ SMTP connection verified');
     
     const mailOptions = {
       from: process.env.FROM_EMAIL || 'HospitiumRIS <noreply@hospitiumris.com>',
@@ -283,12 +306,36 @@ HospitiumRIS
       text: textContent,
     };
 
+    console.log('📤 Sending email to:', user.email);
     const result = await transporter.sendMail(mailOptions);
+    console.log('✅ Email sent successfully. Message ID:', result.messageId);
     
     return { success: true, data: result };
   } catch (error) {
-    console.error('Email send error:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Email send error:', {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode,
+      stack: error.stack
+    });
+    
+    let errorDetails = error.message;
+    if (error.code === 'EAUTH') {
+      errorDetails = 'SMTP Authentication failed. Please check SMTP_USER and SMTP_PASS credentials.';
+    } else if (error.code === 'ECONNECTION' || error.code === 'ETIMEDOUT') {
+      errorDetails = 'Cannot connect to SMTP server. Please check SMTP_HOST and SMTP_PORT.';
+    } else if (error.code === 'ESOCKET') {
+      errorDetails = 'Socket error connecting to SMTP server. Check network connectivity.';
+    }
+    
+    return { 
+      success: false, 
+      error: error.message,
+      details: errorDetails,
+      code: error.code
+    };
   }
 }
 

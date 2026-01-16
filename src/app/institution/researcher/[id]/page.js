@@ -25,12 +25,25 @@ import {
   TableHead,
   TableRow,
   Divider,
+  TextField,
+  InputAdornment,
+  IconButton,
+  Tooltip,
+  ButtonGroup,
+  Grid,
+  LinearProgress,
 } from '@mui/material';
 import {
   Person as PersonIcon,
   ArrowBack as ArrowBackIcon,
   OpenInNew as OpenInNewIcon,
   Verified as VerifiedIcon,
+  Search as SearchIcon,
+  FilterList as FilterListIcon,
+  TrendingUp as TrendingUpIcon,
+  Description as DescriptionIcon,
+  Assignment as AssignmentIcon,
+  MenuBook as MenuBookIcon,
 } from '@mui/icons-material';
 
 const InstitutionResearcherProfile = () => {
@@ -38,7 +51,6 @@ const InstitutionResearcherProfile = () => {
   const router = useRouter();
   const researcherId = params.id;
 
-  const [mounted, setMounted] = useState(false);
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [manuscripts, setManuscripts] = useState([]);
@@ -47,14 +59,20 @@ const InstitutionResearcherProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  
+  // Interactive state
+  const [publicationSearch, setPublicationSearch] = useState('');
+  const [manuscriptSearch, setManuscriptSearch] = useState('');
+  const [proposalSearch, setProposalSearch] = useState('');
+  const [manuscriptStatusFilter, setManuscriptStatusFilter] = useState('all');
+  const [proposalStatusFilter, setProposalStatusFilter] = useState('all');
+  const [publicationSortBy, setPublicationSortBy] = useState('year');
+  const [manuscriptSortBy, setManuscriptSortBy] = useState('updated');
+  const [proposalSortBy, setProposalSortBy] = useState('created');
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!researcherId || !mounted) return;
+      if (!researcherId) return;
 
       try {
         setLoading(true);
@@ -86,7 +104,7 @@ const InstitutionResearcherProfile = () => {
     };
 
     fetchProfile();
-  }, [researcherId, mounted]);
+  }, [researcherId]);
 
   const getInitials = () => {
     if (profile?.givenName && profile?.familyName) {
@@ -130,7 +148,7 @@ const InstitutionResearcherProfile = () => {
   };
 
   // Loading State
-  if (!mounted || loading) {
+  if (loading) {
     return (
       <Box sx={{ 
         minHeight: '100vh', 
@@ -294,7 +312,7 @@ const InstitutionResearcherProfile = () => {
           </Box>
         </Paper>
 
-        {/* Stats Row */}
+        {/* Stats Row - Enhanced */}
         <Box sx={{ 
           display: 'flex', 
           gap: 2, 
@@ -302,12 +320,12 @@ const InstitutionResearcherProfile = () => {
           flexWrap: 'wrap'
         }}>
           {[
-            { label: 'Manuscripts', value: stats?.manuscripts || 0, color: '#8b6cbc' },
-            { label: 'Publications', value: stats?.publications || 0, color: '#2d8659' },
-            { label: 'Proposals', value: stats?.proposals || 0, color: '#d97706' },
-            { label: 'Collaborations', value: stats?.collaborations || 0, color: '#2563eb' },
-            { label: 'H-Index', value: profile?.researchProfile?.hIndex || 0, color: '#7c3aed' },
-            { label: 'Citations', value: profile?.researchProfile?.citationCount || stats?.totalCitations || 0, color: '#059669' },
+            { label: 'Manuscripts', value: stats?.manuscripts || 0, color: '#8b6cbc', icon: <DescriptionIcon />, gradient: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)' },
+            { label: 'Publications', value: stats?.publications || 0, color: '#2d8659', icon: <MenuBookIcon />, gradient: 'linear-gradient(135deg, #2d8659 0%, #3fa76f 100%)' },
+            { label: 'Proposals', value: stats?.proposals || 0, color: '#d97706', icon: <AssignmentIcon />, gradient: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)' },
+            { label: 'Collaborations', value: stats?.collaborations || 0, color: '#2563eb', icon: <PersonIcon />, gradient: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)' },
+            { label: 'H-Index', value: profile?.researchProfile?.hIndex || 0, color: '#7c3aed', icon: <TrendingUpIcon />, gradient: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)' },
+            { label: 'Citations', value: profile?.researchProfile?.citationCount || stats?.totalCitations || 0, color: '#059669', icon: <TrendingUpIcon />, gradient: 'linear-gradient(135deg, #059669 0%, #10b981 100%)' },
           ].map((stat) => (
             <Paper
               key={stat.label}
@@ -318,9 +336,48 @@ const InstitutionResearcherProfile = () => {
                 borderRadius: 2,
                 textAlign: 'center',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                borderTop: `3px solid ${stat.color}`,
+                border: '1px solid',
+                borderColor: alpha(stat.color, 0.1),
+                position: 'relative',
+                overflow: 'hidden',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: `0 8px 20px ${alpha(stat.color, 0.2)}`,
+                  borderColor: alpha(stat.color, 0.3),
+                  '& .stat-icon': {
+                    transform: 'scale(1.1) rotate(5deg)',
+                  }
+                },
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  background: stat.gradient,
+                }
               }}
             >
+              <Box 
+                className="stat-icon"
+                sx={{ 
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 2,
+                  background: alpha(stat.color, 0.1),
+                  color: stat.color,
+                  mb: 1,
+                  transition: 'transform 0.3s ease',
+                  '& svg': { fontSize: 20 }
+                }}
+              >
+                {stat.icon}
+              </Box>
               <Typography variant="h4" sx={{ fontWeight: 700, color: stat.color, mb: 0.5 }}>
                 {stat.value}
               </Typography>
@@ -636,17 +693,94 @@ const InstitutionResearcherProfile = () => {
                   <Fade in={activeTab === 1}>
                     <Box>
                       {publications.length > 0 ? (
-                        <TableContainer>
-                          <Table>
-                            <TableHead>
-                              <TableRow>
-                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5 }}>Publication</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 80 }}>Year</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 80 }}>Citations</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {publications.map((pub) => (
+                        <>
+                          {/* Search and Filter Controls */}
+                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
+                            <TextField
+                              size="small"
+                              placeholder="Search publications..."
+                              value={publicationSearch}
+                              onChange={(e) => setPublicationSearch(e.target.value)}
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
+                                  </InputAdornment>
+                                ),
+                              }}
+                              sx={{ 
+                                flex: 1,
+                                '& .MuiOutlinedInput-root': {
+                                  borderRadius: 2,
+                                  '&:hover fieldset': { borderColor: '#8b6cbc' },
+                                  '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
+                                }
+                              }}
+                            />
+                            <ButtonGroup size="small">
+                              <Button
+                                onClick={() => setPublicationSortBy('year')}
+                                variant={publicationSortBy === 'year' ? 'contained' : 'outlined'}
+                                sx={{
+                                  bgcolor: publicationSortBy === 'year' ? '#8b6cbc' : 'transparent',
+                                  color: publicationSortBy === 'year' ? 'white' : '#8b6cbc',
+                                  borderColor: '#8b6cbc',
+                                  '&:hover': {
+                                    bgcolor: publicationSortBy === 'year' ? '#7b5cac' : alpha('#8b6cbc', 0.1),
+                                    borderColor: '#8b6cbc'
+                                  },
+                                  textTransform: 'none'
+                                }}
+                              >
+                                Year
+                              </Button>
+                              <Button
+                                onClick={() => setPublicationSortBy('citations')}
+                                variant={publicationSortBy === 'citations' ? 'contained' : 'outlined'}
+                                sx={{
+                                  bgcolor: publicationSortBy === 'citations' ? '#8b6cbc' : 'transparent',
+                                  color: publicationSortBy === 'citations' ? 'white' : '#8b6cbc',
+                                  borderColor: '#8b6cbc',
+                                  '&:hover': {
+                                    bgcolor: publicationSortBy === 'citations' ? '#7b5cac' : alpha('#8b6cbc', 0.1),
+                                    borderColor: '#8b6cbc'
+                                  },
+                                  textTransform: 'none'
+                                }}
+                              >
+                                Citations
+                              </Button>
+                            </ButtonGroup>
+                          </Stack>
+
+                          <TableContainer>
+                            <Table>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5 }}>Publication</TableCell>
+                                  <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 80 }}>Year</TableCell>
+                                  <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 80 }}>Citations</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {publications
+                                  .filter(pub => {
+                                    if (!publicationSearch) return true;
+                                    const searchLower = publicationSearch.toLowerCase();
+                                    return (
+                                      (pub.title || '').toLowerCase().includes(searchLower) ||
+                                      (pub.journal || '').toLowerCase().includes(searchLower) ||
+                                      (pub.authors || '').toLowerCase().includes(searchLower)
+                                    );
+                                  })
+                                  .sort((a, b) => {
+                                    if (publicationSortBy === 'year') {
+                                      return (b.year || 0) - (a.year || 0);
+                                    } else {
+                                      return (b.citationCount || 0) - (a.citationCount || 0);
+                                    }
+                                  })
+                                  .map((pub) => (
                                 <TableRow 
                                   key={pub.id}
                                   sx={{ 
@@ -682,10 +816,11 @@ const InstitutionResearcherProfile = () => {
                                     </Typography>
                                   </TableCell>
                                 </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
+                                  ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </>
                       ) : (
                         <Box sx={{ textAlign: 'center', py: 8 }}>
                           <Typography variant="body1" sx={{ color: '#9ca3af', mb: 1 }}>
@@ -705,17 +840,111 @@ const InstitutionResearcherProfile = () => {
                   <Fade in={activeTab === 2}>
                     <Box>
                       {manuscripts.length > 0 ? (
-                        <TableContainer>
-                          <Table>
-                            <TableHead>
-                              <TableRow>
-                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5 }}>Manuscript</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 120 }}>Status</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 120 }}>Updated</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {manuscripts.map((manuscript) => (
+                        <>
+                          {/* Search and Filter Controls */}
+                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
+                            <TextField
+                              size="small"
+                              placeholder="Search manuscripts..."
+                              value={manuscriptSearch}
+                              onChange={(e) => setManuscriptSearch(e.target.value)}
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
+                                  </InputAdornment>
+                                ),
+                              }}
+                              sx={{ 
+                                flex: 1,
+                                '& .MuiOutlinedInput-root': {
+                                  borderRadius: 2,
+                                  '&:hover fieldset': { borderColor: '#8b6cbc' },
+                                  '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
+                                }
+                              }}
+                            />
+                            <ButtonGroup size="small">
+                              <Button
+                                onClick={() => setManuscriptStatusFilter('all')}
+                                variant={manuscriptStatusFilter === 'all' ? 'contained' : 'outlined'}
+                                sx={{
+                                  bgcolor: manuscriptStatusFilter === 'all' ? '#8b6cbc' : 'transparent',
+                                  color: manuscriptStatusFilter === 'all' ? 'white' : '#8b6cbc',
+                                  borderColor: '#8b6cbc',
+                                  '&:hover': {
+                                    bgcolor: manuscriptStatusFilter === 'all' ? '#7b5cac' : alpha('#8b6cbc', 0.1),
+                                    borderColor: '#8b6cbc'
+                                  },
+                                  textTransform: 'none'
+                                }}
+                              >
+                                All
+                              </Button>
+                              <Button
+                                onClick={() => setManuscriptStatusFilter('draft')}
+                                variant={manuscriptStatusFilter === 'draft' ? 'contained' : 'outlined'}
+                                sx={{
+                                  bgcolor: manuscriptStatusFilter === 'draft' ? '#8b6cbc' : 'transparent',
+                                  color: manuscriptStatusFilter === 'draft' ? 'white' : '#8b6cbc',
+                                  borderColor: '#8b6cbc',
+                                  '&:hover': {
+                                    bgcolor: manuscriptStatusFilter === 'draft' ? '#7b5cac' : alpha('#8b6cbc', 0.1),
+                                    borderColor: '#8b6cbc'
+                                  },
+                                  textTransform: 'none'
+                                }}
+                              >
+                                Draft
+                              </Button>
+                              <Button
+                                onClick={() => setManuscriptStatusFilter('published')}
+                                variant={manuscriptStatusFilter === 'published' ? 'contained' : 'outlined'}
+                                sx={{
+                                  bgcolor: manuscriptStatusFilter === 'published' ? '#8b6cbc' : 'transparent',
+                                  color: manuscriptStatusFilter === 'published' ? 'white' : '#8b6cbc',
+                                  borderColor: '#8b6cbc',
+                                  '&:hover': {
+                                    bgcolor: manuscriptStatusFilter === 'published' ? '#7b5cac' : alpha('#8b6cbc', 0.1),
+                                    borderColor: '#8b6cbc'
+                                  },
+                                  textTransform: 'none'
+                                }}
+                              >
+                                Published
+                              </Button>
+                            </ButtonGroup>
+                          </Stack>
+
+                          <TableContainer>
+                            <Table>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5 }}>Manuscript</TableCell>
+                                  <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 120 }}>Status</TableCell>
+                                  <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 120 }}>Updated</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {manuscripts
+                                  .filter(manuscript => {
+                                    if (manuscriptStatusFilter !== 'all') {
+                                      const status = (manuscript.status || 'DRAFT').toUpperCase();
+                                      if (manuscriptStatusFilter === 'draft' && status !== 'DRAFT') return false;
+                                      if (manuscriptStatusFilter === 'published' && status !== 'PUBLISHED') return false;
+                                    }
+                                    if (manuscriptSearch) {
+                                      const searchLower = manuscriptSearch.toLowerCase();
+                                      return (manuscript.title || '').toLowerCase().includes(searchLower);
+                                    }
+                                    return true;
+                                  })
+                                  .sort((a, b) => {
+                                    const dateA = new Date(a.updatedAt || 0);
+                                    const dateB = new Date(b.updatedAt || 0);
+                                    return dateB - dateA;
+                                  })
+                                  .map((manuscript) => (
                                 <TableRow 
                                   key={manuscript.id}
                                   sx={{ 
@@ -747,10 +976,11 @@ const InstitutionResearcherProfile = () => {
                                     </Typography>
                                   </TableCell>
                                 </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
+                                  ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </>
                       ) : (
                         <Box sx={{ textAlign: 'center', py: 8 }}>
                           <Typography variant="body1" sx={{ color: '#9ca3af', mb: 1 }}>
@@ -770,18 +1000,115 @@ const InstitutionResearcherProfile = () => {
                   <Fade in={activeTab === 3}>
                     <Box>
                       {proposals.length > 0 ? (
-                        <TableContainer>
-                          <Table>
-                            <TableHead>
-                              <TableRow>
-                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5 }}>Proposal</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 140 }}>Status</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 120 }}>Budget</TableCell>
-                                <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 120 }}>Submitted</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {proposals.map((proposal) => (
+                        <>
+                          {/* Search and Filter Controls */}
+                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
+                            <TextField
+                              size="small"
+                              placeholder="Search proposals..."
+                              value={proposalSearch}
+                              onChange={(e) => setProposalSearch(e.target.value)}
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
+                                  </InputAdornment>
+                                ),
+                              }}
+                              sx={{ 
+                                flex: 1,
+                                '& .MuiOutlinedInput-root': {
+                                  borderRadius: 2,
+                                  '&:hover fieldset': { borderColor: '#8b6cbc' },
+                                  '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
+                                }
+                              }}
+                            />
+                            <ButtonGroup size="small">
+                              <Button
+                                onClick={() => setProposalStatusFilter('all')}
+                                variant={proposalStatusFilter === 'all' ? 'contained' : 'outlined'}
+                                sx={{
+                                  bgcolor: proposalStatusFilter === 'all' ? '#8b6cbc' : 'transparent',
+                                  color: proposalStatusFilter === 'all' ? 'white' : '#8b6cbc',
+                                  borderColor: '#8b6cbc',
+                                  '&:hover': {
+                                    bgcolor: proposalStatusFilter === 'all' ? '#7b5cac' : alpha('#8b6cbc', 0.1),
+                                    borderColor: '#8b6cbc'
+                                  },
+                                  textTransform: 'none'
+                                }}
+                              >
+                                All
+                              </Button>
+                              <Button
+                                onClick={() => setProposalStatusFilter('approved')}
+                                variant={proposalStatusFilter === 'approved' ? 'contained' : 'outlined'}
+                                sx={{
+                                  bgcolor: proposalStatusFilter === 'approved' ? '#8b6cbc' : 'transparent',
+                                  color: proposalStatusFilter === 'approved' ? 'white' : '#8b6cbc',
+                                  borderColor: '#8b6cbc',
+                                  '&:hover': {
+                                    bgcolor: proposalStatusFilter === 'approved' ? '#7b5cac' : alpha('#8b6cbc', 0.1),
+                                    borderColor: '#8b6cbc'
+                                  },
+                                  textTransform: 'none'
+                                }}
+                              >
+                                Approved
+                              </Button>
+                              <Button
+                                onClick={() => setProposalStatusFilter('pending')}
+                                variant={proposalStatusFilter === 'pending' ? 'contained' : 'outlined'}
+                                sx={{
+                                  bgcolor: proposalStatusFilter === 'pending' ? '#8b6cbc' : 'transparent',
+                                  color: proposalStatusFilter === 'pending' ? 'white' : '#8b6cbc',
+                                  borderColor: '#8b6cbc',
+                                  '&:hover': {
+                                    bgcolor: proposalStatusFilter === 'pending' ? '#7b5cac' : alpha('#8b6cbc', 0.1),
+                                    borderColor: '#8b6cbc'
+                                  },
+                                  textTransform: 'none'
+                                }}
+                              >
+                                Pending
+                              </Button>
+                            </ButtonGroup>
+                          </Stack>
+
+                          <TableContainer>
+                            <Table>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5 }}>Proposal</TableCell>
+                                  <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 140 }}>Status</TableCell>
+                                  <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 120 }}>Budget</TableCell>
+                                  <TableCell sx={{ fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb', py: 1.5, width: 120 }}>Submitted</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {proposals
+                                  .filter(proposal => {
+                                    if (proposalStatusFilter !== 'all') {
+                                      const status = (proposal.status || '').toUpperCase();
+                                      if (proposalStatusFilter === 'approved' && status !== 'APPROVED') return false;
+                                      if (proposalStatusFilter === 'pending' && !['SUBMITTED', 'UNDER_REVIEW'].includes(status)) return false;
+                                    }
+                                    if (proposalSearch) {
+                                      const searchLower = proposalSearch.toLowerCase();
+                                      return (
+                                        (proposal.title || '').toLowerCase().includes(searchLower) ||
+                                        (proposal.abstract || '').toLowerCase().includes(searchLower)
+                                      );
+                                    }
+                                    return true;
+                                  })
+                                  .sort((a, b) => {
+                                    const dateA = new Date(a.createdAt || 0);
+                                    const dateB = new Date(b.createdAt || 0);
+                                    return dateB - dateA;
+                                  })
+                                  .map((proposal) => (
                                 <TableRow 
                                   key={proposal.id}
                                   sx={{ 
@@ -823,10 +1150,11 @@ const InstitutionResearcherProfile = () => {
                                     </Typography>
                                   </TableCell>
                                 </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
+                                  ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </>
                       ) : (
                         <Box sx={{ textAlign: 'center', py: 8 }}>
                           <Typography variant="body1" sx={{ color: '#9ca3af', mb: 1 }}>

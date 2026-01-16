@@ -383,6 +383,8 @@ export default function OrcidCollaboratorInvite({
                       )}
                     </Box>
                   }
+                  primaryTypographyProps={{ component: 'div' }}
+                  secondaryTypographyProps={{ component: 'div' }}
                 />
                 {!readOnly && (
                   <ListItemSecondaryAction>

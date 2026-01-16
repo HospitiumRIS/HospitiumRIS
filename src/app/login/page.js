@@ -550,7 +550,7 @@ const NoSSR = ({ children, fallback = null }) => {
                   }
                 </FormHelperText>
               </Box>
-              <Link
+             {/* <Link
                 href="/forgot-password"
                 variant="body2"
                 sx={{
@@ -563,7 +563,7 @@ const NoSSR = ({ children, fallback = null }) => {
                 }}
               >
                 Forgot password?
-              </Link>
+              </Link>*/}
             </Box>
 
             {/* Login Button */}
@@ -638,7 +638,7 @@ const NoSSR = ({ children, fallback = null }) => {
               </Typography>
             </Box>
 
-            {/* Resend Activation Link */}
+            {/* Resend Activation Link 
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary">
                 Need to activate your account?{' '}
@@ -656,7 +656,7 @@ const NoSSR = ({ children, fallback = null }) => {
                   Resend activation email
                 </Link>
               </Typography>
-            </Box>
+            </Box>*/}
           </Box>
         </Paper>
       </Container>

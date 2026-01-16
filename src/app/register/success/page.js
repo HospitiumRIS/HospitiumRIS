@@ -14,7 +14,6 @@ import {
 import {
   CheckCircle as CheckCircleIcon,
   Login as LoginIcon,
-  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -38,10 +37,6 @@ const RegisterSuccessContent = () => {
 
   const handleLoginClick = () => {
     router.push('/login');
-  };
-
-  const handleResendEmail = () => {
-    router.push('/resend-activation');
   };
 
   return (
@@ -86,12 +81,12 @@ const RegisterSuccessContent = () => {
           </Box>
 
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Your account has been created successfully
+            Your account has been created and is now active!
           </Typography>
 
-          {/* Email Status */}
+          {/* Account Info */}
           <Alert 
-            severity="info" 
+            severity="success" 
             sx={{ 
               mb: 3, 
               textAlign: 'left',
@@ -100,7 +95,7 @@ const RegisterSuccessContent = () => {
           >
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Typography variant="body2" fontWeight={600}>
-                Activation email sent to:
+                Account registered with:
               </Typography>
               <Chip 
                 label={userEmail} 
@@ -120,38 +115,30 @@ const RegisterSuccessContent = () => {
             textAlign: 'left'
           }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-              Next Steps:
+              What's Next?
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-              1. Check your email inbox<br />
-              2. Click the activation link<br />
-              3. Login to your account
+              Your account is ready to use! Click the button below to login and start using Hospitium RIS.
             </Typography>
           </Box>
 
-          {/* Compact Actions */}
-          <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', mb: 2 }}>
+          {/* Login Action */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
             <Button
               variant="contained"
               onClick={handleLoginClick}
               startIcon={<LoginIcon />}
-              size="small"
+              size="large"
+              fullWidth
+              sx={{ maxWidth: 300 }}
             >
-              Login
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={handleResendEmail}
-              startIcon={<RefreshIcon />}
-              size="small"
-            >
-              Resend Email
+              Login to Your Account
             </Button>
           </Box>
 
           {/* Footer Note */}
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-            Activation link expires in 24 hours • Check spam folder if email not received
+            You can now login with your email and password
           </Typography>
         </Paper>
       </Container>

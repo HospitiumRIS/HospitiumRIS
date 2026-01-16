@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { hashPassword, validateEmail, validatePassword } from '@/lib/auth';
-import { sendActivationEmail, generateActivationToken } from '@/lib/email';
 
 export async function POST(request) {
   let body = {};
@@ -186,10 +185,6 @@ export async function POST(request) {
     // Hash password
     const passwordHash = await hashPassword(password);
 
-    // Generate activation token
-    const activationToken = generateActivationToken();
-    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
     // Create user and related records in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // For Foundation Admins, extract name from email
@@ -213,8 +208,10 @@ export async function POST(request) {
           email: email.toLowerCase(),
           confirmEmail: confirmEmail || null,
           passwordHash,
-          emailVerifyToken: activationToken,
-          emailVerifyExpires: tokenExpires,
+          status: 'ACTIVE',
+          emailVerified: true,
+          emailVerifyToken: null,
+          emailVerifyExpires: null,
           orcidId: accountType === 'FOUNDATION_ADMIN' ? null : (orcidData?.orcidId || orcidId || null),
           orcidGivenNames: accountType === 'FOUNDATION_ADMIN' ? null : (orcidData?.givenNames || orcidGivenNames || null),
           orcidFamilyName: accountType === 'FOUNDATION_ADMIN' ? null : (orcidData?.familyName || orcidFamilyName || null),
@@ -242,23 +239,7 @@ export async function POST(request) {
       return user;
     });
 
-    // Send activation email
-    let emailSent = false;
-    let emailError = null;
-    
-    try {
-      const emailResult = await sendActivationEmail(result, activationToken);
-      emailSent = emailResult.success;
-      if (!emailResult.success) {
-        emailError = emailResult.error;
-        console.error('Failed to send activation email:', emailResult.error);
-      }
-    } catch (error) {
-      console.error('Email sending error:', error);
-      emailError = error.message;
-    }
-
-    // Log successful registration
+    // Log registration attempt
     await prisma.registrationLog.create({
       data: {
         email: email.toLowerCase(),
@@ -266,27 +247,24 @@ export async function POST(request) {
         ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
         userAgent: request.headers.get('user-agent') || null,
         success: true,
+        errorMessage: null,
       }
     });
 
     // Return success response (don't include sensitive data)
     const response = NextResponse.json({
       success: true,
-      message: emailSent 
-        ? 'Registration successful! Please check your email to activate your account.' 
-        : 'Registration successful, but there was an issue sending the activation email. Please contact support.',
+      message: 'Registration successful! Your account is now active.',
       user: {
         id: result.id,
         accountType: result.accountType,
         givenName: result.givenName,
         familyName: result.familyName,
         email: result.email,
-        emailVerified: false,
-        orcidId: result.orcidId, // Include ORCID ID if available
+        emailVerified: true,
+        orcidId: result.orcidId,
       },
-      emailSent,
-      emailError: emailSent ? null : emailError,
-      nextStep: 'Please check your email and click the activation link to complete your registration.'
+      nextStep: 'Please login to access your account.'
     }, { status: 201 });
 
     // Clear ORCID cookie if it was used

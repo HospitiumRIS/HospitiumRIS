@@ -3095,6 +3095,8 @@ export default function CollaborativeWriting() {
                                   )}
                         </Box>
                       }
+                      primaryTypographyProps={{ component: 'div' }}
+                      secondaryTypographyProps={{ component: 'div' }}
                     />
                             
                     <ListItemSecondaryAction>
@@ -3233,6 +3235,8 @@ export default function CollaborativeWriting() {
                                 </Box>
                               </Box>
                             }
+                            primaryTypographyProps={{ component: 'div' }}
+                            secondaryTypographyProps={{ component: 'div' }}
                           />
                           
                           <ListItemSecondaryAction>

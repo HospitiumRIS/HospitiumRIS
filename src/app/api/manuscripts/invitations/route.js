@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getUserId } from '../../../../lib/auth-server.js';
 import { searchResearchers, getResearcherEmails } from '../../../../utils/orcidService.js';
-import { sendCollaborationInviteEmail } from '../../../../lib/email.js';
 
 const prisma = new PrismaClient();
 
@@ -212,35 +211,7 @@ export async function POST(request) {
       console.log(`🔔 Created notification for existing user ${invitedUserId}`);
     }
 
-    // Send email invitation if we have an email address
-    if (inviteeEmail) {
-      try {
-        // Determine if this is a proposal or manuscript based on type
-        const isProposal = manuscript.type?.toLowerCase().includes('proposal');
-        
-        const emailResult = await sendCollaborationInviteEmail({
-          inviteeEmail,
-          inviteeName,
-          inviterName,
-          manuscriptTitle: manuscript.title,
-          role,
-          message,
-          invitationToken: invitation.token,
-          type: isProposal ? 'proposal' : 'manuscript'
-        });
-
-        if (emailResult.success) {
-          console.log(`📧 Invitation email sent to ${inviteeEmail}`);
-        } else {
-          console.error(`⚠️ Failed to send invitation email: ${emailResult.error}`);
-        }
-      } catch (emailError) {
-        // Don't fail the invitation if email fails - log and continue
-        console.error(`⚠️ Email sending failed:`, emailError);
-      }
-    }
-
-    console.log(`📧 INVITATION SENT SUCCESSFULLY:`, {
+    console.log(`✅ INVITATION CREATED SUCCESSFULLY:`, {
       invitationId: invitation.id,
       manuscriptId: manuscriptId,
       inviterUserId: userId,
@@ -270,10 +241,10 @@ export async function POST(request) {
         }
       },
       message: isExistingUser 
-        ? `Invitation sent! ${inviteeName} will receive a notification when they log in.`
+        ? `Invitation sent! ${inviteeName} will see it in their notifications.`
         : inviteeEmail 
-          ? `Invitation sent to ${inviteeEmail}. They will need to create an account to accept.`
-          : 'Invitation created. The researcher will need to claim it when they join.'
+          ? `Invitation created for ${inviteeEmail}. They will see it when they create an account.`
+          : 'Invitation created. The researcher will see it when they join.'
     });
 
   } catch (error) {

@@ -295,6 +295,28 @@ const ResearcherDashboard = () => {
     return 'User';
   };
 
+  // Get formatted account type display name
+  const getAccountTypeDisplay = () => {
+    if (!user || !user.accountType) return 'User Account';
+    
+    const accountType = user.accountType.toLowerCase();
+    
+    switch (accountType) {
+      case 'researcher':
+        return 'Researcher';
+      case 'research_admin':
+        return 'Research Administrator';
+      case 'institution_admin':
+        return 'Institution Administrator';
+      case 'foundation_manager':
+        return 'Foundation Manager';
+      case 'super_admin':
+        return 'Super Administrator';
+      default:
+        return 'User Account';
+    }
+  };
+
   // Get analytics data based on selected time range and data type (CURRENT YEAR ONLY)
   const getAnalyticsData = () => {
     if (!dashboardData) return [];
@@ -495,6 +517,10 @@ const ResearcherDashboard = () => {
         title={`${greeting}, ${getUserDisplayName()}!`}
         description={
           <>
+            <span style={{ fontSize: '0.95rem', fontWeight: 400, opacity: 0.9 }}>
+              Logged in as: <span style={{ fontWeight: 700, color: '#fff' }}>{getAccountTypeDisplay()}</span>
+            </span>
+            <br />
             Here's what's happening with your research today
             <br />
             <span style={{ fontSize: '0.875rem', opacity: 0.8 }}>
@@ -522,7 +548,7 @@ const ResearcherDashboard = () => {
         {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {/* Total Publications */}
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card elevation={3} sx={{ 
               background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
               color: 'white',
@@ -567,7 +593,7 @@ const ResearcherDashboard = () => {
           </Grid>
 
           {/* Ongoing Projects */}
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card elevation={3} sx={{ 
               background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
               color: 'white',
@@ -612,7 +638,7 @@ const ResearcherDashboard = () => {
           </Grid>
 
           {/* Collaborations */}
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card elevation={3} sx={{ 
               background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
               color: 'white',
@@ -656,53 +682,8 @@ const ResearcherDashboard = () => {
             </Card>
           </Grid>
 
-          {/* Network Size */}
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-                <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-                  height: '100%',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: '50%',
-                    height: '100%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '50% 0 0 50%',
-                    transform: 'translateX(60%)'
-                  }
-                }}>
-                  <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <NetworkIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label={dashboardData.stats.networkSize.change}
-                    size="small"
-                    sx={{ 
-                          backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                          fontSize: '0.7rem',
-                          fontWeight: 600,
-                          border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {dashboardData.stats.networkSize.value}
-                </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                  Network Size
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Citation Impact */}
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+          {/* Citation Count */}
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Card elevation={3} sx={{ 
               background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
               color: 'white',
@@ -740,7 +721,7 @@ const ResearcherDashboard = () => {
                   {dashboardData.stats.citationImpact.value}
                 </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                  Citation Impact
+                  Citation Count
                 </Typography>
               </CardContent>
             </Card>
