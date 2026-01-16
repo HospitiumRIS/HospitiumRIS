@@ -63,7 +63,7 @@ import {
   Assessment as AssessmentIcon,
 } from '@mui/icons-material';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useThemeMode } from './ThemeProvider';
 import { useAuth } from './AuthProvider';
 import { UserDropdown, MobileMenu, SettingsDrawer, DashboardNav } from './Navigation';
@@ -88,6 +88,7 @@ const NoSSR = ({ children, fallback = null }) => {
 const Navbar = () => {
   const theme = useTheme();
   const router = useRouter();
+  const pathname = usePathname();
   const { isDarkMode } = useThemeMode();
   const { isAuthenticated } = useAuth();
   // Always call hooks unconditionally - handle errors within the hook itself
@@ -99,15 +100,13 @@ const Navbar = () => {
   // Debug notifications
   console.log('🔔 Navbar notifications state (UNREAD ONLY):', { 
     unreadCount, 
-    notificationsLoading, 
-    notificationsError,
-    isAuthenticated,
-    notificationsCount: notificationState?.notifications?.length || 0
+    isLoading: notificationsLoading,
+    error: notificationsError 
   });
-  const [settingsOpen, setSettingsOpen] = useState(false);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationAnchor, setNotificationAnchor] = useState(null);
-  const [currentPath, setCurrentPath] = useState('');
   const [isClient, setIsClient] = useState(false);
   
   // Responsive breakpoints
@@ -117,15 +116,10 @@ const Navbar = () => {
   // Handle client-side mounting
   useEffect(() => {
     setIsClient(true);
-    setCurrentPath(window.location.pathname);
   }, []);
 
-  // Update current path on route changes (only on client)
-  useEffect(() => {
-    if (isClient) {
-      setCurrentPath(window.location.pathname);
-    }
-  }, [router, isClient]);
+  // Use pathname from usePathname hook which updates on route changes
+  const currentPath = pathname || '';
 
   // Determine if we're on a dashboard page and user is authenticated (only on client)
   const isDashboardPage = isClient && isAuthenticated && (currentPath.includes('/researcher') || currentPath.includes('/institution') || currentPath.includes('/foundation'));

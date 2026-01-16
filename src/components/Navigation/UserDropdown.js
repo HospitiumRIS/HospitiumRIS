@@ -17,6 +17,10 @@ import {
   Settings as SettingsIcon,
   Login as LoginIcon,
   ListAlt as LogsIcon,
+  SwapHoriz as SwitchIcon,
+  Person as ResearcherIcon,
+  Business as InstitutionIcon,
+  AccountBalance as FoundationIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
@@ -208,9 +212,11 @@ const UserDropdown = () => {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
-                {getUserRole() === 'researcher' ? 'Researcher' : 
+                {user?.accountType === 'GLOBAL_ADMIN' ? 'Global Admin' :
+                 getUserRole() === 'researcher' ? 'Researcher' : 
                  getUserRole() === 'research_admin' ? 'Research Administrator' : 
                  getUserRole() === 'foundation_admin' ? 'Foundation Administrator' : 
+                 getUserRole() === 'super_admin' ? 'Super Administrator' :
                  'User'}
               </Typography>
               {user?.primaryInstitution && (
@@ -319,6 +325,94 @@ const UserDropdown = () => {
             </MenuItem>
           )}
         </Box>
+
+        {/* Global Admin Interface Switcher */}
+        {user?.accountType === 'GLOBAL_ADMIN' && [
+          <Box key="divider-switch" sx={{ mx: 2, borderBottom: `1px solid ${theme.palette.divider}`, my: 1 }} />,
+          
+          <Box key="switch-interface" sx={{ px: 3, py: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+              <SwitchIcon sx={{ fontSize: 16, color: '#8b6cbc', mr: 1 }} />
+              <Typography variant="caption" sx={{ fontWeight: 600, color: theme.palette.text.secondary, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Switch Interface
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Button
+                fullWidth
+                startIcon={<ResearcherIcon />}
+                onClick={(event) => handleUserMenuItemClick(event, 'switch', '/researcher')}
+                sx={{
+                  justifyContent: 'flex-start',
+                  textTransform: 'none',
+                  color: theme.palette.text.primary,
+                  backgroundColor: 'transparent',
+                  border: '1px solid',
+                  borderColor: theme.palette.divider,
+                  py: 1,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(139, 108, 188, 0.08)',
+                    borderColor: '#8b6cbc',
+                  }
+                }}
+              >
+                <Typography variant="body2" sx={{ fontSize: '0.85rem', fontWeight: 500 }}>
+                  Researcher
+                </Typography>
+              </Button>
+              
+              <Button
+                fullWidth
+                startIcon={<InstitutionIcon />}
+                onClick={(event) => handleUserMenuItemClick(event, 'switch', '/institution')}
+                sx={{
+                  justifyContent: 'flex-start',
+                  textTransform: 'none',
+                  color: theme.palette.text.primary,
+                  backgroundColor: 'transparent',
+                  border: '1px solid',
+                  borderColor: theme.palette.divider,
+                  py: 1,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(139, 108, 188, 0.08)',
+                    borderColor: '#8b6cbc',
+                  }
+                }}
+              >
+                <Typography variant="body2" sx={{ fontSize: '0.85rem', fontWeight: 500 }}>
+                  Research Administrator
+                </Typography>
+              </Button>
+              
+              <Button
+                fullWidth
+                startIcon={<FoundationIcon />}
+                onClick={(event) => handleUserMenuItemClick(event, 'switch', '/foundation')}
+                sx={{
+                  justifyContent: 'flex-start',
+                  textTransform: 'none',
+                  color: theme.palette.text.primary,
+                  backgroundColor: 'transparent',
+                  border: '1px solid',
+                  borderColor: theme.palette.divider,
+                  py: 1,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(139, 108, 188, 0.08)',
+                    borderColor: '#8b6cbc',
+                  }
+                }}
+              >
+                <Typography variant="body2" sx={{ fontSize: '0.85rem', fontWeight: 500 }}>
+                  Foundation Administrator
+                </Typography>
+              </Button>
+            </Box>
+          </Box>
+        ]}
 
         {/* Divider */}
         <Box sx={{ mx: 2, borderBottom: `1px solid ${theme.palette.divider}`, my: 1 }} />

@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Hospitium Ris - Hospitality Management Solutions",
-  description: "Revolutionary hospitality management platform designed for modern businesses. Streamline operations, enhance guest experiences, and drive growth.",
+  title: "HospitiumRIS - Hospital Management Solutions",
+  description: "HospitiumRIS (Research Information System) is an integrated digital infrastructure designed to manage, track, and enhance the entire research lifecycle in hospitals and health research institutions. It enables seamless coordination between clinicians, researchers, ethics committees, and funders through a centralized and secure platform.",
 };
 
 export default function RootLayout({ children }) {

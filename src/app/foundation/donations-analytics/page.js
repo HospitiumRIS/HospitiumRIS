@@ -18,6 +18,21 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
+// NoSSR wrapper component to prevent hydration mismatch
+const NoSSR = ({ children, fallback = null }) => {
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  if (!hasMounted) {
+    return fallback;
+  }
+
+  return children;
+};
+
 // Professional Components
 import AnalyticsSidebar, { DRAWER_WIDTH } from '@/components/Analytics/AnalyticsSidebar';
 import ProfessionalAnalyticsHeader from '@/components/Analytics/ProfessionalAnalyticsHeader';
@@ -318,9 +333,10 @@ export default function ProfessionalDonationsAnalytics() {
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-        <CssBaseline />
+    <NoSSR fallback={<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><CircularProgress size={60} sx={{ color: '#8b6cbc' }} /></Box>}>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+          <CssBaseline />
         
         {/* Sidebar Navigation */}
         <AnalyticsSidebar
@@ -380,5 +396,6 @@ export default function ProfessionalDonationsAnalytics() {
         </Box>
       </Box>
     </LocalizationProvider>
+    </NoSSR>
   );
 }

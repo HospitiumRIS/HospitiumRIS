@@ -675,82 +675,217 @@ export default function DonationManagement() {
           <StatsSkeleton />
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, justifyContent: 'space-between', mb:2 }}>
-            <Box sx={{ width: '25%' }}>
-              <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)' }}>
-                <CardContent sx={{ p: 2, textAlign: 'center' }}>
-                  <CategoryIcon sx={{ fontSize: 24, color: 'white', mb: 1 }} />
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', mb: 0.5 }}>
+            <Box sx={{ width: '20%' }}>
+              <Card elevation={3} sx={{ 
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
+                color: 'white',
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '50%',
+                  height: '100%',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '50% 0 0 50%',
+                  transform: 'translateX(60%)'
+                }
+              }}>
+                <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <CategoryIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+                    <Chip 
+                      label="+0%"
+                      size="small"
+                      sx={{ 
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        color: 'white',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        border: '1px solid rgba(255,255,255,0.3)'
+                      }}
+                    />
+                  </Box>
+                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                     {stats.totalCategories || 0}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                     Categories
                   </Typography>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                    campaign categories
-                  </Typography>
                 </CardContent>
               </Card>
             </Box>
-            <Box sx={{ width: '25%' }}>
-              <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)' }}>
-                <CardContent sx={{ p: 2, textAlign: 'center' }}>
-                  <CampaignIcon sx={{ fontSize: 24, color: 'white', mb: 1 }} />
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', mb: 0.5 }}>
+            <Box sx={{ width: '20%' }}>
+              <Card elevation={3} sx={{ 
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
+                color: 'white',
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '50%',
+                  height: '100%',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '50% 0 0 50%',
+                  transform: 'translateX(60%)'
+                }
+              }}>
+                <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <CampaignIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+                    <Chip 
+                      label="+0%"
+                      size="small"
+                      sx={{ 
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        color: 'white',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        border: '1px solid rgba(255,255,255,0.3)'
+                      }}
+                    />
+                  </Box>
+                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                     {stats.totalInitiatives || 0}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                     Initiatives
                   </Typography>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                    fundraising initiatives
-                  </Typography>
                 </CardContent>
               </Card>
             </Box>
-            <Box sx={{ width: '25%' }}>
-              <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)' }}>
-                <CardContent sx={{ p: 2, textAlign: 'center' }}>
-                  <ReceiptIcon sx={{ fontSize: 24, color: 'white', mb: 1 }} />
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', mb: 0.5 }}>
+            <Box sx={{ width: '20%' }}>
+              <Card elevation={3} sx={{ 
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
+                color: 'white',
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '50%',
+                  height: '100%',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '50% 0 0 50%',
+                  transform: 'translateX(60%)'
+                }
+              }}>
+                <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <ReceiptIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+                    <Chip 
+                      label="+0%"
+                      size="small"
+                      sx={{ 
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        color: 'white',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        border: '1px solid rgba(255,255,255,0.3)'
+                      }}
+                    />
+                  </Box>
+                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                     {stats.totalDonations || 0}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                     Total Donations
                   </Typography>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                    donation records
-                  </Typography>
                 </CardContent>
               </Card>
             </Box>
-            <Box sx={{ width: '25%' }}>
-              <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)' }}>
-                <CardContent sx={{ p: 2, textAlign: 'center' }}>
-                  <TrendingUpIcon sx={{ fontSize: 24, color: 'white', mb: 1 }} />
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', mb: 0.5 }}>
+            <Box sx={{ width: '20%' }}>
+              <Card elevation={3} sx={{ 
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
+                color: 'white',
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '50%',
+                  height: '100%',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '50% 0 0 50%',
+                  transform: 'translateX(60%)'
+                }
+              }}>
+                <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <TrendingUpIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+                    <Chip 
+                      label="+0%"
+                      size="small"
+                      sx={{ 
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        color: 'white',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        border: '1px solid rgba(255,255,255,0.3)'
+                      }}
+                    />
+                  </Box>
+                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                     {formatCurrency(stats.totalAmount || 0)}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                     Total Raised
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                    funds raised
                   </Typography>
                 </CardContent>
               </Card>
             </Box>
-            <Box sx={{ width: '25%' }}>
-              <Card sx={{ borderRadius: 3, background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)' }}>
-                <CardContent sx={{ p: 2, textAlign: 'center' }}>
-                  <PeopleIcon sx={{ fontSize: 24, color: 'white', mb: 1 }} />
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', mb: 0.5 }}>
+            <Box sx={{ width: '20%' }}>
+              <Card elevation={3} sx={{ 
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
+                color: 'white',
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '50%',
+                  height: '100%',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '50% 0 0 50%',
+                  transform: 'translateX(60%)'
+                }
+              }}>
+                <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <PeopleIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+                    <Chip 
+                      label="+0%"
+                      size="small"
+                      sx={{ 
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        color: 'white',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        border: '1px solid rgba(255,255,255,0.3)'
+                      }}
+                    />
+                  </Box>
+                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                     {stats.uniqueDonors || 0}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>
+                  <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                     Unique Donors
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                    individual donors
                   </Typography>
                 </CardContent>
               </Card>

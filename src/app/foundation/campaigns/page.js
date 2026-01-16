@@ -226,20 +226,45 @@ export default function CampaignManagement() {
 
         clearTimeout(timeoutId);
 
-        if (!categoriesRes.ok || !campaignsRes.ok || !activitiesRes.ok) {
-          throw new Error('One or more API calls failed');
+        // Handle responses gracefully - set empty arrays if API fails
+        let categoriesData = { success: true, data: [] };
+        let campaignsData = { success: true, data: [] };
+        let activitiesData = { success: true, data: [] };
+
+        if (categoriesRes.ok) {
+          try {
+            categoriesData = await categoriesRes.json();
+          } catch (e) {
+            console.warn('Failed to parse categories response:', e);
+          }
+        } else {
+          console.warn('Categories API failed with status:', categoriesRes.status);
         }
 
-        const [categoriesData, campaignsData, activitiesData] = await Promise.all([
-          categoriesRes.json(),
-          campaignsRes.json(),
-          activitiesRes.json()
-        ]);
+        if (campaignsRes.ok) {
+          try {
+            campaignsData = await campaignsRes.json();
+          } catch (e) {
+            console.warn('Failed to parse campaigns response:', e);
+          }
+        } else {
+          console.warn('Campaigns API failed with status:', campaignsRes.status);
+        }
+
+        if (activitiesRes.ok) {
+          try {
+            activitiesData = await activitiesRes.json();
+          } catch (e) {
+            console.warn('Failed to parse activities response:', e);
+          }
+        } else {
+          console.warn('Activities API failed with status:', activitiesRes.status);
+        }
 
         // Process and set data
-        if (categoriesData.success) setCategories(categoriesData.data || []);
-        if (campaignsData.success) setCampaigns(campaignsData.data || []);
-        if (activitiesData.success) setActivities(activitiesData.data || []);
+        setCategories(categoriesData.data || []);
+        setCampaigns(campaignsData.data || []);
+        setActivities(activitiesData.data || []);
         
         // Enhanced caching with compression
         if (typeof window !== 'undefined') {

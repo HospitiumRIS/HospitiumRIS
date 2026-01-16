@@ -18,6 +18,7 @@ import {
   Stack,
   Tooltip,
   FormHelperText,
+  CircularProgress,
 } from '@mui/material';
 import {
   Visibility,
@@ -410,39 +411,28 @@ const NoSSR = ({ children, fallback = null }) => {
   }, []);
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.palette.background.default,
-        py: 4,
-      }}
-    >
-      <Container maxWidth="sm">
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, sm: 4 },
-            backgroundColor: theme.palette.background.paper,
-            border: `1px solid ${theme.palette.mode === 'dark' ? '#404040' : 'rgba(0,0,0,0.1)'}`,
-          }}
-        >
-          {/* Logo and Title */}
-          <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <NoSSR
-              fallback={
-                <Image
-                  src="/hospitium-logo.png"
-                  alt="Hospitium RIS"
-                  width={160}
-                  height={36}
-                  style={{ marginBottom: '16px' }}
-                  priority
-                />
-              }
-            >
+    <NoSSR fallback={<Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CircularProgress /></Box>}>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.palette.background.default,
+          py: 4,
+        }}
+      >
+        <Container maxWidth="sm">
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 3, sm: 4 },
+              backgroundColor: theme.palette.background.paper,
+              border: `1px solid ${theme.palette.mode === 'dark' ? '#404040' : 'rgba(0,0,0,0.1)'}`,
+            }}
+          >
+            {/* Logo and Title */}
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
               <Image
                 src={isDarkMode ? "/hospitium-logo-dark.png" : "/hospitium-logo.png"}
                 alt="Hospitium RIS"
@@ -451,7 +441,6 @@ const NoSSR = ({ children, fallback = null }) => {
                 style={{ marginBottom: '16px' }}
                 priority
               />
-            </NoSSR>
             <Typography
               variant="h4"
               component="h1"
@@ -661,6 +650,7 @@ const NoSSR = ({ children, fallback = null }) => {
         </Paper>
       </Container>
     </Box>
+    </NoSSR>
   );
 };
 

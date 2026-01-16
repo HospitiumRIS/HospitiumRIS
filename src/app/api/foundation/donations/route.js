@@ -34,8 +34,8 @@ export async function GET(request) {
         return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 });
       }
 
-      // Only allow foundation admins to access this endpoint
-      if (currentUser.accountType !== 'FOUNDATION_ADMIN') {
+      // Only allow foundation admins and global admins to access this endpoint
+      if (currentUser.accountType !== 'FOUNDATION_ADMIN' && currentUser.accountType !== 'GLOBAL_ADMIN') {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
     }
@@ -274,8 +274,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 });
     }
 
-    // Only allow foundation admins to create donations
-    if (currentUser.accountType !== 'FOUNDATION_ADMIN') {
+    // Only allow foundation admins and global admins to create donations
+    if (currentUser.accountType !== 'FOUNDATION_ADMIN' && currentUser.accountType !== 'GLOBAL_ADMIN') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

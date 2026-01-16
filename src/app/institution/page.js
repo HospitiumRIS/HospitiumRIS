@@ -154,6 +154,8 @@ const InstitutionDashboard = () => {
         return 'Foundation Manager';
       case 'super_admin':
         return 'Super Administrator';
+      case 'global_admin':
+        return 'Global Admin';
       default:
         return 'User Account';
     }
@@ -472,81 +474,169 @@ const InstitutionDashboard = () => {
               minWidth: 0
             }
           }}>
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
+            <Card elevation={3} sx={{ 
+              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
               color: 'white',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-3px)',
-                boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
+              height: '100%',
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: '50%',
+                height: '100%',
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '50% 0 0 50%',
+                transform: 'translateX(60%)'
               }
             }}>
-              <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                <ResearchersIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', mb: 1 }} />
-                <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>
+              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                  <ResearchersIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+                  <Chip 
+                    label="+0%"
+                    size="small"
+                    sx={{ 
+                      backgroundColor: 'rgba(255,255,255,0.25)',
+                      color: 'white',
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}
+                  />
+                </Box>
+                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                   {analyticsData.overview.totalResearchers}
-                  </Typography>
-                <Typography variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                   Researchers
                 </Typography>
               </CardContent>
             </Card>
 
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
+            <Card elevation={3} sx={{ 
+              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
               color: 'white',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-3px)',
-                boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
+              height: '100%',
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: '50%',
+                height: '100%',
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '50% 0 0 50%',
+                transform: 'translateX(60%)'
               }
             }}>
-              <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                <ManuscriptIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', mb: 1 }} />
-                <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>
+              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                  <ManuscriptIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+                  <Chip 
+                    label="+0%"
+                    size="small"
+                    sx={{ 
+                      backgroundColor: 'rgba(255,255,255,0.25)',
+                      color: 'white',
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}
+                  />
+                </Box>
+                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                   {analyticsData.overview.totalManuscripts}
-                  </Typography>
-                <Typography variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                   Manuscripts
                 </Typography>
               </CardContent>
             </Card>
 
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
+            <Card elevation={3} sx={{ 
+              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
               color: 'white',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-3px)',
-                boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
+              height: '100%',
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: '50%',
+                height: '100%',
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '50% 0 0 50%',
+                transform: 'translateX(60%)'
               }
             }}>
-              <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                <ProposalIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', mb: 1 }} />
-                <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>
+              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                  <ProposalIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+                  <Chip 
+                    label="+0%"
+                    size="small"
+                    sx={{ 
+                      backgroundColor: 'rgba(255,255,255,0.25)',
+                      color: 'white',
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}
+                  />
+                </Box>
+                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                   {analyticsData.overview.totalProposals}
                 </Typography>
-                <Typography variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                   Proposals
                 </Typography>
               </CardContent>
             </Card>
 
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
+            <Card elevation={3} sx={{ 
+              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
               color: 'white',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-3px)',
-                boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
+              height: '100%',
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: '50%',
+                height: '100%',
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '50% 0 0 50%',
+                transform: 'translateX(60%)'
               }
             }}>
-              <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                <PublicationIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', mb: 1 }} />
-                <Typography variant="h4" fontWeight="bold" sx={{ color: 'white' }}>
+              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                  <PublicationIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+                  <Chip 
+                    label="+0%"
+                    size="small"
+                    sx={{ 
+                      backgroundColor: 'rgba(255,255,255,0.25)',
+                      color: 'white',
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}
+                  />
+                </Box>
+                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
                   {analyticsData.overview.totalPublications}
                 </Typography>
-                <Typography variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
                   Publications
                 </Typography>
               </CardContent>

@@ -312,6 +312,8 @@ const ResearcherDashboard = () => {
         return 'Foundation Manager';
       case 'super_admin':
         return 'Super Administrator';
+      case 'global_admin':
+        return 'Global Admin';
       default:
         return 'User Account';
     }

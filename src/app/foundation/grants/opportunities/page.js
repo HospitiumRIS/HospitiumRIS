@@ -64,6 +64,8 @@ import {
   ExpandMore as ExpandMoreIcon,
   Public as CountryIcon,
   Close as CloseIcon,
+  Cancel as CancelIcon,
+  Assignment as AssignmentIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
 
@@ -507,65 +509,180 @@ const GrantOpportunityTracking = () => {
       <Box sx={{ minHeight: 'calc(100vh - 200px)', backgroundColor: '#f8f9fa' }}>
         <Container maxWidth="xl" sx={{ py: 4 }}>
           {/* Stats Cards */}
-          <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: 2,
-            mb: 3,
-            background: grantors.length > 0 ? 'linear-gradient(135deg, rgba(139, 108, 188, 0.08) 0%, rgba(255, 255, 255, 1) 100%)' : 'white'
-          }}>
-            <CardContent sx={{ py: 3 }}>
-              <Grid container spacing={4}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 0.5 }}>
-                      <TrendingUpIcon sx={{ fontSize: 24, color: '#8b6cbc' }} />
-                      <Typography variant="h3" fontWeight="bold" color="primary">
-                        {grantors.length}
-                      </Typography>
-                    </Stack>
-                    <Typography variant="subtitle1" color="text.secondary" sx={{ fontSize: '1rem', fontWeight: 500 }}>
-                      Active Grantors (Ranked)
-                    </Typography>
-                    {grantors.length > 0 && (
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.8rem', opacity: 0.7 }}>
-                        Top: {grantors[0]?.name} ({grantors[0]?.opportunities.length} opportunities)
-                      </Typography>
-                    )}
+          <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, justifyContent: 'space-between', mb: 3 }}>
+            <Box sx={{ width: '25%' }}>
+              <Card elevation={3} sx={{ 
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
+                color: 'white',
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '50%',
+                  height: '100%',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '50% 0 0 50%',
+                  transform: 'translateX(60%)'
+                }
+              }}>
+                <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <TrendingUpIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+                    <Chip 
+                      label="+0%"
+                      size="small"
+                      sx={{ 
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        color: 'white',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        border: '1px solid rgba(255,255,255,0.3)'
+                      }}
+                    />
                   </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h3" fontWeight="bold" color="success.main" sx={{ mb: 0.5 }}>
-                      {openOpportunities}
-                    </Typography>
-                    <Typography variant="subtitle1" color="text.secondary" sx={{ fontSize: '1rem', fontWeight: 500 }}>
-                      Open Opportunities
-                    </Typography>
+                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
+                    {grantors.length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
+                    Active Grantors
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Box>
+            <Box sx={{ width: '25%' }}>
+              <Card elevation={3} sx={{ 
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
+                color: 'white',
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '50%',
+                  height: '100%',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '50% 0 0 50%',
+                  transform: 'translateX(60%)'
+                }
+              }}>
+                <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <CheckCircleIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+                    <Chip 
+                      label="+0%"
+                      size="small"
+                      sx={{ 
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        color: 'white',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        border: '1px solid rgba(255,255,255,0.3)'
+                      }}
+                    />
                   </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h3" fontWeight="bold" color="error.main" sx={{ mb: 0.5 }}>
-                      {closedOpportunities}
-                    </Typography>
-                    <Typography variant="subtitle1" color="text.secondary" sx={{ fontSize: '1rem', fontWeight: 500 }}>
-                      Closed Opportunities
-                    </Typography>
+                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
+                    {openOpportunities}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
+                    Open Opportunities
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Box>
+            <Box sx={{ width: '25%' }}>
+              <Card elevation={3} sx={{ 
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
+                color: 'white',
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '50%',
+                  height: '100%',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '50% 0 0 50%',
+                  transform: 'translateX(60%)'
+                }
+              }}>
+                <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <CancelIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+                    <Chip 
+                      label="+0%"
+                      size="small"
+                      sx={{ 
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        color: 'white',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        border: '1px solid rgba(255,255,255,0.3)'
+                      }}
+                    />
                   </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 0.5 }}>
-                      {totalOpportunities}
-                    </Typography>
-                    <Typography variant="subtitle1" color="text.secondary" sx={{ fontSize: '1rem', fontWeight: 500 }}>
-                      Total Opportunities
-                    </Typography>
+                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
+                    {closedOpportunities}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
+                    Closed Opportunities
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Box>
+            <Box sx={{ width: '25%' }}>
+              <Card elevation={3} sx={{ 
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
+                color: 'white',
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '50%',
+                  height: '100%',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '50% 0 0 50%',
+                  transform: 'translateX(60%)'
+                }
+              }}>
+                <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <AssignmentIcon sx={{ fontSize: 24, opacity: 0.9 }} />
+                    <Chip 
+                      label="+0%"
+                      size="small"
+                      sx={{ 
+                        backgroundColor: 'rgba(255,255,255,0.25)',
+                        color: 'white',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        border: '1px solid rgba(255,255,255,0.3)'
+                      }}
+                    />
                   </Box>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
+                    {totalOpportunities}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
+                    Total Opportunities
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Box>
+          </Box>
 
           {/* Search and Filters */}
           <Paper sx={{ borderRadius: 3, p: 3, mb: 3 }}>

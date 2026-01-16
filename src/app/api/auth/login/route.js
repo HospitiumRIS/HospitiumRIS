@@ -143,6 +143,9 @@ export async function POST(request) {
         case 'SUPER_ADMIN':
           dashboardRoute = '/super-admin';
           break;
+        case 'GLOBAL_ADMIN':
+          dashboardRoute = '/select-interface';
+          break;
       }
 
       // Update last login time
@@ -401,6 +404,9 @@ export async function POST(request) {
         break;
       case 'SUPER_ADMIN':
         dashboardRoute = '/super-admin';
+        break;
+      case 'GLOBAL_ADMIN':
+        dashboardRoute = '/select-interface';
         break;
     }
 
