@@ -14,8 +14,18 @@ import {
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 
-const AccountTypeStep = ({ accountType, onAccountTypeChange, errors }) => {
+const AccountTypeStep = ({ accountType, onAccountTypeChange, errors, onNext }) => {
   const theme = useTheme();
+
+  const handleAccountTypeSelect = (value) => {
+    onAccountTypeChange(null, value);
+    // Automatically proceed to next step after selection
+    if (onNext) {
+      setTimeout(() => {
+        onNext();
+      }, 300); // Small delay for visual feedback
+    }
+  };
 
   const accountTypeOptions = [
     {
@@ -64,7 +74,7 @@ const AccountTypeStep = ({ accountType, onAccountTypeChange, errors }) => {
                   boxShadow: theme.shadows[4],
                 },
               }}
-              onClick={() => onAccountTypeChange(null, option.value)}
+              onClick={() => handleAccountTypeSelect(option.value)}
             >
               <CardContent sx={{ textAlign: 'center', py: 2 }}>
                 <Box sx={{ color: theme.palette.primary.main, mb: 1 }}>

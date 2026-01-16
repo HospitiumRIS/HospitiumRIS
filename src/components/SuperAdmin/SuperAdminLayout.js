@@ -58,10 +58,16 @@ const SuperAdminLayout = ({ children }) => {
       color: 'info'
     },
     {
+      text: 'Account Types',
+      icon: <SecurityIcon />,
+      path: '/super-admin/account-types',
+      color: 'secondary'
+    },
+    {
       text: 'Database',
       icon: <DatabaseIcon />,
       path: '/super-admin/database',
-      color: 'secondary'
+      color: 'warning'
     },
     {
       text: 'Activity Logs',

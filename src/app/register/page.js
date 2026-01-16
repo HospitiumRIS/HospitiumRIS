@@ -525,6 +525,7 @@ const RegisterPage = () => {
             accountType={formData.accountType}
             onAccountTypeChange={handleAccountTypeChange}
             errors={errors}
+            onNext={handleNext}
           />
         );
 

@@ -10,13 +10,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum AccountType {
-  RESEARCHER
-  RESEARCH_ADMIN
-  FOUNDATION_ADMIN
-  SUPER_ADMIN
-}
-
 enum UserStatus {
   PENDING
   ACTIVE
@@ -24,61 +17,81 @@ enum UserStatus {
   SUSPENDED
 }
 
+model AccountType {
+  id          String  @id @default(cuid())
+  name        String  @unique // e.g., "RESEARCHER", "GLOBAL_ADMIN"
+  displayName String // e.g., "Researcher", "Global Admin"
+  description String?
+  permissions Json // Store permissions as JSON array
+  isActive    Boolean @default(true)
+  isSystem    Boolean @default(false) // System roles cannot be deleted
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users User[]
+
+  @@map("account_types")
+}
+
 model User {
-  id          String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Account Information
-  accountType AccountType
-  status      UserStatus @default(PENDING)
-  
+  accountType         String // Changed from enum to String to reference AccountType.name
+  accountTypeRelation AccountType? @relation(fields: [accountType], references: [name])
+  status              UserStatus   @default(PENDING)
+
   // Personal Information
-  givenName   String
-  familyName  String
-  email       String   @unique
-  confirmEmail String?  // Only for non-researchers
+  givenName    String
+  familyName   String
+  email        String  @unique
+  confirmEmail String? // Only for non-researchers
   passwordHash String
-  
+
   // Email Verification
-  emailVerified    Boolean  @default(false)
-  emailVerifyToken String?  @unique
+  emailVerified      Boolean   @default(false)
+  emailVerifyToken   String?   @unique
   emailVerifyExpires DateTime?
-  
+
   // ORCID Information
-  orcidId          String?
-  orcidGivenNames  String?
-  orcidFamilyName  String?
-  
+  orcidId         String?
+  orcidGivenNames String?
+  orcidFamilyName String?
+
   // Research Information (for RESEARCHER and RESEARCH_ADMIN)
   primaryInstitution String?
   startMonth         String?
   startYear          String?
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  institution Institution?
-  foundation  Foundation?
+  institution     Institution?
+  foundation      Foundation?
   researchProfile ResearchProfile?
-  publications PublicationAuthor[]
-  settings UserSettings[]
-  
+  publications    PublicationAuthor[]
+  settings        UserSettings[]
+
   // Manuscript Relations
-  createdManuscripts ManuscriptCollaborator[] @relation("InvitedCollaborators")
+  createdManuscripts       ManuscriptCollaborator[] @relation("InvitedCollaborators")
   manuscriptCollaborations ManuscriptCollaborator[] @relation("ManuscriptCollaborations")
-  sentInvitations ManuscriptInvitation[] @relation("SentInvitations")
-  receivedInvitations ManuscriptInvitation[] @relation("ReceivedInvitations")
-  manuscripts Manuscript[] @relation("CreatedManuscripts")
-  lastUpdatedManuscripts Manuscript[] @relation("LastUpdatedManuscripts")
-  notifications Notification[] @relation("UserNotifications")
-  comments ManuscriptComment[] @relation("CommentAuthor")
-  
+  sentInvitations          ManuscriptInvitation[]   @relation("SentInvitations")
+  receivedInvitations      ManuscriptInvitation[]   @relation("ReceivedInvitations")
+  manuscripts              Manuscript[]             @relation("CreatedManuscripts")
+  lastUpdatedManuscripts   Manuscript[]             @relation("LastUpdatedManuscripts")
+  notifications            Notification[]           @relation("UserNotifications")
+  comments                 ManuscriptComment[]      @relation("CommentAuthor")
+
   // Track Changes and Version Relations
   createdVersions ManuscriptVersion[] @relation("VersionCreator")
-  authoredChanges TrackedChange[] @relation("ChangeAuthor")
-  reviewedChanges TrackedChange[] @relation("ChangeReviewer")
-  
+  authoredChanges TrackedChange[]     @relation("ChangeAuthor")
+  reviewedChanges TrackedChange[]     @relation("ChangeReviewer")
+
   @@map("users")
 }
 
@@ -89,81 +102,81 @@ enum SettingsType {
 }
 
 model UserSettings {
-  id          String   @id @default(cuid())
-  userId      String
-  type        SettingsType
-  settings    Json     // Store settings as JSON for flexibility
-  
+  id       String       @id @default(cuid())
+  userId   String
+  type     SettingsType
+  settings Json // Store settings as JSON for flexibility
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // Ensure unique combination of userId and type
   @@unique([userId, type])
   @@map("user_settings")
 }
 
 model Institution {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  
+  id     String @id @default(cuid())
+  userId String @unique
+
   // Institution Details
-  name        String
-  type        String   // University, Hospital, Research Institute, Other
-  country     String
-  website     String?  // Optional for Research Admins, required for others
-  
+  name    String
+  type    String // University, Hospital, Research Institute, Other
+  country String
+  website String? // Optional for Research Admins, required for others
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("institutions")
 }
 
 model Foundation {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  
+  id     String @id @default(cuid())
+  userId String @unique
+
   // Foundation Details
-  institutionName String   // Primary institution name
-  foundationName  String   // Foundation name
-  type           String   // Private Foundation, Public Foundation, etc.
-  country        String
-  website        String?  // Optional
-  focusArea      String?  // Optional
-  description    String?  // Optional
-  
+  institutionName String // Primary institution name
+  foundationName  String // Foundation name
+  type            String // Private Foundation, Public Foundation, etc.
+  country         String
+  website         String? // Optional
+  focusArea       String? // Optional
+  description     String? // Optional
+
   // Timestamps
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("foundations")
 }
 
 // Optional: Audit log for tracking registration attempts
 model RegistrationLog {
-  id          String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Registration attempt details
-  email       String
-  accountType AccountType
-  ipAddress   String?
-  userAgent   String?
-  success     Boolean
+  email        String
+  accountType  String // Changed to String to match User.accountType
+  ipAddress    String?
+  userAgent    String?
+  success      Boolean
   errorMessage String?
-  
+
   // Timestamps
   attemptedAt DateTime @default(now())
-  
+
   @@map("registration_logs")
 }
 
@@ -174,281 +187,281 @@ enum PublicationStatus {
 
 // Publications and Research Network Models
 model Publication {
-  id          String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Publication Details
-  title       String
-  type        String?  // Article, Review, Conference, etc. (renamed from publicationType)
-  field       String?  // Field of study
-  journal     String?
-  abstract    String?
-  authors     String[] // Authors as array for imported publications
-  
+  title    String
+  type     String? // Article, Review, Conference, etc. (renamed from publicationType)
+  field    String? // Field of study
+  journal  String?
+  abstract String?
+  authors  String[] // Authors as array for imported publications
+
   // Publication identifiers and links
-  doi         String?
-  isbn        String?
-  url         String?
-  
+  doi  String?
+  isbn String?
+  url  String?
+
   // Publication metadata
   keywords        String[]
   pages           String?
   volume          String?
   publicationDate DateTime?
   year            Int?
-  
+
   // Publication tracking
-  status          PublicationStatus @default(PUBLISHED)
-  source          String?  // PubMed, CrossRef, OpenAlex, Manual, etc.
-  
+  status PublicationStatus @default(PUBLISHED)
+  source String? // PubMed, CrossRef, OpenAlex, Manual, etc.
+
   // ORCID for primary/corresponding author if available
-  authorId        String?  // ORCID ID if present
-  
+  authorId String? // ORCID ID if present
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  authorRelations PublicationAuthor[] @relation("authorRelations")
+  authorRelations     PublicationAuthor[]        @relation("authorRelations")
   manuscriptCitations ManuscriptCitation[]
-  proposals ProposalPublication[]
-  libraryFolders LibraryFolderPublication[]
-  
+  proposals           ProposalPublication[]
+  libraryFolders      LibraryFolderPublication[]
+
   @@map("publications")
 }
 
 model PublicationAuthor {
-  id            String @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Relations
   userId        String
   publicationId String
-  
+
   // Author details for this publication
-  authorOrder   Int     // 1st author, 2nd author, etc.
+  authorOrder     Int // 1st author, 2nd author, etc.
   isCorresponding Boolean @default(false)
-  
+
   // Relations
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade, name: "authorRelations")
-  
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  publication Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade, name: "authorRelations")
+
   // Timestamps
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([userId, publicationId])
   @@map("publication_authors")
 }
 
 // Research Profile Enhancement
 model ResearchProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  
+  id     String @id @default(cuid())
+  userId String @unique
+
   // Research Information
-  specialization  String[]
-  keywords        String[]
+  specialization    String[]
+  keywords          String[]
   researchInterests String?
-  biography       String?
-  
+  biography         String?
+
   // Academic Information
-  academicTitle   String?  // Professor, Dr., etc.
-  department      String?
-  
+  academicTitle String? // Professor, Dr., etc.
+  department    String?
+
   // Contact Information
-  phone           String?
-  
+  phone String?
+
   // Professional Links
-  website         String?
-  linkedin        String?
-  twitter         String?
-  googleScholar   String?
-  
+  website       String?
+  linkedin      String?
+  twitter       String?
+  googleScholar String?
+
   // Research Metrics
-  hIndex          Int?
-  citationCount   Int?
-  
+  hIndex        Int?
+  citationCount Int?
+
   // Timestamps
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("research_profiles")
 }
 
 // Campaign Management Models
 model CampaignCategory {
-  id          String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Category Details
   name        String
   description String?
-  icon        String?   // Icon identifier (e.g., 'Golfing', 'Running', 'Events')
-  color       String?   // Hex color for theming
-  
+  icon        String? // Icon identifier (e.g., 'Golfing', 'Running', 'Events')
+  color       String? // Hex color for theming
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  campaigns   Campaign[]
-  
+  campaigns Campaign[]
+
   @@map("campaign_categories")
 }
 
 model Campaign {
-  id          String   @id @default(cuid())
-  categoryId  String
-  
+  id         String @id @default(cuid())
+  categoryId String
+
   // Campaign Details
-  name        String
-  description String?
-  targetAmount Decimal?  @db.Decimal(15,2)
-  raisedAmount Decimal   @default(0) @db.Decimal(15,2)
-  
+  name         String
+  description  String?
+  targetAmount Decimal? @db.Decimal(15, 2)
+  raisedAmount Decimal  @default(0) @db.Decimal(15, 2)
+
   // Campaign Dates
-  startDate   DateTime?
-  endDate     DateTime?
-  
+  startDate DateTime?
+  endDate   DateTime?
+
   // Campaign Status
-  status      String    @default("Planning") // Planning, Active, Completed, Paused, Cancelled
-  
+  status String @default("Planning") // Planning, Active, Completed, Paused, Cancelled
+
   // Campaign Metrics
-  donorCount      Int @default(0)
-  donationCount   Int @default(0)
-  
+  donorCount    Int @default(0)
+  donationCount Int @default(0)
+
   // Timestamps  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  category    CampaignCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  activities  CampaignActivity[]
-  donations   Donation[]
-  
+  category   CampaignCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  activities CampaignActivity[]
+  donations  Donation[]
+
   @@map("campaigns")
 }
 
 model CampaignActivity {
-  id          String   @id @default(cuid())
-  campaignId  String
-  
+  id         String @id @default(cuid())
+  campaignId String
+
   // Activity Details
-  type        String   // Meeting, Event, Mailing, Call, etc.
+  type        String // Meeting, Event, Mailing, Call, etc.
   title       String
   description String?
-  
+
   // Activity Timing
-  date        DateTime
-  time        String?
-  
+  date DateTime
+  time String?
+
   // Activity Details
-  location    String?
-  attendees   String?
-  notes       String?
-  
+  location  String?
+  attendees String?
+  notes     String?
+
   // Activity Status
-  status      String   @default("Planned") // Planned, In Progress, Completed, Cancelled
-  phase       String   @default("Pre-Campaign") // Pre-Campaign, Post-Campaign
-  
+  status String @default("Planned") // Planned, In Progress, Completed, Cancelled
+  phase  String @default("Pre-Campaign") // Pre-Campaign, Post-Campaign
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
   @@map("campaign_activities")
 }
 
 model Donation {
-  id              String   @id @default(cuid())
-  campaignId      String?
-  
+  id         String  @id @default(cuid())
+  campaignId String?
+
   // Donor Information
-  donorName       String
-  donorEmail      String?
-  donorPhone      String?
-  donorType       String?   // Individual, Corporate, Foundation, etc.
-  
+  donorName  String
+  donorEmail String?
+  donorPhone String?
+  donorType  String? // Individual, Corporate, Foundation, etc.
+
   // Donation Details
-  amount          Decimal  @db.Decimal(15,2)
-  donationDate    DateTime @default(now())
-  paymentMethod   String?  // Credit Card, Bank Transfer, Check, Cash, etc.
-  transactionId   String?
-  
+  amount        Decimal  @db.Decimal(15, 2)
+  donationDate  DateTime @default(now())
+  paymentMethod String? // Credit Card, Bank Transfer, Check, Cash, etc.
+  transactionId String?
+
   // Donation Status
-  status          String   @default("Completed") // Pending, Completed, Failed, Refunded
-  
+  status String @default("Completed") // Pending, Completed, Failed, Refunded
+
   // Additional Information
-  message         String?
-  isAnonymous     Boolean  @default(false)
-  taxDeductible   Boolean  @default(true)
-  
+  message       String?
+  isAnonymous   Boolean @default(false)
+  taxDeductible Boolean @default(true)
+
   // Timestamps
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  campaign        Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
   @@map("donations")
 }
 
 // Grant Management Models
 model Grantor {
-  id              String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Grantor Details
-  name            String   @unique
-  type            String   // federal, private, nonprofit, corporate
-  focus           String[] // Focus areas array
-  
+  name  String   @unique
+  type  String // federal, private, nonprofit, corporate
+  focus String[] // Focus areas array
+
   // Contact Information
-  contactPerson   String?
-  email           String?
-  phone           String?
-  country         String
-  
+  contactPerson String?
+  email         String?
+  phone         String?
+  country       String
+
   // Additional Information
-  notes           String?
-  status          String   @default("active") // active, inactive
-  
+  notes  String?
+  status String  @default("active") // active, inactive
+
   // Timestamps
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  opportunities   GrantOpportunity[]
-  
+  opportunities GrantOpportunity[]
+
   @@map("grantors")
 }
 
 model GrantOpportunity {
-  id              String   @id @default(cuid())
-  grantorId       String
-  
+  id        String @id @default(cuid())
+  grantorId String
+
   // Opportunity Details
-  title           String
-  amount          Decimal  @db.Decimal(15,2)
-  deadline        DateTime
-  
+  title    String
+  amount   Decimal  @db.Decimal(15, 2)
+  deadline DateTime
+
   // Opportunity Categories and Eligibility
-  category        String[] // Array of categories
-  eligibility     String[] // Array of eligibility criteria
-  
+  category    String[] // Array of categories
+  eligibility String[] // Array of eligibility criteria
+
   // Additional Information
-  notes           String?
-  status          String   @default("open") // open, closed
-  
+  notes  String?
+  status String  @default("open") // open, closed
+
   // Timestamps
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  grantor         Grantor  @relation(fields: [grantorId], references: [id], onDelete: Cascade)
-  
+  grantor Grantor @relation(fields: [grantorId], references: [id], onDelete: Cascade)
+
   @@map("grant_opportunities")
 }
 
@@ -484,159 +497,159 @@ enum NotificationType {
 }
 
 model Manuscript {
-  id          String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Manuscript Details
   title       String
-  type        String   // Article, Review, Proposal, etc.
-  field       String?  // Medical field or research area
+  type        String // Article, Review, Proposal, etc.
+  field       String? // Medical field or research area
   description String?
   status      ManuscriptStatus @default(DRAFT)
-  
+
   // Document Content
-  content     String?  @db.Text // Store the manuscript content (HTML/JSON from TipTap)
-  wordCount   Int?     @default(0) // Cache word count for performance
-  
+  content   String? @db.Text // Store the manuscript content (HTML/JSON from TipTap)
+  wordCount Int?    @default(0) // Cache word count for performance
+
   // Creation Info
-  createdBy   String   // User ID of creator
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  lastSaved   DateTime? // Track when content was last saved
+  createdBy     String // User ID of creator
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastSaved     DateTime? // Track when content was last saved
   lastUpdatedBy String? // User ID of last person to update
-  
+
   // Relations
-  creator     User     @relation(fields: [createdBy], references: [id], onDelete: Cascade, name: "CreatedManuscripts")
-  lastUpdater User?    @relation(fields: [lastUpdatedBy], references: [id], onDelete: SetNull, name: "LastUpdatedManuscripts")
-  collaborators ManuscriptCollaborator[]
-  invitations ManuscriptInvitation[]
-  notifications Notification[]
-  citations   ManuscriptCitation[]
-  comments    ManuscriptComment[]
-  versions    ManuscriptVersion[]
+  creator        User                     @relation(fields: [createdBy], references: [id], onDelete: Cascade, name: "CreatedManuscripts")
+  lastUpdater    User?                    @relation(fields: [lastUpdatedBy], references: [id], onDelete: SetNull, name: "LastUpdatedManuscripts")
+  collaborators  ManuscriptCollaborator[]
+  invitations    ManuscriptInvitation[]
+  notifications  Notification[]
+  citations      ManuscriptCitation[]
+  comments       ManuscriptComment[]
+  versions       ManuscriptVersion[]
   trackedChanges TrackedChange[]
-  proposals   ProposalManuscript[]
-  
+  proposals      ProposalManuscript[]
+
   @@map("manuscripts")
 }
 
 model ManuscriptCollaborator {
-  id           String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Relations
   manuscriptId String
   userId       String
-  
+
   // Collaboration Details
-  role         CollaboratorRole
-  invitedBy    String   // User ID who invited this collaborator
-  joinedAt     DateTime @default(now())
-  
+  role      CollaboratorRole
+  invitedBy String // User ID who invited this collaborator
+  joinedAt  DateTime         @default(now())
+
   // Permissions
-  canEdit      Boolean  @default(true)
-  canInvite    Boolean  @default(false)
-  canDelete    Boolean  @default(false)
-  
+  canEdit   Boolean @default(true)
+  canInvite Boolean @default(false)
+  canDelete Boolean @default(false)
+
   // Relations
-  manuscript   Manuscript @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade, name: "ManuscriptCollaborations")
-  inviter      User       @relation(fields: [invitedBy], references: [id], onDelete: Cascade, name: "InvitedCollaborators")
-  
+  manuscript Manuscript @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade, name: "ManuscriptCollaborations")
+  inviter    User       @relation(fields: [invitedBy], references: [id], onDelete: Cascade, name: "InvitedCollaborators")
+
   // Timestamps
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([manuscriptId, userId])
   @@map("manuscript_collaborators")
 }
 
 model ManuscriptInvitation {
-  id           String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Relations
   manuscriptId String
-  invitedBy    String   // User ID who sent invitation
-  
+  invitedBy    String // User ID who sent invitation
+
   // Invitation Details - for existing users
-  invitedUserId String?  // If user exists in system
-  
+  invitedUserId String? // If user exists in system
+
   // Invitation Details - for ORCID-based invitations
-  orcidId      String?  // ORCID ID of invited researcher
-  email        String?  // Email from ORCID or provided
-  givenName    String?  // From ORCID
-  familyName   String?  // From ORCID
-  affiliation  String?  // From ORCID
-  
+  orcidId     String? // ORCID ID of invited researcher
+  email       String? // Email from ORCID or provided
+  givenName   String? // From ORCID
+  familyName  String? // From ORCID
+  affiliation String? // From ORCID
+
   // Invitation Settings
-  role         CollaboratorRole @default(CONTRIBUTOR)
-  status       InvitationStatus @default(PENDING)
-  message      String?  // Personal message from inviter
-  
+  role    CollaboratorRole @default(CONTRIBUTOR)
+  status  InvitationStatus @default(PENDING)
+  message String? // Personal message from inviter
+
   // Invitation Token for email links
-  token        String   @unique @default(cuid())
-  expiresAt    DateTime // Invitation expiry
-  
+  token     String   @unique @default(cuid())
+  expiresAt DateTime // Invitation expiry
+
   // Response tracking
-  respondedAt  DateTime?
-  
+  respondedAt DateTime?
+
   // Relations
-  manuscript   Manuscript @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
-  inviter      User       @relation(fields: [invitedBy], references: [id], onDelete: Cascade, name: "SentInvitations")
-  invitedUser  User?      @relation(fields: [invitedUserId], references: [id], onDelete: Cascade, name: "ReceivedInvitations")
-  
+  manuscript  Manuscript @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
+  inviter     User       @relation(fields: [invitedBy], references: [id], onDelete: Cascade, name: "SentInvitations")
+  invitedUser User?      @relation(fields: [invitedUserId], references: [id], onDelete: Cascade, name: "ReceivedInvitations")
+
   // Timestamps
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@map("manuscript_invitations")
 }
 
 model Notification {
-  id           String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Relations
-  userId       String   // User receiving notification
-  manuscriptId String?  // Related manuscript (optional)
-  
+  userId       String // User receiving notification
+  manuscriptId String? // Related manuscript (optional)
+
   // Notification Details
-  type         NotificationType
-  title        String
-  message      String
-  data         Json?    // Additional data as JSON
-  
+  type    NotificationType
+  title   String
+  message String
+  data    Json? // Additional data as JSON
+
   // Notification Status
-  isRead       Boolean  @default(false)
-  readAt       DateTime?
-  
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
   // Relations
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserNotifications")
-  manuscript   Manuscript? @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
-  
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserNotifications")
+  manuscript Manuscript? @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@map("notifications")
 }
 
 // Manuscript Citation Library
 model ManuscriptCitation {
-  id           String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Relations
-  manuscriptId String
+  manuscriptId  String
   publicationId String
-  
+
   // Citation tracking
-  citationCount Int     @default(1)  // How many times this publication is cited in the manuscript
-  
+  citationCount Int @default(1) // How many times this publication is cited in the manuscript
+
   // Timestamps
-  createdAt    DateTime @default(now())  // When first cited
-  updatedAt    DateTime @updatedAt       // When last cited
-  
+  createdAt DateTime @default(now()) // When first cited
+  updatedAt DateTime @updatedAt // When last cited
+
   // Relations
-  manuscript   Manuscript  @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
-  publication  Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
-  
+  manuscript  Manuscript  @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
+  publication Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
   @@unique([manuscriptId, publicationId])
   @@map("manuscript_citations")
 }
@@ -644,7 +657,7 @@ model ManuscriptCitation {
 // Comment System Models
 enum CommentType {
   COMMENT
-  SUGGESTION  
+  SUGGESTION
   QUESTION
 }
 
@@ -655,116 +668,116 @@ enum CommentStatus {
 }
 
 model ManuscriptComment {
-  id              String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Relations
   manuscriptId    String
   authorId        String
-  parentCommentId String?  // For replies/threaded comments
-  
+  parentCommentId String? // For replies/threaded comments
+
   // Comment Content
-  content         String   @db.Text
-  type            CommentType @default(COMMENT)
-  status          CommentStatus @default(ACTIVE)
-  
+  content String        @db.Text
+  type    CommentType   @default(COMMENT)
+  status  CommentStatus @default(ACTIVE)
+
   // Text Selection Context (for inline comments)
-  selectedText    String?  // The text that was selected when creating comment
-  startOffset     Int?     // Start position in document
-  endOffset       Int?     // End position in document
-  
+  selectedText String? // The text that was selected when creating comment
+  startOffset  Int? // Start position in document
+  endOffset    Int? // End position in document
+
   // Timestamps
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  manuscript      Manuscript @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
-  author          User      @relation(fields: [authorId], references: [id], onDelete: Cascade, name: "CommentAuthor")
-  parentComment   ManuscriptComment? @relation(fields: [parentCommentId], references: [id], onDelete: Cascade, name: "CommentThread")
-  replies         ManuscriptComment[] @relation("CommentThread")
-  
+  manuscript    Manuscript          @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
+  author        User                @relation(fields: [authorId], references: [id], onDelete: Cascade, name: "CommentAuthor")
+  parentComment ManuscriptComment?  @relation(fields: [parentCommentId], references: [id], onDelete: Cascade, name: "CommentThread")
+  replies       ManuscriptComment[] @relation("CommentThread")
+
   @@map("manuscript_comments")
 }
 
 // Track Changes and Version Control Models
 model ManuscriptVersion {
-  id           String   @id @default(cuid())
-  manuscriptId String
-  versionNumber Int     // Auto-incremented version number
-  
+  id            String @id @default(cuid())
+  manuscriptId  String
+  versionNumber Int // Auto-incremented version number
+
   // Version Details
-  title        String   // Snapshot of title at this version
-  content      String   @db.Text // Full HTML content at this version
-  changes      String?  @db.Text // JSON containing tracked changes data
-  
+  title   String // Snapshot of title at this version
+  content String  @db.Text // Full HTML content at this version
+  changes String? @db.Text // JSON containing tracked changes data
+
   // Metadata
-  createdBy    String   // User who created this version
-  versionType  VersionType @default(AUTO) // AUTO, MANUAL, MILESTONE
-  description  String?   // Optional description for manual versions
-  wordCount    Int?     @default(0)
-  
+  createdBy   String // User who created this version
+  versionType VersionType @default(AUTO) // AUTO, MANUAL, MILESTONE
+  description String? // Optional description for manual versions
+  wordCount   Int?        @default(0)
+
   // Timestamps
-  createdAt    DateTime @default(now())
-  
+  createdAt DateTime @default(now())
+
   // Relations
-  manuscript   Manuscript @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
-  creator      User     @relation(fields: [createdBy], references: [id], onDelete: Cascade, name: "VersionCreator")
-  
+  manuscript Manuscript @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
+  creator    User       @relation(fields: [createdBy], references: [id], onDelete: Cascade, name: "VersionCreator")
+
   @@unique([manuscriptId, versionNumber])
   @@map("manuscript_versions")
 }
 
 model TrackedChange {
-  id           String     @id @default(cuid())
+  id           String @id @default(cuid())
   manuscriptId String
-  changeId     String     // Unique identifier for this change in the document
-  
+  changeId     String // Unique identifier for this change in the document
+
   // Change Details
-  type         ChangeType // INSERT, DELETE, FORMAT
-  operation    String     // Specific operation (e.g., "bold", "underline", "insert-text")
-  content      String?    @db.Text // Content that was inserted/deleted
-  oldContent   String?    @db.Text // Previous content (for updates)
-  
+  type       ChangeType // INSERT, DELETE, FORMAT
+  operation  String // Specific operation (e.g., "bold", "underline", "insert-text")
+  content    String?    @db.Text // Content that was inserted/deleted
+  oldContent String?    @db.Text // Previous content (for updates)
+
   // Position Information
-  startOffset  Int        // Start position in document
-  endOffset    Int        // End position in document
-  nodeType     String?    // Type of node (paragraph, heading, etc.)
-  
+  startOffset Int // Start position in document
+  endOffset   Int // End position in document
+  nodeType    String? // Type of node (paragraph, heading, etc.)
+
   // Change Metadata
-  authorId     String     // Who made the change
-  status       ChangeStatus @default(PENDING) // PENDING, ACCEPTED, REJECTED
-  
+  authorId String // Who made the change
+  status   ChangeStatus @default(PENDING) // PENDING, ACCEPTED, REJECTED
+
   // Timestamps
-  createdAt    DateTime   @default(now())
-  acceptedAt   DateTime?  // When change was accepted
-  rejectedAt   DateTime?  // When change was rejected
-  acceptedBy   String?    // Who accepted/rejected the change
-  
+  createdAt  DateTime  @default(now())
+  acceptedAt DateTime? // When change was accepted
+  rejectedAt DateTime? // When change was rejected
+  acceptedBy String? // Who accepted/rejected the change
+
   // Relations
-  manuscript   Manuscript @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
-  author       User       @relation(fields: [authorId], references: [id], onDelete: Cascade, name: "ChangeAuthor")
-  acceptedByUser User?    @relation(fields: [acceptedBy], references: [id], onDelete: SetNull, name: "ChangeReviewer")
-  
+  manuscript     Manuscript @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
+  author         User       @relation(fields: [authorId], references: [id], onDelete: Cascade, name: "ChangeAuthor")
+  acceptedByUser User?      @relation(fields: [acceptedBy], references: [id], onDelete: SetNull, name: "ChangeReviewer")
+
   @@map("tracked_changes")
 }
 
 // Enums for Track Changes and Versions
 enum VersionType {
-  AUTO      // Automatic version save (e.g., every N changes)
-  MANUAL    // Manually created version
+  AUTO // Automatic version save (e.g., every N changes)
+  MANUAL // Manually created version
   MILESTONE // Important milestone version
 }
 
 enum ChangeType {
-  INSERT    // Content insertion
-  DELETE    // Content deletion
-  FORMAT    // Formatting change (bold, italic, etc.)
-  REPLACE   // Content replacement
+  INSERT // Content insertion
+  DELETE // Content deletion
+  FORMAT // Formatting change (bold, italic, etc.)
+  REPLACE // Content replacement
 }
 
 enum ChangeStatus {
-  PENDING   // Change is pending review
-  ACCEPTED  // Change has been accepted
-  REJECTED  // Change has been rejected
+  PENDING // Change is pending review
+  ACCEPTED // Change has been accepted
+  REJECTED // Change has been rejected
 }
 
 // Proposal Management Models
@@ -778,108 +791,108 @@ enum ProposalStatus {
 }
 
 model Proposal {
-  id          String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Core Information
-  title       String
-  principalInvestigator String
+  title                      String
+  principalInvestigator      String
   principalInvestigatorOrcid String?
-  coInvestigators Json[] // Array of co-investigator objects
-  departments String[] // Array of department names
-  startDate   DateTime?
-  endDate     DateTime?
-  
+  coInvestigators            Json[] // Array of co-investigator objects
+  departments                String[] // Array of department names
+  startDate                  DateTime?
+  endDate                    DateTime?
+
   // Research Details
-  researchAreas String[] // Array of research areas
+  researchAreas      String[] // Array of research areas
   researchObjectives String?
-  methodology String?
-  abstract    String?
-  
+  methodology        String?
+  abstract           String?
+
   // Project Management
-  milestones  Json[] // Array of milestone objects
+  milestones   Json[] // Array of milestone objects
   deliverables Json[] // Array of deliverable objects
-  
+
   // Funding and Grants
-  fundingSource String?
-  grantNumber String?
+  fundingSource      String?
+  grantNumber        String?
   fundingInstitution String?
-  grantStartDate DateTime?
-  grantEndDate DateTime?
-  totalBudgetAmount Decimal? @db.Decimal(15,2)
-  
+  grantStartDate     DateTime?
+  grantEndDate       DateTime?
+  totalBudgetAmount  Decimal?  @db.Decimal(15, 2)
+
   // Ethical Considerations
   ethicalConsiderationsOverview String?
-  consentProcedures String?
-  dataSecurityMeasures String?
-  ethicsApprovalStatus String?
-  ethicsApprovalReference String?
-  ethicsCommittee String?
-  approvalDate DateTime?
-  
+  consentProcedures             String?
+  dataSecurityMeasures          String?
+  ethicsApprovalStatus          String?
+  ethicsApprovalReference       String?
+  ethicsCommittee               String?
+  approvalDate                  DateTime?
+
   // Related Publications & Files
   publicationRelevance String?
-  
+
   // Summary Information
-  impactStatement String?
+  impactStatement   String?
   disseminationPlan String?
-  
+
   // File uploads (stored as JSON with file metadata)
-  ethicsDocuments Json[] // Array of file metadata objects
+  ethicsDocuments    Json[] // Array of file metadata objects
   dataManagementPlan Json[] // Array of file metadata objects
-  otherRelatedFiles Json[] // Array of file metadata objects
-  
+  otherRelatedFiles  Json[] // Array of file metadata objects
+
   // Status and Metadata
-  status      ProposalStatus @default(DRAFT)
-  
+  status ProposalStatus @default(DRAFT)
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
   publications ProposalPublication[]
-  manuscripts ProposalManuscript[]
-  reviews ProposalReview[]
-  
+  manuscripts  ProposalManuscript[]
+  reviews      ProposalReview[]
+
   // TODO: Add userId when authentication is implemented
   // userId      String
   // user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@map("proposals")
 }
 
 // Proposal Review Model for comprehensive reviews
 model ProposalReview {
-  id          String   @id @default(cuid())
-  proposalId  String
-  
+  id         String @id @default(cuid())
+  proposalId String
+
   // Reviewer Information
-  reviewerId  String   // User ID of reviewer
-  reviewerName String  // Name of reviewer
-  
+  reviewerId   String // User ID of reviewer
+  reviewerName String // Name of reviewer
+
   // Review Decision
-  decision    String   // APPROVED, REJECTED, REQUIRES_REVISION
-  
+  decision String // APPROVED, REJECTED, REQUIRES_REVISION
+
   // Review Content
-  overallComments String @db.Text
-  rejectionReason String? @db.Text
+  overallComments      String  @db.Text
+  rejectionReason      String? @db.Text
   revisionRequirements String? @db.Text
-  recommendation String? @db.Text
-  
+  recommendation       String? @db.Text
+
   // Section-by-Section Reviews (stored as JSON)
-  sectionReviews Json   // Contains compliance ratings and comments for each section
-  complianceScore Json  // Contains total, compliant, and non-compliant counts
-  
+  sectionReviews  Json // Contains compliance ratings and comments for each section
+  complianceScore Json // Contains total, compliant, and non-compliant counts
+
   // Review Metadata
-  reviewDate  DateTime
-  status      String   @default("COMPLETED") // COMPLETED, DRAFT
-  
+  reviewDate DateTime
+  status     String   @default("COMPLETED") // COMPLETED, DRAFT
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-  
+  proposal Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
   @@map("proposal_reviews")
 }
 
@@ -888,56 +901,56 @@ model ProposalPublication {
   id            String @id @default(cuid())
   proposalId    String
   publicationId String
-  
+
   // Relations
-  proposal      Proposal    @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-  publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
-  
+  proposal    Proposal    @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  publication Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt     DateTime @default(now())
-  
+  createdAt DateTime @default(now())
+
   @@unique([proposalId, publicationId])
   @@map("proposal_publications")
 }
 
 // Junction table for Proposal-Manuscript (collaborative proposals) relationships
 model ProposalManuscript {
-  id            String @id @default(cuid())
-  proposalId    String
-  manuscriptId  String
-  
+  id           String @id @default(cuid())
+  proposalId   String
+  manuscriptId String
+
   // Relations
-  proposal      Proposal   @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-  manuscript    Manuscript @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
-  
+  proposal   Proposal   @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  manuscript Manuscript @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt     DateTime @default(now())
-  
+  createdAt DateTime @default(now())
+
   @@unique([proposalId, manuscriptId])
   @@map("proposal_manuscripts")
 }
 
 // Library Folder System for organizing publications
 model LibraryFolder {
-  id          String   @id @default(cuid())
-  userId      String   // Owner of the folder
-  
+  id     String @id @default(cuid())
+  userId String // Owner of the folder
+
   // Folder Details
-  name        String
-  parentId    String?  // Parent folder ID for nested structure (null = root folder)
-  expanded    Boolean  @default(false) // UI state for folder expansion
-  
+  name     String
+  parentId String? // Parent folder ID for nested structure (null = root folder)
+  expanded Boolean @default(false) // UI state for folder expansion
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Self-referential relation for parent-child folders
-  parent      LibraryFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children    LibraryFolder[] @relation("FolderHierarchy")
-  
+  parent   LibraryFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children LibraryFolder[] @relation("FolderHierarchy")
+
   // Publications in this folder
   publications LibraryFolderPublication[]
-  
+
   @@map("library_folders")
 }
 
@@ -946,14 +959,14 @@ model LibraryFolderPublication {
   id            String @id @default(cuid())
   folderId      String
   publicationId String
-  
+
   // When the publication was added to the folder
-  addedAt       DateTime @default(now())
-  
+  addedAt DateTime @default(now())
+
   // Relations
-  folder        LibraryFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  publication   Publication   @relation(fields: [publicationId], references: [id], onDelete: Cascade)
-  
+  folder      LibraryFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  publication Publication   @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
   @@unique([folderId, publicationId])
   @@map("library_folder_publications")
 }

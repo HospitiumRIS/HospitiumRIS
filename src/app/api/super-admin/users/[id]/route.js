@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { PrismaClient } from '@prisma/client';
 import { getAuthenticatedUser } from '@/lib/auth-server';
+
+const prisma = new PrismaClient();
 
 // Helper function to check Super Admin access
 async function checkSuperAdminAccess(request) {
@@ -115,12 +117,27 @@ export async function PATCH(request, { params }) {
       );
     }
 
+    // Validate account type if provided
+    if (body.accountType) {
+      const accountTypeExists = await prisma.accountType.findUnique({
+        where: { name: body.accountType }
+      });
+      
+      if (!accountTypeExists) {
+        return NextResponse.json(
+          { success: false, message: 'Invalid account type' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Only allow specific fields to be updated
     const allowedUpdates = {
       status: body.status,
       emailVerified: body.emailVerified,
       givenName: body.givenName,
-      familyName: body.familyName
+      familyName: body.familyName,
+      accountType: body.accountType
     };
 
     // Remove undefined values

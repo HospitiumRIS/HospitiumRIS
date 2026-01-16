@@ -39,7 +39,8 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  Menu
+  Menu,
+  Snackbar
 } from '@mui/material';
 import {
   People as UsersIcon,
@@ -86,6 +87,7 @@ const UserManagementPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuUserId, setMenuUserId] = useState(null);
+  const [accountTypes, setAccountTypes] = useState([]);
   
   // Filters and pagination
   const [searchQuery, setSearchQuery] = useState('');
@@ -103,7 +105,8 @@ const UserManagementPage = () => {
     givenName: '',
     familyName: '',
     status: '',
-    emailVerified: false
+    emailVerified: false,
+    accountType: ''
   });
 
   // Check Super Admin access
@@ -153,8 +156,21 @@ const UserManagementPage = () => {
   useEffect(() => {
     if (user?.accountType === 'SUPER_ADMIN') {
       fetchUsers();
+      fetchAccountTypes();
     }
   }, [user, page, rowsPerPage, searchQuery, statusFilter, accountTypeFilter]);
+
+  const fetchAccountTypes = async () => {
+    try {
+      const response = await fetch('/api/super-admin/account-types');
+      const data = await response.json();
+      if (data.success) {
+        setAccountTypes(data.accountTypes.filter(type => type.isActive));
+      }
+    } catch (error) {
+      console.error('Error fetching account types:', error);
+    }
+  };
 
   // Alert helper
   const showAlert = (message, severity = 'info') => {
@@ -175,7 +191,8 @@ const UserManagementPage = () => {
       givenName: userData.givenName,
       familyName: userData.familyName,
       status: userData.status,
-      emailVerified: userData.emailVerified
+      emailVerified: userData.emailVerified,
+      accountType: userData.accountType
     });
     setEditDialogOpen(true);
     handleMenuClose();
@@ -194,7 +211,11 @@ const UserManagementPage = () => {
       const response = await fetch(`/api/super-admin/users/${selectedUser.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm)
+        body: JSON.stringify({
+          status: editForm.status,
+          emailVerified: editForm.emailVerified,
+          accountType: editForm.accountType
+        })
       });
 
       const data = await response.json();
@@ -267,19 +288,33 @@ const UserManagementPage = () => {
 
   // Get account type chip
   const getAccountTypeChip = (accountType) => {
-    const typeConfig = {
-      RESEARCHER: { color: 'primary', icon: <ResearcherIcon />, label: 'Researcher' },
-      RESEARCH_ADMIN: { color: 'info', icon: <AdminIcon />, label: 'Research Admin' },
-      FOUNDATION_ADMIN: { color: 'secondary', icon: <FoundationIcon />, label: 'Foundation Admin' },
-      SUPER_ADMIN: { color: 'error', icon: <SuperAdminIcon />, label: 'Super Admin' }
+    // Find the account type from the fetched list
+    const accountTypeData = accountTypes.find(type => type.name === accountType);
+    
+    // Fallback icon mapping for system types
+    const iconMap = {
+      RESEARCHER: <ResearcherIcon />,
+      RESEARCH_ADMIN: <AdminIcon />,
+      FOUNDATION_ADMIN: <FoundationIcon />,
+      SUPER_ADMIN: <SuperAdminIcon />
     };
 
-    const config = typeConfig[accountType] || typeConfig.RESEARCHER;
+    const colorMap = {
+      RESEARCHER: 'primary',
+      RESEARCH_ADMIN: 'info',
+      FOUNDATION_ADMIN: 'secondary',
+      SUPER_ADMIN: 'error'
+    };
+
+    const label = accountTypeData?.displayName || accountType.replace(/_/g, ' ');
+    const icon = iconMap[accountType] || <ResearcherIcon />;
+    const color = colorMap[accountType] || 'default';
+
     return (
       <Chip
-        icon={config.icon}
-        label={config.label}
-        color={config.color}
+        icon={icon}
+        label={label}
+        color={color}
         size="small"
         variant="outlined"
       />
@@ -345,7 +380,7 @@ const UserManagementPage = () => {
               </Avatar>
               <Box>
                 <Typography 
-                  variant="h3" 
+                  variant="h4" 
                   sx={{ 
                     fontWeight: 700,
                     mb: 0.5,
@@ -394,12 +429,22 @@ const UserManagementPage = () => {
           </Box>
         </Box>
 
-      {/* Alert */}
-      {alert.show && (
-        <Alert severity={alert.severity} sx={{ mb: 3 }} onClose={() => setAlert({ ...alert, show: false })}>
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={alert.show}
+        autoHideDuration={4000}
+        onClose={() => setAlert({ ...alert, show: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setAlert({ ...alert, show: false })} 
+          severity={alert.severity}
+          sx={{ width: '100%' }}
+          variant="filled"
+        >
           {alert.message}
         </Alert>
-      )}
+      </Snackbar>
 
       {/* Statistics Cards */}
       <Box sx={{ 
@@ -438,7 +483,7 @@ const UserManagementPage = () => {
                   <CheckIcon />
                 </Avatar>
                 <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
                     {stats.byStatus?.active || 0}
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
@@ -480,7 +525,7 @@ const UserManagementPage = () => {
                   <PendingIcon />
                 </Avatar>
                 <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
                     {stats.byStatus?.pending || 0}
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
@@ -522,7 +567,7 @@ const UserManagementPage = () => {
                   <BlockIcon />
                 </Avatar>
                 <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
                     {stats.byStatus?.suspended || 0}
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
@@ -564,7 +609,7 @@ const UserManagementPage = () => {
                   <UsersIcon />
                 </Avatar>
                 <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
                     {totalUsers}
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
@@ -828,7 +873,7 @@ const UserManagementPage = () => {
               {selectedUser && getInitials(selectedUser.givenName, selectedUser.familyName)}
             </Avatar>
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
                 {selectedUser?.givenName} {selectedUser?.familyName}
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.95 }}>
@@ -1079,7 +1124,7 @@ const UserManagementPage = () => {
                 fullWidth
                 label="Given Name"
                 value={editForm.givenName}
-                onChange={(e) => setEditForm({ ...editForm, givenName: e.target.value })}
+                disabled
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     '&.Mui-focused fieldset': {
@@ -1098,7 +1143,7 @@ const UserManagementPage = () => {
                 fullWidth
                 label="Family Name"
                 value={editForm.familyName}
-                onChange={(e) => setEditForm({ ...editForm, familyName: e.target.value })}
+                disabled
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     '&.Mui-focused fieldset': {
@@ -1110,6 +1155,28 @@ const UserManagementPage = () => {
                   }
                 }}
               />
+            </Paper>
+            
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, bgcolor: 'white' }}>
+              <FormControl fullWidth>
+                <InputLabel sx={{ '&.Mui-focused': { color: '#8b6cbc' } }}>Account Type</InputLabel>
+                <Select
+                  value={editForm.accountType}
+                  label="Account Type"
+                  onChange={(e) => setEditForm({ ...editForm, accountType: e.target.value })}
+                  sx={{
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#8b6cbc'
+                    }
+                  }}
+                >
+                  {accountTypes.map((type) => (
+                    <MenuItem key={type.id} value={type.name}>
+                      {type.displayName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Paper>
             
             <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, bgcolor: 'white' }}>

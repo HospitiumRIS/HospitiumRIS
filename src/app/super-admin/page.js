@@ -167,7 +167,7 @@ const SuperAdminPage = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
               <Typography 
-                variant="h3" 
+                variant="h4" 
                 sx={{ 
                   fontWeight: 700, 
                   mb: 1,
@@ -249,7 +249,7 @@ const SuperAdminPage = () => {
                     size="small" 
                   />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, letterSpacing: '-0.02em' }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, letterSpacing: '-0.02em' }}>
                   {stats.totalUsers || 0}
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
@@ -301,7 +301,7 @@ const SuperAdminPage = () => {
                     size="small" 
                   />
                 </Box>
-                <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, letterSpacing: '-0.02em' }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, letterSpacing: '-0.02em' }}>
                   {stats.newUsersToday || 0}
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
@@ -352,7 +352,7 @@ const SuperAdminPage = () => {
                     size="small" 
                   />
                 </Box>
-                <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, letterSpacing: '-0.02em' }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, letterSpacing: '-0.02em' }}>
                   {stats.activeUsers || 0}
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
@@ -403,7 +403,7 @@ const SuperAdminPage = () => {
                     size="small" 
                   />
                 </Box>
-                <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, letterSpacing: '-0.02em' }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, letterSpacing: '-0.02em' }}>
                   {stats.pendingUsers || 0}
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
@@ -442,7 +442,7 @@ const SuperAdminPage = () => {
                   <SpeedIcon />
                 </Avatar>
                 <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
                     System Health
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -553,7 +553,7 @@ const SuperAdminPage = () => {
                   <TrendingUpIcon />
                 </Avatar>
                 <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
                     Quick Stats
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -565,7 +565,7 @@ const SuperAdminPage = () => {
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                 <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '120px' }}>
                   <Box sx={{ p: 2, bgcolor: '#f3e5f5', borderRadius: 2, textAlign: 'center', border: '1px solid #e1bee7' }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
                       {stats.totalManuscripts || 0}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
@@ -575,7 +575,7 @@ const SuperAdminPage = () => {
                 </Box>
                 <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '120px' }}>
                   <Box sx={{ p: 2, bgcolor: '#f3e5f5', borderRadius: 2, textAlign: 'center', border: '1px solid #e1bee7' }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
                       {stats.activeManuscripts || 0}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
@@ -585,7 +585,7 @@ const SuperAdminPage = () => {
                 </Box>
                 <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '120px' }}>
                   <Box sx={{ p: 2, bgcolor: '#f3e5f5', borderRadius: 2, textAlign: 'center', border: '1px solid #e1bee7' }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
                       {stats.activeUsers || 0}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
@@ -595,7 +595,7 @@ const SuperAdminPage = () => {
                 </Box>
                 <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '120px' }}>
                   <Box sx={{ p: 2, bgcolor: '#f3e5f5', borderRadius: 2, textAlign: 'center', border: '1px solid #e1bee7' }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
                       {stats.pendingUsers || 0}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
@@ -625,7 +625,7 @@ const SuperAdminPage = () => {
                 <UsersIcon />
               </Avatar>
               <Box>
-                <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   Recently Created User Accounts
                 </Typography>
                 <Typography variant="caption" color="text.secondary">

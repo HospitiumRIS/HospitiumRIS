@@ -68,8 +68,8 @@ import {
   History as HistoryIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
-import PageHeader from '../../../../../../components/common/PageHeader';
-import { useAuth } from '../../../../../../components/AuthProvider';
+import PageHeader from '@/components/common/PageHeader';
+import { useAuth } from '@/components/AuthProvider';
 
 const SectionHeader = ({ icon, title, number }) => (
   <Box sx={{ 
@@ -322,19 +322,19 @@ const ProposalViewPage = () => {
             </Button>
             <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
               <Button
-                variant="outlined"
+                variant="contained"
                 startIcon={<EditIcon />}
-                onClick={handleEdit}
-                sx={{ 
-                  borderColor: '#8b6cbc', 
+                onClick={() => router.push(`/researcher/projects/proposals/edit/${params.id}`)}
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.95)',
                   color: '#8b6cbc',
-                  '&:hover': { 
-                    borderColor: '#7b5cac',
-                    backgroundColor: 'rgba(139, 108, 188, 0.08)'
-                  }
+                  '&:hover': {
+                    bgcolor: 'white',
+                  },
+                  fontWeight: 600
                 }}
               >
-                Edit
+                Edit Proposal
               </Button>
               <Button
                 variant="outlined"

@@ -1,15 +1,21 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { fetchCitationsForPublications } from '../../../../services/citationService.js';
+import { getUserId } from '../../../../lib/auth-server.js';
 
 const prisma = new PrismaClient();
 
 export async function GET(request) {
     try {
-        // TODO: Add proper authentication when auth is set up
-        // For now using dev user - replace with real auth later
-        const session = { user: { id: 'dev-user-id' } };
-        const userId = session.user.id;
+        // Get authenticated user ID
+        const userId = await getUserId(request);
+        
+        if (!userId) {
+            return NextResponse.json(
+                { error: 'Authentication required' },
+                { status: 401 }
+            );
+        }
 
         // Get current year for year-based statistics
         const currentYear = new Date().getFullYear();
@@ -22,20 +28,31 @@ export async function GET(request) {
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-        // Fetch publications from current year only
+        // Fetch publications from current year only where user is an author
         const allPublications = await prisma.publication.findMany({
             where: {
-                OR: [
-                    { year: currentYear },
-                    { 
-                        publicationDate: {
-                            gte: startOfYear
+                AND: [
+                    {
+                        authorRelations: {
+                            some: {
+                                userId: userId
+                            }
                         }
                     },
                     {
-                        createdAt: {
-                            gte: startOfYear
-                        }
+                        OR: [
+                            { year: currentYear },
+                            { 
+                                publicationDate: {
+                                    gte: startOfYear
+                                }
+                            },
+                            {
+                                createdAt: {
+                                    gte: startOfYear
+                                }
+                            }
+                        ]
                     }
                 ]
             },
