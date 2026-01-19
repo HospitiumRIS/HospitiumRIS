@@ -117,7 +117,6 @@ import PageHeader from '../../../../../components/common/PageHeader';
 import { useAuth } from '../../../../../components/AuthProvider';
 import { useRouter } from 'next/navigation';
 
-// Mock data for demonstration
 const mockGrantApplications = [
   {
     id: '1',
@@ -166,84 +165,6 @@ const mockGrantApplications = [
         changedBy: 'John Researcher',
         changedAt: new Date('2024-09-15'),
         visibility: 'Shared'
-      }
-    ]
-  },
-  {
-    id: '2',
-    proposalTitle: 'Telemedicine Solutions for Rural Healthcare Access',
-    funderName: 'Bill & Melinda Gates Foundation',
-    funderType: 'Private',
-    contactPerson: 'Michael Chen',
-    contactEmail: 'michael.chen@gatesfoundation.org',
-    contactPhone: '+1-555-987-6543',
-    grantAmount: 750000,
-    status: 'Approved',
-    applicationDate: new Date('2024-08-01'),
-    followUpDate: new Date('2024-12-15'),
-    lastContact: new Date('2024-10-20'),
-    priority: 'High',
-    notes: 'Grant approved! Working on contract finalization and milestone setup.',
-    emailThreads: [
-      {
-        id: 'thread-2',
-        subject: 'Grant Approval - Next Steps',
-        lastMessage: 'Congratulations! Please review the attached contract terms.',
-        messageCount: 12,
-        lastMessageDate: new Date('2024-10-20'),
-        participants: ['michael.chen@gatesfoundation.org', 'researcher@university.edu', 'legal@university.edu']
-      }
-    ]
-  },
-  {
-    id: '3',
-    proposalTitle: 'Machine Learning for Cancer Diagnostics',
-    funderName: 'Howard Hughes Medical Institute',
-    funderType: 'Private',
-    contactPerson: 'Dr. Lisa Park',
-    contactEmail: 'lisa.park@hhmi.org',
-    contactPhone: '+1-555-456-7890',
-    grantAmount: 320000,
-    status: 'Rejected',
-    applicationDate: new Date('2024-07-10'),
-    followUpDate: null,
-    lastContact: new Date('2024-09-25'),
-    priority: 'Medium',
-    notes: 'Application rejected. Feedback received for future improvements.',
-    emailThreads: [
-      {
-        id: 'thread-3',
-        subject: 'Grant Application Status Update',
-        lastMessage: 'We regret to inform you that your application was not selected.',
-        messageCount: 8,
-        lastMessageDate: new Date('2024-09-25'),
-        participants: ['lisa.park@hhmi.org', 'researcher@university.edu']
-      }
-    ]
-  },
-  {
-    id: '4',
-    proposalTitle: 'Digital Health Platform for Maternal Care',
-    funderName: 'World Health Organization',
-    funderType: 'International',
-    contactPerson: 'Dr. Amara Okafor',
-    contactEmail: 'okafor@who.int',
-    contactPhone: '+41-22-791-2111',
-    grantAmount: 580000,
-    status: 'Pending Submission',
-    applicationDate: new Date('2024-11-05'),
-    followUpDate: new Date('2024-11-20'),
-    lastContact: new Date('2024-10-22'),
-    priority: 'High',
-    notes: 'Final review before submission. Deadline approaching.',
-    emailThreads: [
-      {
-        id: 'thread-4',
-        subject: 'WHO Grant Opportunity Discussion',
-        lastMessage: 'Looking forward to your submission. Please ensure all documents are included.',
-        messageCount: 3,
-        lastMessageDate: new Date('2024-10-22'),
-        participants: ['okafor@who.int', 'researcher@university.edu']
       }
     ]
   }
@@ -792,185 +713,418 @@ export default function ProposalLiaisonPage() {
       gap: 3, 
       mb: 4,
       flexWrap: 'wrap',
-      '& > *': { flex: 1, minWidth: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(20% - 12px)' } }
+      '& > *': { 
+        flex: '1 1 0',
+        minWidth: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 18px)' }
+      }
     }}>
-      <Card elevation={2}>
-        <CardContent sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" color="primary" fontWeight="bold">
-            {stats.total}
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Total Applications
-          </Typography>
+      <Card 
+        elevation={0}
+        sx={{ 
+          background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d4 100%)',
+          color: 'white',
+          borderRadius: 3,
+          position: 'relative',
+          overflow: 'visible',
+          height: 120
+        }}
+      >
+        <CardContent sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ 
+              bgcolor: 'rgba(255,255,255,0.2)', 
+              p: 1, 
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <GrantIcon sx={{ fontSize: 20 }} />
+            </Box>
+            <Chip 
+              label="+0%" 
+              size="small" 
+              sx={{ 
+                bgcolor: 'rgba(255,255,255,0.25)',
+                color: 'white',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 20
+              }}
+            />
+          </Box>
+          <Box>
+            <Typography variant="h4" fontWeight="bold" sx={{ mb: 0.5 }}>
+              {stats.total}
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.875rem' }}>
+              Total Applications
+            </Typography>
+          </Box>
         </CardContent>
       </Card>
       
-      <Card elevation={2}>
-        <CardContent sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" sx={{ color: statusColors['Under Review'] }} fontWeight="bold">
-            {stats.underReview}
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Under Review
-          </Typography>
+      <Card 
+        elevation={0}
+        sx={{ 
+          background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d4 100%)',
+          color: 'white',
+          borderRadius: 3,
+          position: 'relative',
+          overflow: 'visible',
+          height: 120
+        }}
+      >
+        <CardContent sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ 
+              bgcolor: 'rgba(255,255,255,0.2)', 
+              p: 1, 
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <PendingIcon sx={{ fontSize: 20 }} />
+            </Box>
+            <Chip 
+              label="+0%" 
+              size="small" 
+              sx={{ 
+                bgcolor: 'rgba(255,255,255,0.25)',
+                color: 'white',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 20
+              }}
+            />
+          </Box>
+          <Box>
+            <Typography variant="h4" fontWeight="bold" sx={{ mb: 0.5 }}>
+              {stats.underReview}
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.875rem' }}>
+              Under Review
+            </Typography>
+          </Box>
         </CardContent>
       </Card>
       
-      <Card elevation={2}>
-        <CardContent sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" sx={{ color: statusColors['Approved'] }} fontWeight="bold">
-            {stats.approved}
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Approved
-          </Typography>
+      <Card 
+        elevation={0}
+        sx={{ 
+          background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d4 100%)',
+          color: 'white',
+          borderRadius: 3,
+          position: 'relative',
+          overflow: 'visible',
+          height: 120
+        }}
+      >
+        <CardContent sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ 
+              bgcolor: 'rgba(255,255,255,0.2)', 
+              p: 1, 
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <CheckCircleIcon sx={{ fontSize: 20 }} />
+            </Box>
+            <Chip 
+              label="+0%" 
+              size="small" 
+              sx={{ 
+                bgcolor: 'rgba(255,255,255,0.25)',
+                color: 'white',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 20
+              }}
+            />
+          </Box>
+          <Box>
+            <Typography variant="h4" fontWeight="bold" sx={{ mb: 0.5 }}>
+              {stats.approved}
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.875rem' }}>
+              Approved
+            </Typography>
+          </Box>
         </CardContent>
       </Card>
       
-      <Card elevation={2}>
-        <CardContent sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" sx={{ color: statusColors['Rejected'] }} fontWeight="bold">
-            {stats.rejected}
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Rejected
-          </Typography>
-        </CardContent>
-      </Card>
-      
-      <Card elevation={2}>
-        <CardContent sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" sx={{ color: theme.palette.success.main }} fontWeight="bold">
-            ${(stats.totalFunding / 1000000).toFixed(1)}M
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            Total Approved Funding
-          </Typography>
+      <Card 
+        elevation={0}
+        sx={{ 
+          background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d4 100%)',
+          color: 'white',
+          borderRadius: 3,
+          position: 'relative',
+          overflow: 'visible',
+          height: 120
+        }}
+      >
+        <CardContent sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ 
+              bgcolor: 'rgba(255,255,255,0.2)', 
+              p: 1, 
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <MoneyIcon sx={{ fontSize: 20 }} />
+            </Box>
+            <Chip 
+              label="+0%" 
+              size="small" 
+              sx={{ 
+                bgcolor: 'rgba(255,255,255,0.25)',
+                color: 'white',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 20
+              }}
+            />
+          </Box>
+          <Box>
+            <Typography variant="h4" fontWeight="bold" sx={{ mb: 0.5 }}>
+              ${(stats.totalFunding / 1000).toFixed(0)}K
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.875rem' }}>
+              Total Funding
+            </Typography>
+          </Box>
         </CardContent>
       </Card>
     </Box>
   );
 
   const renderApplicationCard = (application) => (
-    <Card key={application.id} elevation={2} sx={{ mb: 2 }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Box>
-            <Typography variant="h6" gutterBottom>
+    <Card 
+      key={application.id} 
+      elevation={3} 
+      sx={{ 
+        mb: 3,
+        borderRadius: 2,
+        overflow: 'hidden',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: '0 12px 24px rgba(0,0,0,0.15)'
+        }
+      }}
+    >
+      <Box sx={{ 
+        background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d4 100%)',
+        p: 2,
+        color: 'white'
+      }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h5" fontWeight="bold" gutterBottom>
               {application.proposalTitle}
             </Typography>
             <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
               <Chip
                 label={application.status}
-                color={application.status === 'Approved' ? 'success' : 
-                       application.status === 'Rejected' ? 'error' : 
-                       application.status === 'Under Review' ? 'primary' : 'warning'}
                 size="small"
                 icon={getStatusIcon(application.status)}
+                sx={{ 
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  color: 'white',
+                  fontWeight: 600,
+                  '& .MuiChip-icon': { color: 'white' }
+                }}
               />
               <Chip
-                label={application.priority}
+                label={`${application.priority} Priority`}
                 size="small"
                 sx={{ 
-                  bgcolor: priorityColors[application.priority],  
-                  color: 'white' 
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  color: 'white',
+                  fontWeight: 600
                 }}
               />
             </Stack>
           </Box>
-          <IconButton onClick={(e) => handleMenuOpen(e, application)}>
+          <IconButton 
+            onClick={(e) => handleMenuOpen(e, application)}
+            sx={{ color: 'white' }}
+          >
             <MoreIcon />
           </IconButton>
         </Box>
+      </Box>
 
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              {funderTypeIcons[application.funderType]}
-              <Typography variant="body2" sx={{ ml: 1 }}>
-                <strong>{application.funderName}</strong> ({application.funderType})
+      <CardContent sx={{ p: 3 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 3,
+          flexWrap: 'wrap',
+          '& > *': {
+            flex: '1 1 0',
+            minWidth: { xs: '100%', md: 'calc(50% - 12px)' }
+          }
+        }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                FUNDING ORGANIZATION
               </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {funderTypeIcons[application.funderType]}
+                <Box>
+                  <Typography variant="body1" fontWeight="600">
+                    {application.funderName}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {application.funderType}
+                  </Typography>
+                </Box>
+              </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <ContactMailIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-              <Typography variant="body2">
-                {application.contactPerson}
+
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                PRIMARY CONTACT
               </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ContactMailIcon fontSize="small" sx={{ color: '#8b6cbc' }} />
+                <Box>
+                  <Typography variant="body1" fontWeight="600">
+                    {application.contactPerson}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {application.contactEmail}
+                  </Typography>
+                </Box>
+              </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <MoneyIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-              <Typography variant="body2">
-                ${application.grantAmount.toLocaleString()}
+
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                GRANT AMOUNT
               </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <MoneyIcon fontSize="small" color="success" />
+                <Typography variant="h6" color="success.main" fontWeight="bold">
+                  ${application.grantAmount.toLocaleString()}
+                </Typography>
+              </Box>
             </Box>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <EventIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-              <Typography variant="body2">
-                Applied: {format(application.applicationDate, 'MMM dd, yyyy')}
+          </Box>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                APPLICATION DATE
               </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <EventIcon fontSize="small" sx={{ color: '#8b6cbc' }} />
+                <Typography variant="body1">
+                  {format(application.applicationDate, 'MMMM dd, yyyy')}
+                </Typography>
+              </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <ScheduleIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-              <Typography variant="body2">
-                Last Contact: {format(application.lastContact, 'MMM dd, yyyy')}
+
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                LAST CONTACT
               </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ScheduleIcon fontSize="small" sx={{ color: '#8b6cbc' }} />
+                <Typography variant="body1">
+                  {format(application.lastContact, 'MMMM dd, yyyy')}
+                </Typography>
+              </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <EmailIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-              <Typography variant="body2">
-                {application.emailThreads.length} Email Thread(s)
+
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                COMMUNICATIONS
               </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <EmailIcon fontSize="small" sx={{ color: '#8b6cbc' }} />
+                <Typography variant="body1">
+                  {application.emailThreads.length} Email Thread{application.emailThreads.length !== 1 ? 's' : ''}
+                </Typography>
+              </Box>
             </Box>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {application.notes && (
-          <Alert severity="info" sx={{ mt: 2 }}>
-            {application.notes}
+          <Alert 
+            severity="info" 
+            sx={{ 
+              mt: 3,
+              borderRadius: 2,
+              '& .MuiAlert-icon': { fontSize: 24 }
+            }}
+          >
+            <Typography variant="body2" fontWeight="500">
+              {application.notes}
+            </Typography>
           </Alert>
         )}
       </CardContent>
-      <CardActions>
-        {application.emailThreads.length > 0 && (
-          <Button
-            startIcon={<EmailIcon />}
-            onClick={() => handleViewEmailThread(application.emailThreads[0])}
+
+      <Divider />
+
+      <CardActions sx={{ p: 2, bgcolor: 'grey.50', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          {application.emailThreads.length > 0 && (
+            <Button
+              variant="outlined"
+              startIcon={<EmailIcon />}
+              onClick={() => handleViewEmailThread(application.emailThreads[0])}
+              size="small"
+            >
+              View Emails
+            </Button>
+          )}
+          <Button 
+            variant="outlined"
+            startIcon={<PhoneIcon />} 
             size="small"
+            onClick={() => {
+              setSelectedApplication(application);
+              setCallForm({
+                ...callForm,
+                title: `Follow-up call - ${application.proposalTitle}`,
+                participants: application.contactPerson
+              });
+              setScheduleCallDialog(true);
+            }}
           >
-            View Email Thread
+            Schedule Call
           </Button>
-        )}
+          <Button 
+            variant="outlined"
+            startIcon={<CalendarIcon />} 
+            size="small"
+            onClick={() => handleViewCalls(application)}
+          >
+            Calls ({scheduledCalls.filter(call => call.applicationId === application.id).length})
+          </Button>
+        </Box>
         <Button 
-          startIcon={<PhoneIcon />} 
-          size="small"
-          onClick={() => {
-            setSelectedApplication(application);
-            setCallForm({
-              ...callForm,
-              title: `Follow-up call - ${application.proposalTitle}`,
-              participants: application.contactPerson
-            });
-            setScheduleCallDialog(true);
-          }}
-        >
-          Schedule Call
-        </Button>
-        <Button 
-          startIcon={<CalendarIcon />} 
-          size="small"
-          onClick={() => handleViewCalls(application)}
-        >
-          View Calls ({scheduledCalls.filter(call => call.applicationId === application.id).length})
-        </Button>
-        <Button 
-          startIcon={<EditIcon />} 
+          variant="contained"
+          startIcon={<TimelineIcon />} 
           size="small"
           onClick={() => {
             setSelectedApplication(application);
             setStatusUpdate(prev => ({ ...prev, newStatus: application.status }));
             setUpdateStatusDialog(true);
+          }}
+          sx={{ 
+            bgcolor: '#8b6cbc',
+            '&:hover': { bgcolor: '#7b5cac' }
           }}
         >
           Update Status
@@ -1096,81 +1250,49 @@ export default function ProposalLiaisonPage() {
 
         {currentTab === 1 && (
           <Box>
-            {filteredApplications
-              .filter(app => app.status === 'Under Review' || app.status === 'Pending Submission')
-              .map(renderApplicationCard)}
+            {filteredApplications.filter(app => app.status === 'Under Review' || app.status === 'Pending Submission').length === 0 ? (
+              <Paper elevation={1} sx={{ p: 4, textAlign: 'center' }}>
+                <PendingIcon sx={{ fontSize: 64, color: '#8b6cbc', mb: 2 }} />
+                <Typography variant="h6" color="textSecondary" gutterBottom>
+                  No active follow-ups
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Applications that are under review or pending submission will appear here
+                </Typography>
+              </Paper>
+            ) : (
+              filteredApplications
+                .filter(app => app.status === 'Under Review' || app.status === 'Pending Submission')
+                .map(renderApplicationCard)
+            )}
           </Box>
         )}
 
         {currentTab === 2 && (
           <Box>
-            {filteredApplications
-              .filter(app => app.status === 'Approved')
-              .map(renderApplicationCard)}
+            {filteredApplications.filter(app => app.status === 'Approved').length === 0 ? (
+              <Paper elevation={1} sx={{ p: 4, textAlign: 'center' }}>
+                <CheckCircleIcon sx={{ fontSize: 64, color: '#8b6cbc', mb: 2 }} />
+                <Typography variant="h6" color="textSecondary" gutterBottom>
+                  No approved grants yet
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Successfully approved grant applications will appear here
+                </Typography>
+              </Paper>
+            ) : (
+              filteredApplications
+                .filter(app => app.status === 'Approved')
+                .map(renderApplicationCard)
+            )}
           </Box>
         )}
 
         {currentTab === 3 && (
           <Box>
-            {/* Call Management Content */}
-            <Grid container spacing={3} sx={{ mb: 3 }}>
-              <Grid item xs={12} md={3}>
-                <Card elevation={2}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <PhoneIcon sx={{ fontSize: 32, color: 'primary.main', mb: 1 }} />
-                    <Typography variant="h4" color="primary" fontWeight="bold">
-                      {stats.totalCalls}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Total Calls
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <Card elevation={2}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <PendingCallIcon sx={{ fontSize: 32, color: '#ff9800', mb: 1 }} />
-                    <Typography variant="h4" sx={{ color: '#ff9800' }} fontWeight="bold">
-                      {stats.scheduledCalls}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Scheduled
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <Card elevation={2}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <CompleteIcon sx={{ fontSize: 32, color: '#4caf50', mb: 1 }} />
-                    <Typography variant="h4" sx={{ color: '#4caf50' }} fontWeight="bold">
-                      {stats.completedCalls}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Completed
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <Card elevation={2}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <TimeIcon sx={{ fontSize: 32, color: '#2196f3', mb: 1 }} />
-                    <Typography variant="h4" sx={{ color: '#2196f3' }} fontWeight="bold">
-                      {stats.upcomingCalls}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Upcoming
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-
             {scheduledCalls.length === 0 ? (
               <Paper elevation={1} sx={{ p: 4, textAlign: 'center' }}>
-                <PhoneIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                <PhoneIcon sx={{ fontSize: 64, color: '#8b6cbc', mb: 2 }} />
                 <Typography variant="h6" color="textSecondary" gutterBottom>
                   No calls scheduled yet
                 </Typography>
@@ -1214,44 +1336,52 @@ export default function ProposalLiaisonPage() {
                           </Box>
                         </Box>
 
-                        <Grid container spacing={2}>
-                          <Grid item xs={12} md={6}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                              <CalendarIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
+                        <Box sx={{ 
+                          display: 'flex', 
+                          gap: 2,
+                          flexWrap: 'wrap',
+                          '& > *': {
+                            flex: '1 1 0',
+                            minWidth: { xs: '100%', md: 'calc(50% - 8px)' }
+                          }
+                        }}>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <CalendarIcon fontSize="small" sx={{ mr: 1, color: '#8b6cbc' }} />
                               <Typography variant="body2">
                                 {format(new Date(call.dateTime), 'MMM dd, yyyy \'at\' HH:mm')}
                               </Typography>
                             </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                              <ContactMailIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <ContactMailIcon fontSize="small" sx={{ mr: 1, color: '#8b6cbc' }} />
                               <Typography variant="body2">
                                 {call.contactPerson} ({call.funderName})
                               </Typography>
                             </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                              <TimeIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <TimeIcon fontSize="small" sx={{ mr: 1, color: '#8b6cbc' }} />
                               <Typography variant="body2">
                                 Duration: {call.duration} minutes
                               </Typography>
                             </Box>
-                          </Grid>
-                          <Grid item xs={12} md={6}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                              <LocationIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
+                          </Box>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <LocationIcon fontSize="small" sx={{ mr: 1, color: '#8b6cbc' }} />
                               <Typography variant="body2">
                                 {call.location}
                               </Typography>
                             </Box>
                             {call.agenda && (
-                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                <AgendaIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <AgendaIcon fontSize="small" sx={{ mr: 1, color: '#8b6cbc' }} />
                                 <Typography variant="body2" noWrap>
                                   {call.agenda.length > 50 ? call.agenda.substring(0, 50) + '...' : call.agenda}
                                 </Typography>
                               </Box>
                             )}
-                          </Grid>
-                        </Grid>
+                          </Box>
+                        </Box>
 
                         {call.outcome && (
                           <Accordion sx={{ mt: 2 }}>
@@ -1259,9 +1389,17 @@ export default function ProposalLiaisonPage() {
                               <Typography variant="subtitle2">Call Outcome & Summary</Typography>
                             </AccordionSummary>
                             <AccordionDetails>
-                              <Grid container spacing={2}>
-                                <Grid item xs={12} md={6}>
-                                  <Typography variant="subtitle2" color="primary" gutterBottom>
+                              <Box sx={{ 
+                                display: 'flex', 
+                                gap: 2,
+                                flexWrap: 'wrap',
+                                '& > *': {
+                                  flex: '1 1 0',
+                                  minWidth: { xs: '100%', md: 'calc(50% - 8px)' }
+                                }
+                              }}>
+                                <Box>
+                                  <Typography variant="subtitle2" sx={{ color: '#8b6cbc' }} gutterBottom>
                                     Status: {call.outcome.status}
                                   </Typography>
                                   <Typography variant="body2" paragraph>
@@ -1274,8 +1412,8 @@ export default function ProposalLiaisonPage() {
                                       {call.outcome.nextSteps}
                                     </Typography>
                                   )}
-                                </Grid>
-                                <Grid item xs={12} md={6}>
+                                </Box>
+                                <Box>
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                     <Typography variant="body2"><strong>Rating:</strong></Typography>
                                     <Rating value={call.outcome.rating} readOnly size="small" />
@@ -1283,8 +1421,8 @@ export default function ProposalLiaisonPage() {
                                   <Typography variant="caption" color="textSecondary">
                                     Completed: {format(call.outcome.completedAt, 'MMM dd, yyyy \'at\' HH:mm')}
                                   </Typography>
-                                </Grid>
-                              </Grid>
+                                </Box>
+                              </Box>
                             </AccordionDetails>
                           </Accordion>
                         )}
@@ -1351,6 +1489,7 @@ export default function ProposalLiaisonPage() {
         }}
         maxWidth="lg"
         fullWidth
+        disableScrollLock
         PaperProps={{
           sx: {
             borderRadius: 2,
@@ -1680,6 +1819,7 @@ export default function ProposalLiaisonPage() {
         onClose={() => setUpdateStatusDialog(false)}
         maxWidth="md"
         fullWidth
+        disableScrollLock
         PaperProps={{
           elevation: 8,
           sx: { borderRadius: 2 }
@@ -1976,6 +2116,7 @@ export default function ProposalLiaisonPage() {
         onClose={() => setScheduleCallDialog(false)}
         maxWidth="md"
         fullWidth
+        disableScrollLock
         PaperProps={{
           sx: {
             borderRadius: 2,
@@ -2243,6 +2384,7 @@ export default function ProposalLiaisonPage() {
         onClose={() => setEmailComposeDialog(false)}
         maxWidth="md"
         fullWidth
+        disableScrollLock
       >
         <DialogTitle>Compose Email</DialogTitle>
         <DialogContent>
@@ -2284,6 +2426,7 @@ export default function ProposalLiaisonPage() {
         onClose={() => setViewDetailsDialog(false)}
         maxWidth="md"
         fullWidth
+        disableScrollLock
       >
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -2360,6 +2503,7 @@ export default function ProposalLiaisonPage() {
         onClose={() => setCallOutcomeDialog(false)}
         maxWidth="md"
         fullWidth
+        disableScrollLock
         PaperProps={{
           sx: {
             borderRadius: 2,
@@ -2560,6 +2704,7 @@ export default function ProposalLiaisonPage() {
         onClose={() => setViewCallsDialog(false)}
         maxWidth="md"
         fullWidth
+        disableScrollLock
         PaperProps={{
           sx: {
             borderRadius: 2,
