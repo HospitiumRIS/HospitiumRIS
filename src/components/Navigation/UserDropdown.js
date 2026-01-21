@@ -10,6 +10,7 @@ import {
   Box,
   ListItemIcon,
   Button,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -31,6 +32,8 @@ const UserDropdown = () => {
   const router = useRouter();
   const { user, logout, getDashboardRoute, getUserRole } = useAuth();
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isExtraSmall = useMediaQuery('(max-width:400px)');
 
   const handleUserMenuClick = (event) => {
     event.preventDefault();
@@ -101,13 +104,15 @@ const UserDropdown = () => {
         disableScrollLock
         sx={{
           '& .MuiPaper-root': {
-            minWidth: 320,
-            maxWidth: 360,
+            width: isExtraSmall ? 'calc(100vw - 32px)' : isSmallScreen ? 'calc(100vw - 48px)' : 320,
+            maxWidth: isSmallScreen ? 'calc(100vw - 32px)' : 360,
             mt: 1,
-            borderRadius: 3,
+            borderRadius: isSmallScreen ? 2 : 3,
             boxShadow: '0 12px 32px rgba(0,0,0,0.15)',
             overflow: 'hidden',
             border: `1px solid ${theme.palette.divider}`,
+            maxHeight: 'calc(100vh - 80px)',
+            overflowY: 'auto',
           }
         }}
         anchorOrigin={{
@@ -124,7 +129,7 @@ const UserDropdown = () => {
           sx={{ 
             background: 'linear-gradient(135deg, #8b6cbc 0%, #a855c7 100%)',
             color: 'white',
-            p: 3,
+            p: isSmallScreen ? 2 : 3,
             position: 'relative',
             overflow: 'hidden',
             '&::before': {
@@ -132,8 +137,8 @@ const UserDropdown = () => {
               position: 'absolute',
               top: 0,
               right: 0,
-              width: '100px',
-              height: '100px',
+              width: isSmallScreen ? '60px' : '100px',
+              height: isSmallScreen ? '60px' : '100px',
               background: 'rgba(255, 255, 255, 0.1)',
               borderRadius: '50%',
               transform: 'translate(30px, -30px)',
@@ -141,23 +146,34 @@ const UserDropdown = () => {
           }}
         >
           {/* Avatar and Basic Info */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: isSmallScreen ? 2 : 3, position: 'relative', zIndex: 1 }}>
             <Avatar
               sx={{
-                width: 48,
-                height: 48,
+                width: isSmallScreen ? 40 : 48,
+                height: isSmallScreen ? 40 : 48,
                 backgroundColor: 'rgba(255, 255, 255, 0.2)',
                 color: 'white',
-                fontSize: '1.25rem',
+                fontSize: isSmallScreen ? '1rem' : '1.25rem',
                 fontWeight: 600,
-                mr: 2,
+                mr: isSmallScreen ? 1.5 : 2,
                 border: '2px solid rgba(255, 255, 255, 0.3)',
+                flexShrink: 0,
               }}
             >
               {(user?.givenName || user?.firstName || user?.email)?.charAt(0)?.toUpperCase()}
             </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5, fontSize: '1.1rem' }}>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 600, 
+                  mb: 0.5, 
+                  fontSize: isSmallScreen ? '0.95rem' : '1.1rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {user?.givenName && user?.familyName 
                   ? `${user.givenName} ${user.familyName}`
                   : user?.firstName && user?.lastName 
@@ -165,7 +181,16 @@ const UserDropdown = () => {
                   : user?.email?.split('@')[0]
                 }
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  opacity: 0.9, 
+                  fontSize: isSmallScreen ? '0.75rem' : '0.85rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {user?.email}
               </Typography>
             </Box>
@@ -188,10 +213,10 @@ const UserDropdown = () => {
               backgroundColor: '#e91e63',
               color: 'white',
               fontWeight: 700,
-              fontSize: '0.75rem',
+              fontSize: isSmallScreen ? '0.7rem' : '0.75rem',
               letterSpacing: '0.5px',
-              py: 1.2,
-              mb: 2,
+              py: isSmallScreen ? 1 : 1.2,
+              mb: isSmallScreen ? 1.5 : 2,
               borderRadius: 2,
               textTransform: 'uppercase',
               '&:hover': {
@@ -202,16 +227,26 @@ const UserDropdown = () => {
               transition: 'all 0.2s ease',
             }}
           >
-            Manage My Account
+            {isExtraSmall ? 'My Account' : 'Manage My Account'}
           </Button>
         </Box>
 
         {/* User Details Section */}
-        <Box sx={{ px: 3, py: 2, backgroundColor: theme.palette.grey[50] }}>
+        <Box sx={{ px: isSmallScreen ? 2 : 3, py: isSmallScreen ? 1.5 : 2, backgroundColor: theme.palette.grey[50] }}>
           {/* Role/Education Info */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, gap: 1 }}>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  fontWeight: 600, 
+                  color: theme.palette.text.primary,
+                  fontSize: isSmallScreen ? '0.8rem' : '0.875rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {user?.accountType === 'GLOBAL_ADMIN' ? 'Global Admin' :
                  getUserRole() === 'researcher' ? 'Researcher' : 
                  getUserRole() === 'research_admin' ? 'Research Administrator' : 
@@ -220,22 +255,33 @@ const UserDropdown = () => {
                  'User'}
               </Typography>
               {user?.primaryInstitution && (
-                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    color: theme.palette.text.secondary,
+                    fontSize: isSmallScreen ? '0.65rem' : '0.75rem',
+                    display: 'block',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   {user.primaryInstitution}
                 </Typography>
               )}
             </Box>
-            <Box sx={{ textAlign: 'right' }}>
+            <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
               <Typography 
                 variant="caption" 
                 sx={{ 
                   backgroundColor: '#4caf50', 
                   color: 'white', 
-                  px: 1, 
+                  px: isSmallScreen ? 0.75 : 1, 
                   py: 0.25, 
                   borderRadius: 1,
                   fontWeight: 500,
-                  fontSize: '0.7rem'
+                  fontSize: isSmallScreen ? '0.65rem' : '0.7rem',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 Active
@@ -245,14 +291,24 @@ const UserDropdown = () => {
 
           {/* ORCID ID if available */}
           {user?.orcidId && (
-            <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block' }}>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: theme.palette.text.secondary, 
+                display: 'block',
+                fontSize: isSmallScreen ? '0.65rem' : '0.75rem',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
               ORCID: {user.orcidId}
             </Typography>
           )}
         </Box>
 
         {/* Quick Actions */}
-        <Box sx={{ px: 2, py: 1 }}>
+        <Box sx={{ px: isSmallScreen ? 1 : 2, py: 1 }}>
           <MenuItem 
             onClick={(event) => {
               const dashboardRoute = getDashboardRoute();
@@ -268,7 +324,7 @@ const UserDropdown = () => {
             <ListItemIcon sx={{ minWidth: 32 }}>
               <DashboardIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
             </ListItemIcon>
-            <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>Dashboard</Typography>
+            <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>Dashboard</Typography>
           </MenuItem>
 
           <MenuItem 
@@ -291,7 +347,7 @@ const UserDropdown = () => {
             <ListItemIcon sx={{ minWidth: 32 }}>
               <AccountCircleIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
             </ListItemIcon>
-            <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>Profile</Typography>
+            <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>Profile</Typography>
           </MenuItem>
 
           <MenuItem 
@@ -305,7 +361,7 @@ const UserDropdown = () => {
             <ListItemIcon sx={{ minWidth: 32 }}>
               <SettingsIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
             </ListItemIcon>
-            <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>Settings</Typography>
+            <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>Settings</Typography>
           </MenuItem>
 
           {/* Admin-only Logs menu item */}
@@ -321,7 +377,7 @@ const UserDropdown = () => {
               <ListItemIcon sx={{ minWidth: 32 }}>
                 <LogsIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
               </ListItemIcon>
-              <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>Activity Logs</Typography>
+              <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>Activity Logs</Typography>
             </MenuItem>
           )}
         </Box>
@@ -330,7 +386,7 @@ const UserDropdown = () => {
         {user?.accountType === 'GLOBAL_ADMIN' && [
           <Box key="divider-switch" sx={{ mx: 2, borderBottom: `1px solid ${theme.palette.divider}`, my: 1 }} />,
           
-          <Box key="switch-interface" sx={{ px: 3, py: 2 }}>
+          <Box key="switch-interface" sx={{ px: isSmallScreen ? 2 : 3, py: isSmallScreen ? 1.5 : 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
               <SwitchIcon sx={{ fontSize: 16, color: '#8b6cbc', mr: 1 }} />
               <Typography variant="caption" sx={{ fontWeight: 600, color: theme.palette.text.secondary, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -358,7 +414,7 @@ const UserDropdown = () => {
                   }
                 }}
               >
-                <Typography variant="body2" sx={{ fontSize: '0.85rem', fontWeight: 500 }}>
+                <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.75rem' : '0.85rem', fontWeight: 500 }}>
                   Researcher
                 </Typography>
               </Button>
@@ -382,8 +438,8 @@ const UserDropdown = () => {
                   }
                 }}
               >
-                <Typography variant="body2" sx={{ fontSize: '0.85rem', fontWeight: 500 }}>
-                  Research Administrator
+                <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.75rem' : '0.85rem', fontWeight: 500 }}>
+                  {isExtraSmall ? 'Research Admin' : 'Research Administrator'}
                 </Typography>
               </Button>
               
@@ -406,8 +462,8 @@ const UserDropdown = () => {
                   }
                 }}
               >
-                <Typography variant="body2" sx={{ fontSize: '0.85rem', fontWeight: 500 }}>
-                  Foundation Administrator
+                <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.75rem' : '0.85rem', fontWeight: 500 }}>
+                  {isExtraSmall ? 'Foundation Admin' : 'Foundation Administrator'}
                 </Typography>
               </Button>
             </Box>
@@ -430,7 +486,7 @@ const UserDropdown = () => {
             <ListItemIcon sx={{ minWidth: 32 }}>
               <LoginIcon sx={{ fontSize: 18, color: '#ff9800' }} />
             </ListItemIcon>
-            <Typography variant="body2" sx={{ fontSize: '0.9rem', color: '#ff9800' }}>
+            <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem', color: '#ff9800' }}>
               Sign Out
             </Typography>
           </MenuItem>

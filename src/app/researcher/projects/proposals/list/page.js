@@ -334,217 +334,213 @@ const ProposalsListPage = () => {
             flexDirection: 'column'
           }
         }}>
-            <Card sx={{ 
+          <Card sx={{ 
             flex: '1 1 250px',
             minWidth: '250px',
             background: '#8b6cbc', 
-              color: 'white',
-            height: '100px',
-            borderRadius: 4,
-            boxShadow: '0 4px 20px rgba(102, 126, 234, 0.15)',
+            color: 'white',
+            height: '130px',
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             cursor: 'pointer',
             position: 'relative',
             overflow: 'hidden',
-              '&:hover': {
-              transform: 'translateY(-8px)',
-              boxShadow: '0 20px 40px rgba(102, 126, 234, 0.25)'
-            },
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-              opacity: 0,
-              transition: 'opacity 0.3s ease'
-            },
-            '&:hover::before': {
-              opacity: 1
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 16px rgba(139, 108, 188, 0.3)'
             }
           }}>
-              <CardContent sx={{ textAlign: 'center', py: 1.5, position: 'relative', overflow: 'hidden' }}>
+            <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box sx={{ 
-                  position: 'absolute', 
-                  top: -20, 
-                  right: -20, 
-                  opacity: 0.1, 
-                  transform: 'rotate(12deg)' 
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  borderRadius: 1,
+                  p: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
-                  <ProposalIcon sx={{ fontSize: 80 }} />
+                  <ProposalIcon sx={{ fontSize: 24 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.25, letterSpacing: '-1px', fontSize: '1.5rem' }}>
+                <Chip 
+                  label="+0%" 
+                  size="small"
+                  sx={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    height: '24px'
+                  }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, fontSize: '2rem' }}>
                   {stats.total}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                  <ProposalIcon fontSize="small" />
-                  <Typography variant="body2" sx={{ fontWeight: 600, letterSpacing: '0.5px', fontSize: '0.8rem' }}>
-                    Total Proposals
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
+                <Typography variant="body2" sx={{ fontWeight: 500, opacity: 0.95 }}>
+                  Total Proposals
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
 
-            <Card sx={{ 
+          <Card sx={{ 
             flex: '1 1 250px',
             minWidth: '250px',
-            background: 'linear-gradient(135deg, #764ba2 0%, #764ba2 100%)', 
-              color: 'white',
-            height: '100px',
-            borderRadius: 4,
-            boxShadow: '0 4px 20px rgba(102, 126, 234, 0.15)',
+            background: '#8b6cbc', 
+            color: 'white',
+            height: '130px',
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             cursor: 'pointer',
             position: 'relative',
             overflow: 'hidden',
-              '&:hover': {
-              transform: 'translateY(-8px)',
-              boxShadow: '0 20px 40px rgba(102, 126, 234, 0.25)'
-            },
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-              opacity: 0,
-              transition: 'opacity 0.3s ease'
-            },
-            '&:hover::before': {
-              opacity: 1
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 16px rgba(139, 108, 188, 0.3)'
             }
           }}>
-              <CardContent sx={{ textAlign: 'center', py: 1.5, position: 'relative', overflow: 'hidden' }}>
+            <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box sx={{ 
-                  position: 'absolute', 
-                  top: -20, 
-                  right: -20, 
-                  opacity: 0.1, 
-                  transform: 'rotate(12deg)' 
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  borderRadius: 1,
+                  p: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
-                  <CheckCircleIcon sx={{ fontSize: 80 }} />
+                  <CheckCircleIcon sx={{ fontSize: 24 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.25, letterSpacing: '-1px', fontSize: '1.5rem' }}>
+                <Chip 
+                  label="+0%" 
+                  size="small"
+                  sx={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    height: '24px'
+                  }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, fontSize: '2rem' }}>
                   {stats.approved}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                  <CheckCircleIcon fontSize="small" />
-                  <Typography variant="body2" sx={{ fontWeight: 600, letterSpacing: '0.5px', fontSize: '0.8rem' }}>
-                    Approved
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
+                <Typography variant="body2" sx={{ fontWeight: 500, opacity: 0.95 }}>
+                  Approved
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
 
-            <Card sx={{ 
+          <Card sx={{ 
             flex: '1 1 250px',
             minWidth: '250px',
-            background: 'linear-gradient(135deg, #764ba2 0%, #764ba2 100%)', 
-              color: 'white',
-            height: '100px',
-            borderRadius: 4,
-            boxShadow: '0 4px 20px rgba(102, 126, 234, 0.15)',
+            background: '#8b6cbc', 
+            color: 'white',
+            height: '130px',
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             cursor: 'pointer',
             position: 'relative',
             overflow: 'hidden',
-              '&:hover': {
-              transform: 'translateY(-8px)',
-              boxShadow: '0 20px 40px rgba(102, 126, 234, 0.25)'
-            },
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-              opacity: 0,
-              transition: 'opacity 0.3s ease'
-            },
-            '&:hover::before': {
-              opacity: 1
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 16px rgba(139, 108, 188, 0.3)'
             }
           }}>
-              <CardContent sx={{ textAlign: 'center', py: 1.5, position: 'relative', overflow: 'hidden' }}>
+            <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box sx={{ 
-                  position: 'absolute', 
-                  top: -20, 
-                  right: -20, 
-                  opacity: 0.1, 
-                  transform: 'rotate(12deg)' 
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  borderRadius: 1,
+                  p: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
-                  <ReviewIcon sx={{ fontSize: 80 }} />
+                  <ReviewIcon sx={{ fontSize: 24 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.25, letterSpacing: '-1px', fontSize: '1.5rem' }}>
+                <Chip 
+                  label="+0%" 
+                  size="small"
+                  sx={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    height: '24px'
+                  }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, fontSize: '2rem' }}>
                   {stats.underReview}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                  <ReviewIcon fontSize="small" />
-                  <Typography variant="body2" sx={{ fontWeight: 600, letterSpacing: '0.5px', fontSize: '0.8rem' }}>
-                    Under Review
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
+                <Typography variant="body2" sx={{ fontWeight: 500, opacity: 0.95 }}>
+                  Under Review
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
 
-            <Card sx={{ 
+          <Card sx={{ 
             flex: '1 1 250px',
             minWidth: '250px',
-            background: 'linear-gradient(135deg, #764ba2 0%, #764ba2 100%)', 
-              color: 'white',
-            height: '100px',
-            borderRadius: 4,
-            boxShadow: '0 4px 20px rgba(102, 126, 234, 0.15)',
+            background: '#8b6cbc', 
+            color: 'white',
+            height: '130px',
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             cursor: 'pointer',
             position: 'relative',
             overflow: 'hidden',
-              '&:hover': {
-              transform: 'translateY(-8px)',
-              boxShadow: '0 20px 40px rgba(102, 126, 234, 0.25)'
-            },
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-              opacity: 0,
-              transition: 'opacity 0.3s ease'
-            },
-            '&:hover::before': {
-              opacity: 1
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 16px rgba(139, 108, 188, 0.3)'
             }
           }}>
-              <CardContent sx={{ textAlign: 'center', py: 1.5, position: 'relative', overflow: 'hidden' }}>
+            <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box sx={{ 
-                  position: 'absolute', 
-                  top: -20, 
-                  right: -20, 
-                  opacity: 0.1, 
-                  transform: 'rotate(12deg)' 
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  borderRadius: 1,
+                  p: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
-                  <EditIcon sx={{ fontSize: 80 }} />
+                  <EditIcon sx={{ fontSize: 24 }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.25, letterSpacing: '-1px', fontSize: '1.5rem' }}>
+                <Chip 
+                  label="+0%" 
+                  size="small"
+                  sx={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    height: '24px'
+                  }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, fontSize: '2rem' }}>
                   {stats.draft}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                  <EditIcon fontSize="small" />
-                  <Typography variant="body2" sx={{ fontWeight: 600, letterSpacing: '0.5px', fontSize: '0.8rem' }}>
-                    Draft
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
+                <Typography variant="body2" sx={{ fontWeight: 500, opacity: 0.95 }}>
+                  Draft
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
         </Box>
 
         {/* Search and Filters */}

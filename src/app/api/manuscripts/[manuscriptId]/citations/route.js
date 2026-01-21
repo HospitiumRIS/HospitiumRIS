@@ -6,9 +6,15 @@ const prisma = new PrismaClient();
 // GET - Fetch all citations for a specific manuscript
 export async function GET(request, { params }) {
     try {
-        const { manuscriptId } = params;
+        // Await params for Next.js 15 compatibility
+        const resolvedParams = await params;
+        const { manuscriptId } = resolvedParams;
+        
+        console.log('Citations GET - params:', resolvedParams);
+        console.log('Citations GET - manuscriptId:', manuscriptId);
         
         if (!manuscriptId) {
+            console.error('Citations GET - manuscriptId is missing from params:', resolvedParams);
             return NextResponse.json(
                 { error: 'Manuscript ID is required' },
                 { status: 400 }
@@ -107,9 +113,13 @@ export async function GET(request, { params }) {
 // POST - Add a citation to the manuscript library
 export async function POST(request, { params }) {
     try {
-        const { manuscriptId } = params;
+        // Await params for Next.js 15 compatibility
+        const resolvedParams = await params;
+        const { manuscriptId } = resolvedParams;
         const body = await request.json();
         const { publicationId } = body;
+        
+        console.log('Citations POST - manuscriptId:', manuscriptId);
         
         if (!manuscriptId || !publicationId) {
             return NextResponse.json(
@@ -192,7 +202,9 @@ export async function POST(request, { params }) {
 // DELETE - Remove a citation from the manuscript library
 export async function DELETE(request, { params }) {
     try {
-        const { manuscriptId } = params;
+        // Await params for Next.js 15 compatibility
+        const resolvedParams = await params;
+        const { manuscriptId } = resolvedParams;
         const { searchParams } = new URL(request.url);
         const publicationId = searchParams.get('publicationId');
         

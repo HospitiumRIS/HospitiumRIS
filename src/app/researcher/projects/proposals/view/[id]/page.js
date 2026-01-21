@@ -36,7 +36,9 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -66,7 +68,8 @@ import {
   LocationOn as LocationIcon,
   Email as EmailIcon,
   History as HistoryIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Visibility as ViewIcon
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
 import { useAuth } from '@/components/AuthProvider';
@@ -124,6 +127,11 @@ const ProposalViewPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reviewHistoryOpen, setReviewHistoryOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
 
   useEffect(() => {
     if (params.id) {
@@ -291,898 +299,986 @@ const ProposalViewPage = () => {
   }
 
   return (
+    <>
     <Box sx={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
-      {/* Header Bar */}
+      {/* Purple Gradient Header */}
       <Box sx={{ 
-        backgroundColor: 'white', 
-        borderBottom: '1px solid #e8e8e8',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
+        background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
+        color: 'white',
+        pt: 10,
+        pb: 4
       }}>
-        <Box sx={{ px: 4, maxWidth: '100%' }}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            py: 2,
-            gap: 2
-          }}>
+        <Container maxWidth="xl">
+          {/* Breadcrumbs */}
+          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: 'rgba(255, 255, 255, 0.9)',
+                cursor: 'pointer',
+                '&:hover': { color: 'white' }
+              }}
+              onClick={() => router.push('/researcher')}
+            >
+              Institution
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>/</Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: 'rgba(255, 255, 255, 0.9)',
+                cursor: 'pointer',
+                '&:hover': { color: 'white' }
+              }}
+              onClick={() => router.push('/researcher/projects/proposals/list')}
+            >
+              Proposal Review
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>/</Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+              Details
+            </Typography>
+          </Box>
+
+          {/* Title Section */}
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
+            <Box sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 1.5,
+              bgcolor: 'rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <AssignmentIcon sx={{ fontSize: 28 }} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, lineHeight: 1.3 }}>
+                {proposal.title}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.95)', mb: 2 }}>
+                Principal Investigator: <strong>{proposal.principalInvestigator || 'Not specified'}</strong> • Add "{proposal.departments?.[0] || 'Clinical Research & Epidemiology'}"
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Action Buttons */}
+          <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
             <Button
               startIcon={<ArrowBackIcon />}
               onClick={handleBack}
               sx={{
-                color: '#8b6cbc',
+                bgcolor: 'rgba(255, 255, 255, 0.15)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                color: 'white',
                 textTransform: 'none',
-                fontWeight: 500,
-                '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.08)' }
+                fontWeight: 600,
+                px: 3,
+                '&:hover': {
+                  bgcolor: 'rgba(255, 255, 255, 0.25)'
+                }
               }}
             >
-              Back to Proposals
+              Back to List
             </Button>
-            <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
-              <Button
-                variant="contained"
-                startIcon={<EditIcon />}
-                onClick={() => router.push(`/researcher/projects/proposals/edit/${params.id}`)}
-                sx={{
-                  bgcolor: 'rgba(255,255,255,0.95)',
-                  color: '#8b6cbc',
-                  '&:hover': {
-                    bgcolor: 'white',
-                  },
-                  fontWeight: 600
-                }}
-              >
-                Edit Proposal
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<PrintIcon />}
-                sx={{ 
-                  borderColor: '#6b7280', 
-                  color: '#6b7280',
-                  '&:hover': { 
-                    borderColor: '#4b5563',
-                    backgroundColor: 'rgba(107, 114, 128, 0.08)'
-                  }
-                }}
-              >
-                Print
-              </Button>
-            </Stack>
-          </Box>
-        </Box>
+          </Stack>
+        </Container>
       </Box>
 
-      <Box sx={{ px: 4, py: 4, maxWidth: '100%' }}>
-        {/* Two Column Layout from the top */}
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 4, 
-          alignItems: 'flex-start',
-          '@media (max-width: 900px)': {
-            flexDirection: 'column'
-          }
+      {/* Stats Bar */}
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        <Paper sx={{ 
+          borderRadius: 0, 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          overflow: 'hidden'
         }}>
-          {/* Left Column - Main Content */}
           <Box sx={{ 
-            flex: '1 1 auto',
-            minWidth: 0,
-            '@media (max-width: 900px)': {
-              width: '100%'
-            }
+            display: 'flex',
+            flexWrap: 'wrap'
           }}>
-            {/* Proposal Header Card */}
-            <Paper sx={{ 
-              borderRadius: 2, 
-              overflow: 'hidden',
-              mb: 3,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+            <Box sx={{ 
+              flex: '1 1 250px',
+              p: 3, 
+              textAlign: 'center',
+              borderRight: '1px solid #e5e7eb'
             }}>
-              {/* Top Banner */}
-              <Box sx={{ 
-                height: 100, 
-                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)'
-              }} />
-              
-              {/* Proposal Info */}
-              <Box sx={{ px: 4, pb: 4, mt: -4 }}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: { xs: 'column', md: 'row' },
-                  alignItems: { xs: 'flex-start', md: 'flex-end' },
-                  gap: 3
-                }}>
-                  {/* Status Badge */}
-                  <Box sx={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: 2,
-                    backgroundColor: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '4px solid white',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    flexShrink: 0
-                  }}>
-                    {getStatusIcon(proposal.status)}
-                  </Box>
-
-                  {/* Title & Status */}
-                  <Box sx={{ 
-                    flex: 1, 
-                    minWidth: 0
-                  }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1 }}>
-                      {proposal.title}
-                    </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap' }}>
-                      <Chip
-                        label={proposal.status?.replace('_', ' ') || 'Draft'}
-                        color={getStatusColor(proposal.status)}
-                        variant="filled"
-                        sx={{ fontWeight: 600 }}
-                      />
-                      <Typography variant="body2" color="text.secondary">
-                        {proposal.status === 'DRAFT' && 'Draft saved'}
-                        {proposal.status === 'SUBMITTED' && 'Awaiting review'}
-                        {proposal.status === 'UNDER_REVIEW' && 'Currently under review'}
-                        {proposal.status === 'APPROVED' && 'Approved'}
-                        {proposal.status === 'REJECTED' && 'Rejected'}
-                        {proposal.status === 'REQUIRES_AMENDMENT' && 'Amendments required'}
-                      </Typography>
-                    </Stack>
-                  </Box>
-                </Box>
+              <Typography variant="caption" sx={{ 
+                color: '#9ca3af', 
+                fontWeight: 600, 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.5px',
+                fontSize: '0.7rem'
+              }}>
+                Budget
+              </Typography>
+              <Typography variant="h5" sx={{ 
+                fontWeight: 700, 
+                color: '#8b6cbc', 
+                mt: 1 
+              }}>
+                {formatCurrency(proposal.totalBudgetAmount)}
+              </Typography>
+            </Box>
+            <Box sx={{ 
+              flex: '1 1 250px',
+              p: 3, 
+              textAlign: 'center',
+              borderRight: '1px solid #e5e7eb'
+            }}>
+              <Typography variant="caption" sx={{ 
+                color: '#9ca3af', 
+                fontWeight: 600, 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.5px',
+                fontSize: '0.7rem'
+              }}>
+                Status
+              </Typography>
+              <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
+                <Chip
+                  icon={getStatusIcon(proposal.status)}
+                  label={proposal.status?.replace('_', ' ') || 'Draft'}
+                  sx={{
+                    bgcolor: '#0ea5e9',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.875rem',
+                    height: '32px',
+                    '& .MuiChip-icon': {
+                      color: 'white'
+                    }
+                  }}
+                />
               </Box>
-            </Paper>
-
-            {/* Status Alert */}
-            {proposal.status === 'REQUIRES_AMENDMENT' && (
-              <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  Amendments Required
-                </Typography>
-                <Typography variant="body2">
-                  Please review the feedback and make necessary changes before resubmitting.
-                </Typography>
-              </Alert>
-            )}
-
-            {/* Quick Stats */}
-            <Paper sx={{ p: 3, mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <CalendarIcon sx={{ fontSize: 32, color: '#8b6cbc', mb: 1 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
-                      {formatDate(proposal.createdAt)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">Created</Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <BudgetIcon sx={{ fontSize: 32, color: '#22c55e', mb: 1 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
-                      {formatCurrency(proposal.totalBudgetAmount)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">Total Budget</Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <ScheduleIcon sx={{ fontSize: 32, color: '#f59e0b', mb: 1 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
-                      {proposal.startDate && proposal.endDate ? 
-                        Math.ceil((new Date(proposal.endDate) - new Date(proposal.startDate)) / (1000 * 60 * 60 * 24 * 30)) : 0}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">Duration (months)</Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <SchoolIcon sx={{ fontSize: 32, color: '#3b82f6', mb: 1 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
-                      {proposal.departments?.length || 0}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">Departments</Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Paper>
-          {/* Core Information */}
-          <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-            <SectionHeader number="1" title="Core Information" />
-            <CardContent sx={{ p: 4, pt: 0 }}>
-
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                    Abstract
-                  </Typography>
-                  <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.6 }}>
-                    {proposal.abstract || 'No abstract provided'}
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                    Research Areas
-                  </Typography>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {proposal.researchAreas?.map((area, index) => (
-                      <Chip
-                        key={index}
-                        label={area}
-                        size="small"
-                        sx={{ backgroundColor: '#f0f9ff', color: '#0ea5e9' }}
-                      />
-                    )) || <Typography variant="body2" color="text.secondary">None specified</Typography>}
-                  </Stack>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                    Departments
-                  </Typography>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {proposal.departments?.map((dept, index) => (
-                      <Chip
-                        key={index}
-                        label={dept}
-                        size="small"
-                        sx={{ backgroundColor: '#f0fdf4', color: '#22c55e' }}
-                      />
-                    )) || <Typography variant="body2" color="text.secondary">None specified</Typography>}
-                  </Stack>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                    Start Date
-                  </Typography>
-                  <Typography variant="body1">
-                    {formatDate(proposal.startDate)}
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                    End Date
-                  </Typography>
-                  <Typography variant="body1">
-                    {formatDate(proposal.endDate)}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-
-          {/* Research Details */}
-          <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-            <SectionHeader icon={<ScienceIcon />} title="Research Details" />
-            <CardContent sx={{ p: 4, pt: 0 }}>
-
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                    Research Objectives
-                  </Typography>
-                  <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.6 }}>
-                    {proposal.researchObjectives || 'No research objectives provided'}
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                    Methodology
-                  </Typography>
-                  <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
-                    {proposal.methodology || 'No methodology provided'}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-
-          {/* Project Management */}
-          {(proposal.milestones?.length > 0 || proposal.deliverables?.length > 0) && (
-            <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-              <SectionHeader icon={<TimelineIcon />} title="Project Management" />
-              <CardContent sx={{ p: 4, pt: 0 }}>
-
-                <Grid container spacing={4}>
-                  {proposal.milestones?.length > 0 && (
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Milestones
-                      </Typography>
-                      <Stack spacing={2}>
-                        {proposal.milestones.map((milestone, index) => (
-                          <Paper key={index} sx={{ p: 2, backgroundColor: '#f8f9fa', border: '1px solid #e2e8f0' }}>
-                            <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
-                              <Box component="span" sx={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: 20,
-                                height: 20,
-                                borderRadius: '50%',
-                                backgroundColor: '#8b6cbc',
-                                color: 'white',
-                                fontSize: 12,
-                                mr: 1
-                              }}>{index + 1}</Box>
-                              {milestone.title}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                              Target: {formatDate(milestone.targetDate)}
-                            </Typography>
-                            {milestone.description && (
-                              <Typography variant="body2" color="text.secondary">
-                                {milestone.description}
-                              </Typography>
-                            )}
-                          </Paper>
-                        ))}
-                      </Stack>
-                    </Grid>
-                  )}
-
-                  {proposal.deliverables?.length > 0 && (
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Deliverables
-                      </Typography>
-                      <Stack spacing={2}>
-                        {proposal.deliverables.map((deliverable, index) => (
-                          <Paper key={index} sx={{ p: 2, backgroundColor: '#f8f9fa', border: '1px solid #e2e8f0' }}>
-                            <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
-                              {deliverable.title}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                              Due: {formatDate(deliverable.dueDate)} • Type: {deliverable.type}
-                            </Typography>
-                            {deliverable.description && (
-                              <Typography variant="body2" color="text.secondary">
-                                {deliverable.description}
-                              </Typography>
-                            )}
-                          </Paper>
-                        ))}
-                      </Stack>
-                    </Grid>
-                  )}
-                </Grid>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Funding Information moved to sidebar */}
-
-          {/* Ethical Considerations */}
-          <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-            <SectionHeader icon={<EthicsIcon />} title="Ethical Considerations" />
-            <CardContent sx={{ p: 4, pt: 0 }}>
-
-              <Grid container spacing={3}>
-                {proposal.ethicalConsiderationsOverview && (
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                      Overview
-                    </Typography>
-                    <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.6 }}>
-                      {proposal.ethicalConsiderationsOverview}
-                    </Typography>
-                  </Grid>
-                )}
-
-                {proposal.consentProcedures && (
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                      Consent Procedures
-                    </Typography>
-                    <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.6 }}>
-                      {proposal.consentProcedures}
-                    </Typography>
-                  </Grid>
-                )}
-
-                {proposal.dataSecurityMeasures && (
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                      Data Security Measures
-                    </Typography>
-                    <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.6 }}>
-                      {proposal.dataSecurityMeasures}
-                    </Typography>
-                  </Grid>
-                )}
-
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                    Ethics Approval Status
-                  </Typography>
-                  <Chip
-                    label={proposal.ethicsApprovalStatus || 'Not specified'}
-                    size="small"
-                    color={proposal.ethicsApprovalStatus === 'Approved' ? 'success' : 'default'}
-                  />
-                </Grid>
-
-                {proposal.ethicsCommittee && (
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                      Ethics Committee
-                    </Typography>
-                    <Typography variant="body1">
-                      {proposal.ethicsCommittee}
-                    </Typography>
-                  </Grid>
-                )}
-
-                {proposal.ethicsApprovalReference && (
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                      Approval Reference
-                    </Typography>
-                    <Typography variant="body1">
-                      {proposal.ethicsApprovalReference}
-                    </Typography>
-                  </Grid>
-                )}
-
-                {proposal.approvalDate && (
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                      Approval Date
-                    </Typography>
-                    <Typography variant="body1">
-                      {formatDate(proposal.approvalDate)}
-                    </Typography>
-                  </Grid>
-                )}
-              </Grid>
-            </CardContent>
-          </Card>
-
-          {/* Files Section */}
-          {(proposal.ethicsDocuments?.length > 0 || proposal.dataManagementPlan?.length > 0 || proposal.otherRelatedFiles?.length > 0) && (
-            <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-              <SectionHeader icon={<FilesIcon />} title="Attached Files" />
-              <CardContent sx={{ p: 4, pt: 0 }}>
-
-                <Grid container spacing={3}>
-                  {proposal.ethicsDocuments?.length > 0 && (
-                    <Grid item xs={12} md={4}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Ethics Documents
-                      </Typography>
-                      <Stack spacing={1}>
-                        {proposal.ethicsDocuments.map((file, index) => (
-                          <Paper key={index} sx={{ p: 2, backgroundColor: '#fef3f2', border: '1px solid #fecaca' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-                                <FilesIcon sx={{ color: '#dc2626', fontSize: 20 }} />
-                                <Box sx={{ minWidth: 0, flex: 1 }}>
-                                  <Typography variant="body2" sx={{ fontWeight: 500, wordBreak: 'break-word' }}>
-                                    {file.originalName}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {Math.round(file.size / 1024)} KB
-                                  </Typography>
-                                </Box>
-                              </Box>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDownloadFile(file)}
-                                sx={{ color: '#dc2626' }}
-                              >
-                                <DownloadIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          </Paper>
-                        ))}
-                      </Stack>
-                    </Grid>
-                  )}
-
-                  {proposal.dataManagementPlan?.length > 0 && (
-                    <Grid item xs={12} md={4}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Data Management Plan
-                      </Typography>
-                      <Stack spacing={1}>
-                        {proposal.dataManagementPlan.map((file, index) => (
-                          <Paper key={index} sx={{ p: 2, backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-                                <FilesIcon sx={{ color: '#16a34a', fontSize: 20 }} />
-                                <Box sx={{ minWidth: 0, flex: 1 }}>
-                                  <Typography variant="body2" sx={{ fontWeight: 500, wordBreak: 'break-word' }}>
-                                    {file.originalName}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {Math.round(file.size / 1024)} KB
-                                  </Typography>
-                                </Box>
-                              </Box>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDownloadFile(file)}
-                                sx={{ color: '#16a34a' }}
-                              >
-                                <DownloadIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          </Paper>
-                        ))}
-                      </Stack>
-                    </Grid>
-                  )}
-
-                  {proposal.otherRelatedFiles?.length > 0 && (
-                    <Grid item xs={12} md={4}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Other Related Files
-                      </Typography>
-                      <Stack spacing={1}>
-                        {proposal.otherRelatedFiles.map((file, index) => (
-                          <Paper key={index} sx={{ p: 2, backgroundColor: '#f0f9ff', border: '1px solid #bfdbfe' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-                                <FilesIcon sx={{ color: '#2563eb', fontSize: 20 }} />
-                                <Box sx={{ minWidth: 0, flex: 1 }}>
-                                  <Typography variant="body2" sx={{ fontWeight: 500, wordBreak: 'break-word' }}>
-                                    {file.originalName}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {Math.round(file.size / 1024)} KB
-                                  </Typography>
-                                </Box>
-                              </Box>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDownloadFile(file)}
-                                sx={{ color: '#2563eb' }}
-                              >
-                                <DownloadIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          </Paper>
-                        ))}
-                      </Stack>
-                    </Grid>
-                  )}
-                </Grid>
-              </CardContent>
-            </Card>
-          )}
+            </Box>
+            <Box sx={{ 
+              flex: '1 1 250px',
+              p: 3, 
+              textAlign: 'center',
+              borderRight: '1px solid #e5e7eb'
+            }}>
+              <Typography variant="caption" sx={{ 
+                color: '#9ca3af', 
+                fontWeight: 600, 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.5px',
+                fontSize: '0.7rem'
+              }}>
+                Duration
+              </Typography>
+              <Typography variant="h5" sx={{ 
+                fontWeight: 700, 
+                color: '#2c3e50', 
+                mt: 1 
+              }}>
+                {proposal.startDate && proposal.endDate ? 
+                  Math.ceil((new Date(proposal.endDate) - new Date(proposal.startDate)) / (1000 * 60 * 60 * 24 * 30)) : 0} months
+              </Typography>
+            </Box>
+            <Box sx={{ 
+              flex: '1 1 250px',
+              p: 3, 
+              textAlign: 'center'
+            }}>
+              <Typography variant="caption" sx={{ 
+                color: '#9ca3af', 
+                fontWeight: 600, 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.5px',
+                fontSize: '0.7rem'
+              }}>
+                Submitted
+              </Typography>
+              <Typography variant="h5" sx={{ 
+                fontWeight: 700, 
+                color: '#2c3e50', 
+                mt: 1 
+              }}>
+                {formatDate(proposal.createdAt)}
+              </Typography>
+            </Box>
           </Box>
+        </Paper>
+      </Container>
 
-          {/* Right Column - Sidebar */}
-          <Box sx={{ 
-            flex: '0 0 320px',
-            '@media (max-width: 900px)': {
-              flex: '1 1 auto',
-              width: '100%'
-            }
-          }}>
-            <Box sx={{ position: 'sticky', top: '90px' }}>
-              {/* Sidebar: Key Information */}
-              <Card sx={{ mb: 3, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-                <Box sx={{ 
-                  p: 2.5,
-                  backgroundColor: '#f8f9fa',
-                  borderBottom: '2px solid #8b6cbc'
-                }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.95rem' }}>
-                    KEY INFORMATION
-                  </Typography>
-                </Box>
-                <CardContent sx={{ p: 3 }}>
-                  <Stack spacing={2.5}>
-                    <Box>
-                      <Typography variant="caption" sx={{ color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.65rem' }}>
-                        Principal Investigator
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#374151', mt: 0.5 }}>
-                        {proposal.principalInvestigator || 'Not specified'}
-                      </Typography>
-                    </Box>
-                    <Divider />
-                    <Box>
-                      <Typography variant="caption" sx={{ color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.65rem' }}>
-                        Created
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#374151', mt: 0.5 }}>
-                        {formatDate(proposal.createdAt)}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" sx={{ color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.65rem' }}>
-                        Last Updated
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#374151', mt: 0.5 }}>
-                        {formatDate(proposal.updatedAt)}
-                      </Typography>
-                    </Box>
-                    <Divider />
-                    <Box>
-                      <Typography variant="caption" sx={{ color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.65rem' }}>
-                        Total Budget
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#8b6cbc', mt: 0.5 }}>
-                        {formatCurrency(proposal.totalBudgetAmount)}
-                      </Typography>
-                    </Box>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      startIcon={<HistoryIcon />}
-                      onClick={handleOpenReviewHistory}
-                      sx={{ 
-                        mt: 2,
-                        borderColor: '#8b6cbc',
-                        color: '#8b6cbc',
-                        '&:hover': {
-                          borderColor: '#7c3aed',
-                          backgroundColor: 'rgba(139, 108, 188, 0.04)'
-                        }
-                      }}
-                    >
-                      Review History
-                    </Button>
-                  </Stack>
-                </CardContent>
-              </Card>
+      {/* Tabs Section */}
+      <Container maxWidth="xl" sx={{ mb: 4 }}>
+        <Paper sx={{ borderRadius: 0, boxShadow: 'none', borderBottom: '1px solid #e5e7eb' }}>
+          <Tabs 
+            value={activeTab} 
+            onChange={handleTabChange}
+            sx={{
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                color: '#6b7280',
+                minHeight: '48px',
+                '&.Mui-selected': {
+                  color: '#8b6cbc'
+                }
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: '#8b6cbc',
+                height: '3px'
+              }
+            }}
+          >
+            <Tab 
+              icon={<InfoIcon sx={{ fontSize: 18 }} />} 
+              iconPosition="start" 
+              label="Overview" 
+            />
+            <Tab 
+              icon={<ScienceIcon sx={{ fontSize: 18 }} />} 
+              iconPosition="start" 
+              label="Research Details" 
+            />
+            <Tab 
+              icon={<EthicsIcon sx={{ fontSize: 18 }} />} 
+              iconPosition="start" 
+              label="Ethics & Compliance" 
+            />
+            <Tab 
+              icon={<FilesIcon sx={{ fontSize: 18 }} />} 
+              iconPosition="start" 
+              label="Supporting Documents" 
+            />
+            <Tab 
+              icon={<HistoryIcon sx={{ fontSize: 18 }} />} 
+              iconPosition="start" 
+              label="Review History" 
+            />
+          </Tabs>
+        </Paper>
+      </Container>
 
-              {/* Funding Information */}
-              <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-                <Box sx={{ 
-                  p: 2.5,
-                  backgroundColor: '#f8f9fa',
-                  borderBottom: '2px solid #8b6cbc'
-                }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.95rem' }}>
-                    FUNDING INFORMATION
-                  </Typography>
-                </Box>
-                <CardContent sx={{ p: 3 }}>
-                  <Stack spacing={2}>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">Funding Source</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {proposal.fundingSource || 'Not specified'}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">Funding Institution</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {proposal.fundingInstitution || 'Not specified'}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">Grant Number</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {proposal.grantNumber || 'Not specified'}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">Total Budget</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#10b981' }}>
-                        {formatCurrency(proposal.totalBudgetAmount)}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">Grant Start Date</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {formatDate(proposal.grantStartDate)}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">Grant End Date</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {formatDate(proposal.grantEndDate)}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </CardContent>
-              </Card>
-
-              {/* Team Information */}
-              <Card sx={{ mb: 4, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-                <Box sx={{ 
-                  p: 2.5,
-                  backgroundColor: '#f8f9fa',
-                  borderBottom: '2px solid #8b6cbc'
-                }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.95rem' }}>
-                    TEAM INFORMATION
-                  </Typography>
-                </Box>
-                <CardContent sx={{ p: 3 }}>
-
-                  {/* Principal Investigator */}
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                      Principal Investigator
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar sx={{ bgcolor: '#8b6cbc' }}>
-                        <PersonIcon />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          {proposal.principalInvestigator || 'Not specified'}
+      <Container maxWidth="xl" sx={{ pt: 2, pb: 4 }}>
+        {/* Overview Tab Content */}
+        {activeTab === 0 && (
+              <Box>
+                {/* Top Row - Two Cards */}
+                <Box sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
+                  {/* Proposal Details Card */}
+                  <Card sx={{ flex: '1 1 400px', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                        <AssignmentIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
+                          Proposal Details
                         </Typography>
-                        {proposal.principalInvestigatorOrcid && (
-                          <Chip
-                            label={`ORCID: ${proposal.principalInvestigatorOrcid}`}
-                            size="small"
-                            sx={{ mt: 0.5, backgroundColor: '#8b6cbc', color: 'white' }}
-                          />
-                        )}
+                      </Box>
+
+                      <Stack spacing={2.5}>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+                            Title
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 0.5, color: '#2c3e50', lineHeight: 1.6 }}>
+                            {proposal.title}
+                          </Typography>
+                        </Box>
+
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+                            Research Areas
+                          </Typography>
+                          <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {proposal.researchAreas?.map((area, index) => (
+                              <Chip
+                                key={index}
+                                label={area}
+                                size="small"
+                                sx={{ 
+                                  bgcolor: '#f3e8ff', 
+                                  color: '#8b6cbc',
+                                  fontWeight: 600,
+                                  fontSize: '0.75rem'
+                                }}
+                              />
+                            )) || <Typography variant="body2" color="text.secondary">None specified</Typography>}
+                          </Box>
+                        </Box>
+
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+                            Description
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 0.5, color: '#4b5563', lineHeight: 1.6 }}>
+                            {proposal.abstract || 'No description provided'}
+                          </Typography>
+                        </Box>
+
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+                            Duration
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 0.5, color: '#2c3e50', fontWeight: 600 }}>
+                            {proposal.startDate && proposal.endDate ? 
+                              Math.ceil((new Date(proposal.endDate) - new Date(proposal.startDate)) / (1000 * 60 * 60 * 24 * 30)) : 0} months
+                          </Typography>
+                        </Box>
+
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+                            Project Timeline
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 0.5, color: '#2c3e50' }}>
+                            {formatDate(proposal.startDate)} - {formatDate(proposal.endDate)}
+                          </Typography>
+                        </Box>
+
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+                            Status
+                          </Typography>
+                          <Box sx={{ mt: 1 }}>
+                            <Chip
+                              icon={getStatusIcon(proposal.status)}
+                              label={proposal.status?.replace('_', ' ') || 'Draft'}
+                              sx={{
+                                bgcolor: '#0ea5e9',
+                                color: 'white',
+                                fontWeight: 600,
+                                fontSize: '0.75rem',
+                                '& .MuiChip-icon': {
+                                  color: 'white'
+                                }
+                              }}
+                            />
+                            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#6b7280' }}>
+                              Days in Review
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#2c3e50' }}>
+                              {Math.ceil((new Date() - new Date(proposal.createdAt)) / (1000 * 60 * 60 * 24))} days
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+
+                  {/* Principal Investigator & Team Card */}
+                  <Card sx={{ flex: '1 1 400px', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                        <PersonIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
+                          Principal Investigator & Team
+                        </Typography>
+                      </Box>
+
+                      <Stack spacing={2.5}>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+                            Principal Investigator
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 0.5, color: '#2c3e50', fontWeight: 600 }}>
+                            {proposal.principalInvestigator || 'Not specified'}
+                          </Typography>
+                        </Box>
+
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+                            Department
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 0.5, color: '#2c3e50' }}>
+                            Add "{proposal.departments?.[0] || 'Clinical Research & Epidemiology'}"
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </Box>
+
+                {/* Funding Information Card */}
+                <Card sx={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <BudgetIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
+                          Funding Information
+                        </Typography>
+                      </Box>
+                      <Chip 
+                        label="Compliant" 
+                        size="small"
+                        sx={{ 
+                          bgcolor: '#10b981', 
+                          color: 'white',
+                          fontWeight: 600,
+                          fontSize: '0.75rem'
+                        }}
+                      />
+                    </Box>
+
+                    <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                      <Box sx={{ 
+                        flex: '0 0 auto',
+                        p: 3,
+                        borderRadius: 2,
+                        bgcolor: '#f3e8ff'
+                      }}>
+                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 0.5 }}>
+                          {formatCurrency(proposal.totalBudgetAmount)}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600 }}>
+                          Total Budget Requested
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ flex: '1 1 300px' }}>
+                        <Stack spacing={2}>
+                          <Box>
+                            <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+                              Funding Source
+                            </Typography>
+                            <Typography variant="body2" sx={{ mt: 0.5, color: '#2c3e50', fontWeight: 600 }}>
+                              {proposal.fundingSource || 'Internal'}
+                            </Typography>
+                          </Box>
+
+                          <Box>
+                            <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+                              Funding Institution
+                            </Typography>
+                            <Typography variant="body2" sx={{ mt: 0.5, color: '#2c3e50' }}>
+                              {proposal.fundingInstitution || 'N/A'}
+                            </Typography>
+                          </Box>
+                        </Stack>
                       </Box>
                     </Box>
-                  </Box>
+                  </CardContent>
+                </Card>
+              </Box>
+            )}
 
-                  {/* Co-Investigators */}
-                  {proposal.coInvestigators?.length > 0 && (
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                        Co-Investigators ({proposal.coInvestigators.length})
-                      </Typography>
-                      <Stack spacing={2}>
-                        {proposal.coInvestigators.map((coInv, index) => (
-                          <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Avatar sx={{ bgcolor: '#22c55e', width: 32, height: 32 }}>
-                              <GroupIcon fontSize="small" />
-                            </Avatar>
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                {coInv.name}
-                              </Typography>
-                              {coInv.email && (
-                                <Typography variant="caption" color="text.secondary">
-                                  {coInv.email}
-                                </Typography>
-                              )}
-                              {coInv.orcidId && (
-                                <Chip
-                                  label={`ORCID: ${coInv.orcidId}`}
-                                  size="small"
-                                  sx={{ mt: 0.5, backgroundColor: '#22c55e', color: 'white' }}
-                                />
-                              )}
-                            </Box>
-                          </Box>
-                        ))}
-                      </Stack>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Quick Stats */}
-              <Card sx={{ mb: 4, borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                <Box sx={{ 
-                  p: 2,
-                  background: 'linear-gradient(135deg, #8b6cbc 0%, #a855f7 100%)',
-                  color: 'white'
-                }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'white' }}>
-                    Quick Stats
-                  </Typography>
-                </Box>
-                <CardContent sx={{ p: 3 }}>
-
-                  <Stack spacing={2}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Research Areas
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {proposal.researchAreas?.length || 0}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Departments
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {proposal.departments?.length || 0}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Co-Investigators
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {proposal.coInvestigators?.length || 0}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Milestones
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {proposal.milestones?.length || 0}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Deliverables
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {proposal.deliverables?.length || 0}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Attached Files
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {(proposal.ethicsDocuments?.length || 0) + 
-                         (proposal.dataManagementPlan?.length || 0) + 
-                         (proposal.otherRelatedFiles?.length || 0)}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </CardContent>
-              </Card>
-
-              {/* Related Publications */}
-              {proposal.selectedPublications?.length > 0 && (
-                <Card sx={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-                  <Box sx={{ 
-                    p: 2.5,
-                    backgroundColor: '#f8f9fa',
-                    borderBottom: '2px solid #8b6cbc'
-                  }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.95rem' }}>
-                      RELATED PUBLICATIONS ({proposal.selectedPublications.length})
-                    </Typography>
-                  </Box>
+            {/* Research Details Tab Content */}
+            {activeTab === 1 && (
+              <Box>
+                {/* Research Objectives Section */}
+                <Card sx={{ mb: 3, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
                   <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
+                        Research Objectives
+                      </Typography>
+                      <Chip 
+                        label="Compliant" 
+                        size="small"
+                        sx={{ 
+                          bgcolor: '#10b981', 
+                          color: 'white',
+                          fontWeight: 600,
+                          fontSize: '0.75rem'
+                        }}
+                      />
+                    </Box>
+                    <Typography variant="body2" sx={{ color: '#4b5563', lineHeight: 1.8 }}>
+                      {proposal.researchObjectives || 'No research objectives provided'}
+                    </Typography>
+                  </CardContent>
+                </Card>
 
+                {/* Methodology Section */}
+                <Card sx={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
+                        Methodology
+                      </Typography>
+                      <Chip 
+                        label="Compliant" 
+                        size="small"
+                        sx={{ 
+                          bgcolor: '#10b981', 
+                          color: 'white',
+                          fontWeight: 600,
+                          fontSize: '0.75rem'
+                        }}
+                      />
+                    </Box>
+                    <Typography variant="body2" sx={{ color: '#4b5563', lineHeight: 1.8 }}>
+                      {proposal.methodology || 'No methodology provided'}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Box>
+            )}
+
+            {/* Ethics & Compliance Tab Content */}
+            {activeTab === 2 && (
+              <Box>
+                {/* Ethics Approval Status Section */}
+                <Card sx={{ mb: 3, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <EthicsIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
+                          Ethics Approval Status
+                        </Typography>
+                      </Box>
+                      <Chip 
+                        label="Compliant" 
+                        size="small"
+                        sx={{ 
+                          bgcolor: '#10b981', 
+                          color: 'white',
+                          fontWeight: 600,
+                          fontSize: '0.75rem'
+                        }}
+                      />
+                    </Box>
+                    <Chip
+                      label={proposal.ethicsApprovalStatus || 'Approved'}
+                      sx={{
+                        bgcolor: '#10b981',
+                        color: 'white',
+                        fontWeight: 600,
+                        fontSize: '0.875rem',
+                        height: '32px'
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Ethical Considerations Section */}
+                <Card sx={{ mb: 3, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
+                        Ethical Considerations
+                      </Typography>
+                      <Chip 
+                        label="Compliant" 
+                        size="small"
+                        sx={{ 
+                          bgcolor: '#10b981', 
+                          color: 'white',
+                          fontWeight: 600,
+                          fontSize: '0.75rem'
+                        }}
+                      />
+                    </Box>
+                    <Typography variant="body2" sx={{ color: '#4b5563', lineHeight: 1.8 }}>
+                      {proposal.ethicalConsiderationsOverview || 'Test'}
+                    </Typography>
+                  </CardContent>
+                </Card>
+
+                {/* Two Column Layout for Consent Procedures and Data Security */}
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                  {/* Consent Procedures */}
+                  <Card sx={{ flex: '1 1 400px', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
+                          Consent Procedures
+                        </Typography>
+                        <Chip 
+                          label="Compliant" 
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#10b981', 
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                      </Box>
+                      <Typography variant="body2" sx={{ color: '#4b5563', lineHeight: 1.8 }}>
+                        {proposal.consentProcedures || 'Test'}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+
+                  {/* Data Security Measures */}
+                  <Card sx={{ flex: '1 1 400px', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
+                          Data Security Measures
+                        </Typography>
+                        <Chip 
+                          label="Compliant" 
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#10b981', 
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                      </Box>
+                      <Typography variant="body2" sx={{ color: '#4b5563', lineHeight: 1.8 }}>
+                        {proposal.dataSecurityMeasures || 'Test'}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Box>
+              </Box>
+            )}
+
+            {/* Supporting Documents Tab Content */}
+            {activeTab === 3 && (
+              <Box>
+                <Card sx={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <FilesIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
+                          Supporting Documents
+                        </Typography>
+                      </Box>
+                      <Chip 
+                        label="Compliant" 
+                        size="small"
+                        sx={{ 
+                          bgcolor: '#10b981', 
+                          color: 'white',
+                          fontWeight: 600,
+                          fontSize: '0.75rem'
+                        }}
+                      />
+                    </Box>
+
+                    {/* File List */}
                     <Stack spacing={2}>
-                      {proposal.selectedPublications.slice(0, 3).map((pub, index) => (
-                        <Paper key={index} sx={{ p: 2, backgroundColor: '#f8f9fa', border: '1px solid #e2e8f0' }}>
-                          <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
-                            {pub.title}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                            {pub.authors} • {pub.year}
-                          </Typography>
-                          {pub.journal && (
-                            <Typography variant="caption" color="text.secondary">
-                              {pub.journal}
-                            </Typography>
-                          )}
+                      {/* Ethics Documents */}
+                      {proposal.ethicsDocuments?.map((file, index) => (
+                        <Paper key={index} sx={{ 
+                          p: 2.5, 
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 2,
+                          boxShadow: 'none',
+                          '&:hover': {
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                          }
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            {/* File Icon */}
+                            <Box sx={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 1.5,
+                              bgcolor: '#fee2e2',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0
+                            }}>
+                              <FilesIcon sx={{ color: '#dc2626', fontSize: 24 }} />
+                            </Box>
+
+                            {/* File Info */}
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                                <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                                  {file.originalName}
+                                </Typography>
+                                <Chip 
+                                  label="Ethics Documents" 
+                                  size="small"
+                                  sx={{ 
+                                    bgcolor: '#fef3c7', 
+                                    color: '#92400e',
+                                    fontWeight: 600,
+                                    fontSize: '0.7rem',
+                                    height: '20px'
+                                  }}
+                                />
+                              </Box>
+                              <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                {file.mimeType || 'application/pdf'} • {Math.round(file.size / 1024)} KB
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: '#6b7280', display: 'block' }}>
+                                Uploaded: {formatDate(file.uploadedAt || new Date())}
+                              </Typography>
+                            </Box>
+
+                            {/* View Button */}
+                            <Button
+                              variant="outlined"
+                              startIcon={<ViewIcon />}
+                              onClick={() => handleDownloadFile(file)}
+                              sx={{
+                                borderColor: '#e5e7eb',
+                                color: '#6b7280',
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                '&:hover': {
+                                  borderColor: '#8b6cbc',
+                                  color: '#8b6cbc',
+                                  bgcolor: '#f3e8ff'
+                                }
+                              }}
+                            >
+                              View
+                            </Button>
+                          </Box>
                         </Paper>
                       ))}
-                      {proposal.selectedPublications.length > 3 && (
-                        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', mt: 1 }}>
-                          +{proposal.selectedPublications.length - 3} more publications
-                        </Typography>
+
+                      {/* Data Management Plan */}
+                      {proposal.dataManagementPlan?.map((file, index) => (
+                        <Paper key={index} sx={{ 
+                          p: 2.5, 
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 2,
+                          boxShadow: 'none',
+                          '&:hover': {
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                          }
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Box sx={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 1.5,
+                              bgcolor: '#dcfce7',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0
+                            }}>
+                              <FilesIcon sx={{ color: '#16a34a', fontSize: 24 }} />
+                            </Box>
+
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                                <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                                  {file.originalName}
+                                </Typography>
+                                <Chip 
+                                  label="Data Management" 
+                                  size="small"
+                                  sx={{ 
+                                    bgcolor: '#dbeafe', 
+                                    color: '#1e40af',
+                                    fontWeight: 600,
+                                    fontSize: '0.7rem',
+                                    height: '20px'
+                                  }}
+                                />
+                              </Box>
+                              <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                {file.mimeType || 'application/pdf'} • {Math.round(file.size / 1024)} KB
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: '#6b7280', display: 'block' }}>
+                                Uploaded: {formatDate(file.uploadedAt || new Date())}
+                              </Typography>
+                            </Box>
+
+                            <Button
+                              variant="outlined"
+                              startIcon={<ViewIcon />}
+                              onClick={() => handleDownloadFile(file)}
+                              sx={{
+                                borderColor: '#e5e7eb',
+                                color: '#6b7280',
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                '&:hover': {
+                                  borderColor: '#8b6cbc',
+                                  color: '#8b6cbc',
+                                  bgcolor: '#f3e8ff'
+                                }
+                              }}
+                            >
+                              View
+                            </Button>
+                          </Box>
+                        </Paper>
+                      ))}
+
+                      {/* Other Related Files */}
+                      {proposal.otherRelatedFiles?.map((file, index) => (
+                        <Paper key={index} sx={{ 
+                          p: 2.5, 
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 2,
+                          boxShadow: 'none',
+                          '&:hover': {
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                          }
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Box sx={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 1.5,
+                              bgcolor: '#dbeafe',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0
+                            }}>
+                              <FilesIcon sx={{ color: '#2563eb', fontSize: 24 }} />
+                            </Box>
+
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                                <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                                  {file.originalName}
+                                </Typography>
+                                <Chip 
+                                  label="Other Documents" 
+                                  size="small"
+                                  sx={{ 
+                                    bgcolor: '#f3f4f6', 
+                                    color: '#374151',
+                                    fontWeight: 600,
+                                    fontSize: '0.7rem',
+                                    height: '20px'
+                                  }}
+                                />
+                              </Box>
+                              <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                {file.mimeType || 'application/pdf'} • {Math.round(file.size / 1024)} KB
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: '#6b7280', display: 'block' }}>
+                                Uploaded: {formatDate(file.uploadedAt || new Date())}
+                              </Typography>
+                            </Box>
+
+                            <Button
+                              variant="outlined"
+                              startIcon={<ViewIcon />}
+                              onClick={() => handleDownloadFile(file)}
+                              sx={{
+                                borderColor: '#e5e7eb',
+                                color: '#6b7280',
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                '&:hover': {
+                                  borderColor: '#8b6cbc',
+                                  color: '#8b6cbc',
+                                  bgcolor: '#f3e8ff'
+                                }
+                              }}
+                            >
+                              View
+                            </Button>
+                          </Box>
+                        </Paper>
+                      ))}
+
+                      {/* Empty State */}
+                      {(!proposal.ethicsDocuments?.length && !proposal.dataManagementPlan?.length && !proposal.otherRelatedFiles?.length) && (
+                        <Box sx={{ textAlign: 'center', py: 6 }}>
+                          <FilesIcon sx={{ fontSize: 48, color: '#d1d5db', mb: 2 }} />
+                          <Typography variant="h6" sx={{ color: '#6b7280', mb: 1 }}>
+                            No Documents Uploaded
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#9ca3af' }}>
+                            Supporting documents will appear here once uploaded
+                          </Typography>
+                        </Box>
                       )}
                     </Stack>
                   </CardContent>
                 </Card>
-              )}
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+              </Box>
+            )}
+
+            {/* Review History Tab Content */}
+            {activeTab === 4 && (
+              <Box>
+                <Card sx={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                      <HistoryIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
+                        Review History
+                      </Typography>
+                    </Box>
+
+                    {/* Info Alert */}
+                    {(!proposal.reviewHistory || proposal.reviewHistory.length === 0) ? (
+                      <Alert 
+                        severity="info" 
+                        sx={{ 
+                          borderRadius: 2,
+                          bgcolor: '#e0f2fe',
+                          border: '1px solid #bae6fd',
+                          '& .MuiAlert-icon': {
+                            color: '#0284c7'
+                          }
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ color: '#0c4a6e' }}>
+                          No review history available for this proposal. This will be the first review.
+                        </Typography>
+                      </Alert>
+                    ) : (
+                      <Stack spacing={2}>
+                        {proposal.reviewHistory.map((entry, idx) => (
+                          <Paper key={idx} sx={{ 
+                            p: 3, 
+                            backgroundColor: entry.status === 'REQUIRES_AMENDMENT' ? '#fef3f2' : 
+                                            entry.status === 'APPROVED' ? '#f0fdf4' :
+                                            entry.status === 'REJECTED' ? '#fef2f2' : '#f8fafc',
+                            border: `1px solid ${entry.status === 'REQUIRES_AMENDMENT' ? '#fecaca' : 
+                                                entry.status === 'APPROVED' ? '#bbf7d0' :
+                                                entry.status === 'REJECTED' ? '#fca5a5' : '#e2e8f0'}`,
+                            borderRadius: 2
+                          }}>
+                            <Stack spacing={2}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Chip
+                                  label={entry.status?.replace('_', ' ') || 'Unknown'}
+                                  sx={{
+                                    bgcolor: entry.status === 'APPROVED' ? '#10b981' : 
+                                            entry.status === 'REJECTED' ? '#ef4444' : 
+                                            entry.status === 'REQUIRES_AMENDMENT' ? '#f59e0b' : '#6b7280',
+                                    color: 'white',
+                                    fontWeight: 600
+                                  }}
+                                />
+                                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                  {formatDate(entry.date)}
+                                </Typography>
+                              </Box>
+                              
+                              {entry.reviewer && (
+                                <Box>
+                                  <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600 }}>
+                                    Reviewed by
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ color: '#2c3e50' }}>
+                                    {entry.reviewer}
+                                  </Typography>
+                                </Box>
+                              )}
+
+                              {entry.comment && (
+                                <Box>
+                                  <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600 }}>
+                                    Comments
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ color: '#4b5563', mt: 0.5 }}>
+                                    {entry.comment}
+                                  </Typography>
+                                </Box>
+                              )}
+                            </Stack>
+                          </Paper>
+                        ))}
+                      </Stack>
+                    )}
+                  </CardContent>
+                </Card>
+              </Box>
+            )}
+      </Container>
+    </Box>
 
       {/* Review History Modal */}
       <Dialog 
@@ -1292,7 +1388,7 @@ const ProposalViewPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </>
   );
 };
 

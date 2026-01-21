@@ -1671,52 +1671,51 @@ export default function CollaborativeWriting() {
         <Card sx={{ 
           flex: '1 1 250px',
           minWidth: '250px',
-          background: 'linear-gradient(135deg, #764ba2 0%, #764ba2 100%)', 
+          background: '#8b6cbc', 
           color: 'white',
-            height: '100px',
-          borderRadius: 4,
-          boxShadow: '0 4px 20px rgba(102, 126, 234, 0.15)',
+          height: '130px',
+          borderRadius: 2,
+          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           cursor: 'pointer',
-            position: 'relative',
-            overflow: 'hidden',
+          position: 'relative',
+          overflow: 'hidden',
           '&:hover': {
-            transform: 'translateY(-8px)',
-            boxShadow: '0 20px 40px rgba(102, 126, 234, 0.25)'
-          },
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-            opacity: 0,
-            transition: 'opacity 0.3s ease'
-          },
-          '&:hover::before': {
-            opacity: 1
+            transform: 'translateY(-4px)',
+            boxShadow: '0 8px 16px rgba(139, 108, 188, 0.3)'
           }
         }}>
-          <CardContent sx={{ textAlign: 'center', py: 1.5, position: 'relative', overflow: 'hidden' }}>
-            <Box sx={{ 
-              position: 'absolute', 
-              top: -20, 
-              right: -20, 
-              opacity: 0.1, 
-              transform: 'rotate(12deg)' 
-            }}>
-              <DescriptionIcon sx={{ fontSize: 80 }} />
+          <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box sx={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: 1,
+                p: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <DescriptionIcon sx={{ fontSize: 24 }} />
+              </Box>
+              <Chip 
+                label="+0%" 
+                size="small"
+                sx={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                  color: 'white',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  height: '24px'
+                }}
+              />
             </Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.25, letterSpacing: '-1px', fontSize: '1.5rem' }}>
-              {stats.totalManuscripts}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-              <DescriptionIcon fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 600, letterSpacing: '0.5px', fontSize: '0.8rem' }}>
-                Total Manuscripts
-            </Typography>
+            <Box>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, fontSize: '2rem' }}>
+                {stats.totalManuscripts}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500, opacity: 0.95 }}>
+                Publications
+              </Typography>
             </Box>
           </CardContent>
         </Card>
@@ -1724,52 +1723,51 @@ export default function CollaborativeWriting() {
         <Card sx={{ 
           flex: '1 1 250px',
           minWidth: '250px',
-          background: 'linear-gradient(135deg, #764ba2 0%, #764ba2 100%)', 
+          background: '#8b6cbc', 
           color: 'white',
-            height: '100px',
-          borderRadius: 4,
-          boxShadow: '0 4px 20px rgba(102, 126, 234, 0.15)',
+          height: '130px',
+          borderRadius: 2,
+          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           cursor: 'pointer',
-            position: 'relative',
-            overflow: 'hidden',
+          position: 'relative',
+          overflow: 'hidden',
           '&:hover': {
-            transform: 'translateY(-8px)',
-            boxShadow: '0 20px 40px rgba(102, 126, 234, 0.25)'
-          },
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-            opacity: 0,
-            transition: 'opacity 0.3s ease'
-          },
-          '&:hover::before': {
-            opacity: 1
+            transform: 'translateY(-4px)',
+            boxShadow: '0 8px 16px rgba(139, 108, 188, 0.3)'
           }
         }}>
-          <CardContent sx={{ textAlign: 'center', py: 1.5, position: 'relative', overflow: 'hidden' }}>
-            <Box sx={{ 
-              position: 'absolute', 
-              top: -20, 
-              right: -20, 
-              opacity: 0.1, 
-              transform: 'rotate(12deg)' 
-            }}>
-              <AccessTimeIcon sx={{ fontSize: 80 }} />
+          <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box sx={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: 1,
+                p: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <AccessTimeIcon sx={{ fontSize: 24 }} />
+              </Box>
+              <Chip 
+                label="+0%" 
+                size="small"
+                sx={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                  color: 'white',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  height: '24px'
+                }}
+              />
             </Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.25, letterSpacing: '-1px', fontSize: '1.5rem' }}>
-              {stats.inReviewManuscripts}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-              <AccessTimeIcon fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 600, letterSpacing: '0.5px', fontSize: '0.8rem' }}>
+            <Box>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, fontSize: '2rem' }}>
+                {stats.inReviewManuscripts}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500, opacity: 0.95 }}>
                 In Progress
-            </Typography>
+              </Typography>
             </Box>
           </CardContent>
         </Card>
@@ -1777,52 +1775,51 @@ export default function CollaborativeWriting() {
         <Card sx={{ 
           flex: '1 1 250px',
           minWidth: '250px',
-          background: 'linear-gradient(135deg, #764ba2 0%, #764ba2 100%)',  
+          background: '#8b6cbc',  
           color: 'white',
-            height: '100px',
-          borderRadius: 4,
-          boxShadow: '0 4px 20px rgba(102, 126, 234, 0.15)',
+          height: '130px',
+          borderRadius: 2,
+          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           cursor: 'pointer',
-            position: 'relative',
-            overflow: 'hidden',
+          position: 'relative',
+          overflow: 'hidden',
           '&:hover': {
-            transform: 'translateY(-8px)',
-            boxShadow: '0 20px 40px rgba(102, 126, 234, 0.25)'
-          },
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-            opacity: 0,
-            transition: 'opacity 0.3s ease'
-          },
-          '&:hover::before': {
-            opacity: 1
+            transform: 'translateY(-4px)',
+            boxShadow: '0 8px 16px rgba(139, 108, 188, 0.3)'
           }
         }}>
-          <CardContent sx={{ textAlign: 'center', py: 1.5, position: 'relative', overflow: 'hidden' }}>
-            <Box sx={{ 
-              position: 'absolute', 
-              top: -20, 
-              right: -20, 
-              opacity: 0.1, 
-              transform: 'rotate(12deg)' 
-            }}>
-              <VisibilityIcon sx={{ fontSize: 80 }} />
+          <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box sx={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: 1,
+                p: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <VisibilityIcon sx={{ fontSize: 24 }} />
+              </Box>
+              <Chip 
+                label="+0%" 
+                size="small"
+                sx={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                  color: 'white',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  height: '24px'
+                }}
+              />
             </Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.25, letterSpacing: '-1px', fontSize: '1.5rem' }}>
-              {stats.publishedManuscripts}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-              <VisibilityIcon fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 600, letterSpacing: '0.5px', fontSize: '0.8rem' }}>
+            <Box>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, fontSize: '2rem' }}>
+                {stats.publishedManuscripts}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500, opacity: 0.95 }}>
                 Published
-            </Typography>
+              </Typography>
             </Box>
           </CardContent>
         </Card>
@@ -1830,52 +1827,51 @@ export default function CollaborativeWriting() {
         <Card sx={{ 
           flex: '1 1 250px',
           minWidth: '250px',
-          background: 'linear-gradient(135deg, #764ba2 0%, #764ba2 100%)', 
+          background: '#8b6cbc', 
           color: 'white',
-            height: '100px',
-          borderRadius: 4,
-          boxShadow: '0 4px 20px rgba(102, 126, 234, 0.15)',
+          height: '130px',
+          borderRadius: 2,
+          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           cursor: 'pointer',
-            position: 'relative',
-            overflow: 'hidden',
+          position: 'relative',
+          overflow: 'hidden',
           '&:hover': {
-            transform: 'translateY(-8px)',
-            boxShadow: '0 20px 40px rgba(102, 126, 234, 0.25)'
-          },
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-            opacity: 0,
-            transition: 'opacity 0.3s ease'
-          },
-          '&:hover::before': {
-            opacity: 1
+            transform: 'translateY(-4px)',
+            boxShadow: '0 8px 16px rgba(139, 108, 188, 0.3)'
           }
         }}>
-          <CardContent sx={{ textAlign: 'center', py: 1.5, position: 'relative', overflow: 'hidden' }}>
-            <Box sx={{ 
-              position: 'absolute', 
-              top: -20, 
-              right: -20, 
-              opacity: 0.1, 
-              transform: 'rotate(12deg)' 
-            }}>
-              <GroupsIcon sx={{ fontSize: 80 }} />
+          <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box sx={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: 1,
+                p: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <GroupsIcon sx={{ fontSize: 24 }} />
+              </Box>
+              <Chip 
+                label="+0%" 
+                size="small"
+                sx={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                  color: 'white',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  height: '24px'
+                }}
+              />
             </Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.25, letterSpacing: '-1px', fontSize: '1.5rem' }}>
-              {stats.totalCollaborators}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-              <GroupsIcon fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 600, letterSpacing: '0.5px', fontSize: '0.8rem' }}>
+            <Box>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, fontSize: '2rem' }}>
+                {stats.totalCollaborators}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500, opacity: 0.95 }}>
                 Collaborators
-            </Typography>
+              </Typography>
             </Box>
           </CardContent>
         </Card>

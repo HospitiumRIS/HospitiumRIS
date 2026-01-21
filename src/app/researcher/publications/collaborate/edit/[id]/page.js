@@ -489,7 +489,13 @@ export default function ManuscriptEditor() {
   const { user } = useAuth();
   const params = useParams();
   const router = useRouter();
-  const manuscriptId = params.id;
+  const manuscriptId = params?.id || params?.manuscriptId;
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('ManuscriptEditor - params:', params);
+    console.log('ManuscriptEditor - manuscriptId:', manuscriptId);
+  }, [params, manuscriptId]);
 
   // Prevent hydration mismatch by only rendering on client
   const [mounted, setMounted] = useState(false);
@@ -2901,7 +2907,13 @@ export default function ManuscriptEditor() {
             {/* References Hover Button */}
             <ReferencesHoverButton
               editor={editor}
-              onOpenBibliographyGenerator={() => setBibliographyGeneratorOpen(true)}
+              onOpenBibliographyGenerator={() => {
+                if (!manuscriptId) {
+                  console.error('Cannot open bibliography generator: manuscriptId is missing');
+                  return;
+                }
+                setBibliographyGeneratorOpen(true);
+              }}
             />
           </Box>
         </Box>
@@ -3076,6 +3088,10 @@ export default function ManuscriptEditor() {
         {/* Bibliography */}
         <MuiMenuItem onClick={() => {
           setCitationMenuAnchor(null);
+          if (!manuscriptId) {
+            console.error('Cannot open bibliography generator: manuscriptId is missing');
+            return;
+          }
           setBibliographyGeneratorOpen(true);
         }}>
           <ListItemIcon sx={{ minWidth: 36 }}>

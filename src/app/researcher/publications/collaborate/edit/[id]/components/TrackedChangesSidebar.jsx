@@ -33,7 +33,9 @@ import {
   Person as PersonIcon,
   AccessTime as TimeIcon,
   FilterList as FilterIcon,
-  MoreVert as MoreIcon
+  MoreVert as MoreIcon,
+  PendingActions as PendingIcon,
+  TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
@@ -192,17 +194,21 @@ export default function TrackedChangesSidebar({
   return (
     <>
       <Paper sx={{ 
-        width: 400, 
+        width: 420, 
         height: '100%', 
         display: 'flex', 
         flexDirection: 'column',
         borderRadius: 0,
-        borderLeft: '1px solid #e0e0e0'
+        borderLeft: '1px solid #e9ecef',
+        boxShadow: '-4px 0 12px rgba(0, 0, 0, 0.05)'
       }}>
         {/* Header */}
         <Box sx={{ 
-          p: 2, 
-          borderBottom: '1px solid #e0e0e0'
+          background: 'linear-gradient(135deg, #8b6cbc 0%, #9d7ec9 100%)',
+          p: 2.5,
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.15)'
         }}>
           <Box sx={{ 
             display: 'flex', 
@@ -210,15 +216,38 @@ export default function TrackedChangesSidebar({
             justifyContent: 'space-between',
             mb: 2
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <TrackChangesIcon color="primary" />
-              <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 600 }}>
-                Track Changes
-              </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <TrackChangesIcon sx={{ fontSize: 24, color: 'white' }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontSize: '1.125rem', fontWeight: 700, color: 'white' }}>
+                  Track Changes
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.75rem' }}>
+                  Review manuscript edits
+                </Typography>
+              </Box>
             </Box>
             <Tooltip title="Close">
-              <IconButton size="small" onClick={onClose}>
-                <CloseIcon />
+              <IconButton 
+                size="small" 
+                onClick={onClose}
+                sx={{ 
+                  color: 'white',
+                  bgcolor: 'rgba(255, 255, 255, 0.15)',
+                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.25)' }
+                }}
+              >
+                <CloseIcon fontSize="small" />
               </IconButton>
             </Tooltip>
           </Box>
@@ -229,37 +258,136 @@ export default function TrackedChangesSidebar({
               <Switch
                 checked={trackChangesEnabled}
                 onChange={(e) => onToggleTrackChanges(e.target.checked)}
-                color="primary"
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': {
+                    color: 'white'
+                  },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.5)'
+                  }
+                }}
               />
             }
-            label="Enable Track Changes"
-            sx={{ mb: 2 }}
+            label={<Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'white' }}>Enable Track Changes</Typography>}
+            sx={{ mb: 0 }}
           />
+        </Box>
 
-          {/* Filter and Actions */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {/* Stats Bar */}
+        {!loading && changes.length > 0 && (
+          <Box sx={{ 
+            px: 2.5, 
+            py: 2, 
+            bgcolor: '#f8f9fa',
+            borderBottom: '1px solid #e9ecef',
+            display: 'flex',
+            gap: 2,
+            alignItems: 'center'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{
+                width: 32,
+                height: 32,
+                borderRadius: 1.5,
+                bgcolor: '#8b6cbc15',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <TrackChangesIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.125rem', color: '#2d3748' }}>
+                  {changes.length}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#718096', fontSize: '0.7rem' }}>
+                  Total Changes
+                </Typography>
+              </Box>
+            </Box>
+            <Divider orientation="vertical" flexItem />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{
+                width: 32,
+                height: 32,
+                borderRadius: 1.5,
+                bgcolor: '#f59e0b15',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <PendingIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.125rem', color: '#2d3748' }}>
+                  {pendingChangesCount}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#718096', fontSize: '0.7rem' }}>
+                  Pending
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        )}
+
+        {/* Filter and Actions */}
+        <Box sx={{ px: 2.5, py: 2, borderBottom: '1px solid #e9ecef', bgcolor: 'white' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
             <Button
               size="small"
               startIcon={<FilterIcon />}
               onClick={(e) => setFilterMenuAnchor(e.currentTarget)}
-              sx={{ fontSize: '0.8rem' }}
+              variant="outlined"
+              sx={{ 
+                fontSize: '0.8125rem',
+                textTransform: 'none',
+                borderColor: '#e2e8f0',
+                color: '#64748b',
+                fontWeight: 600,
+                borderRadius: 2,
+                '&:hover': {
+                  borderColor: '#8b6cbc',
+                  color: '#8b6cbc',
+                  bgcolor: '#8b6cbc05'
+                }
+              }}
             >
-              {filter === 'ALL' ? 'All Changes' : `${filter.toLowerCase()} Changes`}
+              {filter === 'ALL' ? 'All Changes' : `${filter.charAt(0) + filter.slice(1).toLowerCase()} Changes`}
             </Button>
             
             {pendingChangesCount > 0 && (
               <ButtonGroup size="small" variant="outlined">
                 <Button
                   onClick={handleAcceptAll}
-                  sx={{ fontSize: '0.7rem', px: 1 }}
-                  color="success"
+                  sx={{ 
+                    fontSize: '0.75rem', 
+                    px: 1.5,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    borderColor: '#10b981',
+                    color: '#10b981',
+                    '&:hover': {
+                      borderColor: '#059669',
+                      bgcolor: '#10b98110'
+                    }
+                  }}
                 >
                   Accept All
                 </Button>
                 <Button
                   onClick={handleRejectAll}
-                  sx={{ fontSize: '0.7rem', px: 1 }}
-                  color="error"
+                  sx={{ 
+                    fontSize: '0.75rem', 
+                    px: 1.5,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    borderColor: '#ef4444',
+                    color: '#ef4444',
+                    '&:hover': {
+                      borderColor: '#dc2626',
+                      bgcolor: '#ef444410'
+                    }
+                  }}
                 >
                   Reject All
                 </Button>
@@ -269,26 +397,40 @@ export default function TrackedChangesSidebar({
         </Box>
 
         {/* Changes List */}
-        <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+        <Box sx={{ flexGrow: 1, overflow: 'auto', bgcolor: '#fafbfc' }}>
           {loading ? (
             <Box sx={{ p: 2 }}>
               {[1, 2, 3, 4, 5].map((i) => (
                 <Box key={i} sx={{ mb: 2 }}>
-                  <Skeleton height={60} />
+                  <Skeleton height={80} sx={{ borderRadius: 2 }} />
                 </Box>
               ))}
             </Box>
           ) : filteredChanges.length === 0 ? (
             <Box sx={{ 
               p: 4, 
-              textAlign: 'center', 
-              color: 'text.secondary' 
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 1.5,
+              mt: 4
             }}>
-              <TrackChangesIcon sx={{ fontSize: 48, opacity: 0.3, mb: 2 }} />
-              <Typography variant="body1">
+              <Box sx={{
+                width: 80,
+                height: 80,
+                borderRadius: 3,
+                bgcolor: '#f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <TrackChangesIcon sx={{ fontSize: 40, color: '#cbd5e0' }} />
+              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748' }}>
                 {filter === 'ALL' ? 'No changes tracked yet' : `No ${filter.toLowerCase()} changes`}
               </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
+              <Typography variant="body2" sx={{ color: '#64748b', maxWidth: 280, textAlign: 'center' }}>
                 {trackChangesEnabled 
                   ? 'Start editing to see tracked changes'
                   : 'Enable track changes to start tracking edits'
@@ -296,17 +438,22 @@ export default function TrackedChangesSidebar({
               </Typography>
             </Box>
           ) : (
-            <List sx={{ p: 1 }}>
+            <List sx={{ p: 2 }}>
               {filteredChanges.map((change) => (
                 <ListItem 
                   key={change.id}
                   sx={{ 
-                    mb: 1,
-                    border: '1px solid #f0f0f0',
-                    borderRadius: 2,
+                    mb: 2,
+                    p: 2,
+                    border: '1px solid #e9ecef',
+                    borderRadius: 2.5,
+                    bgcolor: 'white',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                    transition: 'all 0.2s',
                     '&:hover': {
-                      bgcolor: 'rgba(139, 108, 188, 0.05)',
-                      borderColor: '#8b6cbc'
+                      boxShadow: '0 4px 12px rgba(139, 108, 188, 0.15)',
+                      borderColor: '#8b6cbc',
+                      transform: 'translateY(-2px)'
                     }
                   }}
                 >
@@ -316,18 +463,34 @@ export default function TrackedChangesSidebar({
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'space-between',
-                      mb: 1 
+                      mb: 1.5 
                     }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         {getChangeTypeIcon(change.type)}
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#2d3748', fontSize: '0.875rem' }}>
                           {getChangeTypeName(change.type)}
                         </Typography>
                         <Chip
                           label={change.status}
                           size="small"
-                          color={getStatusColor(change.status)}
-                          variant="outlined"
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: '0.7rem',
+                            height: 22,
+                            ...(change.status === 'PENDING' ? {
+                              bgcolor: '#f59e0b15',
+                              color: '#f59e0b',
+                              border: 'none'
+                            } : change.status === 'ACCEPTED' ? {
+                              bgcolor: '#10b98115',
+                              color: '#10b981',
+                              border: 'none'
+                            } : {
+                              bgcolor: '#ef444415',
+                              color: '#ef4444',
+                              border: 'none'
+                            })
+                          }}
                         />
                       </Box>
                       
@@ -337,7 +500,13 @@ export default function TrackedChangesSidebar({
                             <IconButton 
                               size="small" 
                               onClick={() => handleAcceptChange(change.changeId)}
-                              sx={{ color: '#4caf50' }}
+                              sx={{ 
+                                color: '#64748b',
+                                '&:hover': {
+                                  color: '#10b981',
+                                  bgcolor: '#10b98110'
+                                }
+                              }}
                             >
                               <AcceptIcon fontSize="small" />
                             </IconButton>
@@ -346,7 +515,13 @@ export default function TrackedChangesSidebar({
                             <IconButton 
                               size="small" 
                               onClick={() => handleRejectChange(change.changeId)}
-                              sx={{ color: '#f44336' }}
+                              sx={{ 
+                                color: '#64748b',
+                                '&:hover': {
+                                  color: '#ef4444',
+                                  bgcolor: '#ef444410'
+                                }
+                              }}
                             >
                               <RejectIcon fontSize="small" />
                             </IconButton>
@@ -359,6 +534,13 @@ export default function TrackedChangesSidebar({
                             setChangeMenuAnchor(e.currentTarget);
                             setSelectedChange(change);
                           }}
+                          sx={{
+                            color: '#64748b',
+                            '&:hover': {
+                              color: '#8b6cbc',
+                              bgcolor: '#8b6cbc10'
+                            }
+                          }}
                         >
                           <MoreIcon fontSize="small" />
                         </IconButton>
@@ -367,19 +549,22 @@ export default function TrackedChangesSidebar({
 
                     {/* Change Content */}
                     {change.type === 'DELETE' && (
-                      <Box sx={{ mb: 1 }}>
-                        <Typography variant="caption" color="text.secondary">
+                      <Box sx={{ mb: 1.5 }}>
+                        <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.7rem' }}>
                           Deleted:
                         </Typography>
                         <Typography 
                           variant="body2" 
                           sx={{ 
-                            bgcolor: '#ffcdd2', 
-                            p: 0.5, 
-                            borderRadius: 1,
+                            bgcolor: '#fee2e2', 
+                            p: 1.5, 
+                            borderRadius: 2,
+                            border: '1px solid #fecaca',
                             fontFamily: 'monospace',
-                            fontSize: '0.8rem',
-                            textDecoration: 'line-through'
+                            fontSize: '0.8125rem',
+                            textDecoration: 'line-through',
+                            color: '#991b1b',
+                            mt: 0.5
                           }}
                         >
                           "{change.content}"
@@ -388,18 +573,21 @@ export default function TrackedChangesSidebar({
                     )}
 
                     {change.type === 'INSERT' && (
-                      <Box sx={{ mb: 1 }}>
-                        <Typography variant="caption" color="text.secondary">
+                      <Box sx={{ mb: 1.5 }}>
+                        <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.7rem' }}>
                           Inserted:
                         </Typography>
                         <Typography 
                           variant="body2" 
                           sx={{ 
-                            bgcolor: '#c8e6c9', 
-                            p: 0.5, 
-                            borderRadius: 1,
+                            bgcolor: '#d1fae5', 
+                            p: 1.5, 
+                            borderRadius: 2,
+                            border: '1px solid #a7f3d0',
                             fontFamily: 'monospace',
-                            fontSize: '0.8rem'
+                            fontSize: '0.8125rem',
+                            color: '#065f46',
+                            mt: 0.5
                           }}
                         >
                           "{change.content}"
@@ -408,20 +596,23 @@ export default function TrackedChangesSidebar({
                     )}
 
                     {change.type === 'REPLACE' && (
-                      <Box sx={{ mb: 1 }}>
-                        <Typography variant="caption" color="text.secondary">
+                      <Box sx={{ mb: 1.5 }}>
+                        <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.7rem' }}>
                           Changed:
                         </Typography>
                         <Typography 
                           variant="body2" 
                           sx={{ 
-                            bgcolor: '#ffcdd2', 
-                            p: 0.5, 
-                            borderRadius: 1,
+                            bgcolor: '#fee2e2', 
+                            p: 1.5, 
+                            borderRadius: 2,
+                            border: '1px solid #fecaca',
                             fontFamily: 'monospace',
-                            fontSize: '0.8rem',
+                            fontSize: '0.8125rem',
                             textDecoration: 'line-through',
-                            mb: 0.5
+                            color: '#991b1b',
+                            mb: 1,
+                            mt: 0.5
                           }}
                         >
                           "{change.oldContent}"
@@ -429,11 +620,13 @@ export default function TrackedChangesSidebar({
                         <Typography 
                           variant="body2" 
                           sx={{ 
-                            bgcolor: '#c8e6c9', 
-                            p: 0.5, 
-                            borderRadius: 1,
+                            bgcolor: '#d1fae5', 
+                            p: 1.5, 
+                            borderRadius: 2,
+                            border: '1px solid #a7f3d0',
                             fontFamily: 'monospace',
-                            fontSize: '0.8rem'
+                            fontSize: '0.8125rem',
+                            color: '#065f46'
                           }}
                         >
                           "{change.content}"
@@ -442,28 +635,28 @@ export default function TrackedChangesSidebar({
                     )}
 
                     {/* Change Metadata */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <PersonIcon fontSize="small" color="action" />
-                        <Typography variant="caption" color="text.secondary">
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <PersonIcon sx={{ fontSize: 16, color: '#8b6cbc' }} />
+                        <Typography variant="caption" sx={{ color: '#4a5568', fontSize: '0.75rem', fontWeight: 500 }}>
                           {change.author.givenName} {change.author.familyName}
                         </Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <TimeIcon fontSize="small" color="action" />
-                        <Typography variant="caption" color="text.secondary">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <TimeIcon sx={{ fontSize: 16, color: '#8b6cbc' }} />
+                        <Typography variant="caption" sx={{ color: '#4a5568', fontSize: '0.75rem' }}>
                           {format(new Date(change.createdAt), 'MMM d, h:mm a')}
                         </Typography>
                       </Box>
+                      {(change.acceptedAt || change.rejectedAt) && change.acceptedBy && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                          <AcceptIcon sx={{ fontSize: 16, color: change.status === 'ACCEPTED' ? '#10b981' : '#ef4444' }} />
+                          <Typography variant="caption" sx={{ color: '#4a5568', fontSize: '0.75rem' }}>
+                            {change.status.toLowerCase()} by {change.acceptedBy.givenName} {change.acceptedBy.familyName}
+                          </Typography>
+                        </Box>
+                      )}
                     </Box>
-
-                    {(change.acceptedAt || change.rejectedAt) && change.acceptedBy && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          {change.status.toLowerCase()} by {change.acceptedBy.givenName} {change.acceptedBy.familyName}
-                        </Typography>
-                      </Box>
-                    )}
                   </Box>
                 </ListItem>
               ))}

@@ -42,7 +42,11 @@ import {
   School as ConferenceIcon,
   MenuBook as ChapterIcon,
   Launch as LaunchIcon,
-  ContentCopy as CopyIcon
+  ContentCopy as CopyIcon,
+  ManageSearch as ManageSearchIcon,
+  TrendingUp as TrendingUpIcon,
+  CheckCircle as CheckCircleIcon,
+  FormatQuote as FormatQuoteIcon
 } from '@mui/icons-material';
 
 const ManageSourcesModal = ({ 
@@ -224,9 +228,11 @@ const ManageSourcesModal = ({
       fullWidth
       PaperProps={{
         sx: {
-          height: '80vh',
+          height: '85vh',
+          maxHeight: '900px',
           borderRadius: 3,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.15)'
+          boxShadow: '0 24px 80px rgba(139, 108, 188, 0.15)',
+          overflow: 'hidden'
         }
       }}
     >
@@ -234,60 +240,136 @@ const ManageSourcesModal = ({
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {/* Header */}
           <Box sx={{ 
-            p: 3, 
-            borderBottom: '1px solid #e0e0e0',
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #9d7ec9 100%)',
+            p: 3,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.15)'
           }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="h5" sx={{ fontWeight: 600, color: '#333' }}>
-                Manage Sources
-              </Typography>
-              <Chip 
-                icon={<BookIcon fontSize="small" />}
-                label={`${totalCount} citations in this manuscript`}
-                size="small"
-                variant="outlined"
-                sx={{ 
-                  fontSize: '0.75rem',
-                  color: '#666',
-                  borderColor: '#ddd'
-                }}
-              />
+              <Box sx={{
+                width: 48,
+                height: 48,
+                borderRadius: 2,
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ManageSearchIcon sx={{ fontSize: 28, color: 'white' }} />
+              </Box>
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', mb: 0.5 }}>
+                  Manage Sources
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.875rem' }}>
+                  View and manage manuscript citations
+                </Typography>
+              </Box>
             </Box>
             <IconButton 
               onClick={onClose}
               size="small"
               sx={{ 
-                color: '#666',
-                '&:hover': { bgcolor: '#f5f5f5' }
+                color: 'white',
+                bgcolor: 'rgba(255, 255, 255, 0.15)',
+                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.25)' }
               }}
             >
               <CloseIcon />
             </IconButton>
           </Box>
 
+          {/* Stats Bar */}
+          <Box sx={{ 
+            px: 3, 
+            py: 2, 
+            bgcolor: '#f8f9fa',
+            borderBottom: '1px solid #e9ecef',
+            display: 'flex',
+            gap: 3,
+            alignItems: 'center'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{
+                width: 36,
+                height: 36,
+                borderRadius: 1.5,
+                bgcolor: '#8b6cbc15',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <FormatQuoteIcon sx={{ fontSize: 20, color: '#8b6cbc' }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.25rem', color: '#2d3748' }}>
+                  {totalCount}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#718096', fontSize: '0.75rem' }}>
+                  Total Citations
+                </Typography>
+              </Box>
+            </Box>
+            <Divider orientation="vertical" flexItem />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{
+                width: 36,
+                height: 36,
+                borderRadius: 1.5,
+                bgcolor: '#10b98115',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <TrendingUpIcon sx={{ fontSize: 20, color: '#10b981' }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.25rem', color: '#2d3748' }}>
+                  {filteredAndSortedCitations.reduce((sum, c) => sum + (c.citationCount || 0), 0)}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#718096', fontSize: '0.75rem' }}>
+                  Total Uses
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
           {/* Search and Controls */}
-          <Box sx={{ p: 3, borderBottom: '1px solid #f0f0f0' }}>
+          <Box sx={{ p: 3, borderBottom: '1px solid #e9ecef', bgcolor: 'white' }}>
             <Stack direction="row" spacing={2} alignItems="center">
               <TextField
                 fullWidth
-                size="small"
-                placeholder="Search manuscript citations..."
+                size="medium"
+                placeholder="Search by title, author, journal..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: '#999' }} />
+                      <SearchIcon sx={{ color: '#8b6cbc' }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                    bgcolor: '#f8f9fa'
+                    borderRadius: 2.5,
+                    bgcolor: '#f8f9fa',
+                    border: '2px solid transparent',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      bgcolor: 'white',
+                      borderColor: '#e2e8f0'
+                    },
+                    '&.Mui-focused': {
+                      bgcolor: 'white',
+                      borderColor: '#8b6cbc',
+                      boxShadow: '0 0 0 3px rgba(139, 108, 188, 0.1)'
+                    },
+                    '& fieldset': {
+                      border: 'none'
+                    }
                   }
                 }}
               />
@@ -297,11 +379,17 @@ const ManageSourcesModal = ({
                 startIcon={<FilterIcon />}
                 onClick={(e) => setFilterAnchor(e.currentTarget)}
                 sx={{ 
-                  minWidth: 120,
+                  minWidth: 110,
                   borderRadius: 2,
                   textTransform: 'none',
-                  borderColor: '#ddd',
-                  color: '#666'
+                  borderColor: '#e2e8f0',
+                  color: '#64748b',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: '#8b6cbc',
+                    color: '#8b6cbc',
+                    bgcolor: '#8b6cbc05'
+                  }
                 }}
               >
                 Filter
@@ -312,11 +400,17 @@ const ManageSourcesModal = ({
                 startIcon={<SortIcon />}
                 onClick={(e) => setSortAnchor(e.currentTarget)}
                 sx={{ 
-                  minWidth: 120,
+                  minWidth: 110,
                   borderRadius: 2,
                   textTransform: 'none',
-                  borderColor: '#ddd',
-                  color: '#666'
+                  borderColor: '#e2e8f0',
+                  color: '#64748b',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: '#8b6cbc',
+                    color: '#8b6cbc',
+                    bgcolor: '#8b6cbc05'
+                  }
                 }}
               >
                 Sort
@@ -372,15 +466,19 @@ const ManageSourcesModal = ({
 
             {/* Citations Table */}
             {!loading && !error && filteredAndSortedCitations.length > 0 && (
-              <TableContainer component={Paper} sx={{ borderRadius: 2, border: '1px solid #f0f0f0' }}>
+              <TableContainer component={Paper} sx={{ 
+                borderRadius: 2.5, 
+                border: '1px solid #e9ecef',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+              }}>
                 <Table>
                   <TableHead>
-                    <TableRow sx={{ bgcolor: '#fafafa' }}>
-                      <TableCell sx={{ fontWeight: 600, color: '#333' }}>Publication</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#333', minWidth: 100 }}>Type</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#333', minWidth: 100 }}>Year</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#333', minWidth: 100 }}>Citations</TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#333', minWidth: 120 }}>Actions</TableCell>
+                    <TableRow sx={{ bgcolor: '#f8f9fa' }}>
+                      <TableCell sx={{ fontWeight: 700, color: '#2d3748', fontSize: '0.875rem', py: 2 }}>Publication</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: '#2d3748', fontSize: '0.875rem', minWidth: 100, py: 2 }}>Type</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: '#2d3748', fontSize: '0.875rem', minWidth: 100, py: 2 }}>Year</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: '#2d3748', fontSize: '0.875rem', minWidth: 120, py: 2 }}>Usage</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: '#2d3748', fontSize: '0.875rem', minWidth: 140, py: 2 }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -388,37 +486,44 @@ const ManageSourcesModal = ({
                       <TableRow 
                         key={citation.id}
                         sx={{ 
-                          '&:hover': { bgcolor: '#f9f9f9' },
+                          transition: 'all 0.2s',
+                          '&:hover': { bgcolor: '#f8f9fa' },
                           '&:last-child td': { border: 0 }
                         }}
                       >
-                        <TableCell>
+                        <TableCell sx={{ py: 2.5 }}>
                           <Box>
                             <Typography 
                               variant="body2" 
                               sx={{ 
-                                fontWeight: 600,
-                                fontSize: '0.9rem',
+                                fontWeight: 700,
+                                fontSize: '0.9375rem',
                                 mb: 0.5,
-                                lineHeight: 1.3
+                                lineHeight: 1.4,
+                                color: '#1a202c'
                               }}
                             >
                               {citation.title}
                             </Typography>
                             <Typography 
                               variant="caption" 
-                              color="textSecondary"
-                              sx={{ fontSize: '0.8rem' }}
+                              sx={{ 
+                                fontSize: '0.8125rem',
+                                color: '#4a5568',
+                                display: 'block',
+                                mb: 0.25
+                              }}
                             >
                               {citation.authors?.join(', ')}
                             </Typography>
                             {citation.journal && (
                               <Typography 
                                 variant="caption" 
-                                color="primary"
                                 sx={{ 
                                   display: 'block',
                                   fontSize: '0.75rem',
+                                  color: '#8b6cbc',
+                                  fontStyle: 'italic',
                                   mt: 0.25
                                 }}
                               >
@@ -427,34 +532,62 @@ const ManageSourcesModal = ({
                             )}
                           </Box>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 2.5 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {getPublicationIcon(citation.type)}
-                            <Typography variant="caption" sx={{ textTransform: 'uppercase', fontSize: '0.7rem' }}>
-                              {citation.type}
+                            <Box sx={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: 1.5,
+                              bgcolor: '#8b6cbc10',
+                              color: '#8b6cbc',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              {getPublicationIcon(citation.type)}
+                            </Box>
+                            <Typography variant="caption" sx={{ 
+                              textTransform: 'capitalize', 
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              color: '#4a5568'
+                            }}>
+                              {citation.type.replace('_', ' ')}
                             </Typography>
                           </Box>
                         </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
+                        <TableCell sx={{ py: 2.5 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#2d3748' }}>
                             {citation.year || '-'}
                           </Typography>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 2.5 }}>
                           <Chip 
                             label={`${citation.citationCount} time${citation.citationCount !== 1 ? 's' : ''}`}
                             size="small"
-                            variant="outlined"
-                            sx={{ fontSize: '0.7rem' }}
+                            sx={{ 
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              height: 26,
+                              bgcolor: '#8b6cbc15',
+                              color: '#8b6cbc',
+                              border: 'none'
+                            }}
                           />
                         </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <TableCell sx={{ py: 2.5 }}>
+                          <Box sx={{ display: 'flex', gap: 0.75 }}>
                             <Tooltip title="Copy formatted citation">
                               <IconButton 
                                 size="small"
                                 onClick={() => handleCopyFormattedCitation(citation)}
-                                sx={{ color: '#666' }}
+                                sx={{ 
+                                  color: '#64748b',
+                                  '&:hover': { 
+                                    color: '#8b6cbc',
+                                    bgcolor: '#8b6cbc10'
+                                  }
+                                }}
                               >
                                 <CopyIcon fontSize="small" />
                               </IconButton>
@@ -464,7 +597,13 @@ const ManageSourcesModal = ({
                                 <IconButton 
                                   size="small"
                                   onClick={() => window.open(citation.url, '_blank')}
-                                  sx={{ color: '#666' }}
+                                  sx={{ 
+                                    color: '#64748b',
+                                    '&:hover': { 
+                                      color: '#10b981',
+                                      bgcolor: '#10b98110'
+                                    }
+                                  }}
                                 >
                                   <LaunchIcon fontSize="small" />
                                 </IconButton>
@@ -474,7 +613,13 @@ const ManageSourcesModal = ({
                               <IconButton 
                                 size="small"
                                 onClick={() => handleRemoveCitation(citation.id)}
-                                sx={{ color: '#d32f2f' }}
+                                sx={{ 
+                                  color: '#64748b',
+                                  '&:hover': { 
+                                    color: '#ef4444',
+                                    bgcolor: '#ef444410'
+                                  }
+                                }}
                               >
                                 <DeleteIcon fontSize="small" />
                               </IconButton>
@@ -492,20 +637,45 @@ const ManageSourcesModal = ({
           {/* Footer */}
           <Box sx={{ 
             p: 3, 
-            borderTop: '1px solid #e0e0e0',
+            borderTop: '1px solid #e9ecef',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            bgcolor: '#fafafa'
+            bgcolor: '#f8f9fa'
           }}>
-            <Typography variant="body2" color="textSecondary">
-              {loading ? 'Loading...' : `${filteredAndSortedCitations.length} of ${totalCount} citations shown`}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
+                {loading ? 'Loading...' : `${filteredAndSortedCitations.length} of ${totalCount} citations displayed`}
+              </Typography>
+              {!loading && filteredAndSortedCitations.length > 0 && (
+                <Chip
+                  icon={<CheckCircleIcon sx={{ fontSize: 14 }} />}
+                  label="Synced"
+                  size="small"
+                  sx={{
+                    height: 24,
+                    bgcolor: '#10b98115',
+                    color: '#10b981',
+                    fontWeight: 600,
+                    fontSize: '0.75rem'
+                  }}
+                />
+              )}
+            </Box>
             <Button 
               onClick={onClose}
+              variant="outlined"
               sx={{ 
                 textTransform: 'none',
-                color: '#666'
+                borderColor: '#e2e8f0',
+                color: '#64748b',
+                fontWeight: 600,
+                borderRadius: 2,
+                '&:hover': {
+                  borderColor: '#8b6cbc',
+                  color: '#8b6cbc',
+                  bgcolor: '#8b6cbc05'
+                }
               }}
             >
               Close
