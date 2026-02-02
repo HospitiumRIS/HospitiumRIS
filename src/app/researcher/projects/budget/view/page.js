@@ -23,6 +23,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  InputAdornment,
   Stack,
   Divider,
   Tab,
@@ -51,7 +52,9 @@ import {
   CheckCircle as CheckCircleIcon,
   Business as BusinessIcon,
   Assignment as ProjectIcon,
-  FilterList as FilterIcon
+  FilterList as FilterIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 
@@ -71,6 +74,7 @@ const BudgetManagementPage = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filterStatus, setFilterStatus] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [expenseForm, setExpenseForm] = useState({
     description: '',
     amount: '',
@@ -339,11 +343,10 @@ const BudgetManagementPage = () => {
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Budget Overview Cards */}
         <Box sx={{ 
-          display: 'flex', 
-          gap: 3, 
-          mb: 4,
-          flexWrap: 'wrap',
-          '& > *': { flex: 1, minWidth: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 12px)' } }
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+          gap: 2.5,
+          mb: 4
         }}>
           <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
             <CardContent sx={{ py: 2 }}>
@@ -410,45 +413,58 @@ const BudgetManagementPage = () => {
           </Card>
         </Box>
 
-        {/* Project Selection and Main Content */}
-        <Paper elevation={2} sx={{ mb: 3 }}>
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-              Select Project
-            </Typography>
-            <FormControl fullWidth>
-              <InputLabel>Project</InputLabel>
-              <Select
-                value={selectedProject?.id || ''}
-                onChange={(e) => {
-                  const project = projects.find(p => p.id === e.target.value);
-                  setSelectedProject(project);
+        {/* Search Projects */}
+        <Paper sx={{ 
+          p: 3, 
+          mb: 3,
+          borderRadius: 3,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
+        }}>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 2, 
+            alignItems: 'center',
+            flexWrap: 'wrap'
+          }}>
+            <Box sx={{ flex: '1 1 300px', minWidth: '300px' }}>
+              <TextField
+                fullWidth
+                placeholder="Search projects by title, PI, or budget..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: '#8b6cbc' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchQuery && (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setSearchQuery('')} size="small">
+                        <ClearIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  )
                 }}
-                label="Project"
-              >
-                {projects.map((project) => (
-                  <MenuItem key={project.id} value={project.id}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                          {project.title}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Budget: ${project.budget.total.toLocaleString()} • 
-                          Spent: ${project.budget.spent.toLocaleString()} • 
-                          {project.budget.utilization.toFixed(1)}% utilized
-                        </Typography>
-                      </Box>
-                      <Chip 
-                        label={project.status} 
-                        size="small"
-                        color={getStatusColor(project.status)}
-                      />
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    backgroundColor: 'rgba(255,255,255,0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,1)',
+                      '& fieldset': {
+                        borderColor: '#8b6cbc',
+                      }
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#8b6cbc',
+                    },
+                  },
+                }}
+              />
+            </Box>
           </Box>
         </Paper>
 

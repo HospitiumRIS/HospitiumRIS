@@ -74,7 +74,7 @@ import SuperAdminLayout from '../../../components/SuperAdmin/SuperAdminLayout';
 
 const UserManagementPage = () => {
   const theme = useTheme();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   
   // State management
@@ -111,6 +111,9 @@ const UserManagementPage = () => {
 
   // Check Super Admin access
   useEffect(() => {
+    // Wait for auth to finish loading before checking
+    if (authLoading) return;
+    
     if (!user) {
       router.push('/login');
       return;
@@ -120,7 +123,7 @@ const UserManagementPage = () => {
       router.push('/dashboard');
       return;
     }
-  }, [user, router]);
+  }, [user, router, authLoading]);
 
   // Fetch users
   const fetchUsers = async () => {

@@ -179,13 +179,13 @@ const Navbar = () => {
                 title: 'PROPOSALS',
                 items: [
                   {
-                    label: 'Create Proposal',
+                    label: 'Project Proposals',
                     description: 'Manage research proposals',
                     icon: <ProposalIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
                     path: '/researcher/projects/proposals/list'
                   },
                   {
-                    label: 'Follow-ups',
+                    label: 'Grant Lifecycle',
                     description: 'Grant application follow-ups',
                     icon: <FollowUpIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
                     path: '/researcher/projects/proposals/liason'

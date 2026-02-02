@@ -107,6 +107,7 @@ import {
   VisibilityOff as VisibilityOffIcon,
   AttachFile as AttachFileIcon,
   LocalOffer as TagIcon,
+  Clear as ClearIcon,
   CalendarToday as CalendarTodayIcon,
   ArrowForward as DirectionsRunIcon,
   Info as LightbulbIcon,
@@ -1162,55 +1163,139 @@ export default function ProposalLiaisonPage() {
         {renderStatsCards()}
 
         {/* Filters and Search */}
-        <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
+        <Paper sx={{ 
+          p: 4, 
+          mb: 3, 
+          borderRadius: 4, 
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
+        }}>
           <Box sx={{ 
             display: 'flex', 
-            gap: 2, 
+            gap: 3, 
             alignItems: 'center',
             flexWrap: 'wrap',
-            '& > *': { flex: 1, minWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.333% - 8px)' } }
+            '@media (max-width: 768px)': {
+              flexDirection: 'column',
+              alignItems: 'stretch'
+            }
           }}>
-            <TextField
-              placeholder="Search grants, funders, or contacts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
+            <Box sx={{ flex: '2 1 300px', minWidth: '300px' }}>
+              <TextField
+                fullWidth
+                placeholder="Search grants, funders, or contacts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: '#8b6cbc' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchQuery && (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setSearchQuery('')} size="small">
+                        <ClearIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    backgroundColor: 'rgba(255,255,255,0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,1)',
+                      '& fieldset': {
+                        borderColor: '#8b6cbc',
+                      }
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#8b6cbc',
+                    },
+                  },
+                }}
+              />
+            </Box>
             
-            <FormControl>
-              <InputLabel>Status Filter</InputLabel>
-              <Select
-                value={statusFilter}
-                label="Status Filter"
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <MenuItem value="All">All Status</MenuItem>
-                <MenuItem value="Pending Submission">Pending Submission</MenuItem>
-                <MenuItem value="Under Review">Under Review</MenuItem>
-                <MenuItem value="Approved">Approved</MenuItem>
-                <MenuItem value="Rejected">Rejected</MenuItem>
-              </Select>
-            </FormControl>
+            <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={statusFilter}
+                  label="Status"
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  sx={{
+                    borderRadius: 3,
+                    backgroundColor: 'rgba(255,255,255,0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,1)'
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#8b6cbc',
+                    },
+                  }}
+                >
+                  <MenuItem value="All">All Status</MenuItem>
+                  <MenuItem value="Pending Submission">Pending Submission</MenuItem>
+                  <MenuItem value="Under Review">Under Review</MenuItem>
+                  <MenuItem value="Approved">Approved</MenuItem>
+                  <MenuItem value="Rejected">Rejected</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
             
-            <FormControl>
-              <InputLabel>Priority Filter</InputLabel>
-              <Select
-                value={priorityFilter}
-                label="Priority Filter"
-                onChange={(e) => setPriorityFilter(e.target.value)}
+            <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+              <FormControl fullWidth>
+                <InputLabel>Priority</InputLabel>
+                <Select
+                  value={priorityFilter}
+                  label="Priority"
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                  sx={{
+                    borderRadius: 3,
+                    backgroundColor: 'rgba(255,255,255,0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,1)'
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#8b6cbc',
+                    },
+                  }}
+                >
+                  <MenuItem value="All">All Priorities</MenuItem>
+                  <MenuItem value="High">High Priority</MenuItem>
+                  <MenuItem value="Medium">Medium Priority</MenuItem>
+                  <MenuItem value="Low">Low Priority</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            <Box sx={{ flex: '0 0 auto' }}>
+              <Button
+                variant="text"
+                startIcon={<ClearIcon />}
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter('All');
+                  setPriorityFilter('All');
+                }}
+                sx={{ 
+                  borderRadius: 3,
+                  height: '56px',
+                  px: 3,
+                  color: '#8b6cbc',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'rgba(139, 108, 188, 0.08)',
+                    color: '#7a5cac'
+                  }
+                }}
               >
-                <MenuItem value="All">All Priorities</MenuItem>
-                <MenuItem value="High">High Priority</MenuItem>
-                <MenuItem value="Medium">Medium Priority</MenuItem>
-                <MenuItem value="Low">Low Priority</MenuItem>
-              </Select>
-            </FormControl>
+                Clear All
+              </Button>
+            </Box>
           </Box>
         </Paper>
 

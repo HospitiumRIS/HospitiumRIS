@@ -1,0 +1,261 @@
+{
+  "metadata": {
+    "backupType": "full",
+    "description": "",
+    "timestamp": "2026-02-02T14:02:50.021Z",
+    "version": "1.0"
+  },
+  "data": {
+    "users": [
+      {
+        "id": "cmkguoi230001vlr41jwh3n5y",
+        "accountType": "GLOBAL_ADMIN",
+        "status": "ACTIVE",
+        "givenName": "Stephen Gaita",
+        "familyName": "Gaikia",
+        "email": "steveggaita@gmail.com",
+        "confirmEmail": null,
+        "passwordHash": "$2b$12$AbdGCTisdNjpz2ksAV9qTO7BTan2sfR.HKbsq6CVr8WyumzZc5iE2",
+        "emailVerified": true,
+        "emailVerifyToken": null,
+        "emailVerifyExpires": null,
+        "orcidId": "0009-0009-4810-6393",
+        "orcidGivenNames": "Stephen Gaita",
+        "orcidFamilyName": "Gaikia",
+        "primaryInstitution": "Scofield Associates",
+        "startMonth": "01",
+        "startYear": "2026",
+        "createdAt": "2026-01-16T12:24:07.270Z",
+        "updatedAt": "2026-02-02T12:45:06.978Z"
+      },
+      {
+        "id": "cmkgugnr90001vlmo0pe1256p",
+        "accountType": "SUPER_ADMIN",
+        "status": "ACTIVE",
+        "givenName": "Admin",
+        "familyName": "User",
+        "email": "admin@hospitiumris.org",
+        "confirmEmail": null,
+        "passwordHash": "$2b$10$bge5Ui.1bpcfhQfN1RJlauSH2RLuwAB.BVIxMfxdYAd6YvOMOhfuq",
+        "emailVerified": true,
+        "emailVerifyToken": null,
+        "emailVerifyExpires": null,
+        "orcidId": null,
+        "orcidGivenNames": null,
+        "orcidFamilyName": null,
+        "primaryInstitution": null,
+        "startMonth": null,
+        "startYear": null,
+        "createdAt": "2026-01-16T12:18:01.412Z",
+        "updatedAt": "2026-02-02T12:45:28.432Z"
+      }
+    ],
+    "manuscripts": [
+      {
+        "id": "cmknyxfpu0005vltcsvfg664t",
+        "title": "Manuscript 1",
+        "type": "Article",
+        "field": "Cardiology",
+        "description": null,
+        "status": "DRAFT",
+        "content": "<p>Test (Hyuna Sung et al., 2021)</p><p></p><p><strong>References  </strong></p><p>Sung, H., et al.. (2021). Global Cancer Statistics 2020: GLOBOCAN Estimates of Incidence and Mortality Worldwide for 36 Cancers in 185 Countries. *CA A Cancer Journal for Clinicians*, *71*, 209-249. https://doi.org/10.3322/caac.21660.</p>",
+        "wordCount": 37,
+        "createdBy": "cmkguoi230001vlr41jwh3n5y",
+        "createdAt": "2026-01-21T11:57:25.843Z",
+        "updatedAt": "2026-01-21T12:13:47.083Z",
+        "lastSaved": "2026-01-21T12:13:47.083Z",
+        "lastUpdatedBy": "cmkguoi230001vlr41jwh3n5y"
+      }
+    ],
+    "publications": [
+      {
+        "id": "cmknytn8s0001vltc8fmfgc0c",
+        "title": "Multilayer metabolomic integration reveals bioenergetic disruption in Long COVID.",
+        "type": "article",
+        "field": null,
+        "journal": "Journal of translational medicine",
+        "abstract": "",
+        "authors": [
+          "García-Hidalgo MC",
+          "Mota-Martorell N",
+          "González J",
+          "Benítez ID",
+          "Company-Marín I",
+          "Jové M",
+          "Barbé F",
+          "Amigó N",
+          "Pamplona R",
+          "de Gonzalo-Calvo D",
+          "Torres G"
+        ],
+        "doi": "10.1186/s12967-026-07684-3",
+        "isbn": null,
+        "url": "https://pubmed.ncbi.nlm.nih.gov/41559790/",
+        "keywords": [],
+        "pages": null,
+        "volume": null,
+        "publicationDate": null,
+        "year": 2026,
+        "status": "PUBLISHED",
+        "source": "PubMed",
+        "authorId": null,
+        "createdAt": "2026-01-21T11:54:28.973Z",
+        "updatedAt": "2026-01-21T11:54:28.973Z"
+      },
+      {
+        "id": "cmknyugp00002vltcqtepalc9",
+        "title": "Emerging Subspecialties in Neurology: Women's Neurology",
+        "type": "article",
+        "field": null,
+        "journal": "Neurology",
+        "abstract": "",
+        "authors": [
+          "Unknown Author"
+        ],
+        "doi": "10.1212/wnl.0000000000209208",
+        "isbn": null,
+        "url": "https://doi.org/10.1212/wnl.0000000000209208",
+        "keywords": [],
+        "pages": null,
+        "volume": "102",
+        "publicationDate": "2024-03-11T21:00:00.000Z",
+        "year": 2024,
+        "status": "PUBLISHED",
+        "source": "Crossref",
+        "authorId": null,
+        "createdAt": "2026-01-21T11:55:07.141Z",
+        "updatedAt": "2026-01-21T11:55:07.141Z"
+      },
+      {
+        "id": "cmknywann0003vltcd78549gs",
+        "title": "Global Cancer Statistics 2020: GLOBOCAN Estimates of Incidence and Mortality Worldwide for 36 Cancers in 185 Countries",
+        "type": "article",
+        "field": null,
+        "journal": "CA A Cancer Journal for Clinicians",
+        "abstract": "Abstract This article provides an update on the global cancer burden using the GLOBOCAN 2020 estimates of cancer incidence and mortality produced by the International Agency for Research on Cancer. Worldwide, an estimated 19.3 million new cancer cases (18.1 million excluding nonmelanoma skin cancer) and almost 10.0 million cancer deaths (9.9 million excluding nonmelanoma skin cancer) occurred in 2020. Female breast cancer has surpassed lung cancer as the most commonly diagnosed cancer, with an estimated 2.3 million new cases (11.7%), followed by lung (11.4%), colorectal (10.0 %), prostate (7.3%), and stomach (5.6%) cancers. Lung cancer remained the leading cause of cancer death, with an estimated 1.8 million deaths (18%), followed by colorectal (9.4%), liver (8.3%), stomach (7.7%), and female breast (6.9%) cancers. Overall incidence was from 2‐fold to 3‐fold higher in transitioned versus transitioning countries for both sexes, whereas mortality varied &lt;2‐fold for men and little for women. Death rates for female breast and cervical cancers, however, were considerably higher in transitioning versus transitioned countries (15.0 vs 12.8 per 100,000 and 12.4 vs 5.2 per 100,000, respectively). The global cancer burden is expected to be 28.4 million cases in 2040, a 47% rise from 2020, with a larger increase in transitioning (64% to 95%) versus transitioned (32% to 56%) countries due to demographic changes, although this may be further exacerbated by increasing risk factors associated with globalization and a growing economy. Efforts to build a sustainable infrastructure for the dissemination of cancer prevention measures and provision of cancer care in transitioning countries is critical for global cancer control.",
+        "authors": [
+          "Hyuna Sung",
+          "Jacques Ferlay",
+          "Rebecca L. Siegel",
+          "Mathieu Laversanne",
+          "Isabelle Soerjomataram",
+          "Ahmedin Jemal",
+          "Freddie Bray"
+        ],
+        "doi": "10.3322/caac.21660",
+        "isbn": null,
+        "url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.3322/caac.21660",
+        "keywords": [
+          "Medicine",
+          "Cancer",
+          "Breast cancer",
+          "Skin cancer",
+          "Lung cancer",
+          "Colorectal cancer",
+          "Incidence (geometry)",
+          "Demography",
+          "Prostate cancer",
+          "Mortality rate"
+        ],
+        "pages": "209-249",
+        "volume": "71",
+        "publicationDate": "2021-02-04T00:00:00.000Z",
+        "year": 2021,
+        "status": "PUBLISHED",
+        "source": "OpenAlex",
+        "authorId": null,
+        "createdAt": "2026-01-21T11:56:32.627Z",
+        "updatedAt": "2026-01-21T11:56:32.627Z"
+      }
+    ],
+    "proposals": [
+      {
+        "id": "cmko0dr1s000cvltc45nvwk7p",
+        "title": "The Efficacy of [Intervention] in Reducing [Condition] among [Target Population]: A Randomized Controlled Trial",
+        "principalInvestigator": "Stephen Gaita Gaikia",
+        "principalInvestigatorOrcid": "0009-0009-4810-6393",
+        "coInvestigators": [],
+        "departments": [
+          "Add \"Clinical Research & Epidemiology\""
+        ],
+        "startDate": "2026-02-01T00:00:00.000Z",
+        "endDate": "2028-01-31T00:00:00.000Z",
+        "researchAreas": [
+          "Clinical Epidemiology & Evidence-Based Medicine"
+        ],
+        "researchObjectives": "- Primary Objective: To quantitatively determine if the administration of [Intervention] results in a statistically significant reduction in the severity/frequency of [Condition] compared to a control group over a period of 24 months.\n\n- Secondary Objective: To assess the safety profile, adverse event rate, and participant adherence levels associated with [Intervention].- ",
+        "methodology": "Study Design: A prospective, multi-center, double-blind, randomized, placebo-controlled superiority trial.\n\nSampling Strategy: Stratified random sampling to ensure balanced representation of age and gender demographics within [Target Population].\n\nInclusion Criteria: Adults aged 18-65 with a confirmed diagnosis of [Condition]; able to provide informed consent.\n\nExclusion Criteria: Patients with [Specific Contraindication] or those currently participating in another investigational study.\n\nData Analysis: Efficacy will be analyzed using an Intention-to-Treat (ITT) approach. Continuous variables will be compared using t-tests or ANCOVA, while categorical variables will be analyzed using Chi-square tests.",
+        "abstract": "Background: [Condition] represents a significant burden on [Target Population], with current treatments offering limited efficacy.\nMethods: This double-blind, randomized controlled trial (RCT) will enroll participants from [Location/Hospital]. Participants will be randomized 1:1 to receive either [Intervention] or a placebo. The primary endpoint is the reduction in [Specific Clinical Marker] at 24 weeks.\nExpected Results: We hypothesize that the [Intervention] group will show a significant improvement in clinical outcomes compared to the control group (p < 0.05).\nConclusion: If successful, this study could provide high-quality evidence to support [Intervention] as a standard of care.",
+        "milestones": [],
+        "deliverables": [],
+        "fundingSource": "",
+        "grantNumber": "",
+        "fundingInstitution": "",
+        "grantStartDate": "2026-01-21T00:00:00.000Z",
+        "grantEndDate": "2029-01-21T00:00:00.000Z",
+        "totalBudgetAmount": "500000",
+        "ethicalConsiderationsOverview": "Test",
+        "consentProcedures": "Test",
+        "dataSecurityMeasures": "Test",
+        "ethicsApprovalStatus": "Approved",
+        "ethicsApprovalReference": "1271887",
+        "ethicsCommittee": "",
+        "approvalDate": "2026-01-22T00:00:00.000Z",
+        "publicationRelevance": "",
+        "impactStatement": "",
+        "disseminationPlan": "",
+        "ethicsDocuments": [
+          {
+            "size": 149970,
+            "fileName": "ethics_1768999527765_IK DOC.pdf",
+            "filePath": "C:\\projects\\hospitiumris\\uploads\\proposals\\ethics_1768999527765_IK DOC.pdf",
+            "mimeType": "application/pdf",
+            "originalName": "IK DOC.pdf"
+          }
+        ],
+        "dataManagementPlan": [],
+        "otherRelatedFiles": [],
+        "status": "UNDER_REVIEW",
+        "createdAt": "2026-01-21T12:38:06.542Z",
+        "updatedAt": "2026-01-21T12:45:27.773Z"
+      }
+    ],
+    "donations": [
+      {
+        "id": "cmkgy9doz000jvlr4keaz6diq",
+        "campaignId": "cmkgy8abv000fvlr4i62x8frb",
+        "donorName": "Test",
+        "donorEmail": null,
+        "donorPhone": null,
+        "donorType": "INDIVIDUAL",
+        "amount": "300",
+        "donationDate": "2026-01-16T00:00:00.000Z",
+        "paymentMethod": "CREDIT_CARD",
+        "transactionId": null,
+        "status": "PENDING",
+        "message": null,
+        "isAnonymous": false,
+        "taxDeductible": true,
+        "createdAt": "2026-01-16T14:04:20.243Z",
+        "updatedAt": "2026-01-16T14:04:20.243Z"
+      }
+    ],
+    "campaigns": [
+      {
+        "id": "cmkgy8abv000fvlr4i62x8frb",
+        "categoryId": "cmkgy182a000dvlr4ll11dh1x",
+        "name": "Test",
+        "description": null,
+        "targetAmount": null,
+        "raisedAmount": "0",
+        "startDate": null,
+        "endDate": null,
+        "status": "Planning",
+        "donorCount": 0,
+        "donationCount": 0,
+        "createdAt": "2026-01-16T14:03:29.219Z",
+        "updatedAt": "2026-01-16T14:03:29.219Z"
+      }
+    ]
+  }
+}

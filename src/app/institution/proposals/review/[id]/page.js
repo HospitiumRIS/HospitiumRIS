@@ -513,17 +513,6 @@ const ProposalDetailsPage = () => {
                         <BudgetIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
                         Funding Information
                       </Typography>
-                      <Chip 
-                        label="Compliant" 
-                        size="small"
-                        sx={{ 
-                          bgcolor: '#10b981', 
-                          color: 'white',
-                          fontWeight: 600,
-                          '& .MuiChip-icon': { color: 'white' }
-                        }}
-                        icon={<CheckCircleIcon />}
-                      />
                     </Box>
                     <Grid container spacing={3}>
                       <Grid item xs={12} md={3}>
@@ -577,17 +566,6 @@ const ProposalDetailsPage = () => {
                 <CardContent sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
                     <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>Research Objectives</Typography>
-                    <Chip 
-                      label="Compliant" 
-                      size="small"
-                      sx={{ 
-                        bgcolor: '#10b981', 
-                        color: 'white',
-                        fontWeight: 600,
-                        '& .MuiChip-icon': { color: 'white' }
-                      }}
-                      icon={<CheckCircleIcon />}
-                    />
                   </Box>
                   <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#555' }}>
                     {proposal.researchObjectives || 'No research objectives provided.'}
@@ -603,17 +581,6 @@ const ProposalDetailsPage = () => {
                 <CardContent sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
                     <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>Methodology</Typography>
-                    <Chip 
-                      label="Compliant" 
-                      size="small"
-                      sx={{ 
-                        bgcolor: '#10b981', 
-                        color: 'white',
-                        fontWeight: 600,
-                        '& .MuiChip-icon': { color: 'white' }
-                      }}
-                      icon={<CheckCircleIcon />}
-                    />
                   </Box>
                   <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#555' }}>
                     {proposal.methodology || 'No methodology provided.'}
@@ -636,17 +603,6 @@ const ProposalDetailsPage = () => {
                           <TimelineIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
                           Milestones
                         </Typography>
-                        <Chip 
-                          label="Compliant" 
-                          size="small"
-                          sx={{ 
-                            bgcolor: '#10b981', 
-                            color: 'white',
-                            fontWeight: 600,
-                            '& .MuiChip-icon': { color: 'white' }
-                          }}
-                          icon={<CheckCircleIcon />}
-                        />
                       </Box>
                       <List sx={{ p: 0 }}>
                         {proposal.milestones.map((milestone, index) => (
@@ -718,17 +674,19 @@ const ProposalDetailsPage = () => {
                           <AssignmentIcon sx={{ mr: 1.5, color: '#4caf50', fontSize: 24 }} />
                           Deliverables
                         </Typography>
-                        <Chip 
-                          label="Compliant" 
-                          size="small"
-                          sx={{ 
-                            bgcolor: '#10b981', 
-                            color: 'white',
-                            fontWeight: 600,
-                            '& .MuiChip-icon': { color: 'white' }
-                          }}
-                          icon={<CheckCircleIcon />}
-                        />
+                        {reviews.length > 0 && (
+                          <Chip 
+                            label="Compliant" 
+                            size="small"
+                            sx={{ 
+                              bgcolor: '#10b981', 
+                              color: 'white',
+                              fontWeight: 600,
+                              '& .MuiChip-icon': { color: 'white' }
+                            }}
+                            icon={<CheckCircleIcon />}
+                          />
+                        )}
                       </Box>
                       <List sx={{ p: 0 }}>
                         {proposal.deliverables.map((deliverable, index) => (
@@ -802,17 +760,19 @@ const ProposalDetailsPage = () => {
                         <ReviewIcon sx={{ mr: 1, color: '#8b6cbc' }} />
                         Ethics Approval Status
                       </Typography>
-                      <Chip 
-                        label={proposal.ethicsApproval === 'Approved' ? 'Compliant' : 'Non-Compliant'}
-                        size="small"
-                        sx={{ 
-                          bgcolor: proposal.ethicsApproval === 'Approved' ? '#10b981' : '#ef4444', 
-                          color: 'white',
-                          fontWeight: 600,
-                          '& .MuiChip-icon': { color: 'white' }
-                        }}
-                        icon={proposal.ethicsApproval === 'Approved' ? <CheckCircleIcon /> : <ErrorIcon />}
-                      />
+                      {reviews.length > 0 && (
+                        <Chip 
+                          label={proposal.ethicsApproval === 'Approved' ? 'Compliant' : 'Non-Compliant'}
+                          size="small"
+                          sx={{ 
+                            bgcolor: proposal.ethicsApproval === 'Approved' ? '#10b981' : '#ef4444', 
+                            color: 'white',
+                            fontWeight: 600,
+                            '& .MuiChip-icon': { color: 'white' }
+                          }}
+                          icon={proposal.ethicsApproval === 'Approved' ? <CheckCircleIcon /> : <ErrorIcon />}
+                        />
+                      )}
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                       <Chip 
@@ -839,17 +799,6 @@ const ProposalDetailsPage = () => {
                   <CardContent sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
                       <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>Ethical Considerations</Typography>
-                      <Chip 
-                        label="Compliant" 
-                        size="small"
-                        sx={{ 
-                          bgcolor: '#10b981', 
-                          color: 'white',
-                          fontWeight: 600,
-                          '& .MuiChip-icon': { color: 'white' }
-                        }}
-                        icon={<CheckCircleIcon />}
-                      />
                     </Box>
                     <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#555' }}>
                       {proposal.ethicalConsiderations}
@@ -865,17 +814,6 @@ const ProposalDetailsPage = () => {
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                         <Typography variant="h6">Consent Procedures</Typography>
-                        <Chip 
-                          label="Compliant" 
-                          size="small"
-                          sx={{ 
-                            bgcolor: '#10b981', 
-                            color: 'white',
-                            fontWeight: 600,
-                            '& .MuiChip-icon': { color: 'white' }
-                          }}
-                          icon={<CheckCircleIcon />}
-                        />
                       </Box>
                       <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                         {proposal.consentProcedures}
@@ -890,17 +828,6 @@ const ProposalDetailsPage = () => {
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                         <Typography variant="h6">Data Security Measures</Typography>
-                        <Chip 
-                          label="Compliant" 
-                          size="small"
-                          sx={{ 
-                            bgcolor: '#10b981', 
-                            color: 'white',
-                            fontWeight: 600,
-                            '& .MuiChip-icon': { color: 'white' }
-                          }}
-                          icon={<CheckCircleIcon />}
-                        />
                       </Box>
                       <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                         {proposal.dataSecurityMeasures}
@@ -929,17 +856,19 @@ const ProposalDetailsPage = () => {
                         <AttachFileIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
                         Supporting Documents
                       </Typography>
-                      <Chip 
-                        label="Compliant" 
-                        size="small"
-                        sx={{ 
-                          bgcolor: '#10b981', 
-                          color: 'white',
-                          fontWeight: 600,
-                          '& .MuiChip-icon': { color: 'white' }
-                        }}
-                        icon={<CheckCircleIcon />}
-                      />
+                      {reviews.length > 0 && (
+                        <Chip 
+                          label="Compliant" 
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#10b981', 
+                            color: 'white',
+                            fontWeight: 600,
+                            '& .MuiChip-icon': { color: 'white' }
+                          }}
+                          icon={<CheckCircleIcon />}
+                        />
+                      )}
                     </Box>
                     <List sx={{ p: 0 }}>
                       {proposal.documents.map((doc, index) => {

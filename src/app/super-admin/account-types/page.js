@@ -51,7 +51,7 @@ import { useRouter } from 'next/navigation';
 import SuperAdminLayout from '../../../components/SuperAdmin/SuperAdminLayout';
 
 const AccountTypesPage = () => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   
   const [accountTypes, setAccountTypes] = useState([]);
@@ -73,6 +73,9 @@ const AccountTypesPage = () => {
   const [newPermission, setNewPermission] = useState('');
 
   useEffect(() => {
+    // Wait for auth to finish loading before checking
+    if (authLoading) return;
+    
     if (!user) {
       router.push('/login');
       return;
@@ -82,7 +85,7 @@ const AccountTypesPage = () => {
       router.push('/dashboard');
       return;
     }
-  }, [user, router]);
+  }, [user, router, authLoading]);
 
   useEffect(() => {
     if (user?.accountType === 'SUPER_ADMIN') {

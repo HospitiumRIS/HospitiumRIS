@@ -42,6 +42,7 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
+  TablePagination,
   Checkbox,
   Snackbar
 } from '@mui/material';
@@ -76,7 +77,8 @@ import {
   FolderOpen as FolderOpenIcon,
   DriveFileMove as MoveIcon,
   Check as CheckIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Clear as ClearIcon
 } from '@mui/icons-material';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
@@ -96,8 +98,8 @@ export default function ManagePublications() {
   const [activeTab, setActiveTab] = useState(0);
   const [error, setError] = useState(null);
   const [viewType, setViewType] = useState('table'); // 'table' or 'cards'
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   
   // Library folder management
   const [folders, setFolders] = useState([]);
@@ -134,6 +136,8 @@ export default function ManagePublications() {
     message: '',
     severity: 'success' // 'success', 'error', 'warning', 'info'
   });
+  
+  const [recentPublicationsCount, setRecentPublicationsCount] = useState(0);
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
@@ -195,8 +199,8 @@ export default function ManagePublications() {
       tags: Array.isArray(dbPublication.keywords) && dbPublication.keywords.length > 0 
         ? dbPublication.keywords 
         : [],
-      createdAt: dbPublication.createdAt ? new Date(dbPublication.createdAt) : new Date(),
-      updatedAt: dbPublication.updatedAt ? new Date(dbPublication.updatedAt) : new Date(),
+      createdAt: dbPublication.createdAt ? new Date(dbPublication.createdAt) : null,
+      updatedAt: dbPublication.updatedAt ? new Date(dbPublication.updatedAt) : null,
       // Additional metadata
       publicationDate: dbPublication.publicationDate ? new Date(dbPublication.publicationDate) : null,
       authorId: dbPublication.authorId || null
@@ -274,8 +278,24 @@ export default function ManagePublications() {
     });
 
     setFilteredPublications(filtered);
-    setCurrentPage(1); // Reset to first page when filters change
+    setPage(0); // Reset to first page when filters change
   }, [publications, searchQuery, typeFilter, sortBy]);
+
+  // Calculate recent publications count (client-side only to avoid hydration mismatch)
+  useEffect(() => {
+    if (publications.length > 0) {
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      
+      const count = publications.filter(pub => {
+        if (!pub.createdAt) return false;
+        const pubDate = new Date(pub.createdAt);
+        return pubDate >= sixMonthsAgo;
+      }).length;
+      
+      setRecentPublicationsCount(count);
+    }
+  }, [publications]);
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -979,22 +999,25 @@ export default function ManagePublications() {
   };
 
   // Pagination calculations
-  const totalPages = Math.ceil(filteredPublications.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentPagePublications = filteredPublications.slice(startIndex, endIndex);
+  const currentPagePublications = filteredPublications.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   const clearFilters = () => {
     setSearchQuery('');
     setTypeFilter('all');
     setSortBy('date-desc');
-    setCurrentPage(1);
+    setPage(0);
   };
 
   const TabPanel = ({ children, value, index }) => (
@@ -1565,12 +1588,7 @@ export default function ManagePublications() {
                 <DateIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
               <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                {publications.filter(pub => {
-                  const pubDate = new Date(pub.createdAt);
-                  const sixMonthsAgo = new Date();
-                  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-                  return pubDate >= sixMonthsAgo;
-                }).length}
+                {recentPublicationsCount}
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', fontSize: '0.7rem' }}>
                 <Box component="span" sx={{ mr: 0.5, fontSize: '0.8rem' }}>⏰</Box>
@@ -1620,14 +1638,17 @@ export default function ManagePublications() {
 
         {/* Filter & Search Publications */}
         <Paper sx={{ p: 2.5, mb: 3, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)' }}>
-          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <FilterIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
-            <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>
-              Search & Filter
-            </Typography>
-          </Box>
-          <Grid container spacing={2.5} alignItems="center">
-            <Grid size={{ xs: 12, md: 4 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 3, 
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            '@media (max-width: 768px)': {
+              flexDirection: 'column',
+              alignItems: 'stretch'
+            }
+          }}>
+            <Box sx={{ flex: '2 1 300px', minWidth: '300px' }}>
               <TextField
                 fullWidth
                 placeholder="Search publications, authors, journals..."
@@ -1638,12 +1659,24 @@ export default function ManagePublications() {
                     <InputAdornment position="start">
                       <SearchIcon sx={{ color: '#8b6cbc' }} />
                     </InputAdornment>
+                  ),
+                  endAdornment: searchQuery && (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setSearchQuery('')} size="small">
+                        <ClearIcon />
+                      </IconButton>
+                    </InputAdornment>
                   )
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#8b6cbc',
+                    borderRadius: 3,
+                    backgroundColor: 'rgba(255,255,255,0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,1)',
+                      '& fieldset': {
+                        borderColor: '#8b6cbc',
+                      }
                     },
                     '&.Mui-focused fieldset': {
                       borderColor: '#8b6cbc',
@@ -1651,10 +1684,10 @@ export default function ManagePublications() {
                   },
                 }}
               />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
+            </Box>
+            <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
               <FormControl fullWidth>
-                <InputLabel sx={{ color: 'text.secondary' }}>Publication Type</InputLabel>
+                <InputLabel>Publication Type</InputLabel>
                 <Select
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
@@ -1663,6 +1696,11 @@ export default function ManagePublications() {
                     disableScrollLock: true
                   }}
                   sx={{
+                    borderRadius: 3,
+                    backgroundColor: 'rgba(255,255,255,0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,1)'
+                    },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                       borderColor: '#8b6cbc',
                     },
@@ -1676,10 +1714,10 @@ export default function ManagePublications() {
                   <MenuItem value="thesis">Thesis</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
+            </Box>
+            <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
               <FormControl fullWidth>
-                <InputLabel sx={{ color: 'text.secondary' }}>Sort By</InputLabel>
+                <InputLabel>Sort By</InputLabel>
                 <Select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
@@ -1688,6 +1726,11 @@ export default function ManagePublications() {
                     disableScrollLock: true
                   }}
                   sx={{
+                    borderRadius: 3,
+                    backgroundColor: 'rgba(255,255,255,0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,1)'
+                    },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                       borderColor: '#8b6cbc',
                     },
@@ -1699,28 +1742,28 @@ export default function ManagePublications() {
                   <MenuItem value="citations">Most Citations</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<FilterIcon />}
-                  onClick={clearFilters}
-                  sx={{ 
-                    borderColor: '#8b6cbc',
-                    color: '#8b6cbc',
-                    '&:hover': {
-                      bgcolor: '#8b6cbc10',
-                      borderColor: '#8b6cbc'
-                    }
-                  }}
-                >
-                  Clear Filters
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
+            </Box>
+            <Box sx={{ flex: '0 0 auto' }}>
+              <Button
+                variant="text"
+                startIcon={<ClearIcon />}
+                onClick={clearFilters}
+                sx={{ 
+                  borderRadius: 3,
+                  height: '56px',
+                  px: 3,
+                  color: '#8b6cbc',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'rgba(139, 108, 188, 0.08)',
+                    color: '#7a5cac'
+                  }
+                }}
+              >
+                Clear All
+              </Button>
+            </Box>
+          </Box>
         </Paper>
 
         {/* Error Display */}
@@ -1752,7 +1795,7 @@ export default function ManagePublications() {
                 />
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                Showing {startIndex + 1}-{Math.min(endIndex, filteredPublications.length)} of {filteredPublications.length} publications
+                Showing {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, filteredPublications.length)} of {filteredPublications.length} publications
               </Typography>
             </Box>
 
@@ -1794,92 +1837,66 @@ export default function ManagePublications() {
               </Box>
               </Box>
             ) : viewType === 'table' ? (
-              <>
+              <Box>
                 <PublicationsTable publications={currentPagePublications} />
                 {/* Pagination */}
-                {totalPages > 1 && (
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 3, pt: 2, borderTop: '1px solid #eee' }}>
-                  <Typography variant="body2" color="text.secondary">
-                      Rows per page: {itemsPerPage}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                        {startIndex + 1}-{Math.min(endIndex, filteredPublications.length)} of {filteredPublications.length}
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                        <IconButton 
-                          size="small" 
-                          disabled={currentPage === 1}
-                          onClick={() => handlePageChange(currentPage - 1)}
-                          sx={{ color: currentPage === 1 ? '#ccc' : '#8b6cbc' }}
-                        >
-                        <Box sx={{ transform: 'rotate(180deg)' }}>▶</Box>
-                      </IconButton>
-                        <Typography variant="body2" sx={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          px: 1,
-                          minWidth: 60,
-                          justifyContent: 'center'
-                        }}>
-                          Page {currentPage} of {totalPages}
-                        </Typography>
-                        <IconButton 
-                          size="small" 
-                          disabled={currentPage === totalPages}
-                          onClick={() => handlePageChange(currentPage + 1)}
-                          sx={{ color: currentPage === totalPages ? '#ccc' : '#8b6cbc' }}
-                        >
-                        ▶
-                      </IconButton>
-                    </Box>
-                  </Box>
-                </Box>
-                )}
-              </>
+                <TablePagination
+                  component="div"
+                  count={filteredPublications.length}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  rowsPerPageOptions={[5, 10, 25, 50]}
+                  sx={{
+                    borderTop: '1px solid #e5e7eb',
+                    bgcolor: '#fafbfd',
+                    '.MuiTablePagination-toolbar': {
+                      minHeight: 52
+                    },
+                    '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+                      fontWeight: 500,
+                      color: '#6b7280'
+                    },
+                    '.MuiTablePagination-select': {
+                      color: '#8b6cbc',
+                      fontWeight: 600
+                    }
+                  }}
+                />
+              </Box>
             ) : (
-              <>
+              <Box>
                 <PublicationsCards publications={currentPagePublications} />
                 {/* Pagination for Cards View */}
-                {totalPages > 1 && (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 4, pt: 3, borderTop: '1px solid #eee' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <IconButton 
-                        size="small" 
-                        disabled={currentPage === 1}
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        sx={{ 
-                          color: currentPage === 1 ? '#ccc' : '#8b6cbc',
-                          border: '1px solid',
-                          borderColor: currentPage === 1 ? '#ccc' : '#8b6cbc'
-                        }}
-                      >
-                        <Box sx={{ transform: 'rotate(180deg)' }}>▶</Box>
-                      </IconButton>
-                      <Typography variant="body2" sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        px: 2,
-                        color: 'text.secondary'
-                      }}>
-                        Page {currentPage} of {totalPages} • {filteredPublications.length} total publications
-                      </Typography>
-                      <IconButton 
-                        size="small" 
-                        disabled={currentPage === totalPages}
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        sx={{ 
-                          color: currentPage === totalPages ? '#ccc' : '#8b6cbc',
-                          border: '1px solid',
-                          borderColor: currentPage === totalPages ? '#ccc' : '#8b6cbc'
-                        }}
-                      >
-                        ▶
-                      </IconButton>
-                    </Box>
-                  </Box>
-                )}
-              </>
+                <TablePagination
+                  component="div"
+                  count={filteredPublications.length}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  rowsPerPageOptions={[5, 10, 25, 50]}
+                  sx={{
+                    mt: 4,
+                    pt: 3,
+                    borderTop: '1px solid #e5e7eb',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    '.MuiTablePagination-toolbar': {
+                      minHeight: 52
+                    },
+                    '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+                      fontWeight: 500,
+                      color: '#6b7280'
+                    },
+                    '.MuiTablePagination-select': {
+                      color: '#8b6cbc',
+                      fontWeight: 600
+                    }
+                  }}
+                />
+              </Box>
             )}
           </Box>
         </Paper>

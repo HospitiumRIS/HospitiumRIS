@@ -72,14 +72,8 @@ const SuperAdminLayout = ({ children }) => {
     {
       text: 'Activity Logs',
       icon: <LogsIcon />,
-      path: '/logs',
+      path: '/super-admin/logs',
       color: 'primary'
-    },
-    {
-      text: 'Analytics',
-      icon: <AnalyticsIcon />,
-      path: '/super-admin/analytics',
-      color: 'success'
     },
     {
       text: 'Security',

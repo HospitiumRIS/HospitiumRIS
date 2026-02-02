@@ -30,6 +30,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -78,6 +79,10 @@ const ProposalsListPage = () => {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [revisionResponse, setRevisionResponse] = useState('');
   const [submittingRevision, setSubmittingRevision] = useState(false);
+  
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Statistics state
   const [stats, setStats] = useState({
@@ -151,6 +156,22 @@ const ProposalsListPage = () => {
     
     return matchesSearch && matchesStatus;
   });
+
+  // Paginated proposals
+  const paginatedProposals = filteredProposals.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Pagination handlers
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   // Handle menu actions
   const handleMenuClick = (event, proposal) => {
@@ -797,7 +818,7 @@ const ProposalsListPage = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredProposals.map((proposal) => (
+                  {paginatedProposals.map((proposal) => (
                     <TableRow 
                       key={proposal.id}
                       sx={{ 
@@ -977,6 +998,32 @@ const ProposalsListPage = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            
+            {/* Pagination */}
+            <TablePagination
+              component="div"
+              count={filteredProposals.length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[5, 10, 25, 50]}
+              sx={{
+                borderTop: '1px solid rgba(0,0,0,0.06)',
+                bgcolor: '#fafbfd',
+                '.MuiTablePagination-toolbar': {
+                  minHeight: 52
+                },
+                '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+                  fontWeight: 500,
+                  color: '#6b7280'
+                },
+                '.MuiTablePagination-select': {
+                  color: '#8b6cbc',
+                  fontWeight: 600
+                }
+              }}
+            />
           </Paper>
         )}
 

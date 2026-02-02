@@ -544,75 +544,126 @@ const ProposalReviewPage = () => {
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Statistics Cards */}
         <Box sx={{ 
-          display: 'flex', 
-          gap: 2, 
-          mb: 4, 
-          flexWrap: 'wrap',
-          '& > *': {
-            transition: 'all 0.2s ease'
-          }
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+          gap: 2.5,
+          mb: 4
         }}>
           <Card sx={{ 
-            flex: '1 1 calc(33.333% - 14px)', 
-            minWidth: '180px',
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
             color: 'white',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: '0 4px 12px rgba(139, 108, 188, 0.25)'
-            }
+            borderRadius: 2,
+            position: 'relative',
+            overflow: 'visible'
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-              <ProposalIcon sx={{ fontSize: 24, mb: 0.5 }} />
-              <Typography variant="h5" fontWeight="bold">
+            <CardContent sx={{ p: 2, position: 'relative' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                <Box sx={{ 
+                  bgcolor: 'rgba(255,255,255,0.2)', 
+                  borderRadius: 1, 
+                  p: 0.5, 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <ProposalIcon sx={{ fontSize: 16 }} />
+                </Box>
+                <Chip 
+                  label="+0%"
+                  size="small"
+                  sx={{ 
+                    bgcolor: 'rgba(255,255,255,0.25)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.7rem',
+                    height: 20
+                  }}
+                />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.25, mt: 0.5 }}>
                 {proposals.length}
               </Typography>
-              <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+              <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.8rem' }}>
                 Total Proposals
               </Typography>
             </CardContent>
           </Card>
 
           <Card sx={{ 
-            flex: '1 1 calc(33.333% - 14px)', 
-            minWidth: '180px',
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
             color: 'white',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: '0 4px 12px rgba(139, 108, 188, 0.25)'
-            }
+            borderRadius: 2,
+            position: 'relative',
+            overflow: 'visible'
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-              <ReviewIcon sx={{ fontSize: 24, mb: 0.5 }} />
-              <Typography variant="h5" fontWeight="bold">
+            <CardContent sx={{ p: 2, position: 'relative' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                <Box sx={{ 
+                  bgcolor: 'rgba(255,255,255,0.2)', 
+                  borderRadius: 1, 
+                  p: 0.5, 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <ReviewIcon sx={{ fontSize: 16 }} />
+                </Box>
+                <Chip 
+                  label="+0%"
+                  size="small"
+                  sx={{ 
+                    bgcolor: 'rgba(255,255,255,0.25)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.7rem',
+                    height: 20
+                  }}
+                />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.25, mt: 0.5 }}>
                 {proposals.filter(p => p.status === 'UNDER_REVIEW').length}
               </Typography>
-              <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+              <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.8rem' }}>
                 Under Review
               </Typography>
             </CardContent>
           </Card>
 
           <Card sx={{ 
-            flex: '1 1 calc(33.333% - 14px)', 
-            minWidth: '180px',
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
             color: 'white',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: '0 4px 12px rgba(139, 108, 188, 0.25)'
-            }
+            borderRadius: 2,
+            position: 'relative',
+            overflow: 'visible'
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-              <ApproveIcon sx={{ fontSize: 24, mb: 0.5 }} />
-              <Typography variant="h5" fontWeight="bold">
+            <CardContent sx={{ p: 2, position: 'relative' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                <Box sx={{ 
+                  bgcolor: 'rgba(255,255,255,0.2)', 
+                  borderRadius: 1, 
+                  p: 0.5, 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <ApproveIcon sx={{ fontSize: 16 }} />
+                </Box>
+                <Chip 
+                  label="+0%"
+                  size="small"
+                  sx={{ 
+                    bgcolor: 'rgba(255,255,255,0.25)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.7rem',
+                    height: 20
+                  }}
+                />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.25, mt: 0.5 }}>
                 {proposals.filter(p => p.status === 'APPROVED').length}
               </Typography>
-              <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+              <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.8rem' }}>
                 Approved
               </Typography>
             </CardContent>
@@ -620,42 +671,105 @@ const ProposalReviewPage = () => {
         </Box>
 
         {/* Filters */}
-        <Card sx={{ mb: 4 }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Paper sx={{ 
+          p: 3, 
+          mb: 4,
+          borderRadius: 3,
+          bgcolor: '#fafafa',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+        }}>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 2, 
+            flexWrap: 'wrap', 
+            alignItems: 'flex-end'
+          }}>
+            <Box sx={{ flex: '1 1 300px', minWidth: '250px' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.5, display: 'block', fontSize: '0.75rem' }}>
+                Search
+              </Typography>
               <TextField
-                placeholder="Search proposals..."
+                placeholder="Search proposals by title, PI, or department..."
                 variant="outlined"
                 size="small"
+                fullWidth
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
-                  startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
+                  startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1, fontSize: 20 }} />
                 }}
-                sx={{ flex: '1 1 300px', minWidth: '250px' }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 8,
+                    bgcolor: 'white',
+                    '& fieldset': {
+                      borderColor: '#e0e0e0'
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#8b6cbc'
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#8b6cbc'
+                    }
+                  }
+                }}
               />
-              
-              <FormControl size="small" sx={{ minWidth: '150px' }}>
-                <InputLabel>Status</InputLabel>
+            </Box>
+            
+            <Box sx={{ minWidth: '180px' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.5, display: 'block', fontSize: '0.75rem' }}>
+                Status
+              </Typography>
+              <FormControl fullWidth size="small">
                 <Select
                   value={statusFilter}
-                  label="Status"
                   onChange={(e) => setStatusFilter(e.target.value)}
+                  displayEmpty
+                  sx={{
+                    borderRadius: 8,
+                    bgcolor: 'white',
+                    '& fieldset': {
+                      borderColor: '#e0e0e0'
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#8b6cbc'
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#8b6cbc'
+                    }
+                  }}
                 >
-                  <MenuItem value="all">All Status</MenuItem>
+                  <MenuItem value="all">All Statuses</MenuItem>
                   <MenuItem value="SUBMITTED">Submitted</MenuItem>
                   <MenuItem value="UNDER_REVIEW">Under Review</MenuItem>
                   <MenuItem value="APPROVED">Approved</MenuItem>
                   <MenuItem value="REJECTED">Rejected</MenuItem>
                 </Select>
               </FormControl>
+            </Box>
 
-              <FormControl size="small" sx={{ minWidth: '150px' }}>
-                <InputLabel>Department</InputLabel>
+            <Box sx={{ minWidth: '180px' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.5, display: 'block', fontSize: '0.75rem' }}>
+                Department
+              </Typography>
+              <FormControl fullWidth size="small">
                 <Select
                   value={departmentFilter}
-                  label="Department"
                   onChange={(e) => setDepartmentFilter(e.target.value)}
+                  displayEmpty
+                  sx={{
+                    borderRadius: 8,
+                    bgcolor: 'white',
+                    '& fieldset': {
+                      borderColor: '#e0e0e0'
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#8b6cbc'
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#8b6cbc'
+                    }
+                  }}
                 >
                   <MenuItem value="all">All Departments</MenuItem>
                   {getUniqueDepartments().map(dept => (
@@ -664,8 +778,28 @@ const ProposalReviewPage = () => {
                 </Select>
               </FormControl>
             </Box>
-          </CardContent>
-        </Card>
+
+            <Button
+              variant="text"
+              startIcon={<CloseIcon />}
+              onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('all');
+                setDepartmentFilter('all');
+              }}
+              sx={{ 
+                color: '#8b6cbc',
+                textTransform: 'none',
+                fontWeight: 600,
+                '&:hover': {
+                  bgcolor: 'rgba(139, 108, 188, 0.08)'
+                }
+              }}
+            >
+              Clear All
+            </Button>
+          </Box>
+        </Paper>
 
         {/* Proposals Table */}
         <Card elevation={2}>
@@ -887,40 +1021,6 @@ const ProposalReviewPage = () => {
                               }}
                             >
                               <ViewIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          {proposal.status === 'UNDER_REVIEW' && (
-                            <Tooltip title="Review Proposal" arrow>
-                              <IconButton 
-                                size="small" 
-                                onClick={() => handleReviewProposal(proposal)}
-                                sx={{ 
-                                  color: '#4caf50',
-                                  '&:hover': {
-                                    bgcolor: '#e8f5e9',
-                                    transform: 'scale(1.1)'
-                                  },
-                                  transition: 'all 0.2s'
-                                }}
-                              >
-                                <ReviewIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          <Tooltip title="Download Proposal Data" arrow>
-                            <IconButton 
-                              size="small"
-                              onClick={() => handleDownload(proposal)}
-                              sx={{ 
-                                color: '#757575',
-                                '&:hover': {
-                                  bgcolor: '#f5f5f5',
-                                  transform: 'scale(1.1)'
-                                },
-                                transition: 'all 0.2s'
-                              }}
-                            >
-                              <DownloadIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         </Stack>

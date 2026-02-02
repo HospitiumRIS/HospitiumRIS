@@ -31,6 +31,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -326,6 +327,10 @@ export default function CollaborativeWriting() {
   // Manuscript submission loading
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
 
   // New proposal modal state
   const [newProposalOpen, setNewProposalOpen] = useState(false);
@@ -556,6 +561,22 @@ export default function CollaborativeWriting() {
     const matchesType = typeFilter === 'All Types' || manuscript.type === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
   });
+
+  // Paginated manuscripts
+  const paginatedManuscripts = filteredManuscripts.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Pagination handlers
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   // Handlers
   const handleMenuClick = (event, manuscript) => {
@@ -1880,13 +1901,23 @@ export default function CollaborativeWriting() {
       {/* Professional Search and Filters */}
       <Paper sx={{ 
         mb: 3, 
-        p: 2.5, 
-        borderRadius: 2, 
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08)', 
-        border: '1px solid rgba(0,0,0,0.06)' 
+        p: 4, 
+        borderRadius: 4, 
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+        border: '1px solid rgba(0,0,0,0.06)',
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
       }}>
-        <Grid container spacing={2.5} alignItems="center">
-          <Grid size={{ xs: 12, md: 4 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 3, 
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          '@media (max-width: 768px)': {
+            flexDirection: 'column',
+            alignItems: 'stretch'
+          }
+        }}>
+          <Box sx={{ flex: '2 1 300px', minWidth: '300px' }}>
             <TextField
               fullWidth
               placeholder="Search manuscripts, collaborators..."
@@ -1898,11 +1929,23 @@ export default function CollaborativeWriting() {
                     <SearchIcon sx={{ color: '#8b6cbc' }} />
                   </InputAdornment>
                 ),
+                endAdornment: searchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setSearchQuery('')} size="small">
+                      <CloseIcon />
+                    </IconButton>
+                  </InputAdornment>
+                )
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: '#8b6cbc',
+                  borderRadius: 3,
+                  backgroundColor: 'rgba(255,255,255,0.8)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255,255,255,1)',
+                    '& fieldset': {
+                      borderColor: '#8b6cbc',
+                    }
                   },
                   '&.Mui-focused fieldset': {
                     borderColor: '#8b6cbc',
@@ -1910,15 +1953,20 @@ export default function CollaborativeWriting() {
                 },
               }}
             />
-          </Grid>
-          <Grid size={{ xs: 6, md: 2.5 }}>
+          </Box>
+          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
             <FormControl fullWidth>
-              <InputLabel sx={{ color: 'text.secondary' }}>Status</InputLabel>
+              <InputLabel>Status</InputLabel>
               <Select
                 value={statusFilter}
                 label="Status"
                 onChange={(e) => setStatusFilter(e.target.value)}
                 sx={{
+                  borderRadius: 3,
+                  backgroundColor: 'rgba(255,255,255,0.8)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255,255,255,1)'
+                  },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                     borderColor: '#8b6cbc',
                   },
@@ -1932,15 +1980,20 @@ export default function CollaborativeWriting() {
                 ))}
               </Select>
             </FormControl>
-          </Grid>
-          <Grid size={{ xs: 6, md: 2.5 }}>
+          </Box>
+          <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
             <FormControl fullWidth>
-              <InputLabel sx={{ color: 'text.secondary' }}>Type</InputLabel>
+              <InputLabel>Type</InputLabel>
               <Select
                 value={typeFilter}
                 label="Type"
                 onChange={(e) => setTypeFilter(e.target.value)}
                 sx={{
+                  borderRadius: 3,
+                  backgroundColor: 'rgba(255,255,255,0.8)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255,255,255,1)'
+                  },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                     borderColor: '#8b6cbc',
                   },
@@ -1954,8 +2007,32 @@ export default function CollaborativeWriting() {
                 ))}
               </Select>
             </FormControl>
-          </Grid>
-        </Grid>
+          </Box>
+          <Box sx={{ flex: '0 0 auto' }}>
+            <Button
+              variant="text"
+              startIcon={<CloseIcon />}
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('All Status');
+                setTypeFilter('All Types');
+              }}
+              sx={{ 
+                borderRadius: 3,
+                height: '56px',
+                px: 3,
+                color: '#8b6cbc',
+                fontWeight: 600,
+                '&:hover': {
+                  backgroundColor: 'rgba(139, 108, 188, 0.08)',
+                  color: '#7a5cac'
+                }
+              }}
+            >
+              Clear All
+            </Button>
+          </Box>
+        </Box>
       </Paper>
 
       {/* Manuscripts Display */}
@@ -2108,7 +2185,7 @@ export default function CollaborativeWriting() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredManuscripts.map((manuscript, index) => {
+                    {paginatedManuscripts.map((manuscript, index) => {
                       const statusOption = STATUS_OPTIONS.find(s => s.value === manuscript.status);
                       const isProposal = manuscript.type === 'Proposal';
                       return (
@@ -2421,6 +2498,28 @@ export default function CollaborativeWriting() {
                   </TableBody>
                 </Table>
               </TableContainer>
+              
+              {/* Pagination */}
+              <TablePagination
+                component="div"
+                count={filteredManuscripts.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[5, 10, 25]}
+                sx={{
+                  borderTop: '1px solid rgba(139, 108, 188, 0.12)',
+                  bgcolor: '#fafbfd',
+                  '.MuiTablePagination-toolbar': {
+                    minHeight: 52
+                  },
+                  '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+                    fontWeight: 500,
+                    color: '#6b7280'
+                  }
+                }}
+              />
             </Paper>
         </>
       )}

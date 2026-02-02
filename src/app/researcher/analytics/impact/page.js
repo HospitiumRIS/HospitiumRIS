@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import KenyaNetworkVisualization from '../../../../components/KenyaNetworkVisualization';
 import {
   Box,
   Container,
@@ -141,11 +142,10 @@ const ResearchImpactPage = () => {
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Impact Overview Cards */}
         <Box sx={{ 
-          display: 'flex', 
-          gap: 3, 
-          mb: 4,
-          flexWrap: 'wrap',
-          '& > *': { flex: 1, minWidth: { xs: '100%', sm: 'calc(50% - 12px)', lg: 'calc(25% - 12px)' } }
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+          gap: 2.5,
+          mb: 4
         }}>
           <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
             <CardContent sx={{ py: 2 }}>
@@ -231,7 +231,6 @@ const ResearchImpactPage = () => {
               <Tab label="Citation Analytics" />
               <Tab label="Publication Impact" />
               <Tab label="Collaboration Network" />
-              <Tab label="Alternative Metrics" />
             </Tabs>
           </Box>
 
@@ -376,6 +375,11 @@ const ResearchImpactPage = () => {
                   Research Collaboration Network
                 </Typography>
 
+                {/* Kenya Network Visualization */}
+                <Box sx={{ mb: 4 }}>
+                  <KenyaNetworkVisualization />
+                </Box>
+
                 <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                   <Box sx={{ flex: '1 1 65%', minWidth: { xs: '100%', md: '300px' } }}>
                     <Card elevation={1} sx={{ p: 2 }}>
@@ -451,90 +455,6 @@ const ResearchImpactPage = () => {
                     </Card>
                   </Box>
                 </Box>
-              </Box>
-            )}
-
-            {currentTab === 3 && (
-              <Box>
-                {/* Alternative Metrics Tab */}
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', color: '#8b6cbc' }}>
-                  Alternative Impact Metrics
-                </Typography>
-
-                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                  <Box sx={{ flex: '1 1 45%', minWidth: { xs: '100%', md: '300px' } }}>
-                    <Card elevation={1} sx={{ p: 2 }}>
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-                        Altmetric Score
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <Typography variant="h2" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
-                          {impactData.metrics.altmetricScore}
-                        </Typography>
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            Overall Altmetric Score
-                          </Typography>
-                          <Typography variant="caption" color="success.main">
-                            Top 5% in your field
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={impactData.metrics.altmetricScore}
-                        sx={{
-                          height: 8,
-                          borderRadius: 4,
-                          bgcolor: 'rgba(139, 108, 188, 0.1)',
-                          '& .MuiLinearProgress-bar': { bgcolor: '#8b6cbc' }
-                        }}
-                      />
-                    </Card>
-                  </Box>
-
-                  <Box sx={{ flex: '1 1 45%', minWidth: { xs: '100%', md: '300px' } }}>
-                    <Card elevation={1} sx={{ p: 2 }}>
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-                        Social & Media Impact
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body2">Social Media Mentions</Typography>
-                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
-                            {impactData.metrics.socialMediaMentions}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body2">News Articles</Typography>
-                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
-                            {impactData.metrics.newsArticles}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body2">Policy Documents</Typography>
-                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
-                            {impactData.metrics.policyDocuments}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body2">Blog Posts</Typography>
-                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
-                            {impactData.metrics.blogPosts}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Card>
-                  </Box>
-                </Box>
-
-                <Alert severity="info" sx={{ mt: 3 }}>
-                  <Typography variant="body2">
-                    <strong>Alternative metrics (altmetrics)</strong> capture the online attention that research receives 
-                    through social media, news outlets, policy documents, and other digital platforms, providing a broader 
-                    view of research impact beyond traditional citations.
-                  </Typography>
-                </Alert>
               </Box>
             )}
           </Box>

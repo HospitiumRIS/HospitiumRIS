@@ -61,6 +61,7 @@ import {
   Cancel as BlockedIcon,
   Flag as MilestoneIcon,
   Task as TaskIcon,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 
@@ -433,44 +434,102 @@ const ProjectStatusPage = () => {
     return (
       <Box>
         {/* Filters */}
-        <Paper elevation={1} sx={{ p: 3, mb: 3, width: '100%' }}>
+        <Paper sx={{ 
+          p: 4, 
+          mb: 3, 
+          borderRadius: 4, 
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.06)',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
+        }}>
           <Box sx={{ 
             display: 'flex', 
             gap: 3, 
             alignItems: 'center',
             flexWrap: 'wrap',
-            width: '100%'
+            '@media (max-width: 768px)': {
+              flexDirection: 'column',
+              alignItems: 'stretch'
+            }
           }}>
-            <FormControl sx={{ minWidth: 200, flex: '0 0 auto' }}>
-              <InputLabel>Filter by Status</InputLabel>
-              <Select
-                value={filterStatus}
-                label="Filter by Status"
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <MenuItem value="All">All Status</MenuItem>
-                <MenuItem value="Active">Active</MenuItem>
-                <MenuItem value="Planning">Planning</MenuItem>
-                <MenuItem value="Review">Review</MenuItem>
-                <MenuItem value="Completed">Completed</MenuItem>
-                <MenuItem value="On Hold">On Hold</MenuItem>
-              </Select>
-            </FormControl>
+            <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={filterStatus}
+                  label="Status"
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  sx={{
+                    borderRadius: 3,
+                    backgroundColor: 'rgba(255,255,255,0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,1)'
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#8b6cbc',
+                    },
+                  }}
+                >
+                  <MenuItem value="All">All Status</MenuItem>
+                  <MenuItem value="Active">Active</MenuItem>
+                  <MenuItem value="Planning">Planning</MenuItem>
+                  <MenuItem value="Review">Review</MenuItem>
+                  <MenuItem value="Completed">Completed</MenuItem>
+                  <MenuItem value="On Hold">On Hold</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
 
-            <FormControl sx={{ minWidth: 200, flex: '0 0 auto' }}>
-              <InputLabel>Filter by Priority</InputLabel>
-              <Select
-                value={filterPriority}
-                label="Filter by Priority"
-                onChange={(e) => setFilterPriority(e.target.value)}
+            <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+              <FormControl fullWidth>
+                <InputLabel>Priority</InputLabel>
+                <Select
+                  value={filterPriority}
+                  label="Priority"
+                  onChange={(e) => setFilterPriority(e.target.value)}
+                  sx={{
+                    borderRadius: 3,
+                    backgroundColor: 'rgba(255,255,255,0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,1)'
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#8b6cbc',
+                    },
+                  }}
+                >
+                  <MenuItem value="All">All Priorities</MenuItem>
+                  <MenuItem value="Critical">Critical</MenuItem>
+                  <MenuItem value="High">High</MenuItem>
+                  <MenuItem value="Medium">Medium</MenuItem>
+                  <MenuItem value="Low">Low</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            <Box sx={{ flex: '0 0 auto' }}>
+              <Button
+                variant="text"
+                startIcon={<ClearIcon />}
+                onClick={() => {
+                  setFilterStatus('All');
+                  setFilterPriority('All');
+                }}
+                sx={{ 
+                  borderRadius: 3,
+                  height: '56px',
+                  px: 3,
+                  color: '#8b6cbc',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'rgba(139, 108, 188, 0.08)',
+                    color: '#7a5cac'
+                  }
+                }}
               >
-                <MenuItem value="All">All Priorities</MenuItem>
-                <MenuItem value="Critical">Critical</MenuItem>
-                <MenuItem value="High">High</MenuItem>
-                <MenuItem value="Medium">Medium</MenuItem>
-                <MenuItem value="Low">Low</MenuItem>
-              </Select>
-            </FormControl>
+                Clear All
+              </Button>
+            </Box>
           </Box>
         </Paper>
 
@@ -1645,24 +1704,42 @@ const ProjectStatusPage = () => {
         sx={{ '& .MuiDialog-paper': { height: '90vh' } }}
       >
         <DialogTitle sx={{ 
-          bgcolor: '#8b6cbc', 
+          background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5cac 100%)', 
           color: 'white',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 1,
-          pb: 1
+          py: 1.5,
+          px: 2.5
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ViewIcon />
-            Project Details
+            <Box sx={{ 
+              bgcolor: 'rgba(255,255,255,0.2)', 
+              borderRadius: 1.5, 
+              p: 0.75, 
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <ViewIcon sx={{ fontSize: 20 }} />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+              Project Details
+            </Typography>
           </Box>
           <IconButton 
             onClick={() => {
               setViewDetailsDialog(false);
               setDetailsTab(0);
             }}
-            sx={{ color: 'white' }}
+            sx={{ 
+              color: 'white',
+              bgcolor: 'rgba(255,255,255,0.1)',
+              '&:hover': {
+                bgcolor: 'rgba(255,255,255,0.2)'
+              }
+            }}
             size="small"
           >
             <BlockedIcon />
@@ -1671,18 +1748,37 @@ const ProjectStatusPage = () => {
         
         {selectedProject && (
           <>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
+            <Box sx={{ 
+              borderBottom: 1, 
+              borderColor: 'divider', 
+              bgcolor: '#fafbfd',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}>
               <Tabs 
                 value={detailsTab} 
                 onChange={(e, newValue) => setDetailsTab(newValue)}
                 sx={{ 
-                  px: 3,
+                  px: 2.5,
                   '& .MuiTab-root': { 
                     minHeight: 48,
                     color: 'text.secondary',
-                    '&.Mui-selected': { color: '#8b6cbc' }
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    textTransform: 'none',
+                    '&.Mui-selected': { 
+                      color: '#8b6cbc',
+                      fontWeight: 700
+                    },
+                    '&:hover': {
+                      color: '#8b6cbc',
+                      bgcolor: 'rgba(139, 108, 188, 0.04)'
+                    }
                   },
-                  '& .MuiTabs-indicator': { backgroundColor: '#8b6cbc' }
+                  '& .MuiTabs-indicator': { 
+                    backgroundColor: '#8b6cbc',
+                    height: 2,
+                    borderRadius: '2px 2px 0 0'
+                  }
                 }}
               >
                 <Tab label="Overview" />
@@ -1693,47 +1789,73 @@ const ProjectStatusPage = () => {
               </Tabs>
             </Box>
             
-            <DialogContent sx={{ p: 0, flex: 1, overflow: 'hidden' }}>
+            <DialogContent sx={{ p: 0, flex: 1, overflow: 'hidden', bgcolor: '#f8f9fa' }}>
               {detailsTab === 0 && (
-                <Box sx={{ p: 3, height: '100%', overflow: 'auto' }}>
+                <Box sx={{ p: 2.5, height: '100%', overflow: 'auto' }}>
                   {/* Overview Tab */}
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {/* Project Header */}
-                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+                    <Paper elevation={0} sx={{ 
+                      p: 2.5, 
+                      borderRadius: 2,
+                      border: '1px solid rgba(0,0,0,0.08)',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+                      background: 'linear-gradient(135deg, #ffffff 0%, #fafbfd 100%)'
+                    }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                         <Box sx={{ flex: 1 }}>
-                          <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>
+                          <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: '#2c3e50' }}>
                             {selectedProject.title}
                           </Typography>
-                          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
                             {selectedProject.description || 'No description available'}
                           </Typography>
-                          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                             <Chip 
                               label={selectedProject.status} 
                               color={getStatusColor(selectedProject.status)}
-                              size="medium"
+                              size="small"
+                              sx={{ 
+                                fontWeight: 600,
+                                fontSize: '0.75rem',
+                                height: 26,
+                                borderRadius: 1.5
+                              }}
                             />
                             <Chip 
                               label={selectedProject.priority || 'Medium'} 
                               color={selectedProject.priority === 'High' ? 'error' : selectedProject.priority === 'Low' ? 'default' : 'warning'}
                               variant="outlined"
-                              size="medium"
+                              size="small"
+                              sx={{ 
+                                fontWeight: 600,
+                                fontSize: '0.75rem',
+                                height: 26,
+                                borderRadius: 1.5
+                              }}
                             />
                             <Chip 
                               label={`${selectedProject.progress || 0}% Complete`}
-                              color="primary"
-                              variant="outlined"
-                              size="medium"
+                              size="small"
+                              sx={{
+                                bgcolor: 'rgba(139, 108, 188, 0.1)',
+                                color: '#8b6cbc',
+                                fontWeight: 600,
+                                fontSize: '0.75rem',
+                                height: 26,
+                                borderRadius: 1.5
+                              }}
                             />
                           </Box>
                         </Box>
                         <Avatar 
                           sx={{ 
-                            width: 80, 
-                            height: 80, 
-                            bgcolor: '#8b6cbc',
-                            fontSize: '2rem'
+                            width: 72, 
+                            height: 72, 
+                            background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5cac 100%)',
+                            fontSize: '1.8rem',
+                            fontWeight: 700,
+                            boxShadow: '0 4px 16px rgba(139, 108, 188, 0.3)'
                           }}
                         >
                           {selectedProject.title?.charAt(0) || 'P'}
@@ -1741,12 +1863,18 @@ const ProjectStatusPage = () => {
                       </Box>
                       
                       {/* Progress Bar */}
-                      <Box sx={{ mt: 3 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                          <Typography variant="subtitle2" color="text.secondary">
+                      <Box sx={{ 
+                        mt: 2, 
+                        p: 2, 
+                        bgcolor: 'rgba(139, 108, 188, 0.04)',
+                        borderRadius: 1.5,
+                        border: '1px solid rgba(139, 108, 188, 0.1)'
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.9rem' }}>
                             Overall Progress
                           </Typography>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
+                          <Typography variant="h6" sx={{ fontWeight: 800, color: '#8b6cbc' }}>
                             {selectedProject.progress || 0}%
                           </Typography>
                         </Box>
@@ -1756,9 +1884,10 @@ const ProjectStatusPage = () => {
                           sx={{ 
                             height: 8, 
                             borderRadius: 4,
-                            bgcolor: 'rgba(139, 108, 188, 0.1)',
+                            bgcolor: 'rgba(139, 108, 188, 0.15)',
                             '& .MuiLinearProgress-bar': {
-                              bgcolor: '#8b6cbc'
+                              background: 'linear-gradient(90deg, #8b6cbc 0%, #9d7ecc 100%)',
+                              borderRadius: 6
                             }
                           }}
                         />
@@ -1768,20 +1897,46 @@ const ProjectStatusPage = () => {
                     {/* Key Information Grid */}
                     <Box sx={{ 
                       display: 'flex', 
-                      gap: 3, 
+                      gap: 2, 
                       flexWrap: 'wrap',
                       '& > *': { flex: 1, minWidth: { xs: '100%', md: 'calc(50% - 12px)' } }
                     }}>
                       {/* Timeline Information */}
-                      <Paper elevation={1} sx={{ p: 2.5, borderRadius: 2 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <ScheduleIcon sx={{ color: '#8b6cbc' }} />
+                      <Paper elevation={0} sx={{ 
+                        p: 2, 
+                        borderRadius: 2,
+                        border: '1px solid rgba(0,0,0,0.08)',
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                          transform: 'translateY(-2px)'
+                        }
+                      }}>
+                        <Typography variant="subtitle2" sx={{ 
+                          fontWeight: 700, 
+                          mb: 2, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1,
+                          color: '#2c3e50',
+                          fontSize: '0.9rem'
+                        }}>
+                          <Box sx={{
+                            bgcolor: 'rgba(139, 108, 188, 0.1)',
+                            borderRadius: 1.5,
+                            p: 0.75,
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            <ScheduleIcon sx={{ color: '#8b6cbc', fontSize: 18 }} />
+                          </Box>
                           Timeline
                         </Typography>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                           <Box>
-                            <Typography variant="caption" color="text.secondary">Start Date</Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: 0.5 }}>Start Date</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.25, color: '#2c3e50' }}>
                               {selectedProject.startDate && new Date(selectedProject.startDate) && !isNaN(new Date(selectedProject.startDate).getTime())
                                 ? format(new Date(selectedProject.startDate), 'MMM dd, yyyy')
                                 : 'Not set'
@@ -1789,8 +1944,8 @@ const ProjectStatusPage = () => {
                             </Typography>
                           </Box>
                           <Box>
-                            <Typography variant="caption" color="text.secondary">End Date</Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: 0.5 }}>End Date</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.25, color: '#2c3e50' }}>
                               {selectedProject.endDate && new Date(selectedProject.endDate) && !isNaN(new Date(selectedProject.endDate).getTime())
                                 ? format(new Date(selectedProject.endDate), 'MMM dd, yyyy')
                                 : 'Not set'
@@ -1798,10 +1953,11 @@ const ProjectStatusPage = () => {
                             </Typography>
                           </Box>
                           <Box>
-                            <Typography variant="caption" color="text.secondary">Days Until Deadline</Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: 0.5 }}>Days Until Deadline</Typography>
                             <Typography variant="body2" sx={{ 
-                              fontWeight: 'bold',
-                              color: (selectedProject.daysUntilDeadline && selectedProject.daysUntilDeadline < 30) ? 'error.main' : 'text.primary'
+                              fontWeight: 700,
+                              mt: 0.25,
+                              color: (selectedProject.daysUntilDeadline && selectedProject.daysUntilDeadline < 30) ? 'error.main' : '#2c3e50'
                             }}>
                               {selectedProject.daysUntilDeadline || 'N/A'} days
                             </Typography>
@@ -1810,15 +1966,41 @@ const ProjectStatusPage = () => {
                       </Paper>
 
                       {/* Team Information */}
-                      <Paper elevation={1} sx={{ p: 2.5, borderRadius: 2 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <TeamIcon sx={{ color: '#8b6cbc' }} />
+                      <Paper elevation={0} sx={{ 
+                        p: 2, 
+                        borderRadius: 2,
+                        border: '1px solid rgba(0,0,0,0.08)',
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                          transform: 'translateY(-2px)'
+                        }
+                      }}>
+                        <Typography variant="subtitle2" sx={{ 
+                          fontWeight: 700, 
+                          mb: 2, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1,
+                          color: '#2c3e50',
+                          fontSize: '0.9rem'
+                        }}>
+                          <Box sx={{
+                            bgcolor: 'rgba(139, 108, 188, 0.1)',
+                            borderRadius: 1.5,
+                            p: 0.75,
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            <TeamIcon sx={{ color: '#8b6cbc', fontSize: 18 }} />
+                          </Box>
                           Team
                         </Typography>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                           <Box>
-                            <Typography variant="caption" color="text.secondary">Project Lead</Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: 0.5 }}>Project Lead</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.25, color: '#2c3e50' }}>
                               {typeof selectedProject.lead === 'string' 
                                 ? selectedProject.lead || 'Not assigned'
                                 : selectedProject.lead?.name || 'Not assigned'
@@ -1826,14 +2008,14 @@ const ProjectStatusPage = () => {
                             </Typography>
                           </Box>
                           <Box>
-                            <Typography variant="caption" color="text.secondary">Team Size</Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: 0.5 }}>Team Size</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.25, color: '#2c3e50' }}>
                               {selectedProject.team || 0} members
                             </Typography>
                           </Box>
                           <Box>
-                            <Typography variant="caption" color="text.secondary">Department</Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem', letterSpacing: 0.5 }}>Department</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.25, color: '#2c3e50' }}>
                               {selectedProject.department || 'Not specified'}
                             </Typography>
                           </Box>
@@ -1842,9 +2024,30 @@ const ProjectStatusPage = () => {
                     </Box>
 
                     {/* Milestones Summary */}
-                    <Paper elevation={1} sx={{ p: 2.5, borderRadius: 2 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <MilestoneIcon sx={{ color: '#8b6cbc' }} />
+                    <Paper elevation={0} sx={{ 
+                      p: 2, 
+                      borderRadius: 2,
+                      border: '1px solid rgba(0,0,0,0.08)',
+                      boxShadow: '0 2px 12px rgba(0,0,0,0.04)'
+                    }}>
+                      <Typography variant="subtitle2" sx={{ 
+                        fontWeight: 700, 
+                        mb: 2, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 1,
+                        color: '#2c3e50',
+                        fontSize: '0.9rem'
+                      }}>
+                        <Box sx={{
+                          bgcolor: 'rgba(139, 108, 188, 0.1)',
+                          borderRadius: 1.5,
+                          p: 0.75,
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          <MilestoneIcon sx={{ color: '#8b6cbc', fontSize: 18 }} />
+                        </Box>
                         Milestones Summary
                       </Typography>
                       <Box sx={{ 

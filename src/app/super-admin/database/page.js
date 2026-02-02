@@ -74,7 +74,7 @@ import SuperAdminLayout from '../../../components/SuperAdmin/SuperAdminLayout';
 
 const DatabaseManagementPage = () => {
   const theme = useTheme();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [dbStats, setDbStats] = useState({});
@@ -85,6 +85,9 @@ const DatabaseManagementPage = () => {
 
   // Check Super Admin access
   useEffect(() => {
+    // Wait for auth to finish loading before checking
+    if (authLoading) return;
+    
     if (!user) {
       router.push('/login');
       return;
@@ -94,7 +97,7 @@ const DatabaseManagementPage = () => {
       router.push('/dashboard');
       return;
     }
-  }, [user, router]);
+  }, [user, router, authLoading]);
 
   // Fetch database statistics
   useEffect(() => {
@@ -108,18 +111,22 @@ const DatabaseManagementPage = () => {
         
         if (statsData.success) {
           setDbStats({
-            totalUsers: statsData.stats.totalUsers,
-            activeUsers: statsData.stats.activeUsers,
-            totalManuscripts: statsData.stats.totalManuscripts,
-            totalPublications: statsData.stats.totalPublications,
-            totalProposals: statsData.stats.totalProposals,
-            totalDonations: statsData.stats.totalDonations,
-            dbSize: statsData.stats.dbSize || '2.3 GB',
+            totalUsers: statsData.stats.totalUsers || 0,
+            activeUsers: statsData.stats.activeUsers || 0,
+            totalManuscripts: statsData.stats.totalManuscripts || 0,
+            totalPublications: statsData.stats.totalPublications || 0,
+            totalProposals: statsData.stats.totalProposals || 0,
+            totalDonations: statsData.stats.totalDonations || 0,
+            totalCampaigns: statsData.stats.totalCampaigns || 0,
+            dbSize: statsData.stats.dbSize || 'N/A',
             lastBackup: statsData.stats.lastBackup || 'N/A',
             backupSize: statsData.stats.backupSize || 'N/A',
             uptime: statsData.stats.uptime || 'N/A',
             connections: statsData.stats.connections || 0,
-            slowQueries: statsData.stats.slowQueries || 0
+            maxConnections: statsData.stats.maxConnections || 100,
+            slowQueries: statsData.stats.slowQueries || 0,
+            recentLogs: statsData.stats.recentLogs || 0,
+            health: statsData.stats.health || 'healthy'
           });
         }
         
@@ -208,6 +215,11 @@ const DatabaseManagementPage = () => {
           throw new Error(`Unknown operation: ${selectedOperation}`);
       }
       
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const result = await response.json();
       
       if (result.success) {
@@ -222,7 +234,14 @@ const DatabaseManagementPage = () => {
       setDialogOpen(false);
     } catch (error) {
       console.error(`Error executing ${selectedOperation}:`, error);
-      alert(`Error: ${error.message}`);
+      
+      // Show more helpful error message
+      let errorMessage = error.message;
+      if (selectedOperation === 'backup') {
+        errorMessage = `Database backup failed: ${error.message}\n\nNote: This operation requires pg_dump to be installed and DATABASE_URL to be configured.`;
+      }
+      
+      alert(`Error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -499,300 +518,168 @@ const DatabaseManagementPage = () => {
           </Box>
         </Box>
 
-        {/* Database Health Overview */}
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+        {/* Database Health Overview - Compact Stats */}
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ mb: 2.5 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
               Database Health & Performance
             </Typography>
-            <Chip 
-              label="Real-time" 
-              size="small" 
-              sx={{ 
-                bgcolor: '#f3e5f5',
-                color: '#8b6cbc',
-                border: '1px solid #e1bee7',
-                fontWeight: 600
-              }}
-              icon={<CheckIcon sx={{ color: '#8b6cbc' }} />}
-            />
+            <Typography variant="body2" color="text.secondary">
+              Real-time monitoring and system metrics
+            </Typography>
           </Box>
           
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-            <Box sx={{ flex: '1 1 calc(66% - 8px)', minWidth: '300px' }}>
-              <Paper 
-                elevation={0}
-                sx={{ 
-                  p: 3, 
-                  height: '100%',
-                  borderRadius: 3,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  background: 'linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(249,250,251,1) 100%)'
-                }}
-              >
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                  {[
-                    { 
-                      value: dbStats.dbSize, 
-                      label: 'Database Size', 
-                      icon: <DatabaseIcon />, 
-                      color: 'primary.main',
-                      bgColor: 'primary.main'
-                    },
-                    { 
-                      value: dbStats.backupSize, 
-                      label: 'Latest Backup', 
-                      icon: <BackupIcon />, 
-                      color: 'info.main',
-                      bgColor: 'info.main'
-                    },
-                    { 
-                      value: dbStats.connections, 
-                      label: 'Active Connections', 
-                      icon: <SecurityIcon />, 
-                      color: 'warning.main',
-                      bgColor: 'warning.main'
-                    },
-                    { 
-                      value: dbStats.slowQueries, 
-                      label: 'Slow Queries', 
-                      icon: <AnalyticsIcon />, 
-                      color: dbStats.slowQueries > 0 ? 'error.main' : 'success.main',
-                      bgColor: dbStats.slowQueries > 0 ? 'error.main' : 'success.main'
-                    }
-                  ].map((stat, index) => (
-                    <Box key={index} sx={{ flex: '1 1 calc(25% - 18px)', minWidth: '120px', textAlign: 'center' }}>
-                      <Box sx={{ 
-                        p: 2,
-                        bgcolor: '#f3e5f5',
-                        borderRadius: 2,
-                        border: '1px solid #e1bee7'
-                      }}>
-                        <Avatar sx={{ 
-                          bgcolor: '#8b6cbc',
-                          mx: 'auto',
-                          width: 48,
-                          height: 48,
-                          mb: 1.5,
-                          boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
-                        }}>
-                          {React.cloneElement(stat.icon, { fontSize: 'medium' })}
-                        </Avatar>
-                        <Typography variant="h4" sx={{ 
-                          fontWeight: 700, 
-                          color: '#8b6cbc',
-                          mb: 0.5,
-                          letterSpacing: '-0.02em'
-                        }}>
-                          {stat.value}
-                        </Typography>
-                        <Typography variant="caption" sx={{ 
-                          color: 'text.secondary',
-                          fontWeight: 600,
-                          textTransform: 'uppercase',
-                          fontSize: '0.7rem'
-                        }}>
-                          {stat.label}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-              </Paper>
-            </Box>
-            
-            <Box sx={{ flex: '1 1 calc(34% - 8px)', minWidth: '300px' }}>
-              <Paper 
-                elevation={0}
-                sx={{ 
-                  p: 3, 
-                  height: '100%',
-                  borderRadius: 3,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                background: `linear-gradient(145deg, ${theme.palette.success.main}08 0%, ${theme.palette.success.main}03 100%)`,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-                border: `1px solid ${theme.palette.success.main}20`
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                  <Avatar sx={{ bgcolor: 'success.main', width: 40, height: 40 }}>
-                    <CheckIcon />
-                  </Avatar>
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>
-                    System Status
-                  </Typography>
-                </Box>
-                
-                <Stack spacing={3}>
-                  {[
-                    { icon: <CheckIcon />, label: 'Database Online', status: 'Operational', color: 'success' },
-                    { icon: <BackupIcon />, label: 'Backups Active', status: 'Running', color: 'success' },
-                    { icon: <SecurityIcon />, label: 'Security Status', status: 'Secure', color: 'success' },
-                    { icon: <AnalyticsIcon />, label: 'Performance', status: 'Optimal', color: 'success' }
-                  ].map((item, index) => (
-                    <Box key={index} sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between',
-                      p: 2,
-                      borderRadius: 2,
-                      bgcolor: 'background.paper',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            {[
+              { 
+                value: dbStats.dbSize, 
+                label: 'Database Size', 
+                icon: <DatabaseIcon />, 
+                color: '#8b6cbc'
+              },
+              { 
+                value: dbStats.backupSize, 
+                label: 'Latest Backup', 
+                icon: <BackupIcon />, 
+                color: '#0ea5e9'
+              },
+              { 
+                value: dbStats.connections, 
+                label: 'Active Connections', 
+                icon: <SecurityIcon />, 
+                color: '#f59e0b'
+              },
+              { 
+                value: dbStats.slowQueries, 
+                label: 'Slow Queries', 
+                icon: <AnalyticsIcon />, 
+                color: dbStats.slowQueries > 0 ? '#ef4444' : '#10b981'
+              },
+              { 
+                value: dbStats.uptime || 'N/A', 
+                label: 'System Uptime', 
+                icon: <CheckIcon />, 
+                color: '#10b981'
+              },
+              { 
+                value: dbStats.lastBackup || 'N/A', 
+                label: 'Last Backup', 
+                icon: <ScheduleIcon />, 
+                color: '#6366f1'
+              }
+            ].map((stat, index) => (
+              <Box key={index} sx={{ flex: '1 1 calc(16.666% - 14px)', minWidth: '150px' }}>
+                <Paper sx={{ 
+                  p: 2,
+                  borderRadius: 2,
+                  border: '1px solid #e5e7eb',
+                  boxShadow: 'none',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                    transform: 'translateY(-2px)'
+                  }
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                    <Box sx={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 1.5,
+                      bgcolor: `${stat.color}15`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: stat.color
                     }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Box sx={{ color: `${item.color}.main` }}>
-                          {React.cloneElement(item.icon, { fontSize: 'small' })}
-                        </Box>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {item.label}
-                        </Typography>
-                      </Box>
-                      <Chip 
-                        label={item.status}
-                        size="small"
-                        sx={{ 
-                          bgcolor: '#f3e5f5',
-                          color: '#8b6cbc',
-                          border: '1px solid #e1bee7',
-                          fontWeight: 600,
-                          fontSize: '0.7rem'
-                        }}
-                      />
+                      {React.cloneElement(stat.icon, { fontSize: 'small' })}
                     </Box>
-                  ))}
-                </Stack>
-                
-                <Divider sx={{ my: 3 }} />
-                
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                    Last Updated
+                    <Typography variant="caption" sx={{ 
+                      color: '#6b7280',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      fontSize: '0.65rem',
+                      lineHeight: 1.2
+                    }}>
+                      {stat.label}
+                    </Typography>
+                  </Box>
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 700, 
+                    color: '#2c3e50',
+                    fontSize: '1.25rem'
+                  }}>
+                    {stat.value}
                   </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                    {new Date().toLocaleTimeString()}
-                  </Typography>
-                </Box>
-              </Paper>
-            </Box>
+                </Paper>
+              </Box>
+            ))}
           </Box>
+        </Box>
 
-        {/* Data Statistics */}
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
-                Data Overview
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Real-time statistics from your database tables
-              </Typography>
-            </Box>
-            <Button
-              variant="outlined"
-              startIcon={<AnalyticsIcon />}
-              sx={{ 
-                borderColor: '#8b6cbc',
-                color: '#8b6cbc',
-                '&:hover': {
-                  borderColor: '#7a5caa',
-                  bgcolor: '#f3e5f5'
-                }
-              }}
-            >
-              View Analytics
-            </Button>
+        {/* Data Statistics - Compact */}
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ mb: 2.5 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
+              Data Overview
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Real-time statistics from your database tables
+            </Typography>
           </Box>
           
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
             {dataStats.map((stat, index) => (
-              <Box key={index} sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
-                <Card sx={{ 
-                  height: '100%',
-                  background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
-                  color: 'white',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+              <Box key={index} sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '180px' }}>
+                <Paper sx={{ 
+                  p: 2.5,
+                  borderRadius: 2,
+                  border: '1px solid #e5e7eb',
+                  boxShadow: 'none',
+                  transition: 'all 0.2s',
                   '&:hover': { 
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 8px 24px rgba(139, 108, 188, 0.3)'
-                  },
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: '100px',
-                    height: '100px',
-                    background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-                    borderRadius: '50%',
-                    transform: 'translate(40%, -40%)'
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                    transform: 'translateY(-2px)',
+                    borderColor: '#8b6cbc'
                   }
                 }}>
-                  <CardContent sx={{ position: 'relative', zIndex: 1, p: 2.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
-                      <Avatar sx={{ 
-                        bgcolor: 'rgba(255,255,255,0.2)', 
-                        width: 44, 
-                        height: 44
-                      }}>
-                        {React.cloneElement(stat.icon, { fontSize: 'medium' })}
-                      </Avatar>
-                      <Box sx={{ textAlign: 'right' }}>
-                        <Typography variant="caption" sx={{ 
-                          opacity: 0.9,
-                          fontWeight: 500,
-                          textTransform: 'uppercase',
-                          fontSize: '0.7rem'
-                        }}>
-                          Total
-                        </Typography>
-                        <Typography variant="h4" sx={{ 
-                          fontWeight: 700, 
-                          lineHeight: 1,
-                          letterSpacing: '-0.02em'
-                        }}>
-                          {stat.count}
-                        </Typography>
-                        </Box>
-                      </Box>
-                      
-                      <Typography variant="body1" sx={{ 
-                        fontWeight: 600,
-                        opacity: 0.9,
-                        mb: 1
-                      }}>
-                        {stat.label}
-                      </Typography>
-                      
-                      <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'space-between',
-                        mt: 1.5,
-                        pt: 1.5,
-                        borderTop: '1px solid rgba(255,255,255,0.2)'
-                      }}>
-                        <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 500 }}>
-                          Table: {stat.table}
-                        </Typography>
-                        <IconButton 
-                          size="small" 
-                          sx={{ 
-                            color: 'white',
-                            bgcolor: 'rgba(255,255,255,0.2)',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
-                          }}
-                        >
-                          <ViewIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Box>
-              ))}
-            </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    <Box sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 1.5,
+                      bgcolor: '#f3e8ff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#8b6cbc'
+                    }}>
+                      {React.cloneElement(stat.icon, { fontSize: 'small' })}
+                    </Box>
+                    <Typography variant="h5" sx={{ 
+                      fontWeight: 700, 
+                      color: '#8b6cbc'
+                    }}>
+                      {stat.count}
+                    </Typography>
+                  </Box>
+                  
+                  <Typography variant="body2" sx={{ 
+                    fontWeight: 600,
+                    color: '#2c3e50',
+                    mb: 0.5
+                  }}>
+                    {stat.label}
+                  </Typography>
+                  
+                  <Typography variant="caption" sx={{ 
+                    color: '#6b7280',
+                    fontSize: '0.7rem'
+                  }}>
+                    Table: {stat.table}
+                  </Typography>
+                </Paper>
+              </Box>
+            ))}
           </Box>
         </Box>
 

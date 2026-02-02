@@ -3,11 +3,29 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
+import { getAuthenticatedUser } from '@/lib/auth-server';
 
 const execAsync = promisify(exec);
 
 export async function POST(request) {
   try {
+    // Check authentication
+    const user = await getAuthenticatedUser(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    if (user.accountType !== 'SUPER_ADMIN') {
+      return NextResponse.json(
+        { success: false, message: 'Insufficient privileges' },
+        { status: 403 }
+      );
+    }
+
     const { backupType = 'full', description = '', compression = 'gzip' } = await request.json();
     
     // Generate backup filename with timestamp
@@ -21,66 +39,62 @@ export async function POST(request) {
       await fs.mkdir(backupDir, { recursive: true });
     }
     
-    const filename = `backup-${timestamp}.sql${compression === 'gzip' ? '.gz' : ''}`;
+    const filename = `backup-${timestamp}.json`;
     const filepath = path.join(backupDir, filename);
     
-    // Build pg_dump command based on backup type
-    let pgDumpCommand = 'pg_dump';
+    // Use Prisma to export data (works in development without pg_dump)
+    console.log('Starting database backup using Prisma...');
     
-    // Add connection parameters from environment
-    if (process.env.DATABASE_URL) {
-      pgDumpCommand += ` "${process.env.DATABASE_URL}"`;
-    }
+    const prisma = (await import('@/lib/prisma')).default;
     
-    // Add backup type specific options
-    switch (backupType) {
-      case 'schema':
-        pgDumpCommand += ' --schema-only';
-        break;
-      case 'data':
-        pgDumpCommand += ' --data-only';
-        break;
-      case 'incremental':
-        // For incremental, we would need to implement custom logic
-        // This is a simplified version
-        pgDumpCommand += ' --verbose';
-        break;
-      default: // full
-        pgDumpCommand += ' --verbose --no-owner --no-privileges';
-        break;
-    }
-    
-    // Add compression if specified
-    if (compression === 'gzip') {
-      pgDumpCommand += ` | gzip > "${filepath}"`;
-    } else {
-      pgDumpCommand += ` > "${filepath}"`;
-    }
-    
-    // Execute backup command
-    console.log('Starting database backup...');
-    const { stdout, stderr } = await execAsync(pgDumpCommand);
-    
-    // Get backup file stats
-    const stats = await fs.stat(filepath);
-    const sizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
-    
-    // Log backup completion (you might want to save this to a database table)
-    const backupInfo = {
-      id: Date.now(),
-      filename,
-      filepath,
-      type: backupType,
-      description,
-      compression,
-      size: `${sizeInMB} MB`,
-      status: 'Completed',
-      createdAt: new Date().toISOString(),
-      stdout: stdout?.substring(0, 1000), // Limit log size
-      stderr: stderr?.substring(0, 1000)
+    const backupData = {
+      metadata: {
+        backupType,
+        description,
+        timestamp: new Date().toISOString(),
+        version: '1.0'
+      },
+      data: {}
     };
     
-    console.log('Database backup completed:', backupInfo);
+    // Export data from all tables
+    try {
+      if (backupType === 'full' || backupType === 'data') {
+        backupData.data.users = await prisma.user.findMany();
+        backupData.data.manuscripts = await prisma.manuscript.findMany();
+        backupData.data.publications = await prisma.publication.findMany();
+        backupData.data.proposals = await prisma.proposal.findMany();
+        backupData.data.donations = await prisma.donation.findMany();
+        backupData.data.campaigns = await prisma.campaign.findMany();
+      }
+      
+      // Write backup to file
+      await fs.writeFile(filepath, JSON.stringify(backupData, null, 2), 'utf-8');
+      
+      // Get backup file stats
+      const stats = await fs.stat(filepath);
+      const sizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
+      
+      // Log backup completion
+      const backupInfo = {
+        id: Date.now(),
+        filename,
+        filepath,
+        type: backupType,
+        description,
+        compression: 'none',
+        size: `${sizeInMB} MB`,
+        status: 'Completed',
+        createdAt: new Date().toISOString()
+      };
+      
+      console.log('Database backup completed:', backupInfo);
+      
+      await prisma.$disconnect();
+    } catch (error) {
+      await prisma.$disconnect();
+      throw error;
+    }
     
     return NextResponse.json({
       success: true,
@@ -101,25 +115,58 @@ export async function POST(request) {
 
 export async function GET(request) {
   try {
+    // Check authentication
+    const user = await getAuthenticatedUser(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    if (user.accountType !== 'SUPER_ADMIN') {
+      return NextResponse.json(
+        { success: false, message: 'Insufficient privileges' },
+        { status: 403 }
+      );
+    }
+
     const backupDir = path.join(process.cwd(), 'backups');
     
     try {
       const files = await fs.readdir(backupDir);
       const backups = await Promise.all(
         files
-          .filter(file => file.startsWith('backup-') && (file.endsWith('.sql') || file.endsWith('.sql.gz')))
+          .filter(file => file.startsWith('backup-') && (file.endsWith('.json') || file.endsWith('.sql') || file.endsWith('.sql.gz')))
           .map(async (file) => {
             const filepath = path.join(backupDir, file);
             const stats = await fs.stat(filepath);
             const sizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
             
+            // Try to read metadata from JSON backups
+            let backupType = 'Manual';
+            let description = '';
+            
+            if (file.endsWith('.json')) {
+              try {
+                const content = await fs.readFile(filepath, 'utf-8');
+                const data = JSON.parse(content);
+                backupType = data.metadata?.backupType || 'full';
+                description = data.metadata?.description || '';
+              } catch (error) {
+                console.log('Could not read backup metadata:', error.message);
+              }
+            }
+            
             return {
               id: file,
               filename: file,
               size: `${sizeInMB} MB`,
-              type: 'Automatic', // You might parse this from filename or database
+              type: backupType.charAt(0).toUpperCase() + backupType.slice(1),
               status: 'Completed',
-              date: stats.ctime.toISOString().replace('T', ' ').substring(0, 19)
+              date: stats.ctime.toISOString().replace('T', ' ').substring(0, 19),
+              description
             };
           })
       );
