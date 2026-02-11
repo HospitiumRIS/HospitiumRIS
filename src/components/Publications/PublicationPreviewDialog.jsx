@@ -254,7 +254,7 @@ const PublicationPreviewDialog = ({
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                             <AIIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
                             <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8b6cbc' }}>
-                                AI Summary (Academic)
+                                AI Summary
                             </Typography>
                         </Box>
                         
@@ -290,9 +290,70 @@ const PublicationPreviewDialog = ({
                             </Alert>
                         ) : aiSummary ? (
                             <Box>
-                                <Typography variant="body2" sx={{ lineHeight: 1.6, mb: 2 }}>
-                                    {aiSummary}
-                                </Typography>
+                                <Box 
+                                    sx={{ 
+                                        mb: 2,
+                                        maxHeight: '400px',
+                                        overflowY: 'auto',
+                                        pr: 1,
+                                        '&::-webkit-scrollbar': {
+                                            width: '8px'
+                                        },
+                                        '&::-webkit-scrollbar-track': {
+                                            backgroundColor: 'rgba(0,0,0,0.05)',
+                                            borderRadius: '4px'
+                                        },
+                                        '&::-webkit-scrollbar-thumb': {
+                                            backgroundColor: '#8b6cbc',
+                                            borderRadius: '4px',
+                                            '&:hover': {
+                                                backgroundColor: '#7b5ca7'
+                                            }
+                                        },
+                                        '& h3': {
+                                            fontSize: '1rem',
+                                            fontWeight: 700,
+                                            color: '#4a4a4a',
+                                            marginTop: '1.5rem',
+                                            marginBottom: '0.75rem',
+                                            '&:first-of-type': {
+                                                marginTop: 0
+                                            }
+                                        },
+                                        '& p': {
+                                            fontSize: '0.875rem',
+                                            lineHeight: 1.7,
+                                            color: '#5a5a5a',
+                                            marginBottom: '1rem'
+                                        },
+                                        '& ul': {
+                                            marginLeft: '1.5rem',
+                                            marginBottom: '1rem',
+                                            paddingLeft: 0,
+                                            listStyleType: 'none'
+                                        },
+                                        '& li': {
+                                            fontSize: '0.875rem',
+                                            lineHeight: 1.7,
+                                            color: '#5a5a5a',
+                                            marginBottom: '0.75rem',
+                                            position: 'relative',
+                                            paddingLeft: '1.5rem',
+                                            '&:before': {
+                                                content: '"•"',
+                                                position: 'absolute',
+                                                left: 0,
+                                                color: '#8b6cbc',
+                                                fontWeight: 700
+                                            }
+                                        },
+                                        '& strong': {
+                                            fontWeight: 600,
+                                            color: '#3a3a3a'
+                                        }
+                                    }}
+                                    dangerouslySetInnerHTML={{ __html: aiSummary.replace(/\\n/g, '\n').replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') }}
+                                />
                                 {aiKeywords && aiKeywords.length > 0 && (
                                     <Box>
                                         <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', mb: 1 }}>

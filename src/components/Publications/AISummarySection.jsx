@@ -15,6 +15,21 @@ import {
 } from '@mui/icons-material';
 
 /**
+ * Sanitize and prepare HTML content for safe rendering
+ */
+const sanitizeHTML = (html) => {
+    if (!html) return '';
+    
+    // Replace escaped newlines with actual newlines
+    let cleaned = html.replace(/\\n/g, '\n');
+    
+    // Remove any script tags for safety
+    cleaned = cleaned.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    
+    return cleaned;
+};
+
+/**
  * AISummarySection - Displays AI-generated summary and keywords for a publication
  */
 const AISummarySection = ({ publication, expanded }) => {
@@ -35,7 +50,7 @@ const AISummarySection = ({ publication, expanded }) => {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                             <AIIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
                             <Typography variant="subtitle2" sx={{ color: '#8b6cbc', fontWeight: 600 }}>
-                                AI Summary (Academic)
+                                AI Summary
                             </Typography>
                         </Box>
                         <Skeleton variant="text" width="100%" height={20} />
@@ -71,20 +86,74 @@ const AISummarySection = ({ publication, expanded }) => {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                             <AIIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
                             <Typography variant="subtitle2" sx={{ color: '#8b6cbc', fontWeight: 600 }}>
-                                AI Summary (Academic)
+                                AI Summary
                             </Typography>
                         </Box>
                         
-                        <Typography 
-                            variant="body2" 
+                        <Box 
                             sx={{ 
                                 mb: 2,
-                                lineHeight: 1.6,
-                                color: 'text.primary'
+                                maxHeight: '400px',
+                                overflowY: 'auto',
+                                pr: 1,
+                                '&::-webkit-scrollbar': {
+                                    width: '8px'
+                                },
+                                '&::-webkit-scrollbar-track': {
+                                    backgroundColor: 'rgba(0,0,0,0.05)',
+                                    borderRadius: '4px'
+                                },
+                                '&::-webkit-scrollbar-thumb': {
+                                    backgroundColor: '#8b6cbc',
+                                    borderRadius: '4px',
+                                    '&:hover': {
+                                        backgroundColor: '#7b5ca7'
+                                    }
+                                },
+                                '& h3': {
+                                    fontSize: '1rem',
+                                    fontWeight: 700,
+                                    color: '#4a4a4a',
+                                    marginTop: '1.5rem',
+                                    marginBottom: '0.75rem',
+                                    '&:first-of-type': {
+                                        marginTop: 0
+                                    }
+                                },
+                                '& p': {
+                                    fontSize: '0.875rem',
+                                    lineHeight: 1.7,
+                                    color: '#5a5a5a',
+                                    marginBottom: '1rem'
+                                },
+                                '& ul': {
+                                    marginLeft: '1.5rem',
+                                    marginBottom: '1rem',
+                                    paddingLeft: 0,
+                                    listStyleType: 'none'
+                                },
+                                '& li': {
+                                    fontSize: '0.875rem',
+                                    lineHeight: 1.7,
+                                    color: '#5a5a5a',
+                                    marginBottom: '0.75rem',
+                                    position: 'relative',
+                                    paddingLeft: '1.5rem',
+                                    '&:before': {
+                                        content: '"•"',
+                                        position: 'absolute',
+                                        left: 0,
+                                        color: '#8b6cbc',
+                                        fontWeight: 700
+                                    }
+                                },
+                                '& strong': {
+                                    fontWeight: 600,
+                                    color: '#3a3a3a'
+                                }
                             }}
-                        >
-                            {aiSummary}
-                        </Typography>
+                            dangerouslySetInnerHTML={{ __html: sanitizeHTML(aiSummary) }}
+                        />
 
                         {aiKeywords && aiKeywords.length > 0 && (
                             <Box>

@@ -158,6 +158,14 @@ const SearchResultsDialog = ({
     const isAllSelected = filteredResults.length > 0 && selectedPublications.length === filteredResults.length;
     const isSomeSelected = selectedPublications.length > 0 && selectedPublications.length < filteredResults.length;
 
+    const checkboxRef = React.useRef(null);
+
+    useEffect(() => {
+        if (checkboxRef.current) {
+            checkboxRef.current.indeterminate = isSomeSelected;
+        }
+    }, [isSomeSelected]);
+
     return (
         <Dialog 
             open={open} 
@@ -310,9 +318,9 @@ const SearchResultsDialog = ({
                             <TableRow>
                                 <TableCell padding="checkbox">
                                     <input
+                                        ref={checkboxRef}
                                         type="checkbox"
                                         checked={isAllSelected}
-                                        indeterminate={isSomeSelected}
                                         onChange={handleSelectAll}
                                         style={{ cursor: 'pointer' }}
                                     />

@@ -1217,6 +1217,7 @@ export default function ManagePublications() {
             <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Title</TableCell>
             <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Authors</TableCell>
             <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Date</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Imported</TableCell>
             <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Status</TableCell>
             <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Type</TableCell>
             <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Library</TableCell>
@@ -1296,6 +1297,20 @@ export default function ManagePublications() {
                         year: 'numeric' 
                       })
                     : publication.year || 'N/A'
+                  }
+                </Typography>
+              </TableCell>
+
+              {/* Imported Date */}
+              <TableCell sx={{ py: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                  {publication.createdAt 
+                    ? new Date(publication.createdAt).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })
+                    : 'N/A'
                   }
                 </Typography>
               </TableCell>

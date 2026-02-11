@@ -20,7 +20,25 @@ export async function generatePublicationSummary(publication) {
         throw new Error('GOOGLE_GEMINI_API_KEY is not configured');
     }
 
-    const prompt = `Analyze this publication and provide a concise 2-3 sentence academic summary, along with 5-7 key research terms/keywords.
+    const prompt = `Provide a comprehensive, well-structured summary of this research article with the following sections:
+
+Overview
+A brief introduction explaining what the study investigates (2-3 sentences)
+
+Key Findings
+The main discoveries and results, organized with bullet points. Each bullet point should have a bold sub-heading followed by the description.
+
+Conclusion and Significance
+What the authors conclude and why this research matters
+
+Also extract key research terms/keywords from the article.
+
+Format the response in clean HTML with the following structure:
+- Use <h3> tags for main section headings (Overview, Key Findings, Conclusion and Significance)
+- Use <p> tags for paragraphs
+- Use <ul> and <li> tags for bullet lists
+- Use <strong> tags for bold text (especially for sub-headings within bullet points)
+- Write in a professional academic style without emojis
 
 Title: ${publication.title}
 Abstract: ${publication.abstract || 'No abstract available'}`;
@@ -32,21 +50,21 @@ Abstract: ${publication.abstract || 'No abstract available'}`;
             contents: prompt,
             config: {
                 temperature: 0.7,
-                maxOutputTokens: 1024,
+                maxOutputTokens: 2048,
                 responseMimeType: 'application/json',
                 responseSchema: {
                     type: 'object',
                     properties: {
                         summary: {
                             type: 'string',
-                            description: 'A concise 2-3 sentence academic summary'
+                            description: 'A comprehensive, well-structured summary in HTML format with <h3> tags for section headings, <p> tags for paragraphs, <ul>/<li> for bullet lists, and <strong> for bold text. Professional academic style without emojis.'
                         },
                         keywords: {
                             type: 'array',
                             items: {
                                 type: 'string'
                             },
-                            description: '5-7 key research terms/keywords'
+                            description: 'Key research terms and keywords extracted from the article'
                         }
                     },
                     required: ['summary', 'keywords']
@@ -81,7 +99,66 @@ Abstract: ${publication.abstract || 'No abstract available'}`;
             cleanText = jsonMatch[0];
         }
         
-        const parsed = JSON.parse(cleanText);
+        // Try to parse JSON with error recovery
+        let parsed;
+        try {
+            parsed = JSON.parse(cleanText);
+        } catch (parseError) {
+            console.error('Initial JSON parse failed:', parseError);
+            console.error('Problematic text:', cleanText.substring(0, 500));
+            
+            // Try to fix common JSON issues
+            try {
+                // Try multiple escape fixes
+                let fixedText = cleanText
+                    .replace(/\n/g, '\\n')  // Escape actual newlines
+                    .replace(/\r/g, '\\r')  // Escape carriage returns
+                    .replace(/\t/g, '\\t'); // Escape tabs
+                
+                parsed = JSON.parse(fixedText);
+                console.log('JSON parsed after fixing escape sequences');
+            } catch (secondError) {
+                // If still failing, try extracting with a more robust pattern
+                console.error('Second parse attempt failed, trying manual extraction');
+                
+                // Try to find the summary content between quotes, handling nested content
+                let summaryContent = '';
+                let keywordsArray = [];
+                
+                // Extract summary - look for the last occurrence before keywords
+                const summaryPattern = /"summary"\s*:\s*"((?:[^"\\]|\\.)*)"/s;
+                const summaryMatch = cleanText.match(summaryPattern);
+                
+                if (summaryMatch) {
+                    summaryContent = summaryMatch[1]
+                        .replace(/\\"/g, '"')
+                        .replace(/\\n/g, '\n')
+                        .replace(/\\r/g, '\r')
+                        .replace(/\\t/g, '\t')
+                        .replace(/\\\\/g, '\\');
+                }
+                
+                // Extract keywords array
+                const keywordsPattern = /"keywords"\s*:\s*\[([\s\S]*?)\]/;
+                const keywordsMatch = cleanText.match(keywordsPattern);
+                
+                if (keywordsMatch) {
+                    const keywordsText = keywordsMatch[1];
+                    keywordsArray = keywordsText.match(/"([^"]+)"/g)?.map(k => k.replace(/"/g, '')) || [];
+                }
+                
+                if (summaryContent || keywordsArray.length > 0) {
+                    parsed = {
+                        summary: summaryContent,
+                        keywords: keywordsArray
+                    };
+                    console.log('Manually extracted summary and keywords');
+                } else {
+                    console.error('Full response text:', text);
+                    throw new Error('Unable to parse or extract JSON data from response');
+                }
+            }
+        }
         
         return {
             summary: parsed.summary || '',
