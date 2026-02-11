@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -15,14 +15,21 @@ import {
     Alert,
     IconButton,
     Link,
-    Grid
+    Grid,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem
 } from '@mui/material';
 import {
     Close as CloseIcon,
     Visibility as PreviewIcon,
     Download as ImportIcon,
-    OpenInNew as OpenInNewIcon
+    OpenInNew as OpenInNewIcon,
+    AutoAwesome as AIIcon,
+    Folder as FolderIcon
 } from '@mui/icons-material';
+import LibrarySelectionModal from './LibrarySelectionModal';
 
 /**
  * PublicationPreviewDialog - Shows publication details before importing
@@ -35,13 +42,82 @@ const PublicationPreviewDialog = ({
     importing = false
 }) => {
     const [error, setError] = useState(null);
+    const [aiSummary, setAiSummary] = useState(null);
+    const [aiKeywords, setAiKeywords] = useState([]);
+    const [generatingAI, setGeneratingAI] = useState(false);
+    const [aiError, setAiError] = useState(null);
+    const [selectedLibrary, setSelectedLibrary] = useState('');
+    const [selectedLibraryName, setSelectedLibraryName] = useState('');
+    const [libraryModalOpen, setLibraryModalOpen] = useState(false);
+
+    // Generate AI summary when dialog opens
+    useEffect(() => {
+        if (open && publication) {
+            // Only generate if there's an abstract or title
+            if (publication.abstract || publication.title) {
+                generateAISummary();
+            }
+        }
+        // Reset state when dialog closes
+        if (!open) {
+            setSelectedLibrary('');
+            setSelectedLibraryName('');
+            setAiSummary(null);
+            setAiKeywords([]);
+            setAiError(null);
+        }
+    }, [open, publication]);
+
+    const handleLibrarySelect = (folderId, folderName) => {
+        setSelectedLibrary(folderId);
+        setSelectedLibraryName(folderName);
+    };
+
+    const generateAISummary = async () => {
+        setGeneratingAI(true);
+        setAiError(null);
+
+        try {
+            const response = await fetch('/api/ai/summarize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    publications: [{
+                        id: publication.id,
+                        title: publication.title,
+                        abstract: publication.abstract
+                    }]
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate AI summary');
+            }
+
+            const { results } = await response.json();
+            
+            if (results && results.length > 0 && results[0].success) {
+                setAiSummary(results[0].summary);
+                setAiKeywords(results[0].keywords || []);
+            } else {
+                throw new Error(results[0]?.error || 'Failed to generate summary');
+            }
+        } catch (err) {
+            console.error('Error generating AI summary:', err);
+            setAiError(err.message || 'Failed to generate AI summary');
+        } finally {
+            setGeneratingAI(false);
+        }
+    };
 
     if (!publication) return null;
 
     const handleImport = async () => {
         try {
             setError(null);
-            await onImport(publication);
+            await onImport(publication, selectedLibrary);
         } catch (err) {
             setError(err.message || 'Failed to import publication');
         }
@@ -173,6 +249,82 @@ const PublicationPreviewDialog = ({
 
                 {/* Additional Details */}
                 <Box sx={{ p: 3 }}>
+                    {/* AI Summary Section */}
+                    <Box sx={{ mb: 3, p: 2, backgroundColor: 'rgba(139, 108, 188, 0.08)', borderRadius: 1, border: '1px solid rgba(139, 108, 188, 0.2)' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                            <AIIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8b6cbc' }}>
+                                AI Summary (Academic)
+                            </Typography>
+                        </Box>
+                        
+                        {generatingAI ? (
+                            <Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                    <CircularProgress size={16} sx={{ color: '#8b6cbc' }} />
+                                    <Typography variant="body2" color="text.secondary">
+                                        Generating AI summary...
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        ) : aiError ? (
+                            <Alert 
+                                severity={aiError.includes('quota') || aiError.includes('exceeded') ? 'info' : 'warning'} 
+                                sx={{ 
+                                    backgroundColor: aiError.includes('quota') || aiError.includes('exceeded') 
+                                        ? 'rgba(33, 150, 243, 0.1)' 
+                                        : 'rgba(255, 152, 0, 0.1)',
+                                    '& .MuiAlert-message': {
+                                        width: '100%'
+                                    }
+                                }}
+                            >
+                                <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+                                    {aiError.includes('quota') || aiError.includes('exceeded') 
+                                        ? 'AI Summary Temporarily Unavailable' 
+                                        : 'Unable to Generate AI Summary'}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                    {aiError}
+                                </Typography>
+                            </Alert>
+                        ) : aiSummary ? (
+                            <Box>
+                                <Typography variant="body2" sx={{ lineHeight: 1.6, mb: 2 }}>
+                                    {aiSummary}
+                                </Typography>
+                                {aiKeywords && aiKeywords.length > 0 && (
+                                    <Box>
+                                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', mb: 1 }}>
+                                            AI-Extracted Keywords:
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                            {aiKeywords.map((keyword, index) => (
+                                                <Chip
+                                                    key={index}
+                                                    label={keyword}
+                                                    size="small"
+                                                    sx={{
+                                                        backgroundColor: '#8b6cbc',
+                                                        color: 'white',
+                                                        fontWeight: 500,
+                                                        '&:hover': {
+                                                            backgroundColor: '#7b5ca7'
+                                                        }
+                                                    }}
+                                                />
+                                            ))}
+                                        </Box>
+                                    </Box>
+                                )}
+                            </Box>
+                        ) : (
+                            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                No abstract available to generate summary
+                            </Typography>
+                        )}
+                    </Box>
+
                     {/* Abstract */}
                     {publication.abstract && (
                         <Box sx={{ mb: 3 }}>
@@ -287,6 +439,54 @@ const PublicationPreviewDialog = ({
                     </Grid>
                 </Box>
 
+                {/* Library Selection */}
+                <Box sx={{ px: 3, pb: 2 }}>
+                    <Divider sx={{ mb: 2 }} />
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <FolderIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8b6cbc' }}>
+                                Add to Library (Optional)
+                            </Typography>
+                        </Box>
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<FolderIcon />}
+                            onClick={() => setLibraryModalOpen(true)}
+                            sx={{
+                                borderColor: '#8b6cbc',
+                                color: '#8b6cbc',
+                                '&:hover': {
+                                    borderColor: '#7b5ca7',
+                                    backgroundColor: 'rgba(139, 108, 188, 0.08)'
+                                }
+                            }}
+                        >
+                            {selectedLibrary ? 'Change Folder' : 'Select Folder'}
+                        </Button>
+                    </Box>
+                    {selectedLibrary ? (
+                        <Box sx={{ 
+                            p: 1.5, 
+                            bgcolor: 'rgba(139, 108, 188, 0.08)', 
+                            borderRadius: 1,
+                            border: '1px solid rgba(139, 108, 188, 0.2)'
+                        }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+                                Selected: {selectedLibraryName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                This publication will be imported and added to this library folder.
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <Typography variant="caption" color="text.secondary">
+                            Click "Select Folder" to add this publication to a library folder after import.
+                        </Typography>
+                    )}
+                </Box>
+
                 {/* Error Display */}
                 {error && (
                     <Box sx={{ px: 3, pb: 2 }}>
@@ -319,6 +519,28 @@ const PublicationPreviewDialog = ({
                     {importing ? 'Importing...' : 'Import Publications'}
                 </Button>
             </DialogActions>
+
+            {/* Library Selection Modal */}
+            <LibrarySelectionModal
+                open={libraryModalOpen}
+                onClose={() => setLibraryModalOpen(false)}
+                onSelect={(folderId) => {
+                    // Fetch folder name
+                    fetch('/api/publications/library')
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success && data.folders) {
+                                const folder = data.folders.find(f => f.id === folderId);
+                                if (folder) {
+                                    handleLibrarySelect(folderId, folder.name);
+                                }
+                            }
+                        });
+                }}
+                publicationTitle={publication?.title}
+                multiplePublications={false}
+                publicationCount={1}
+            />
         </Dialog>
     );
 };

@@ -11,14 +11,15 @@ const PUBMED_BASE_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils';
  * Search PubMed by terms and return a list of PMIDs
  * @param {string} searchTerm - The search query
  * @param {number} maxResults - Maximum number of results to return (default: 50)
- * @returns {Promise<string[]>} Array of PMIDs
+ * @param {number} startIndex - Starting index for pagination (default: 0)
+ * @returns {Promise<{pmids: string[], totalCount: number}>} Object with PMIDs array and total count
  */
-export const searchPubMed = async (searchTerm, maxResults = 50) => {
+export const searchPubMed = async (searchTerm, maxResults = 50, startIndex = 0) => {
     if (!searchTerm?.trim()) {
         throw new Error('Search term is required');
     }
 
-    const searchUrl = `${PUBMED_BASE_URL}/esearch.fcgi?db=pubmed&term=${encodeURIComponent(searchTerm.trim())}&retmode=json&retmax=${maxResults}`;
+    const searchUrl = `${PUBMED_BASE_URL}/esearch.fcgi?db=pubmed&term=${encodeURIComponent(searchTerm.trim())}&retmode=json&retmax=${maxResults}&retstart=${startIndex}`;
     
     const response = await fetch(searchUrl);
     if (!response.ok) {
@@ -31,7 +32,10 @@ export const searchPubMed = async (searchTerm, maxResults = 50) => {
         throw new Error('No publications found for this search term');
     }
 
-    return data.esearchresult.idlist;
+    return {
+        pmids: data.esearchresult.idlist,
+        totalCount: parseInt(data.esearchresult.count) || 0
+    };
 };
 
 /**
@@ -66,6 +70,11 @@ export const transformPubMedData = (pmid, pubData) => {
     if (!pubData) {
         throw new Error('Publication data not found');
     }
+
+    // Log raw publication data for debugging
+    console.log('=== RAW PUBMED DATA FOR PMID:', pmid, '===');
+    console.log(JSON.stringify(pubData, null, 2));
+    console.log('=== END RAW PUBMED DATA ===');
 
     // Helper function to extract DOI from article IDs
     const extractDOI = (articleIds) => {
@@ -108,6 +117,11 @@ export const transformPubMedData = (pmid, pubData) => {
         isbn: '',
         pubmedId: pmid.toString(),
         source: 'PubMed',
+        // AI-generated fields
+        aiSummary: null,
+        aiKeywords: [],
+        aiGenerating: false,
+        aiError: null,
         // Additional metadata for tracking
         importSource: {
             method: 'pubmed',
@@ -125,12 +139,13 @@ export const transformPubMedData = (pmid, pubData) => {
  * Search PubMed and return formatted publication objects
  * @param {string} searchTerm - The search query
  * @param {number} maxResults - Maximum number of results to return
- * @returns {Promise<Object[]>} Array of formatted publication objects
+ * @param {number} startIndex - Starting index for pagination (default: 0)
+ * @returns {Promise<{publications: Object[], totalCount: number}>} Object with publications array and total count
  */
-export const searchAndFormatPubMed = async (searchTerm, maxResults = 50) => {
+export const searchAndFormatPubMed = async (searchTerm, maxResults = 50, startIndex = 0) => {
     try {
         // Step 1: Search for PMIDs
-        const pmids = await searchPubMed(searchTerm, maxResults);
+        const { pmids, totalCount } = await searchPubMed(searchTerm, maxResults, startIndex);
         
         // Step 2: Get summaries for all PMIDs
         const summaryData = await getPubMedSummaries(pmids);
@@ -141,7 +156,10 @@ export const searchAndFormatPubMed = async (searchTerm, maxResults = 50) => {
             return transformPubMedData(pmid, pubData);
         });
 
-        return publications;
+        return {
+            publications,
+            totalCount
+        };
     } catch (error) {
         console.error('Error in searchAndFormatPubMed:', error);
         throw error;

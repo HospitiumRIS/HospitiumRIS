@@ -11,12 +11,6 @@ import {
   Paper,
   TextField,
   Button,
-  Tabs,
-  Tab,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   IconButton,
   Chip,
   Dialog,
@@ -24,8 +18,6 @@ import {
   DialogContent,
   DialogActions,
   MenuItem,
-  Avatar,
-  Badge,
   InputAdornment,
   Select,
   FormControl,
@@ -33,7 +25,6 @@ import {
   Divider,
   Tooltip,
   Alert,
-  Stack,
   LinearProgress,
   Table,
   TableBody,
@@ -1482,7 +1473,7 @@ export default function ManagePublications() {
               }}
               onClick={handleOpenLibraryBrowser}
             >
-              View Library
+              My Library
             </Button>
             <Button
               variant="contained"
@@ -1927,7 +1918,7 @@ export default function ManagePublications() {
           <DialogTitle sx={{ bgcolor: '#8b6cbc', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <LibraryAddIcon sx={{ mr: 1 }} />
-              {libraryViewMode === 'add' ? 'Add to Library' : 'Library Browser'}
+              {libraryViewMode === 'add' ? 'Add to My Library' : 'Library Browser'}
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Tooltip title="Create new folder at root">
