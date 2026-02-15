@@ -254,6 +254,7 @@ const KenyaNetworkVisualization = () => {
       return {
         id: author.author_id,
         name: author.name,
+        orcidId: author.orcidId || null,
         specialization: author.specialization,
         institution: author.institution,
         role: author.role,
@@ -268,6 +269,8 @@ const KenyaNetworkVisualization = () => {
         publicationsWithLead: publicationsWithLead.map(p => p.pub_id),
         manuscriptsWithLead: manuscriptsWithLead.map(m => m.manuscript_id),
         totalOutputs: totalOutputs,
+        globalCitations: author.globalCitations || 0,
+        hospitiumCitations: author.hospitiumCitations || 0,
         isPending: author.isPending || false
       };
     });
@@ -348,38 +351,15 @@ const KenyaNetworkVisualization = () => {
           return 550; // Much larger default distance to prevent clumping
         });
         
-        // Add a radial force to maintain the structured circular rings
-        fgRef.current.d3Force('radial', d3.forceRadial(node => {
-          if (node.isLead) return 0; // Lead at center
-          
-          // Maintain distinct circular rings with much more space for larger nodes
-          switch(node.collaborationLevel) {
-            case 'direct': return 450; // Much larger inner ring for 50px nodes
-            case 'secondary': return 700; // Much larger middle ring
-            default: return 950; // Much larger outer ring
-          }
-        }, 0, 0).strength(0.3)); // Reduced strength for more natural layout
-        
-        // Add collision detection adjusted for 50px nodes with more padding
-        fgRef.current.d3Force('collision', d3.forceCollide().radius(node => {
-          const baseSize = node.isLead ? 50 : Math.max(20, node.val); // Match actual node sizes
-          return baseSize + 50; // Much larger padding to prevent overlap
-        }).strength(0.7)); // Stronger collision to maintain spacing
-        
-        // Add a weak centering force to keep network together but allow spacing
-        fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(0.05));
-        
-        // Restart the simulation with new parameters
-        fgRef.current.d3ReheatSimulation();
-        
-        // Create structured circular layout like the reference image
+        // Create structured circular layout first
         const directNodes = networkData.nodes.filter(n => n.collaborationLevel === 'direct');
         const secondaryNodes = networkData.nodes.filter(n => n.collaborationLevel === 'secondary');
         const otherNodes = networkData.nodes.filter(n => n.collaborationLevel === 'none');
         
+        // Set initial positions with much larger radii to prevent clustering
         networkData.nodes.forEach((node, i) => {
           if (node.isLead) {
-            // Lead at center - larger and fixed
+            // Lead at center
             node.x = 0;
             node.y = 0;
             node.fx = 0;
@@ -387,58 +367,90 @@ const KenyaNetworkVisualization = () => {
           } else {
             let radius, angleIndex, totalInRing;
             
-            // Position based on collaboration level in distinct rings
+            // Position based on collaboration level in distinct rings with larger spacing
             switch(node.collaborationLevel) {
               case 'direct':
-                radius = 200; // Inner ring for direct collaborators
+                radius = 300; // Larger inner ring
                 angleIndex = directNodes.indexOf(node);
-                totalInRing = directNodes.length;
+                totalInRing = Math.max(directNodes.length, 1);
                 break;
               case 'secondary':
-                radius = 320; // Middle ring for secondary collaborators  
+                radius = 500; // Larger middle ring
                 angleIndex = secondaryNodes.indexOf(node);
-                totalInRing = secondaryNodes.length;
+                totalInRing = Math.max(secondaryNodes.length, 1);
                 break;
               default:
-                radius = 440; // Outer ring for other connections
+                radius = 700; // Larger outer ring
                 angleIndex = otherNodes.indexOf(node);
-                totalInRing = otherNodes.length;
+                totalInRing = Math.max(otherNodes.length, 1);
             }
             
             // Calculate evenly spaced angles around the circle
             const angleStep = (2 * Math.PI) / totalInRing;
             const angle = angleStep * angleIndex;
             
-            // Position nodes in perfect circles
+            // Position nodes in circles with initial positions
             node.x = radius * Math.cos(angle);
             node.y = radius * Math.sin(angle);
             
-            // Fix positions initially for structured layout
-            node.fx = node.x;
-            node.fy = node.y;
-            
-            // Keep positions more fixed for cleaner circular structure
-            setTimeout(() => {
-              if (node && !node.isLead) {
-                // Only release after layout is established
-                node.fx = undefined;
-                node.fy = undefined;
-              }
-            }, 2000);
+            // Add small random offset to break perfect symmetry
+            node.x += (Math.random() - 0.5) * 20;
+            node.y += (Math.random() - 0.5) * 20;
           }
         });
         
-        // Restart simulation
+        // Configure force simulation with much stronger repulsion
+        fgRef.current.d3Force('charge', d3.forceManyBody()
+          .strength(-2000) // Much stronger repulsion to prevent clustering
+          .distanceMin(50)
+          .distanceMax(1500)
+        );
+        
+        fgRef.current.d3Force('link', d3.forceLink()
+          .id(d => d.id)
+          .distance(200) // Even longer links
+          .strength(0.1) // Much weaker link force to allow spreading
+        );
+        
+        // Add very strong collision detection with large padding
+        fgRef.current.d3Force('collision', d3.forceCollide().radius(node => {
+          const baseSize = node.isLead ? 60 : Math.max(25, node.val);
+          return baseSize + 60; // Much larger padding to prevent overlap
+        }).strength(1).iterations(5));
+        
+        // Very weak centering force
+        fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(0.01));
+        
+        // Weaker radial force to allow more natural spreading
+        fgRef.current.d3Force('radial', d3.forceRadial(node => {
+          if (node.isLead) return 0;
+          switch(node.collaborationLevel) {
+            case 'direct': return 350;
+            case 'secondary': return 550;
+            default: return 750;
+          }
+        }, 0, 0).strength(0.1));
+        
+        // Warm up the simulation with more iterations
         if (fgRef.current._simulation) {
-          fgRef.current._simulation.alpha(1).restart();
+          fgRef.current._simulation
+            .alpha(1)
+            .alphaDecay(0.01) // Even slower decay for more settling time
+            .velocityDecay(0.2) // More momentum for spreading
+            .restart();
+          
+          // Run extra simulation ticks to spread nodes before rendering
+          for (let i = 0; i < 100; i++) {
+            fgRef.current._simulation.tick();
+          }
         }
         
-        // Initial zoom to perfectly frame the circular layout
+        // Zoom to fit after layout settles
         setTimeout(() => {
           if (fgRef.current && typeof fgRef.current.zoomToFit === 'function') {
-            fgRef.current.zoomToFit(500, 60); // Optimized for circular structure
+            fgRef.current.zoomToFit(800, 80);
           }
-        }, 2500); // Let the circular layout establish first
+        }, 1500);
       } catch (err) {
         console.error("Error configuring network layout:", err);
       }
@@ -1578,12 +1590,80 @@ const KenyaNetworkVisualization = () => {
                 </Box>
               </Box>
               
-              {/* Stats Cards - Below header */}
+              {/* Citation Cards - Above stats */}
               <Box sx={{ 
                 display: 'flex', 
                 gap: 1,
                 px: 2,
-                py: 2,
+                pt: 2,
+                pb: 1,
+                backgroundColor: '#f9fafb'
+              }}>
+                <Box sx={{ 
+                  flex: 1,
+                  py: 1.5,
+                  px: 1,
+                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                  border: '1px solid #fbbf24',
+                  borderRadius: 2,
+                  textAlign: 'center'
+                }}>
+                  <Typography sx={{ 
+                    fontWeight: 700, 
+                    color: '#92400e',
+                    fontSize: '1.25rem',
+                    lineHeight: 1
+                  }}>
+                    {selectedNode.globalCitations || 0}
+                  </Typography>
+                  <Typography sx={{ 
+                    color: '#78350f',
+                    fontWeight: 600,
+                    fontSize: '0.65rem',
+                    mt: 0.5,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    Global Citations
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ 
+                  flex: 1,
+                  py: 1.5,
+                  px: 1,
+                  background: 'linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%)',
+                  border: '1px solid #8b5cf6',
+                  borderRadius: 2,
+                  textAlign: 'center'
+                }}>
+                  <Typography sx={{ 
+                    fontWeight: 700, 
+                    color: '#5b21b6',
+                    fontSize: '1.25rem',
+                    lineHeight: 1
+                  }}>
+                    {selectedNode.hospitiumCitations || 0}
+                  </Typography>
+                  <Typography sx={{ 
+                    color: '#4c1d95',
+                    fontWeight: 600,
+                    fontSize: '0.65rem',
+                    mt: 0.5,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    My Citations in HospitiumRIS
+                  </Typography>
+                </Box>
+              </Box>
+              
+              {/* Stats Cards - Below citations */}
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 1,
+                px: 2,
+                pb: 2,
                 backgroundColor: '#f9fafb',
                 borderBottom: '1px solid #e5e7eb'
               }}>
@@ -1824,6 +1904,66 @@ const KenyaNetworkVisualization = () => {
                         </Typography>
                       </Box>
                     </Box>
+                    
+                    {/* ORCID ID */}
+                    {selectedNode.orcidId && (
+                      <Box sx={{ 
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 1.5,
+                        p: 2,
+                        backgroundColor: '#f0fdf4',
+                        borderRadius: 2,
+                        border: '1px solid #bbf7d0'
+                      }}>
+                        <Box sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 2,
+                          backgroundColor: '#dcfce7',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <svg width="18" height="18" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+                            <path fill="#A6CE39" d="M256 128c0 70.7-57.3 128-128 128S0 198.7 0 128S57.3 0 128 0s128 57.3 128 128z"/>
+                            <path fill="#FFF" d="M86.3 186.2H70.9V79.1h15.4v107.1zM108.9 79.1h41.6c39.6 0 57 28.3 57 53.6c0 27.5-21.5 53.6-56.8 53.6h-41.8V79.1zm15.4 93.3h24.5c34.9 0 42.9-26.5 42.9-39.7c0-21.5-13.7-39.7-43.7-39.7h-23.7v79.4z"/>
+                            <path fill="#FFF" d="M88.7 56.8c0 5.5-4.5 10.1-10.1 10.1s-10.1-4.6-10.1-10.1c0-5.6 4.5-10.1 10.1-10.1s10.1 4.6 10.1 10.1z"/>
+                          </svg>
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography sx={{ 
+                            color: '#6b7280',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.3px',
+                            mb: 0.25
+                          }}>
+                            ORCID iD
+                          </Typography>
+                          <Typography 
+                            component="a"
+                            href={`https://orcid.org/${selectedNode.orcidId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ 
+                              color: '#16a34a',
+                              fontWeight: 600,
+                              fontSize: '0.85rem',
+                              textDecoration: 'none',
+                              fontFamily: 'monospace',
+                              '&:hover': {
+                                textDecoration: 'underline'
+                              }
+                            }}
+                          >
+                            {selectedNode.orcidId}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    )}
                   </Box>
                 </Box>
               

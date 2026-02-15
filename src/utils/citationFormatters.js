@@ -28,6 +28,14 @@ export const formatAuthorNames = (authors, style, maxAuthors = 3) => {
       return formatAuthorsMLA(authorList, maxAuthors);
     case 'Chicago':
       return formatAuthorsChicago(authorList, maxAuthors);
+    case 'Harvard':
+      return formatAuthorsHarvard(authorList, maxAuthors);
+    case 'Vancouver':
+      return formatAuthorsVancouver(authorList, maxAuthors);
+    case 'IEEE':
+      return formatAuthorsIEEE(authorList, maxAuthors);
+    case 'AMA':
+      return formatAuthorsAMA(authorList, maxAuthors);
     default:
       return formatAuthorsAPA(authorList, maxAuthors);
   }
@@ -75,6 +83,84 @@ const formatAuthorsChicago = (authors, maxAuthors) => {
       : `${formatSingleAuthorChicago(authors[0])}, ${otherAuthors.slice(formatSingleAuthorChicago(authors[0]).length + 2)}, and ${lastAuthor}`;
   } else {
     return `${formatSingleAuthorChicago(authors[0])} et al.`;
+  }
+};
+
+// Harvard author formatting
+const formatAuthorsHarvard = (authors, maxAuthors) => {
+  if (authors.length === 1) {
+    return formatSingleAuthorAPA(authors[0]);
+  } else if (authors.length === 2) {
+    return `${formatSingleAuthorAPA(authors[0])} and ${formatSingleAuthorAPA(authors[1])}`;
+  } else if (authors.length <= maxAuthors) {
+    const lastAuthor = formatSingleAuthorAPA(authors[authors.length - 1]);
+    const otherAuthors = authors.slice(0, -1).map(formatSingleAuthorAPA).join(', ');
+    return `${otherAuthors} and ${lastAuthor}`;
+  } else {
+    return `${formatSingleAuthorAPA(authors[0])} et al.`;
+  }
+};
+
+// Vancouver author formatting (numbered style)
+const formatAuthorsVancouver = (authors, maxAuthors) => {
+  if (authors.length <= 6) {
+    return authors.map(author => {
+      const nameParts = author.trim().split(' ');
+      if (nameParts.length === 1) return nameParts[0];
+      const lastName = nameParts[nameParts.length - 1];
+      const initials = nameParts.slice(0, -1).map(name => name.charAt(0).toUpperCase()).join('');
+      return `${lastName} ${initials}`;
+    }).join(', ');
+  } else {
+    const firstSix = authors.slice(0, 6).map(author => {
+      const nameParts = author.trim().split(' ');
+      if (nameParts.length === 1) return nameParts[0];
+      const lastName = nameParts[nameParts.length - 1];
+      const initials = nameParts.slice(0, -1).map(name => name.charAt(0).toUpperCase()).join('');
+      return `${lastName} ${initials}`;
+    }).join(', ');
+    return `${firstSix}, et al.`;
+  }
+};
+
+// IEEE author formatting
+const formatAuthorsIEEE = (authors, maxAuthors) => {
+  if (authors.length === 1) {
+    const nameParts = authors[0].trim().split(' ');
+    if (nameParts.length === 1) return nameParts[0];
+    const firstName = nameParts.slice(0, -1).map(n => n.charAt(0).toUpperCase() + '.').join(' ');
+    const lastName = nameParts[nameParts.length - 1];
+    return `${firstName} ${lastName}`;
+  } else {
+    return authors.map(author => {
+      const nameParts = author.trim().split(' ');
+      if (nameParts.length === 1) return nameParts[0];
+      const firstName = nameParts.slice(0, -1).map(n => n.charAt(0).toUpperCase() + '.').join(' ');
+      const lastName = nameParts[nameParts.length - 1];
+      return `${firstName} ${lastName}`;
+    }).join(', ');
+  }
+};
+
+// AMA author formatting
+const formatAuthorsAMA = (authors, maxAuthors) => {
+  if (authors.length <= 6) {
+    return authors.map(author => {
+      const nameParts = author.trim().split(' ');
+      if (nameParts.length === 1) return nameParts[0];
+      const lastName = nameParts[nameParts.length - 1];
+      const initials = nameParts.slice(0, -1).map(name => name.charAt(0).toUpperCase()).join('');
+      return `${lastName} ${initials}`;
+    }).join(', ');
+  } else {
+    const firstThree = authors.slice(0, 3).map(author => {
+      const nameParts = author.trim().split(' ');
+      if (nameParts.length === 1) return nameParts[0];
+      const lastName = nameParts[nameParts.length - 1];
+      const initials = nameParts.slice(0, -1).map(name => name.charAt(0).toUpperCase()).join('');
+      return `${lastName} ${initials}`;
+    }).join(', ');
+    return `${firstThree}, et al`;
   }
 };
 
@@ -277,13 +363,186 @@ export const formatCitationChicago = (citation, type = 'inline') => {
 };
 
 /**
+ * Format citation in Harvard style
+ * @param {Object} citation - Citation object
+ * @param {string} type - 'inline' or 'bibliography'
+ * @returns {string} Formatted citation
+ */
+export const formatCitationHarvard = (citation, type = 'inline') => {
+  if (type === 'inline') {
+    const author = citation.authors && citation.authors[0] 
+      ? formatSingleAuthorAPA(citation.authors[0]).split(',')[0]
+      : 'Unknown Author';
+    const year = citation.year || 'n.d.';
+    
+    if (citation.authors && citation.authors.length > 2) {
+      const firstAuthor = formatSingleAuthorAPA(citation.authors[0]).split(',')[0];
+      return `(${firstAuthor} et al. ${year})`;
+    } else if (citation.authors && citation.authors.length === 2) {
+      const author1 = formatSingleAuthorAPA(citation.authors[0]).split(',')[0];
+      const author2 = formatSingleAuthorAPA(citation.authors[1]).split(',')[0];
+      return `(${author1} and ${author2} ${year})`;
+    } else {
+      return `(${author} ${year})`;
+    }
+  }
+  
+  const authors = formatAuthorNames(citation.authors, 'Harvard');
+  const year = citation.year ? `(${citation.year})` : '(n.d.)';
+  const title = citation.title ? `'${citation.title}'` : "'Untitled'";
+  
+  let formatted = `${authors} ${year} ${title}`;
+  
+  if (citation.journal) {
+    formatted += `, *${citation.journal}*`;
+    if (citation.volume) {
+      formatted += `, ${citation.volume}`;
+      if (citation.issue) {
+        formatted += `(${citation.issue})`;
+      }
+    }
+    if (citation.pages) {
+      formatted += `, pp. ${citation.pages}`;
+    }
+  }
+  
+  if (citation.doi) {
+    formatted += `. doi: ${citation.doi}`;
+  } else if (citation.url) {
+    formatted += `. Available at: ${citation.url}`;
+  }
+  
+  return formatted + '.';
+};
+
+/**
+ * Format citation in Vancouver style (numbered)
+ * @param {Object} citation - Citation object
+ * @param {string} type - 'inline' or 'bibliography'
+ * @param {number} number - Citation number for Vancouver style
+ * @returns {string} Formatted citation
+ */
+export const formatCitationVancouver = (citation, type = 'inline', number = 1) => {
+  if (type === 'inline') {
+    return `[${number}]`;
+  }
+  
+  const authors = formatAuthorNames(citation.authors, 'Vancouver');
+  const title = citation.title || 'Untitled';
+  
+  let formatted = `${authors}. ${title}`;
+  
+  if (citation.journal) {
+    formatted += `. ${citation.journal}`;
+    if (citation.year) {
+      formatted += `. ${citation.year}`;
+    }
+    if (citation.volume) {
+      formatted += `;${citation.volume}`;
+      if (citation.issue) {
+        formatted += `(${citation.issue})`;
+      }
+    }
+    if (citation.pages) {
+      formatted += `:${citation.pages}`;
+    }
+  }
+  
+  return formatted + '.';
+};
+
+/**
+ * Format citation in IEEE style
+ * @param {Object} citation - Citation object
+ * @param {string} type - 'inline' or 'bibliography'
+ * @param {number} number - Citation number for IEEE style
+ * @returns {string} Formatted citation
+ */
+export const formatCitationIEEE = (citation, type = 'inline', number = 1) => {
+  if (type === 'inline') {
+    return `[${number}]`;
+  }
+  
+  const authors = formatAuthorNames(citation.authors, 'IEEE');
+  const title = citation.title ? `"${citation.title}"` : '"Untitled"';
+  
+  let formatted = `${authors}, ${title}`;
+  
+  if (citation.journal) {
+    formatted += `, *${citation.journal}*`;
+    if (citation.volume) {
+      formatted += `, vol. ${citation.volume}`;
+      if (citation.issue) {
+        formatted += `, no. ${citation.issue}`;
+      }
+    }
+    if (citation.pages) {
+      formatted += `, pp. ${citation.pages}`;
+    }
+    if (citation.year) {
+      formatted += `, ${citation.year}`;
+    }
+  }
+  
+  if (citation.doi) {
+    formatted += `, doi: ${citation.doi}`;
+  }
+  
+  return formatted + '.';
+};
+
+/**
+ * Format citation in AMA style
+ * @param {Object} citation - Citation object
+ * @param {string} type - 'inline' or 'bibliography'
+ * @param {number} number - Citation number for AMA style
+ * @returns {string} Formatted citation
+ */
+export const formatCitationAMA = (citation, type = 'inline', number = 1) => {
+  if (type === 'inline') {
+    return `${number}`;
+  }
+  
+  const authors = formatAuthorNames(citation.authors, 'AMA');
+  const title = citation.title || 'Untitled';
+  
+  let formatted = `${authors}. ${title}`;
+  
+  if (citation.journal) {
+    formatted += `. *${citation.journal}*`;
+    if (citation.year) {
+      formatted += `. ${citation.year}`;
+    }
+    if (citation.volume) {
+      formatted += `;${citation.volume}`;
+      if (citation.issue) {
+        formatted += `(${citation.issue})`;
+      }
+    }
+    if (citation.pages) {
+      formatted += `:${citation.pages}`;
+    }
+  }
+  
+  if (citation.doi) {
+    formatted += `. doi:${citation.doi}`;
+  }
+  
+  return formatted;
+};
+
+/**
  * Get available citation styles
  * @returns {Array} Array of citation style objects
  */
 export const getCitationStyles = () => [
   { value: 'APA', label: 'APA 7th Edition', description: 'American Psychological Association' },
   { value: 'MLA', label: 'MLA 9th Edition', description: 'Modern Language Association' },
-  { value: 'Chicago', label: 'Chicago 17th Edition', description: 'Chicago Manual of Style' }
+  { value: 'Chicago', label: 'Chicago 17th Edition', description: 'Chicago Manual of Style' },
+  { value: 'Harvard', label: 'Harvard', description: 'Harvard Referencing Style' },
+  { value: 'Vancouver', label: 'Vancouver', description: 'Vancouver (Numbered) Style' },
+  { value: 'IEEE', label: 'IEEE', description: 'Institute of Electrical and Electronics Engineers' },
+  { value: 'AMA', label: 'AMA', description: 'American Medical Association' }
 ];
 
 /**
@@ -316,7 +575,11 @@ export const formatBibliography = (citations, style = 'APA', sortOrder = 'alphab
   const formatter = {
     'APA': formatCitationAPA,
     'MLA': formatCitationMLA,
-    'Chicago': formatCitationChicago
+    'Chicago': formatCitationChicago,
+    'Harvard': formatCitationHarvard,
+    'Vancouver': formatCitationVancouver,
+    'IEEE': formatCitationIEEE,
+    'AMA': formatCitationAMA
   }[style] || formatCitationAPA;
   
   const formattedEntries = sorted.map(citation => formatter(citation, 'bibliography'));

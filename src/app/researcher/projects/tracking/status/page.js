@@ -237,61 +237,95 @@ const ProjectStatusPage = () => {
 
 
   const renderOverviewCards = () => (
-    <Box sx={{ 
-      display: 'flex', 
-      gap: 3, 
-      mb: 3,
-      flexWrap: 'nowrap',
-      '& > *': { flex: 1, minWidth: 0 }
-    }}>
-      <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-        <CardContent sx={{ py: 2 }}>
+    <Grid container spacing={2.5} sx={{ mb: 4 }}>
+      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+        <Paper sx={{ 
+          p: 2, 
+          borderRadius: 2,
+          bgcolor: '#8b6cbc',
+          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+          border: 'none',
+          position: 'relative',
+          overflow: 'hidden',
+          height: '100px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}>
+          <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5, color: 'white' }}>
-                {stats.totalProjects}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                Total Projects
-              </Typography>
-            </Box>
-            <DashboardIcon sx={{ fontSize: 28, color: 'white', opacity: 0.8 }} />
+            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+              Total Projects
+            </Typography>
+            <DashboardIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
           </Box>
-        </CardContent>
-      </Card>
-
-      <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-        <CardContent sx={{ py: 2 }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+            {stats.totalProjects}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+            All tracked projects
+          </Typography>
+        </Paper>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+        <Paper sx={{ 
+          p: 2, 
+          borderRadius: 2,
+          bgcolor: '#8b6cbc',
+          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+          border: 'none',
+          position: 'relative',
+          overflow: 'hidden',
+          height: '100px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}>
+          <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5, color: 'white' }}>
-                {stats.activeProjects}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                Active Projects
-              </Typography>
-            </Box>
-            <TrackIcon sx={{ fontSize: 28, color: 'white', opacity: 0.8 }} />
+            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+              Active Projects
+            </Typography>
+            <TrackIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
           </Box>
-        </CardContent>
-      </Card>
-
-      <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-        <CardContent sx={{ py: 2 }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+            {stats.activeProjects}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+            Currently in progress
+          </Typography>
+        </Paper>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+        <Paper sx={{ 
+          p: 2, 
+          borderRadius: 2,
+          bgcolor: '#8b6cbc',
+          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+          border: 'none',
+          position: 'relative',
+          overflow: 'hidden',
+          height: '100px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}>
+          <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5, color: 'white' }}>
-                {stats.upcoming}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                Due This Week
-              </Typography>
-            </Box>
-            <ScheduleIcon sx={{ fontSize: 28, color: 'white', opacity: 0.8 }} />
+            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+              Due This Week
+            </Typography>
+            <ScheduleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
           </Box>
-        </CardContent>
-      </Card>
-    </Box>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+            {stats.upcoming}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+            Upcoming deadlines
+          </Typography>
+        </Paper>
+      </Grid>
+    </Grid>
   );
 
   // Milestone management functions

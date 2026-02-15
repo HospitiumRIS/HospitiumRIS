@@ -174,74 +174,122 @@ const PublicationsReportPage = () => {
         {/* Publications Overview Cards */}
         <Box sx={{ 
           display: 'flex', 
-          gap: 3, 
+          gap: 2.5, 
           mb: 4,
           flexWrap: 'wrap',
-          '& > *': { flex: 1, minWidth: { xs: '100%', sm: 'calc(50% - 12px)', lg: 'calc(25% - 12px)' } }
+          '& > *': { 
+            flex: '1 1 0',
+            minWidth: { xs: '100%', sm: 'calc(50% - 10px)', md: 'calc(25% - 19px)' }
+          }
         }}>
-          <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-            <CardContent sx={{ py: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Total Publications</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>
-                    {publicationsData.overview.totalPublications}
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}>
-                  <PublicationIcon />
-                </Avatar>
-              </Box>
-            </CardContent>
-          </Card>
-
-          <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-            <CardContent sx={{ py: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Total Citations</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>
-                    {publicationsData.overview.totalCitations}
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}>
-                  <CitationIcon />
-                </Avatar>
-              </Box>
-            </CardContent>
-          </Card>
-
-          <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-            <CardContent sx={{ py: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Total Views</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>
-                    {publicationsData.overview.totalViews.toLocaleString()}
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}>
-                  <ViewIcon />
-                </Avatar>
-              </Box>
-            </CardContent>
-          </Card>
-
-          <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-            <CardContent sx={{ py: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>H-Index</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>
-                    {publicationsData.overview.hIndex}
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}>
-                  <StarIcon />
-                </Avatar>
-              </Box>
-            </CardContent>
-          </Card>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Publications
+              </Typography>
+              <PublicationIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {publicationsData.overview.totalPublications}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              All research outputs
+            </Typography>
+          </Paper>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Citations
+              </Typography>
+              <CitationIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {publicationsData.overview.totalCitations}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Citation count
+            </Typography>
+          </Paper>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Views
+              </Typography>
+              <ViewIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {publicationsData.overview.totalViews.toLocaleString()}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Publication views
+            </Typography>
+          </Paper>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                H-Index
+              </Typography>
+              <StarIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {publicationsData.overview.hIndex}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Research impact metric
+            </Typography>
+          </Paper>
         </Box>
 
         {/* Main Content Tabs */}

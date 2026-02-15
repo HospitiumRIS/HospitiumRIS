@@ -226,10 +226,21 @@ export async function GET(request) {
     // Build the authors list
     const authors = [];
 
+    // Calculate global citations (from all publications)
+    const globalCitations = userPublications.reduce((sum, pub) => {
+      return sum + (pub.citationCount || 0);
+    }, 0);
+    
+    // Calculate HospitiumRIS citations (from manuscripts)
+    const hospitiumCitations = userManuscripts.reduce((sum, manuscript) => {
+      return sum + (manuscript._count?.citations || 0);
+    }, 0);
+
     // Add current user as lead investigator
     authors.push({
       author_id: currentUser.id,
       name: `${currentUser.givenName} ${currentUser.familyName}`,
+      orcidId: currentUser.orcidId || null,
       specialization: currentUser.researchProfile?.specialization?.join(', ') || 'General Research',
       institution: currentUser.institution?.name || currentUser.foundation?.institutionName || 'Independent Researcher',
       role: 'Lead Investigator/Current User',
@@ -241,6 +252,8 @@ export async function GET(request) {
         publications: userPublications.map(p => p.id),
         manuscripts: userManuscripts.map(m => m.id)
       },
+      globalCitations: globalCitations,
+      hospitiumCitations: hospitiumCitations,
       isLead: true
     });
 

@@ -709,200 +709,124 @@ export default function ProposalLiaisonPage() {
   };
 
   const renderStatsCards = () => (
-    <Box sx={{ 
-      display: 'flex', 
-      gap: 3, 
-      mb: 4,
-      flexWrap: 'wrap',
-      '& > *': { 
-        flex: '1 1 0',
-        minWidth: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(25% - 18px)' }
-      }
-    }}>
-      <Card 
-        elevation={0}
-        sx={{ 
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d4 100%)',
-          color: 'white',
-          borderRadius: 3,
+    <Grid container spacing={2.5} sx={{ mb: 4 }}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Paper sx={{ 
+          p: 2, 
+          borderRadius: 2,
+          bgcolor: '#8b6cbc',
+          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+          border: 'none',
           position: 'relative',
-          overflow: 'visible',
-          height: 120
-        }}
-      >
-        <CardContent sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          overflow: 'hidden',
+          height: '100px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}>
+          <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ 
-              bgcolor: 'rgba(255,255,255,0.2)', 
-              p: 1, 
-              borderRadius: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <GrantIcon sx={{ fontSize: 20 }} />
-            </Box>
-            <Chip 
-              label="+0%" 
-              size="small" 
-              sx={{ 
-                bgcolor: 'rgba(255,255,255,0.25)',
-                color: 'white',
-                fontWeight: 600,
-                fontSize: '0.7rem',
-                height: 20
-              }}
-            />
-          </Box>
-          <Box>
-            <Typography variant="h4" fontWeight="bold" sx={{ mb: 0.5 }}>
-              {stats.total}
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.875rem' }}>
+            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
               Total Applications
             </Typography>
+            <GrantIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
           </Box>
-        </CardContent>
-      </Card>
-      
-      <Card 
-        elevation={0}
-        sx={{ 
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d4 100%)',
-          color: 'white',
-          borderRadius: 3,
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+            {stats.total}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+            All grant applications
+          </Typography>
+        </Paper>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Paper sx={{ 
+          p: 2, 
+          borderRadius: 2,
+          bgcolor: '#8b6cbc',
+          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+          border: 'none',
           position: 'relative',
-          overflow: 'visible',
-          height: 120
-        }}
-      >
-        <CardContent sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          overflow: 'hidden',
+          height: '100px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}>
+          <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ 
-              bgcolor: 'rgba(255,255,255,0.2)', 
-              p: 1, 
-              borderRadius: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <PendingIcon sx={{ fontSize: 20 }} />
-            </Box>
-            <Chip 
-              label="+0%" 
-              size="small" 
-              sx={{ 
-                bgcolor: 'rgba(255,255,255,0.25)',
-                color: 'white',
-                fontWeight: 600,
-                fontSize: '0.7rem',
-                height: 20
-              }}
-            />
-          </Box>
-          <Box>
-            <Typography variant="h4" fontWeight="bold" sx={{ mb: 0.5 }}>
-              {stats.underReview}
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.875rem' }}>
+            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
               Under Review
             </Typography>
+            <PendingIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
           </Box>
-        </CardContent>
-      </Card>
-      
-      <Card 
-        elevation={0}
-        sx={{ 
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d4 100%)',
-          color: 'white',
-          borderRadius: 3,
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+            {stats.underReview}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+            Currently being reviewed
+          </Typography>
+        </Paper>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Paper sx={{ 
+          p: 2, 
+          borderRadius: 2,
+          bgcolor: '#8b6cbc',
+          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+          border: 'none',
           position: 'relative',
-          overflow: 'visible',
-          height: 120
-        }}
-      >
-        <CardContent sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          overflow: 'hidden',
+          height: '100px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}>
+          <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ 
-              bgcolor: 'rgba(255,255,255,0.2)', 
-              p: 1, 
-              borderRadius: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <CheckCircleIcon sx={{ fontSize: 20 }} />
-            </Box>
-            <Chip 
-              label="+0%" 
-              size="small" 
-              sx={{ 
-                bgcolor: 'rgba(255,255,255,0.25)',
-                color: 'white',
-                fontWeight: 600,
-                fontSize: '0.7rem',
-                height: 20
-              }}
-            />
-          </Box>
-          <Box>
-            <Typography variant="h4" fontWeight="bold" sx={{ mb: 0.5 }}>
-              {stats.approved}
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.875rem' }}>
+            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
               Approved
             </Typography>
+            <CheckCircleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
           </Box>
-        </CardContent>
-      </Card>
-      
-      <Card 
-        elevation={0}
-        sx={{ 
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d4 100%)',
-          color: 'white',
-          borderRadius: 3,
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+            {stats.approved}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+            Successfully approved
+          </Typography>
+        </Paper>
+      </Grid>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Paper sx={{ 
+          p: 2, 
+          borderRadius: 2,
+          bgcolor: '#8b6cbc',
+          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+          border: 'none',
           position: 'relative',
-          overflow: 'visible',
-          height: 120
-        }}
-      >
-        <CardContent sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          overflow: 'hidden',
+          height: '100px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}>
+          <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ 
-              bgcolor: 'rgba(255,255,255,0.2)', 
-              p: 1, 
-              borderRadius: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <MoneyIcon sx={{ fontSize: 20 }} />
-            </Box>
-            <Chip 
-              label="+0%" 
-              size="small" 
-              sx={{ 
-                bgcolor: 'rgba(255,255,255,0.25)',
-                color: 'white',
-                fontWeight: 600,
-                fontSize: '0.7rem',
-                height: 20
-              }}
-            />
-          </Box>
-          <Box>
-            <Typography variant="h4" fontWeight="bold" sx={{ mb: 0.5 }}>
-              ${(stats.totalFunding / 1000).toFixed(0)}K
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.875rem' }}>
+            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
               Total Funding
             </Typography>
+            <MoneyIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
           </Box>
-        </CardContent>
-      </Card>
-    </Box>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+            ${(stats.totalFunding / 1000).toFixed(0)}K
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+            Approved funding amount
+          </Typography>
+        </Paper>
+      </Grid>
+    </Grid>
   );
 
   const renderApplicationCard = (application) => (

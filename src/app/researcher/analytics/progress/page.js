@@ -243,74 +243,122 @@ const ProjectProgressPage = () => {
         {/* Progress Overview Cards */}
         <Box sx={{ 
           display: 'flex', 
-          gap: 3, 
+          gap: 2.5, 
           mb: 4,
           flexWrap: 'wrap',
-          '& > *': { flex: 1, minWidth: { xs: '100%', sm: 'calc(50% - 12px)', lg: 'calc(25% - 12px)' } }
+          '& > *': { 
+            flex: '1 1 0',
+            minWidth: { xs: '100%', sm: 'calc(50% - 10px)', md: 'calc(25% - 19px)' }
+          }
         }}>
-          <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-            <CardContent sx={{ py: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Total Projects</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>
-                    {progressData.overview.totalProjects}
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}>
-                  <ProjectIcon />
-                </Avatar>
-              </Box>
-            </CardContent>
-          </Card>
-
-          <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-            <CardContent sx={{ py: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Completed</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>
-                    {progressData.overview.completedProjects}
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}>
-                  <CompletedIcon />
-                </Avatar>
-              </Box>
-            </CardContent>
-          </Card>
-
-          <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-            <CardContent sx={{ py: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Overall Progress</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>
-                    {progressData.overview.overallProgress}%
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}>
-                  <TrendingUpIcon />
-                </Avatar>
-              </Box>
-            </CardContent>
-          </Card>
-
-          <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-            <CardContent sx={{ py: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Budget Utilization</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>
-                    {progressData.overview.budgetUtilization}%
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}>
-                  <BudgetIcon />
-                </Avatar>
-              </Box>
-            </CardContent>
-          </Card>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Projects
+              </Typography>
+              <ProjectIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {progressData.overview.totalProjects}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              All tracked projects
+            </Typography>
+          </Paper>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Completed
+              </Typography>
+              <CompletedIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {progressData.overview.completedProjects}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Successfully finished
+            </Typography>
+          </Paper>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Overall Progress
+              </Typography>
+              <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {progressData.overview.overallProgress}%
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Average completion rate
+            </Typography>
+          </Paper>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Budget Utilization
+              </Typography>
+              <BudgetIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {progressData.overview.budgetUtilization}%
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Funds utilized
+            </Typography>
+          </Paper>
         </Box>
 
         {/* Main Content Tabs */}

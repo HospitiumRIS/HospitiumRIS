@@ -342,76 +342,124 @@ const BudgetManagementPage = () => {
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Budget Overview Cards */}
-        <Box sx={{ 
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
-          gap: 2.5,
-          mb: 4
-        }}>
-          <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-            <CardContent sx={{ py: 2 }}>
+        <Grid container spacing={2.5} sx={{ mb: 4 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Total Budget</Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'white' }}>
-                    ${budgetStats.totalBudget.toLocaleString()}
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}>
-                  <MoneyIcon />
-                </Avatar>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Total Budget
+                </Typography>
+                <MoneyIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
-            </CardContent>
-          </Card>
-
-          <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-            <CardContent sx={{ py: 2 }}>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                ${budgetStats.totalBudget.toLocaleString()}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Allocated funding
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Total Spent</Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'white' }}>
-                    ${budgetStats.totalSpent.toLocaleString()}
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}>
-                  <ExpenseIcon />
-                </Avatar>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Total Spent
+                </Typography>
+                <ExpenseIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
-            </CardContent>
-          </Card>
-
-          <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-            <CardContent sx={{ py: 2 }}>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                ${budgetStats.totalSpent.toLocaleString()}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Expenses to date
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Avg Utilization</Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'white' }}>
-                    {budgetStats.avgUtilization.toFixed(1)}%
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}>
-                  <TrendingUpIcon />
-                </Avatar>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Avg Utilization
+                </Typography>
+                <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
-            </CardContent>
-          </Card>
-
-          <Card elevation={2} sx={{ bgcolor: '#8b6cbc' }}>
-            <CardContent sx={{ py: 2 }}>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {budgetStats.avgUtilization.toFixed(1)}%
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Budget utilization rate
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>Active Projects</Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'white' }}>
-                    {budgetStats.activeProjects}
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', color: 'white' }}>
-                  <AnalyticsIcon />
-                </Avatar>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Active Projects
+                </Typography>
+                <AnalyticsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
-            </CardContent>
-          </Card>
-        </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {budgetStats.activeProjects}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Projects with budgets
+              </Typography>
+            </Paper>
+          </Grid>
+        </Grid>
 
         {/* Search Projects */}
         <Paper sx={{ 

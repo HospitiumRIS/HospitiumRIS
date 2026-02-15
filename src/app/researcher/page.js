@@ -516,7 +516,7 @@ const ResearcherDashboard = () => {
       }}
     >
       <PageHeader
-        title={`${greeting}, ${getUserDisplayName()}!`}
+        title={`${greeting}, ${getUserDisplayName()}`}
         description={
           <>
             <span style={{ fontSize: '0.95rem', fontWeight: 400, opacity: 0.9 }}>
@@ -548,187 +548,124 @@ const ResearcherDashboard = () => {
         ) : dashboardData && (
           <>
         {/* Stats Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          {/* Total Publications */}
+        <Grid container spacing={2.5} sx={{ mb: 4 }}>
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-                  height: '100%',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: '50%',
-                    height: '100%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '50% 0 0 50%',
-                    transform: 'translateX(60%)'
-                  }
-                }}>
-                  <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <ArticleIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label={dashboardData.stats.totalPublications.change}
-                    size="small"
-                    sx={{ 
-                          backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                          fontSize: '0.7rem',
-                          fontWeight: 600,
-                          border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {dashboardData.stats.totalPublications.value}
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Total Publications
                 </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                      Publications
-                </Typography>
-              </CardContent>
-            </Card>
+                <ArticleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {dashboardData.stats.totalPublications.value}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                All research outputs
+              </Typography>
+            </Paper>
           </Grid>
-
-          {/* Ongoing Projects */}
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-                  height: '100%',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: '50%',
-                    height: '100%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '50% 0 0 50%',
-                    transform: 'translateX(60%)'
-                  }
-                }}>
-                  <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <ProjectIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label={dashboardData.stats.ongoingProjects.change}
-                    size="small"
-                    sx={{ 
-                          backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                          fontSize: '0.7rem',
-                          fontWeight: 600,
-                          border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {dashboardData.stats.ongoingProjects.value}
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Active Projects
                 </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                      Active Projects
-                </Typography>
-              </CardContent>
-            </Card>
+                <ProjectIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {dashboardData.stats.ongoingProjects.value}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Ongoing research work
+              </Typography>
+            </Paper>
           </Grid>
-
-          {/* Collaborations */}
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-                  height: '100%',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: '50%',
-                    height: '100%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '50% 0 0 50%',
-                    transform: 'translateX(60%)'
-                  }
-                }}>
-                  <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <CollaborationIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label={dashboardData.stats.collaborations.change}
-                    size="small"
-                    sx={{ 
-                          backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                          fontSize: '0.7rem',
-                          fontWeight: 600,
-                          border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {dashboardData.stats.collaborations.value}
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Collaborators
                 </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                      Collaborators
-                </Typography>
-              </CardContent>
-            </Card>
+                <CollaborationIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {dashboardData.stats.collaborations.value}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Active team members
+              </Typography>
+            </Paper>
           </Grid>
-
-          {/* Citation Count */}
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-                  height: '100%',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: '50%',
-                    height: '100%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '50% 0 0 50%',
-                    transform: 'translateX(60%)'
-                  }
-                }}>
-                  <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <TrendingUpIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label={dashboardData.stats.citationImpact.change}
-                    size="small"
-                    sx={{ 
-                          backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                          fontSize: '0.7rem',
-                          fontWeight: 600,
-                          border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                    <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {dashboardData.stats.citationImpact.value}
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Citations
                 </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                  Citation Count
-                </Typography>
-              </CardContent>
-            </Card>
+                <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {dashboardData.stats.citationImpact.value}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Total citation count
+              </Typography>
+            </Paper>
           </Grid>
-          </Grid>
+        </Grid>
 
         <Grid container spacing={4}>
           {/* Research Analytics */}
@@ -826,77 +763,154 @@ const ResearcherDashboard = () => {
                       </FormControl>
                     </Box>
                 
-                    {/* Enhanced Chart */}
+                    {/* Enhanced Chart with Proper Scaling */}
                 <Box sx={{ 
-                      height: 240, 
+                      height: 280, 
                   display: 'flex', 
-                  alignItems: 'end', 
-                  justifyContent: 'space-around',
+                  flexDirection: 'column',
                       background: `linear-gradient(135deg, ${analyticsDataType === 'publications' ? 'rgba(139, 108, 188, 0.02)' : 'rgba(255, 107, 107, 0.02)'} 0%, ${analyticsDataType === 'publications' ? 'rgba(139, 108, 188, 0.05)' : 'rgba(255, 107, 107, 0.05)'} 100%)`,
                       borderRadius: 2,
                       p: 3,
                       mb: 3,
                       border: `1px solid ${analyticsDataType === 'publications' ? 'rgba(139, 108, 188, 0.1)' : 'rgba(255, 107, 107, 0.1)'}`
                 }}>
-                  {getAnalyticsData().map((item, index) => {
-                    const colors = getAnalyticsColor();
-                    return (
-                        <Box key={index} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                      <Tooltip 
-                        title={getTooltipContent(item, index)}
-                        arrow
-                        placement="top"
-                        componentsProps={{
-                          tooltip: {
-                            sx: {
-                              bgcolor: colors.primary,
-                              color: 'white',
-                              fontSize: '0.875rem',
-                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                              borderRadius: 2,
-                              p: 1.5
-                            }
-                          },
-                          arrow: {
-                            sx: {
-                              color: colors.primary
-                            }
-                          }
-                        }}
-                      >
-                      <Box sx={{ 
-                            width: analyticsTimeRange === '1year' ? 32 : 48,
-                            height: Math.max(20, (item.count * 60) + 20),
-                            background: item.count > 0 
-                              ? `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)` 
-                              : `${colors.primary}33`,
-                            borderRadius: 2,
-                            mb: 1.5,
-                            position: 'relative',
-                            transition: 'all 0.3s ease',
-                            cursor: 'pointer',
-                            '&:hover': {
-                              transform: 'scale(1.08)',
-                              boxShadow: `0 6px 20px ${colors.primary}66`
-                            },
-                            '&::before': {
-                              content: `"${item.count}"`,
-                              position: 'absolute',
-                              top: -25,
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
-                              color: colors.primary
-                            }
-                          }} />
-                      </Tooltip>
-                          <Typography variant="body2" sx={{ color: '#4a5568', fontWeight: 500, fontSize: analyticsTimeRange === '1year' ? '0.7rem' : '0.875rem' }}>
-                        {item.month}
-                      </Typography>
+                  {/* Y-axis labels */}
+                  <Box sx={{ display: 'flex', mb: 1 }}>
+                    <Box sx={{ width: 40, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: 200, pr: 1 }}>
+                      {(() => {
+                        const data = getAnalyticsData();
+                        const maxValue = Math.max(...data.map(d => d.count), 1);
+                        const steps = 4;
+                        return Array.from({ length: steps + 1 }, (_, i) => {
+                          const value = Math.round((maxValue / steps) * (steps - i));
+                          return (
+                            <Typography key={i} variant="caption" sx={{ color: '#718096', fontSize: '0.7rem', textAlign: 'right' }}>
+                              {value}
+                            </Typography>
+                          );
+                        });
+                      })()}
                     </Box>
-                    );
-                  })}
+                    
+                    {/* Chart area */}
+                    <Box sx={{ 
+                      flex: 1,
+                      height: 200,
+                      display: 'flex', 
+                      alignItems: 'flex-end', 
+                      justifyContent: 'space-around',
+                      borderLeft: '2px solid rgba(0,0,0,0.1)',
+                      borderBottom: '2px solid rgba(0,0,0,0.1)',
+                      position: 'relative',
+                      pl: 2
+                    }}>
+                      {/* Grid lines */}
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <Box
+                          key={i}
+                          sx={{
+                            position: 'absolute',
+                            left: 0,
+                            right: 0,
+                            bottom: `${(i / 4) * 100}%`,
+                            height: '1px',
+                            bgcolor: 'rgba(0,0,0,0.05)',
+                            zIndex: 0
+                          }}
+                        />
+                      ))}
+                      
+                      {/* Bars */}
+                      {(() => {
+                        const data = getAnalyticsData();
+                        const maxValue = Math.max(...data.map(d => d.count), 1);
+                        const colors = getAnalyticsColor();
+                        
+                        return data.map((item, index) => {
+                          const heightPercentage = (item.count / maxValue) * 100;
+                          const barHeight = Math.max((heightPercentage / 100) * 180, 8);
+                          
+                          return (
+                            <Box key={index} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, zIndex: 1 }}>
+                              <Tooltip 
+                                title={getTooltipContent(item, index)}
+                                arrow
+                                placement="top"
+                                componentsProps={{
+                                  tooltip: {
+                                    sx: {
+                                      bgcolor: colors.primary,
+                                      color: 'white',
+                                      fontSize: '0.875rem',
+                                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                      borderRadius: 2,
+                                      p: 1.5
+                                    }
+                                  },
+                                  arrow: {
+                                    sx: {
+                                      color: colors.primary
+                                    }
+                                  }
+                                }}
+                              >
+                                <Box sx={{ 
+                                  width: data.length > 8 ? 28 : 40,
+                                  height: barHeight,
+                                  background: item.count > 0 
+                                    ? `linear-gradient(180deg, ${colors.primary} 0%, ${colors.secondary} 100%)` 
+                                    : `${colors.primary}22`,
+                                  borderRadius: '4px 4px 0 0',
+                                  position: 'relative',
+                                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                  cursor: 'pointer',
+                                  boxShadow: item.count > 0 ? `0 2px 8px ${colors.primary}33` : 'none',
+                                  '&:hover': {
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: `0 8px 24px ${colors.primary}55`,
+                                    filter: 'brightness(1.1)'
+                                  },
+                                  '&::after': item.count > 0 ? {
+                                    content: `"${item.count}"`,
+                                    position: 'absolute',
+                                    top: -22,
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 700,
+                                    color: colors.primary,
+                                    bgcolor: 'white',
+                                    px: 0.75,
+                                    py: 0.25,
+                                    borderRadius: 1,
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                    whiteSpace: 'nowrap'
+                                  } : {}
+                                }} />
+                              </Tooltip>
+                            </Box>
+                          );
+                        });
+                      })()}
+                    </Box>
+                  </Box>
+                  
+                  {/* X-axis labels */}
+                  <Box sx={{ display: 'flex', ml: 5 }}>
+                    {getAnalyticsData().map((item, index) => (
+                      <Box key={index} sx={{ flex: 1, textAlign: 'center' }}>
+                        <Typography variant="caption" sx={{ 
+                          color: '#4a5568', 
+                          fontWeight: 600, 
+                          fontSize: getAnalyticsData().length > 8 ? '0.65rem' : '0.75rem',
+                          display: 'block',
+                          mt: 0.5
+                        }}>
+                          {item.month}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
                 </Box>
 
                     <Box sx={{ display: 'flex', justifyContent: 'center', gap: 6 }}>

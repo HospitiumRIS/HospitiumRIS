@@ -136,11 +136,17 @@ export default function ManagePublications() {
     severity: 'success' // 'success', 'error', 'warning', 'info'
   });
   
-  const [recentPublicationsCount, setRecentPublicationsCount] = useState(0);
   
   // Batch selection and delete
   const [selectedPublications, setSelectedPublications] = useState([]);
   const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
+  
+  // Track if component is mounted (client-side only)
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
@@ -353,20 +359,18 @@ export default function ManagePublications() {
   }, [publications, searchQuery, typeFilter, sortBy]);
 
   // Calculate recent publications count (client-side only to avoid hydration mismatch)
-  useEffect(() => {
-    if (publications.length > 0) {
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      
-      const count = publications.filter(pub => {
-        if (!pub.createdAt) return false;
-        const pubDate = new Date(pub.createdAt);
-        return pubDate >= sixMonthsAgo;
-      }).length;
-      
-      setRecentPublicationsCount(count);
-    }
-  }, [publications]);
+  const recentPublicationsCount = React.useMemo(() => {
+    if (!isMounted || publications.length === 0) return 0;
+    
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    return publications.filter(pub => {
+      if (!pub.createdAt) return false;
+      const pubDate = new Date(pub.createdAt);
+      return pubDate >= sixMonthsAgo;
+    }).length;
+  }, [isMounted, publications]);
 
   const getStatusIcon = (status) => {
     switch (status) {

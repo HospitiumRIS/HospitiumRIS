@@ -37,7 +37,15 @@ import {
   Description as DescriptionIcon,
   FormatQuote as FormatQuoteIcon
 } from '@mui/icons-material';
-import { formatCitationAPA, formatCitationMLA, formatCitationChicago } from '@/utils/citationFormatters';
+import { 
+  formatCitationAPA, 
+  formatCitationMLA, 
+  formatCitationChicago,
+  formatCitationHarvard,
+  formatCitationVancouver,
+  formatCitationIEEE,
+  formatCitationAMA
+} from '@/utils/citationFormatters';
 
 const BibliographyGenerator = ({ 
   open, 
@@ -175,7 +183,11 @@ const BibliographyGenerator = ({
     const formatter = {
       'APA': formatCitationAPA,
       'MLA': formatCitationMLA,
-      'Chicago': formatCitationChicago
+      'Chicago': formatCitationChicago,
+      'Harvard': formatCitationHarvard,
+      'Vancouver': formatCitationVancouver,
+      'IEEE': formatCitationIEEE,
+      'AMA': formatCitationAMA
     }[citationStyle] || formatCitationAPA;
     
     const formattedEntries = processedCitations.map(citation => {
@@ -374,6 +386,10 @@ const BibliographyGenerator = ({
               <MenuItem value="APA">APA 7th Edition</MenuItem>
               <MenuItem value="MLA">MLA 9th Edition</MenuItem>
               <MenuItem value="Chicago">Chicago 17th Edition</MenuItem>
+              <MenuItem value="Harvard">Harvard</MenuItem>
+              <MenuItem value="Vancouver">Vancouver</MenuItem>
+              <MenuItem value="IEEE">IEEE</MenuItem>
+              <MenuItem value="AMA">AMA</MenuItem>
             </Select>
           </FormControl>
           

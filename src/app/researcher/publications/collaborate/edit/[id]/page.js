@@ -150,8 +150,10 @@ import VersionHistorySidebar from './components/VersionHistorySidebar';
 import TrackedChangesSidebar from './components/TrackedChangesSidebar';
 import CommentHighlight from './extensions/CommentHighlight';
 import TrackChanges from './extensions/TrackChanges';
+import { CitationMark } from './extensions/CitationMark';
 import BibliographyGenerator from '@/components/Bibliography/BibliographyGenerator';
 import ReferencesHoverButton from '@/components/Bibliography/ReferencesHoverButton';
+import CitationHoverMenu from './components/CitationHoverMenu';
 
 // Custom TipTap Extensions Configuration
 const extensions = [
@@ -203,6 +205,7 @@ const extensions = [
     onChangeAccepted: () => {},   // Will be set when editor initializes
     onChangeRejected: () => {},   // Will be set when editor initializes
   }),
+  CitationMark,
 ];
 
 // Toolbar Button Component
@@ -632,6 +635,64 @@ export default function ManuscriptEditor() {
     [filterCitations, citationSearch]
   );
 
+  // Handle citation update
+  const handleUpdateCitation = (citationId, citationData) => {
+    if (!editor) return;
+    
+    const formattedCitation = formatCitation(citationData);
+    editor.chain().focus().updateCitation(citationId, formattedCitation).run();
+  };
+
+  // Handle citation deletion
+  const handleDeleteCitation = async (citationId) => {
+    if (!editor) return;
+    
+    // Remove citation mark from document
+    editor.chain().focus().removeCitation(citationId).run();
+    
+    // Decrement citation count in database
+    try {
+      if (!manuscriptId) return;
+      
+      const response = await fetch(`/api/manuscripts/${manuscriptId}/citations/${citationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('Citation removed from manuscript');
+      } else {
+        console.error('Failed to remove citation:', result.error);
+      }
+    } catch (error) {
+      console.error('Error removing citation:', error);
+    }
+  };
+
+  // Get citations used in document
+  const getUsedCitations = () => {
+    if (!editor) return [];
+    
+    const citationIds = new Set();
+    const { doc } = editor.state;
+    
+    doc.descendants((node) => {
+      if (node.isText && node.marks) {
+        node.marks.forEach(mark => {
+          if (mark.type.name === 'citation' && mark.attrs.citationId) {
+            citationIds.add(mark.attrs.citationId);
+          }
+        });
+      }
+    });
+    
+    return Array.from(citationIds);
+  };
+
   // Citation insertion function (defined as regular function to avoid dependency issues)
   const insertCitation = async (citation) => {
     if (!editor) return;
@@ -644,11 +705,11 @@ export default function ManuscriptEditor() {
         .chain()
         .focus()
         .setTextSelection({ from: triggerPosition.startPos, to: triggerPosition.endPos })
-        .insertContent(formattedCitation)
+        .setCitation(citation.id, citation, formattedCitation)
         .run();
     } else {
       // Fallback to inserting at current position
-      editor.chain().focus().insertContent(formattedCitation).run();
+      editor.chain().focus().setCitation(citation.id, citation, formattedCitation).run();
     }
     
     // Automatically add citation to manuscript library
@@ -2915,6 +2976,13 @@ export default function ManuscriptEditor() {
                 setBibliographyGeneratorOpen(true);
               }}
             />
+            
+            {/* Citation Hover Menu */}
+            <CitationHoverMenu
+              editor={editor}
+              onUpdateCitation={handleUpdateCitation}
+              onDeleteCitation={handleDeleteCitation}
+            />
           </Box>
         </Box>
 
@@ -3191,6 +3259,78 @@ export default function ManuscriptEditor() {
             )}
           </ListItemIcon>
           Citation Style: Chicago
+        </MuiMenuItem>
+
+        {/* Citation Style: Harvard */}
+        <MuiMenuItem 
+          onClick={() => {
+            setCitationStyle('Harvard');
+            setCitationMenuAnchor(null);
+          }}
+          className={citationStyle === 'Harvard' ? 'checked' : ''}
+        >
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            {citationStyle === 'Harvard' ? (
+              <RadioButtonCheckedIcon fontSize="small" sx={{ color: '#8b6cbc' }} />
+            ) : (
+              <RadioButtonUncheckedIcon fontSize="small" sx={{ color: '#666' }} />
+            )}
+          </ListItemIcon>
+          Citation Style: Harvard
+        </MuiMenuItem>
+
+        {/* Citation Style: Vancouver */}
+        <MuiMenuItem 
+          onClick={() => {
+            setCitationStyle('Vancouver');
+            setCitationMenuAnchor(null);
+          }}
+          className={citationStyle === 'Vancouver' ? 'checked' : ''}
+        >
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            {citationStyle === 'Vancouver' ? (
+              <RadioButtonCheckedIcon fontSize="small" sx={{ color: '#8b6cbc' }} />
+            ) : (
+              <RadioButtonUncheckedIcon fontSize="small" sx={{ color: '#666' }} />
+            )}
+          </ListItemIcon>
+          Citation Style: Vancouver
+        </MuiMenuItem>
+
+        {/* Citation Style: IEEE */}
+        <MuiMenuItem 
+          onClick={() => {
+            setCitationStyle('IEEE');
+            setCitationMenuAnchor(null);
+          }}
+          className={citationStyle === 'IEEE' ? 'checked' : ''}
+        >
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            {citationStyle === 'IEEE' ? (
+              <RadioButtonCheckedIcon fontSize="small" sx={{ color: '#8b6cbc' }} />
+            ) : (
+              <RadioButtonUncheckedIcon fontSize="small" sx={{ color: '#666' }} />
+            )}
+          </ListItemIcon>
+          Citation Style: IEEE
+        </MuiMenuItem>
+
+        {/* Citation Style: AMA */}
+        <MuiMenuItem 
+          onClick={() => {
+            setCitationStyle('AMA');
+            setCitationMenuAnchor(null);
+          }}
+          className={citationStyle === 'AMA' ? 'checked' : ''}
+        >
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            {citationStyle === 'AMA' ? (
+              <RadioButtonCheckedIcon fontSize="small" sx={{ color: '#8b6cbc' }} />
+            ) : (
+              <RadioButtonUncheckedIcon fontSize="small" sx={{ color: '#666' }} />
+            )}
+          </ListItemIcon>
+          Citation Style: AMA
         </MuiMenuItem>
 
         <Divider sx={{ my: 0.5 }} />

@@ -122,7 +122,7 @@ const PageHeader = ({
                         <Box>
                             <Typography variant="h4" sx={{ 
                                 fontWeight: 700, 
-                                fontSize: { xs: '1.5rem', md: '2rem' },
+                                fontSize: { xs: '1.25rem', md: '1.5rem' },
                                 textShadow: '0 2px 4px rgba(0,0,0,0.1)',
                                 mb: 1
                             }}>

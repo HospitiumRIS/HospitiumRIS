@@ -1680,223 +1680,124 @@ export default function CollaborativeWriting() {
       <Container maxWidth="xl" sx={{ py: 4 }}>
 
       {/* Statistics Cards */}
-      <Box sx={{ 
-        display: 'flex', 
-        gap: 3, 
-        mb: 5,
-        flexWrap: 'wrap',
-        '@media (max-width: 768px)': {
-          flexDirection: 'column'
-        }
-      }}>
-        <Card sx={{ 
-          flex: '1 1 250px',
-          minWidth: '250px',
-          background: '#8b6cbc', 
-          color: 'white',
-          height: '130px',
-          borderRadius: 2,
-          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          cursor: 'pointer',
-          position: 'relative',
-          overflow: 'hidden',
-          '&:hover': {
-            transform: 'translateY(-4px)',
-            boxShadow: '0 8px 16px rgba(139, 108, 188, 0.3)'
-          }
-        }}>
-          <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <Box sx={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                borderRadius: 1,
-                p: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <DescriptionIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Chip 
-                label="+0%" 
-                size="small"
-                sx={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  color: 'white',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  height: '24px'
-                }}
-              />
-            </Box>
-            <Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, fontSize: '2rem' }}>
-                {stats.totalManuscripts}
+      <Grid container spacing={2.5} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Manuscripts
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 500, opacity: 0.95 }}>
-                Publications
-              </Typography>
+              <DescriptionIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
-          </CardContent>
-        </Card>
-
-        <Card sx={{ 
-          flex: '1 1 250px',
-          minWidth: '250px',
-          background: '#8b6cbc', 
-          color: 'white',
-          height: '130px',
-          borderRadius: 2,
-          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          cursor: 'pointer',
-          position: 'relative',
-          overflow: 'hidden',
-          '&:hover': {
-            transform: 'translateY(-4px)',
-            boxShadow: '0 8px 16px rgba(139, 108, 188, 0.3)'
-          }
-        }}>
-          <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <Box sx={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                borderRadius: 1,
-                p: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <AccessTimeIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Chip 
-                label="+0%" 
-                size="small"
-                sx={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  color: 'white',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  height: '24px'
-                }}
-              />
-            </Box>
-            <Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, fontSize: '2rem' }}>
-                {stats.inReviewManuscripts}
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 500, opacity: 0.95 }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.totalManuscripts}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              All collaborative works
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 In Progress
               </Typography>
+              <AccessTimeIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
-          </CardContent>
-        </Card>
-
-        <Card sx={{ 
-          flex: '1 1 250px',
-          minWidth: '250px',
-          background: '#8b6cbc',  
-          color: 'white',
-          height: '130px',
-          borderRadius: 2,
-          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          cursor: 'pointer',
-          position: 'relative',
-          overflow: 'hidden',
-          '&:hover': {
-            transform: 'translateY(-4px)',
-            boxShadow: '0 8px 16px rgba(139, 108, 188, 0.3)'
-          }
-        }}>
-          <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <Box sx={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                borderRadius: 1,
-                p: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <VisibilityIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Chip 
-                label="+0%" 
-                size="small"
-                sx={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  color: 'white',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  height: '24px'
-                }}
-              />
-            </Box>
-            <Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, fontSize: '2rem' }}>
-                {stats.publishedManuscripts}
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 500, opacity: 0.95 }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.inReviewManuscripts}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Currently being worked on
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 Published
               </Typography>
+              <CheckCircleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
-          </CardContent>
-        </Card>
-
-        <Card sx={{ 
-          flex: '1 1 250px',
-          minWidth: '250px',
-          background: '#8b6cbc', 
-          color: 'white',
-          height: '130px',
-          borderRadius: 2,
-          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          cursor: 'pointer',
-          position: 'relative',
-          overflow: 'hidden',
-          '&:hover': {
-            transform: 'translateY(-4px)',
-            boxShadow: '0 8px 16px rgba(139, 108, 188, 0.3)'
-          }
-        }}>
-          <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <Box sx={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                borderRadius: 1,
-                p: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <GroupsIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Chip 
-                label="+0%" 
-                size="small"
-                sx={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  color: 'white',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  height: '24px'
-                }}
-              />
-            </Box>
-            <Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 0.5, fontSize: '2rem' }}>
-                {stats.totalCollaborators}
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 500, opacity: 0.95 }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.publishedManuscripts}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Completed manuscripts
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 Collaborators
               </Typography>
+              <GroupsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
-          </CardContent>
-        </Card>
-      </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.totalCollaborators}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Active team members
+            </Typography>
+          </Paper>
+        </Grid>
+      </Grid>
 
       {/* Professional Search and Filters */}
       <Paper sx={{ 
