@@ -137,6 +137,10 @@ export default function ManagePublications() {
   });
   
   const [recentPublicationsCount, setRecentPublicationsCount] = useState(0);
+  
+  // Batch selection and delete
+  const [selectedPublications, setSelectedPublications] = useState([]);
+  const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
@@ -266,10 +270,10 @@ export default function ManagePublications() {
       tags: Array.isArray(dbPublication.keywords) && dbPublication.keywords.length > 0 
         ? dbPublication.keywords 
         : [],
-      createdAt: dbPublication.createdAt ? new Date(dbPublication.createdAt) : null,
-      updatedAt: dbPublication.updatedAt ? new Date(dbPublication.updatedAt) : null,
+      createdAt: dbPublication.createdAt || null,
+      updatedAt: dbPublication.updatedAt || null,
       // Additional metadata
-      publicationDate: dbPublication.publicationDate ? new Date(dbPublication.publicationDate) : null,
+      publicationDate: dbPublication.publicationDate || null,
       authorId: dbPublication.authorId || null
     };
   };
@@ -417,10 +421,83 @@ export default function ManagePublications() {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
-    setPublications(prev => prev.filter(pub => pub.id !== selectedPublication.id));
-    setDeleteDialogOpen(false);
-    setSelectedPublication(null);
+  const confirmDelete = async () => {
+    try {
+      // Delete from database
+      const response = await fetch(`/api/publications?id=${selectedPublication.id}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete publication');
+      }
+      
+      // Update local state
+      setPublications(prev => prev.filter(pub => pub.id !== selectedPublication.id));
+      setDeleteDialogOpen(false);
+      setSelectedPublication(null);
+      
+      showSnackbar('Publication deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting publication:', error);
+      showSnackbar('Failed to delete publication', 'error');
+    }
+  };
+  
+  const handleSelectAllPublications = (event) => {
+    if (event.target.checked) {
+      const currentPagePublications = filteredPublications.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
+      );
+      setSelectedPublications(currentPagePublications.map(pub => pub.id));
+    } else {
+      setSelectedPublications([]);
+    }
+  };
+  
+  const handleSelectPublication = (publicationId) => {
+    setSelectedPublications(prev => {
+      if (prev.includes(publicationId)) {
+        return prev.filter(id => id !== publicationId);
+      } else {
+        return [...prev, publicationId];
+      }
+    });
+  };
+  
+  const handleBatchDelete = () => {
+    setBatchDeleteDialogOpen(true);
+  };
+  
+  const confirmBatchDelete = async () => {
+    try {
+      // Delete publications from database
+      const deletePromises = selectedPublications.map(pubId =>
+        fetch(`/api/publications?id=${pubId}`, {
+          method: 'DELETE'
+        })
+      );
+      
+      const results = await Promise.all(deletePromises);
+      
+      // Check if all deletions were successful
+      const failedDeletions = results.filter(res => !res.ok);
+      
+      if (failedDeletions.length > 0) {
+        throw new Error(`Failed to delete ${failedDeletions.length} publication(s)`);
+      }
+      
+      // Update local state
+      setPublications(prev => prev.filter(pub => !selectedPublications.includes(pub.id)));
+      setSelectedPublications([]);
+      setBatchDeleteDialogOpen(false);
+      
+      showSnackbar(`Successfully deleted ${selectedPublications.length} publication(s)`, 'success');
+    } catch (error) {
+      console.error('Error deleting publications:', error);
+      showSnackbar(error.message || 'Failed to delete some publications', 'error');
+    }
   };
 
   const handleAddToLibrary = (publication) => {
@@ -592,10 +669,23 @@ export default function ManagePublications() {
     return allFolderIds.reduce((total, id) => total + (folderPublications[id] || []).length, 0);
   };
 
-  // Get publications in a folder
+  // Get publications in a folder (including subfolders)
   const getPublicationsInFolder = (folderId) => {
-    const pubIds = folderPublications[folderId] || [];
-    return publications.filter(pub => pubIds.includes(pub.id));
+    // Get publications directly in this folder
+    const directPubIds = folderPublications[folderId] || [];
+    
+    // Get all descendant folder IDs
+    const descendantIds = getDescendantFolderIds(folderId);
+    
+    // Collect publication IDs from this folder and all subfolders
+    const allPubIds = new Set(directPubIds);
+    descendantIds.forEach(descendantId => {
+      const descendantPubIds = folderPublications[descendantId] || [];
+      descendantPubIds.forEach(pubId => allPubIds.add(pubId));
+    });
+    
+    // Return unique publications
+    return publications.filter(pub => allPubIds.has(pub.id));
   };
 
   // Get folders that contain a specific publication
@@ -1273,7 +1363,7 @@ export default function ManagePublications() {
               <PrivateIcon sx={{ fontSize: 18, color: '#757575' }} />
             )}
             <Typography variant="caption" color="text.secondary">
-              Updated {publication.updatedAt.toLocaleDateString()}
+              Updated {publication.updatedAt ? new Date(publication.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
             </Typography>
           </Box>
         </Box>
@@ -1288,6 +1378,14 @@ export default function ManagePublications() {
       <Table>
         <TableHead>
           <TableRow sx={{ bgcolor: '#8b6cbc' }}>
+            <TableCell padding="checkbox" sx={{ borderBottom: 'none' }}>
+              <Checkbox
+                sx={{ color: 'white', '&.Mui-checked': { color: 'white' } }}
+                indeterminate={selectedPublications.length > 0 && selectedPublications.length < publications.length}
+                checked={publications.length > 0 && selectedPublications.length === publications.length}
+                onChange={handleSelectAllPublications}
+              />
+            </TableCell>
             <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Title</TableCell>
             <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Authors</TableCell>
             <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Date</TableCell>
@@ -1309,6 +1407,14 @@ export default function ManagePublications() {
                 transition: 'background-color 0.2s ease'
               }}
             >
+              {/* Checkbox */}
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={selectedPublications.includes(publication.id)}
+                  onChange={() => handleSelectPublication(publication.id)}
+                  sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }}
+                />
+              </TableCell>
               {/* Title */}
               <TableCell sx={{ py: 2, maxWidth: 400 }}>
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
@@ -1610,8 +1716,7 @@ export default function ManagePublications() {
               <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
                 {publications.length}
               </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', fontSize: '0.7rem' }}>
-                <Box component="span" sx={{ mr: 0.5, fontSize: '0.8rem' }}>📚</Box>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
                 All research outputs
               </Typography>
             </Paper>
@@ -1640,8 +1745,7 @@ export default function ManagePublications() {
               <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
                 {publications.filter(pub => pub.doi && pub.doi.length > 0).length}
               </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', fontSize: '0.7rem' }}>
-                <Box component="span" sx={{ mr: 0.5, fontSize: '0.8rem' }}>🔗</Box>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
                 {publications.length > 0 ? Math.round((publications.filter(pub => pub.doi && pub.doi.length > 0).length / publications.length) * 100) : 0}% have DOI
               </Typography>
             </Paper>
@@ -1670,9 +1774,8 @@ export default function ManagePublications() {
               <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
                 {recentPublicationsCount}
               </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', fontSize: '0.7rem' }}>
-                <Box component="span" sx={{ mr: 0.5, fontSize: '0.8rem' }}>⏰</Box>
-                Last 6 months
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Added in last 6 months
               </Typography>
             </Paper>
           </Grid>
@@ -1693,24 +1796,15 @@ export default function ManagePublications() {
               <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Most Common
+                  Libraries
               </Typography>
-                <MetricsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+                <FolderIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem', textTransform: 'capitalize' }}>
-                {publications.length > 0 ? (() => {
-                  const typeCounts = publications.reduce((acc, pub) => {
-                    const type = pub.type || 'article';
-                    acc[type] = (acc[type] || 0) + 1;
-                    return acc;
-                  }, {});
-                  const mostCommon = Object.keys(typeCounts).reduce((a, b) => typeCounts[a] > typeCounts[b] ? a : b);
-                  return mostCommon === 'article' ? 'Articles' : mostCommon === 'conference' ? 'Conf.' : mostCommon.charAt(0).toUpperCase() + mostCommon.slice(1);
-                })() : 'N/A'}
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {folders.length}
               </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', fontSize: '0.7rem' }}>
-                <Box component="span" sx={{ mr: 0.5, fontSize: '0.8rem' }}>📊</Box>
-                Publication type
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Library folders created
               </Typography>
             </Paper>
           </Grid>
@@ -1873,10 +1967,45 @@ export default function ManagePublications() {
                     height: 20
                   }}
                 />
+                {selectedPublications.length > 0 && (
+                  <Chip 
+                    label={`${selectedPublications.length} selected`}
+                    size="small"
+                    onDelete={() => setSelectedPublications([])}
+                    sx={{ 
+                      bgcolor: '#ff9800',
+                      color: 'white',
+                      fontWeight: 600,
+                      fontSize: '0.7rem',
+                      height: 20,
+                      '& .MuiChip-deleteIcon': {
+                        color: 'white',
+                        '&:hover': { color: 'rgba(255,255,255,0.8)' }
+                      }
+                    }}
+                  />
+                )}
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                Showing {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, filteredPublications.length)} of {filteredPublications.length} publications
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                {selectedPublications.length > 0 && (
+                  <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={handleBatchDelete}
+                    size="small"
+                    sx={{
+                      bgcolor: '#f44336',
+                      '&:hover': { bgcolor: '#d32f2f' }
+                    }}
+                  >
+                    Delete {selectedPublications.length} Publication{selectedPublications.length > 1 ? 's' : ''}
+                  </Button>
+                )}
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                  Showing {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, filteredPublications.length)} of {filteredPublications.length} publications
+                </Typography>
+              </Box>
             </Box>
 
             {loading ? (
@@ -2770,10 +2899,10 @@ export default function ManagePublications() {
                 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'text.secondary' }}>
                   <Typography variant="body2">
-                    Created: {selectedPublication.createdAt.toLocaleDateString()}
+                    Created: {selectedPublication.createdAt ? new Date(selectedPublication.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
                   </Typography>
                   <Typography variant="body2">
-                    Updated: {selectedPublication.updatedAt.toLocaleDateString()}
+                    Updated: {selectedPublication.updatedAt ? new Date(selectedPublication.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
                 </Typography>
                 </Box>
               </Box>
@@ -3059,6 +3188,47 @@ export default function ManagePublications() {
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
             <Button onClick={handleCloseAIPreview}>Close</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Batch Delete Confirmation Dialog */}
+        <Dialog
+          open={batchDeleteDialogOpen}
+          onClose={() => setBatchDeleteDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle sx={{ bgcolor: '#f44336', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DeleteIcon />
+            Confirm Batch Delete
+          </DialogTitle>
+          <DialogContent sx={{ mt: 2 }}>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              This action cannot be undone!
+            </Alert>
+            <Typography variant="body1">
+              Are you sure you want to delete <strong>{selectedPublications.length}</strong> publication{selectedPublications.length > 1 ? 's' : ''}?
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              This will permanently remove {selectedPublications.length > 1 ? 'these publications' : 'this publication'} from your library.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setBatchDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={confirmBatchDelete}
+              startIcon={<DeleteIcon />}
+              sx={{
+                bgcolor: '#f44336',
+                '&:hover': { bgcolor: '#d32f2f' }
+              }}
+            >
+              Delete {selectedPublications.length} Publication{selectedPublications.length > 1 ? 's' : ''}
+            </Button>
           </DialogActions>
         </Dialog>
 

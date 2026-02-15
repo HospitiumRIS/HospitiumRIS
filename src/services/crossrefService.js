@@ -10,11 +10,11 @@ const CROSSREF_BASE_URL = 'https://api.crossref.org/works';
 /**
  * Search Crossref by query terms and return publication data
  * @param {string} query - The search query
- * @param {number} maxResults - Maximum number of results to return (default: 20)
+ * @param {number} maxResults - Maximum number of results to return (default: 500)
  * @param {Object} filters - Additional filters like publication year, type, etc.
  * @returns {Promise<Object[]>} Array of formatted publication objects
  */
-export const searchCrossref = async (query, maxResults = 20, filters = {}) => {
+export const searchCrossref = async (query, maxResults = 500, filters = {}) => {
     if (!query?.trim()) {
         throw new Error('Search query is required');
     }
@@ -23,7 +23,7 @@ export const searchCrossref = async (query, maxResults = 20, filters = {}) => {
         // Build query parameters
         const params = new URLSearchParams({
             query: query.trim(),
-            rows: Math.min(maxResults, 100), // Crossref limits to 100 per request
+            rows: Math.min(maxResults, 1000), // Crossref allows up to 1000 per request
             sort: 'relevance',
             order: 'desc'
         });
@@ -221,7 +221,7 @@ export const isDOI = (input) => {
  * @param {number} maxResults - Maximum results for search (ignored for direct DOI lookup)
  * @returns {Promise<{type: string, data: Object|Object[]}>} Result object with type and data
  */
-export const importFromCrossref = async (input, maxResults = 50) => {
+export const importFromCrossref = async (input, maxResults = 500) => {
     if (!input?.toString().trim()) {
         throw new Error('DOI or search term is required');
     }

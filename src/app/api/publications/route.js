@@ -106,3 +106,47 @@ export async function GET(request) {
         await prisma.$disconnect();
     }
 }
+
+export async function DELETE(request) {
+    try {
+        // TODO: Add proper authentication when auth is set up
+        const session = { user: { id: 'dev-user-id', orcidId: null } };
+
+        const { searchParams } = new URL(request.url);
+        const id = searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json(
+                { error: 'Publication ID is required' },
+                { status: 400 }
+            );
+        }
+
+        // Delete the publication
+        await prisma.publication.delete({
+            where: { id }
+        });
+
+        return NextResponse.json({
+            success: true,
+            message: 'Publication deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Error deleting publication:', error);
+        
+        if (error.code === 'P2025') {
+            return NextResponse.json(
+                { error: 'Publication not found' },
+                { status: 404 }
+            );
+        }
+        
+        return NextResponse.json(
+            { error: 'Failed to delete publication' },
+            { status: 500 }
+        );
+    } finally {
+        await prisma.$disconnect();
+    }
+}

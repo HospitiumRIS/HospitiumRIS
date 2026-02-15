@@ -62,18 +62,13 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
       // Search Research4Life resources
       const publications = await searchResearch4Life(
         searchQuery.trim(), 
-        50, 
+        500, 
         selectedPartner || null
       );
       
       if (publications && publications.length > 0) {
         setSearchResults(publications);
         setResultsDialogOpen(true);
-        setSnackbar({
-          open: true,
-          message: `Found ${publications.length} publication(s) from Research4Life`,
-          severity: 'success'
-        });
       } else {
         setSnackbar({
           open: true,

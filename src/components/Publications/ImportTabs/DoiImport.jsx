@@ -19,6 +19,11 @@ import { importFromCrossref } from '../../../services/crossrefService';
 
 const DoiImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [keywords, setKeywords] = useState('');
+  const [author, setAuthor] = useState('');
+  const [year, setYear] = useState('');
+  const [journal, setJournal] = useState('');
+  const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
@@ -29,10 +34,11 @@ const DoiImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const handleSearch = useCallback(async () => {
-    if (!searchQuery.trim()) {
+    // Check if at least one field is filled
+    if (!keywords.trim() && !author.trim() && !year.trim() && !journal.trim() && !title.trim() && !searchQuery.trim()) {
       setSnackbar({
         open: true,
-        message: 'Please enter a search term or DOI',
+        message: 'Please enter at least one search term',
         severity: 'warning'
       });
       return;
@@ -42,27 +48,31 @@ const DoiImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
     setError(null);
 
     try {
+      // Build search query from fields
+      let query = searchQuery.trim();
+      
+      // If specific fields are filled, build a structured query
+      if (!query && (keywords || author || year || journal || title)) {
+        const parts = [];
+        if (keywords) parts.push(keywords);
+        if (author) parts.push(author);
+        if (title) parts.push(title);
+        if (journal) parts.push(journal);
+        if (year) parts.push(year);
+        query = parts.join(' ');
+      }
+      
       // Real Crossref API call
-      const result = await importFromCrossref(searchQuery.trim(), 50);
+      const result = await importFromCrossref(query, 500);
       
       if (result.type === 'single') {
         // Direct DOI lookup - show single result in results dialog
         setSearchResults([result.data]);
         setResultsDialogOpen(true);
-        setSnackbar({
-          open: true,
-          message: 'Found publication from DOI',
-          severity: 'success'
-        });
       } else if (result.data && result.data.length > 0) {
         // Search results - show multiple results
         setSearchResults(result.data);
         setResultsDialogOpen(true);
-        setSnackbar({
-          open: true,
-          message: `Found ${result.data.length} publication(s) from Crossref`,
-          severity: 'success'
-        });
       } else {
         setSnackbar({
           open: true,
@@ -93,7 +103,7 @@ const DoiImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, keywords, author, year, journal, title]);
 
   const handlePreviewResult = useCallback((result) => {
     setPreviewPublication(result);
@@ -216,17 +226,11 @@ const DoiImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
     }
   }, [onImportSuccess]);
 
-  const handleQueryChange = useCallback((event) => {
-    const value = event.target.value;
-    setSearchQuery(value);
-    if (error) setError(null);
-  }, [error]);
-
   const handleKeyPress = useCallback((event) => {
-    if (event.key === 'Enter' && !loading && searchQuery.trim()) {
+    if (event.key === 'Enter' && !loading) {
       handleSearch();
     }
-  }, [handleSearch, loading, searchQuery]);
+  }, [handleSearch, loading]);
 
   const handleCloseResults = useCallback(() => {
     setResultsDialogOpen(false);
@@ -245,37 +249,105 @@ const DoiImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
   }, []);
 
   return (
-    <Box sx={{ maxWidth: 600 }}>
+    <Box sx={{ maxWidth: 800 }}>
       <Typography variant="h6" gutterBottom>
         Search Crossref Database
       </Typography>
       
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Search the Crossref database with keywords, author names, or enter a specific DOI to find relevant publications.
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        Fill in one or more fields to search the Crossref database. All fields will be combined with AND logic.
       </Typography>
 
+      {/* Keywords Field */}
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          fullWidth
+          label="Keywords"
+          placeholder="e.g., diabetes, treatment, intervention"
+          value={keywords}
+          onChange={(e) => setKeywords(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          InputProps={{
+            startAdornment: <SearchIcon sx={{ mr: 1, color: '#8b6cbc' }} />
+          }}
+          helperText="General keywords or terms to search for"
+        />
+      </Box>
 
-      <TextField
-        fullWidth
-        label="Search Query or DOI"
-        placeholder="Enter keywords, author names, or DOI (e.g., 10.1038/nature12373)"
-        value={searchQuery}
-        onChange={handleQueryChange}
-        onKeyPress={handleKeyPress}
-        disabled={loading}
-        sx={{ mb: 2 }}
-        InputProps={{
-          startAdornment: <SearchIcon sx={{ mr: 1, color: '#8b6cbc' }} />
-        }}
-        helperText="Use specific terms for better results or enter a DOI for exact lookup"
-      />
+      {/* Author Field */}
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          fullWidth
+          label="Author"
+          placeholder="Author name (last name and initials)"
+          value={author}
+          onChange={(e) => setAuthor(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          helperText="Author name (last name and initials)"
+        />
+      </Box>
+
+      {/* Year and Journal Fields */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <TextField
+          label="Year"
+          placeholder="Publication year or range"
+          value={year}
+          onChange={(e) => setYear(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          sx={{ flex: 1 }}
+          helperText="Publication year or range"
+        />
+        <TextField
+          label="Journal"
+          placeholder="Journal name"
+          value={journal}
+          onChange={(e) => setJournal(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          sx={{ flex: 1 }}
+          helperText="Journal name"
+        />
+      </Box>
+
+      {/* Title Field */}
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          fullWidth
+          label="Title"
+          placeholder="Words or phrases in the title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          helperText="Words or phrases in the title"
+        />
+      </Box>
+
+      {/* DOI Field */}
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          fullWidth
+          label="DOI (Direct Lookup)"
+          placeholder="e.g., 10.1038/nature12373"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          helperText="Enter a specific DOI for exact lookup (overrides other fields)"
+        />
+      </Box>
 
       {loading && <LinearProgress sx={{ mb: 2, '& .MuiLinearProgress-bar': { bgcolor: '#8b6cbc' } }} />}
 
       <Button
         variant="contained"
         onClick={handleSearch}
-        disabled={loading || !searchQuery.trim()}
+        disabled={loading}
+        startIcon={<SearchIcon />}
         sx={{ 
           bgcolor: '#8b6cbc', 
           '&:hover': { 

@@ -10,11 +10,11 @@ const PUBMED_BASE_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils';
 /**
  * Search PubMed by terms and return a list of PMIDs
  * @param {string} searchTerm - The search query
- * @param {number} maxResults - Maximum number of results to return (default: 50)
+ * @param {number} maxResults - Maximum number of results to return (default: 500)
  * @param {number} startIndex - Starting index for pagination (default: 0)
  * @returns {Promise<{pmids: string[], totalCount: number}>} Object with PMIDs array and total count
  */
-export const searchPubMed = async (searchTerm, maxResults = 50, startIndex = 0) => {
+export const searchPubMed = async (searchTerm, maxResults = 500, startIndex = 0) => {
     if (!searchTerm?.trim()) {
         throw new Error('Search term is required');
     }
@@ -142,7 +142,7 @@ export const transformPubMedData = (pmid, pubData) => {
  * @param {number} startIndex - Starting index for pagination (default: 0)
  * @returns {Promise<{publications: Object[], totalCount: number}>} Object with publications array and total count
  */
-export const searchAndFormatPubMed = async (searchTerm, maxResults = 50, startIndex = 0) => {
+export const searchAndFormatPubMed = async (searchTerm, maxResults = 500, startIndex = 0) => {
     try {
         // Step 1: Search for PMIDs
         const { pmids, totalCount } = await searchPubMed(searchTerm, maxResults, startIndex);
@@ -214,7 +214,7 @@ export const isPMID = (input) => {
  * @param {number} maxResults - Maximum results for search (ignored for direct PMID lookup)
  * @returns {Promise<{type: string, data: Object|Object[]}>} Result object with type and data
  */
-export const importFromPubMed = async (input, maxResults = 50) => {
+export const importFromPubMed = async (input, maxResults = 500) => {
     if (!input?.toString().trim()) {
         throw new Error('PubMed ID or search term is required');
     }

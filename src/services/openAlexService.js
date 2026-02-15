@@ -10,11 +10,11 @@ const OPENALEX_BASE_URL = 'https://api.openalex.org';
 /**
  * Search OpenAlex by query terms and return publication data
  * @param {string} query - The search query
- * @param {number} maxResults - Maximum number of results to return (default: 20)
+ * @param {number} maxResults - Maximum number of results to return (default: 500)
  * @param {Object} filters - Additional filters like publication year, type, etc.
  * @returns {Promise<Object[]>} Array of formatted publication objects
  */
-export const searchOpenAlex = async (query, maxResults = 20, filters = {}) => {
+export const searchOpenAlex = async (query, maxResults = 500, filters = {}) => {
     if (!query?.trim()) {
         throw new Error('Search query is required');
     }
@@ -23,7 +23,7 @@ export const searchOpenAlex = async (query, maxResults = 20, filters = {}) => {
         // Build query parameters
         const params = new URLSearchParams({
             search: query.trim(),
-            per_page: Math.min(maxResults, 200), // OpenAlex limits to 200 per request
+            per_page: Math.min(maxResults, 200), // OpenAlex limits to 200 per request, but we can paginate
             mailto: 'support@hospitium.org' // Polite pool access
         });
 
@@ -279,7 +279,7 @@ function reconstructAbstractFromInvertedIndex(invertedIndex) {
  * @param {number} maxResults - Maximum results for search
  * @returns {Promise<{type: string, data: Object[]}>} Result object with type and data
  */
-export const importFromOpenAlex = async (input, maxResults = 50) => {
+export const importFromOpenAlex = async (input, maxResults = 500) => {
     if (!input?.toString().trim()) {
         throw new Error('Search term is required');
     }

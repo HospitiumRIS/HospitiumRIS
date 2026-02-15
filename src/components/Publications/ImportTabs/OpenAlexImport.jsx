@@ -19,6 +19,11 @@ import { importFromOpenAlex } from '../../../services/openAlexService';
 
 const OpenAlexImport = ({ onImportSuccess, color = '#2563eb' }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [keywords, setKeywords] = useState('');
+  const [author, setAuthor] = useState('');
+  const [year, setYear] = useState('');
+  const [journal, setJournal] = useState('');
+  const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
@@ -29,10 +34,11 @@ const OpenAlexImport = ({ onImportSuccess, color = '#2563eb' }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const handleSearch = useCallback(async () => {
-    if (!searchQuery.trim()) {
+    // Check if at least one field is filled
+    if (!keywords.trim() && !author.trim() && !year.trim() && !journal.trim() && !title.trim() && !searchQuery.trim()) {
       setSnackbar({
         open: true,
-        message: 'Please enter search terms',
+        message: 'Please enter at least one search term',
         severity: 'warning'
       });
       return;
@@ -42,17 +48,26 @@ const OpenAlexImport = ({ onImportSuccess, color = '#2563eb' }) => {
     setError(null);
 
     try {
+      // Build search query from fields
+      let query = searchQuery.trim();
+      
+      // If specific fields are filled, build a structured query
+      if (!query && (keywords || author || year || journal || title)) {
+        const parts = [];
+        if (keywords) parts.push(keywords);
+        if (author) parts.push(author);
+        if (title) parts.push(title);
+        if (journal) parts.push(journal);
+        if (year) parts.push(year);
+        query = parts.join(' ');
+      }
+      
       // Real OpenAlex API call
-      const result = await importFromOpenAlex(searchQuery.trim(), 50);
+      const result = await importFromOpenAlex(query, 500);
       
       if (result.data && result.data.length > 0) {
         setSearchResults(result.data);
         setResultsDialogOpen(true);
-        setSnackbar({
-          open: true,
-          message: `Found ${result.data.length} publication(s) from OpenAlex`,
-          severity: 'success'
-        });
       } else {
         setSnackbar({
           open: true,
@@ -83,7 +98,7 @@ const OpenAlexImport = ({ onImportSuccess, color = '#2563eb' }) => {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, keywords, author, year, journal, title]);
 
   const handlePreviewResult = useCallback((result) => {
     setPreviewPublication(result);
@@ -206,17 +221,11 @@ const OpenAlexImport = ({ onImportSuccess, color = '#2563eb' }) => {
     }
   }, [onImportSuccess]);
 
-  const handleQueryChange = useCallback((event) => {
-    const value = event.target.value;
-    setSearchQuery(value);
-    if (error) setError(null);
-  }, [error]);
-
   const handleKeyPress = useCallback((event) => {
-    if (event.key === 'Enter' && !loading && searchQuery.trim()) {
+    if (event.key === 'Enter' && !loading) {
       handleSearch();
     }
-  }, [handleSearch, loading, searchQuery]);
+  }, [handleSearch, loading]);
 
   const handleCloseResults = useCallback(() => {
     setResultsDialogOpen(false);
@@ -235,41 +244,95 @@ const OpenAlexImport = ({ onImportSuccess, color = '#2563eb' }) => {
   }, []);
 
   return (
-    <Box sx={{ maxWidth: 600 }}>
+    <Box sx={{ maxWidth: 800 }}>
       <Typography variant="h6" gutterBottom>
         Search OpenAlex Database
       </Typography>
       
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Search the OpenAlex comprehensive scholarly knowledge graph with keywords, author names, or research topics to find relevant publications.
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        Fill in one or more fields to search the OpenAlex database. All fields will be combined with AND logic.
       </Typography>
 
+      {/* Keywords Field */}
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          fullWidth
+          label="Keywords"
+          placeholder="e.g., diabetes, treatment, intervention"
+          value={keywords}
+          onChange={(e) => setKeywords(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          InputProps={{
+            startAdornment: <SearchIcon sx={{ mr: 1, color: '#2563eb' }} />
+          }}
+          helperText="General keywords or terms to search for"
+        />
+      </Box>
 
-      <TextField
-        fullWidth
-        label="Search Query"
-        placeholder="Enter keywords, author names, or research topics"
-        value={searchQuery}
-        onChange={handleQueryChange}
-        onKeyPress={handleKeyPress}
-        disabled={loading}
-        sx={{ mb: 2 }}
-        InputProps={{
-          startAdornment: <SearchIcon sx={{ mr: 1, color: '#8b6cbc' }} />
-        }}
-        helperText="Use specific terms for better results - includes open access and citation data"
-      />
+      {/* Author Field */}
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          fullWidth
+          label="Author"
+          placeholder="Author name (last name and initials)"
+          value={author}
+          onChange={(e) => setAuthor(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          helperText="Author name (last name and initials)"
+        />
+      </Box>
 
-      {loading && <LinearProgress sx={{ mb: 2, '& .MuiLinearProgress-bar': { bgcolor: '#8b6cbc' } }} />}
+      {/* Year and Journal Fields */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <TextField
+          label="Year"
+          placeholder="Publication year or range"
+          value={year}
+          onChange={(e) => setYear(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          sx={{ flex: 1 }}
+          helperText="Publication year or range"
+        />
+        <TextField
+          label="Journal"
+          placeholder="Journal name"
+          value={journal}
+          onChange={(e) => setJournal(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          sx={{ flex: 1 }}
+          helperText="Journal name"
+        />
+      </Box>
+
+      {/* Title Field */}
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          fullWidth
+          label="Title"
+          placeholder="Words or phrases in the title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          helperText="Words or phrases in the title"
+        />
+      </Box>
+
+      {loading && <LinearProgress sx={{ mb: 2, '& .MuiLinearProgress-bar': { bgcolor: '#2563eb' } }} />}
 
       <Button
         variant="contained"
         onClick={handleSearch}
-        disabled={loading || !searchQuery.trim()}
+        disabled={loading}
+        startIcon={<SearchIcon />}
         sx={{ 
-          bgcolor: '#8b6cbc', 
+          bgcolor: '#2563eb', 
           '&:hover': { 
-            bgcolor: '#7559a3' 
+            bgcolor: '#1d4ed8' 
           },
           '&:disabled': {
             bgcolor: '#cccccc'

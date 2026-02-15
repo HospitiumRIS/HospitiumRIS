@@ -37,7 +37,7 @@ const R4L_PARTNERS = {
  * @param {string} partner - Specific partner to search (optional)
  * @returns {Promise<Array>} Array of formatted publications
  */
-export const searchResearch4Life = async (query, limit = 20, partner = null) => {
+export const searchResearch4Life = async (query, limit = 500, partner = null) => {
   try {
     const results = [];
     
