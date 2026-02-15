@@ -173,7 +173,7 @@ const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
     setPreviewDialogOpen(true);
   }, []);
 
-  const handleImportPublication = useCallback(async (publication, libraryId = null) => {
+  const handleImportPublication = useCallback(async (publication, libraryId = null, folderIds = []) => {
     setImporting(true);
     try {
       const response = await fetch('/api/publications/import', {
@@ -184,63 +184,114 @@ const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
         body: JSON.stringify({ publication }),
       });
 
+      // Check for duplicate publication (409 Conflict)
+      if (response.status === 409) {
+        const errorData = await response.json();
+        setSnackbar({
+          open: true,
+          message: `${errorData.message || 'This publication already exists in your library'}`,
+          severity: 'info'
+        });
+        
+        // Close dialogs and don't proceed with import
+        setPreviewDialogOpen(false);
+        setResultsDialogOpen(false);
+        setImporting(false);
+        return;
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to import publication');
       }
 
       const data = await response.json();
-      const importedPublicationId = data.publication?.id;
+      // API returns publications array, get the first one's ID
+      const importedPublicationId = data.publications?.[0]?.id;
       
-      // If library is selected, add publication to library
-      if (libraryId && importedPublicationId) {
-        console.log('Adding publication to library:', {
-          libraryId,
-          importedPublicationId,
-          action: 'addPublication'
+      console.log('PubMedImport - After publication import:', {
+        apiResponse: data,
+        importedPublicationId,
+        receivedLibraryId: libraryId,
+        receivedFolderIds: folderIds,
+        folderIdsLength: folderIds.length
+      });
+      
+      // Add publication to all selected folders
+      const foldersToAdd = folderIds.length > 0 ? folderIds : (libraryId ? [libraryId] : []);
+      
+      console.log('PubMedImport - Folders to add:', {
+        foldersToAdd,
+        foldersToAddLength: foldersToAdd.length,
+        hasImportedPublicationId: !!importedPublicationId
+      });
+      
+      if (foldersToAdd.length > 0 && importedPublicationId) {
+        console.log('PubMedImport - Starting folder addition loop:', {
+          folderIds: foldersToAdd,
+          importedPublicationId
         });
         
-        try {
-          const libraryResponse = await fetch('/api/publications/library', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              action: 'addPublication',
-              folderId: libraryId,
-              publicationId: importedPublicationId
-            }),
-          });
+        let libraryAddSuccessCount = 0;
+        let libraryAddFailCount = 0;
+        
+        for (const folderId of foldersToAdd) {
+          try {
+            const libraryResponse = await fetch('/api/publications/library', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                action: 'addPublication',
+                folderId: folderId,
+                publicationId: importedPublicationId
+              }),
+            });
 
-          const libraryData = await libraryResponse.json();
-          console.log('Library response:', libraryData);
+            const libraryData = await libraryResponse.json();
 
-          if (!libraryResponse.ok) {
-            console.error('Failed to add to library:', libraryData);
-            throw new Error(libraryData.error || 'Failed to add to library');
+            if (!libraryResponse.ok) {
+              console.error('Failed to add to folder:', libraryData);
+              libraryAddFailCount++;
+            } else {
+              libraryAddSuccessCount++;
+              console.log('Successfully added publication to folder:', folderId);
+            }
+          } catch (libraryError) {
+            console.error('Error adding to folder:', libraryError);
+            libraryAddFailCount++;
           }
-          
-          console.log('Successfully added publication to library');
-        } catch (libraryError) {
-          console.error('Error adding to library:', libraryError);
-          // Show warning but don't fail the import
+        }
+        
+        // Show appropriate message based on results
+        if (libraryAddFailCount > 0 && libraryAddSuccessCount === 0) {
           setSnackbar({
             open: true,
-            message: `Publication imported but failed to add to library: ${libraryError.message}`,
+            message: `Publication imported but failed to add to ${libraryAddFailCount} folder(s)`,
             severity: 'warning'
           });
+        } else if (libraryAddFailCount > 0) {
+          setSnackbar({
+            open: true,
+            message: `Successfully imported "${publication.title}" and added to ${libraryAddSuccessCount} folder(s), ${libraryAddFailCount} failed`,
+            severity: 'warning'
+          });
+        } else {
+          setSnackbar({
+            open: true,
+            message: `Successfully imported "${publication.title}" and added to ${libraryAddSuccessCount} folder(s)`,
+            severity: 'success'
+          });
         }
+      } else {
+        // Show success message without library
+        setSnackbar({
+          open: true,
+          message: `Successfully imported "${publication.title}"`,
+          severity: 'success'
+        });
       }
-      
-      // Show success message
-      setSnackbar({
-        open: true,
-        message: libraryId 
-          ? `Successfully imported "${publication.title}" and added to library`
-          : `Successfully imported "${publication.title}"`,
-        severity: 'success'
-      });
       
       // Convert to format expected by ImportResults and notify parent
       onImportSuccess([publication]);

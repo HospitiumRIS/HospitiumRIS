@@ -19,7 +19,8 @@ import {
     FormControl,
     InputLabel,
     Select,
-    MenuItem
+    MenuItem,
+    Alert
 } from '@mui/material';
 import {
     Close as CloseIcon,
@@ -204,7 +205,7 @@ const MultiPublicationPreviewDialog = ({
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <FolderIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
                             <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8b6cbc' }}>
-                                Add to Library (Optional)
+                                Add to My Library
                             </Typography>
                         </Box>
                         <Button
@@ -240,9 +241,11 @@ const MultiPublicationPreviewDialog = ({
                             </Typography>
                         </Box>
                     ) : (
-                        <Typography variant="caption" color="text.secondary">
-                            Click "Select Folder" to add these publications to a library folder after import.
-                        </Typography>
+                        <Alert severity="info" sx={{ mt: 1 }}>
+                            <Typography variant="caption">
+                                Please select a library folder to import these publications.
+                            </Typography>
+                        </Alert>
                     )}
                 </Box>
             </DialogContent>
@@ -257,12 +260,16 @@ const MultiPublicationPreviewDialog = ({
                 <Button
                     variant="contained"
                     onClick={handleImport}
-                    disabled={importing}
+                    disabled={importing || !selectedLibrary}
                     startIcon={importing ? <CircularProgress size={16} /> : <ImportIcon />}
                     sx={{
                         backgroundColor: '#8b6cbc',
                         '&:hover': {
                             backgroundColor: '#7b5ca7'
+                        },
+                        '&.Mui-disabled': {
+                            backgroundColor: 'rgba(139, 108, 188, 0.3)',
+                            color: 'rgba(255, 255, 255, 0.5)'
                         }
                     }}
                 >
@@ -275,7 +282,7 @@ const MultiPublicationPreviewDialog = ({
                 open={libraryModalOpen}
                 onClose={() => setLibraryModalOpen(false)}
                 onSelect={(folderId) => {
-                    // Fetch folder name
+                    // Fetch folder name and set as selected folder
                     fetch('/api/publications/library')
                         .then(res => res.json())
                         .then(data => {
@@ -286,6 +293,7 @@ const MultiPublicationPreviewDialog = ({
                                 }
                             }
                         });
+                    // Don't close the modal - let user add to multiple folders or perform other actions
                 }}
                 publicationTitle={null}
                 multiplePublications={true}

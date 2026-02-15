@@ -38,6 +38,50 @@ export async function POST(request) {
                     continue;
                 }
 
+                // Check for duplicates before attempting to create
+                let existingPublication = null;
+                
+                // First, try to find by DOI if available (most reliable)
+                if (pub.doi) {
+                    existingPublication = await prisma.publication.findFirst({
+                        where: { doi: pub.doi }
+                    });
+                }
+                
+                // If no DOI match, try PubMed ID if available
+                if (!existingPublication && pub.pubmedId) {
+                    existingPublication = await prisma.publication.findFirst({
+                        where: { 
+                            url: {
+                                contains: pub.pubmedId
+                            }
+                        }
+                    });
+                }
+                
+                // If still no match, check by title and year (less reliable but catches most duplicates)
+                if (!existingPublication && pub.year) {
+                    existingPublication = await prisma.publication.findFirst({
+                        where: {
+                            title: pub.title,
+                            year: parseInt(pub.year)
+                        }
+                    });
+                }
+                
+                // If publication already exists, return error response
+                if (existingPublication) {
+                    return NextResponse.json(
+                        { 
+                            error: 'DUPLICATE_PUBLICATION',
+                            message: `This publication already exists in your library`,
+                            existingPublication: existingPublication,
+                            duplicate: true
+                        },
+                        { status: 409 } // 409 Conflict status code
+                    );
+                }
+
                 // Transform the publication data for database storage
                 const publicationData = {
                     title: pub.title,
@@ -112,6 +156,53 @@ export async function GET(request) {
     try {
         // TODO: Add proper authentication when auth is set up
         const session = { user: { id: 'dev-user-id', orcidId: null } };
+
+        // Check if this is a duplicate check request
+        const { searchParams } = new URL(request.url);
+        const checkDuplicate = searchParams.get('checkDuplicate');
+        
+        if (checkDuplicate === 'true') {
+            // Extract publication identifiers from query params
+            const doi = searchParams.get('doi');
+            const pubmedId = searchParams.get('pubmedId');
+            const title = searchParams.get('title');
+            const year = searchParams.get('year');
+            
+            let existingPublication = null;
+            
+            // Check by DOI first (most reliable)
+            if (doi) {
+                existingPublication = await prisma.publication.findFirst({
+                    where: { doi: doi }
+                });
+            }
+            
+            // Check by PubMed ID if no DOI match
+            if (!existingPublication && pubmedId) {
+                existingPublication = await prisma.publication.findFirst({
+                    where: { 
+                        url: {
+                            contains: pubmedId
+                        }
+                    }
+                });
+            }
+            
+            // Check by title and year as fallback
+            if (!existingPublication && title && year) {
+                existingPublication = await prisma.publication.findFirst({
+                    where: {
+                        title: title,
+                        year: parseInt(year)
+                    }
+                });
+            }
+            
+            return NextResponse.json({
+                exists: !!existingPublication,
+                publication: existingPublication
+            });
+        }
 
         // Get all publications for now - to be filtered by user when auth is implemented
         const publications = await prisma.publication.findMany({

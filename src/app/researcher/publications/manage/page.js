@@ -69,10 +69,12 @@ import {
   DriveFileMove as MoveIcon,
   Check as CheckIcon,
   Close as CloseIcon,
-  Clear as ClearIcon
+  Clear as ClearIcon,
+  AutoAwesome as AIIcon
 } from '@mui/icons-material';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { Skeleton, CircularProgress } from '@mui/material';
 
 export default function ManagePublications() {
   const { user } = useAuth();
@@ -86,6 +88,12 @@ export default function ManagePublications() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [libraryDialogOpen, setLibraryDialogOpen] = useState(false);
+  const [aiPreviewDialogOpen, setAiPreviewDialogOpen] = useState(false);
+  const [aiPreviewPublication, setAiPreviewPublication] = useState(null);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [aiKeywords, setAiKeywords] = useState([]);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
   const [error, setError] = useState(null);
   const [viewType, setViewType] = useState('table'); // 'table' or 'cards'
@@ -137,6 +145,74 @@ export default function ManagePublications() {
   const handleCloseSnackbar = (event, reason) => {
     if (reason === 'clickaway') return;
     setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  // Generate AI summary for preview
+  const generateAISummary = async (publication) => {
+    setAiGenerating(true);
+    setAiError(null);
+    setAiSummary(null);
+    setAiKeywords([]);
+
+    try {
+      const response = await fetch('/api/ai/summarize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          publications: [{
+            id: publication.id,
+            title: publication.title,
+            abstract: publication.abstract
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate AI summary');
+      }
+
+      const data = await response.json();
+      console.log('AI Summary API Response:', data);
+      
+      if (data.results && data.results.length > 0) {
+        const result = data.results[0];
+        if (result.success) {
+          setAiSummary(result.summary);
+          setAiKeywords(result.keywords || []);
+        } else {
+          throw new Error(result.error || 'Failed to generate summary');
+        }
+      } else if (data.error) {
+        throw new Error(data.error);
+      } else {
+        throw new Error('No summary generated');
+      }
+    } catch (error) {
+      console.error('AI summary generation error:', error);
+      setAiError(error.message || 'Failed to generate AI summary');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  // Handle opening AI preview dialog
+  const handleOpenAIPreview = (publication) => {
+    setAiPreviewPublication(publication);
+    setAiPreviewDialogOpen(true);
+    // Generate AI summary when dialog opens
+    if (publication.abstract || publication.title) {
+      generateAISummary(publication);
+    }
+  };
+
+  // Handle closing AI preview dialog
+  const handleCloseAIPreview = () => {
+    setAiPreviewDialogOpen(false);
+    setAiSummary(null);
+    setAiKeywords([]);
+    setAiError(null);
   };
 
   // Fetch library data (folders and publications)
@@ -907,9 +983,7 @@ export default function ManagePublications() {
                   sx={{ 
                     ml: 'auto', 
                     display: 'flex', 
-                    gap: 0.25,
-                    opacity: 0,
-                    transition: 'opacity 0.2s ease'
+                    gap: 0.25
                   }}
                 >
                   <Tooltip title="Add subfolder">
@@ -920,7 +994,7 @@ export default function ManagePublications() {
                         setNewFolderParent(folder.id);
                         setShowNewFolderInput(true);
                       }}
-                      sx={{ p: 0.5, '&:hover': { bgcolor: '#8b6cbc15', color: '#8b6cbc' } }}
+                      sx={{ p: 0.5,  color: '#8b6cbc'  }}
                     >
                       <AddIcon sx={{ fontSize: 18 }} />
                     </IconButton>
@@ -929,7 +1003,7 @@ export default function ManagePublications() {
                     <IconButton
                       size="small"
                       onClick={(e) => handleStartEditFolder(folder, e)}
-                      sx={{ p: 0.5, '&:hover': { bgcolor: '#2196f315', color: '#2196f3' } }}
+                      sx={{ p: 0.5,  color: '#2196f3'}}
                     >
                       <EditIcon sx={{ fontSize: 18 }} />
                     </IconButton>
@@ -938,7 +1012,7 @@ export default function ManagePublications() {
                     <IconButton
                       size="small"
                       onClick={(e) => handleOpenMoveFolder(folder, e)}
-                      sx={{ p: 0.5, '&:hover': { bgcolor: '#ff980015', color: '#ff9800' } }}
+                      sx={{ p: 0.5, color: '#ff9800'  }}
                     >
                       <MoveIcon sx={{ fontSize: 18 }} />
                     </IconButton>
@@ -947,7 +1021,7 @@ export default function ManagePublications() {
                     <IconButton
                       size="small"
                       onClick={(e) => handleOpenDeleteFolder(folder, e)}
-                      sx={{ p: 0.5, '&:hover': { bgcolor: '#f4433615', color: '#f44336' } }}
+                      sx={{ p: 0.5, color: '#f44336'  }}
                     >
                       <DeleteIcon sx={{ fontSize: 18 }} />
                     </IconButton>
@@ -1417,16 +1491,16 @@ export default function ManagePublications() {
                   alignItems: 'center',
                   minHeight: '40px'
                 }}>
-                  <Tooltip title="View Details" arrow>
+                  <Tooltip title="AI Preview" arrow>
                     <IconButton 
                       size="small" 
-                      onClick={() => handleViewPublication(publication)}
+                      onClick={() => handleOpenAIPreview(publication)}
                       sx={{ 
                         color: '#8b6cbc',
                         '&:hover': { bgcolor: '#8b6cbc10' }
                       }}
                     >
-                      <ViewIcon fontSize="small" />
+                      <AIIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Add to Library" arrow>
@@ -2707,9 +2781,6 @@ export default function ManagePublications() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
-            <Button variant="contained" sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7559a3' } }}>
-              Edit Publication
-            </Button>
           </DialogActions>
         </Dialog>
 
@@ -2736,6 +2807,258 @@ export default function ManagePublications() {
             <Button onClick={confirmDelete} color="error" variant="contained">
               Delete
             </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* AI Preview Dialog */}
+        <Dialog
+          open={aiPreviewDialogOpen}
+          onClose={() => setAiPreviewDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+          scroll="paper"
+          disableScrollLock={true}
+        >
+          <DialogTitle sx={{ bgcolor: '#8b6cbc', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AIIcon />
+            Publication Details & AI Summary
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 3 }}>
+            {aiPreviewPublication && (
+              <Box>
+                <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                  {aiPreviewPublication.title}
+                </Typography>
+                
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid size={3}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Authors</Typography>
+                  </Grid>
+                  <Grid size={9}>
+                    <Typography variant="body2">{aiPreviewPublication.authors?.join(', ') || 'Unknown authors'}</Typography>
+                  </Grid>
+                  
+                  {aiPreviewPublication.journal && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Publication</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Typography variant="body2">
+                          {aiPreviewPublication.journal}
+                          {aiPreviewPublication.year && ` (${aiPreviewPublication.year})`}
+                          {aiPreviewPublication.volume && `, Vol. ${aiPreviewPublication.volume}`}
+                          {aiPreviewPublication.pages && `, pp. ${aiPreviewPublication.pages}`}
+                        </Typography>
+                      </Grid>
+                    </>
+                  )}
+                  
+                  <Grid size={3}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Type</Typography>
+                  </Grid>
+                  <Grid size={9}>
+                    <Typography variant="body2">{aiPreviewPublication.type}</Typography>
+                  </Grid>
+                  
+                  <Grid size={3}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Status</Typography>
+                  </Grid>
+                  <Grid size={9}>
+                    <Chip 
+                      label={aiPreviewPublication.status?.replace('-', ' ') || 'Unknown'} 
+                      size="small"
+                      sx={{ bgcolor: '#8b6cbc', color: 'white' }}
+                    />
+                  </Grid>
+                  
+                  {aiPreviewPublication.source && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Source</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Typography variant="body2">
+                          Imported from {aiPreviewPublication.source}
+                        </Typography>
+                      </Grid>
+                    </>
+                  )}
+                  
+                  {aiPreviewPublication.doi && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>DOI</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Typography variant="body2">
+                          <a 
+                            href={`https://doi.org/${aiPreviewPublication.doi}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ color: '#8b6cbc' }}
+                          >
+                            {aiPreviewPublication.doi}
+                          </a>
+                        </Typography>
+                      </Grid>
+                    </>
+                  )}
+                  
+                  {aiPreviewPublication.url && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>URL</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Typography variant="body2">
+                          <a 
+                            href={aiPreviewPublication.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ color: '#8b6cbc' }}
+                          >
+                            View Publication
+                          </a>
+                        </Typography>
+                      </Grid>
+                    </>
+                  )}
+                  
+                  {aiPreviewPublication.isbn && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>ISBN</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Typography variant="body2">{aiPreviewPublication.isbn}</Typography>
+                      </Grid>
+                    </>
+                  )}
+                </Grid>
+
+                {aiPreviewPublication.abstract && (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Abstract</Typography>
+                    <Typography variant="body2" sx={{ 
+                      textAlign: 'justify',
+                      bgcolor: '#f5f5f5',
+                      p: 2,
+                      borderRadius: 1,
+                      lineHeight: 1.6
+                    }}>
+                      {aiPreviewPublication.abstract}
+                    </Typography>
+                  </Box>
+                )}
+                
+                {aiPreviewPublication.tags && aiPreviewPublication.tags.length > 0 && (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Keywords</Typography>
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                      {aiPreviewPublication.tags.map((tag, index) => (
+                        <Chip
+                          key={index}
+                          label={tag}
+                          size="small"
+                          variant="outlined"
+                          sx={{ borderColor: '#8b6cbc40', color: '#8b6cbc' }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+
+                <Divider sx={{ my: 3 }} />
+
+                <Box sx={{ 
+                  p: 2, 
+                  bgcolor: 'rgba(139, 108, 188, 0.08)', 
+                  borderRadius: 1,
+                  border: '1px solid rgba(139, 108, 188, 0.2)'
+                }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                    <AIIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
+                    AI-Generated Summary
+                  </Typography>
+
+                  {/* Loading State */}
+                  {aiGenerating && (
+                    <Box sx={{ py: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                        <CircularProgress size={20} sx={{ color: '#8b6cbc' }} />
+                        <Typography variant="body2" color="text.secondary">
+                          Generating AI summary...
+                        </Typography>
+                      </Box>
+                      <Skeleton variant="text" width="100%" height={20} />
+                      <Skeleton variant="text" width="95%" height={20} />
+                      <Skeleton variant="text" width="90%" height={20} />
+                    </Box>
+                  )}
+
+                  {/* Error State */}
+                  {aiError && !aiGenerating && (
+                    <Alert severity="warning" sx={{ mt: 1 }}>
+                      <Typography variant="body2">
+                        {aiError}
+                      </Typography>
+                    </Alert>
+                  )}
+
+                  {/* Success State */}
+                  {aiSummary && !aiGenerating && !aiError && (
+                    <Box>
+                      <Box 
+                        sx={{ 
+                          mb: 2,
+                          '& h3': { fontSize: '1rem', fontWeight: 600, color: '#333', mt: 2, mb: 1 },
+                          '& p': { fontSize: '0.875rem', lineHeight: 1.6, mb: 1 },
+                          '& ul': { pl: 2, mb: 1 },
+                          '& li': { fontSize: '0.875rem', lineHeight: 1.6, mb: 0.5 },
+                          '& strong': { fontWeight: 600, color: '#8b6cbc' }
+                        }}
+                        dangerouslySetInnerHTML={{ __html: aiSummary }}
+                      />
+
+                      {aiKeywords && aiKeywords.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontWeight: 600 }}>
+                            AI-Extracted Keywords:
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                            {aiKeywords.map((keyword, index) => (
+                              <Chip
+                                key={index}
+                                label={keyword}
+                                size="small"
+                                sx={{
+                                  bgcolor: '#8b6cbc',
+                                  color: 'white',
+                                  fontWeight: 500,
+                                  fontSize: '0.75rem',
+                                  '&:hover': { bgcolor: '#7b5ca7' }
+                                }}
+                              />
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
+                    </Box>
+                  )}
+
+                  {/* No Summary Yet */}
+                  {!aiSummary && !aiGenerating && !aiError && (
+                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                      No abstract available to generate summary.
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={handleCloseAIPreview}>Close</Button>
           </DialogActions>
         </Dialog>
 

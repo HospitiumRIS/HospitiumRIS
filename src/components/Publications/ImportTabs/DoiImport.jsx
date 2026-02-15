@@ -101,7 +101,7 @@ const DoiImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
     setResultsDialogOpen(false);
   }, []);
 
-  const handleImportPublication = useCallback(async (publication) => {
+  const handleImportPublication = useCallback(async (publication, libraryId = null, folderIds = []) => {
     setImporting(true);
     try {
       const response = await fetch('/api/publications/import', {
@@ -112,19 +112,90 @@ const DoiImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
         body: JSON.stringify({ publication }),
       });
 
+      // Check for duplicate publication (409 Conflict)
+      if (response.status === 409) {
+        const errorData = await response.json();
+        setSnackbar({
+          open: true,
+          message: `${errorData.message || 'This publication already exists in your library'}`,
+          severity: 'info'
+        });
+        
+        // Close dialogs and don't proceed with import
+        setPreviewDialogOpen(false);
+        setResultsDialogOpen(false);
+        setImporting(false);
+        return;
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to import publication');
       }
 
       const data = await response.json();
+      // API returns publications array, get the first one's ID
+      const importedPublicationId = data.publications?.[0]?.id;
       
-      // Show success message
-      setSnackbar({
-        open: true,
-        message: `Successfully imported "${publication.title}"`,
-        severity: 'success'
-      });
+      // Add publication to all selected folders
+      const foldersToAdd = folderIds.length > 0 ? folderIds : (libraryId ? [libraryId] : []);
+      
+      if (foldersToAdd.length > 0 && importedPublicationId) {
+        let libraryAddSuccessCount = 0;
+        let libraryAddFailCount = 0;
+        
+        for (const folderId of foldersToAdd) {
+          try {
+            const libraryResponse = await fetch('/api/publications/library', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                action: 'addPublication',
+                folderId: folderId,
+                publicationId: importedPublicationId
+              }),
+            });
+
+            if (!libraryResponse.ok) {
+              libraryAddFailCount++;
+            } else {
+              libraryAddSuccessCount++;
+            }
+          } catch (libraryError) {
+            libraryAddFailCount++;
+          }
+        }
+        
+        // Show appropriate message based on results
+        if (libraryAddFailCount > 0 && libraryAddSuccessCount === 0) {
+          setSnackbar({
+            open: true,
+            message: `Publication imported but failed to add to ${libraryAddFailCount} folder(s)`,
+            severity: 'warning'
+          });
+        } else if (libraryAddFailCount > 0) {
+          setSnackbar({
+            open: true,
+            message: `Successfully imported "${publication.title}" and added to ${libraryAddSuccessCount} folder(s), ${libraryAddFailCount} failed`,
+            severity: 'warning'
+          });
+        } else {
+          setSnackbar({
+            open: true,
+            message: `Successfully imported "${publication.title}" and added to ${libraryAddSuccessCount} folder(s)`,
+            severity: 'success'
+          });
+        }
+      } else {
+        // Show success message without library
+        setSnackbar({
+          open: true,
+          message: `Successfully imported "${publication.title}"`,
+          severity: 'success'
+        });
+      }
       
       // Convert to format expected by ImportResults and notify parent
       onImportSuccess([publication]);

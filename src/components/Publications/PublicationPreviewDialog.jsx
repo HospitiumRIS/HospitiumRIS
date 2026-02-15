@@ -27,7 +27,8 @@ import {
     Download as ImportIcon,
     OpenInNew as OpenInNewIcon,
     AutoAwesome as AIIcon,
-    Folder as FolderIcon
+    Folder as FolderIcon,
+    Check as CheckIcon
 } from '@mui/icons-material';
 import LibrarySelectionModal from './LibrarySelectionModal';
 
@@ -49,6 +50,44 @@ const PublicationPreviewDialog = ({
     const [selectedLibrary, setSelectedLibrary] = useState('');
     const [selectedLibraryName, setSelectedLibraryName] = useState('');
     const [libraryModalOpen, setLibraryModalOpen] = useState(false);
+    const [localFolderAssociations, setLocalFolderAssociations] = useState({});
+    const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+    const [importedPublicationTitle, setImportedPublicationTitle] = useState('');
+    const [isDuplicate, setIsDuplicate] = useState(false);
+    const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+
+    // Check for duplicate publication when dialog opens
+    useEffect(() => {
+        const checkDuplicate = async () => {
+            if (!open || !publication) {
+                setIsDuplicate(false);
+                return;
+            }
+
+            setCheckingDuplicate(true);
+            try {
+                const params = new URLSearchParams({
+                    checkDuplicate: 'true',
+                    ...(publication.doi && { doi: publication.doi }),
+                    ...(publication.pubmedId && { pubmedId: publication.pubmedId }),
+                    ...(publication.title && { title: publication.title }),
+                    ...(publication.year && { year: publication.year.toString() })
+                });
+
+                const response = await fetch(`/api/publications/import?${params}`);
+                const data = await response.json();
+                
+                setIsDuplicate(data.exists);
+            } catch (error) {
+                console.error('Error checking for duplicate:', error);
+                setIsDuplicate(false);
+            } finally {
+                setCheckingDuplicate(false);
+            }
+        };
+
+        checkDuplicate();
+    }, [open, publication]);
 
     // Generate AI summary when dialog opens
     useEffect(() => {
@@ -58,19 +97,47 @@ const PublicationPreviewDialog = ({
                 generateAISummary();
             }
         }
-        // Reset state when dialog closes
+    }, [open, publication]);
+
+    // Reset state only when dialog closes
+    useEffect(() => {
         if (!open) {
             setSelectedLibrary('');
             setSelectedLibraryName('');
             setAiSummary(null);
             setAiKeywords([]);
             setAiError(null);
+            setLocalFolderAssociations({});
         }
-    }, [open, publication]);
+    }, [open]);
 
     const handleLibrarySelect = (folderId, folderName) => {
         setSelectedLibrary(folderId);
         setSelectedLibraryName(folderName);
+    };
+
+    const handleAddToFolder = (folderId) => {
+        // Add publication to folder locally (before database persistence)
+        console.log('handleAddToFolder called:', {
+            folderId,
+            publicationId: publication.id,
+            publicationTitle: publication.title
+        });
+        
+        setLocalFolderAssociations(prev => {
+            const folderPubs = prev[folderId] || [];
+            // Check if publication already added to this folder
+            if (folderPubs.some(pub => pub.id === publication.id)) {
+                console.log('Publication already in folder, skipping');
+                return prev; // Already added
+            }
+            const updated = {
+                ...prev,
+                [folderId]: [...folderPubs, publication]
+            };
+            console.log('Updated localFolderAssociations:', updated);
+            return updated;
+        });
     };
 
     const generateAISummary = async () => {
@@ -117,10 +184,42 @@ const PublicationPreviewDialog = ({
     const handleImport = async () => {
         try {
             setError(null);
-            await onImport(publication, selectedLibrary);
+            // Get all folder IDs from localFolderAssociations
+            // Note: We use all keys because the publication might not have an ID yet (it gets one after import)
+            const folderIds = Object.keys(localFolderAssociations);
+            
+            console.log('PublicationPreviewDialog - handleImport:', {
+                publicationId: publication.id,
+                publicationTitle: publication.title,
+                localFolderAssociations,
+                folderIds,
+                folderIdsCount: folderIds.length,
+                selectedLibrary
+            });
+            await onImport(publication, selectedLibrary, folderIds);
+            // Show success dialog
+            setImportedPublicationTitle(publication.title);
+            setSuccessDialogOpen(true);
         } catch (err) {
             setError(err.message || 'Failed to import publication');
         }
+    };
+
+    const handleCloseSuccessDialog = () => {
+        setSuccessDialogOpen(false);
+        onClose();
+    };
+
+    const handleImportAnother = () => {
+        setSuccessDialogOpen(false);
+        onClose();
+        // Parent component will handle staying on the import page
+    };
+
+    const handleManagePublications = () => {
+        setSuccessDialogOpen(false);
+        onClose();
+        window.location.href = '/researcher/publications/manage';
     };
 
     const formatAuthors = (authors) => {
@@ -500,6 +599,28 @@ const PublicationPreviewDialog = ({
                     </Grid>
                 </Box>
 
+                {/* Duplicate Warning */}
+                {isDuplicate && (
+                    <Box sx={{ px: 3, pb: 2 }}>
+                        <Alert 
+                            severity="warning" 
+                            sx={{ 
+                                mb: 2,
+                                '& .MuiAlert-icon': {
+                                    color: '#ed6c02'
+                                }
+                            }}
+                        >
+                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                Publication Already Exists
+                            </Typography>
+                            <Typography variant="caption">
+                                This publication is already in your library. Import has been disabled to prevent duplicates.
+                            </Typography>
+                        </Alert>
+                    </Box>
+                )}
+
                 {/* Library Selection */}
                 <Box sx={{ px: 3, pb: 2 }}>
                     <Divider sx={{ mb: 2 }} />
@@ -507,7 +628,7 @@ const PublicationPreviewDialog = ({
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <FolderIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
                             <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8b6cbc' }}>
-                                Add to Library (Optional)
+                                Add to My Library
                             </Typography>
                         </Box>
                         <Button
@@ -542,9 +663,11 @@ const PublicationPreviewDialog = ({
                             </Typography>
                         </Box>
                     ) : (
-                        <Typography variant="caption" color="text.secondary">
-                            Click "Select Folder" to add this publication to a library folder after import.
-                        </Typography>
+                        <Alert severity="info" sx={{ mt: 1 }}>
+                            <Typography variant="caption">
+                                Please select a library folder to import this publication.
+                            </Typography>
+                        </Alert>
                     )}
                 </Box>
 
@@ -568,16 +691,23 @@ const PublicationPreviewDialog = ({
                 <Button
                     variant="contained"
                     onClick={handleImport}
-                    disabled={importing}
+                    disabled={importing || !selectedLibrary || isDuplicate || checkingDuplicate}
                     startIcon={importing ? <CircularProgress size={16} /> : <ImportIcon />}
                     sx={{
                         backgroundColor: '#8b6cbc',
                         '&:hover': {
                             backgroundColor: '#7b5ca7'
+                        },
+                        '&.Mui-disabled': {
+                            backgroundColor: 'rgba(139, 108, 188, 0.3)',
+                            color: 'rgba(255, 255, 255, 0.5)'
                         }
                     }}
                 >
-                    {importing ? 'Importing...' : 'Import Publications'}
+                    {checkingDuplicate ? 'Checking...' : 
+                     importing ? 'Importing...' : 
+                     isDuplicate ? 'Already in Library' : 
+                     'Import Publication'}
                 </Button>
             </DialogActions>
 
@@ -585,23 +715,77 @@ const PublicationPreviewDialog = ({
             <LibrarySelectionModal
                 open={libraryModalOpen}
                 onClose={() => setLibraryModalOpen(false)}
-                onSelect={(folderId) => {
-                    // Fetch folder name
-                    fetch('/api/publications/library')
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success && data.folders) {
-                                const folder = data.folders.find(f => f.id === folderId);
-                                if (folder) {
-                                    handleLibrarySelect(folderId, folder.name);
-                                }
+                onSelect={async (folderId) => {
+                    // Add publication to folder locally
+                    handleAddToFolder(folderId);
+                    // Also set as selected folder for the main import
+                    try {
+                        const res = await fetch('/api/publications/library');
+                        const data = await res.json();
+                        if (data.success && data.folders) {
+                            const folder = data.folders.find(f => f.id === folderId);
+                            if (folder) {
+                                handleLibrarySelect(folderId, folder.name);
                             }
-                        });
+                        }
+                    } catch (error) {
+                        console.error('Error selecting folder:', error);
+                        setError('Failed to select folder');
+                    }
+                    // Don't close the modal - let user add to multiple folders or perform other actions
                 }}
                 publicationTitle={publication?.title}
                 multiplePublications={false}
                 publicationCount={1}
+                localFolderAssociations={localFolderAssociations}
             />
+
+            {/* Success Dialog */}
+            <Dialog
+                open={successDialogOpen}
+                onClose={handleCloseSuccessDialog}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ bgcolor: '#4caf50', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CheckIcon />
+                    Import Successful!
+                </DialogTitle>
+                <DialogContent sx={{ mt: 3 }}>
+                    <Typography variant="body1" sx={{ mb: 2 }}>
+                        <strong>{importedPublicationTitle}</strong> has been successfully imported to your library.
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        What would you like to do next?
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2, display: 'flex', gap: 1, justifyContent: 'center' }}>
+                    <Button
+                        variant="outlined"
+                        onClick={handleImportAnother}
+                        sx={{
+                            borderColor: '#8b6cbc',
+                            color: '#8b6cbc',
+                            '&:hover': {
+                                borderColor: '#7b5ca7',
+                                backgroundColor: 'rgba(139, 108, 188, 0.08)'
+                            }
+                        }}
+                    >
+                        Import Another Publication
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleManagePublications}
+                        sx={{
+                            bgcolor: '#8b6cbc',
+                            '&:hover': { bgcolor: '#7b5ca7' }
+                        }}
+                    >
+                        Manage Your Publications
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Dialog>
     );
 };
