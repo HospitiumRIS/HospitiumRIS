@@ -12,42 +12,80 @@ HospitiumRIS serves as a centralized platform for:
 
 ## Features
 
-### Publication Management
+### 🤖 AI-Powered Insights
 
-- Import publications from PubMed, CrossRef, OpenAlex, and Research4Life
-- Support for BibTeX, RIS (EndNote), and Mendeley formats
-- Organize publications in custom folder hierarchies
-- Citation formatting with multiple styles (APA, MLA, Chicago, Vancouver)
+- **AI Publication Summaries**: Automatically generate comprehensive summaries of research publications using Google Gemini AI
+- **Keyword Extraction**: AI-powered extraction of key terms and concepts from abstracts
+- **Batch Processing**: Generate summaries for multiple publications simultaneously
+- **Research Trends**: Identify emerging patterns and themes in your research portfolio
 
-### Manuscript Collaboration
+### 📚 Publication Management
 
-- Real-time collaborative document editing with TipTap editor
-- Invite collaborators via ORCID search or direct email
-- Role-based permissions (Owner, Admin, Editor, Contributor, Reviewer)
-- Track changes with accept/reject workflow
-- Version history with manual and automatic snapshots
-- Threaded comments and inline suggestions
+- **Multi-Source Import**: Import from PubMed, CrossRef, OpenAlex, and Research4Life
+- **Format Support**: BibTeX, RIS (EndNote), Mendeley, and CSV formats
+- **Folder Organization**: Create custom hierarchies to organize your publications
+- **Citation Styles**: Support for 7 major styles (APA, MLA, Chicago, Harvard, Vancouver, IEEE, AMA)
+- **Citation Tracking**: Track citations with metadata using custom TipTap extension
+- **Hover Menu**: Quick update/delete citations with inline hover menu
+- **Bibliography Generation**: Automatic bibliography with only cited references
+- **Cite-as-You-Write**: Real-time citation insertion while writing
 
-### Research Proposals
+### ✍️ Manuscript Collaboration
 
-- Create and manage research proposals with structured templates
-- Link related publications and manuscripts
-- Track ethical approvals and documentation
-- Manage milestones, deliverables, and budgets
-- Support for multi-investigator projects
+- **Real-time Editing**: Collaborative document editing with TipTap rich text editor
+- **ORCID Integration**: Invite collaborators via ORCID search or direct email
+- **Role-Based Permissions**: Owner, Admin, Editor, Contributor, Reviewer roles
+- **Track Changes**: Accept/reject workflow for document revisions
+- **Version History**: Manual and automatic snapshots with restore capability
+- **Comments & Suggestions**: Threaded comments and inline suggestions
+- **Presence Indicators**: See who's online and editing in real-time
+- **Citation Management**: Integrated citation insertion and bibliography generation
 
-### Integrations
+### 🔬 Research Proposals
 
-- ORCID authentication and researcher lookup
-- Zotero library synchronization
-- DOI resolution and metadata fetching
-- PubMed and OpenAlex search
+- **Structured Templates**: Create proposals with predefined sections
+- **Publication Linking**: Connect related publications and manuscripts
+- **Ethics Tracking**: Track ethical approvals and documentation
+- **Budget Management**: Manage project budgets and funding sources
+- **Milestone Tracking**: Monitor deliverables and project progress
+- **Multi-Investigator**: Support for collaborative research teams
+- **Data Management Plans**: Create and manage DMP documents
 
-### Grant and Campaign Management
+### 🌐 Network Visualization
 
-- Track funding sources and grant opportunities
-- Manage fundraising campaigns with activity logging
-- Record donations and donor information
+- **Collaboration Network**: Interactive D3.js visualization of research connections
+- **ORCID Display**: Show researcher ORCID IDs in network profiles
+- **Citation Metrics**: Display global citations and HospitiumRIS citations
+- **Force-Directed Layout**: Automatic node positioning with collision detection
+- **Relationship Levels**: Direct, secondary, and tertiary collaboration visualization
+- **Publication Sharing**: View shared publications between collaborators
+
+### 📊 Analytics & Reporting
+
+- **Research Analytics**: Professional bar charts with proper scaling
+- **Publication Trends**: Track publications and projects over time
+- **Citation Impact**: Monitor citation counts and h-index
+- **Network Growth**: Visualize collaboration network expansion
+- **Custom Reports**: Generate reports for specific time periods
+- **Export Options**: Download data in multiple formats
+
+### 🔗 Integrations
+
+- **ORCID**: Authentication and researcher profile lookup
+- **Zotero**: Library synchronization and import
+- **DOI Resolution**: Automatic metadata fetching via DOI
+- **PubMed**: Direct search and import from PubMed database
+- **OpenAlex**: Access to open scholarly data
+- **CrossRef**: Citation data and metadata retrieval
+- **Research4Life**: Access to research resources
+
+### 💰 Grant & Campaign Management
+
+- **Funding Tracking**: Monitor grant opportunities and applications
+- **Campaign Management**: Manage fundraising campaigns with activity logs
+- **Donor Records**: Track donations and donor information
+- **Budget Allocation**: Manage research budgets and expenses
+- **Reporting**: Generate financial and progress reports
 
 ## Tech Stack
 
@@ -91,6 +129,9 @@ FROM_EMAIL="HospitiumRIS <your-email@gmail.com>"
 NEXT_PUBLIC_ORCID_CLIENT_ID="your-client-id"
 ORCID_CLIENT_SECRET="your-client-secret"
 NEXT_PUBLIC_ORCID_REDIRECT_URI="http://localhost:3000/auth/orcid/callback"
+
+# Google Gemini AI (optional - for AI summaries)
+GOOGLE_GEMINI_API_KEY="your-gemini-api-key"
 ```
 
 3. Set up the database:

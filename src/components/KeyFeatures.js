@@ -11,6 +11,7 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SecurityIcon from '@mui/icons-material/Security';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import GroupsIcon from '@mui/icons-material/Groups';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { styled, useTheme } from '@mui/material/styles';
 
 // Define animation
@@ -104,16 +105,16 @@ const KeyFeatures = () => {
       highlights: ['Citation Management', 'Open Access Support', 'Impact Metrics']
     },
     {
+      icon: <AutoAwesomeIcon />,
+      title: "AI-Powered Insights",
+      description: "Leverage artificial intelligence to automatically generate summaries and extract key insights from your publications and research.",
+      highlights: ['AI Publication Summaries', 'Keyword Extraction', 'Research Trends']
+    },
+    {
       icon: <SecurityIcon />,
       title: "Compliance & Governance",
       description: "Ensure your research meets all regulatory requirements with built-in compliance checking and governance tools.",
       highlights: ['Ethics Approval', 'Data Protection', 'Audit Trails']
-    },
-    {
-      icon: <AnalyticsIcon />,
-      title: "Analytics & Reporting",
-      description: "Gain valuable insights into your research performance with comprehensive analytics and reporting tools.",
-      highlights: ['Performance Metrics', 'Custom Reports', 'Trend Analysis']
     },
     {
       icon: <GroupsIcon />,
