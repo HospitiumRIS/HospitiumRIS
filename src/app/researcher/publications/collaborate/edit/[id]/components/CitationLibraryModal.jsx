@@ -201,7 +201,7 @@ const CitationLibraryModal = ({
     });
 
     return filtered;
-  }, [citations, sortBy, sortOrder]);
+  }, [citations, sortBy, sortOrder, viewMode, selectedFolder, folderPublications]);
 
   const getPublicationIcon = (type) => {
     switch (type) {
@@ -336,10 +336,10 @@ const CitationLibraryModal = ({
       fullWidth
       PaperProps={{
         sx: {
-          height: '85vh',
-          maxHeight: '900px',
-          borderRadius: 3,
-          boxShadow: '0 24px 80px rgba(139, 108, 188, 0.15)',
+          height: '80vh',
+          maxHeight: '800px',
+          borderRadius: 2,
+          boxShadow: '0 8px 32px rgba(139, 108, 188, 0.12)',
           overflow: 'hidden'
         }
       }}
@@ -349,138 +349,54 @@ const CitationLibraryModal = ({
           {/* Header */}
           <Box sx={{ 
             background: 'linear-gradient(135deg, #8b6cbc 0%, #9d7ec9 100%)',
-            p: 3,
+            px: 2.5,
+            py: 1.5,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.15)'
+            justifyContent: 'space-between'
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box sx={{
-                width: 48,
-                height: 48,
-                borderRadius: 2,
-                bgcolor: 'rgba(255, 255, 255, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <LibraryBooksIcon sx={{ fontSize: 28, color: 'white' }} />
-              </Box>
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', mb: 0.5 }}>
-                  Citation Library
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.875rem' }}>
-                  Manage and cite your research sources
-                </Typography>
-              </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <LibraryBooksIcon sx={{ fontSize: 24, color: 'white' }} />
+              <Typography variant="h6" sx={{ fontWeight: 600, color: 'white', fontSize: '1.1rem' }}>
+                Citation Library
+              </Typography>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <IconButton 
-                size="small" 
-                sx={{ 
-                  color: 'white',
-                  bgcolor: 'rgba(255, 255, 255, 0.15)',
-                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.25)' }
-                }}
-              >
-                <SyncIcon />
-              </IconButton>
-              <IconButton 
-                onClick={onClose}
-                size="small"
-                sx={{ 
-                  color: 'white',
-                  bgcolor: 'rgba(255, 255, 255, 0.15)',
-                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.25)' }
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </Box>
-          </Box>
-
-          {/* Stats Bar */}
-          <Box sx={{ 
-            px: 3, 
-            py: 2, 
-            bgcolor: '#f8f9fa',
-            borderBottom: '1px solid #e9ecef',
-            display: 'flex',
-            gap: 3,
-            alignItems: 'center'
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{
-                width: 36,
-                height: 36,
-                borderRadius: 1.5,
-                bgcolor: '#8b6cbc15',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <ArticleIcon sx={{ fontSize: 20, color: '#8b6cbc' }} />
-              </Box>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.25rem', color: '#2d3748' }}>
-                  {totalCount}
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#718096', fontSize: '0.75rem' }}>
-                  Total Sources
-                </Typography>
-              </Box>
-            </Box>
-            <Divider orientation="vertical" flexItem />
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{
-                width: 36,
-                height: 36,
-                borderRadius: 1.5,
-                bgcolor: '#10b98115',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <FolderIcon sx={{ fontSize: 20, color: '#10b981' }} />
-              </Box>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.25rem', color: '#2d3748' }}>
-                  {folders.length}
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#718096', fontSize: '0.75rem' }}>
-                  Collections
-                </Typography>
-              </Box>
-            </Box>
+            <IconButton 
+              onClick={onClose}
+              size="small"
+              sx={{ 
+                color: 'white',
+                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' }
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
           </Box>
 
           {/* View Mode Toggle */}
-          <Box sx={{ px: 3, pt: 2.5, pb: 2, borderBottom: '1px solid #e9ecef' }}>
-            <Stack direction="row" spacing={1.5}>
+          <Box sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid #e9ecef', bgcolor: 'white' }}>
+            <Stack direction="row" spacing={1}>
               <Button
                 variant={viewMode === 'all' ? 'contained' : 'outlined'}
-                startIcon={<ViewListIcon />}
+                size="small"
+                startIcon={<ViewListIcon fontSize="small" />}
                 onClick={() => {
                   setViewMode('all');
                   setSelectedFolder(null);
                 }}
                 sx={{
                   textTransform: 'none',
-                  borderRadius: 2,
-                  px: 2.5,
-                  py: 1,
+                  borderRadius: 1.5,
+                  px: 2,
+                  py: 0.5,
                   fontWeight: 600,
-                  fontSize: '0.875rem',
+                  fontSize: '0.8125rem',
                   ...(viewMode === 'all' ? {
                     bgcolor: '#8b6cbc',
-                    boxShadow: '0 2px 8px rgba(139, 108, 188, 0.25)',
-                    '&:hover': { bgcolor: '#7a5ba8', boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)' }
+                    '&:hover': { bgcolor: '#7a5ba8' }
                   } : {
-                    borderColor: '#e2e8f0',
+                    borderColor: '#d1d5db',
                     color: '#64748b',
-                    bgcolor: 'white',
                     '&:hover': { borderColor: '#8b6cbc', color: '#8b6cbc', bgcolor: '#8b6cbc05' }
                   })
                 }}
@@ -489,65 +405,63 @@ const CitationLibraryModal = ({
               </Button>
               <Button
                 variant={viewMode === 'folders' ? 'contained' : 'outlined'}
-                startIcon={<AccountTreeIcon />}
+                size="small"
+                startIcon={<AccountTreeIcon fontSize="small" />}
                 onClick={() => setViewMode('folders')}
                 sx={{
                   textTransform: 'none',
-                  borderRadius: 2,
-                  px: 2.5,
-                  py: 1,
+                  borderRadius: 1.5,
+                  px: 2,
+                  py: 0.5,
                   fontWeight: 600,
-                  fontSize: '0.875rem',
+                  fontSize: '0.8125rem',
                   ...(viewMode === 'folders' ? {
                     bgcolor: '#8b6cbc',
-                    boxShadow: '0 2px 8px rgba(139, 108, 188, 0.25)',
-                    '&:hover': { bgcolor: '#7a5ba8', boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)' }
+                    '&:hover': { bgcolor: '#7a5ba8' }
                   } : {
-                    borderColor: '#e2e8f0',
+                    borderColor: '#d1d5db',
                     color: '#64748b',
-                    bgcolor: 'white',
                     '&:hover': { borderColor: '#8b6cbc', color: '#8b6cbc', bgcolor: '#8b6cbc05' }
                   })
                 }}
               >
-                My Collections ({folders.length})
+                My Library ({folders.length})
               </Button>
             </Stack>
           </Box>
 
           {/* Search and Controls */}
-          <Box sx={{ p: 3, borderBottom: '1px solid #e9ecef', bgcolor: 'white' }}>
-            <Stack direction="row" spacing={2} alignItems="center">
+          <Box sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid #e9ecef', bgcolor: 'white' }}>
+            <Stack direction="row" spacing={1.5} alignItems="center">
               <TextField
                 fullWidth
-                size="medium"
+                size="small"
                 placeholder="Search by title, author, keyword..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: '#8b6cbc' }} />
+                      <SearchIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2.5,
+                    borderRadius: 2,
                     bgcolor: '#f8f9fa',
-                    border: '2px solid transparent',
-                    transition: 'all 0.2s',
+                    fontSize: '0.875rem',
                     '&:hover': {
-                      bgcolor: 'white',
-                      borderColor: '#e2e8f0'
+                      bgcolor: 'white'
                     },
                     '&.Mui-focused': {
                       bgcolor: 'white',
-                      borderColor: '#8b6cbc',
-                      boxShadow: '0 0 0 3px rgba(139, 108, 188, 0.1)'
+                      '& fieldset': {
+                        borderColor: '#8b6cbc'
+                      }
                     },
                     '& fieldset': {
-                      border: 'none'
+                      borderColor: '#e2e8f0'
                     }
                   }
                 }}
@@ -555,15 +469,17 @@ const CitationLibraryModal = ({
               
               <Button
                 variant="outlined"
-                startIcon={<FilterIcon />}
+                size="small"
+                startIcon={<FilterIcon fontSize="small" />}
                 onClick={(e) => setFilterAnchor(e.currentTarget)}
                 sx={{ 
-                  minWidth: 110,
-                  borderRadius: 2,
+                  minWidth: 90,
+                  borderRadius: 1.5,
                   textTransform: 'none',
-                  borderColor: '#e2e8f0',
+                  borderColor: '#d1d5db',
                   color: '#64748b',
                   fontWeight: 600,
+                  fontSize: '0.8125rem',
                   '&:hover': {
                     borderColor: '#8b6cbc',
                     color: '#8b6cbc',
@@ -576,15 +492,17 @@ const CitationLibraryModal = ({
               
               <Button
                 variant="outlined"
-                startIcon={<SortIcon />}
+                size="small"
+                startIcon={<SortIcon fontSize="small" />}
                 onClick={(e) => setSortAnchor(e.currentTarget)}
                 sx={{ 
-                  minWidth: 110,
-                  borderRadius: 2,
+                  minWidth: 90,
+                  borderRadius: 1.5,
                   textTransform: 'none',
-                  borderColor: '#e2e8f0',
+                  borderColor: '#d1d5db',
                   color: '#64748b',
                   fontWeight: 600,
+                  fontSize: '0.8125rem',
                   '&:hover': {
                     borderColor: '#8b6cbc',
                     color: '#8b6cbc',
@@ -594,25 +512,6 @@ const CitationLibraryModal = ({
               >
                 Sort
               </Button>
-              
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                sx={{ 
-                  minWidth: 140,
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  bgcolor: '#8b6cbc',
-                  fontWeight: 600,
-                  boxShadow: '0 2px 8px rgba(139, 108, 188, 0.25)',
-                  '&:hover': { 
-                    bgcolor: '#7a5ba8',
-                    boxShadow: '0 4px 12px rgba(139, 108, 188, 0.35)'
-                  }
-                }}
-              >
-                Add Source
-              </Button>
             </Stack>
           </Box>
 
@@ -621,17 +520,17 @@ const CitationLibraryModal = ({
             {/* Folder Sidebar (only in folder view) */}
             {viewMode === 'folders' && (
               <Box sx={{ 
-                width: '280px', 
+                width: '260px', 
                 borderRight: '1px solid #e0e0e0',
                 display: 'flex',
                 flexDirection: 'column',
                 bgcolor: '#fafafa'
               }}>
-                <Box sx={{ p: 2.5, borderBottom: '1px solid #e9ecef' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#2d3748', fontSize: '0.875rem', mb: 0.5 }}>
-                    My Collections
+                <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid #e9ecef' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#2d3748', fontSize: '0.8125rem', mb: 0.25 }}>
+                    My Library
                   </Typography>
-                  <Typography variant="caption" sx={{ color: '#718096', fontSize: '0.75rem' }}>
+                  <Typography variant="caption" sx={{ color: '#718096', fontSize: '0.7rem' }}>
                     {folders.length} collection{folders.length !== 1 ? 's' : ''}
                   </Typography>
                 </Box>
@@ -658,7 +557,7 @@ const CitationLibraryModal = ({
             )}
 
             {/* Citations List */}
-            <Box sx={{ flexGrow: 1, overflow: 'auto', p: 3 }}>
+            <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
             {/* Error State */}
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
@@ -710,29 +609,28 @@ const CitationLibraryModal = ({
 
             {/* Citations List */}
             {!loading && !error && filteredAndSortedCitations.length > 0 && (
-              <Stack spacing={2}>
+              <Stack spacing={1.5}>
                 {filteredAndSortedCitations.map((citation, index) => (
                 <Card 
                   key={citation.id || index}
                   sx={{ 
-                    borderRadius: 2.5,
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                    borderRadius: 2,
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                     border: '1px solid #e9ecef',
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transition: 'all 0.2s',
                     '&:hover': {
-                      boxShadow: '0 8px 24px rgba(139, 108, 188, 0.15)',
-                      borderColor: '#8b6cbc',
-                      transform: 'translateY(-2px)'
+                      boxShadow: '0 4px 12px rgba(139, 108, 188, 0.12)',
+                      borderColor: '#8b6cbc'
                     }
                   }}
                 >
-                  <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
                       {/* Publication Icon */}
                       <Box sx={{ 
-                        width: 44,
-                        height: 44,
-                        borderRadius: 2, 
+                        width: 36,
+                        height: 36,
+                        borderRadius: 1.5, 
                         bgcolor: '#8b6cbc10',
                         color: '#8b6cbc',
                         display: 'flex',
@@ -749,12 +647,11 @@ const CitationLibraryModal = ({
                         <Typography 
                           variant="h6" 
                           sx={{ 
-                            fontWeight: 700,
-                            fontSize: '1.05rem',
+                            fontWeight: 600,
+                            fontSize: '0.95rem',
                             color: '#1a202c',
-                            mb: 0.75,
-                            lineHeight: 1.4,
-                            letterSpacing: '-0.01em'
+                            mb: 0.5,
+                            lineHeight: 1.3
                           }}
                         >
                           {citation.title}
@@ -765,8 +662,8 @@ const CitationLibraryModal = ({
                           variant="body2" 
                           sx={{ 
                             color: '#4a5568',
-                            mb: 0.75,
-                            fontSize: '0.875rem',
+                            mb: 0.5,
+                            fontSize: '0.8125rem',
                             fontWeight: 500
                           }}
                         >
@@ -778,8 +675,8 @@ const CitationLibraryModal = ({
                           variant="body2" 
                           sx={{ 
                             color: '#718096',
-                            mb: 1.5,
-                            fontSize: '0.8125rem',
+                            mb: 1,
+                            fontSize: '0.75rem',
                             fontStyle: 'italic'
                           }}
                         >
@@ -798,46 +695,46 @@ const CitationLibraryModal = ({
                         </Typography>
 
                         {/* Tags */}
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 0 }}>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0 }}>
                           <Chip
                             label={citation.source}
                             size="small"
                             sx={{
-                              fontSize: '0.6875rem',
-                              height: 22,
+                              fontSize: '0.65rem',
+                              height: 20,
                               bgcolor: getSourceColor(citation.source),
                               color: 'white',
                               fontWeight: 600,
-                              borderRadius: 1.5
+                              borderRadius: 1
                             }}
                           />
-                          {citation.tags?.slice(0, 3).map((tag) => (
+                          {citation.tags?.slice(0, 2).map((tag) => (
                             <Chip
                               key={tag}
                               label={tag}
                               size="small"
                               sx={{
-                                fontSize: '0.6875rem',
-                                height: 22,
+                                fontSize: '0.65rem',
+                                height: 20,
                                 bgcolor: '#f1f5f9',
                                 color: '#64748b',
                                 fontWeight: 500,
-                                borderRadius: 1.5,
+                                borderRadius: 1,
                                 border: 'none'
                               }}
                             />
                           ))}
-                          {citation.tags?.length > 3 && (
+                          {citation.tags?.length > 2 && (
                             <Chip
-                              label={`+${citation.tags.length - 3}`}
+                              label={`+${citation.tags.length - 2}`}
                               size="small"
                               sx={{
-                                fontSize: '0.6875rem',
-                                height: 22,
+                                fontSize: '0.65rem',
+                                height: 20,
                                 bgcolor: '#e2e8f0',
                                 color: '#64748b',
                                 fontWeight: 600,
-                                borderRadius: 1.5
+                                borderRadius: 1
                               }}
                             />
                           )}
@@ -845,37 +742,28 @@ const CitationLibraryModal = ({
                       </Box>
 
                       {/* Action Buttons */}
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <Button
                           variant="contained"
-                          size="medium"
+                          size="small"
                           onClick={() => handleCite(citation)}
                           sx={{
                             bgcolor: '#8b6cbc',
-                            '&:hover': { bgcolor: '#7a5ba8' },
                             textTransform: 'none',
                             fontWeight: 600,
-                            px: 3,
-                            py: 1,
-                            borderRadius: 2,
-                            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.25)',
+                            px: 2,
+                            py: 0.75,
+                            borderRadius: 1.5,
+                            fontSize: '0.8125rem',
+                            boxShadow: 'none',
                             '&:hover': {
                               bgcolor: '#7a5ba8',
-                              boxShadow: '0 4px 12px rgba(139, 108, 188, 0.35)'
+                              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.25)'
                             }
                           }}
                         >
-                          Insert Citation
+                          Insert
                         </Button>
-                        <IconButton 
-                          size="small"
-                          sx={{ 
-                            color: '#94a3b8',
-                            '&:hover': { color: '#8b6cbc', bgcolor: '#8b6cbc10' }
-                          }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
                       </Box>
                     </Box>
                   </CardContent>
@@ -888,46 +776,30 @@ const CitationLibraryModal = ({
 
           {/* Footer */}
           <Box sx={{ 
-            p: 3, 
+            px: 2.5, 
+            py: 1.5, 
             borderTop: '1px solid #e9ecef',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            bgcolor: '#f8f9fa'
+            bgcolor: '#fafafa'
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                {loading ? 'Loading...' : viewMode === 'folders' && selectedFolder
-                  ? `${filteredAndSortedCitations.length} citation(s) in ${folders.find(f => f.id === selectedFolder)?.name || 'folder'}`
-                  : `${totalCount} total sources • ${filteredAndSortedCitations.length} displayed`
-                }
-              </Typography>
-              {!loading && filteredAndSortedCitations.length > 0 && (
-                <Chip
-                  icon={<CheckCircleIcon sx={{ fontSize: 14 }} />}
-                  label="Synced"
-                  size="small"
-                  sx={{
-                    height: 24,
-                    bgcolor: '#10b98115',
-                    color: '#10b981',
-                    fontWeight: 600,
-                    fontSize: '0.75rem'
-                  }}
-                />
-              )}
-            </Box>
+            <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500, fontSize: '0.75rem' }}>
+              {loading ? 'Loading...' : viewMode === 'folders' && selectedFolder
+                ? `${filteredAndSortedCitations.length} citation(s) in ${folders.find(f => f.id === selectedFolder)?.name || 'folder'}`
+                : `${filteredAndSortedCitations.length} of ${totalCount} sources`
+              }
+            </Typography>
             <Button 
               onClick={onClose}
-              variant="outlined"
+              variant="text"
+              size="small"
               sx={{ 
                 textTransform: 'none',
-                borderColor: '#e2e8f0',
                 color: '#64748b',
                 fontWeight: 600,
-                borderRadius: 2,
+                fontSize: '0.8125rem',
                 '&:hover': {
-                  borderColor: '#8b6cbc',
                   color: '#8b6cbc',
                   bgcolor: '#8b6cbc05'
                 }
