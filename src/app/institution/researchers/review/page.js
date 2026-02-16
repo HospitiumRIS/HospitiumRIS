@@ -259,71 +259,128 @@ const PerformanceReview = () => {
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Overall Statistics */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                    Total Researchers
-                  </Typography>
-                  <AssessmentIcon sx={{ color: alpha('#8b6cbc', 0.3) }} />
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
-                  {stats.total}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2.5, 
+          mb: 4, 
+          flexWrap: 'wrap',
+          '& > *': {
+            flex: '1 1 calc(25% - 19px)',
+            minWidth: '200px'
+          }
+        }}>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Researchers
+              </Typography>
+              <AssessmentIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.total}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Active researchers
+            </Typography>
+          </Paper>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                    Avg Output/Researcher
-                  </Typography>
-                  <TimelineIcon sx={{ color: alpha('#2563eb', 0.3) }} />
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 700, color: '#2563eb' }}>
-                  {stats.avgOutputPerResearcher}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Avg Output/Researcher
+              </Typography>
+              <TimelineIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.avgOutputPerResearcher}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Publications per person
+            </Typography>
+          </Paper>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                    Total Citations
-                  </Typography>
-                  <CitationIcon sx={{ color: alpha('#059669', 0.3) }} />
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 700, color: '#059669' }}>
-                  {stats.totalCitations}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Citations
+              </Typography>
+              <CitationIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.totalCitations}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Citation impact
+            </Typography>
+          </Paper>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                    Average H-Index
-                  </Typography>
-                  <ScienceIcon sx={{ color: alpha('#d97706', 0.3) }} />
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 700, color: '#d97706' }}>
-                  {stats.avgHIndex}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Average H-Index
+              </Typography>
+              <ScienceIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.avgHIndex}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Research impact score
+            </Typography>
+          </Paper>
+        </Box>
 
         {/* Filters and Search */}
         <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>

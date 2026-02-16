@@ -5,9 +5,9 @@
 
 import { GoogleGenAI } from '@google/genai';
 
-// Initialize Gemini AI with API key from environment
+// Initialize Gemini AI with API key
 const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GEMINI_API_KEY
+    apiKey: 'AIzaSyBvqL9i7oMQEcSCGksfWz_YxnSB4iv-1R8'
 });
 
 /**
@@ -16,10 +16,6 @@ const ai = new GoogleGenAI({
  * @returns {Promise<{summary: string, keywords: string[]}>}
  */
 export async function generatePublicationSummary(publication) {
-    if (!process.env.GOOGLE_GEMINI_API_KEY) {
-        throw new Error('GOOGLE_GEMINI_API_KEY is not configured');
-    }
-
     const prompt = `Provide a comprehensive, well-structured summary of this research article with the following sections:
 
 Overview

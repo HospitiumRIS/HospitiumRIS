@@ -233,396 +233,182 @@ const InstitutionAnalytics = () => {
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Key Performance Indicators */}
         <Box sx={{ mb: 4 }}>
-          <Typography 
-            variant="h5" 
-            sx={{ 
-              fontWeight: 700, 
-              mb: 3,
-              color: '#2d3748',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}
-          >
-            <AnalyticsIcon sx={{ color: '#8b6cbc' }} />
-            Key Performance Indicators
-          </Typography>
-          
           <Box sx={{ 
             display: 'flex', 
-            gap: 3, 
+            gap: 2.5, 
             flexWrap: 'wrap',
             '& > *': { 
-              flex: { 
-                xs: '1 1 100%', 
-                sm: '1 1 calc(50% - 12px)', 
-                lg: '1 1 calc(33.333% - 16px)', 
-                xl: '1 1 calc(16.666% - 20px)' 
-              } 
+              flex: '1 1 calc(16.666% - 21px)',
+              minWidth: '200px'
             }
           }}>
-            <Card sx={{ 
-              borderRadius: 3,
-              height: '120px',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-              boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              cursor: 'pointer',
-              color: 'white',
-              '&:hover': {
-                transform: 'translateY(-3px) scale(1.01)',
-                boxShadow: '0 6px 20px rgba(139, 108, 188, 0.3)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ 
-                p: 2, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between'
-              }}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Box sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <ResearchersIcon sx={{ fontSize: 20, color: 'white' }} />
-                  </Box>
-                  <Tooltip title="Total active researchers">
-                    <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white' } }}>
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', fontSize: '1.3rem', lineHeight: 1.1, mb: 0.25 }}>
-                    {analyticsData.overview.totalResearchers}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'white', fontSize: '0.8rem', opacity: 0.9 }}>
-                    Total Researchers
-                  </Typography>
-                </Box>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <TrendingUpIcon sx={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'rgba(255,255,255,0.9)', fontSize: '0.7rem' }}>
-                    Active
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Total Researchers
+                </Typography>
+                <ResearchersIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.totalResearchers}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Active researchers
+              </Typography>
+            </Paper>
 
-            <Card sx={{ 
-              borderRadius: 3,
-              height: '120px',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-              boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              cursor: 'pointer',
-              color: 'white',
-              '&:hover': {
-                transform: 'translateY(-3px) scale(1.01)',
-                boxShadow: '0 6px 20px rgba(139, 108, 188, 0.3)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ 
-                p: 2, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between'
-              }}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Box sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <ManuscriptIcon sx={{ fontSize: 20, color: 'white' }} />
-                  </Box>
-                  <Tooltip title="Total manuscripts created">
-                    <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white' } }}>
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', fontSize: '1.3rem', lineHeight: 1.1, mb: 0.25 }}>
-                    {analyticsData.overview.totalManuscripts}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'white', fontSize: '0.8rem', opacity: 0.9 }}>
-                    Total Manuscripts
-                  </Typography>
-                </Box>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <TrendingUpIcon sx={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'rgba(255,255,255,0.9)', fontSize: '0.7rem' }}>
-                    Growing
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Total Manuscripts
+                </Typography>
+                <ManuscriptIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.totalManuscripts}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Collaborative works
+              </Typography>
+            </Paper>
 
-            <Card sx={{ 
-              borderRadius: 3,
-              height: '120px',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-              boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              cursor: 'pointer',
-              color: 'white',
-              '&:hover': {
-                transform: 'translateY(-3px) scale(1.01)',
-                boxShadow: '0 6px 20px rgba(139, 108, 188, 0.3)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ 
-                p: 2, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between'
-              }}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Box sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <ProposalIcon sx={{ fontSize: 20, color: 'white' }} />
-                  </Box>
-                  <Tooltip title="Total research proposals">
-                    <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white' } }}>
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', fontSize: '1.3rem', lineHeight: 1.1, mb: 0.25 }}>
-                    {analyticsData.overview.totalProposals}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'white', fontSize: '0.8rem', opacity: 0.9 }}>
-                    Total Proposals
-                  </Typography>
-                </Box>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <TrendingUpIcon sx={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'rgba(255,255,255,0.9)', fontSize: '0.7rem' }}>
-                    Active
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Total Proposals
+                </Typography>
+                <ProposalIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.totalProposals}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Research proposals
+              </Typography>
+            </Paper>
 
-            <Card sx={{ 
-              borderRadius: 3,
-              height: '120px',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-              boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              cursor: 'pointer',
-              color: 'white',
-              '&:hover': {
-                transform: 'translateY(-3px) scale(1.01)',
-                boxShadow: '0 6px 20px rgba(139, 108, 188, 0.3)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ 
-                p: 2, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between'
-              }}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Box sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <PublicationIcon sx={{ fontSize: 20, color: 'white' }} />
-                  </Box>
-                  <Tooltip title="Total publications">
-                    <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white' } }}>
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', fontSize: '1.3rem', lineHeight: 1.1, mb: 0.25 }}>
-                    {analyticsData.overview.totalPublications}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'white', fontSize: '0.8rem', opacity: 0.9 }}>
-                    Total Publications
-                  </Typography>
-                </Box>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <TrendingUpIcon sx={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'rgba(255,255,255,0.9)', fontSize: '0.7rem' }}>
-                    Published
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Total Publications
+                </Typography>
+                <PublicationIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.totalPublications}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Published research
+              </Typography>
+            </Paper>
 
-            <Card sx={{ 
-              borderRadius: 3,
-              height: '120px',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-              boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              cursor: 'pointer',
-              color: 'white',
-              '&:hover': {
-                transform: 'translateY(-3px) scale(1.01)',
-                boxShadow: '0 6px 20px rgba(139, 108, 188, 0.3)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ 
-                p: 2, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between'
-              }}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Box sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <ReviewIcon sx={{ fontSize: 20, color: 'white' }} />
-                  </Box>
-                  <Tooltip title="Proposals awaiting review">
-                    <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white' } }}>
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', fontSize: '1.3rem', lineHeight: 1.1, mb: 0.25 }}>
-                    {analyticsData.overview.submittedProposals + analyticsData.overview.underReviewProposals}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'white', fontSize: '0.8rem', opacity: 0.9 }}>
-                    Awaiting Review
-                  </Typography>
-                </Box>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <PendingIcon sx={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'rgba(255,255,255,0.9)', fontSize: '0.7rem' }}>
-                    Pending
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Awaiting Review
+                </Typography>
+                <ReviewIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.submittedProposals + analyticsData.overview.underReviewProposals}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Pending review
+              </Typography>
+            </Paper>
 
-            <Card sx={{ 
-              borderRadius: 3,
-              height: '120px',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-              boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              cursor: 'pointer',
-              color: 'white',
-              '&:hover': {
-                transform: 'translateY(-3px) scale(1.01)',
-                boxShadow: '0 6px 20px rgba(139, 108, 188, 0.3)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ 
-                p: 2, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between'
-              }}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Box sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <TrendingUpIcon sx={{ fontSize: 20, color: 'white' }} />
-                  </Box>
-                  <Tooltip title="Proposal approval success rate">
-                    <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white' } }}>
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', fontSize: '1.3rem', lineHeight: 1.1, mb: 0.25 }}>
-                    {analyticsData.overview.proposalSuccessRate}%
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'white', fontSize: '0.8rem', opacity: 0.9 }}>
-                    Success Rate
-                  </Typography>
-                </Box>
-                <Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={analyticsData.overview.proposalSuccessRate}
-                    sx={{
-                      height: 3,
-                      borderRadius: 2,
-                      backgroundColor: 'rgba(255,255,255,0.2)',
-                      '& .MuiLinearProgress-bar': {
-                        borderRadius: 2,
-                        background: 'rgba(255,255,255,0.8)'
-                      }
-                    }}
-                  />
-                </Box>
-              </CardContent>
-            </Card>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Success Rate
+                </Typography>
+                <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.proposalSuccessRate}%
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Approval rate
+              </Typography>
+            </Paper>
           </Box>
         </Box>
 

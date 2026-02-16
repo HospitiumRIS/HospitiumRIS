@@ -180,124 +180,129 @@ const CentralFundPool = () => {
         {/* Overview Cards */}
         <Box sx={{ 
           display: 'flex', 
-          gap: 3, 
-          mb: 4, 
+          gap: 2.5, 
           flexWrap: 'wrap',
-          '& > *': {
-            flex: {
-              xs: '1 1 100%',
-              sm: '1 1 calc(50% - 12px)',
-              md: '1 1 calc(25% - 18px)'
-            }
+          mb: 4,
+          '& > *': { 
+            flex: '1 1 calc(25% - 19px)',
+            minWidth: '200px'
           }
         }}>
           {/* Total Pool */}
-          <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: 2, 
-            height: 120,
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-3px)',
-              boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
-            }
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <AccountBalanceIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, color: 'white' }}>
-                {formatCurrency(fundData.totalPool)}
-              </Typography>
-              <Typography variant="subtitle1" sx={{ fontSize: '1rem', color: 'rgba(255,255,255,0.9)' }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 Total Pool
               </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                Consolidated funds
-              </Typography>
-            </CardContent>
-          </Card>
+              <AccountBalanceIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {formatCurrency(fundData.totalPool)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Consolidated funds
+            </Typography>
+          </Paper>
 
           {/* Available */}
-          <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: 2, 
-            height: 120,
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-3px)',
-              boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
-            }
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <MoneyIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, color: 'white' }}>
-                {formatCurrency(fundData.available)}
-              </Typography>
-              <Typography variant="subtitle1" sx={{ fontSize: '1rem', color: 'rgba(255,255,255,0.9)' }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 Available
               </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                Ready for allocation
-              </Typography>
-            </CardContent>
-          </Card>
+              <MoneyIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {formatCurrency(fundData.available)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Ready for allocation
+            </Typography>
+          </Paper>
 
           {/* Monthly Inflow */}
-          <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: 2, 
-            height: 120,
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-3px)',
-              boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
-            }
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <TrendingUpIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, color: 'white' }}>
-                {formatCurrency(fundData.monthlyInflow)}
-              </Typography>
-              <Typography variant="subtitle1" sx={{ fontSize: '1rem', color: 'rgba(255,255,255,0.9)' }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 Monthly Inflow
               </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                New funds received
-              </Typography>
-            </CardContent>
-          </Card>
+              <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {formatCurrency(fundData.monthlyInflow)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              New funds received
+            </Typography>
+          </Paper>
 
           {/* Monthly Outflow */}
-          <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: 2, 
-            height: 120,
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-3px)',
-              boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
-            }
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <TrendingDownIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, color: 'white' }}>
-                {formatCurrency(fundData.monthlyOutflow)}
-              </Typography>
-              <Typography variant="subtitle1" sx={{ fontSize: '1rem', color: 'rgba(255,255,255,0.9)' }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 Monthly Outflow
               </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                Funds disbursed
-              </Typography>
-            </CardContent>
-          </Card>
+              <TrendingDownIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {formatCurrency(fundData.monthlyOutflow)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Funds disbursed
+            </Typography>
+          </Paper>
         </Box>
 
         {/* Fund Categories */}

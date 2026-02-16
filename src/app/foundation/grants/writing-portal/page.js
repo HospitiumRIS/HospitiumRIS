@@ -57,6 +57,7 @@ import {
   AccessTime as AccessTimeIcon,
   Pending as PendingIcon,
   Description as DescriptionIcon,
+  Assignment as AssignmentIcon,
 } from '@mui/icons-material';
 
 import { alpha } from '@mui/material/styles';
@@ -395,80 +396,125 @@ export default function GrantWritingPortal() {
         {/* Statistics Cards */}
         <Box sx={{ 
           display: 'flex', 
-          gap: 3, 
-          mb: 4,
+          gap: 2.5, 
           flexWrap: 'wrap',
+          mb: 4,
           '& > *': { 
-            flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', lg: '1 1 calc(25% - 18px)' } 
+            flex: '1 1 calc(25% - 19px)',
+            minWidth: '200px'
           }
         }}>
-          <Card sx={{ 
-            borderRadius: 3, 
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-            transition: 'all 0.3s ease'
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <Typography variant="h3" fontWeight="bold" color="white">
-                {stats.totalProposals}
-              </Typography>
-              <Typography variant="subtitle1" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 Total Proposals
               </Typography>
-            </CardContent>
-          </Card>
+              <AssignmentIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.totalProposals}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              All grant proposals
+            </Typography>
+          </Paper>
 
-          <Card sx={{ 
-            borderRadius: 3, 
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-            transition: 'all 0.3s ease'
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <Typography variant="h3" fontWeight="bold" color="white">
-                {stats.draftProposals}
-              </Typography>
-              <Typography variant="subtitle1" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 Drafts
               </Typography>
-            </CardContent>
-          </Card>
+              <EditIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.draftProposals}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Work in draft
+            </Typography>
+          </Paper>
 
-          <Card sx={{ 
-            borderRadius: 3, 
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-            transition: 'all 0.3s ease'
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <Typography variant="h3" fontWeight="bold" color="white">
-                {stats.inProgressProposals}
-              </Typography>
-              <Typography variant="subtitle1" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 In Progress
               </Typography>
-            </CardContent>
-          </Card>
+              <AccessTimeIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.inProgressProposals}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Being developed
+            </Typography>
+          </Paper>
 
-          <Card sx={{ 
-            borderRadius: 3, 
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-            transition: 'all 0.3s ease'
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <Typography variant="h3" fontWeight="bold" color="white">
-                {stats.submittedProposals}
-              </Typography>
-              <Typography variant="subtitle1" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 Submitted
               </Typography>
-            </CardContent>
-          </Card>
+              <CheckCircleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.submittedProposals}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Successfully submitted
+            </Typography>
+          </Paper>
         </Box>
 
         {/* Search and Filters */}

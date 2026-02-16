@@ -386,12 +386,6 @@ const Navbar = () => {
                     description: 'Manage user accounts and access',
                     icon: <UserManagerIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
                     path: '/institution/users'
-                  },
-                  {
-                    label: 'Role Management',
-                    description: 'Assign and manage user roles',
-                    icon: <ManageIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/users/roles'
                   }
                 ]
               }

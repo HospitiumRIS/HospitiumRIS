@@ -74,6 +74,7 @@ const InstitutionDashboard = () => {
   const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [currentDate, setCurrentDate] = useState('');
   const [greeting, setGreeting] = useState('');
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -163,6 +164,7 @@ const InstitutionDashboard = () => {
 
   // Initialize date and greeting
   useEffect(() => {
+    setMounted(true);
     const updateDateTime = () => {
       const now = new Date();
       const options = { 
@@ -427,7 +429,7 @@ const InstitutionDashboard = () => {
       {/* Full-width Page Header */}
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
-          title={`${greeting}, ${getUserDisplayName()}!`}
+          title={mounted ? `${greeting}, ${getUserDisplayName()}!` : `Welcome, ${getUserDisplayName()}!`}
           description={
             <>
               <span style={{ fontSize: '0.95rem', fontWeight: 400, opacity: 0.9 }}>
@@ -436,7 +438,7 @@ const InstitutionDashboard = () => {
             
               <br />
               <span style={{ fontSize: '0.875rem', opacity: 0.8 }}>
-                {currentDate}
+                {mounted ? currentDate : 'Loading...'}
               </span>
             </>
           }
@@ -458,13 +460,9 @@ const InstitutionDashboard = () => {
 
         {/* Key Metrics Cards */}
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, color: '#8b6cbc' }}>
-            Key Performance Indicators
-          </Typography>
-          
           <Box sx={{ 
             display: 'flex', 
-            gap: 3, 
+            gap: 2.5, 
             flexWrap: { xs: 'wrap', sm: 'nowrap' },
             '& > *': {
               flex: {
@@ -474,173 +472,117 @@ const InstitutionDashboard = () => {
               minWidth: 0
             }
           }}>
-            <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-              height: '100%',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '50%',
-                height: '100%',
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '50% 0 0 50%',
-                transform: 'translateX(60%)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <ResearchersIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label="+0%"
-                    size="small"
-                    sx={{ 
-                      backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {analyticsData.overview.totalResearchers}
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Total Researchers
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                  Researchers
-                </Typography>
-              </CardContent>
-            </Card>
+                <ResearchersIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.totalResearchers}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Active researchers
+              </Typography>
+            </Paper>
 
-            <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-              height: '100%',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '50%',
-                height: '100%',
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '50% 0 0 50%',
-                transform: 'translateX(60%)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <ManuscriptIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label="+0%"
-                    size="small"
-                    sx={{ 
-                      backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {analyticsData.overview.totalManuscripts}
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Total Manuscripts
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                  Manuscripts
-                </Typography>
-              </CardContent>
-            </Card>
+                <ManuscriptIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.totalManuscripts}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Collaborative writings
+              </Typography>
+            </Paper>
 
-            <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-              height: '100%',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '50%',
-                height: '100%',
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '50% 0 0 50%',
-                transform: 'translateX(60%)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <ProposalIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label="+0%"
-                    size="small"
-                    sx={{ 
-                      backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {analyticsData.overview.totalProposals}
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Total Proposals
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                  Proposals
-                </Typography>
-              </CardContent>
-            </Card>
+                <ProposalIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.totalProposals}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Research proposals
+              </Typography>
+            </Paper>
 
-            <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-              height: '100%',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '50%',
-                height: '100%',
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '50% 0 0 50%',
-                transform: 'translateX(60%)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <PublicationIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label="+0%"
-                    size="small"
-                    sx={{ 
-                      backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {analyticsData.overview.totalPublications}
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Total Publications
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                  Publications
-                </Typography>
-              </CardContent>
-            </Card>
+                <PublicationIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.totalPublications}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Published research
+              </Typography>
+            </Paper>
           </Box>
         </Box>
 

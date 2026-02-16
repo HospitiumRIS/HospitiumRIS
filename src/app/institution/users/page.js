@@ -110,6 +110,9 @@ const UserManagement = () => {
   const filterUsers = () => {
     let filtered = [...users];
 
+    // Filter out super admin users
+    filtered = filtered.filter(user => user.accountType !== 'SUPER_ADMIN');
+
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(user => {
@@ -312,79 +315,128 @@ const UserManagement = () => {
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Stats Cards */}
         {stats && (
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box>
-                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#059669', mb: 0.5 }}>
-                        {stats.byStatus.active}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                        Active Users
-                      </Typography>
-                    </Box>
-                    <CheckCircleIcon sx={{ fontSize: 40, color: alpha('#059669', 0.2) }} />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 2.5, 
+            mb: 4, 
+            flexWrap: 'wrap',
+            '& > *': {
+              flex: '1 1 calc(25% - 19px)',
+              minWidth: '200px'
+            }
+          }}>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Active Users
+                </Typography>
+                <CheckCircleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {stats.byStatus.active}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Verified accounts
+              </Typography>
+            </Paper>
 
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box>
-                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#d97706', mb: 0.5 }}>
-                        {stats.byStatus.pending}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                        Pending Approval
-                      </Typography>
-                    </Box>
-                    <PendingIcon sx={{ fontSize: 40, color: alpha('#d97706', 0.2) }} />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Pending Approval
+                </Typography>
+                <PendingIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {stats.byStatus.pending}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Awaiting verification
+              </Typography>
+            </Paper>
 
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box>
-                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 0.5 }}>
-                        {stats.byAccountType.researcher}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                        Researchers
-                      </Typography>
-                    </Box>
-                    <PersonIcon sx={{ fontSize: 40, color: alpha('#8b6cbc', 0.2) }} />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Researchers
+                </Typography>
+                <PersonIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {stats.byAccountType.researcher}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Researcher accounts
+              </Typography>
+            </Paper>
 
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box>
-                      <Typography variant="h4" sx={{ fontWeight: 700, color: '#2563eb', mb: 0.5 }}>
-                        {stats.byAccountType.researchAdmin}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                        Research Admins
-                      </Typography>
-                    </Box>
-                    <SchoolIcon sx={{ fontSize: 40, color: alpha('#2563eb', 0.2) }} />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Research Admins
+                </Typography>
+                <SchoolIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {stats.byAccountType.researchAdmin}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Admin accounts
+              </Typography>
+            </Paper>
+          </Box>
         )}
 
         {/* Filters */}

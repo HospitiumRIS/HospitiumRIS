@@ -8,6 +8,7 @@ import {
   Typography,
   Card,
   CardContent,
+  Paper,
   CircularProgress,
   Alert,
   IconButton,
@@ -243,405 +244,182 @@ const ComplianceAnalytics = () => {
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Key Compliance Metrics */}
         <Box sx={{ mb: 4 }}>
-          <Typography 
-            variant="h5" 
-            sx={{ 
-              fontWeight: 700, 
-              mb: 3,
-              color: '#2d3748',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}
-          >
-            <ComplianceIcon sx={{ color: '#8b6cbc' }} />
-            Compliance Overview
-          </Typography>
-          
           <Box sx={{ 
             display: 'flex', 
-            gap: 3, 
+            gap: 2.5, 
             flexWrap: 'wrap',
             '& > *': { 
-              flex: { 
-                xs: '1 1 100%', 
-                sm: '1 1 calc(50% - 12px)', 
-                lg: '1 1 calc(33.333% - 16px)', 
-                xl: '1 1 calc(16.666% - 20px)' 
-              } 
+              flex: '1 1 calc(16.666% - 21px)',
+              minWidth: '200px'
             }
           }}>
-            <Card sx={{ 
-              borderRadius: 3,
-              height: '120px',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-              boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              cursor: 'pointer',
-              color: 'white',
-              '&:hover': {
-                transform: 'translateY(-3px) scale(1.01)',
-                boxShadow: '0 6px 20px rgba(139, 108, 188, 0.3)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ 
-                p: 2, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between'
-              }}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Box sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <ProposalIcon sx={{ fontSize: 20, color: 'white' }} />
-                  </Box>
-                  <Tooltip title="Total proposals submitted">
-                    <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white' } }}>
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', fontSize: '1.3rem', lineHeight: 1.1, mb: 0.25 }}>
-                    {analyticsData.overview.totalProposals}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'white', fontSize: '0.8rem', opacity: 0.9 }}>
-                    Total Proposals
-                  </Typography>
-                </Box>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <ProposalIcon sx={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'rgba(255,255,255,0.9)', fontSize: '0.7rem' }}>
-                    All Submissions
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Total Proposals
+                </Typography>
+                <ProposalIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.totalProposals}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                All submissions
+              </Typography>
+            </Paper>
 
-            <Card sx={{ 
-              borderRadius: 3,
-              height: '120px',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-              boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              cursor: 'pointer',
-              color: 'white',
-              '&:hover': {
-                transform: 'translateY(-3px) scale(1.01)',
-                boxShadow: '0 6px 20px rgba(139, 108, 188, 0.3)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ 
-                p: 2, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between'
-              }}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Box sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <ApprovedIcon sx={{ fontSize: 20, color: 'white' }} />
-                  </Box>
-                  <Tooltip title="Ethics approvals granted">
-                    <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white' } }}>
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', fontSize: '1.3rem', lineHeight: 1.1, mb: 0.25 }}>
-                    {analyticsData.overview.approvedEthics}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'white', fontSize: '0.8rem', opacity: 0.9 }}>
-                    Ethics Approved
-                  </Typography>
-                </Box>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <ApprovedIcon sx={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'rgba(255,255,255,0.9)', fontSize: '0.7rem' }}>
-                    Approved
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Ethics Approved
+                </Typography>
+                <ApprovedIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.approvedEthics}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Approved
+              </Typography>
+            </Paper>
 
-            <Card sx={{ 
-              borderRadius: 3,
-              height: '120px',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-              boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              cursor: 'pointer',
-              color: 'white',
-              '&:hover': {
-                transform: 'translateY(-3px) scale(1.01)',
-                boxShadow: '0 6px 20px rgba(139, 108, 188, 0.3)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ 
-                p: 2, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between'
-              }}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Box sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <PendingIcon sx={{ fontSize: 20, color: 'white' }} />
-                  </Box>
-                  <Tooltip title="Pending ethics review">
-                    <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white' } }}>
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', fontSize: '1.3rem', lineHeight: 1.1, mb: 0.25 }}>
-                    {analyticsData.overview.pendingEthics}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'white', fontSize: '0.8rem', opacity: 0.9 }}>
-                    Pending Review
-                  </Typography>
-                </Box>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <PendingIcon sx={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'rgba(255,255,255,0.9)', fontSize: '0.7rem' }}>
-                    Under Review
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Pending Review
+                </Typography>
+                <PendingIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.pendingEthics}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Under review
+              </Typography>
+            </Paper>
 
-            <Card sx={{ 
-              borderRadius: 3,
-              height: '120px',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-              boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              cursor: 'pointer',
-              color: 'white',
-              '&:hover': {
-                transform: 'translateY(-3px) scale(1.01)',
-                boxShadow: '0 6px 20px rgba(139, 108, 188, 0.3)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ 
-                p: 2, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between'
-              }}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Box sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <ShieldIcon sx={{ fontSize: 20, color: 'white' }} />
-                  </Box>
-                  <Tooltip title="Proposals with data management plans">
-                    <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white' } }}>
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', fontSize: '1.3rem', lineHeight: 1.1, mb: 0.25 }}>
-                    {analyticsData.overview.proposalsWithDataPlan}
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'white', fontSize: '0.8rem', opacity: 0.9 }}>
-                    Data Plans
-                  </Typography>
-                </Box>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <ShieldIcon sx={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'rgba(255,255,255,0.9)', fontSize: '0.7rem' }}>
-                    Data Management
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Data Plans
+                </Typography>
+                <ShieldIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.proposalsWithDataPlan}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Data management
+              </Typography>
+            </Paper>
 
-            <Card sx={{ 
-              borderRadius: 3,
-              height: '120px',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-              boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              cursor: 'pointer',
-              color: 'white',
-              '&:hover': {
-                transform: 'translateY(-3px) scale(1.01)',
-                boxShadow: '0 6px 20px rgba(139, 108, 188, 0.3)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ 
-                p: 2, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between'
-              }}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Box sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <TrendingUpIcon sx={{ fontSize: 20, color: 'white' }} />
-                  </Box>
-                  <Tooltip title="Overall compliance rate">
-                    <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white' } }}>
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', fontSize: '1.3rem', lineHeight: 1.1, mb: 0.25 }}>
-                    {analyticsData.overview.complianceRate}%
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'white', fontSize: '0.8rem', opacity: 0.9 }}>
-                    Compliance Rate
-                  </Typography>
-                </Box>
-                <Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={analyticsData.overview.complianceRate}
-                    sx={{
-                      height: 3,
-                      borderRadius: 2,
-                      backgroundColor: 'rgba(255,255,255,0.2)',
-                      '& .MuiLinearProgress-bar': {
-                        borderRadius: 2,
-                        background: 'rgba(255,255,255,0.8)'
-                      }
-                    }}
-                  />
-                </Box>
-              </CardContent>
-            </Card>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Compliance Rate
+                </Typography>
+                <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.complianceRate}%
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Overall compliance
+              </Typography>
+            </Paper>
 
-            <Card sx={{ 
-              borderRadius: 3,
-              height: '120px',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-              boxShadow: '0 3px 12px rgba(139, 108, 188, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              cursor: 'pointer',
-              color: 'white',
-              '&:hover': {
-                transform: 'translateY(-3px) scale(1.01)',
-                boxShadow: '0 6px 20px rgba(139, 108, 188, 0.3)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ 
-                p: 2, 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between'
-              }}>
-                <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Box sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <FactCheckIcon sx={{ fontSize: 20, color: 'white' }} />
-                  </Box>
-                  <Tooltip title="Ethics approval success rate">
-                    <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white' } }}>
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', fontSize: '1.3rem', lineHeight: 1.1, mb: 0.25 }}>
-                    {analyticsData.overview.approvalRate}%
-                  </Typography>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'white', fontSize: '0.8rem', opacity: 0.9 }}>
-                    Approval Rate
-                  </Typography>
-                </Box>
-                <Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={analyticsData.overview.approvalRate}
-                    sx={{
-                      height: 3,
-                      borderRadius: 2,
-                      backgroundColor: 'rgba(255,255,255,0.2)',
-                      '& .MuiLinearProgress-bar': {
-                        borderRadius: 2,
-                        background: 'rgba(255,255,255,0.8)'
-                      }
-                    }}
-                  />
-                </Box>
-              </CardContent>
-            </Card>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Approval Rate
+                </Typography>
+                <FactCheckIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.approvalRate}%
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Success rate
+              </Typography>
+            </Paper>
           </Box>
         </Box>
 

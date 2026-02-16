@@ -289,232 +289,154 @@ const FoundationAnalyticsDashboard = () => {
 
         {/* Key Performance Indicators */}
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, color: '#8b6cbc' }}>
-            Key Performance Indicators
-          </Typography>
-          
           <Box sx={{ 
             display: 'flex', 
-            gap: 3, 
+            gap: 2.5, 
             flexWrap: 'wrap',
-            '& > *': {
-              flex: {
-                xs: '1 1 100%',
-                sm: '1 1 calc(50% - 12px)',
-                md: '1 1 calc(33.333% - 16px)',
-                lg: '1 1 calc(16.666% - 20px)'
-              }
+            '& > *': { 
+              flex: '1 1 calc(20% - 20px)',
+              minWidth: '200px'
             }
           }}>
-            <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-              height: '100%',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '50%',
-                height: '100%',
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '50% 0 0 50%',
-                transform: 'translateX(60%)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <MoneyIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label="+0%"
-                    size="small"
-                    sx={{ 
-                      backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {formatCurrency(analyticsData.overview.totalRaised + analyticsData.overview.totalGrants)}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                   Total Raised
                 </Typography>
-              </CardContent>
-            </Card>
+                <MoneyIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {formatCurrency(analyticsData.overview.totalRaised + analyticsData.overview.totalGrants)}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Donations & grants
+              </Typography>
+            </Paper>
 
-            <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-              height: '100%',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '50%',
-                height: '100%',
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '50% 0 0 50%',
-                transform: 'translateX(60%)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <CampaignIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label="+0%"
-                    size="small"
-                    sx={{ 
-                      backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {analyticsData.overview.totalDonations}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                   Total Donations
                 </Typography>
-              </CardContent>
-            </Card>
+                <CampaignIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.totalDonations}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Donation count
+              </Typography>
+            </Paper>
 
-            <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-              height: '100%',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '50%',
-                height: '100%',
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '50% 0 0 50%',
-                transform: 'translateX(60%)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <PeopleIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label="+0%"
-                    size="small"
-                    sx={{ 
-                      backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {analyticsData.overview.uniqueDonors}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                   Unique Donors
                 </Typography>
-              </CardContent>
-            </Card>
+                <PeopleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.uniqueDonors}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Active contributors
+              </Typography>
+            </Paper>
 
-            <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-              height: '100%',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '50%',
-                height: '100%',
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '50% 0 0 50%',
-                transform: 'translateX(60%)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <MoneyIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label="+0%"
-                    size="small"
-                    sx={{ 
-                      backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {formatCurrency(analyticsData.overview.averageDonation)}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                   Average Donation
                 </Typography>
-              </CardContent>
-            </Card>
+                <MoneyIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {formatCurrency(analyticsData.overview.averageDonation)}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Per donation
+              </Typography>
+            </Paper>
 
-            <Card elevation={3} sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-              color: 'white',
-              height: '100%',
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
               position: 'relative',
               overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '50%',
-                height: '100%',
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '50% 0 0 50%',
-                transform: 'translateX(60%)'
-              }
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
             }}>
-              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <GrantIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                  <Chip 
-                    label="+0%"
-                    size="small"
-                    sx={{ 
-                      backgroundColor: 'rgba(255,255,255,0.25)',
-                      color: 'white',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                  />
-                </Box>
-                <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                  {analyticsData.overview.activeGrants}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                   Active Grants
                 </Typography>
-              </CardContent>
-            </Card>
+                <GrantIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {analyticsData.overview.activeGrants}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Grant opportunities
+              </Typography>
+            </Paper>
 
           </Box>
         </Box>

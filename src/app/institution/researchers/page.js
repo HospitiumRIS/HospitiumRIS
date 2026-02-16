@@ -287,150 +287,127 @@ const ManageResearchers = () => {
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Stats Cards */}
-        <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
-          <Card sx={{ 
-            flex: '1 1 200px', 
-            minWidth: 200,
-            borderRadius: 3,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-4px)',
-              boxShadow: '0 8px 30px rgba(139,108,188,0.15)'
-            }
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2.5, 
+          mb: 4, 
+          flexWrap: 'wrap',
+          '& > *': {
+            flex: '1 1 calc(25% - 19px)',
+            minWidth: '200px'
+          }
+        }}>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h3" sx={{ fontWeight: 800, color: '#8b6cbc', mb: 0.5, lineHeight: 1 }}>
-                    {researchers.length}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mt: 1 }}>
-                    Total Researchers
-                  </Typography>
-                </Box>
-                <Box sx={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: '12px',
-                  bgcolor: 'rgba(139, 108, 188, 0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <GroupIcon sx={{ fontSize: 32, color: '#8b6cbc' }} />
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Researchers
+              </Typography>
+              <GroupIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {researchers.length}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Active researchers
+            </Typography>
+          </Paper>
 
-          <Card sx={{ 
-            flex: '1 1 200px', 
-            minWidth: 200,
-            borderRadius: 3,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-4px)',
-              boxShadow: '0 8px 30px rgba(45,134,89,0.15)'
-            }
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h3" sx={{ fontWeight: 800, color: '#2d8659', mb: 0.5, lineHeight: 1 }}>
-                    {researchers.reduce((sum, r) => sum + (r.stats?.totalManuscripts || 0), 0)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mt: 1 }}>
-                    Total Manuscripts
-                  </Typography>
-                </Box>
-                <Box sx={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: '12px',
-                  bgcolor: 'rgba(45, 134, 89, 0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <ManuscriptIcon sx={{ fontSize: 32, color: '#2d8659' }} />
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Manuscripts
+              </Typography>
+              <ManuscriptIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {researchers.reduce((sum, r) => sum + (r.stats?.totalManuscripts || 0), 0)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Collaborative works
+            </Typography>
+          </Paper>
 
-          <Card sx={{ 
-            flex: '1 1 200px', 
-            minWidth: 200,
-            borderRadius: 3,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-4px)',
-              boxShadow: '0 8px 30px rgba(217,119,6,0.15)'
-            }
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h3" sx={{ fontWeight: 800, color: '#d97706', mb: 0.5, lineHeight: 1 }}>
-                    {researchers.reduce((sum, r) => sum + (r.stats?.totalPublications || 0), 0)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mt: 1 }}>
-                    Total Publications
-                  </Typography>
-                </Box>
-                <Box sx={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: '12px',
-                  bgcolor: 'rgba(217, 119, 6, 0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <ArticleIcon sx={{ fontSize: 32, color: '#d97706' }} />
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Publications
+              </Typography>
+              <ArticleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {researchers.reduce((sum, r) => sum + (r.stats?.totalPublications || 0), 0)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Published research
+            </Typography>
+          </Paper>
 
-          <Card sx={{ 
-            flex: '1 1 200px', 
-            minWidth: 200,
-            borderRadius: 3,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-4px)',
-              boxShadow: '0 8px 30px rgba(37,99,235,0.15)'
-            }
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h3" sx={{ fontWeight: 800, color: '#2563eb', mb: 0.5, lineHeight: 1 }}>
-                    {researchers.reduce((sum, r) => sum + (r.stats?.totalCitations || 0), 0)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mt: 1 }}>
-                    Total Citations
-                  </Typography>
-                </Box>
-                <Box sx={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: '12px',
-                  bgcolor: 'rgba(37, 99, 235, 0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <CitationIcon sx={{ fontSize: 32, color: '#2563eb' }} />
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Citations
+              </Typography>
+              <CitationIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {researchers.reduce((sum, r) => sum + (r.stats?.totalCitations || 0), 0)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Citation impact
+            </Typography>
+          </Paper>
         </Box>
 
         {/* Search and Actions */}

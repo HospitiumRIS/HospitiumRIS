@@ -544,130 +544,100 @@ const ProposalReviewPage = () => {
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Statistics Cards */}
         <Box sx={{ 
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-          gap: 2.5,
+          display: 'flex', 
+          gap: 2.5, 
+          flexWrap: 'wrap',
           mb: 4
         }}>
-          <Card sx={{ 
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-            color: 'white',
+          <Paper sx={{ 
+            p: 2, 
             borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
             position: 'relative',
-            overflow: 'visible'
+            overflow: 'hidden',
+            height: '100px',
+            flex: 1,
+            minWidth: '200px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ p: 2, position: 'relative' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                <Box sx={{ 
-                  bgcolor: 'rgba(255,255,255,0.2)', 
-                  borderRadius: 1, 
-                  p: 0.5, 
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <ProposalIcon sx={{ fontSize: 16 }} />
-                </Box>
-                <Chip 
-                  label="+0%"
-                  size="small"
-                  sx={{ 
-                    bgcolor: 'rgba(255,255,255,0.25)',
-                    color: 'white',
-                    fontWeight: 600,
-                    fontSize: '0.7rem',
-                    height: 20
-                  }}
-                />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.25, mt: 0.5 }}>
-                {proposals.length}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.8rem' }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 Total Proposals
               </Typography>
-            </CardContent>
-          </Card>
+              <ProposalIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {proposals.length}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              All submissions
+            </Typography>
+          </Paper>
 
-          <Card sx={{ 
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-            color: 'white',
+          <Paper sx={{ 
+            p: 2, 
             borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
             position: 'relative',
-            overflow: 'visible'
+            overflow: 'hidden',
+            height: '100px',
+            flex: 1,
+            minWidth: '200px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ p: 2, position: 'relative' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                <Box sx={{ 
-                  bgcolor: 'rgba(255,255,255,0.2)', 
-                  borderRadius: 1, 
-                  p: 0.5, 
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <ReviewIcon sx={{ fontSize: 16 }} />
-                </Box>
-                <Chip 
-                  label="+0%"
-                  size="small"
-                  sx={{ 
-                    bgcolor: 'rgba(255,255,255,0.25)',
-                    color: 'white',
-                    fontWeight: 600,
-                    fontSize: '0.7rem',
-                    height: 20
-                  }}
-                />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.25, mt: 0.5 }}>
-                {proposals.filter(p => p.status === 'UNDER_REVIEW').length}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.8rem' }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 Under Review
               </Typography>
-            </CardContent>
-          </Card>
+              <ReviewIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {proposals.filter(p => p.status === 'UNDER_REVIEW').length}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Pending review
+            </Typography>
+          </Paper>
 
-          <Card sx={{ 
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-            color: 'white',
+          <Paper sx={{ 
+            p: 2, 
             borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
             position: 'relative',
-            overflow: 'visible'
+            overflow: 'hidden',
+            height: '100px',
+            flex: 1,
+            minWidth: '200px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <CardContent sx={{ p: 2, position: 'relative' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                <Box sx={{ 
-                  bgcolor: 'rgba(255,255,255,0.2)', 
-                  borderRadius: 1, 
-                  p: 0.5, 
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <ApproveIcon sx={{ fontSize: 16 }} />
-                </Box>
-                <Chip 
-                  label="+0%"
-                  size="small"
-                  sx={{ 
-                    bgcolor: 'rgba(255,255,255,0.25)',
-                    color: 'white',
-                    fontWeight: 600,
-                    fontSize: '0.7rem',
-                    height: 20
-                  }}
-                />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.25, mt: 0.5 }}>
-                {proposals.filter(p => p.status === 'APPROVED').length}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.8rem' }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 Approved
               </Typography>
-            </CardContent>
-          </Card>
+              <ApproveIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {proposals.filter(p => p.status === 'APPROVED').length}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Successfully approved
+            </Typography>
+          </Paper>
         </Box>
 
         {/* Filters */}

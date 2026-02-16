@@ -267,115 +267,132 @@ const ProjectsTracking = () => {
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Stats Cards */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              borderRadius: 2,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-              border: '1px solid #f3f4f6',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                borderColor: '#e5e7eb'
-              }
-            }}>
-              <CardContent sx={{ p: 2.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 0.5, lineHeight: 1 }}>
-                      {stats.total}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
-                      Total Projects
-                    </Typography>
-                  </Box>
-                  <ProjectIcon sx={{ fontSize: 28, color: '#8b6cbc', opacity: 0.3 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2.5, 
+          flexWrap: 'wrap',
+          mb: 4,
+          '& > *': {
+            flex: {
+              xs: '1 1 100%',
+              sm: '1 1 calc(50% - 10px)',
+              md: '1 1 calc(25% - 19px)'
+            },
+            minWidth: 0
+          }
+        }}>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Projects
+              </Typography>
+              <ProjectIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.total}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              All projects
+            </Typography>
+          </Paper>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              borderRadius: 2,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-              border: '1px solid #f3f4f6',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                borderColor: '#e5e7eb'
-              }
-            }}>
-              <CardContent sx={{ p: 2.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#2563eb', mb: 0.5, lineHeight: 1 }}>
-                      {stats.ongoing}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
-                      Ongoing Projects
-                    </Typography>
-                  </Box>
-                  <OngoingIcon sx={{ fontSize: 28, color: '#2563eb', opacity: 0.3 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Ongoing Projects
+              </Typography>
+              <OngoingIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.ongoing}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Active projects
+            </Typography>
+          </Paper>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              borderRadius: 2,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-              border: '1px solid #f3f4f6',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                borderColor: '#e5e7eb'
-              }
-            }}>
-              <CardContent sx={{ p: 2.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#10b981', mb: 0.5, lineHeight: 1 }}>
-                      {stats.completed}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
-                      Completed
-                    </Typography>
-                  </Box>
-                  <CompletedIcon sx={{ fontSize: 28, color: '#10b981', opacity: 0.3 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Completed
+              </Typography>
+              <CompletedIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.completed}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Finished projects
+            </Typography>
+          </Paper>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              borderRadius: 2,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-              border: '1px solid #f3f4f6',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                borderColor: '#e5e7eb'
-              }
-            }}>
-              <CardContent sx={{ p: 2.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#ef4444', mb: 0.5, lineHeight: 1 }}>
-                      {stats.delayed}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mt: 0.5 }}>
-                      Delayed/At Risk
-                    </Typography>
-                  </Box>
-                  <DelayedIcon sx={{ fontSize: 28, color: '#ef4444', opacity: 0.3 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Delayed/At Risk
+              </Typography>
+              <DelayedIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.delayed}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Needs attention
+            </Typography>
+          </Paper>
+        </Box>
 
         {/* Search and Filters */}
         <Paper sx={{ p: 3, mb: 3, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>

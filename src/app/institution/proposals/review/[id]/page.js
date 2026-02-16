@@ -632,7 +632,7 @@ const ProposalDetailsPage = () => {
                               secondary={
                                 <Box component="span" sx={{ display: 'block' }}>
                                   <Typography variant="body2" component="span" color="text.secondary" sx={{ mb: 0.5, lineHeight: 1.6, display: 'block' }}>
-                                    {milestone.description || milestone}
+                                    {milestone.description || 'No description provided'}
                                   </Typography>
                                   {(milestone.dueDate || milestone.targetDate || milestone.date) && (
                                     <Chip 

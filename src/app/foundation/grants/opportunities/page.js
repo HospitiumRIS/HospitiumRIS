@@ -509,179 +509,124 @@ const GrantOpportunityTracking = () => {
       <Box sx={{ minHeight: 'calc(100vh - 200px)', backgroundColor: '#f8f9fa' }}>
         <Container maxWidth="xl" sx={{ py: 4 }}>
           {/* Stats Cards */}
-          <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, justifyContent: 'space-between', mb: 3 }}>
-            <Box sx={{ width: '25%' }}>
-              <Card elevation={3} sx={{ 
-                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-                color: 'white',
-                height: '100%',
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  right: 0,
-                  width: '50%',
-                  height: '100%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  borderRadius: '50% 0 0 50%',
-                  transform: 'translateX(60%)'
-                }
-              }}>
-                <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <TrendingUpIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                    <Chip 
-                      label="+0%"
-                      size="small"
-                      sx={{ 
-                        backgroundColor: 'rgba(255,255,255,0.25)',
-                        color: 'white',
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                        border: '1px solid rgba(255,255,255,0.3)'
-                      }}
-                    />
-                  </Box>
-                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                    {grantors.length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                    Active Grantors
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Box>
-            <Box sx={{ width: '25%' }}>
-              <Card elevation={3} sx={{ 
-                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-                color: 'white',
-                height: '100%',
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  right: 0,
-                  width: '50%',
-                  height: '100%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  borderRadius: '50% 0 0 50%',
-                  transform: 'translateX(60%)'
-                }
-              }}>
-                <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <CheckCircleIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                    <Chip 
-                      label="+0%"
-                      size="small"
-                      sx={{ 
-                        backgroundColor: 'rgba(255,255,255,0.25)',
-                        color: 'white',
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                        border: '1px solid rgba(255,255,255,0.3)'
-                      }}
-                    />
-                  </Box>
-                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                    {openOpportunities}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                    Open Opportunities
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Box>
-            <Box sx={{ width: '25%' }}>
-              <Card elevation={3} sx={{ 
-                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-                color: 'white',
-                height: '100%',
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  right: 0,
-                  width: '50%',
-                  height: '100%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  borderRadius: '50% 0 0 50%',
-                  transform: 'translateX(60%)'
-                }
-              }}>
-                <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <CancelIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                    <Chip 
-                      label="+0%"
-                      size="small"
-                      sx={{ 
-                        backgroundColor: 'rgba(255,255,255,0.25)',
-                        color: 'white',
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                        border: '1px solid rgba(255,255,255,0.3)'
-                      }}
-                    />
-                  </Box>
-                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                    {closedOpportunities}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                    Closed Opportunities
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Box>
-            <Box sx={{ width: '25%' }}>
-              <Card elevation={3} sx={{ 
-                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-                color: 'white',
-                height: '100%',
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  right: 0,
-                  width: '50%',
-                  height: '100%',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  borderRadius: '50% 0 0 50%',
-                  transform: 'translateX(60%)'
-                }
-              }}>
-                <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <AssignmentIcon sx={{ fontSize: 24, opacity: 0.9 }} />
-                    <Chip 
-                      label="+0%"
-                      size="small"
-                      sx={{ 
-                        backgroundColor: 'rgba(255,255,255,0.25)',
-                        color: 'white',
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                        border: '1px solid rgba(255,255,255,0.3)'
-                      }}
-                    />
-                  </Box>
-                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 0.5, fontSize: '2rem' }}>
-                    {totalOpportunities}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.95, fontWeight: 500 }}>
-                    Total Opportunities
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Box>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 2.5, 
+            flexWrap: 'wrap',
+            mb: 4,
+            '& > *': { 
+              flex: '1 1 calc(25% - 19px)',
+              minWidth: '200px'
+            }
+          }}>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Active Grantors
+                </Typography>
+                <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {grantors.length}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Funding organizations
+              </Typography>
+            </Paper>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Open Opportunities
+                </Typography>
+                <CheckCircleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {openOpportunities}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Currently available
+              </Typography>
+            </Paper>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Closed Opportunities
+                </Typography>
+                <CancelIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {closedOpportunities}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Past deadline
+              </Typography>
+            </Paper>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  Total Opportunities
+                </Typography>
+                <AssignmentIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {totalOpportunities}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                All grant opportunities
+              </Typography>
+            </Paper>
           </Box>
 
           {/* Search and Filters */}

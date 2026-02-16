@@ -3265,121 +3265,121 @@ const CreateProposalPage = () => {
                 Select publications from the database that are relevant to this research proposal. These could be preliminary studies, related work, or publications that inform this research. All publications imported into the system are available for selection.
               </Typography>
               
-              {/* Search Field */}
+              {/* Dropdown for Selecting Publications */}
               <Box sx={{ mb: 2.5 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
-                  Search and Select Publications
+                  Select Publications
                 </Typography>
-                <TextField
+                <Autocomplete
                   fullWidth
-                  placeholder="Search publications from database by title, author, journal, or keywords..."
-                  value={publicationSearch}
-                  onChange={(e) => setPublicationSearch(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                        <SearchIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
-                      </Box>
-                    ),
-                    endAdornment: (
-                      <IconButton sx={{ color: '#8b6cbc' }}>
-                        <ExpandMoreIcon />
-                      </IconButton>
-                    )
+                  options={availablePublications}
+                  getOptionLabel={(option) => option.title || ''}
+                  loading={publicationsLoading}
+                  onInputChange={(event, newInputValue) => {
+                    setPublicationSearch(newInputValue);
                   }}
+                  onChange={(event, newValue) => {
+                    if (newValue) {
+                      handlePublicationSelect(newValue);
+                      setPublicationSearch('');
+                    }
+                  }}
+                  value={null}
+                  inputValue={publicationSearch}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Search and select publications by title, author, journal, or keywords..."
+                      InputProps={{
+                        ...params.InputProps,
+                        startAdornment: (
+                          <>
+                            <Box sx={{ ml: 1, mr: 0.5, display: 'flex', alignItems: 'center' }}>
+                              <SearchIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
+                            </Box>
+                            {params.InputProps.startAdornment}
+                          </>
+                        ),
+                        endAdornment: (
+                          <>
+                            {publicationsLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': {
+                            borderColor: '#8b6cbc',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#8b6cbc',
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <li {...props} key={option.id}>
+                      <Box sx={{ width: '100%' }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.25 }}>
+                          {option.title}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#666', fontSize: '0.875rem', mb: 0.25 }}>
+                          {option.authors} {option.year && `(${option.year})`}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                          {option.journal && (
+                            <Typography variant="caption" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
+                              {option.journal}
+                            </Typography>
+                          )}
+                          {option.publicationType && (
+                            <Typography variant="caption" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
+                              {option.publicationType}
+                            </Typography>
+                          )}
+                          {option.doi && (
+                            <Typography variant="caption" sx={{ color: '#666' }}>
+                              DOI: {option.doi}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    </li>
+                  )}
+                  noOptionsText={
+                    publicationsError ? (
+                      <Box sx={{ py: 1 }}>
+                        <Typography variant="body2" color="error" sx={{ mb: 1 }}>
+                          {publicationsError}
+                        </Typography>
+                        <Button 
+                          size="small" 
+                          onClick={() => fetchPublications(publicationSearch)}
+                          sx={{ color: '#8b6cbc' }}
+                        >
+                          Retry
+                        </Button>
+                      </Box>
+                    ) : publicationSearch ? (
+                      'No publications found matching your search.'
+                    ) : (
+                      'No publications available. Start typing to search.'
+                    )
+                  }
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&:hover fieldset': {
-                        borderColor: '#8b6cbc',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#8b6cbc',
-                      },
+                    '& .MuiAutocomplete-listbox': {
+                      maxHeight: '400px',
                     },
                   }}
                 />
-              </Box>
-
-              {/* Publication Search Results */}
-              {(publicationSearch || availablePublications.length > 0) && (
-                <Box sx={{ mb: 2.5 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: '#2D3748' }}>
-                    {publicationSearch ? 'Search Results' : 'Available Publications'}
+                {availablePublications.length === 50 && publicationSearch && (
+                  <Typography variant="caption" sx={{ color: '#8b6cbc', fontStyle: 'italic', mt: 0.5, display: 'block' }}>
+                    Showing first 50 results. Refine your search for more specific results.
                   </Typography>
-                  
-                  {publicationsLoading ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 3 }}>
-                      <CircularProgress size={24} sx={{ color: '#8b6cbc', mr: 2 }} />
-                      <Typography variant="body2" sx={{ color: '#666' }}>
-                        Loading publications...
-                      </Typography>
-                    </Box>
-                  ) : publicationsError ? (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                      {publicationsError}
-                      <Button 
-                        size="small" 
-                        onClick={() => fetchPublications(publicationSearch)}
-                        sx={{ ml: 1, color: '#f44336' }}
-                      >
-                        Retry
-                      </Button>
-                    </Alert>
-                  ) : availablePublications.length > 0 ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {availablePublications.map((publication) => (
-                        <Box
-                          key={publication.id}
-                          sx={{
-                            p: 2,
-                            border: '1px solid #e0e0e0',
-                            borderRadius: 2,
-                            cursor: 'pointer',
-                            '&:hover': {
-                              backgroundColor: 'rgba(139, 108, 188, 0.04)',
-                              borderColor: '#8b6cbc'
-                            }
-                          }}
-                          onClick={() => handlePublicationSelect(publication)}
-                        >
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.5 }}>
-                            {publication.title}
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>
-                            {publication.authors} {publication.year && `(${publication.year})`}
-                          </Typography>
-                          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                            {publication.journal && (
-                              <Typography variant="caption" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
-                                {publication.journal}
-                              </Typography>
-                            )}
-                            {publication.publicationType && (
-                              <Typography variant="caption" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
-                                {publication.publicationType}
-                              </Typography>
-                            )}
-                            {publication.doi && (
-                              <Typography variant="caption" sx={{ color: '#666' }}>
-                                DOI: {publication.doi}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Box>
-                      ))}
-                      {availablePublications.length === 50 && (
-                        <Typography variant="caption" sx={{ color: '#8b6cbc', fontStyle: 'italic', textAlign: 'center', mt: 1 }}>
-                          Showing first 50 results. Use search to narrow down results.
-                        </Typography>
-                      )}
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" sx={{ color: '#666', fontStyle: 'italic' }}>
-                      {publicationSearch ? 'No publications found matching your search.' : 'No publications available in the system.'}
-                    </Typography>
-                  )}
-                </Box>
-              )}
+                )}
+              </Box>
 
               {/* Selected Publications Display */}
               {formData.selectedPublications.length === 0 ? (

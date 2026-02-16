@@ -254,6 +254,11 @@ const ProposalViewPage = () => {
     }).format(amount);
   };
 
+  // Check if proposal has been reviewed by admin
+  const hasBeenReviewed = () => {
+    return proposal?.reviewHistory && proposal.reviewHistory.length > 0;
+  };
+
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -704,16 +709,18 @@ const ProposalViewPage = () => {
                           Funding Information
                         </Typography>
                       </Box>
-                      <Chip 
-                        label="Compliant" 
-                        size="small"
-                        sx={{ 
-                          bgcolor: '#10b981', 
-                          color: 'white',
-                          fontWeight: 600,
-                          fontSize: '0.75rem'
-                        }}
-                      />
+                      {hasBeenReviewed() && (
+                        <Chip 
+                          label="Compliant" 
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#10b981', 
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                      )}
                     </Box>
 
                     <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
@@ -768,16 +775,18 @@ const ProposalViewPage = () => {
                       <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
                         Research Objectives
                       </Typography>
-                      <Chip 
-                        label="Compliant" 
-                        size="small"
-                        sx={{ 
-                          bgcolor: '#10b981', 
-                          color: 'white',
-                          fontWeight: 600,
-                          fontSize: '0.75rem'
-                        }}
-                      />
+                      {hasBeenReviewed() && (
+                        <Chip 
+                          label="Compliant" 
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#10b981', 
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                      )}
                     </Box>
                     <Typography variant="body2" sx={{ color: '#4b5563', lineHeight: 1.8 }}>
                       {proposal.researchObjectives || 'No research objectives provided'}
@@ -792,16 +801,18 @@ const ProposalViewPage = () => {
                       <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
                         Methodology
                       </Typography>
-                      <Chip 
-                        label="Compliant" 
-                        size="small"
-                        sx={{ 
-                          bgcolor: '#10b981', 
-                          color: 'white',
-                          fontWeight: 600,
-                          fontSize: '0.75rem'
-                        }}
-                      />
+                      {hasBeenReviewed() && (
+                        <Chip 
+                          label="Compliant" 
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#10b981', 
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                      )}
                     </Box>
                     <Typography variant="body2" sx={{ color: '#4b5563', lineHeight: 1.8 }}>
                       {proposal.methodology || 'No methodology provided'}
@@ -824,16 +835,18 @@ const ProposalViewPage = () => {
                           Ethics Approval Status
                         </Typography>
                       </Box>
-                      <Chip 
-                        label="Compliant" 
-                        size="small"
-                        sx={{ 
-                          bgcolor: '#10b981', 
-                          color: 'white',
-                          fontWeight: 600,
-                          fontSize: '0.75rem'
-                        }}
-                      />
+                      {hasBeenReviewed() && (
+                        <Chip 
+                          label="Compliant" 
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#10b981', 
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                      )}
                     </Box>
                     <Chip
                       label={proposal.ethicsApprovalStatus || 'Approved'}
@@ -855,16 +868,18 @@ const ProposalViewPage = () => {
                       <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
                         Ethical Considerations
                       </Typography>
-                      <Chip 
-                        label="Compliant" 
-                        size="small"
-                        sx={{ 
-                          bgcolor: '#10b981', 
-                          color: 'white',
-                          fontWeight: 600,
-                          fontSize: '0.75rem'
-                        }}
-                      />
+                      {hasBeenReviewed() && (
+                        <Chip 
+                          label="Compliant" 
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#10b981', 
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                      )}
                     </Box>
                     <Typography variant="body2" sx={{ color: '#4b5563', lineHeight: 1.8 }}>
                       {proposal.ethicalConsiderationsOverview || 'Test'}
@@ -881,16 +896,18 @@ const ProposalViewPage = () => {
                         <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
                           Consent Procedures
                         </Typography>
-                        <Chip 
-                          label="Compliant" 
-                          size="small"
-                          sx={{ 
-                            bgcolor: '#10b981', 
-                            color: 'white',
-                            fontWeight: 600,
-                            fontSize: '0.75rem'
-                          }}
-                        />
+                        {hasBeenReviewed() && (
+                          <Chip 
+                            label="Compliant" 
+                            size="small"
+                            sx={{ 
+                              bgcolor: '#10b981', 
+                              color: 'white',
+                              fontWeight: 600,
+                              fontSize: '0.75rem'
+                            }}
+                          />
+                        )}
                       </Box>
                       <Typography variant="body2" sx={{ color: '#4b5563', lineHeight: 1.8 }}>
                         {proposal.consentProcedures || 'Test'}
@@ -905,16 +922,18 @@ const ProposalViewPage = () => {
                         <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '1rem' }}>
                           Data Security Measures
                         </Typography>
-                        <Chip 
-                          label="Compliant" 
-                          size="small"
-                          sx={{ 
-                            bgcolor: '#10b981', 
-                            color: 'white',
-                            fontWeight: 600,
-                            fontSize: '0.75rem'
-                          }}
-                        />
+                        {hasBeenReviewed() && (
+                          <Chip 
+                            label="Compliant" 
+                            size="small"
+                            sx={{ 
+                              bgcolor: '#10b981', 
+                              color: 'white',
+                              fontWeight: 600,
+                              fontSize: '0.75rem'
+                            }}
+                          />
+                        )}
                       </Box>
                       <Typography variant="body2" sx={{ color: '#4b5563', lineHeight: 1.8 }}>
                         {proposal.dataSecurityMeasures || 'Test'}
@@ -937,16 +956,18 @@ const ProposalViewPage = () => {
                           Supporting Documents
                         </Typography>
                       </Box>
-                      <Chip 
-                        label="Compliant" 
-                        size="small"
-                        sx={{ 
-                          bgcolor: '#10b981', 
-                          color: 'white',
-                          fontWeight: 600,
-                          fontSize: '0.75rem'
-                        }}
-                      />
+                      {hasBeenReviewed() && (
+                        <Chip 
+                          label="Compliant" 
+                          size="small"
+                          sx={{ 
+                            bgcolor: '#10b981', 
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.75rem'
+                          }}
+                        />
+                      )}
                     </Box>
 
                     {/* File List */}
