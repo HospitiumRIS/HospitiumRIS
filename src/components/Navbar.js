@@ -61,6 +61,9 @@ import {
   People as DonorManagementIcon,
   RateReview as ReviewIcon,
   Assessment as AssessmentIcon,
+  NoteAdd as InternalGrantIcon,
+  Shield as EthicsIcon,
+  Gavel as EthicsReviewIcon,
 } from '@mui/icons-material';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
@@ -146,9 +149,15 @@ const Navbar = () => {
                   },
                   {
                     label: 'Submit to Preprint',
-                    description: 'Submit to bioRxiv or medRxiv',
+                    description: 'Submit to bioRxiv, medRxiv or AfricArXiv',
                     icon: <SubmitIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
                     path: '/researcher/publications/submit'
+                  },
+                  {
+                    label: 'Preprint Submissions',
+                    description: 'Track your preprint submissions',
+                    icon: <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/publications/preprints'
                   }
                 ]
               },
@@ -217,6 +226,62 @@ const Navbar = () => {
             ]
           },
           {
+            label: 'Ethics',
+            
+            categories: [
+              {
+                title: 'ETHICS APPLICATIONS',
+                items: [
+                  {
+                    label: 'My Applications',
+                    description: 'Manage ethics applications',
+                    icon: <EthicsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/ethics/applications'
+                  },
+                  {
+                    label: 'Create Application',
+                    description: 'Submit new ethics application',
+                    icon: <CreateIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/ethics/applications/create'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            label: 'Training',
+            categories: [
+              {
+                title: 'AVAILABLE TRAININGS',
+                items: [
+                  {
+                    label: 'Browse Trainings',
+                    description: 'Discover and register for trainings',
+                    icon: <SearchIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/training#available'
+                  }
+                ]
+              },
+              {
+                title: 'MY TRAINING',
+                items: [
+                  {
+                    label: 'My Trainings',
+                    description: 'View registered trainings and progress',
+                    icon: <SchoolIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/training'
+                  },
+                  {
+                    label: 'My Certificates',
+                    description: 'Download earned certificates',
+                    icon: <AwardIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/training/certificates'
+                  }
+                ]
+              }
+            ]
+          },
+          {
             label: 'Reports & Analytics',
             
             categories: [
@@ -270,6 +335,12 @@ const Navbar = () => {
                     description: 'Institutional preprint submissions',
                     icon: <SubmitIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
                     path: '/researcher/publications/submit'
+                  },
+                  {
+                    label: 'Preprint Submissions',
+                    description: 'Track institutional preprint submissions',
+                    icon: <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/publications/preprints'
                   }
                 ]
               },
@@ -347,6 +418,23 @@ const Navbar = () => {
                     description: 'Review and approve project proposals',
                     icon: <ReviewIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
                     path: '/institution/proposals/review'
+                  }
+                ]
+              },
+              {
+                title: 'ETHICS REVIEW',
+                items: [
+                  {
+                    label: 'Review Ethics Applications',
+                    description: 'Review and approve ethics applications',
+                    icon: <EthicsReviewIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/ethics/review'
+                  },
+                  {
+                    label: 'Ethics Applications',
+                    description: 'View all ethics applications',
+                    icon: <EthicsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/ethics/applications'
                   }
                 ]
               },
@@ -441,6 +529,22 @@ const Navbar = () => {
                 ]
               }
             ]
+          },
+          {
+            label: 'Training',
+            categories: [
+              {
+                title: 'TRAINING MANAGEMENT',
+                items: [
+                  {
+                    label: 'Manage Trainings',
+                    description: 'Create and manage institutional trainings',
+                    icon: <SchoolIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/training'
+                  }
+                ]
+              }
+            ]
           }
         ]
       };
@@ -512,6 +616,16 @@ const Navbar = () => {
                   icon:  <AwardIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }} />,
                   path: '/foundation/grants/won' },
                
+              ]
+            },
+
+            {
+              title:"Internal Grants",
+              items: [
+                { label: 'Internal Grant Requests',
+                  description:' Intake, review workflow & approval tracker for internal funding',
+                  icon:  <InternalGrantIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }} />,
+                  path: '/foundation/grants/internal-requests' },
               ]
             },
           

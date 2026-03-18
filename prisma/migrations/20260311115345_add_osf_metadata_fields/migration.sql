@@ -1,0 +1,16 @@
+-- AlterTable
+ALTER TABLE "public"."preprint_submissions" ADD COLUMN     "osfArticleDoi" TEXT,
+ADD COLUMN     "osfCoiStatement" TEXT,
+ADD COLUMN     "osfDateCreated" TIMESTAMP(3),
+ADD COLUMN     "osfDateLastTransitioned" TIMESTAMP(3),
+ADD COLUMN     "osfDateModified" TIMESTAMP(3),
+ADD COLUMN     "osfDatePublished" TIMESTAMP(3),
+ADD COLUMN     "osfDownloadUrl" TEXT,
+ADD COLUMN     "osfHasCoi" BOOLEAN,
+ADD COLUMN     "osfHasDoi" BOOLEAN,
+ADD COLUMN     "osfIsPreprintOrphan" BOOLEAN,
+ADD COLUMN     "osfIsPublished" BOOLEAN,
+ADD COLUMN     "osfLicenseRecord" JSONB,
+ADD COLUMN     "osfPreprintDoiCreated" TIMESTAMP(3),
+ADD COLUMN     "osfPreprintDoiUrl" TEXT,
+ADD COLUMN     "osfReviewsState" TEXT;

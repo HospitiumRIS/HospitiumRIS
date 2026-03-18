@@ -571,264 +571,290 @@ const CampaignCalendar = ({
         </Card>
       </Fade>
 
-      {/* Event Details Dialog - Enhanced Professional Version */}
+      {/* Event Details Dialog - Professional Redesign */}
       <Dialog
         open={eventDialog}
         onClose={() => setEventDialog(false)}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
+        TransitionComponent={Fade}
         PaperProps={{
           sx: { 
-            borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.15)'
+            borderRadius: 4,
+            overflow: 'hidden',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.22), 0 8px 24px rgba(0,0,0,0.12)'
           }
         }}
       >
         {selectedEvent && (
           <>
-            <DialogTitle sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              background: `linear-gradient(135deg, ${selectedEvent.color} 0%, ${selectedEvent.color}DD 100%)`,
-              color: 'white',
-              p: 3
+            {/* Header */}
+            <Box sx={{
+              background: `linear-gradient(135deg, ${selectedEvent.color} 0%, ${selectedEvent.color}CC 100%)`,
+              p: 3,
+              position: 'relative',
+              overflow: 'hidden'
             }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{
+                position: 'absolute', top: -24, right: -24,
+                width: 110, height: 110, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.08)', pointerEvents: 'none'
+              }} />
+              <Box sx={{
+                position: 'absolute', bottom: -32, left: 32,
+                width: 80, height: 80, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.05)', pointerEvents: 'none'
+              }} />
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{
+                    width: 48, height: 48, borderRadius: 3,
+                    background: 'rgba(255,255,255,0.15)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255,255,255,0.25)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                  }}>
+                    <EventIcon sx={{ fontSize: 22, color: 'white' }} />
+                  </Box>
+                  <Box>
+                    <Chip
+                      label={selectedEvent.type.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      size="small"
+                      sx={{
+                        mb: 0.75,
+                        backgroundColor: 'rgba(255,255,255,0.2)',
+                        color: 'white',
+                        fontWeight: 700,
+                        fontSize: '0.62rem',
+                        letterSpacing: '0.6px',
+                        textTransform: 'uppercase',
+                        height: 20,
+                        border: '1px solid rgba(255,255,255,0.3)',
+                        '& .MuiChip-label': { px: 1 }
+                      }}
+                    />
+                    <Typography variant="h6" sx={{ 
+                      fontWeight: 700, color: 'white', lineHeight: 1.25,
+                      textShadow: '0 1px 4px rgba(0,0,0,0.15)'
+                    }}>
+                      {selectedEvent.title}
+                    </Typography>
+                  </Box>
+                </Box>
+                <IconButton
+                  onClick={() => setEventDialog(false)}
+                  size="small"
+                  sx={{
+                    color: 'white', ml: 1.5, flexShrink: 0,
+                    backgroundColor: 'rgba(255,255,255,0.12)',
+                    border: '1px solid rgba(255,255,255,0.22)',
+                    '&:hover': { backgroundColor: 'rgba(255,255,255,0.25)' }
+                  }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            </Box>
+
+            {/* Body */}
+            <DialogContent sx={{ p: 0 }}>
+
+              {/* Date & Time */}
+              <Box sx={{
+                px: 3, py: 2.5, display: 'flex', alignItems: 'center', gap: 2,
+                borderBottom: '1px solid rgba(0,0,0,0.06)'
+              }}>
                 <Box sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 2,
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                  width: 40, height: 40, borderRadius: 2, flexShrink: 0,
+                  backgroundColor: `${selectedEvent.color}18`,
+                  border: `1px solid ${selectedEvent.color}30`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
-                  <EventIcon />
+                  <CalendarTodayIcon sx={{ fontSize: 18, color: selectedEvent.color }} />
                 </Box>
                 <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                    {selectedEvent.title}
-                  </Typography>
-                  <Typography variant="caption" sx={{ 
-                    opacity: 0.9, 
-                    textTransform: 'capitalize',
-                    fontWeight: 500
+                  <Typography variant="caption" sx={{
+                    color: 'text.secondary', fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.62rem'
                   }}>
-                    {selectedEvent.type.replace('-', ' ')} Event
-                </Typography>
-                </Box>
-              </Box>
-              <IconButton 
-                onClick={() => setEventDialog(false)}
-                sx={{ 
-                  color: 'white',
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255,255,255,0.2)'
-                  }
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            
-            <DialogContent sx={{ p: 0 }}>
-              <Box sx={{ p: 3 }}>
-                <Grid container spacing={3}>
-                  {/* Date and Time Information */}
-                <Grid item xs={12}>
-                    <Card sx={{ 
-                      p: 2, 
-                      backgroundColor: 'rgba(139, 108, 188, 0.05)',
-                      border: '1px solid rgba(139, 108, 188, 0.1)'
-                    }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <CalendarTodayIcon sx={{ color: '#8b6cbc' }} />
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                            Date & Time
+                    Date &amp; Time
                   </Typography>
-                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', mt: 0.25 }}>
                     {selectedEvent.date.toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
+                      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                     })}
                   </Typography>
-                          {selectedEvent.activity?.time && (
-                            <Typography variant="body2" color="text.secondary">
-                              {selectedEvent.activity.time}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </Card>
-                </Grid>
-                
-                  {/* Campaign Information */}
-                {selectedEvent.campaign && (
-                  <Grid item xs={12}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CampaignIcon /> Campaign Details
+                  {selectedEvent.activity?.time && (
+                    <Typography variant="caption" color="text.secondary">
+                      {selectedEvent.activity.time}
                     </Typography>
-                      <Card variant="outlined" sx={{ p: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                      <Avatar sx={{ 
-                            width: 48, 
-                            height: 48, 
-                            backgroundColor: selectedEvent.color,
-                            fontSize: '1.2rem',
-                            fontWeight: 700
-                          }}>
-                            {selectedEvent.campaign.name?.charAt(0) || 'C'}
-                      </Avatar>
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                          {selectedEvent.campaign.name}
-                        </Typography>
-                        {selectedEvent.campaign.category && (
-                              <Typography variant="body2" color="text.secondary">
-                                Category: {selectedEvent.campaign.category.name}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                        {selectedEvent.campaign.description && (
-                          <Typography variant="body2" color="text.secondary" sx={{ 
-                            fontStyle: 'italic',
-                            p: 2,
-                            backgroundColor: 'rgba(0,0,0,0.02)',
-                            borderRadius: 1,
-                            border: '1px solid rgba(0,0,0,0.05)'
-                          }}>
-                            {selectedEvent.campaign.description}
-                          </Typography>
-                        )}
-                      </Card>
-                  </Grid>
-                )}
-                
-                  {/* Activity Details */}
-                {selectedEvent.activity && (
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <ScheduleIcon /> Activity Information
-                      </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
-                          <Box sx={{ p: 2, backgroundColor: 'rgba(233, 30, 99, 0.05)', borderRadius: 2 }}>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Phase
-                      </Typography>
-                      <Chip 
-                        label={selectedEvent.phase} 
-                        size="small"
-                              sx={{
-                                backgroundColor: selectedEvent.phase === 'Pre-Campaign' ? '#e91e63' : '#3f51b5',
-                                color: 'white',
-                                fontWeight: 600
-                              }}
-                            />
-                          </Box>
-                    </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Box sx={{ p: 2, backgroundColor: 'rgba(63, 81, 181, 0.05)', borderRadius: 2 }}>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Status
-                      </Typography>
-                      <Chip 
-                        label={selectedEvent.status} 
-                        size="small"
-                        sx={{ 
-                                backgroundColor: getStatusColor(selectedEvent.status),
-                                color: 'white',
-                                fontWeight: 600
-                              }}
-                            />
-                          </Box>
-                        </Grid>
-                        
-                        {selectedEvent.activity.location && (
-                          <Grid item xs={12}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
-                              <LocationIcon color="action" />
-                              <Box>
-                                <Typography variant="subtitle2" color="text.secondary">
-                                  Location
-                                </Typography>
-                                <Typography variant="body1">
-                                  {selectedEvent.activity.location}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          </Grid>
-                        )}
-                        
-                        {selectedEvent.activity.description && (
-                          <Grid item xs={12}>
-                            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, p: 2, backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: 2 }}>
-                              <DescriptionIcon color="action" />
-                              <Box>
-                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                  Description
-                                </Typography>
-                                <Typography variant="body2">
-                                  {selectedEvent.activity.description}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          </Grid>
-                        )}
-                      </Grid>
-                    </Grid>
-                )}
-              </Grid>
+                  )}
+                </Box>
               </Box>
+
+              {/* Campaign */}
+              {selectedEvent.campaign && (
+                <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                  <Typography variant="caption" sx={{
+                    color: 'text.secondary', fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.62rem',
+                    display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5
+                  }}>
+                    <CampaignIcon sx={{ fontSize: 13 }} /> Campaign
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
+                    <Avatar sx={{
+                      width: 44, height: 44, flexShrink: 0,
+                      backgroundColor: selectedEvent.color,
+                      fontSize: '1.1rem', fontWeight: 700,
+                      boxShadow: `0 4px 14px ${selectedEvent.color}45`
+                    }}>
+                      {selectedEvent.campaign.name?.charAt(0)?.toUpperCase() || 'C'}
+                    </Avatar>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', lineHeight: 1.3 }}>
+                        {selectedEvent.campaign.name}
+                      </Typography>
+                      {selectedEvent.campaign.category && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.4 }}>
+                          <Box sx={{
+                            width: 7, height: 7, borderRadius: '50%',
+                            backgroundColor: selectedEvent.color, flexShrink: 0
+                          }} />
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                            {selectedEvent.campaign.category.name}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                    {selectedEvent.campaign.status && (
+                      <Chip
+                        label={selectedEvent.campaign.status}
+                        size="small"
+                        sx={{
+                          backgroundColor: `${getStatusColor(selectedEvent.campaign.status)}15`,
+                          color: getStatusColor(selectedEvent.campaign.status),
+                          border: `1px solid ${getStatusColor(selectedEvent.campaign.status)}30`,
+                          fontWeight: 700, fontSize: '0.68rem', flexShrink: 0
+                        }}
+                      />
+                    )}
+                  </Box>
+                  {selectedEvent.campaign.description && (
+                    <Typography variant="caption" color="text.secondary" sx={{
+                      display: 'block', mt: 1.5, px: 1.5, py: 1.25,
+                      backgroundColor: 'rgba(0,0,0,0.025)',
+                      borderRadius: 2, fontStyle: 'italic', lineHeight: 1.65,
+                      border: '1px solid rgba(0,0,0,0.04)'
+                    }}>
+                      {selectedEvent.campaign.description}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
+              {/* Activity */}
+              {selectedEvent.activity && (
+                <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                  <Typography variant="caption" sx={{
+                    color: 'text.secondary', fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.62rem',
+                    display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5
+                  }}>
+                    <ScheduleIcon sx={{ fontSize: 13 }} /> Activity Details
+                  </Typography>
+                  <Stack direction="row" spacing={1} sx={{ mb: selectedEvent.activity.location || selectedEvent.activity.description ? 2 : 0 }}>
+                    {selectedEvent.phase && (
+                      <Chip
+                        label={selectedEvent.phase}
+                        size="small"
+                        sx={{
+                          backgroundColor: selectedEvent.phase === 'Pre-Campaign' ? 'rgba(233,30,99,0.1)' : 'rgba(63,81,181,0.1)',
+                          color: selectedEvent.phase === 'Pre-Campaign' ? '#e91e63' : '#3f51b5',
+                          border: `1px solid ${selectedEvent.phase === 'Pre-Campaign' ? 'rgba(233,30,99,0.25)' : 'rgba(63,81,181,0.25)'}`,
+                          fontWeight: 700, fontSize: '0.7rem'
+                        }}
+                      />
+                    )}
+                    {selectedEvent.status && (
+                      <Chip
+                        label={selectedEvent.status}
+                        size="small"
+                        sx={{
+                          backgroundColor: `${getStatusColor(selectedEvent.status)}15`,
+                          color: getStatusColor(selectedEvent.status),
+                          border: `1px solid ${getStatusColor(selectedEvent.status)}30`,
+                          fontWeight: 700, fontSize: '0.7rem'
+                        }}
+                      />
+                    )}
+                  </Stack>
+                  {selectedEvent.activity.location && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.25 }}>
+                      <LocationIcon sx={{ fontSize: 17, color: 'text.disabled', flexShrink: 0 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {selectedEvent.activity.location}
+                      </Typography>
+                    </Box>
+                  )}
+                  {selectedEvent.activity.description && (
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                      <DescriptionIcon sx={{ fontSize: 17, color: 'text.disabled', flexShrink: 0, mt: 0.15 }} />
+                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65 }}>
+                        {selectedEvent.activity.description}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              )}
+
             </DialogContent>
-            
-            <DialogActions sx={{ 
-              p: 3, 
-              backgroundColor: 'rgba(0,0,0,0.02)',
-              borderTop: '1px solid rgba(0,0,0,0.05)',
-              gap: 2
+
+            {/* Actions */}
+            <DialogActions sx={{
+              px: 3, py: 2, gap: 1,
+              backgroundColor: 'rgba(0,0,0,0.015)',
+              borderTop: '1px solid rgba(0,0,0,0.06)'
             }}>
-              <Button 
+              <Button
                 onClick={() => setEventDialog(false)}
-                color="inherit"
+                size="small"
+                sx={{ color: 'text.secondary', fontWeight: 500, mr: 'auto' }}
               >
                 Close
               </Button>
-              
-              <Button 
+              <Button
                 startIcon={<DownloadIcon />}
                 variant="outlined"
+                size="small"
                 onClick={() => downloadICalEvent(selectedEvent)}
                 sx={{
-                  borderColor: '#8b6cbc',
-                  color: '#8b6cbc',
+                  borderColor: `${selectedEvent.color}55`,
+                  color: selectedEvent.color, fontWeight: 600,
                   '&:hover': {
-                    backgroundColor: 'rgba(139, 108, 188, 0.1)',
-                    borderColor: '#8b6cbc'
+                    backgroundColor: `${selectedEvent.color}0D`,
+                    borderColor: selectedEvent.color
                   }
                 }}
               >
                 Add to Calendar
               </Button>
-              
               {selectedEvent.campaign && onSelectCampaign && (
-                <Button 
+                <Button
                   startIcon={<LaunchIcon />}
                   variant="contained"
+                  size="small"
                   onClick={() => {
                     onSelectCampaign(selectedEvent.campaign);
                     setEventDialog(false);
                   }}
                   sx={{
                     backgroundColor: selectedEvent.color,
+                    fontWeight: 600,
+                    boxShadow: `0 4px 14px ${selectedEvent.color}45`,
                     '&:hover': {
-                      backgroundColor: selectedEvent.color + 'DD'
+                      backgroundColor: `${selectedEvent.color}E0`,
+                      boxShadow: `0 6px 18px ${selectedEvent.color}55`
                     }
                   }}
                 >

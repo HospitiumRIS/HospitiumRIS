@@ -12,22 +12,30 @@ import {
   VisibilityOff,
 } from '@mui/icons-material';
 
-const FoundationAdminStep = ({ formData, onInputChange, errors }) => {
+const FoundationAdminStep = ({ formData, onInputChange, errors, accountType }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const isFoundationAdmin = accountType === 'FOUNDATION_ADMIN';
+  const title = isFoundationAdmin ? 'Foundation Administrator Registration' : 'Operations Registration';
+  const subtitle = isFoundationAdmin 
+    ? 'Enter your institutional email and create a password'
+    : 'Enter your email and create a password';
 
   return (
     <Box>
       <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, textAlign: 'center' }}>
-        Foundation Administrator Registration
+        {title}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
-        Enter your institutional email and create a password
+        {subtitle}
       </Typography>
 
-      <Alert severity="info" sx={{ mb: 3 }}>
-        Only @hospitium.org email addresses are allowed for Foundation Administrator accounts.
-      </Alert>
+      {isFoundationAdmin && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Only @hospitium.org email addresses are allowed for Foundation Administrator accounts.
+        </Alert>
+      )}
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {/* Email Field */}

@@ -56,6 +56,20 @@ async function seedAccountTypes() {
       isActive: true
     },
     {
+      name: 'OPERATIONS',
+      displayName: 'Operations',
+      description: 'Operations staff managing operational and administrative tasks',
+      permissions: JSON.stringify([
+        'view_own_profile',
+        'edit_own_profile',
+        'manage_operations',
+        'view_system_data',
+        'generate_operational_reports'
+      ]),
+      isSystem: true,
+      isActive: true
+    },
+    {
       name: 'SUPER_ADMIN',
       displayName: 'Super Admin',
       description: 'System administrators with full access to all features',

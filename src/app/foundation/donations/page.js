@@ -107,7 +107,8 @@ import {
   Speed as SpeedIcon,
   Launch as LaunchIcon,
   FilterList as FilterListIcon,
-  VisibilityOff as VisibilityOffIcon
+  VisibilityOff as VisibilityOffIcon,
+  CloudUpload as UploadIcon
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -118,6 +119,7 @@ import PageHeader from '@/components/common/PageHeader';
 
 // Lazy load dialogs for better performance
 const LazyDialogs = lazy(() => import('./components/DonationDialogs'));
+const LazySpreadsheetImport = lazy(() => import('./components/SpreadsheetImport'));
 
 // Constants
 const DONOR_TYPES = ['INDIVIDUAL', 'CORPORATE', 'FOUNDATION', 'GOVERNMENT', 'ANONYMOUS'];
@@ -259,6 +261,8 @@ export default function DonationManagement() {
 
   // Dialog states
   const [donationDialog, setDonationDialog] = useState(false);
+  const [importDialog, setImportDialog] = useState(false);
+  const [importCampaign, setImportCampaign] = useState(null);
   const [donorDialog, setDonorDialog] = useState(false);
   const [reportDialog, setReportDialog] = useState(false);
   const [selectedDonation, setSelectedDonation] = useState(null);
@@ -648,8 +652,8 @@ export default function DonationManagement() {
               </Button>
               <Button
                 variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => handleAddDonation('')}
+                startIcon={<UploadIcon />}
+                onClick={() => { setImportCampaign(null); setImportDialog(true); }}
                 sx={{
                   background: 'rgba(255,255,255,0.2)',
                   backdropFilter: 'blur(10px)',
@@ -660,7 +664,7 @@ export default function DonationManagement() {
                   },
                 }}
               >
-                Record Donation
+                Import Data
               </Button>
             </Stack>
           }
@@ -1282,8 +1286,8 @@ export default function DonationManagement() {
                             </Box>
                             <Button
                               variant="contained"
-                              startIcon={<AddIcon />}
-                              onClick={() => handleAddDonation(campaign.id)}
+                              startIcon={<UploadIcon />}
+                              onClick={() => { setImportCampaign({ id: campaign.id, name: campaign.name }); setImportDialog(true); }}
                               sx={{
                                 background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)',
                                 boxShadow: '0 4px 20px rgba(139, 108, 188, 0.3)',
@@ -1299,7 +1303,7 @@ export default function DonationManagement() {
                                 transition: 'all 0.2s ease'
                               }}
                             >
-                              Add Donation
+                              Import Donations
                             </Button>
                           </Stack>
 
@@ -1320,8 +1324,8 @@ export default function DonationManagement() {
                               </Typography>
                               <Button
                                 variant="contained"
-                                startIcon={<AddIcon />}
-                                onClick={() => handleAddDonation(campaign.id)}
+                                startIcon={<UploadIcon />}
+                                onClick={() => { setImportCampaign({ id: campaign.id, name: campaign.name }); setImportDialog(true); }}
                                 sx={{
                                   background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)',
                                   boxShadow: '0 4px 20px rgba(139, 108, 188, 0.3)',
@@ -1331,7 +1335,7 @@ export default function DonationManagement() {
                                   }
                                 }}
                               >
-                                Add First Donation
+                                Import Donations
                               </Button>
                             </Box>
                           ) : (
@@ -1605,6 +1609,16 @@ export default function DonationManagement() {
             getDonorTypeIcon={getDonorTypeIcon}
             handleSaveDonation={handleSaveDonation}
             generateReportData={() => null}
+          />
+        </Suspense>
+
+        {/* Spreadsheet Import Dialog */}
+        <Suspense fallback={null}>
+          <LazySpreadsheetImport
+            open={importDialog}
+            onClose={() => { setImportDialog(false); setImportCampaign(null); }}
+            onImportComplete={loadData}
+            campaignContext={importCampaign}
           />
         </Suspense>
 

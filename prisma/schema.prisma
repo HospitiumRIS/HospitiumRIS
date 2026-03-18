@@ -92,6 +92,13 @@ model User {
   authoredChanges TrackedChange[]     @relation("ChangeAuthor")
   reviewedChanges TrackedChange[]     @relation("ChangeReviewer")
 
+  // Preprint Submissions
+  preprintSubmissions PreprintSubmission[]
+
+  // Training Relations
+  trainingRegistrations TrainingRegistration[]
+  trainingCertificates  TrainingCertificate[]
+
   @@map("users")
 }
 
@@ -849,9 +856,11 @@ model Proposal {
   updatedAt DateTime @updatedAt
 
   // Relations
-  publications ProposalPublication[]
-  manuscripts  ProposalManuscript[]
-  reviews      ProposalReview[]
+  publications      ProposalPublication[]
+  manuscripts       ProposalManuscript[]
+  reviews           ProposalReview[]
+  ethicsLinks       ProposalEthicsLink[]
+  grantApplications GrantApplication[]
 
   // TODO: Add userId when authentication is implemented
   // userId      String
@@ -930,6 +939,373 @@ model ProposalManuscript {
   @@map("proposal_manuscripts")
 }
 
+// Ethics Management Models
+enum EthicsApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  CONDITIONAL_APPROVAL
+  REJECTED
+  REVISION_REQUESTED
+  WITHDRAWN
+  EXPIRED
+}
+
+model EthicsApplication {
+  id     String @id @default(cuid())
+  userId String // Creator/Principal Investigator
+  
+  // Application Details
+  title                    String
+  principalInvestigator    String
+  principalInvestigatorId  String? // User ID if in system
+  department               String
+  researchType             String // Clinical Trial, Survey, Interview, Observational, etc.
+  
+  // Research Details
+  researchSummary          String @db.Text
+  researchObjectives       String @db.Text
+  methodology              String @db.Text
+  studyDuration            String?
+  
+  // Participant Details
+  participantPopulation    String @db.Text
+  participantCount         Int?
+  ageRange                 String?
+  inclusionCriteria        String? @db.Text
+  exclusionCriteria        String? @db.Text
+  recruitmentMethod        String? @db.Text
+  vulnerablePopulations    Boolean @default(false)
+  vulnerablePopulationDesc String? @db.Text
+  
+  // Risk Assessment
+  riskLevel                String // MINIMAL, LOW, MODERATE, HIGH
+  potentialRisks           String @db.Text
+  riskMitigation           String @db.Text
+  potentialBenefits        String @db.Text
+  riskBenefitRatio         String? @db.Text
+  
+  // Consent Process
+  consentProcess           String @db.Text
+  consentFormAttached      Boolean @default(false)
+  informationSheetAttached Boolean @default(false)
+  consentWaiverRequested   Boolean @default(false)
+  consentWaiverJustification String? @db.Text
+  
+  // Data Protection & Privacy
+  dataCollectionMethods    String @db.Text
+  dataStorageMethods       String @db.Text
+  dataSecurityMeasures     String @db.Text
+  dataRetentionPeriod      String?
+  dataAnonymization        Boolean @default(false)
+  dataSharingPlans         String? @db.Text
+  
+  // Approval Details
+  status                   EthicsApplicationStatus @default(DRAFT)
+  referenceNumber          String? @unique
+  committeeId              String? // Ethics committee assigned
+  committeeName            String?
+  submittedDate            DateTime?
+  reviewDate               DateTime?
+  approvalDate             DateTime?
+  expiryDate               DateTime?
+  
+  // Conditions (for conditional approval)
+  approvalConditions       String? @db.Text
+  conditionsMet            Boolean @default(false)
+  
+  // Documents
+  documents                Json[] // consent forms, information sheets, questionnaires, etc.
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  linkedProposals ProposalEthicsLink[]
+  reviews         EthicsReview[]
+  amendments      EthicsAmendment[]
+  
+  @@map("ethics_applications")
+}
+
+model EthicsReview {
+  id                    String @id @default(cuid())
+  ethicsApplicationId   String
+  
+  // Reviewer Information
+  reviewerId            String // User ID
+  reviewerName          String
+  reviewerRole          String? // Chair, Member, External Reviewer
+  
+  // Review Decision
+  decision              String // APPROVED, CONDITIONAL_APPROVAL, REJECTED, REVISION_REQUESTED
+  
+  // Review Content
+  overallComments       String @db.Text
+  ethicalConcerns       String? @db.Text
+  riskAssessmentReview  String? @db.Text
+  consentReview         String? @db.Text
+  dataProtectionReview  String? @db.Text
+  recommendations       String? @db.Text
+  
+  // Conditions (if conditional approval)
+  conditions            String? @db.Text
+  
+  // Review Metadata
+  reviewDate            DateTime @default(now())
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  ethicsApplication EthicsApplication @relation(fields: [ethicsApplicationId], references: [id], onDelete: Cascade)
+  
+  @@map("ethics_reviews")
+}
+
+model EthicsAmendment {
+  id                    String @id @default(cuid())
+  ethicsApplicationId   String
+  
+  // Amendment Details
+  amendmentNumber       Int
+  amendmentType         String // MINOR, MAJOR, SUBSTANTIAL
+  description           String @db.Text
+  justification         String @db.Text
+  
+  // Status
+  status                String @default("PENDING") // PENDING, APPROVED, REJECTED
+  submittedDate         DateTime @default(now())
+  reviewedDate          DateTime?
+  approvalDate          DateTime?
+  
+  // Documents
+  documents             Json[]
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  ethicsApplication EthicsApplication @relation(fields: [ethicsApplicationId], references: [id], onDelete: Cascade)
+  
+  @@unique([ethicsApplicationId, amendmentNumber])
+  @@map("ethics_amendments")
+}
+
+// Junction table for Proposal-Ethics linking
+model ProposalEthicsLink {
+  id                    String @id @default(cuid())
+  proposalId            String
+  ethicsApplicationId   String
+  
+  // Link metadata
+  linkedDate            DateTime @default(now())
+  linkedBy              String // User ID who created the link
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  
+  // Relations
+  proposal          Proposal          @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  ethicsApplication EthicsApplication @relation(fields: [ethicsApplicationId], references: [id], onDelete: Cascade)
+  
+  @@unique([proposalId, ethicsApplicationId])
+  @@map("proposal_ethics_links")
+}
+
+// Grant Lifecycle Models
+enum GrantApplicationStatus {
+  PREPARING
+  READY_TO_SUBMIT
+  SUBMITTED
+  UNDER_REVIEW
+  ADDITIONAL_INFO_REQUESTED
+  AWARDED
+  REJECTED
+  WITHDRAWN
+}
+
+model GrantApplication {
+  id         String @id @default(cuid())
+  proposalId String // Must link to APPROVED proposal
+  userId     String // Researcher who created
+  
+  // Grant Details
+  grantorName            String
+  grantorEmail           String // Primary contact email for tracking
+  grantorContactPerson   String?
+  grantorPhone           String?
+  grantProgram           String?
+  grantOpportunityId     String? // Link to GrantOpportunity if exists
+  
+  // Application Details
+  applicationTitle       String
+  requestedAmount        Decimal @db.Decimal(15, 2)
+  submissionDeadline     DateTime?
+  applicationDate        DateTime?
+  
+  // Status Tracking
+  status                 GrantApplicationStatus @default(PREPARING)
+  stage                  String @default("preparation") // preparation, submitted, under_review, awarded, closed
+  priority               String @default("Medium") // High, Medium, Low
+  
+  // Grant-specific requirements
+  requirements           Json? // Array of requirement objects
+  notes                  String? @db.Text
+  
+  // Email tracking
+  grantInstitutionEmail  String // Email to track communications
+  emailThreadId          String? // For grouping related emails
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  submittedAt DateTime?
+  
+  // Relations
+  proposal        Proposal              @relation(fields: [proposalId], references: [id])
+  communications  GrantCommunication[]
+  milestones      GrantMilestone[]
+  award           GrantAward?
+  
+  @@map("grant_applications")
+}
+
+model GrantCommunication {
+  id                 String @id @default(cuid())
+  grantApplicationId String
+  
+  // Communication Details
+  type               String // EMAIL_INCOMING, EMAIL_OUTGOING, CALL, MEETING, NOTE
+  direction          String? // INCOMING, OUTGOING (for emails)
+  
+  // Email Details
+  fromEmail          String?
+  fromName           String?
+  toEmail            String?
+  toName             String?
+  ccEmails           String[] // Array of CC emails
+  subject            String?
+  body               String? @db.Text
+  htmlBody           String? @db.Text
+  
+  // Call/Meeting Details
+  participantName    String?
+  participantEmail   String?
+  duration           Int? // minutes
+  location           String?
+  
+  // Common Fields
+  summary            String @db.Text
+  date               DateTime @default(now())
+  
+  // Attachments
+  attachments        Json[] // Array of file metadata
+  
+  // Follow-up
+  followUpRequired   Boolean @default(false)
+  followUpDate       DateTime?
+  followUpCompleted  Boolean @default(false)
+  followUpNotes      String? @db.Text
+  
+  // Email Metadata (for threading)
+  emailMessageId     String? // Unique message ID
+  emailInReplyTo     String? // Message ID this is replying to
+  emailReferences    String[] // Array of reference message IDs
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  grantApplication GrantApplication @relation(fields: [grantApplicationId], references: [id], onDelete: Cascade)
+  
+  @@map("grant_communications")
+}
+
+model GrantMilestone {
+  id                 String @id @default(cuid())
+  grantApplicationId String
+  
+  // Milestone Details
+  title              String
+  description        String? @db.Text
+  dueDate            DateTime?
+  completedDate      DateTime?
+  status             String @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, OVERDUE
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  grantApplication GrantApplication @relation(fields: [grantApplicationId], references: [id], onDelete: Cascade)
+  
+  @@map("grant_milestones")
+}
+
+model GrantAward {
+  id                 String @id @default(cuid())
+  grantApplicationId String @unique
+  
+  // Award Details
+  awardedAmount      Decimal @db.Decimal(15, 2)
+  awardDate          DateTime
+  startDate          DateTime
+  endDate            DateTime
+  grantNumber        String?
+  contractSigned     Boolean @default(false)
+  contractDate       DateTime?
+  
+  // Reporting Requirements
+  reportingSchedule  Json? // Array of reporting milestone objects
+  
+  // Compliance
+  complianceRequirements Json? // Array of compliance item objects
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  grantApplication GrantApplication @relation(fields: [grantApplicationId], references: [id], onDelete: Cascade)
+  reports          GrantReport[]
+  
+  @@map("grant_awards")
+}
+
+model GrantReport {
+  id           String @id @default(cuid())
+  grantAwardId String
+  
+  // Report Details
+  reportType            String // PROGRESS, FINANCIAL, FINAL
+  reportingPeriodStart  DateTime
+  reportingPeriodEnd    DateTime
+  dueDate               DateTime
+  submittedDate         DateTime?
+  
+  // Content
+  content               String? @db.Text
+  status                String @default("PENDING") // PENDING, IN_PROGRESS, SUBMITTED, APPROVED
+  
+  // Documents
+  documents             Json[] // Array of file metadata
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  grantAward GrantAward @relation(fields: [grantAwardId], references: [id], onDelete: Cascade)
+  
+  @@map("grant_reports")
+}
+
 // Library Folder System for organizing publications
 model LibraryFolder {
   id     String @id @default(cuid())
@@ -969,4 +1345,326 @@ model LibraryFolderPublication {
 
   @@unique([folderId, publicationId])
   @@map("library_folder_publications")
+}
+
+// Internal Grant Request Management Models
+model InternalGrantRequest {
+  id String @id @default(cuid())
+
+  // Applicant Information
+  applicantName  String
+  applicantEmail String
+  applicantTitle String?
+  department     String
+
+  // Request Details
+  title           String
+  purpose         String // Research, Equipment, Travel, Training, Operations, Other
+  description     String  @db.Text
+  requestedAmount Decimal @db.Decimal(15, 2)
+  approvedAmount  Decimal? @db.Decimal(15, 2)
+
+  // Project Dates
+  projectStartDate DateTime?
+  projectEndDate   DateTime?
+
+  // Status & Workflow
+  status String @default("draft")      // draft, submitted, under_review, approved, rejected, revision_requested
+  stage  String @default("intake")     // intake, initial_review, committee_review, final_decision
+
+  // Decision Details
+  decisionDate  DateTime?
+  decisionNotes String?   @db.Text
+  revisionNotes String?   @db.Text
+
+  // Reporting
+  reportingRequired Boolean   @default(false)
+  reportDueDate     DateTime?
+  reportSubmitted   Boolean   @default(false)
+  reportSubmittedAt DateTime?
+
+  // Attachments stored as JSON metadata array
+  attachments Json[]
+
+  // Submission timestamp
+  submittedAt DateTime?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  reviews InternalGrantReview[]
+
+  @@map("internal_grant_requests")
+}
+
+model InternalGrantReview {
+  id             String @id @default(cuid())
+  grantRequestId String
+
+  // Reviewer Information
+  reviewerName  String
+  reviewerEmail String?
+
+  // Stage at time of review
+  stage String // intake, initial_review, committee_review, final_decision
+
+  // Review Decision
+  decision String // forward, approved, rejected, revision_requested
+
+  // Review Content
+  comments String @db.Text
+
+  // Timestamps
+  reviewDate DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  grantRequest InternalGrantRequest @relation(fields: [grantRequestId], references: [id], onDelete: Cascade)
+
+  @@map("internal_grant_reviews")
+}
+
+// Preprint Submissions tracking
+enum PreprintStatus {
+  PENDING
+  UNDER_REVIEW
+  ACCEPTED
+  PUBLISHED
+  REJECTED
+  WITHDRAWN
+}
+
+model PreprintSubmission {
+  id     String @id @default(cuid())
+  userId String
+
+  // Submission Details
+  title       String
+  authors     String
+  abstract    String   @db.Text
+  articleType String?
+  subject     String?
+  keywords    String[]
+  license     String?
+
+  // Server / Provider
+  server      String // biorxiv, medrxiv, africarxiv
+  serverName  String // Display name: bioRxiv, medRxiv, AfricArXiv
+
+  // Manuscript
+  manuscriptFileName String?
+  manuscriptFileSize Int?
+
+  // Status & Tracking
+  status    PreprintStatus @default(PENDING)
+  doi       String?
+  serverUrl String? // URL on the preprint server once published
+
+  // OSF-specific (AfricArXiv)
+  osfNodeId              String?
+  osfPreprintId          String?
+  osfReviewsState        String? // OSF review state: pending, accepted, rejected, etc.
+  osfDateCreated         DateTime?
+  osfDateModified        DateTime?
+  osfDatePublished       DateTime?
+  osfDateLastTransitioned DateTime?
+  osfIsPublished         Boolean?
+  osfIsPreprintOrphan    Boolean?
+  osfLicenseRecord       Json? // Store license details as JSON
+  osfHasCoi              Boolean?
+  osfCoiStatement        String? @db.Text
+  osfHasDoi              Boolean?
+  osfArticleDoi          String?
+  osfPreprintDoiCreated  DateTime?
+  osfPreprintDoiUrl      String?
+  osfDownloadUrl         String?
+
+  // medRxiv-specific
+  ethicsStatement  String? @db.Text
+  fundingStatement String? @db.Text
+
+  // Timestamps
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("preprint_submissions")
+}
+
+// Training Management Models
+enum TrainingStatus {
+  DRAFT
+  PUBLISHED
+  COMPLETED
+  CANCELLED
+}
+
+enum TargetGroup {
+  NURSES
+  DOCTORS
+  RESEARCHERS
+  LAB_TECHNICIANS
+  ADMINISTRATORS
+  ALL_STAFF
+}
+
+enum TrainingRegistrationStatus {
+  REGISTERED
+  COMPLETED
+  CANCELLED
+}
+
+enum ModuleStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ModuleProgressStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum MaterialAccessLevel {
+  PUBLIC
+  REGISTERED_ONLY
+}
+
+model Training {
+  id              String         @id @default(cuid())
+  title           String
+  description     String?        @db.Text
+  department      String
+  targetGroup     TargetGroup[]
+  location        String?
+  startDate       DateTime
+  endDate         DateTime
+  maxParticipants Int
+  status          TrainingStatus @default(DRAFT)
+  
+  // Institution scoping
+  institutionId   String // User's primaryInstitution
+  createdBy       String // User ID of creator
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  modules        TrainingModule[]
+  materials      TrainingMaterial[]
+  registrations  TrainingRegistration[]
+  certificates   TrainingCertificate[]
+  
+  @@map("trainings")
+}
+
+model TrainingModule {
+  id          String       @id @default(cuid())
+  trainingId  String
+  title       String
+  description String?      @db.Text
+  order       Int          // Display order
+  status      ModuleStatus @default(ACTIVE)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  training  Training                  @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  materials TrainingMaterial[]
+  progress  TrainingModuleProgress[]
+  
+  @@map("training_modules")
+}
+
+model TrainingMaterial {
+  id          String              @id @default(cuid())
+  trainingId  String
+  moduleId    String?             // Optional: can be linked to a specific module
+  name        String
+  fileUrl     String
+  fileType    String              // pdf, doc, ppt, etc.
+  accessLevel MaterialAccessLevel @default(PUBLIC)
+  uploadedBy  String              // User ID
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  training Training        @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  module   TrainingModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  
+  @@map("training_materials")
+}
+
+model TrainingRegistration {
+  id           String                     @id @default(cuid())
+  trainingId   String
+  userId       String
+  status       TrainingRegistrationStatus @default(REGISTERED)
+  registeredAt DateTime                   @default(now())
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  training         Training                 @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  user             User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleProgress   TrainingModuleProgress[]
+  certificate      TrainingCertificate?
+  
+  @@unique([trainingId, userId])
+  @@map("training_registrations")
+}
+
+model TrainingModuleProgress {
+  id             String               @id @default(cuid())
+  registrationId String
+  moduleId       String
+  status         ModuleProgressStatus @default(PENDING)
+  completedAt    DateTime?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  registration TrainingRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  module       TrainingModule       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  
+  @@unique([registrationId, moduleId])
+  @@map("training_module_progress")
+}
+
+model TrainingCertificate {
+  id             String   @id @default(cuid())
+  trainingId     String
+  userId         String
+  registrationId String   @unique
+  certificateUrl String
+  issuedAt       DateTime @default(now())
+  uploadedBy     String   // User ID of admin who uploaded
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  training     Training             @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  registration TrainingRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  
+  @@map("training_certificates")
 }

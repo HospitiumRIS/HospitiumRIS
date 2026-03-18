@@ -569,6 +569,41 @@ const PublicationPreviewDialog = ({
                             </Grid>
                         )}
 
+                        {/* Country */}
+                        {publication.country && (
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#8b6cbc' }}>
+                                    Country
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {publication.country}
+                                </Typography>
+                            </Grid>
+                        )}
+
+                        {/* Funders */}
+                        {publication.funders && publication.funders.length > 0 && (
+                            <Grid size={12}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#8b6cbc' }}>
+                                    Funders
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                    {publication.funders.map((funder, index) => (
+                                        <Chip 
+                                            key={index}
+                                            label={funder} 
+                                            size="small"
+                                            sx={{ 
+                                                backgroundColor: '#8b6cbc20',
+                                                color: '#8b6cbc',
+                                                fontWeight: 500
+                                            }}
+                                        />
+                                    ))}
+                                </Box>
+                            </Grid>
+                        )}
+
                         {/* Keywords */}
                         {publication.keywords && publication.keywords.length > 0 && (
                             <Grid size={12}>

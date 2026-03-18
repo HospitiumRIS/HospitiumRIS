@@ -64,17 +64,17 @@ export async function POST(request) {
     const errors = {};
     
     // Basic validation
-    if (!accountType || !['RESEARCHER', 'RESEARCH_ADMIN', 'FOUNDATION_ADMIN'].includes(accountType)) {
+    if (!accountType || !['RESEARCHER', 'RESEARCH_ADMIN', 'FOUNDATION_ADMIN', 'OPERATIONS'].includes(accountType)) {
       errors.accountType = 'Valid account type is required';
     }
     
-    // Foundation Admin has simplified validation
-    if (accountType === 'FOUNDATION_ADMIN') {
+    // Foundation Admin and Operations have simplified validation
+    if (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') {
       if (!email) {
         errors.email = 'Email is required';
       } else if (!validateEmail(email)) {
         errors.email = 'Invalid email format';
-      } else if (!email.toLowerCase().endsWith('@hospitium.org')) {
+      } else if (accountType === 'FOUNDATION_ADMIN' && !email.toLowerCase().endsWith('@hospitium.org')) {
         errors.email = 'Only @hospitium.org email addresses are allowed for Foundation Administrator accounts';
       }
       
@@ -131,8 +131,8 @@ export async function POST(request) {
       if (!startYear) {
         errors.startYear = 'Start year is required';
       }
-    } else if (accountType !== 'FOUNDATION_ADMIN') {
-      // For non-researchers and non-foundation admins (if any future account types)
+    } else if (accountType !== 'FOUNDATION_ADMIN' && accountType !== 'OPERATIONS') {
+      // For non-researchers, non-foundation admins, and non-operations (if any future account types)
       if (!confirmEmail) {
         errors.confirmEmail = 'Email confirmation is required';
       } else if (email !== confirmEmail) {
@@ -187,13 +187,13 @@ export async function POST(request) {
 
     // Create user and related records in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // For Foundation Admins, extract name from email
+      // For Foundation Admins and Operations, extract name from email
       let userGivenName, userFamilyName;
-      if (accountType === 'FOUNDATION_ADMIN') {
+      if (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') {
         const emailPrefix = email.split('@')[0];
         const nameParts = emailPrefix.split('.');
-        userGivenName = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1) : 'Foundation';
-        userFamilyName = nameParts[1] ? nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1) : 'Administrator';
+        userGivenName = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1) : (accountType === 'FOUNDATION_ADMIN' ? 'Foundation' : 'Operations');
+        userFamilyName = nameParts[1] ? nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1) : (accountType === 'FOUNDATION_ADMIN' ? 'Administrator' : 'User');
       } else {
         userGivenName = (orcidData?.givenNames || givenName).trim();
         userFamilyName = (orcidData?.familyName || familyName).trim();
@@ -212,12 +212,12 @@ export async function POST(request) {
           emailVerified: true,
           emailVerifyToken: null,
           emailVerifyExpires: null,
-          orcidId: accountType === 'FOUNDATION_ADMIN' ? null : (orcidData?.orcidId || orcidId || null),
-          orcidGivenNames: accountType === 'FOUNDATION_ADMIN' ? null : (orcidData?.givenNames || orcidGivenNames || null),
-          orcidFamilyName: accountType === 'FOUNDATION_ADMIN' ? null : (orcidData?.familyName || orcidFamilyName || null),
-          primaryInstitution: accountType === 'FOUNDATION_ADMIN' ? 'Hospitium Foundation' : (primaryInstitution?.trim() || null),
-          startMonth: accountType === 'FOUNDATION_ADMIN' ? null : (startMonth || null),
-          startYear: accountType === 'FOUNDATION_ADMIN' ? null : (startYear || null),
+          orcidId: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (orcidData?.orcidId || orcidId || null),
+          orcidGivenNames: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (orcidData?.givenNames || orcidGivenNames || null),
+          orcidFamilyName: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (orcidData?.familyName || orcidFamilyName || null),
+          primaryInstitution: accountType === 'FOUNDATION_ADMIN' ? 'Hospitium Foundation' : (accountType === 'OPERATIONS' ? 'Operations' : (primaryInstitution?.trim() || null)),
+          startMonth: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (startMonth || null),
+          startYear: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (startYear || null),
         }
       });
 

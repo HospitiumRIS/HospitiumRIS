@@ -230,6 +230,12 @@ const CreateProposalPage = () => {
   const [piSearchModalOpen, setPiSearchModalOpen] = useState(false);
   const [coInvSearchModalOpen, setCoInvSearchModalOpen] = useState(false);
   
+  // Ethics application linking
+  const [ethicsLinkOption, setEthicsLinkOption] = useState('manual'); // 'manual' or 'existing'
+  const [existingEthicsApplications, setExistingEthicsApplications] = useState([]);
+  const [selectedEthicsApplication, setSelectedEthicsApplication] = useState(null);
+  const [loadingEthicsApps, setLoadingEthicsApps] = useState(false);
+  
   // Unsaved changes and auto-save state
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
@@ -381,6 +387,7 @@ const CreateProposalPage = () => {
     ethicsCommittee: '',
     approvalDate: '',
     dataSecurityMeasures: '',
+    linkedEthicsApplicationId: null,
     ethicsDocuments: [],
     dataManagementPlan: [],
     
@@ -445,6 +452,52 @@ const CreateProposalPage = () => {
       [field]: value
     }));
   };
+
+  // Fetch existing ethics applications
+  const fetchEthicsApplications = async () => {
+    if (!user?.id) return;
+    
+    setLoadingEthicsApps(true);
+    try {
+      const response = await fetch(`/api/ethics/applications?userId=${user.id}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Filter only approved or submitted applications
+        const validApps = data.applications.filter(
+          app => app.status === 'APPROVED' || app.status === 'SUBMITTED' || app.status === 'CONDITIONAL_APPROVAL'
+        );
+        setExistingEthicsApplications(validApps);
+      }
+    } catch (error) {
+      console.error('Error fetching ethics applications:', error);
+    } finally {
+      setLoadingEthicsApps(false);
+    }
+  };
+
+  // Handle ethics application selection
+  const handleEthicsApplicationSelect = (application) => {
+    setSelectedEthicsApplication(application);
+    setFormData(prev => ({
+      ...prev,
+      linkedEthicsApplicationId: application.id,
+      ethicsApprovalStatus: application.status === 'APPROVED' ? 'Approved' : 'Submitted',
+      ethicsApprovalReference: application.referenceNumber || '',
+      ethicsCommittee: application.committeeName || '',
+      approvalDate: application.approvalDate ? new Date(application.approvalDate).toISOString().split('T')[0] : '',
+      ethicalConsiderationsOverview: application.researchSummary || '',
+      consentProcedures: application.consentProcess || '',
+      dataSecurityMeasures: application.dataSecurityMeasures || ''
+    }));
+  };
+
+  // Load ethics applications when switching to existing option
+  useEffect(() => {
+    if (ethicsLinkOption === 'existing' && existingEthicsApplications.length === 0) {
+      fetchEthicsApplications();
+    }
+  }, [ethicsLinkOption]);
 
   // Auto-save function
   const handleAutoSave = async () => {
@@ -2799,6 +2852,131 @@ const CreateProposalPage = () => {
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             
+            {/* Ethics Linking Option */}
+            <Paper sx={{ 
+              p: 3, 
+              borderRadius: 2, 
+              border: '2px solid rgba(139, 108, 188, 0.2)',
+              background: 'rgba(139, 108, 188, 0.02)',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.08)',
+              width: '100%'
+            }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AssignmentIcon sx={{ color: '#8b6cbc' }} />
+                Ethics Application
+              </Typography>
+              
+              <RadioGroup value={ethicsLinkOption} onChange={(e) => setEthicsLinkOption(e.target.value)} sx={{ mb: 2 }}>
+                <FormControlLabel 
+                  value="manual" 
+                  control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />}
+                  label={
+                    <Box>
+                      <Typography variant="body1" sx={{ fontWeight: 600 }}>Enter Ethics Details Manually</Typography>
+                      <Typography variant="caption" sx={{ color: '#666' }}>Provide ethics information directly in this form</Typography>
+                    </Box>
+                  }
+                />
+                <FormControlLabel 
+                  value="existing" 
+                  control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />}
+                  label={
+                    <Box>
+                      <Typography variant="body1" sx={{ fontWeight: 600 }}>Link Existing Ethics Application</Typography>
+                      <Typography variant="caption" sx={{ color: '#666' }}>Connect this proposal to an approved ethics application</Typography>
+                    </Box>
+                  }
+                />
+              </RadioGroup>
+
+              {ethicsLinkOption === 'existing' && (
+                <Box sx={{ mt: 2 }}>
+                  {loadingEthicsApps ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      <CircularProgress sx={{ color: '#8b6cbc' }} />
+                    </Box>
+                  ) : existingEthicsApplications.length > 0 ? (
+                    <Box>
+                      <Typography variant="body2" sx={{ mb: 2, color: '#666', fontWeight: 500 }}>
+                        Select an ethics application to link:
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        {existingEthicsApplications.map((app) => (
+                          <Card 
+                            key={app.id}
+                            sx={{ 
+                              cursor: 'pointer',
+                              border: selectedEthicsApplication?.id === app.id ? '2px solid #8b6cbc' : '1px solid #e2e8f0',
+                              bgcolor: selectedEthicsApplication?.id === app.id ? 'rgba(139, 108, 188, 0.05)' : 'white',
+                              transition: 'all 0.2s',
+                              '&:hover': {
+                                borderColor: '#8b6cbc',
+                                boxShadow: '0 2px 8px rgba(139, 108, 188, 0.15)'
+                              }
+                            }}
+                            onClick={() => handleEthicsApplicationSelect(app)}
+                          >
+                            <CardContent sx={{ p: 2 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#2D3748', flex: 1 }}>
+                                  {app.title}
+                                </Typography>
+                                <Chip 
+                                  label={app.status} 
+                                  size="small"
+                                  sx={{ 
+                                    bgcolor: app.status === 'APPROVED' ? '#10b981' : '#8b6cbc',
+                                    color: 'white',
+                                    fontWeight: 600,
+                                    fontSize: '0.7rem'
+                                  }}
+                                />
+                              </Box>
+                              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                {app.referenceNumber && (
+                                  <Typography variant="caption" sx={{ color: '#666' }}>
+                                    <strong>Ref:</strong> {app.referenceNumber}
+                                  </Typography>
+                                )}
+                                {app.committeeName && (
+                                  <Typography variant="caption" sx={{ color: '#666' }}>
+                                    <strong>Committee:</strong> {app.committeeName}
+                                  </Typography>
+                                )}
+                                {app.approvalDate && (
+                                  <Typography variant="caption" sx={{ color: '#666' }}>
+                                    <strong>Approved:</strong> {new Date(app.approvalDate).toLocaleDateString()}
+                                  </Typography>
+                                )}
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </Box>
+                      {selectedEthicsApplication && (
+                        <Alert severity="success" sx={{ mt: 2 }}>
+                          Ethics application linked successfully. Details have been auto-filled below.
+                        </Alert>
+                      )}
+                    </Box>
+                  ) : (
+                    <Alert severity="info" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <InfoIcon />
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>No approved ethics applications found</Typography>
+                        <Typography variant="caption">
+                          You need to create and submit an ethics application first. Switch to manual entry or{' '}
+                          <a href="/researcher/ethics/applications/create" target="_blank" style={{ color: '#8b6cbc', fontWeight: 600 }}>
+                            create a new ethics application
+                          </a>.
+                        </Typography>
+                      </Box>
+                    </Alert>
+                  )}
+                </Box>
+              )}
+            </Paper>
+            
             {/* Ethical Considerations Overview */}
             <Paper sx={{ 
               p: 2.5, 
@@ -2816,6 +2994,7 @@ const CreateProposalPage = () => {
                 value={formData.ethicalConsiderationsOverview}
                 onChange={(e) => handleInputChange('ethicalConsiderationsOverview', e.target.value)}
                 placeholder="Provide a comprehensive overview of ethical considerations for your research"
+                disabled={ethicsLinkOption === 'existing' && selectedEthicsApplication}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     '&:hover fieldset': {
@@ -2849,6 +3028,7 @@ const CreateProposalPage = () => {
                 value={formData.consentProcedures}
                 onChange={(e) => handleInputChange('consentProcedures', e.target.value)}
                 placeholder="Explain your informed consent process"
+                disabled={ethicsLinkOption === 'existing' && selectedEthicsApplication}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     '&:hover fieldset': {
@@ -2882,6 +3062,7 @@ const CreateProposalPage = () => {
                 value={formData.dataSecurityMeasures}
                 onChange={(e) => handleInputChange('dataSecurityMeasures', e.target.value)}
                 placeholder="Detail your data protection and security measures"
+                disabled={ethicsLinkOption === 'existing' && selectedEthicsApplication}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     '&:hover fieldset': {

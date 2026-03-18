@@ -190,6 +190,8 @@ const RegisterPage = () => {
       return [...baseSteps, 'ORCID Search', 'Account Details', 'Institution Details', 'Password'];
     } else if (accountType === 'FOUNDATION_ADMIN') {
       return [...baseSteps, 'Email & Password'];
+    } else if (accountType === 'OPERATIONS') {
+      return [...baseSteps, 'Email & Password'];
     }
     
     return baseSteps;
@@ -236,6 +238,10 @@ const RegisterPage = () => {
     if (newAccountType !== null) {
       setAccountType(newAccountType);
       setFormData(prev => ({ ...prev, accountType: newAccountType }));
+      // Clear account type error when user makes a selection
+      if (errors.accountType) {
+        setErrors(prev => ({ ...prev, accountType: '' }));
+      }
     }
   };
 
@@ -296,12 +302,14 @@ const RegisterPage = () => {
         break;
         
       case 1: 
-        if (accountType === 'FOUNDATION_ADMIN') {
-          // Email & Password validation for Foundation Admins
+        if (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') {
+          // Email & Password validation for Foundation Admins and Operations
           if (!formData.email) {
             newErrors.email = 'Email is required';
-          } else if (!validateFoundationEmail(formData.email)) {
+          } else if (accountType === 'FOUNDATION_ADMIN' && !validateFoundationEmail(formData.email)) {
             newErrors.email = 'Please enter a valid @hospitium.org email address';
+          } else if (accountType === 'OPERATIONS' && !validateEmail(formData.email)) {
+            newErrors.email = 'Please enter a valid email address';
           }
           
           if (!formData.password) {
@@ -423,46 +431,50 @@ const RegisterPage = () => {
     setFormError('');
     
     try {
+      const requestBody = {
+        ...formData,
+        // Ensure all necessary fields are included
+        accountType: formData.accountType,
+        givenName: formData.givenName,
+        familyName: formData.familyName,
+        email: formData.email,
+        confirmEmail: formData.confirmEmail,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        
+        // ORCID data
+        orcidId: formData.orcidId,
+        orcidGivenNames: formData.orcidGivenNames,
+        orcidFamilyName: formData.orcidFamilyName,
+        
+        // Research details
+        primaryInstitution: formData.primaryInstitution,
+        startMonth: formData.startMonth,
+        startYear: formData.startYear,
+        
+        // Institution details
+        institutionName: formData.institutionName,
+        institutionType: formData.institutionType,
+        institutionCountry: formData.institutionCountry,
+        institutionWebsite: formData.institutionWebsite,
+        
+        // Foundation details
+        foundationName: formData.foundationName,
+        foundationType: formData.foundationType,
+        foundationCountry: formData.foundationCountry,
+        foundationWebsite: formData.foundationWebsite,
+        foundationFocusArea: formData.foundationFocusArea,
+        foundationDescription: formData.foundationDescription,
+      };
+
+      console.log('Submitting registration with data:', requestBody);
+
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          // Ensure all necessary fields are included
-          accountType: formData.accountType,
-          givenName: formData.givenName,
-          familyName: formData.familyName,
-          email: formData.email,
-          confirmEmail: formData.confirmEmail,
-          password: formData.password,
-          confirmPassword: formData.confirmPassword,
-          
-          // ORCID data
-          orcidId: formData.orcidId,
-          orcidGivenNames: formData.orcidGivenNames,
-          orcidFamilyName: formData.orcidFamilyName,
-          
-          // Research details
-          primaryInstitution: formData.primaryInstitution,
-          startMonth: formData.startMonth,
-          startYear: formData.startYear,
-          
-          // Institution details
-          institutionName: formData.institutionName,
-          institutionType: formData.institutionType,
-          institutionCountry: formData.institutionCountry,
-          institutionWebsite: formData.institutionWebsite,
-          
-          // Foundation details
-          foundationName: formData.foundationName,
-          foundationType: formData.foundationType,
-          foundationCountry: formData.foundationCountry,
-          foundationWebsite: formData.foundationWebsite,
-          foundationFocusArea: formData.foundationFocusArea,
-          foundationDescription: formData.foundationDescription,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -475,6 +487,8 @@ const RegisterPage = () => {
         router.push('/register/success?email=' + encodeURIComponent(formData.email));
       } else {
         // Handle validation errors from server
+        console.log('Registration failed:', data);
+        console.log('Validation errors:', data.errors);
         if (data.errors) {
           setErrors(data.errors);
           
@@ -482,10 +496,10 @@ const RegisterPage = () => {
           const errorKeys = Object.keys(data.errors);
           if (errorKeys.some(key => ['accountType'].includes(key))) {
             setActiveStep(0);
-          } else if (accountType === 'FOUNDATION_ADMIN') {
-            // Foundation Admin error mapping - only 2 steps
+          } else if (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') {
+            // Foundation Admin and Operations error mapping - only 2 steps
             if (errorKeys.some(key => ['email', 'password', 'confirmPassword'].includes(key))) {
-              setActiveStep(1); // Email & Password step for Foundation Admins
+              setActiveStep(1); // Email & Password step for Foundation Admins and Operations
             }
           } else {
             // Researcher and Research Admin error mapping
@@ -530,13 +544,14 @@ const RegisterPage = () => {
         );
 
       case 1: 
-        if (accountType === 'FOUNDATION_ADMIN') {
-          // Foundation Admins use simplified email & password step
+        if (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') {
+          // Foundation Admins and Operations use simplified email & password step
           return (
             <FoundationAdminStep 
               formData={formData}
               onInputChange={handleInputChange}
               errors={errors}
+              accountType={accountType}
             />
           );
         } else {
@@ -602,9 +617,6 @@ const RegisterPage = () => {
     }
   };
 
-  // Determine logo source, with fallback for SSR
-  const logoSrc = isClient ? (isDarkMode ? "/hospitium-logo-dark.png" : "/hospitium-logo.png") : "/hospitium-logo.png";
-
   return (
     <Box
       sx={{
@@ -629,27 +641,14 @@ const RegisterPage = () => {
         >
           {/* Logo and Title */}
           <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <NoSSR
-              fallback={
-                <Image
-                  src="/hospitium-logo.png"
-                  alt="Hospitium RIS"
-                  width={140}
-                  height={32}
-                  style={{ marginBottom: '12px' }}
-                  priority
-                />
-              }
-            >
-              <Image
-                src={isDarkMode ? "/hospitium-logo-dark.png" : "/hospitium-logo.png"}
-                alt="Hospitium RIS"
-                width={140}
-                height={32}
-                style={{ marginBottom: '12px' }}
-                priority
-              />
-            </NoSSR>
+            <Image
+              src="/hospitium-logo.png"
+              alt="Hospitium RIS"
+              width={140}
+              height={32}
+              style={{ marginBottom: '12px' }}
+              priority
+            />
             <Typography
               variant="h4"
               component="h1"

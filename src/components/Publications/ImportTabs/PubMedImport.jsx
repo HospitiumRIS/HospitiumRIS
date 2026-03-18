@@ -34,7 +34,9 @@ const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
     author: '',
     year: '',
     journal: '',
-    title: ''
+    title: '',
+    country: '',
+    funder: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -68,6 +70,12 @@ const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
     }
     if (searchFields.title.trim()) {
       queryParts.push(`${searchFields.title.trim()}[Title]`);
+    }
+    if (searchFields.country.trim()) {
+      queryParts.push(`${searchFields.country.trim()}[Affiliation]`);
+    }
+    if (searchFields.funder.trim()) {
+      queryParts.push(`${searchFields.funder.trim()}[Grant Number]`);
     }
     
     return queryParts.join(' AND ');
@@ -565,6 +573,30 @@ const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
           disabled={loading}
           helperText="Words or phrases in the title"
         />
+
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <TextField
+            fullWidth
+            label="Country (Optional)"
+            placeholder="e.g., United States, China"
+            value={searchFields.country}
+            onChange={handleFieldChange('country')}
+            onKeyPress={handleKeyPress}
+            disabled={loading}
+            helperText="Country in author affiliation"
+          />
+
+          <TextField
+            fullWidth
+            label="Funder (Optional)"
+            placeholder="e.g., NIH, NSF"
+            value={searchFields.funder}
+            onChange={handleFieldChange('funder')}
+            onKeyPress={handleKeyPress}
+            disabled={loading}
+            helperText="Funding agency or grant number"
+          />
+        </Box>
       </Stack>
 
 

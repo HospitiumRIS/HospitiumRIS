@@ -100,6 +100,88 @@ export const transformPubMedData = (pmid, pubData) => {
         return yearMatch ? parseInt(yearMatch[1]) : 'Unknown Year';
     };
 
+    // Helper function to extract country from author affiliations
+    const extractCountry = (authors, pubData) => {
+        if (!Array.isArray(authors)) return '';
+        
+        // Try to find country in author affiliations
+        for (const author of authors) {
+            if (author.affiliation) {
+                // Common country patterns in affiliations (country is usually at the end)
+                const affiliation = author.affiliation;
+                
+                // Try to match country at the end after comma
+                const countryMatch = affiliation.match(/,\s*([A-Z][a-zA-Z\s]+)\.?\s*$/);
+                if (countryMatch) {
+                    const country = countryMatch[1].trim();
+                    // Filter out common non-country words
+                    if (!['USA', 'UK', 'Department', 'University', 'Institute', 'Hospital', 'Center', 'Centre'].includes(country)) {
+                        console.log('Extracted country from affiliation:', country);
+                        return country;
+                    }
+                }
+            }
+        }
+        
+        // Check if pubData has a lastauthor field with affiliation
+        if (pubData.lastauthor && pubData.lastauthor.affiliation) {
+            const affiliation = pubData.lastauthor.affiliation;
+            const countryMatch = affiliation.match(/,\s*([A-Z][a-zA-Z\s]+)\.?\s*$/);
+            if (countryMatch) {
+                console.log('Extracted country from last author:', countryMatch[1].trim());
+                return countryMatch[1].trim();
+            }
+        }
+        
+        console.log('No country found in author affiliations');
+        return '';
+    };
+
+    // Helper function to extract grant/funder information
+    const extractFunders = (pubData) => {
+        const funders = [];
+        
+        console.log('Checking for grants in pubData:', {
+            hasGrants: !!pubData.grants,
+            grantsType: typeof pubData.grants,
+            grantsIsArray: Array.isArray(pubData.grants),
+            grants: pubData.grants
+        });
+        
+        // Check for grant information in various formats
+        if (Array.isArray(pubData.grants)) {
+            pubData.grants.forEach(grant => {
+                if (grant.agency) {
+                    funders.push(grant.agency);
+                } else if (typeof grant === 'string') {
+                    funders.push(grant);
+                }
+            });
+        } else if (pubData.grants && typeof pubData.grants === 'object') {
+            // Sometimes grants might be an object
+            Object.values(pubData.grants).forEach(grant => {
+                if (grant && grant.agency) {
+                    funders.push(grant.agency);
+                }
+            });
+        }
+        
+        // Also check for grantlist field
+        if (Array.isArray(pubData.grantlist)) {
+            pubData.grantlist.forEach(grant => {
+                if (grant.agency) {
+                    funders.push(grant.agency);
+                }
+            });
+        }
+        
+        const uniqueFunders = [...new Set(funders)];
+        console.log('Extracted funders:', uniqueFunders);
+        
+        // Return unique funders
+        return uniqueFunders;
+    };
+
     return {
         id: `pubmed_${pmid}_${Date.now()}`,
         title: pubData.title || 'Unknown Title',
@@ -117,6 +199,8 @@ export const transformPubMedData = (pmid, pubData) => {
         isbn: '',
         pubmedId: pmid.toString(),
         source: 'PubMed',
+        country: extractCountry(pubData.authors, pubData),
+        funders: extractFunders(pubData),
         // AI-generated fields
         aiSummary: null,
         aiKeywords: [],

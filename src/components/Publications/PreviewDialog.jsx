@@ -359,6 +359,28 @@ const PreviewDialog = ({
                         </>
                     )}
 
+                    {/* AfricArXiv specific fields */}
+                    {selectedMethod?.id === 'africarxiv' && submissionForm.doi && (
+                        <>
+                            <Grid size={12}>
+                                <Typography variant="h6" gutterBottom sx={{ mt: 2, mb: 1, color: 'text.primary', fontWeight: 600 }}>
+                                    AfricArXiv / OSF Details
+                                </Typography>
+                            </Grid>
+
+                            <Grid size={12}>
+                                <Paper sx={{ p: 3, bgcolor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                                    <Typography variant="overline" color="text.secondary" sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                                        EXISTING DOI
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ mt: 1, fontWeight: 500 }}>
+                                        {submissionForm.doi}
+                                    </Typography>
+                                </Paper>
+                            </Grid>
+                        </>
+                    )}
+
                     {/* Terms agreement */}
                     <Grid size={12}>
                         <Paper sx={{ 

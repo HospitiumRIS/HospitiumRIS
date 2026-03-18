@@ -197,7 +197,7 @@ const SubmissionMethodDialog = ({
                 newErrors.fundingStatement = 'Funding statement is required for medRxiv';
             }
         }
-        
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -231,76 +231,110 @@ const SubmissionMethodDialog = ({
         'Letter to the Editor'
     ];
 
-    const subjects = selectedMethod?.id === 'medrxiv' ? [
-        'Allergy and Immunology',
-        'Anesthesia',
-        'Cardiovascular Medicine',
-        'Dermatology',
-        'Emergency Medicine',
-        'Endocrinology',
-        'Gastroenterology',
-        'Genetic and Genomic Medicine',
-        'Geriatric Medicine',
-        'Health Economics',
-        'Health Informatics',
-        'Health Policy',
-        'Hematology',
-        'Infectious Diseases',
-        'Intensive Care and Critical Care Medicine',
-        'Medical Education',
-        'Medical Ethics',
-        'Nephrology',
-        'Neurology',
-        'Nursing',
-        'Nutrition',
-        'Obstetrics and Gynecology',
-        'Occupational and Environmental Health',
-        'Oncology',
-        'Ophthalmology',
-        'Orthopedics',
-        'Otolaryngology',
-        'Palliative Medicine',
-        'Pathology',
-        'Pediatrics',
-        'Pharmacology and Therapeutics',
-        'Primary Care Research',
-        'Psychiatry and Clinical Psychology',
-        'Public and Global Health',
-        'Radiology and Imaging',
-        'Rehabilitation Medicine and Physical Therapy',
-        'Respiratory Medicine',
-        'Rheumatology',
-        'Sexual and Reproductive Health',
-        'Sports Medicine',
-        'Surgery',
-        'Urology'
-    ] : [
-        'Animal Behavior and Cognition',
-        'Biochemistry',
-        'Bioengineering',
-        'Bioinformatics',
-        'Biophysics',
-        'Cancer Biology',
-        'Cell Biology',
-        'Developmental Biology',
-        'Ecology',
-        'Evolutionary Biology',
-        'Genetics',
-        'Genomics',
-        'Immunology',
-        'Microbiology',
-        'Molecular Biology',
-        'Neuroscience',
-        'Paleontology',
-        'Pathology',
-        'Pharmacology and Toxicology',
-        'Physiology',
-        'Plant Biology',
-        'Structural Biology',
-        'Synthetic Biology',
-        'Systems Biology',
-        'Zoology'
-    ];
+    const subjectsByProvider = {
+        medrxiv: [
+            'Allergy and Immunology',
+            'Anesthesia',
+            'Cardiovascular Medicine',
+            'Dermatology',
+            'Emergency Medicine',
+            'Endocrinology',
+            'Gastroenterology',
+            'Genetic and Genomic Medicine',
+            'Geriatric Medicine',
+            'Health Economics',
+            'Health Informatics',
+            'Health Policy',
+            'Hematology',
+            'Infectious Diseases',
+            'Intensive Care and Critical Care Medicine',
+            'Medical Education',
+            'Medical Ethics',
+            'Nephrology',
+            'Neurology',
+            'Nursing',
+            'Nutrition',
+            'Obstetrics and Gynecology',
+            'Occupational and Environmental Health',
+            'Oncology',
+            'Ophthalmology',
+            'Orthopedics',
+            'Otolaryngology',
+            'Palliative Medicine',
+            'Pathology',
+            'Pediatrics',
+            'Pharmacology and Therapeutics',
+            'Primary Care Research',
+            'Psychiatry and Clinical Psychology',
+            'Public and Global Health',
+            'Radiology and Imaging',
+            'Rehabilitation Medicine and Physical Therapy',
+            'Respiratory Medicine',
+            'Rheumatology',
+            'Sexual and Reproductive Health',
+            'Sports Medicine',
+            'Surgery',
+            'Urology'
+        ],
+        africarxiv: [
+            'Agriculture and Food Sciences',
+            'Arts and Humanities',
+            'Biochemistry, Genetics and Molecular Biology',
+            'Business, Management and Accounting',
+            'Chemical Engineering',
+            'Chemistry',
+            'Computer Science',
+            'Decision Sciences',
+            'Earth and Planetary Sciences',
+            'Economics, Econometrics and Finance',
+            'Education',
+            'Energy',
+            'Engineering',
+            'Environmental Science',
+            'Health Professions',
+            'Immunology and Microbiology',
+            'Law',
+            'Materials Science',
+            'Mathematics',
+            'Medicine and Dentistry',
+            'Neuroscience',
+            'Nursing',
+            'Pharmacology, Toxicology and Pharmaceutical Science',
+            'Physics and Astronomy',
+            'Psychology',
+            'Social Sciences',
+            'Veterinary Science and Veterinary Medicine'
+        ],
+        biorxiv: [
+            'Animal Behavior and Cognition',
+            'Biochemistry',
+            'Bioengineering',
+            'Bioinformatics',
+            'Biophysics',
+            'Cancer Biology',
+            'Cell Biology',
+            'Developmental Biology',
+            'Ecology',
+            'Evolutionary Biology',
+            'Genetics',
+            'Genomics',
+            'Immunology',
+            'Microbiology',
+            'Molecular Biology',
+            'Neuroscience',
+            'Paleontology',
+            'Pathology',
+            'Pharmacology and Toxicology',
+            'Physiology',
+            'Plant Biology',
+            'Structural Biology',
+            'Synthetic Biology',
+            'Systems Biology',
+            'Zoology'
+        ]
+    };
+
+    const subjects = subjectsByProvider[selectedMethod?.id] || subjectsByProvider.biorxiv;
 
     return (
         <Dialog
@@ -728,6 +762,45 @@ const SubmissionMethodDialog = ({
                                     }
                                     label="IRB/Ethics approval obtained"
                                 />
+                            </Grid>
+                        </>
+                    )}
+
+                    {/* AfricArXiv specific fields */}
+                    {selectedMethod?.id === 'africarxiv' && (
+                        <>
+                            <Grid size={12}>
+                                <Divider sx={{ my: 2 }} />
+                                <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', fontWeight: 500 }}>
+                                    AfricArXiv / OSF Details
+                                </Typography>
+                            </Grid>
+
+                            <Grid size={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Existing DOI (Optional)"
+                                    placeholder="e.g., 10.1234/example"
+                                    value={submissionForm.doi || ''}
+                                    onChange={(e) => handleInputChange('doi', e.target.value)}
+                                    helperText="If this work has been previously published, enter the DOI"
+                                    sx={{
+                                        '& .MuiOutlinedInput-root': {
+                                            bgcolor: 'white',
+                                            '& fieldset': {
+                                                borderColor: '#e0e0e0'
+                                            }
+                                        }
+                                    }}
+                                />
+                            </Grid>
+
+                            <Grid size={12}>
+                                <Alert severity="info" sx={{ bgcolor: '#E07B2710', border: '1px solid #E07B2740', '& .MuiAlert-icon': { color: '#E07B27' } }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                        AfricArXiv uses the OSF Preprints infrastructure. Your submission will be sent to OSF and undergo moderation before appearing publicly.
+                                    </Typography>
+                                </Alert>
                             </Grid>
                         </>
                     )}
