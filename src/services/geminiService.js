@@ -5,9 +5,9 @@
 
 import { GoogleGenAI } from '@google/genai';
 
-// Initialize Gemini AI with API key
+// Initialize Gemini AI with API key from environment variable
 const ai = new GoogleGenAI({
-    apiKey: 'AIzaSyBvqL9i7oMQEcSCGksfWz_YxnSB4iv-1R8'
+    apiKey: process.env.GOOGLE_GEMINI_API_KEY
 });
 
 /**

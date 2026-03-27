@@ -2583,10 +2583,10 @@ export default function CollaborativeWriting() {
               <AddIcon />
             </Box>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.25rem' }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
                 Create New Manuscript
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              <Typography variant="body2" sx={{ opacity: 0.8, fontSize: '0.813rem' }}>
                 Start a new collaborative writing project
               </Typography>
             </Box>
@@ -2600,8 +2600,8 @@ export default function CollaborativeWriting() {
           )}
 
           {/* Stepper */}
-          <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid #e0e0e0', backgroundColor: '#fafbfd' }}>
-            <Stepper activeStep={manuscriptActiveStep} sx={{ mb: 2 }}>
+          <Box sx={{ px: 3, pt: 2, pb: 1.5, borderBottom: '1px solid #e0e0e0', backgroundColor: '#fafbfd' }}>
+            <Stepper activeStep={manuscriptActiveStep}>
               {manuscriptSteps.map((label) => (
                 <Step key={label}>
                   <StepLabel 
@@ -2619,12 +2619,12 @@ export default function CollaborativeWriting() {
 
           {/* Step Content */}
           {manuscriptActiveStep === 0 && (
-            <Box sx={{ p: 4 }}>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#2D3748' }}>
+            <Box sx={{ p: 3 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', fontSize: '0.938rem' }}>
                 Manuscript Details
               </Typography>
               
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 {/* Manuscript Title */}
                 <TextField
                   fullWidth
@@ -2661,7 +2661,7 @@ export default function CollaborativeWriting() {
 
                 {/* Research Fields - Multiple Selection Dropdown with Custom Entry */}
                 <Box>
-                  <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, fontSize: '0.875rem' }}>
                     Research Fields * (Select multiple or add custom)
                   </Typography>
                   
@@ -2671,13 +2671,21 @@ export default function CollaborativeWriting() {
                     value={newManuscript.fields}
                     onChange={(event, newValue) => {
                       // Handle both predefined selections and custom entries
-                      const processedValues = newValue.map(value => 
-                        typeof value === 'string' ? value.trim() : value
-                      ).filter(value => value !== ''); // Remove empty strings
+                      // Split comma-separated values into individual fields
+                      const processedValues = newValue.flatMap(value => {
+                        if (typeof value === 'string') {
+                          // Split by comma and trim each field
+                          return value.split(',').map(v => v.trim()).filter(v => v !== '');
+                        }
+                        return value;
+                      });
+                      
+                      // Remove duplicates
+                      const uniqueValues = [...new Set(processedValues)];
                       
                       setNewManuscript(prev => ({
                         ...prev,
-                        fields: processedValues
+                        fields: uniqueValues
                       }));
                     }}
                     options={MEDICAL_FIELDS.filter(field => field !== 'Other')}
@@ -2703,8 +2711,8 @@ export default function CollaborativeWriting() {
                       <TextField
                         {...params}
                         variant="outlined"
-                        placeholder="Select existing fields or type custom ones..."
-                        helperText="Type and press Enter to add custom fields, or select from dropdown"
+                        placeholder="Select or type custom fields..."
+                        helperText="Type and press Enter to add custom fields"
                         sx={{
                           '& .MuiOutlinedInput-root': {
                             '&:hover fieldset': { borderColor: '#8b6cbc' },
@@ -2748,19 +2756,19 @@ export default function CollaborativeWriting() {
                   
                   {/* Information about custom fields */}
                   {newManuscript.fields.length > 0 && (
-                    <Box sx={{ mt: 2 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <CategoryIcon sx={{ fontSize: 14 }} />
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.75rem' }}>
+                        <CategoryIcon sx={{ fontSize: 13 }} />
                         {newManuscript.fields.length} field{newManuscript.fields.length !== 1 ? 's' : ''} selected
                         {newManuscript.fields.some(field => !MEDICAL_FIELDS.includes(field)) && (
                           <Chip 
-                            label="Custom fields included" 
+                            label="Custom" 
                             size="small" 
                             variant="outlined"
                             sx={{ 
-                              ml: 1, 
-                              height: 18, 
-                              fontSize: '0.65rem',
+                              ml: 0.5, 
+                              height: 16, 
+                              fontSize: '0.625rem',
                               borderColor: '#8b6cbc',
                               color: '#8b6cbc'
                             }} 
@@ -2793,12 +2801,12 @@ export default function CollaborativeWriting() {
 
           {/* Step 2: Invite Collaborators */}
           {manuscriptActiveStep === 1 && (
-            <Box sx={{ p: 4 }}>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#2D3748' }}>
+            <Box sx={{ p: 3 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', fontSize: '0.938rem' }}>
                 Invite Collaborators
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Add team members to your manuscript using their ORCID IDs or by searching their names.
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: '0.813rem' }}>
+                Add team members using ORCID IDs or search by name.
               </Typography>
               
               {/* ORCID Collaborator Invite Component */}
@@ -2816,7 +2824,7 @@ export default function CollaborativeWriting() {
           )}
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, gap: 2, borderTop: '1px solid #e0e0e0', backgroundColor: '#fafbfd' }}>
+        <DialogActions sx={{ p: 2.5, gap: 1.5, borderTop: '1px solid #e0e0e0', backgroundColor: '#fafbfd' }}>
           <Button 
             onClick={() => {
             setNewManuscriptOpen(false);
@@ -2868,8 +2876,8 @@ export default function CollaborativeWriting() {
               onClick={handleManuscriptNextStep}
               sx={{ 
                 background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)',
-                px: 3,
-                py: 1,
+                px: 2.5,
+                py: 0.75,
                 '&:hover': {
                   background: 'linear-gradient(135deg, #7b5ca7 0%, #8565c1 100%)',
                   transform: 'translateY(-1px)',
@@ -2889,16 +2897,16 @@ export default function CollaborativeWriting() {
             <Button
               variant="contained"
               disabled={isSubmittingManuscript}
-              startIcon={isSubmittingManuscript ? <CircularProgress size={20} color="inherit" /> : <RocketLaunchIcon />}
+              startIcon={isSubmittingManuscript ? <CircularProgress size={18} color="inherit" /> : null}
               onClick={handleFinishManuscript}
               sx={{ 
-                background: 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)',
-                px: 3,
-                py: 1,
+                bgcolor: '#8b6cbc',
+                px: 2.5,
+                py: 0.75,
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #43a047 0%, #5cb85c 100%)',
+                  bgcolor: '#7a5daa',
                   transform: 'translateY(-1px)',
-                  boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)'
+                  boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
                 },
                 '&:disabled': {
                   background: '#e0e0e0',
@@ -2907,7 +2915,7 @@ export default function CollaborativeWriting() {
                 transition: 'all 0.2s ease'
               }}
             >
-              {isSubmittingManuscript ? 'Creating Manuscript...' : 'Create & Send Invites'}
+              {isSubmittingManuscript ? 'Submitting...' : 'Submit'}
             </Button>
           )}
         </DialogActions>
@@ -3939,10 +3947,11 @@ export default function CollaborativeWriting() {
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            pb: 2
+            pb: 1.5,
+            fontSize: '1.1rem'
           }}
         >
-          <DescriptionIcon />
+          <DescriptionIcon sx={{ fontSize: 22 }} />
           Create New Proposal
         </DialogTitle>
 
@@ -3954,8 +3963,8 @@ export default function CollaborativeWriting() {
           )}
 
           {/* Stepper */}
-          <Box sx={{ px: 3, pt: 3 }}>
-            <Stepper activeStep={proposalActiveStep} sx={{ mb: 4 }}>
+          <Box sx={{ px: 3, pt: 2, pb: 1.5, borderBottom: '1px solid #e0e0e0', backgroundColor: '#fafbfd' }}>
+            <Stepper activeStep={proposalActiveStep}>
               {proposalSteps.map((label) => (
                 <Step key={label}>
                   <StepLabel>{label}</StepLabel>
@@ -3966,12 +3975,12 @@ export default function CollaborativeWriting() {
 
           {/* Step Content */}
           {proposalActiveStep === 0 && (
-          <Box sx={{ p: 4 }}>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+          <Box sx={{ p: 3 }}>
+            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, fontSize: '0.938rem', color: '#2D3748' }}>
               Proposal Details
             </Typography>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {/* Proposal Title */}
               <TextField
                 fullWidth
@@ -3983,96 +3992,128 @@ export default function CollaborativeWriting() {
 
               {/* Research Fields */}
               <Box>
-                <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
-                  Research Fields *
+                <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, fontSize: '0.875rem' }}>
+                  Research Fields * (Select multiple or add custom)
                 </Typography>
-                <FormControl fullWidth required>
-                  <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 2, p: 2 }}>
-                    <FormGroup>
-                      {MEDICAL_FIELDS.map((field) => (
-                        <FormControlLabel
-                          key={field}
-                          control={
-                            <Checkbox
-                              checked={newProposal.fields.includes(field)}
-                              onChange={(e) => {
-                                const fieldValue = e.target.value;
-                                setNewProposal(prev => ({
-                                  ...prev,
-                                  fields: e.target.checked
-                                    ? [...prev.fields, fieldValue]
-                                    : prev.fields.filter(f => f !== fieldValue)
-                                }));
-                              }}
-                              value={field}
-                              sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }}
-                            />
-                          }
-                          label={field}
-                        />
-                      ))}
-                    </FormGroup>
+                
+                <Autocomplete
+                  multiple
+                  freeSolo
+                  value={newProposal.fields}
+                  onChange={(event, newValue) => {
+                    // Handle both predefined selections and custom entries
+                    // Split comma-separated values into individual fields
+                    const processedValues = newValue.flatMap(value => {
+                      if (typeof value === 'string') {
+                        // Split by comma and trim each field
+                        return value.split(',').map(v => v.trim()).filter(v => v !== '');
+                      }
+                      return value;
+                    });
                     
-                    {/* Selected fields display */}
-                    {newProposal.fields.length > 0 && (
-                      <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        {newProposal.fields.map((field) => (
-                          <Chip
-                            key={field}
-                            label={field}
-                            onDelete={() => {
-                              setNewProposal(prev => ({
-                                ...prev,
-                                fields: prev.fields.filter(f => f !== field)
-                              }));
-                            }}
-                            size="small"
-                            sx={{
-                              backgroundColor: '#8b6cbc',
-                              color: 'white',
-                              '& .MuiChip-deleteIcon': {
-                                color: 'rgba(255, 255, 255, 0.7)',
-                                '&:hover': { color: 'white' }
-                              }
-                            }}
-                          />
-                        ))}
+                    // Remove duplicates
+                    const uniqueValues = [...new Set(processedValues)];
+                    
+                    setNewProposal(prev => ({
+                      ...prev,
+                      fields: uniqueValues
+                    }));
+                  }}
+                  options={MEDICAL_FIELDS.filter(field => field !== 'Other')}
+                  renderTags={(value, getTagProps) =>
+                    value.map((option, index) => (
+                      <Chip
+                        variant="filled"
+                        label={option}
+                        {...getTagProps({ index })}
+                        key={`${option}-${index}`}
+                        sx={{
+                          backgroundColor: '#8b6cbc',
+                          color: 'white',
+                          '& .MuiChip-deleteIcon': {
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            '&:hover': { color: 'white' }
+                          }
+                        }}
+                      />
+                    ))
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      variant="outlined"
+                      placeholder="Select or type custom fields..."
+                      helperText="Type and press Enter to add custom fields"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': { borderColor: '#8b6cbc' },
+                          '&.Mui-focused fieldset': { borderColor: '#8b6cbc' },
+                        },
+                        '& .MuiFormLabel-root.Mui-focused': { color: '#8b6cbc' }
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => {
+                    const { key, ...otherProps } = props;
+                    return (
+                      <Box component="li" key={key} {...otherProps}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <ScienceIcon sx={{ fontSize: 16, color: '#8b6cbc' }} />
+                          <Typography variant="body2">{option}</Typography>
+                        </Box>
                       </Box>
-                    )}
-                  </Paper>
-                </FormControl>
+                    );
+                  }}
+                  sx={{
+                    '& .MuiAutocomplete-tag': {
+                      margin: '2px',
+                    },
+                    '& .MuiAutocomplete-inputRoot': {
+                      paddingTop: '8px',
+                      paddingBottom: '8px',
+                    }
+                  }}
+                />
+                
+                {/* Information about custom fields */}
+                {newProposal.fields.length > 0 && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.75rem' }}>
+                      <CategoryIcon sx={{ fontSize: 13 }} />
+                      {newProposal.fields.length} field{newProposal.fields.length !== 1 ? 's' : ''} selected
+                      {newProposal.fields.some(field => !MEDICAL_FIELDS.includes(field)) && (
+                        <Chip 
+                          label="Custom" 
+                          size="small" 
+                          variant="outlined"
+                          sx={{ 
+                            ml: 0.5, 
+                            height: 16, 
+                            fontSize: '0.625rem',
+                            borderColor: '#8b6cbc',
+                            color: '#8b6cbc'
+                          }} 
+                        />
+                      )}
+                    </Typography>
+                  </Box>
+                )}
               </Box>
-
-              {/* Creator (Read-only) */}
-              <TextField
-                fullWidth
-                label="Creator"
-                value={newProposal.creator}
-                InputProps={{
-                  readOnly: true,
-                  startAdornment: (
-                    <Box sx={{ mr: 1, px: 1.5, py: 0.5, backgroundColor: '#e1f5fe', borderRadius: 1, fontSize: '0.75rem', fontWeight: 600, color: '#0277bd' }}>
-                      YOU
-                    </Box>
-                  )
-                }}
-                sx={{ '& .MuiOutlinedInput-root': { backgroundColor: '#f8fafc' } }}
-              />
             </Box>
           </Box>
           )}
 
           {/* Step 2: Select Template */}
           {proposalActiveStep === 1 && (
-            <Box sx={{ p: 4 }}>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+            <Box sx={{ p: 3 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, fontSize: '0.938rem', color: '#2D3748' }}>
                 Select Template
               </Typography>
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 {/* Template Options */}
                 <Box>
-                  <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, fontSize: '0.875rem' }}>
                     Choose a proposal template
                   </Typography>
                   
@@ -4082,7 +4123,7 @@ export default function CollaborativeWriting() {
                       <Paper
                         elevation={selectedTemplate === 'blank' ? 4 : 1}
                         sx={{
-                          p: 3,
+                          p: 2.5,
                           cursor: 'pointer',
                           border: selectedTemplate === 'blank' ? '2px solid #8b6cbc' : '2px solid transparent',
                           transition: 'all 0.2s ease',
@@ -4144,8 +4185,8 @@ export default function CollaborativeWriting() {
 
           {/* Step 3: Invite Collaborators */}
           {proposalActiveStep === 2 && (
-            <Box sx={{ p: 4 }}>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+            <Box sx={{ p: 3 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, fontSize: '0.938rem', color: '#2D3748' }}>
                 Invite Collaborators
               </Typography>
 
@@ -4217,7 +4258,7 @@ export default function CollaborativeWriting() {
               variant="contained"
               disabled={!newProposal.title || newProposal.fields.length === 0}
               onClick={handleProposalNextStep}
-              sx={{ background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)' }}
+              sx={{ background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)', px: 2.5, py: 0.75 }}
             >
               Continue
           </Button>
@@ -4225,7 +4266,7 @@ export default function CollaborativeWriting() {
             <Button
               variant="contained"
               onClick={handleProposalNextStep}
-              sx={{ background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)' }}
+              sx={{ background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)', px: 2.5, py: 0.75 }}
             >
               Continue
             </Button>
@@ -4233,11 +4274,11 @@ export default function CollaborativeWriting() {
             <Button
               variant="contained"
               disabled={isSubmittingProposal}
-              startIcon={isSubmittingProposal ? <CircularProgress size={20} color="inherit" /> : <CheckIcon />}
+              startIcon={isSubmittingProposal ? <CircularProgress size={18} color="inherit" /> : null}
               onClick={handleFinishProposal}
-              sx={{ background: 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)' }}
+              sx={{ bgcolor: '#8b6cbc', px: 2.5, py: 0.75, '&:hover': { bgcolor: '#7a5daa' } }}
             >
-              {isSubmittingProposal ? 'Creating Proposal...' : 'Finish'}
+              {isSubmittingProposal ? 'Submitting...' : 'Submit'}
             </Button>
           )}
         </DialogActions>

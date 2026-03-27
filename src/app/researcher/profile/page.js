@@ -17,9 +17,10 @@ import {
   Alert,
   CircularProgress,
   Tooltip,
-  LinearProgress,
   Badge,
   Link as MuiLink,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -48,10 +49,11 @@ import {
   Phone as PhoneIcon,
   CheckCircle as CheckCircleIcon,
   Group as CollaborationIcon,
+  Download as DownloadIcon,
+  Share as ShareIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../../components/AuthProvider';
-import PageHeader from '../../../components/common/PageHeader';
 
 const ResearcherProfilePage = () => {
   const theme = useTheme();
@@ -65,6 +67,7 @@ const ResearcherProfilePage = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [editedProfile, setEditedProfile] = useState(null);
+  const [activeTab, setActiveTab] = useState(0);
 
   // Fetch user profile data
   useEffect(() => {
@@ -103,27 +106,6 @@ const ResearcherProfilePage = () => {
     fetchProfileData();
   }, [user]);
 
-  // Calculate profile completeness
-  const calculateProfileCompleteness = () => {
-    if (!profile) return 0;
-    let completed = 0;
-    const total = 12;
-
-    if (profile.givenName && profile.familyName) completed++;
-    if (profile.email) completed++;
-    if (profile.orcidId) completed++;
-    if (profile.primaryInstitution) completed++;
-    if (profile.researchProfile?.academicTitle) completed++;
-    if (profile.researchProfile?.department) completed++;
-    if (profile.researchProfile?.biography) completed++;
-    if (profile.researchProfile?.researchInterests) completed++;
-    if (profile.researchProfile?.specialization?.length > 0) completed++;
-    if (profile.researchProfile?.keywords?.length > 0) completed++;
-    if (profile.researchProfile?.socialLinks) completed++;
-    if (publications.length > 0) completed++;
-
-    return Math.round((completed / total) * 100);
-  };
 
   // Handle profile update
   const handleSaveProfile = async () => {
@@ -221,231 +203,262 @@ const ResearcherProfilePage = () => {
     return 'U';
   };
 
-  const completeness = calculateProfileCompleteness();
-
-  const actionButton = (
-    <Button
-      variant="contained"
-      startIcon={editing ? <SaveIcon /> : <EditIcon />}
-      onClick={editing ? handleSaveProfile : () => setEditing(true)}
-      disabled={saving}
-      sx={{
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        color: 'white',
-        fontWeight: 600,
-        borderRadius: 2,
-        px: 3,
-        py: 1,
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255, 255, 255, 0.3)',
-        '&:hover': {
-          backgroundColor: 'rgba(255, 255, 255, 0.3)',
-        },
-      }}
-    >
-      {saving ? 'Saving...' : editing ? 'Save Profile' : 'Edit Profile'}
-    </Button>
-  );
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        backgroundColor: '#f8f9fa',
-      }}
-    >
-      {/* Professional Header */}
-      <Box sx={{
-        background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-        pt: 10,
-        pb: 8,
-        position: 'relative',
-        overflow: 'hidden',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-        }
-      }}>
-        <Container maxWidth="lg">
-          <Box sx={{ position: 'relative', zIndex: 1 }}>
-            <Typography variant="h3" sx={{ fontWeight: 800, color: 'white', mb: 1.5 }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa', width: '100vw', overflow: 'hidden' }}>
+      {/* Top Bar */}
+      <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #e2e8f0', py: 2 }}>
+        <Container maxWidth="xl">
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" sx={{ color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>
               Researcher Profile
             </Typography>
-            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 400, mb: 3 }}>
-              Your professional research identity and credentials
-            </Typography>
-            {actionButton}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<DownloadIcon />}
+                size="small"
+                sx={{ borderColor: '#cbd5e0', color: '#475569' }}
+              >
+                Export CV
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<ShareIcon />}
+                size="small"
+                sx={{ borderColor: '#cbd5e0', color: '#475569' }}
+              >
+                Public Link
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={editing ? <SaveIcon /> : <EditIcon />}
+                onClick={editing ? handleSaveProfile : () => setEditing(true)}
+                disabled={saving}
+                size="small"
+                sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7a5daa' } }}
+              >
+                {saving ? 'Saving...' : editing ? 'Save Profile' : 'Edit Profile'}
+              </Button>
+            </Box>
           </Box>
         </Container>
       </Box>
 
-      <Container maxWidth="lg" sx={{ py: 4, mt: -6, position: 'relative', zIndex: 10 }}>
+      <Box sx={{ px: 4, py: 4, maxWidth: '100%' }}>
         {success && (
-          <Alert severity="success" sx={{ mb: 3 }}>
+          <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
             {success}
           </Alert>
         )}
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
             {error}
           </Alert>
         )}
 
-        {editing && (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3, gap: 2 }}>
-            <Button
-              variant="outlined"
-              startIcon={<CancelIcon />}
-              onClick={handleCancelEdit}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<SaveIcon />}
-              onClick={handleSaveProfile}
-              disabled={saving}
-              sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7a5daa' } }}
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </Box>
-        )}
-
-        {/* Profile Completeness Card */}
-        <Card 
-          sx={{ 
-            mb: 3,
-            borderRadius: 3,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            background: 'linear-gradient(135deg, rgba(139, 108, 188, 0.08) 0%, rgba(160, 132, 209, 0.08) 100%)',
-            border: '1px solid rgba(139, 108, 188, 0.15)',
-          }}
-        >
-          <CardContent sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-              <Box sx={{ flex: 1, minWidth: 200 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748' }}>
-                    Profile Completeness
-                  </Typography>
-                  <Chip 
-                    label={`${completeness}%`}
-                    size="small"
-                    sx={{ 
-                      bgcolor: completeness >= 80 ? '#4caf50' : completeness >= 50 ? '#ff9800' : '#f44336',
-                      color: 'white',
+        {/* Main Profile Content - Flexbox Layout */}
+        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+          {/* Left Sidebar - 3 Separate Cards */}
+          <Box sx={{ flex: '0 0 300px', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            
+            {/* Card 1: Profile Info & Contact */}
+            <Card sx={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', bgcolor: 'white' }}>
+              <CardContent sx={{ p: 3 }}>
+                {/* Avatar and Name */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2.5 }}>
+                  <Avatar
+                    sx={{
+                      width: 96,
+                      height: 96,
+                      bgcolor: '#8b6cbc',
+                      fontSize: '2rem',
                       fontWeight: 700,
+                      mb: 2
                     }}
-                  />
-                </Box>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={completeness} 
-                  sx={{ 
-                    height: 8, 
-                    borderRadius: 4,
-                    bgcolor: 'rgba(139, 108, 188, 0.1)',
-                    '& .MuiLinearProgress-bar': {
-                      bgcolor: completeness >= 80 ? '#4caf50' : completeness >= 50 ? '#ff9800' : '#f44336',
-                      borderRadius: 4,
-                    }
-                  }}
-                />
-                <Typography variant="caption" sx={{ color: '#718096', mt: 0.5, display: 'block' }}>
-                  {completeness >= 80 
-                    ? '🎉 Great! Your profile is looking complete!'
-                    : completeness >= 50
-                    ? '👍 Good progress! Add more details to stand out.'
-                    : '📝 Complete your profile to increase visibility.'}
-                </Typography>
-              </Box>
-              {!editing && completeness < 100 && (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => setEditing(true)}
-                  sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}
-                >
-                  Complete Profile
-                </Button>
-              )}
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* Main Profile Content */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* Header Card with Avatar and Basic Info */}
-          <Card 
-            sx={{ 
-              overflow: 'visible',
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              background: 'white',
-            }}
-          >
-            <CardContent sx={{ p: 4 }}>
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4, mb: 3 }}>
-                {/* Avatar Section */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                  <Badge
-                    overlap="circular"
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                    badgeContent={
-                      profile?.orcidId && (
-                        <Tooltip title="ORCID Verified">
-                          <VerifiedIcon sx={{ color: '#a6ce39', fontSize: 28 }} />
-                        </Tooltip>
-                      )
-                    }
                   >
-                    <Avatar
-                      sx={{
-                        width: 160,
-                        height: 160,
-                        bgcolor: '#8b6cbc',
-                        fontSize: '3.5rem',
-                        fontWeight: 700,
-                        border: '5px solid white',
-                        boxShadow: '0 8px 32px rgba(139, 108, 188, 0.25)',
-                      }}
-                    >
-                      {getInitials()}
-                    </Avatar>
-                  </Badge>
+                    {getInitials()}
+                  </Avatar>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', textAlign: 'center', mb: 0.5, fontSize: '1rem' }}>
+                    {profile?.researchProfile?.academicTitle && `${profile.researchProfile.academicTitle} `}
+                    {profile?.givenName} {profile?.familyName}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#8b6cbc', textAlign: 'center', mb: 0.5, fontSize: '0.813rem' }}>
+                    {profile?.researchProfile?.academicTitle || 'Researcher'}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#64748b', textAlign: 'center', fontSize: '0.813rem' }}>
+                    {profile?.researchProfile?.department || 'Department'}
+                  </Typography>
+                </Box>
+
+                <Divider sx={{ my: 2 }} />
+
+                {/* Contact Information */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {/* H-Index */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <TrendingUpIcon sx={{ color: '#8b6cbc', fontSize: 18 }} />
+                    <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.813rem', flex: 1 }}>H-index</Typography>
+                    <Chip label={profile?.researchProfile?.hIndex || 0} size="small" sx={{ bgcolor: '#8b6cbc', color: 'white', fontWeight: 600, height: 22, fontSize: '0.75rem' }} />
+                  </Box>
+
+                  {/* Location */}
+                  {profile?.primaryInstitution && (
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                      <LocationIcon sx={{ color: '#8b6cbc', fontSize: 18, mt: 0.2 }} />
+                      <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.813rem', flex: 1, lineHeight: 1.5 }}>
+                        {profile.primaryInstitution}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {/* Department */}
+                  {profile?.researchProfile?.department && (
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                      <BusinessIcon sx={{ color: '#8b6cbc', fontSize: 18, mt: 0.2 }} />
+                      <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.813rem', flex: 1, lineHeight: 1.5 }}>
+                        {profile.researchProfile.department}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {/* Email */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <EmailIcon sx={{ color: '#8b6cbc', fontSize: 18 }} />
+                    <MuiLink href={`mailto:${profile?.email}`} sx={{ color: '#8b6cbc', textDecoration: 'none', fontSize: '0.813rem', '&:hover': { textDecoration: 'underline' } }}>
+                      {profile?.email}
+                    </MuiLink>
+                  </Box>
+
+                  {/* ORCID */}
                   {profile?.orcidId && (
-                    <Tooltip title="View ORCID Profile">
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<LinkIcon />}
-                        href={`https://orcid.org/${profile.orcidId}`}
-                        target="_blank"
-                        sx={{
-                          borderColor: '#a6ce39',
-                          color: '#a6ce39',
-                          fontWeight: 600,
-                          '&:hover': { 
-                            borderColor: '#8eb82e', 
-                            bgcolor: 'rgba(166, 206, 57, 0.1)',
-                          },
-                        }}
-                      >
-                        ORCID Profile
-                      </Button>
-                    </Tooltip>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <LinkIcon sx={{ color: '#8b6cbc', fontSize: 18 }} />
+                      <MuiLink href={`https://orcid.org/${profile.orcidId}`} target="_blank" sx={{ color: '#8b6cbc', textDecoration: 'none', fontSize: '0.813rem', '&:hover': { textDecoration: 'underline' } }}>
+                        orcid.org/{profile.orcidId}
+                      </MuiLink>
+                    </Box>
+                  )}
+
+                  {/* Member Since */}
+                  {profile?.createdAt && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <CalendarIcon sx={{ color: '#8b6cbc', fontSize: 18 }} />
+                      <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.813rem' }}>
+                        Member since {new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {/* Website */}
+                  {profile?.researchProfile?.website && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <WebIcon sx={{ color: '#8b6cbc', fontSize: 18 }} />
+                      <MuiLink href={profile.researchProfile.website} target="_blank" sx={{ color: '#8b6cbc', textDecoration: 'none', fontSize: '0.813rem', '&:hover': { textDecoration: 'underline' } }}>
+                        scholar.google.com
+                      </MuiLink>
+                    </Box>
                   )}
                 </Box>
+              </CardContent>
+            </Card>
 
-                {/* Main Info Section */}
-                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Card 2: Research Expertise */}
+            <Card sx={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', bgcolor: 'white' }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b', mb: 2 }}>
+                  Research Expertise
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {profile?.researchProfile?.keywords?.slice(0, 8).map((keyword, index) => (
+                    <Chip key={index} label={keyword} size="small" sx={{ bgcolor: '#f1f5f9', color: '#475569', fontSize: '0.75rem' }} />
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Card 3: Impact Summary */}
+            <Card sx={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', bgcolor: 'white' }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b', mb: 2 }}>
+                  Impact Summary
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                  <Box sx={{ flex: '0 0 calc(50% - 12px)' }}>
+                    <Paper elevation={0} sx={{ p: 2, bgcolor: '#f8fafc', textAlign: 'center', borderRadius: 2 }}>
+                      <Typography variant="h5" sx={{ fontWeight: 800, color: '#1e293b' }}>
+                        {publications.length}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#64748b' }}>Publications</Typography>
+                    </Paper>
+                  </Box>
+                  <Box sx={{ flex: '0 0 calc(50% - 12px)' }}>
+                    <Paper elevation={0} sx={{ p: 2, bgcolor: '#f8fafc', textAlign: 'center', borderRadius: 2 }}>
+                      <Typography variant="h5" sx={{ fontWeight: 800, color: '#1e293b' }}>
+                        {profile?.researchProfile?.citationCount || 0}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#64748b' }}>Citations</Typography>
+                    </Paper>
+                  </Box>
+                  <Box sx={{ flex: '0 0 calc(50% - 12px)' }}>
+                    <Paper elevation={0} sx={{ p: 2, bgcolor: '#f8fafc', textAlign: 'center', borderRadius: 2 }}>
+                      <Typography variant="h5" sx={{ fontWeight: 800, color: '#1e293b' }}>
+                        {profile?.researchProfile?.hIndex || 0}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#64748b' }}>h-index</Typography>
+                    </Paper>
+                  </Box>
+                  <Box sx={{ flex: '0 0 calc(50% - 12px)' }}>
+                    <Paper elevation={0} sx={{ p: 2, bgcolor: '#f8fafc', textAlign: 'center', borderRadius: 2 }}>
+                      <Typography variant="h5" sx={{ fontWeight: 800, color: '#1e293b' }}>
+                        {profile?.researchProfile?.citationCount ? Math.floor(profile.researchProfile.citationCount / (publications.length || 1)) : 0}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#64748b' }}>Co-authors</Typography>
+                    </Paper>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+
+          {/* Right Content Area */}
+          <Box sx={{ flex: '1 1 600px', minWidth: 0 }}>
+            <Card sx={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', bgcolor: 'white' }}>
+              <Box sx={{ borderBottom: '1px solid #e2e8f0' }}>
+                <Tabs 
+                  value={activeTab} 
+                  onChange={handleTabChange}
+                  sx={{
+                    px: 3,
+                    '& .MuiTab-root': {
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      color: '#64748b',
+                      '&.Mui-selected': {
+                        color: '#8b6cbc',
+                      },
+                    },
+                    '& .MuiTabs-indicator': {
+                      backgroundColor: '#8b6cbc',
+                    },
+                  }}
+                >
+                  <Tab label="Biography" />
+                  <Tab label="Academic CV" />
+                  <Tab label="Skills" />
+                  <Tab label="Awards" />
+                </Tabs>
+              </Box>
+
+              <CardContent sx={{ p: 4 }}>
+
+                {/* Tab Content */}
+                {activeTab === 0 && (
+                  <Box>
                   {editing ? (
                     <>
                       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -481,413 +494,212 @@ const ResearcherProfilePage = () => {
                     </>
                   ) : (
                     <>
-                      <Box>
-                        <Typography variant="h3" sx={{ fontWeight: 800, color: '#1a202c', mb: 1, fontSize: '2.5rem' }}>
-                          {profile?.researchProfile?.academicTitle && `${profile.researchProfile.academicTitle} `}
-                          {profile?.givenName} {profile?.familyName}
-                        </Typography>
-                        {profile?.researchProfile?.academicTitle && (
-                          <Chip
-                            icon={<SchoolIcon />}
-                            label={profile.researchProfile.academicTitle}
-                            sx={{ bgcolor: 'rgba(139, 108, 188, 0.1)', color: '#8b6cbc', mr: 1, mb: 1 }}
-                          />
-                        )}
-                      </Box>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-                        <Chip
-                          icon={<EmailIcon />}
-                          label={profile?.email}
-                          variant="outlined"
-                          sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}
-                        />
-                        {profile?.researchProfile?.phone && (
-                          <Chip
-                            icon={<PhoneIcon />}
-                            label={profile.researchProfile.phone}
-                            variant="outlined"
-                            sx={{ borderColor: '#4ECDC4', color: '#4ECDC4' }}
-                          />
-                        )}
-                        {profile?.orcidId && (
-                          <Chip
-                            icon={<PersonIcon />}
-                            label={`ORCID: ${profile.orcidId}`}
-                            variant="outlined"
-                            sx={{ borderColor: '#a6ce39', color: '#a6ce39' }}
-                          />
-                        )}
-                      </Box>
-                      
-                      {/* Quick Stats */}
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mt: 2 }}>
-                        <Paper elevation={0} sx={{ 
-                          p: 2.5, 
-                          bgcolor: 'rgba(139, 108, 188, 0.08)', 
-                          borderRadius: 2,
-                          border: '1px solid rgba(139, 108, 188, 0.15)',
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            bgcolor: 'rgba(139, 108, 188, 0.12)',
-                            transform: 'translateY(-2px)',
-                            boxShadow: '0 4px 12px rgba(139, 108, 188, 0.15)'
-                          }
-                        }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Box sx={{
-                              width: 48,
-                              height: 48,
-                              borderRadius: '12px',
-                              bgcolor: '#8b6cbc',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}>
-                              <ArticleIcon sx={{ color: 'white', fontSize: 24 }} />
-                            </Box>
-                            <Box>
-                              <Typography variant="h5" sx={{ fontWeight: 800, color: '#8b6cbc', lineHeight: 1 }}>
-                                {publications.length}
-                              </Typography>
-                              <Typography variant="body2" sx={{ color: '#718096', fontWeight: 500, mt: 0.5 }}>
-                                Publications
-                              </Typography>
-                            </Box>
+                        {/* Current Focus */}
+                        {profile?.researchProfile?.researchInterests && (
+                          <Box sx={{ mb: 4, p: 3, bgcolor: '#f0fdfa', borderRadius: 2, border: '1px solid #99f6e4' }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 1.5 }}>
+                              CURRENT FOCUS
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#1e293b', lineHeight: 1.7 }}>
+                              {profile.researchProfile.researchInterests}
+                            </Typography>
                           </Box>
-                        </Paper>
-                        <Paper elevation={0} sx={{ 
-                          p: 2.5, 
-                          bgcolor: 'rgba(78, 205, 196, 0.08)', 
-                          borderRadius: 2,
-                          border: '1px solid rgba(78, 205, 196, 0.15)',
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            bgcolor: 'rgba(78, 205, 196, 0.12)',
-                            transform: 'translateY(-2px)',
-                            boxShadow: '0 4px 12px rgba(78, 205, 196, 0.15)'
-                          }
-                        }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Box sx={{
-                              width: 48,
-                              height: 48,
-                              borderRadius: '12px',
-                              bgcolor: '#4ECDC4',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}>
-                              <TrendingUpIcon sx={{ color: 'white', fontSize: 24 }} />
-                            </Box>
-                            <Box>
-                              <Typography variant="h5" sx={{ fontWeight: 800, color: '#4ECDC4', lineHeight: 1 }}>
-                                {profile?.researchProfile?.hIndex || 0}
-                              </Typography>
-                              <Typography variant="body2" sx={{ color: '#718096', fontWeight: 500, mt: 0.5 }}>
-                                H-Index
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Paper>
-                        <Paper elevation={0} sx={{ 
-                          p: 2.5, 
-                          bgcolor: 'rgba(247, 183, 49, 0.08)', 
-                          borderRadius: 2,
-                          border: '1px solid rgba(247, 183, 49, 0.15)',
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            bgcolor: 'rgba(247, 183, 49, 0.12)',
-                            transform: 'translateY(-2px)',
-                            boxShadow: '0 4px 12px rgba(247, 183, 49, 0.15)'
-                          }
-                        }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Box sx={{
-                              width: 48,
-                              height: 48,
-                              borderRadius: '12px',
-                              bgcolor: '#F7B731',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}>
-                              <StarIcon sx={{ color: 'white', fontSize: 24 }} />
-                            </Box>
-                            <Box>
-                              <Typography variant="h5" sx={{ fontWeight: 800, color: '#F7B731', lineHeight: 1 }}>
-                                {profile?.researchProfile?.citationCount || 0}
-                              </Typography>
-                              <Typography variant="body2" sx={{ color: '#718096', fontWeight: 500, mt: 0.5 }}>
-                                Citations
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Paper>
-                      </Box>
-                    </>
-                  )}
-                </Box>
-              </Box>
+                        )}
 
-              <Divider sx={{ my: 3 }} />
-
-              {/* Academic Information */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748', display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SchoolIcon sx={{ color: '#8b6cbc' }} />
-                  Academic Information
-                </Typography>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {editing ? (
-                    <>
-                      <TextField
-                        label="Primary Institution"
-                        value={editedProfile?.primaryInstitution || ''}
-                        onChange={(e) => handleFieldChange('primaryInstitution', e.target.value)}
-                        fullWidth
-                      />
-                      <TextField
-                        label="Department"
-                        value={editedProfile?.researchProfile?.department || ''}
-                        onChange={(e) => handleNestedFieldChange('researchProfile', 'department', e.target.value)}
-                        fullWidth
-                      />
-                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                        <TextField
-                          label="Start Month"
-                          value={editedProfile?.startMonth || ''}
-                          onChange={(e) => handleFieldChange('startMonth', e.target.value)}
-                          placeholder="e.g., January"
-                          sx={{ flex: 1, minWidth: 150 }}
-                        />
-                        <TextField
-                          label="Start Year"
-                          value={editedProfile?.startYear || ''}
-                          onChange={(e) => handleFieldChange('startYear', e.target.value)}
-                          placeholder="e.g., 2020"
-                          sx={{ flex: 1, minWidth: 150 }}
-                        />
-                      </Box>
-                    </>
-                  ) : (
-                    <>
-                      {profile?.primaryInstitution && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <BusinessIcon sx={{ color: '#718096' }} />
-                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                            {profile.primaryInstitution}
-                          </Typography>
-                        </Box>
-                      )}
-                      {profile?.researchProfile?.department && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <WorkIcon sx={{ color: '#718096' }} />
-                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                            {profile.researchProfile.department}
-                          </Typography>
-                        </Box>
-                      )}
-                      {profile?.startMonth && profile?.startYear && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <CalendarIcon sx={{ color: '#718096' }} />
-                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                            Started {profile.startMonth} {profile.startYear}
-                          </Typography>
-                        </Box>
-                      )}
-                    </>
-                  )}
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-
-          {/* Two Column Layout */}
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 3 }}>
-            {/* Left Column */}
-            <Box sx={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Research Profile Card */}
-              <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <ArticleIcon sx={{ color: '#8b6cbc' }} />
-                    Research Profile
-                  </Typography>
-
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    {/* Biography */}
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#4a5568' }}>
-                        Biography
-                      </Typography>
-                      {editing ? (
-                        <TextField
-                          multiline
-                          rows={4}
-                          value={editedProfile?.researchProfile?.biography || ''}
-                          onChange={(e) => handleNestedFieldChange('researchProfile', 'biography', e.target.value)}
-                          placeholder="Tell us about your research background and journey..."
-                          fullWidth
-                        />
-                      ) : (
-                        <Typography variant="body2" sx={{ color: '#718096', lineHeight: 1.8 }}>
-                          {profile?.researchProfile?.biography || 'No biography provided yet.'}
-                        </Typography>
-                      )}
-                    </Box>
-
-                    {/* Research Interests */}
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#4a5568' }}>
-                        Research Interests
-                      </Typography>
-                      {editing ? (
-                        <TextField
-                          multiline
-                          rows={3}
-                          value={editedProfile?.researchProfile?.researchInterests || ''}
-                          onChange={(e) => handleNestedFieldChange('researchProfile', 'researchInterests', e.target.value)}
-                          placeholder="Describe your current and future research interests..."
-                          fullWidth
-                        />
-                      ) : (
-                        <Typography variant="body2" sx={{ color: '#718096', lineHeight: 1.8 }}>
-                          {profile?.researchProfile?.researchInterests || 'No research interests specified yet.'}
-                        </Typography>
-                      )}
-                    </Box>
-
-                    {/* Specializations */}
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#4a5568' }}>
-                        Specializations
-                      </Typography>
-                      {editing ? (
-                        <EditableChipList
-                          items={editedProfile?.researchProfile?.specialization || []}
-                          onAdd={(value) => handleNestedFieldChange('researchProfile', 'specialization', [...(editedProfile?.researchProfile?.specialization || []), value])}
-                          onRemove={(index) => handleNestedFieldChange('researchProfile', 'specialization', editedProfile?.researchProfile?.specialization.filter((_, i) => i !== index))}
-                          placeholder="Add specialization (e.g., Molecular Biology)"
-                        />
-                      ) : (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                          {profile?.researchProfile?.specialization?.length > 0 ? (
-                            profile.researchProfile.specialization.map((spec, index) => (
-                              <Chip
-                                key={index}
-                                label={spec}
-                                icon={<SchoolIcon />}
+                        {/* Biography - Display ORCID biography if available, otherwise profile biography */}
+                        {orcidData?.biography ? (
+                          <Box>
+                            <Typography variant="body1" sx={{ color: '#475569', lineHeight: 1.8, mb: 2 }}>
+                              {orcidData.biography}
+                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+                              <Chip 
+                                icon={<LinkIcon sx={{ fontSize: 14 }} />}
+                                label="From ORCID"
+                                size="small"
                                 sx={{ 
-                                  bgcolor: 'rgba(139, 108, 188, 0.1)', 
-                                  color: '#8b6cbc',
-                                  fontWeight: 500,
+                                  bgcolor: 'rgba(166, 206, 57, 0.1)', 
+                                  color: '#a6ce39',
+                                  fontSize: '0.75rem'
                                 }}
                               />
-                            ))
-                          ) : (
-                            <Typography variant="body2" sx={{ color: '#a0aec0', fontStyle: 'italic' }}>
-                              No specializations added yet
-                            </Typography>
-                          )}
-                        </Box>
-                      )}
-                    </Box>
+                            </Box>
+                          </Box>
+                        ) : profile?.researchProfile?.biography ? (
+                          <Typography variant="body1" sx={{ color: '#475569', lineHeight: 1.8 }}>
+                            {profile.researchProfile.biography}
+                          </Typography>
+                        ) : (
+                          <Typography variant="body2" sx={{ color: '#94a3b8', fontStyle: 'italic' }}>
+                            No biography available. {profile?.orcidId ? 'Biography will be automatically pulled from ORCID if available.' : 'Connect your ORCID account to import your biography.'}
+                          </Typography>
+                        )}
+                    </>
+                    )}
+                  </Box>
+                )}
 
-                    {/* Keywords */}
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#4a5568' }}>
-                        Research Keywords
-                      </Typography>
-                      {editing ? (
-                        <EditableChipList
-                          items={editedProfile?.researchProfile?.keywords || []}
-                          onAdd={(value) => handleNestedFieldChange('researchProfile', 'keywords', [...(editedProfile?.researchProfile?.keywords || []), value])}
-                          onRemove={(index) => handleNestedFieldChange('researchProfile', 'keywords', editedProfile?.researchProfile?.keywords.filter((_, i) => i !== index))}
-                          placeholder="Add keyword (e.g., CRISPR, Machine Learning)"
-                        />
-                      ) : (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                          {profile?.researchProfile?.keywords?.length > 0 ? (
-                            profile.researchProfile.keywords.map((keyword, index) => (
-                              <Chip
-                                key={index}
-                                label={keyword}
-                                size="small"
-                                sx={{ bgcolor: 'rgba(78, 205, 196, 0.1)', color: '#4ECDC4' }}
+                {/* Academic CV Tab */}
+                {activeTab === 1 && (
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 3 }}>
+                      Academic Curriculum Vitae
+                    </Typography>
+
+                    {/* Education Section */}
+                    {orcidData?.educations && orcidData.educations.length > 0 ? (
+                      <Box>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1e293b', mb: 2.5, fontSize: '1rem' }}>
+                          Education
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          {orcidData.educations.map((edu, index) => (
+                            <Box 
+                              key={index} 
+                              sx={{ 
+                                pb: 3, 
+                                borderBottom: index < orcidData.educations.length - 1 ? '1px solid #e2e8f0' : 'none',
+                                position: 'relative',
+                                pl: 3
+                              }}
+                            >
+                              {/* Timeline dot */}
+                              <Box 
+                                sx={{ 
+                                  position: 'absolute',
+                                  left: 0,
+                                  top: 6,
+                                  width: 10,
+                                  height: 10,
+                                  borderRadius: '50%',
+                                  bgcolor: '#8b6cbc',
+                                  border: '2px solid #f0fdfa'
+                                }}
                               />
-                            ))
-                          ) : (
-                            <Typography variant="body2" sx={{ color: '#a0aec0', fontStyle: 'italic' }}>
-                              No keywords added yet
-                            </Typography>
-                          )}
+                              
+                              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1e293b', mb: 0.5, fontSize: '0.938rem' }}>
+                                {edu.degree}
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: '#8b6cbc', mb: 0.5, fontSize: '0.875rem', fontWeight: 500 }}>
+                                {edu.organization}
+                              </Typography>
+                              {edu.department && (
+                                <Typography variant="body2" sx={{ color: '#64748b', mb: 1, fontSize: '0.813rem' }}>
+                                  {edu.department}
+                                </Typography>
+                              )}
+                              {(edu.startDate || edu.endDate) && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                                  <CalendarIcon sx={{ fontSize: 16, color: '#94a3b8' }} />
+                                  <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }}>
+                                    {edu.startDate?.year || 'N/A'} - {edu.endDate?.year || 'Present'}
+                                  </Typography>
+                                </Box>
+                              )}
+                            </Box>
+                          ))}
                         </Box>
-                      )}
+                        
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3 }}>
+                          <Chip 
+                            icon={<LinkIcon sx={{ fontSize: 14 }} />}
+                            label="From ORCID"
+                            size="small"
+                            sx={{ 
+                              bgcolor: 'rgba(166, 206, 57, 0.1)', 
+                              color: '#a6ce39',
+                              fontSize: '0.75rem'
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Box sx={{ textAlign: 'center', py: 6 }}>
+                        <SchoolIcon sx={{ fontSize: 48, color: '#cbd5e0', mb: 2 }} />
+                        <Typography variant="body2" sx={{ color: '#94a3b8', mb: 1 }}>
+                          No education information available
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#cbd5e0' }}>
+                          {profile?.orcidId ? 'Education information will be automatically pulled from ORCID if available.' : 'Connect your ORCID account to import your education history.'}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
+                {/* Skills Tab */}
+                {activeTab === 2 && (
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 3 }}>
+                      Skills & Expertise
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                      {profile?.researchProfile?.specialization?.map((spec, index) => (
+                        <Chip
+                          key={index}
+                          label={spec}
+                          size="small"
+                          sx={{ bgcolor: '#f1f5f9', color: '#475569', fontSize: '0.75rem' }}
+                        />
+                      ))}
                     </Box>
                   </Box>
+                )}
+
+                {/* Awards Tab */}
+                {activeTab === 3 && (
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 3 }}>
+                      Awards & Recognition
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#64748b' }}>
+                      Awards and recognition will be displayed here.
+                    </Typography>
+                  </Box>
+                )}
                 </CardContent>
               </Card>
 
-              {/* Recent Publications Card */}
-              <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748', display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <ArticleIcon sx={{ color: '#8b6cbc' }} />
-                      Recent Publications
-                    </Typography>
-                    <Chip label={publications.length} sx={{ bgcolor: '#8b6cbc', color: 'white', fontWeight: 600 }} />
-                  </Box>
-
+              {/* Recent Works Section */}
+              <Card sx={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', bgcolor: 'white', mt: 3 }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 3, fontSize: '1rem' }}>
+                    Recent Works
+                  </Typography>
+                  
                   {publications.length > 0 ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                       {publications.slice(0, 5).map((pub, index) => (
-                        <Paper 
-                          key={pub.id} 
-                          elevation={1} 
-                          sx={{ 
-                            p: 2.5, 
-                            bgcolor: 'rgba(139, 108, 188, 0.02)',
-                            border: '1px solid rgba(139, 108, 188, 0.1)',
-                            borderRadius: 2,
-                            '&:hover': {
-                              bgcolor: 'rgba(139, 108, 188, 0.05)',
-                              borderColor: 'rgba(139, 108, 188, 0.2)',
-                            },
-                            transition: 'all 0.2s ease',
-                          }}
-                        >
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#2d3748', lineHeight: 1.5 }}>
+                        <Box key={pub.id} sx={{ pb: 2.5, borderBottom: index < 4 ? '1px solid #e2e8f0' : 'none' }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1e293b', mb: 1, lineHeight: 1.5, fontSize: '0.875rem' }}>
                             {pub.title}
                           </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                            <Typography variant="caption" sx={{ color: '#718096' }}>
-                              {pub.journal} • {pub.year || new Date().getFullYear()}
-                            </Typography>
-                            {pub.doi && (
-                              <Chip 
-                                label="DOI"
-                                size="small"
-                                component="a"
-                                href={`https://doi.org/${pub.doi}`}
-                                target="_blank"
-                                clickable
-                                sx={{ 
-                                  fontSize: '0.7rem',
-                                  bgcolor: 'rgba(66, 153, 225, 0.1)',
-                                  color: '#4299e1',
-                                  '&:hover': { bgcolor: 'rgba(66, 153, 225, 0.2)' }
-                                }}
-                              />
-                            )}
-                          </Box>
-                        </Paper>
+                          <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 1, fontSize: '0.75rem' }}>
+                            {pub.journal} • {pub.year || new Date().getFullYear()}
+                          </Typography>
+                          {pub.doi && (
+                            <Chip 
+                              label="View DOI"
+                              size="small"
+                              component="a"
+                              href={`https://doi.org/${pub.doi}`}
+                              target="_blank"
+                              clickable
+                              sx={{ 
+                                fontSize: '0.7rem',
+                                height: 20,
+                                bgcolor: 'rgba(139, 108, 188, 0.1)',
+                                color: '#8b6cbc',
+                                '&:hover': { bgcolor: 'rgba(139, 108, 188, 0.2)' }
+                              }}
+                            />
+                          )}
+                        </Box>
                       ))}
                       {publications.length > 5 && (
                         <Button 
                           variant="text" 
-                          sx={{ color: '#8b6cbc', fontWeight: 600 }}
+                          sx={{ color: '#8b6cbc', fontWeight: 600, fontSize: '0.813rem', alignSelf: 'flex-start', textTransform: 'none' }}
                           href="/researcher/publications/manage"
                         >
                           View All {publications.length} Publications →
@@ -897,7 +709,7 @@ const ResearcherProfilePage = () => {
                   ) : (
                     <Box sx={{ textAlign: 'center', py: 4 }}>
                       <ArticleIcon sx={{ fontSize: 48, color: '#cbd5e0', mb: 1 }} />
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: '0.813rem' }}>
                         No publications found
                       </Typography>
                       <Button 
@@ -907,6 +719,8 @@ const ResearcherProfilePage = () => {
                         sx={{ 
                           borderColor: '#8b6cbc',
                           color: '#8b6cbc',
+                          fontSize: '0.75rem',
+                          textTransform: 'none',
                           '&:hover': {
                             bgcolor: 'rgba(139, 108, 188, 0.1)',
                             borderColor: '#8b6cbc'
@@ -919,294 +733,13 @@ const ResearcherProfilePage = () => {
                   )}
                 </CardContent>
               </Card>
-            </Box>
 
-            {/* Right Column */}
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Research Metrics Card */}
-              <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <TrendingUpIcon sx={{ color: '#8b6cbc' }} />
-                    Research Metrics
-                  </Typography>
-
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {editing ? (
-                      <>
-                        <TextField
-                          label="H-Index"
-                          type="number"
-                          value={editedProfile?.researchProfile?.hIndex || ''}
-                          onChange={(e) => handleNestedFieldChange('researchProfile', 'hIndex', parseInt(e.target.value) || 0)}
-                          fullWidth
-                        />
-                        <TextField
-                          label="Citation Count"
-                          type="number"
-                          value={editedProfile?.researchProfile?.citationCount || ''}
-                          onChange={(e) => handleNestedFieldChange('researchProfile', 'citationCount', parseInt(e.target.value) || 0)}
-                          fullWidth
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <Paper
-                          elevation={0}
-                          sx={{
-                            p: 2.5,
-                            bgcolor: 'rgba(139, 108, 188, 0.05)',
-                            border: '1px solid rgba(139, 108, 188, 0.1)',
-                            borderRadius: 2,
-                          }}
-                        >
-                          <Typography variant="h3" sx={{ fontWeight: 800, color: '#8b6cbc', mb: 0.5 }}>
-                            {profile?.researchProfile?.hIndex || 0}
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#718096', fontWeight: 500 }}>
-                            H-Index
-                          </Typography>
-                        </Paper>
-                        <Paper
-                          elevation={0}
-                          sx={{
-                            p: 2.5,
-                            bgcolor: 'rgba(78, 205, 196, 0.05)',
-                            border: '1px solid rgba(78, 205, 196, 0.1)',
-                            borderRadius: 2,
-                          }}
-                        >
-                          <Typography variant="h3" sx={{ fontWeight: 800, color: '#4ECDC4', mb: 0.5 }}>
-                            {profile?.researchProfile?.citationCount || 0}
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#718096', fontWeight: 500 }}>
-                            Total Citations
-                          </Typography>
-                        </Paper>
-                      </>
-                    )}
-                  </Box>
-                </CardContent>
-              </Card>
-
-              {/* Professional Links Card */}
-              <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <LinkIcon sx={{ color: '#8b6cbc' }} />
-                    Professional Links
-                  </Typography>
-
-                  {editing ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <TextField
-                        label="Personal Website"
-                        value={editedProfile?.researchProfile?.website || ''}
-                        onChange={(e) => handleNestedFieldChange('researchProfile', 'website', e.target.value)}
-                        placeholder="https://yourwebsite.com"
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <WebIcon sx={{ mr: 1, color: '#718096' }} />
-                        }}
-                      />
-                      <TextField
-                        label="LinkedIn"
-                        value={editedProfile?.researchProfile?.linkedin || ''}
-                        onChange={(e) => handleNestedFieldChange('researchProfile', 'linkedin', e.target.value)}
-                        placeholder="https://linkedin.com/in/username"
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <LinkedInIcon sx={{ mr: 1, color: '#0077b5' }} />
-                        }}
-                      />
-                      <TextField
-                        label="Twitter"
-                        value={editedProfile?.researchProfile?.twitter || ''}
-                        onChange={(e) => handleNestedFieldChange('researchProfile', 'twitter', e.target.value)}
-                        placeholder="@username"
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <TwitterIcon sx={{ mr: 1, color: '#1da1f2' }} />
-                        }}
-                      />
-                      <TextField
-                        label="Google Scholar"
-                        value={editedProfile?.researchProfile?.googleScholar || ''}
-                        onChange={(e) => handleNestedFieldChange('researchProfile', 'googleScholar', e.target.value)}
-                        placeholder="https://scholar.google.com/..."
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <SchoolIcon sx={{ mr: 1, color: '#4285f4' }} />
-                        }}
-                      />
-                    </Box>
-                  ) : (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                      {profile?.researchProfile?.website && (
-                        <MuiLink 
-                          href={profile.researchProfile.website} 
-                          target="_blank"
-                          sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 1, 
-                            color: '#8b6cbc',
-                            textDecoration: 'none',
-                            '&:hover': { textDecoration: 'underline' }
-                          }}
-                        >
-                          <WebIcon sx={{ fontSize: 18 }} />
-                          <Typography variant="body2">Personal Website</Typography>
-                        </MuiLink>
-                      )}
-                      {profile?.researchProfile?.linkedin && (
-                        <MuiLink 
-                          href={profile.researchProfile.linkedin} 
-                          target="_blank"
-                          sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 1, 
-                            color: '#0077b5',
-                            textDecoration: 'none',
-                            '&:hover': { textDecoration: 'underline' }
-                          }}
-                        >
-                          <LinkedInIcon sx={{ fontSize: 18 }} />
-                          <Typography variant="body2">LinkedIn</Typography>
-                        </MuiLink>
-                      )}
-                      {profile?.researchProfile?.twitter && (
-                        <MuiLink 
-                          href={`https://twitter.com/${profile.researchProfile.twitter.replace('@', '')}`}
-                          target="_blank"
-                          sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 1, 
-                            color: '#1da1f2',
-                            textDecoration: 'none',
-                            '&:hover': { textDecoration: 'underline' }
-                          }}
-                        >
-                          <TwitterIcon sx={{ fontSize: 18 }} />
-                          <Typography variant="body2">{profile.researchProfile.twitter}</Typography>
-                        </MuiLink>
-                      )}
-                      {profile?.researchProfile?.googleScholar && (
-                        <MuiLink 
-                          href={profile.researchProfile.googleScholar} 
-                          target="_blank"
-                          sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 1, 
-                            color: '#4285f4',
-                            textDecoration: 'none',
-                            '&:hover': { textDecoration: 'underline' }
-                          }}
-                        >
-                          <SchoolIcon sx={{ fontSize: 18 }} />
-                          <Typography variant="body2">Google Scholar</Typography>
-                        </MuiLink>
-                      )}
-                      {!profile?.researchProfile?.website && 
-                       !profile?.researchProfile?.linkedin && 
-                       !profile?.researchProfile?.twitter && 
-                       !profile?.researchProfile?.googleScholar && (
-                        <Typography variant="body2" sx={{ color: '#a0aec0', fontStyle: 'italic' }}>
-                          No professional links added yet
-                        </Typography>
-                      )}
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* ORCID Data Card */}
-              {orcidData && (
-                <Card sx={{ 
-                  borderRadius: 3, 
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                  bgcolor: 'rgba(166, 206, 57, 0.05)', 
-                  border: '1px solid rgba(166, 206, 57, 0.2)' 
-                }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                      <Avatar sx={{ bgcolor: '#a6ce39', width: 36, height: 36 }}>
-                        <LinkIcon />
-                      </Avatar>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748' }}>
-                        ORCID Information
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                      {orcidData.employments && orcidData.employments.length > 0 && (
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#4a5568', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <WorkIcon sx={{ fontSize: 16 }} /> Employment History
-                          </Typography>
-                          {orcidData.employments.slice(0, 3).map((emp, index) => (
-                            <Box key={index} sx={{ mb: 1.5, pl: 2, borderLeft: '2px solid rgba(166, 206, 57, 0.3)' }}>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#2d3748' }}>
-                                {emp.role}
-                              </Typography>
-                              <Typography variant="caption" sx={{ color: '#718096' }}>
-                                {emp.organization}
-                                {emp.department && ` • ${emp.department}`}
-                              </Typography>
-                            </Box>
-                          ))}
-                        </Box>
-                      )}
-
-                      {orcidData.educations && orcidData.educations.length > 0 && (
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#4a5568', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <SchoolIcon sx={{ fontSize: 16 }} /> Education
-                          </Typography>
-                          {orcidData.educations.slice(0, 3).map((edu, index) => (
-                            <Box key={index} sx={{ mb: 1.5, pl: 2, borderLeft: '2px solid rgba(166, 206, 57, 0.3)' }}>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#2d3748' }}>
-                                {edu.degree || 'Degree'}
-                              </Typography>
-                              <Typography variant="caption" sx={{ color: '#718096' }}>
-                                {edu.organization}
-                              </Typography>
-                            </Box>
-                          ))}
-                        </Box>
-                      )}
-
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        fullWidth
-                        href={`https://orcid.org/${profile.orcidId}`}
-                        target="_blank"
-                        sx={{
-                          borderColor: '#a6ce39',
-                          color: '#a6ce39',
-                          '&:hover': {
-                            borderColor: '#8eb82e',
-                            bgcolor: 'rgba(166, 206, 57, 0.1)',
-                          },
-                        }}
-                      >
-                        View Full ORCID Profile
-                      </Button>
-                    </Box>
-                  </CardContent>
-                </Card>
-              )}
             </Box>
           </Box>
         </Box>
-      </Container>
-    </Box>
-  );
-};
+      </Box>
+    );
+  };
 
 // Editable Chip List Component
 const EditableChipList = ({ items, onAdd, onRemove, placeholder }) => {

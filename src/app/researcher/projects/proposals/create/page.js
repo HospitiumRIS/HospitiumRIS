@@ -75,6 +75,7 @@ import {
 import { useRouter } from 'next/navigation';
 import PageHeader from '../../../../../components/common/PageHeader';
 import { useAuth } from '../../../../../components/AuthProvider';
+import TipTapEditor from '../../../../../components/common/TipTapEditor';
 
 const RESEARCH_FIELDS = [
   'Cardiology',
@@ -124,7 +125,10 @@ const DEPARTMENTS = [
   'Health Administration',
   'Biomedical Engineering',
   'Clinical Research',
-  'Health Informatics'
+  'Health Informatics',
+  'Rural Health',
+  'Artificial Intelligence',
+  'Diagnostic Imaging'
 ];
 
 const DELIVERABLE_TYPES = [
@@ -316,6 +320,8 @@ const CreateProposalPage = () => {
           ethicsCommittee: proposal.ethicsCommittee || '',
           approvalDate: proposal.approvalDate || '',
           dataSecurityMeasures: proposal.dataSecurityMeasures || '',
+          linkedEthicsApplicationId: proposal.linkedEthicsApplicationId || null,
+          linkedEthicsDocuments: [],
           ethicsDocuments: [],
           dataManagementPlan: [],
           
@@ -388,6 +394,7 @@ const CreateProposalPage = () => {
     approvalDate: '',
     dataSecurityMeasures: '',
     linkedEthicsApplicationId: null,
+    linkedEthicsDocuments: [],
     ethicsDocuments: [],
     dataManagementPlan: [],
     
@@ -477,19 +484,55 @@ const CreateProposalPage = () => {
   };
 
   // Handle ethics application selection
-  const handleEthicsApplicationSelect = (application) => {
+  const handleEthicsApplicationSelect = async (application) => {
     setSelectedEthicsApplication(application);
-    setFormData(prev => ({
-      ...prev,
-      linkedEthicsApplicationId: application.id,
-      ethicsApprovalStatus: application.status === 'APPROVED' ? 'Approved' : 'Submitted',
-      ethicsApprovalReference: application.referenceNumber || '',
-      ethicsCommittee: application.committeeName || '',
-      approvalDate: application.approvalDate ? new Date(application.approvalDate).toISOString().split('T')[0] : '',
-      ethicalConsiderationsOverview: application.researchSummary || '',
-      consentProcedures: application.consentProcess || '',
-      dataSecurityMeasures: application.dataSecurityMeasures || ''
-    }));
+    
+    // Fetch full application details including documents
+    try {
+      const response = await fetch(`/api/ethics/applications/${application.id}`);
+      const data = await response.json();
+      
+      if (data.success && data.application) {
+        const fullApplication = data.application;
+        
+        // Convert document metadata to file references
+        const ethicsDocuments = fullApplication.documents || [];
+        
+        setFormData(prev => ({
+          ...prev,
+          linkedEthicsApplicationId: fullApplication.id,
+          ethicsApprovalStatus: fullApplication.status === 'APPROVED' ? 'Approved' : 'Submitted',
+          ethicsApprovalReference: fullApplication.referenceNumber || '',
+          ethicsCommittee: fullApplication.committeeName || '',
+          approvalDate: fullApplication.approvalDate ? new Date(fullApplication.approvalDate).toISOString().split('T')[0] : '',
+          ethicalConsiderationsOverview: fullApplication.researchSummary || '',
+          consentProcedures: fullApplication.consentProcess || '',
+          dataSecurityMeasures: fullApplication.dataSecurityMeasures || '',
+          // Link the ethics documents from the application
+          linkedEthicsDocuments: ethicsDocuments
+        }));
+        
+        setSnackbar({
+          open: true,
+          message: `Ethics application linked successfully${ethicsDocuments.length > 0 ? ` with ${ethicsDocuments.length} document(s)` : ''}`,
+          severity: 'success'
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching ethics application details:', error);
+      // Still populate basic fields even if detailed fetch fails
+      setFormData(prev => ({
+        ...prev,
+        linkedEthicsApplicationId: application.id,
+        ethicsApprovalStatus: application.status === 'APPROVED' ? 'Approved' : 'Submitted',
+        ethicsApprovalReference: application.referenceNumber || '',
+        ethicsCommittee: application.committeeName || '',
+        approvalDate: application.approvalDate ? new Date(application.approvalDate).toISOString().split('T')[0] : '',
+        ethicalConsiderationsOverview: application.researchSummary || '',
+        consentProcedures: application.consentProcess || '',
+        dataSecurityMeasures: application.dataSecurityMeasures || ''
+      }));
+    }
   };
 
   // Load ethics applications when switching to existing option
@@ -682,9 +725,59 @@ const CreateProposalPage = () => {
 
   // Department handlers
   const handleDepartmentChange = (event, newValue) => {
+    // Clean up the values to remove "Add " prefix from custom entries
+    // and split comma-separated entries into distinct departments
+    const cleanedValues = newValue.flatMap(value => {
+      let cleanValue = value;
+      
+      // Remove "Add " prefix from custom entries
+      if (typeof value === 'string' && value.startsWith('Add "')) {
+        cleanValue = value.slice(5, -1);
+      }
+      
+      // Split by comma if the value contains commas
+      if (typeof cleanValue === 'string' && cleanValue.includes(',')) {
+        return cleanValue.split(',').map(v => v.trim()).filter(v => v !== '');
+      }
+      
+      return cleanValue;
+    });
+    
+    // Remove duplicates
+    const uniqueValues = [...new Set(cleanedValues)];
+    
     setFormData(prev => ({
       ...prev,
-      departments: newValue
+      departments: uniqueValues
+    }));
+  };
+
+  // Research Areas handlers
+  const handleResearchAreasChange = (event, newValue) => {
+    // Clean up the values to remove "Add " prefix from custom entries
+    // and split comma-separated entries into distinct research areas
+    const cleanedValues = newValue.flatMap(value => {
+      let cleanValue = value;
+      
+      // Remove "Add " prefix from custom entries
+      if (typeof value === 'string' && value.startsWith('Add "')) {
+        cleanValue = value.slice(5, -1);
+      }
+      
+      // Split by comma if the value contains commas
+      if (typeof cleanValue === 'string' && cleanValue.includes(',')) {
+        return cleanValue.split(',').map(v => v.trim()).filter(v => v !== '');
+      }
+      
+      return cleanValue;
+    });
+    
+    // Remove duplicates
+    const uniqueValues = [...new Set(cleanedValues)];
+    
+    setFormData(prev => ({
+      ...prev,
+      fields: uniqueValues
     }));
   };
 
@@ -1878,12 +1971,7 @@ const CreateProposalPage = () => {
                 freeSolo
                 options={RESEARCH_FIELDS}
                 value={formData.fields || []}
-                onChange={(event, newValue) => {
-                  setFormData(prev => ({
-                    ...prev,
-                    fields: newValue
-                  }));
-                }}
+                onChange={handleResearchAreasChange}
                 filterOptions={(options, params) => {
                   const filtered = options.filter(option =>
                     option.toLowerCase().includes(params.inputValue.toLowerCase())
@@ -1996,27 +2084,14 @@ const CreateProposalPage = () => {
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
                 Research Objectives *
               </Typography>
-              <TextField
-                fullWidth
-                multiline
-                rows={6}
-                label="Research Objectives"
+              <Typography variant="body2" sx={{ mb: 2, color: '#666', fontSize: '0.85rem' }}>
+                Clearly state your research objectives. Use formatting tools to organize your content with bullet points or numbered lists.
+              </Typography>
+              <TipTapEditor
                 value={formData.researchObjectives || ''}
-                onChange={(e) => handleInputChange('researchObjectives', e.target.value)}
-                placeholder="Clearly state your research objectives. What do you aim to achieve with this research? List your primary and secondary objectives..."
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#8b6cbc',
-                  },
-                }}
+                onChange={(value) => handleInputChange('researchObjectives', value)}
+                placeholder="What do you aim to achieve with this research? List your primary and secondary objectives..."
+                minHeight="200px"
               />
             </Paper>
 
@@ -2032,27 +2107,14 @@ const CreateProposalPage = () => {
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
                 Research Methods *
               </Typography>
-              <TextField
-                fullWidth
-                multiline
-                rows={6}
-                label="Research Methods"
+              <Typography variant="body2" sx={{ mb: 2, color: '#666', fontSize: '0.85rem' }}>
+                Describe your research methodology in detail. Use formatting to organize your methods clearly.
+              </Typography>
+              <TipTapEditor
                 value={formData.methodology || ''}
-                onChange={(e) => handleInputChange('methodology', e.target.value)}
-                placeholder="Describe your research methodology in detail. Include your research design, data collection methods, analysis techniques, and any tools or instruments you will use..."
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#8b6cbc',
-                  },
-                }}
+                onChange={(value) => handleInputChange('methodology', value)}
+                placeholder="Include your research design, data collection methods, analysis techniques, and any tools or instruments you will use..."
+                minHeight="200px"
               />
             </Paper>
 
@@ -2068,29 +2130,14 @@ const CreateProposalPage = () => {
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
                 Abstract *
               </Typography>
-              <TextField
-                fullWidth
-                multiline
-                rows={8}
-                label="Abstract"
+              <Typography variant="body2" sx={{ mb: 2, color: '#666', fontSize: '0.85rem' }}>
+                Provide a comprehensive abstract of your research proposal (recommended 250-500 words).
+              </Typography>
+              <TipTapEditor
                 value={formData.abstract || ''}
-                onChange={(e) => handleInputChange('abstract', e.target.value)}
-                placeholder="Provide a comprehensive abstract of your research proposal. Include background, objectives, methodology, expected outcomes, and significance (recommended 250-500 words)..."
-                helperText={`${formData.abstract?.length || 0}/2000 characters`}
-                inputProps={{ maxLength: 2000 }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#8b6cbc',
-                  },
-                }}
+                onChange={(value) => handleInputChange('abstract', value)}
+                placeholder="Include background, objectives, methodology, expected outcomes, and significance..."
+                minHeight="250px"
               />
             </Paper>
 
@@ -3238,7 +3285,7 @@ const CreateProposalPage = () => {
               background: 'rgba(139, 108, 188, 0.02)',
               width: '100%'
             }}>
-              <Box sx={{ textAlign: 'center', mb: formData.ethicsDocuments.length > 0 ? 2 : 0 }}>
+              <Box sx={{ textAlign: 'center', mb: (formData.ethicsDocuments?.length > 0 || formData.linkedEthicsDocuments?.length > 0) ? 2 : 0 }}>
                 <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, color: '#2D3748' }}>
                   Ethics Documentation
                 </Typography>
@@ -3272,11 +3319,60 @@ const CreateProposalPage = () => {
                 </label>
               </Box>
 
+              {/* Display linked documents from ethics application */}
+              {formData.linkedEthicsDocuments?.length > 0 && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#2D3748', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CheckIcon sx={{ color: '#4caf50', fontSize: 18 }} />
+                    Linked from Ethics Application ({formData.linkedEthicsDocuments.length})
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {formData.linkedEthicsDocuments.map((doc, index) => (
+                      <Box
+                        key={`linked-${index}`}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          p: 1.5,
+                          backgroundColor: 'rgba(76, 175, 80, 0.05)',
+                          borderRadius: 1,
+                          border: '1px solid rgba(76, 175, 80, 0.3)'
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <FilesIcon sx={{ mr: 1, color: '#4caf50', fontSize: 20 }} />
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {doc.filename || doc.name || 'Document'}
+                          </Typography>
+                          {doc.size && (
+                            <Typography variant="caption" sx={{ ml: 1, color: '#666' }}>
+                              ({(doc.size / 1024).toFixed(1)} KB)
+                            </Typography>
+                          )}
+                          <Chip 
+                            label="From Ethics App" 
+                            size="small" 
+                            sx={{ 
+                              ml: 1, 
+                              height: 20, 
+                              fontSize: '0.7rem',
+                              backgroundColor: '#4caf50',
+                              color: 'white'
+                            }} 
+                          />
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
               {/* Display uploaded files */}
               {formData.ethicsDocuments.length > 0 && (
                 <Box>
                   <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#2D3748' }}>
-                    Uploaded Files ({formData.ethicsDocuments.length})
+                    Newly Uploaded Files ({formData.ethicsDocuments.length})
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     {formData.ethicsDocuments.map((file, index) => (

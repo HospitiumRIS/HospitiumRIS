@@ -410,6 +410,49 @@ export async function GET(request) {
         const networkChange = totalNetworkSize > 0 ? `+${Math.floor(Math.random() * 25 + 15)}%` : '+0%';
         const networkTrend = totalNetworkSize > 0 ? 'up' : 'neutral';
 
+        // Generate monthly timeline data for manuscripts and proposals (last 6 months)
+        const monthlyTimeline = [];
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+            const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+            
+            const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+            
+            // Count publications for this month
+            const monthPublications = allPublications.filter(pub => {
+                const pubDate = pub.publicationDate 
+                    ? new Date(pub.publicationDate) 
+                    : new Date(pub.createdAt);
+                return pubDate >= monthStart && pubDate <= monthEnd;
+            }).length;
+            
+            // Count manuscripts created in this month
+            const monthManuscripts = allManuscripts.filter(m => {
+                const createdDate = new Date(m.createdAt);
+                return createdDate >= monthStart && createdDate <= monthEnd;
+            }).length;
+            
+            // Count proposals created in this month
+            const monthProposals = allProposals.filter(p => {
+                const createdDate = new Date(p.createdAt);
+                return createdDate >= monthStart && createdDate <= monthEnd;
+            }).length;
+            
+            // Combined projects count (manuscripts + proposals)
+            const monthProjects = monthManuscripts + monthProposals;
+            
+            monthlyTimeline.push({
+                month: monthName,
+                publications: monthPublications,
+                manuscripts: monthManuscripts,
+                proposals: monthProposals,
+            monthlyTimeline,
+                projects: monthProjects
+            });
+        }
+
         return NextResponse.json({
             success: true,
             stats: {

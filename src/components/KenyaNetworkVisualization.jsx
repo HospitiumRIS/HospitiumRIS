@@ -127,7 +127,30 @@ const KenyaNetworkVisualization = () => {
   });
   const [showAllPublications, setShowAllPublications] = useState(false);
   const [selectedPublication, setSelectedPublication] = useState(null);
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const fgRef = useRef();
+  const containerRef = useRef();
+
+  // Track container dimensions
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const { width } = containerRef.current.getBoundingClientRect();
+        setDimensions({ width: width, height: 600 });
+      }
+    };
+
+    updateDimensions();
+
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    resizeObserver.observe(containerRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   // Load network data from API
   useEffect(() => {
@@ -247,9 +270,9 @@ const KenyaNetworkVisualization = () => {
         manuscript.collaborators && manuscript.collaborators.includes(data.lead_investigator_id)
       );
 
-      // Enhanced node sizing based on both publications and manuscripts (max 50px radius)
+      // Smaller node sizing for better layout
       const totalOutputs = (author.publications_count || 0) + (author.manuscripts_count || 0);
-      const nodeSize = Math.max(20, Math.min(50, 20 + totalOutputs * 2)); // Larger nodes, max 50px
+      const nodeSize = Math.max(8, Math.min(20, 8 + totalOutputs * 0.5)); // Smaller nodes, max 20px
       
       return {
         id: author.author_id,
@@ -328,28 +351,12 @@ const KenyaNetworkVisualization = () => {
   useEffect(() => {
     if (networkData && fgRef.current) {
       try {
-        // Configure forces for structured circular layout with larger 50px nodes
+        // Configure forces for structured circular layout with smaller nodes
         fgRef.current.d3Force('charge').strength(node => 
-          node.isLead ? -1200 : -600 // Even stronger repulsion to prevent clumping
+          node.isLead ? -800 : -600 // Strong repulsion to prevent clustering
         );
         
-        fgRef.current.d3Force('link').distance(link => {
-          const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-          const targetId = typeof link.target === 'object' ? link.target.id : link.target;
-          const source = networkData.nodes.find(n => n.id === sourceId);
-          const target = networkData.nodes.find(n => n.id === targetId);
-          
-          if (source?.isLead || target?.isLead) {
-            return 450; // Even larger distance from lead for better spacing
-          }
-          
-          // Nodes with the same collaboration level should have more space
-          if (source?.collaborationLevel === target?.collaborationLevel) {
-            return 500; // Much larger spacing for same level nodes
-          }
-          
-          return 550; // Much larger default distance to prevent clumping
-        });
+        fgRef.current.d3Force('link').distance(150); // Larger uniform distance between all nodes
         
         // Create structured circular layout first
         const directNodes = networkData.nodes.filter(n => n.collaborationLevel === 'direct');
@@ -370,17 +377,17 @@ const KenyaNetworkVisualization = () => {
             // Position based on collaboration level in distinct rings with larger spacing
             switch(node.collaborationLevel) {
               case 'direct':
-                radius = 300; // Larger inner ring
+                radius = 180; // Larger inner ring
                 angleIndex = directNodes.indexOf(node);
                 totalInRing = Math.max(directNodes.length, 1);
                 break;
               case 'secondary':
-                radius = 500; // Larger middle ring
+                radius = 280; // Larger middle ring
                 angleIndex = secondaryNodes.indexOf(node);
                 totalInRing = Math.max(secondaryNodes.length, 1);
                 break;
               default:
-                radius = 700; // Larger outer ring
+                radius = 380; // Larger outer ring
                 angleIndex = otherNodes.indexOf(node);
                 totalInRing = Math.max(otherNodes.length, 1);
             }
@@ -399,48 +406,48 @@ const KenyaNetworkVisualization = () => {
           }
         });
         
-        // Configure force simulation with much stronger repulsion
+        // Configure force simulation with strong repulsion
         fgRef.current.d3Force('charge', d3.forceManyBody()
-          .strength(-2000) // Much stronger repulsion to prevent clustering
-          .distanceMin(50)
-          .distanceMax(1500)
+          .strength(-800) // Strong repulsion to spread nodes
+          .distanceMin(30)
+          .distanceMax(800)
         );
         
         fgRef.current.d3Force('link', d3.forceLink()
           .id(d => d.id)
-          .distance(200) // Even longer links
-          .strength(0.1) // Much weaker link force to allow spreading
+          .distance(150) // Larger link distance
+          .strength(0.2) // Weaker link force to allow spreading
         );
         
-        // Add very strong collision detection with large padding
+        // Add strong collision detection with larger padding
         fgRef.current.d3Force('collision', d3.forceCollide().radius(node => {
-          const baseSize = node.isLead ? 60 : Math.max(25, node.val);
-          return baseSize + 60; // Much larger padding to prevent overlap
+          const baseSize = node.isLead ? 25 : Math.max(10, node.val);
+          return baseSize + 30; // Larger padding to prevent overlap
         }).strength(1).iterations(5));
         
-        // Very weak centering force
-        fgRef.current.d3Force('center', d3.forceCenter(0, 0).strength(0.01));
+        // Moderate centering force - offset to the right to account for legend
+        fgRef.current.d3Force('center', d3.forceCenter(100, 0).strength(0.05));
         
-        // Weaker radial force to allow more natural spreading
+        // Stronger radial force to maintain ring structure
         fgRef.current.d3Force('radial', d3.forceRadial(node => {
           if (node.isLead) return 0;
           switch(node.collaborationLevel) {
-            case 'direct': return 350;
-            case 'secondary': return 550;
-            default: return 750;
+            case 'direct': return 200;
+            case 'secondary': return 300;
+            default: return 400;
           }
-        }, 0, 0).strength(0.1));
+        }, 0, 0).strength(0.4));
         
-        // Warm up the simulation with more iterations
+        // Warm up the simulation
         if (fgRef.current._simulation) {
           fgRef.current._simulation
             .alpha(1)
-            .alphaDecay(0.01) // Even slower decay for more settling time
-            .velocityDecay(0.2) // More momentum for spreading
+            .alphaDecay(0.02)
+            .velocityDecay(0.4)
             .restart();
           
-          // Run extra simulation ticks to spread nodes before rendering
-          for (let i = 0; i < 100; i++) {
+          // Run simulation ticks
+          for (let i = 0; i < 50; i++) {
             fgRef.current._simulation.tick();
           }
         }
@@ -448,9 +455,9 @@ const KenyaNetworkVisualization = () => {
         // Zoom to fit after layout settles
         setTimeout(() => {
           if (fgRef.current && typeof fgRef.current.zoomToFit === 'function') {
-            fgRef.current.zoomToFit(800, 80);
+            fgRef.current.zoomToFit(400, 40);
           }
-        }, 1500);
+        }, 1000);
       } catch (err) {
         console.error("Error configuring network layout:", err);
       }
@@ -465,10 +472,10 @@ const KenyaNetworkVisualization = () => {
       const isSelected = selectedNode && selectedNode.id === node.id;
       const isHighlighted = highlightNodes.has(node.id);
       
-      // Larger nodes with max 50px radius
-      const baseSize = node.isLead ? 50 : Math.max(20, node.val); // Max 50px radius
+      // Smaller nodes for better layout
+      const baseSize = node.isLead ? 20 : Math.max(8, node.val); // Smaller nodes
       const sizeMultiplier = isSelected ? 1.3 : (isHighlighted ? 1.15 : 1);
-      const size = Math.min(50, baseSize * sizeMultiplier); // Ensure max 50px
+      const size = Math.min(25, baseSize * sizeMultiplier); // Max 25px
       
       // Get consistent node color based on relationship to lead (never changes)
       const nodeColor = getNodeColor(node, isSelected ? 'selected' : 'normal');
@@ -2440,7 +2447,7 @@ const KenyaNetworkVisualization = () => {
       </Fade>
 
       {/* Force Graph */}
-      <Box sx={{ width: '100%', height: '100%' }}>
+      <Box ref={containerRef} sx={{ width: '100%', height: 600, position: 'relative' }}>
         <ForceGraph2D
           ref={fgRef}
           graphData={networkData}
@@ -2467,13 +2474,13 @@ const KenyaNetworkVisualization = () => {
           d3VelocityDecay={0.3}
           cooldownTicks={300}
           backgroundColor={KENYA_COLORS.background}
-          width={typeof window !== 'undefined' ? window.innerWidth : 1200}
-          height={typeof window !== 'undefined' ? window.innerHeight : 800}
+          width={dimensions.width}
+          height={dimensions.height}
           nodeLabel={() => ''}
           linkLabel={() => ''}
           nodePointerAreaPaint={(node, color, ctx) => {
-            const baseSize = node.isLead ? 50 : Math.max(20, node.val); // Match node size
-            const clickableSize = Math.max(50, baseSize * 1.2); // Slightly larger clickable area
+            const baseSize = node.isLead ? 20 : Math.max(8, node.val); // Match node size
+            const clickableSize = Math.max(25, baseSize * 1.5); // Larger clickable area
             
             ctx.fillStyle = color;
             ctx.beginPath();

@@ -78,11 +78,15 @@ export async function GET(request) {
         if (orcidResponse.ok) {
           const orcidRawData = await orcidResponse.json();
           
+          // Extract biography
+          const biography = orcidRawData.person?.biography?.content || null;
+          
           // Extract employments
           const employments = orcidRawData.activities?.employments?.['employment-summary'] || [];
           const educations = orcidRawData.activities?.educations?.['education-summary'] || [];
           
           orcidData = {
+            biography,
             employments: employments.map(emp => ({
               role: emp['role-title'] || 'Role not specified',
               organization: emp.organization?.name || 'Organization not specified',

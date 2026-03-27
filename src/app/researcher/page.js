@@ -6,65 +6,67 @@ import {
   Button,
   Stack,
   Container,
-  Grid,
   Card,
   CardContent,
   Typography,
   Chip,
   Avatar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
   IconButton,
   Tooltip,
-  Select,
-  MenuItem,
-  FormControl,
-  Tabs,
-  Tab,
   LinearProgress,
   Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Link,
+  Badge,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  AvatarGroup,
+  Tabs,
+  Tab,
+  ToggleButtonGroup,
+  ToggleButton,
+  ButtonGroup,
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Edit as WriteIcon,
   Assignment as ProposalIcon,
   Article as ArticleIcon,
   Work as ProjectIcon,
   Groups as CollaborationIcon,
   Hub as NetworkIcon,
   TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
   BarChart as BarChartIcon,
   Timeline as TimelineIcon,
-  Assessment as AssessmentIcon,
-  Create as CreateIcon,
-  Visibility as VisibilityIcon,
-  Share as ShareIcon,
-  MoreVert as MoreVertIcon,
-  Description as DescriptionIcon,
+  Notifications as NotificationsIcon,
   CheckCircle as CheckCircleIcon,
   Schedule as ScheduleIcon,
-  RateReview as RateReviewIcon,
-  Close as CloseIcon,
-  OpenInNew as OpenInNewIcon,
+  Warning as WarningIcon,
+  Error as ErrorIcon,
+  Info as InfoIcon,
   CalendarToday as CalendarTodayIcon,
   Person as PersonIcon,
-  Business as BusinessIcon,
+  Folder as FolderIcon,
+  AccessTime as AccessTimeIcon,
+  MoreVert as MoreVertIcon,
+  ShowChart as ShowChartIcon,
+  PieChart as PieChartIcon,
+  Download as DownloadIcon,
+  Fullscreen as FullscreenIcon,
+  Edit as EditIcon,
+  Assignment as AssignmentIcon,
+  Close as CloseIcon,
+  DoneAll as DoneAllIcon,
+  Delete as DeleteIcon,
+  OpenInNew as OpenInNewIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../components/AuthProvider';
 import PageHeader from '../../components/common/PageHeader';
 import KenyaNetworkVisualization from '../../components/KenyaNetworkVisualization';
+import ResearchNetworkWidget from '../../components/ResearchNetwork';
+import { LineChart, Line, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 
 const ResearcherDashboard = () => {
   const theme = useTheme();
@@ -74,22 +76,24 @@ const ResearcherDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // Analytics widget state
-  const [analyticsTimeRange, setAnalyticsTimeRange] = useState('6months'); // '1year', '6months', 'thismonth'
-  const [analyticsDataType, setAnalyticsDataType] = useState('publications'); // 'publications' or 'projects'
-  
-  // Recent work widget state
-  const [recentWorkTab, setRecentWorkTab] = useState('all'); // 'all', 'publications', 'projects'
-  
-  // Details dialog state
-  const [detailsDialog, setDetailsDialog] = useState({ open: false, item: null, type: null });
-  
-  // Current date for dropdowns (to avoid hydration mismatch)
-  const [currentDateLabel, setCurrentDateLabel] = useState('');
-  const [currentYear, setCurrentYear] = useState('');
+  const [analyticsTab, setAnalyticsTab] = useState(0);
+  const [chartType, setChartType] = useState('area');
+  const [timeRange, setTimeRange] = useState('6m');
+  const [activities, setActivities] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [tasks, setTasks] = useState([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [tasksSummary, setTasksSummary] = useState({ high: 0, medium: 0, low: 0 });
+  const [deadlines, setDeadlines] = useState([]);
+  const [deadlinesLoading, setDeadlinesLoading] = useState(true);
+  const [deadlinesSummary, setDeadlinesSummary] = useState({ total: 0, urgent: 0, upcoming: 0, future: 0 });
+  const [projectHealth, setProjectHealth] = useState([]);
+  const [projectHealthLoading, setProjectHealthLoading] = useState(true);
+  const [projectHealthSummary, setProjectHealthSummary] = useState({ total: 0, onTrack: 0, needsAttention: 0, atRisk: 0, avgProgress: 0 });
 
-  // Fetch real dashboard data from APIs
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!user) return;
@@ -98,137 +102,75 @@ const ResearcherDashboard = () => {
         setDataLoading(true);
         setError(null);
         
-        // Fetch researcher stats, proposals, and network data in parallel
-        const [statsRes, proposalsRes, networkRes] = await Promise.all([
+        const [statsRes, proposalsRes, activitiesRes, notificationsRes, tasksRes, deadlinesRes, projectHealthRes] = await Promise.all([
           fetch('/api/researcher/stats', { credentials: 'include' }),
           fetch('/api/proposals', { credentials: 'include' }),
-          fetch('/api/network', { credentials: 'include' })
+          fetch('/api/researcher/activities?limit=10', { credentials: 'include' }),
+          fetch('/api/notifications?limit=10', { credentials: 'include' }),
+          fetch('/api/researcher/tasks', { credentials: 'include' }),
+          fetch('/api/researcher/deadlines', { credentials: 'include' }),
+          fetch('/api/researcher/project-health', { credentials: 'include' })
         ]);
 
         const statsData = statsRes.ok ? await statsRes.json() : null;
         const proposalsData = proposalsRes.ok ? await proposalsRes.json() : { proposals: [] };
-        const networkData = networkRes.ok ? await networkRes.json() : { authors: [], publications: [] };
+        const activitiesData = activitiesRes.ok ? await activitiesRes.json() : { activities: [] };
+        const notificationsData = notificationsRes.ok ? await notificationsRes.json() : { data: { notifications: [], unreadCount: 0 } };
+        const tasksData = tasksRes.ok ? await tasksRes.json() : { tasks: [], summary: { high: 0, medium: 0, low: 0 } };
+        const deadlinesData = deadlinesRes.ok ? await deadlinesRes.json() : { deadlines: [], summary: { total: 0, urgent: 0, upcoming: 0, future: 0 } };
+        const projectHealthData = projectHealthRes.ok ? await projectHealthRes.json() : { projects: [], summary: { total: 0, onTrack: 0, needsAttention: 0, atRisk: 0, avgProgress: 0 } };
 
-        // Extract data from responses
-        const proposals = proposalsData.proposals || [];
-        const networkAuthors = networkData.authors || [];
+        setActivities(activitiesData.activities || []);
+        setNotifications(notificationsData.data?.notifications || []);
+        setUnreadCount(notificationsData.data?.unreadCount || 0);
+        setTasks(tasksData.tasks || []);
+        setTasksSummary(tasksData.summary || { high: 0, medium: 0, low: 0 });
+        setDeadlines(deadlinesData.deadlines || []);
+        setDeadlinesSummary(deadlinesData.summary || { total: 0, urgent: 0, upcoming: 0, future: 0 });
+        setProjectHealth(projectHealthData.projects || []);
+        setProjectHealthSummary(projectHealthData.summary || { total: 0, onTrack: 0, needsAttention: 0, atRisk: 0, avgProgress: 0 });
+        setActivitiesLoading(false);
+        setNotificationsLoading(false);
+        setTasksLoading(false);
+        setDeadlinesLoading(false);
+        setProjectHealthLoading(false);
 
-        // Build dashboard stats using real data from stats API
         const stats = {
-          totalPublications: { 
-            value: statsData?.stats?.publications?.total || 0,
-            change: statsData?.stats?.publications?.change || '+0%',
-            trend: statsData?.stats?.publications?.trend || 'neutral'
-          },
-          ongoingProjects: { 
-            value: statsData?.stats?.projects?.ongoing || 0,
-            change: statsData?.stats?.projects?.change || '+0%',
-            trend: statsData?.stats?.projects?.trend || 'neutral'
-          },
-          collaborations: { 
-            value: statsData?.stats?.collaborations?.total || 0,
-            change: statsData?.stats?.collaborations?.change || '+0%',
-            trend: statsData?.stats?.collaborations?.trend || 'neutral'
-          },
-          networkSize: { 
-            value: statsData?.stats?.network?.total || 0,
-            change: statsData?.stats?.network?.change || '+0%',
-            trend: statsData?.stats?.network?.trend || 'neutral'
-          },
-          citationImpact: { 
-            value: statsData?.stats?.citations?.total || 0,
-            change: statsData?.stats?.citations?.change || '+0%',
-            trend: statsData?.stats?.citations?.trend || 'neutral'
-          }
+          totalPublications: statsData?.stats?.publications?.total || 0,
+          ongoingProjects: statsData?.stats?.projects?.ongoing || 0,
+          collaborations: statsData?.stats?.collaborations?.total || 0,
+          citations: statsData?.stats?.citations?.total || 0,
         };
 
-        // Recent publications from stats API (with real citation counts)
-        const recentPublications = (statsData?.recentPublications || []).map(pub => ({
-          id: pub.id,
-          title: pub.title,
-          journal: pub.journal,
-          year: pub.year,
-          authors: pub.authors,
-          doi: pub.doi,
-          citations: pub.citations || 0 // Real citations from OpenAlex API
-        }));
+        const recentPublications = (statsData?.recentPublications || []).slice(0, 5);
+        const allProjects = (statsData?.recentProjects?.manuscripts || []).concat(statsData?.recentProjects?.proposals || []);
 
-        // Collaborative writings (manuscripts)
-        const collaborativeWritings = proposals
-          .filter(p => ['DRAFT', 'UNDER_REVIEW'].includes(p.status))
-          .slice(0, 5)
-          .map(proposal => ({
-            id: proposal.id,
-            title: proposal.title,
-            type: 'Research Proposal',
-            collaborators: ['Co-Investigators'], // Mock for now
-            status: proposal.status === 'DRAFT' ? 'Draft' : 'Review'
-          }));
-
-        // Analytics data for chart from stats API - store both publications and projects data
-        const publicationsByMonth = statsData?.publicationsByMonth || Array.from({ length: 6 }, (_, i) => ({
-          month: new Date(0, i).toLocaleDateString('en-US', { month: 'short' }),
-          count: 0
-        }));
-
-        // Calculate projects by month from the stats data
-        const projectsByMonth = Array.from({ length: 6 }, (_, i) => {
+        const analyticsData = statsData?.monthlyTimeline || Array.from({ length: 6 }, (_, i) => {
           const date = new Date();
           date.setMonth(date.getMonth() - (5 - i));
-          const monthName = date.toLocaleDateString('en-US', { month: 'short' });
-          
-          // Count projects created in this month
-          const monthProjects = (statsData?.recentProjects?.manuscripts || [])
-            .concat(statsData?.recentProjects?.proposals || [])
-            .filter(project => {
-              const createdDate = new Date(project.createdAt);
-              return createdDate.getMonth() === date.getMonth() && 
-                     createdDate.getFullYear() === date.getFullYear();
-            }).length;
-          
-          return { month: monthName, count: monthProjects };
+          return {
+            month: date.toLocaleDateString('en-US', { month: 'short' }),
+            publications: 0,
+            manuscripts: 0,
+            proposals: 0,
+            projects: 0,
+          };
         });
+
+
+
+
 
         setDashboardData({
           stats,
-          collaborativeWritings,
           recentPublications,
-    analyticsData: {
-            publicationsOverTime: publicationsByMonth,
-            projectsOverTime: projectsByMonth,
-            publications6Months: publicationsByMonth,
-            projects6Months: projectsByMonth
-          },
-          rawData: {
-            publications: statsData?.recentPublications || [],
-            proposals,
-            networkData,
-            allProjects: (statsData?.recentProjects?.manuscripts || [])
-              .concat(statsData?.recentProjects?.proposals || [])
-          }
+          allProjects,
+          analyticsData,
         });
         
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         setError('Failed to load dashboard data');
-        // Fallback to mock data on error
-        setDashboardData({
-          stats: {
-            totalPublications: { value: 0, change: '+0%', trend: 'neutral' },
-            ongoingProjects: { value: 0, change: '+0%', trend: 'neutral' },
-            collaborations: { value: 0, change: '+0%', trend: 'neutral' },
-            networkSize: { value: 0, change: '+0%', trend: 'neutral' },
-            citationImpact: { value: 0, change: '+0%', trend: 'neutral' }
-          },
-          collaborativeWritings: [],
-          recentPublications: [],
-          analyticsData: {
-            publicationsOverTime: Array.from({ length: 6 }, (_, i) => ({
-              month: new Date(0, i).toLocaleDateString('en-US', { month: 'short' }),
-              count: 0
-            }))
-          }
-        });
       } finally {
         setDataLoading(false);
       }
@@ -237,1222 +179,1576 @@ const ResearcherDashboard = () => {
     fetchDashboardData();
   }, [user]);
 
-  // Get time-appropriate greeting
-  const getTimeBasedGreeting = () => {
-    const hour = new Date().getHours();
-    
-    if (hour < 12) {
-      return 'Good morning';
-    } else if (hour < 17) {
-      return 'Good afternoon';
-    } else {
-      return 'Good evening';
-    }
-  };
-
-  // Initialize date and greeting, and update greeting periodically
   useEffect(() => {
     const updateDateTime = () => {
       const now = new Date();
-      const options = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      };
-      setCurrentDate(now.toLocaleDateString('en-US', options));
-      setGreeting(getTimeBasedGreeting());
-      
-      // Set date labels for dropdowns
-      setCurrentDateLabel(now.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
-      setCurrentYear(now.getFullYear().toString());
+      const hour = now.getHours();
+      const greetingText = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+      setCurrentDate(now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+      setGreeting(greetingText);
     };
-
-    // Set initial values
     updateDateTime();
-
-    // Update greeting every 30 minutes to catch time boundary changes
     const interval = setInterval(updateDateTime, 30 * 60 * 1000);
-
     return () => clearInterval(interval);
   }, []);
 
-  // Get user's display name
   const getUserDisplayName = () => {
-    if (isLoading) return 'User';
-    if (!user) return 'User';
-    
-    // Try different name fields
-    if (user.firstName) {
-      return user.firstName;
-    } else if (user.fullName) {
-      return user.fullName.split(' ')[0]; // Get first name from full name
-    } else if (user.name) {
-      return user.name.split(' ')[0]; // Get first name from name
-    } else if (user.email) {
-      return user.email.split('@')[0]; // Use email username as fallback
-    }
-    return 'User';
+    if (isLoading || !user) return 'User';
+    return user.firstName || user.fullName?.split(' ')[0] || user.name?.split(' ')[0] || user.email?.split('@')[0] || 'User';
   };
 
-  // Get formatted account type display name
-  const getAccountTypeDisplay = () => {
-    if (!user || !user.accountType) return 'User Account';
-    
-    const accountType = user.accountType.toLowerCase();
-    
-    switch (accountType) {
-      case 'researcher':
-        return 'Researcher';
-      case 'research_admin':
-        return 'Research Administrator';
-      case 'institution_admin':
-        return 'Institution Administrator';
-      case 'foundation_manager':
-        return 'Foundation Manager';
-      case 'super_admin':
-        return 'Super Administrator';
-      case 'global_admin':
-        return 'Global Admin';
-      default:
-        return 'User Account';
+  const getPriorityColor = (priority) => {
+    switch(priority) {
+      case 'high': return '#EF5350';
+      case 'medium': return '#FFA726';
+      case 'low': return '#66BB6A';
+      default: return '#8b6cbc';
     }
   };
 
-  // Get analytics data based on selected time range and data type (CURRENT YEAR ONLY)
-  const getAnalyticsData = () => {
-    if (!dashboardData) return [];
+  const getActivityIcon = (type) => {
+    switch(type) {
+      case 'publication': return <ArticleIcon sx={{ fontSize: 20 }} />;
+      case 'manuscript': return <EditIcon sx={{ fontSize: 20 }} />;
+      case 'collaboration': return <CollaborationIcon sx={{ fontSize: 20 }} />;
+      case 'proposal': return <AssignmentIcon sx={{ fontSize: 20 }} />;
+      case 'article': return <ArticleIcon sx={{ fontSize: 20 }} />;
+      case 'group': return <CollaborationIcon sx={{ fontSize: 20 }} />;
+      case 'check': return <CheckCircleIcon sx={{ fontSize: 20 }} />;
+      case 'rate': return <ScheduleIcon sx={{ fontSize: 20 }} />;
+      default: return <InfoIcon sx={{ fontSize: 20 }} />;
+    }
+  };
 
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth(); // 0-11
-    const isPublications = analyticsDataType === 'publications';
-    const rawData = isPublications 
-      ? dashboardData.rawData.publications 
-      : dashboardData.rawData.allProjects;
+  const getNotificationIcon = (type) => {
+    switch(type) {
+      case 'COLLABORATION_INVITE':
+      case 'COLLABORATION_ACCEPTED':
+        return <CollaborationIcon sx={{ color: '#42A5F5' }} />;
+      case 'MANUSCRIPT_UPDATED':
+      case 'MANUSCRIPT_SHARED':
+        return <EditIcon sx={{ color: '#8b6cbc' }} />;
+      case 'success': return <CheckCircleIcon sx={{ color: '#66BB6A' }} />;
+      case 'warning': return <WarningIcon sx={{ color: '#FFA726' }} />;
+      case 'error': return <ErrorIcon sx={{ color: '#EF5350' }} />;
+      default: return <InfoIcon sx={{ color: '#42A5F5' }} />;
+    }
+  };
 
-    if (analyticsTimeRange === 'thismonth') {
-      // For "this month", show weeks of current month
-      const weeksInMonth = 4;
-      const today = new Date();
-      const currentDay = today.getDate();
-      
-      return Array.from({ length: weeksInMonth }, (_, i) => {
-        const weekNumber = i + 1;
-        const weekLabel = `W${weekNumber}`;
-        const weekStart = (i * 7) + 1;
-        const weekEnd = Math.min((i + 1) * 7, currentDay);
-        
-        // Count items in this week of current month
-        const weekCount = rawData.filter(item => {
-          if (!item.createdAt && !item.year && !item.publicationDate) return false;
-          
-          const itemDate = isPublications
-            ? (item.publicationDate ? new Date(item.publicationDate) : item.year === currentYear ? new Date(item.year, currentMonth, 15) : new Date(item.createdAt))
-            : new Date(item.createdAt);
-          
-          if (itemDate.getFullYear() !== currentYear || itemDate.getMonth() !== currentMonth) return false;
-          
-          const itemDay = itemDate.getDate();
-          return itemDay >= weekStart && itemDay <= weekEnd;
-        }).length;
-        
-        return { month: weekLabel, count: weekCount };
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ notificationIds: [notificationId] })
       });
-    } else if (analyticsTimeRange === '6months') {
-      // Show last 6 months of CURRENT YEAR only
-      const startMonth = Math.max(0, currentMonth - 5);
-      const monthsToShow = currentMonth - startMonth + 1;
-      
-      return Array.from({ length: monthsToShow }, (_, i) => {
-        const monthIndex = startMonth + i;
-        const date = new Date(currentYear, monthIndex, 1);
-        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
-        
-        // Count items for this month in current year
-        const monthCount = rawData.filter(item => {
-          if (!item.createdAt && !item.year && !item.publicationDate) return false;
-          
-          const itemDate = isPublications
-            ? (item.publicationDate ? new Date(item.publicationDate) : item.year === currentYear ? new Date(item.year, 0) : new Date(item.createdAt))
-            : new Date(item.createdAt);
-          
-          return itemDate.getMonth() === monthIndex && 
-                 itemDate.getFullYear() === currentYear;
-        }).length;
-        
-        return { month: monthName, count: monthCount };
-      });
-    } else {
-      // Show all months of CURRENT YEAR (Jan to current month)
-      return Array.from({ length: currentMonth + 1 }, (_, i) => {
-        const date = new Date(currentYear, i, 1);
-        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
-        
-        // Count items for this month in current year
-        const monthCount = rawData.filter(item => {
-          if (!item.createdAt && !item.year && !item.publicationDate) return false;
-          
-          const itemDate = isPublications
-            ? (item.publicationDate ? new Date(item.publicationDate) : item.year === currentYear ? new Date(item.year, 0) : new Date(item.createdAt))
-            : new Date(item.createdAt);
-          
-          return itemDate.getMonth() === i && 
-                 itemDate.getFullYear() === currentYear;
-        }).length;
-        
-        return { month: monthName, count: monthCount };
-      });
+      setNotifications(prev => prev.map(n => 
+        n.id === notificationId ? { ...n, isRead: true } : n
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
     }
   };
 
-  // Get color for analytics chart based on data type
-  const getAnalyticsColor = () => {
-    return analyticsDataType === 'publications' 
-      ? { primary: '#8b6cbc', secondary: '#a084d1' }
-      : { primary: '#FF6B6B', secondary: '#FF8E8E' };
-  };
-
-  // Handle opening details dialog
-  const handleViewDetails = (item, type) => {
-    setDetailsDialog({ open: true, item, type });
-  };
-
-  // Handle closing details dialog
-  const handleCloseDetails = () => {
-    setDetailsDialog({ open: false, item: null, type: null });
-  };
-
-  // Get tooltip content for chart bars (CURRENT YEAR ONLY)
-  const getTooltipContent = (item, index) => {
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth();
-    const dataTypeName = analyticsDataType === 'publications' ? 'Publications' : 'Projects';
-    const total = getAnalyticsData().reduce((sum, d) => sum + d.count, 0);
-    const percentage = total > 0 ? Math.round((item.count / total) * 100) : 0;
-    
-    let timeLabel = item.month;
-    if (analyticsTimeRange === '1year') {
-      // Show months of current year
-      const date = new Date(currentYear, index, 1);
-      timeLabel = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    } else if (analyticsTimeRange === '6months') {
-      // Show last 6 months of current year
-      const startMonth = Math.max(0, currentMonth - 5);
-      const date = new Date(currentYear, startMonth + index, 1);
-      timeLabel = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    } else if (analyticsTimeRange === 'thismonth') {
-      timeLabel = `Week ${index + 1} of ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+  const handleMarkAllAsRead = async () => {
+    try {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ markAllAsRead: true })
+      });
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all as read:', error);
     }
+  };
 
-    return (
-      <Box sx={{ p: 1 }}>
-        <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
-          {timeLabel}
-        </Typography>
-        <Typography variant="body2" sx={{ mb: 0.5 }}>
-          {dataTypeName}: <strong>{item.count}</strong>
-        </Typography>
-        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-          {percentage}% of total
-        </Typography>
-        {total > 0 && (
-          <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'rgba(255,255,255,0.8)' }}>
-            Total: {total} {dataTypeName.toLowerCase()}
-          </Typography>
-        )}
-      </Box>
-    );
+  const handleDeleteNotification = async (notificationId) => {
+    try {
+      await fetch(`/api/notifications?id=${notificationId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      const deletedNotif = notifications.find(n => n.id === notificationId);
+      if (deletedNotif && !deletedNotif.isRead) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  const handleRefreshActivities = async () => {
+    try {
+      setActivitiesLoading(true);
+      const res = await fetch('/api/researcher/activities?limit=10', { credentials: 'include' });
+      const data = await res.json();
+      setActivities(data.activities || []);
+    } catch (error) {
+      console.error('Error refreshing activities:', error);
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
+
+  const handleCompleteTask = (taskId) => {
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+    setTasksSummary(prev => {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        return {
+          ...prev,
+          [task.priority]: Math.max(0, prev[task.priority] - 1)
+        };
+      }
+      return prev;
+    });
+  };
+
+  const handleRefreshTasks = async () => {
+    try {
+      setTasksLoading(true);
+      const res = await fetch('/api/researcher/tasks', { credentials: 'include' });
+      const data = await res.json();
+      setTasks(data.tasks || []);
+      setTasksSummary(data.summary || { high: 0, medium: 0, low: 0 });
+    } catch (error) {
+      console.error('Error refreshing tasks:', error);
+    } finally {
+      setTasksLoading(false);
+    }
+  };
+
+  const handleRefreshDeadlines = async () => {
+    try {
+      setDeadlinesLoading(true);
+      const res = await fetch('/api/researcher/deadlines', { credentials: 'include' });
+      const data = await res.json();
+      setDeadlines(data.deadlines || []);
+      setDeadlinesSummary(data.summary || { total: 0, urgent: 0, upcoming: 0, future: 0 });
+    } catch (error) {
+      console.error('Error refreshing deadlines:', error);
+    } finally {
+      setDeadlinesLoading(false);
+    }
+  };
+
+  const handleRefreshProjectHealth = async () => {
+    try {
+      setProjectHealthLoading(true);
+      const res = await fetch('/api/researcher/project-health', { credentials: 'include' });
+      const data = await res.json();
+      setProjectHealth(data.projects || []);
+      setProjectHealthSummary(data.summary || { total: 0, onTrack: 0, needsAttention: 0, atRisk: 0, avgProgress: 0 });
+    } catch (error) {
+      console.error('Error refreshing project health:', error);
+    } finally {
+      setProjectHealthLoading(false);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'on-track': return '#66BB6A';
+      case 'needs-attention': return '#FFA726';
+      case 'at-risk': return '#EF5350';
+      default: return '#8b6cbc';
+    }
   };
 
   const actionButtons = (
     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-      <Button
-        variant="contained"
-        startIcon={<AddIcon />}
-        sx={{
-          backgroundColor: 'rgba(255, 255, 255, 0.2)',
-          color: 'white',
-          fontWeight: 600,
-          borderRadius: 2,
-          px: 3,
-          py: 1,
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.3)',
-          },
-        }}
-      >
-        New Collaborative Writing
+      <Button variant="contained" startIcon={<AddIcon />} sx={{ bgcolor: 'rgba(255,255,255,0.2)', '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' } }}>
+        New Publication
       </Button>
-      <Button
-        variant="contained"
-        startIcon={<ProposalIcon />}
-        sx={{
-          backgroundColor: 'rgba(255, 255, 255, 0.2)',
-          color: 'white',
-          fontWeight: 600,
-          borderRadius: 2,
-          px: 3,
-          py: 1,
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.3)',
-          },
-        }}
-      >
-        New Project Proposal
+      <Button variant="contained" startIcon={<ProposalIcon />} sx={{ bgcolor: 'rgba(255,255,255,0.2)', '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' } }}>
+        New Project
       </Button>
     </Stack>
   );
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        backgroundColor: theme.palette.background.default,
-        mt:8,
-      }}
-    >
+    <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f7fa', mt: 8 }}>
       <PageHeader
         title={`${greeting}, ${getUserDisplayName()}`}
-        description={
-          <>
-            <span style={{ fontSize: '0.95rem', fontWeight: 400, opacity: 0.9 }}>
-              Logged in as: <span style={{ fontWeight: 700, color: '#fff' }}>{getAccountTypeDisplay()}</span>
-            </span>
-            <br />
-            Here's what's happening with your research today
-            <br />
-            <span style={{ fontSize: '0.875rem', opacity: 0.8 }}>
-              {currentDate}
-            </span>
-          </>
-        }
+        description={<>Your research dashboard overview<br /><span style={{ fontSize: '0.875rem', opacity: 0.8 }}>{currentDate}</span></>}
         actionButton={actionButtons}
         gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)"
       />
       
-      {/* Dashboard Content */}
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Loading State */}
         {dataLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
-            <Typography variant="h6" sx={{ color: 'text.secondary' }}>Loading your dashboard...</Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <Typography variant="h6" color="text.secondary">Loading dashboard...</Typography>
           </Box>
         ) : error ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
-            <Typography variant="h6" sx={{ color: 'error.main' }}>{error}</Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <Typography variant="h6" color="error">{error}</Typography>
           </Box>
         ) : dashboardData && (
           <>
-        {/* Stats Cards */}
-        <Grid container spacing={2.5} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: '#8b6cbc',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Total Publications
-                </Typography>
-                <ArticleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                {dashboardData.stats.totalPublications.value}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                All research outputs
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: '#8b6cbc',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Active Projects
-                </Typography>
-                <ProjectIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                {dashboardData.stats.ongoingProjects.value}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Ongoing research work
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: '#8b6cbc',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Collaborators
-                </Typography>
-                <CollaborationIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                {dashboardData.stats.collaborations.value}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Active team members
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: '#8b6cbc',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Citations
-                </Typography>
-                <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                {dashboardData.stats.citationImpact.value}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Total citation count
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
-
-        <Grid container spacing={4}>
-          {/* Research Analytics */}
-          <Grid size={{ xs: 12, md: 8 }}>
-                <Card elevation={4} sx={{ 
-                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(139, 108, 188, 0.1)'
+            {/* Stats Cards */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2.5, mb: 4 }}>
+              <Box sx={{ flex: '1 1 calc(25% - 15px)', minWidth: '200px' }}>
+                <Paper sx={{ 
+                  p: 2, 
+                  borderRadius: 2,
+                  bgcolor: '#8b6cbc',
+                  boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+                  border: 'none',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  height: '100px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
                 }}>
-                  <CardContent sx={{ p: 4 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Typography variant="h5" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, color: '#2d3748' }}>
-                        <BarChartIcon sx={{ color: '#8b6cbc', fontSize: 28 }} />
-                    Research Analytics
-                </Typography>
-                      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                        <Chip 
-                          label="Publications" 
-                          size="small" 
-                          onClick={() => setAnalyticsDataType('publications')}
-                          sx={{ 
-                            bgcolor: analyticsDataType === 'publications' ? 'rgba(139, 108, 188, 0.2)' : 'rgba(139, 108, 188, 0.1)', 
-                            color: '#8b6cbc',
-                            fontWeight: analyticsDataType === 'publications' ? 600 : 400,
-                            cursor: 'pointer',
-                            border: analyticsDataType === 'publications' ? '2px solid #8b6cbc' : 'none',
-                            '&:hover': {
-                              bgcolor: 'rgba(139, 108, 188, 0.25)'
-                            }
-                          }} 
-                        />
-                        <Chip 
-                          label="Projects" 
-                          size="small"
-                          onClick={() => setAnalyticsDataType('projects')}
-                          sx={{ 
-                            bgcolor: analyticsDataType === 'projects' ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255, 107, 107, 0.1)', 
-                            color: '#FF6B6B',
-                            fontWeight: analyticsDataType === 'projects' ? 600 : 400,
-                            cursor: 'pointer',
-                            border: analyticsDataType === 'projects' ? '2px solid #FF6B6B' : 'none',
-                            '&:hover': {
-                              bgcolor: 'rgba(255, 107, 107, 0.25)'
-                            }
-                          }} 
-                        />
+                  <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                      Total Publications
+                    </Typography>
+                    <ArticleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
                   </Box>
-                </Box>
-                
-                    {/* Time Range Selector */}
-                    <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Typography variant="body2" sx={{ color: '#718096', fontWeight: 500 }}>
-                        Time Range:
-                      </Typography>
-                      <FormControl size="small" sx={{ minWidth: 150 }}>
-                        <Select
-                          value={analyticsTimeRange}
-                          onChange={(e) => setAnalyticsTimeRange(e.target.value)}
-                          MenuProps={{
-                            disableScrollLock: true,
-                            PaperProps: {
-                              sx: {
-                                mt: 1,
-                                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                                borderRadius: 2
-                              }
-                            },
-                            anchorOrigin: {
-                              vertical: 'bottom',
-                              horizontal: 'left',
-                            },
-                            transformOrigin: {
-                              vertical: 'top',
-                              horizontal: 'left',
-                            },
-                          }}
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                    {dashboardData.stats.totalPublications}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                    All research outputs
+                  </Typography>
+                </Paper>
+              </Box>
+              <Box sx={{ flex: '1 1 calc(25% - 15px)', minWidth: '200px' }}>
+                <Paper sx={{ 
+                  p: 2, 
+                  borderRadius: 2,
+                  bgcolor: '#8b6cbc',
+                  boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+                  border: 'none',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  height: '100px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                      Active Projects
+                    </Typography>
+                    <ProjectIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+                  </Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                    {dashboardData.stats.ongoingProjects}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                    Ongoing research work
+                  </Typography>
+                </Paper>
+              </Box>
+              <Box sx={{ flex: '1 1 calc(25% - 15px)', minWidth: '200px' }}>
+                <Paper sx={{ 
+                  p: 2, 
+                  borderRadius: 2,
+                  bgcolor: '#8b6cbc',
+                  boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+                  border: 'none',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  height: '100px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                      Collaborators
+                    </Typography>
+                    <CollaborationIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+                  </Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                    {dashboardData.stats.collaborations}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                    Active team members
+                  </Typography>
+                </Paper>
+              </Box>
+              <Box sx={{ flex: '1 1 calc(25% - 15px)', minWidth: '200px' }}>
+                <Paper sx={{ 
+                  p: 2, 
+                  borderRadius: 2,
+                  bgcolor: '#8b6cbc',
+                  boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+                  border: 'none',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  height: '100px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                      Citations
+                    </Typography>
+                    <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+                  </Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                    {dashboardData.stats.citations}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                    Total citation count
+                  </Typography>
+                </Paper>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+              {/* Enhanced Research Analytics */}
+              <Box sx={{ flex: '1 1 calc(66.666% - 12px)', minWidth: '300px' }}>
+                <Card sx={{ 
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)'
+                  }
+                }}>
+                  <CardContent sx={{ p: 3 }}>
+                    {/* Header with Controls */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ 
+                          bgcolor: 'rgba(139, 108, 188, 0.1)', 
+                          borderRadius: 1.5, 
+                          p: 1, 
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <BarChartIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
+                        </Box>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                            Research Analytics
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Track your research output over time
+                          </Typography>
+                        </Box>
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                        {/* Time Range Selector */}
+                        <ToggleButtonGroup
+                          value={timeRange}
+                          exclusive
+                          onChange={(e, newValue) => newValue && setTimeRange(newValue)}
+                          size="small"
                           sx={{
-                            bgcolor: 'white',
-                            borderRadius: 2,
-                            '& .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'rgba(139, 108, 188, 0.3)'
-                            },
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#8b6cbc'
-                            },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: '#8b6cbc'
+                            '& .MuiToggleButton-root': {
+                              px: 1.5,
+                              py: 0.5,
+                              fontSize: '0.75rem',
+                              textTransform: 'none',
+                              border: '1px solid rgba(139, 108, 188, 0.2)',
+                              '&.Mui-selected': {
+                                bgcolor: '#8b6cbc',
+                                color: 'white',
+                                '&:hover': {
+                                  bgcolor: '#7a5cac'
+                                }
+                              }
                             }
                           }}
                         >
-                          <MenuItem value="thismonth">This Month{currentDateLabel && ` (${currentDateLabel})`}</MenuItem>
-                          <MenuItem value="6months">Last 6 Months{currentYear && ` (${currentYear})`}</MenuItem>
-                          <MenuItem value="1year">Year to Date{currentYear && ` (${currentYear})`}</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Box>
-                
-                    {/* Enhanced Chart with Proper Scaling */}
-                <Box sx={{ 
-                      height: 280, 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                      background: `linear-gradient(135deg, ${analyticsDataType === 'publications' ? 'rgba(139, 108, 188, 0.02)' : 'rgba(255, 107, 107, 0.02)'} 0%, ${analyticsDataType === 'publications' ? 'rgba(139, 108, 188, 0.05)' : 'rgba(255, 107, 107, 0.05)'} 100%)`,
-                      borderRadius: 2,
-                      p: 3,
-                      mb: 3,
-                      border: `1px solid ${analyticsDataType === 'publications' ? 'rgba(139, 108, 188, 0.1)' : 'rgba(255, 107, 107, 0.1)'}`
-                }}>
-                  {/* Y-axis labels */}
-                  <Box sx={{ display: 'flex', mb: 1 }}>
-                    <Box sx={{ width: 40, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: 200, pr: 1 }}>
-                      {(() => {
-                        const data = getAnalyticsData();
-                        const maxValue = Math.max(...data.map(d => d.count), 1);
-                        const steps = 4;
-                        return Array.from({ length: steps + 1 }, (_, i) => {
-                          const value = Math.round((maxValue / steps) * (steps - i));
-                          return (
-                            <Typography key={i} variant="caption" sx={{ color: '#718096', fontSize: '0.7rem', textAlign: 'right' }}>
-                              {value}
-                            </Typography>
-                          );
-                        });
-                      })()}
-                    </Box>
-                    
-                    {/* Chart area */}
-                    <Box sx={{ 
-                      flex: 1,
-                      height: 200,
-                      display: 'flex', 
-                      alignItems: 'flex-end', 
-                      justifyContent: 'space-around',
-                      borderLeft: '2px solid rgba(0,0,0,0.1)',
-                      borderBottom: '2px solid rgba(0,0,0,0.1)',
-                      position: 'relative',
-                      pl: 2
-                    }}>
-                      {/* Grid lines */}
-                      {Array.from({ length: 5 }, (_, i) => (
-                        <Box
-                          key={i}
-                          sx={{
-                            position: 'absolute',
-                            left: 0,
-                            right: 0,
-                            bottom: `${(i / 4) * 100}%`,
-                            height: '1px',
-                            bgcolor: 'rgba(0,0,0,0.05)',
-                            zIndex: 0
-                          }}
-                        />
-                      ))}
-                      
-                      {/* Bars */}
-                      {(() => {
-                        const data = getAnalyticsData();
-                        const maxValue = Math.max(...data.map(d => d.count), 1);
-                        const colors = getAnalyticsColor();
-                        
-                        return data.map((item, index) => {
-                          const heightPercentage = (item.count / maxValue) * 100;
-                          const barHeight = Math.max((heightPercentage / 100) * 180, 8);
-                          
-                          return (
-                            <Box key={index} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, zIndex: 1 }}>
-                              <Tooltip 
-                                title={getTooltipContent(item, index)}
-                                arrow
-                                placement="top"
-                                componentsProps={{
-                                  tooltip: {
-                                    sx: {
-                                      bgcolor: colors.primary,
-                                      color: 'white',
-                                      fontSize: '0.875rem',
-                                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                      borderRadius: 2,
-                                      p: 1.5
-                                    }
-                                  },
-                                  arrow: {
-                                    sx: {
-                                      color: colors.primary
-                                    }
-                                  }
-                                }}
-                              >
-                                <Box sx={{ 
-                                  width: data.length > 8 ? 28 : 40,
-                                  height: barHeight,
-                                  background: item.count > 0 
-                                    ? `linear-gradient(180deg, ${colors.primary} 0%, ${colors.secondary} 100%)` 
-                                    : `${colors.primary}22`,
-                                  borderRadius: '4px 4px 0 0',
-                                  position: 'relative',
-                                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                  cursor: 'pointer',
-                                  boxShadow: item.count > 0 ? `0 2px 8px ${colors.primary}33` : 'none',
-                                  '&:hover': {
-                                    transform: 'translateY(-4px)',
-                                    boxShadow: `0 8px 24px ${colors.primary}55`,
-                                    filter: 'brightness(1.1)'
-                                  },
-                                  '&::after': item.count > 0 ? {
-                                    content: `"${item.count}"`,
-                                    position: 'absolute',
-                                    top: -22,
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    fontSize: '0.7rem',
-                                    fontWeight: 700,
-                                    color: colors.primary,
-                                    bgcolor: 'white',
-                                    px: 0.75,
-                                    py: 0.25,
-                                    borderRadius: 1,
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                    whiteSpace: 'nowrap'
-                                  } : {}
-                                }} />
-                              </Tooltip>
-                            </Box>
-                          );
-                        });
-                      })()}
-                    </Box>
-                  </Box>
-                  
-                  {/* X-axis labels */}
-                  <Box sx={{ display: 'flex', ml: 5 }}>
-                    {getAnalyticsData().map((item, index) => (
-                      <Box key={index} sx={{ flex: 1, textAlign: 'center' }}>
-                        <Typography variant="caption" sx={{ 
-                          color: '#4a5568', 
-                          fontWeight: 600, 
-                          fontSize: getAnalyticsData().length > 8 ? '0.65rem' : '0.75rem',
-                          display: 'block',
-                          mt: 0.5
-                        }}>
-                          {item.month}
-                        </Typography>
+                          <ToggleButton value="3m">3M</ToggleButton>
+                          <ToggleButton value="6m">6M</ToggleButton>
+                          <ToggleButton value="1y">1Y</ToggleButton>
+                          <ToggleButton value="all">All</ToggleButton>
+                        </ToggleButtonGroup>
+
+                        {/* Chart Type Selector */}
+                        <ButtonGroup size="small" variant="outlined">
+                          <Tooltip title="Area Chart">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => setChartType('area')}
+                              sx={{ 
+                                bgcolor: chartType === 'area' ? 'rgba(139, 108, 188, 0.1)' : 'transparent',
+                                borderColor: 'rgba(139, 108, 188, 0.2)',
+                                '&:hover': { bgcolor: 'rgba(139, 108, 188, 0.05)' }
+                              }}
+                            >
+                              <ShowChartIcon sx={{ fontSize: 18, color: chartType === 'area' ? '#8b6cbc' : '#666' }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Bar Chart">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => setChartType('bar')}
+                              sx={{ 
+                                bgcolor: chartType === 'bar' ? 'rgba(139, 108, 188, 0.1)' : 'transparent',
+                                borderColor: 'rgba(139, 108, 188, 0.2)',
+                                '&:hover': { bgcolor: 'rgba(139, 108, 188, 0.05)' }
+                              }}
+                            >
+                              <BarChartIcon sx={{ fontSize: 18, color: chartType === 'bar' ? '#8b6cbc' : '#666' }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Line Chart">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => setChartType('line')}
+                              sx={{ 
+                                bgcolor: chartType === 'line' ? 'rgba(139, 108, 188, 0.1)' : 'transparent',
+                                borderColor: 'rgba(139, 108, 188, 0.2)',
+                                '&:hover': { bgcolor: 'rgba(139, 108, 188, 0.05)' }
+                              }}
+                            >
+                              <TimelineIcon sx={{ fontSize: 18, color: chartType === 'line' ? '#8b6cbc' : '#666' }} />
+                            </IconButton>
+                          </Tooltip>
+                        </ButtonGroup>
+
+                        <Tooltip title="Download Report">
+                          <IconButton size="small" sx={{ borderColor: 'rgba(139, 108, 188, 0.2)' }}>
+                            <DownloadIcon sx={{ fontSize: 18, color: '#666' }} />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
-                    ))}
-                  </Box>
-                </Box>
+                    </Box>
 
-                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
-                  <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="h4" sx={{ color: '#8b6cbc', fontWeight: 800 }}>
-                          {dashboardData.stats.totalPublications.value}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#718096', fontWeight: 500 }}>Total Publications</Typography>
-                  </Box>
-                  <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="h4" sx={{ color: '#FF6B6B', fontWeight: 800 }}>
-                          {dashboardData.recentPublications.filter(p => p.year === new Date().getFullYear()).length}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#718096', fontWeight: 500 }}>This Year</Typography>
-                  </Box>
-                  <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="h4" sx={{ color: '#4ECDC4', fontWeight: 800 }}>
-                          {dashboardData.stats.ongoingProjects.value}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#718096', fontWeight: 500 }}>Active Projects</Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-                  </Grid>
-
-          {/* Recent Work - Enhanced */}
-          <Grid size={{ xs: 12, md: 4 }}>
-                <Card elevation={4} sx={{ 
-                  height: '100%',
-                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(139, 108, 188, 0.1)'
-                }}>
-                  <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, color: '#2d3748' }}>
-                        <TimelineIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
-                        Recent Work
-                  </Typography>
-                      <Tooltip title="Add new item">
-                        <IconButton size="small" sx={{ 
-                          color: '#8b6cbc', 
-                          bgcolor: 'rgba(139, 108, 188, 0.1)',
-                          '&:hover': { bgcolor: 'rgba(139, 108, 188, 0.2)' }
-                        }}>
-                    <AddIcon />
-                  </IconButton>
-                      </Tooltip>
-                </Box>
-
-                    {/* Tabs */}
+                    {/* Tabs for different metrics */}
                     <Tabs 
-                      value={recentWorkTab} 
-                      onChange={(e, newValue) => setRecentWorkTab(newValue)}
+                      value={analyticsTab} 
+                      onChange={(e, newValue) => setAnalyticsTab(newValue)}
                       sx={{
                         mb: 2,
                         minHeight: 40,
                         '& .MuiTab-root': {
                           minHeight: 40,
                           textTransform: 'none',
+                          fontWeight: 600,
                           fontSize: '0.875rem',
-                          fontWeight: 500,
-                          color: '#718096',
+                          color: '#666',
                           '&.Mui-selected': {
-                            color: '#8b6cbc',
-                            fontWeight: 600
+                            color: '#8b6cbc'
                           }
                         },
                         '& .MuiTabs-indicator': {
-                          bgcolor: '#8b6cbc',
+                          backgroundColor: '#8b6cbc',
                           height: 3,
                           borderRadius: '3px 3px 0 0'
                         }
                       }}
                     >
-                      <Tab label="All" value="all" />
-                      <Tab label="Publications" value="publications" />
-                      <Tab label="Projects" value="projects" />
+                      <Tab label="Overview" />
+                      <Tab label="Publications" />
+                      <Tab label="Projects" />
+                      <Tab label="Impact" />
                     </Tabs>
 
-                    <Box sx={{ maxHeight: 420, overflowY: 'auto', pr: 1 }}>
-                      {/* Publications */}
-                      {(recentWorkTab === 'all' || recentWorkTab === 'publications') && dashboardData.recentPublications.length > 0 && (
-                        <Box sx={{ mb: recentWorkTab === 'all' ? 3 : 0 }}>
-                          {recentWorkTab === 'all' && (
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#4a5568', display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <ArticleIcon sx={{ fontSize: 16 }} />
-                              Publications
-                            </Typography>
+                    {/* Summary Stats Row */}
+                    <Box sx={{ 
+                      display: 'flex', 
+                      gap: 2, 
+                      mb: 3, 
+                      p: 2, 
+                      bgcolor: 'rgba(139, 108, 188, 0.05)', 
+                      borderRadius: 2,
+                      flexWrap: 'wrap'
+                    }}>
+                      <Box sx={{ flex: 1, minWidth: 100 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                          Total Output
+                        </Typography>
+                        <Typography variant="h5" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
+                          {dashboardData.analyticsData.reduce((sum, d) => sum + d.publications + d.projects, 0)}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#66BB6A', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <TrendingUpIcon sx={{ fontSize: 12 }} />
+                          +12% vs last period
+                        </Typography>
+                      </Box>
+                      <Divider orientation="vertical" flexItem />
+                      <Box sx={{ flex: 1, minWidth: 100 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                          Avg per Month
+                        </Typography>
+                        <Typography variant="h5" sx={{ fontWeight: 700, color: '#FF6B6B' }}>
+                          {(dashboardData.analyticsData.reduce((sum, d) => sum + d.publications + d.projects, 0) / 6).toFixed(1)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Last 6 months
+                        </Typography>
+                      </Box>
+                      <Divider orientation="vertical" flexItem />
+                      <Box sx={{ flex: 1, minWidth: 100 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                          Peak Month
+                        </Typography>
+                        <Typography variant="h5" sx={{ fontWeight: 700, color: '#42A5F5' }}>
+                          {dashboardData.analyticsData.reduce((max, d) => 
+                            Math.max(max, d.publications + d.projects), 0
                           )}
-                          {dashboardData.recentPublications.slice(0, recentWorkTab === 'all' ? 2 : 5).map((pub, index) => (
-                            <Paper key={pub.id} elevation={0} sx={{ 
-                              p: 2, 
-                              mb: 1.5,
-                              bgcolor: 'rgba(139, 108, 188, 0.02)',
-                              border: '1px solid rgba(139, 108, 188, 0.1)',
-                              borderRadius: 2,
-                              transition: 'all 0.2s',
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {dashboardData.analyticsData.reduce((max, d) => 
+                            (d.publications + d.projects) > (max.publications + max.projects) ? d : max
+                          ).month}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    {/* Chart Area */}
+                    <ResponsiveContainer width="100%" height={320}>
+                      {analyticsTab === 0 && (
+                        chartType === 'area' ? (
+                          <AreaChart data={dashboardData.analyticsData}>
+                            <defs>
+                              <linearGradient id="colorPublications" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#8b6cbc" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="#8b6cbc" stopOpacity={0.1}/>
+                              </linearGradient>
+                              <linearGradient id="colorProjects" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#FF6B6B" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="#FF6B6B" stopOpacity={0.1}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
+                            <XAxis 
+                              dataKey="month" 
+                              stroke="#999" 
+                              tick={{ fontSize: 12 }}
+                              axisLine={{ stroke: '#e0e0e0' }}
+                            />
+                            <YAxis 
+                              stroke="#999" 
+                              tick={{ fontSize: 12 }}
+                              axisLine={{ stroke: '#e0e0e0' }}
+                            />
+                            <RechartsTooltip 
+                              contentStyle={{ 
+                                borderRadius: 8, 
+                                border: 'none', 
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                fontSize: 12
+                              }}
+                              cursor={{ fill: 'rgba(139, 108, 188, 0.05)' }}
+                            />
+                            <Legend 
+                              wrapperStyle={{ fontSize: 12, paddingTop: 10 }}
+                              iconType="circle"
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="publications" 
+                              stroke="#8b6cbc" 
+                              strokeWidth={2}
+                              fillOpacity={1} 
+                              fill="url(#colorPublications)"
+                              activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="projects" 
+                              stroke="#FF6B6B" 
+                              strokeWidth={2}
+                              fillOpacity={1} 
+                              fill="url(#colorProjects)"
+                              activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
+                            />
+                          </AreaChart>
+                        ) : chartType === 'bar' ? (
+                          <RechartsBarChart data={dashboardData.analyticsData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
+                            <XAxis 
+                              dataKey="month" 
+                              stroke="#999" 
+                              tick={{ fontSize: 12 }}
+                              axisLine={{ stroke: '#e0e0e0' }}
+                            />
+                            <YAxis 
+                              stroke="#999" 
+                              tick={{ fontSize: 12 }}
+                              axisLine={{ stroke: '#e0e0e0' }}
+                            />
+                            <RechartsTooltip 
+                              contentStyle={{ 
+                                borderRadius: 8, 
+                                border: 'none', 
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                fontSize: 12
+                              }}
+                              cursor={{ fill: 'rgba(139, 108, 188, 0.05)' }}
+                            />
+                            <Legend 
+                              wrapperStyle={{ fontSize: 12, paddingTop: 10 }}
+                              iconType="circle"
+                            />
+                            <Bar 
+                              dataKey="publications" 
+                              fill="#8b6cbc" 
+                              radius={[8, 8, 0, 0]}
+                              maxBarSize={60}
+                            />
+                            <Bar 
+                              dataKey="projects" 
+                              fill="#FF6B6B" 
+                              radius={[8, 8, 0, 0]}
+                              maxBarSize={60}
+                            />
+                          </RechartsBarChart>
+                        ) : (
+                          <LineChart data={dashboardData.analyticsData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
+                            <XAxis 
+                              dataKey="month" 
+                              stroke="#999" 
+                              tick={{ fontSize: 12 }}
+                              axisLine={{ stroke: '#e0e0e0' }}
+                            />
+                            <YAxis 
+                              stroke="#999" 
+                              tick={{ fontSize: 12 }}
+                              axisLine={{ stroke: '#e0e0e0' }}
+                            />
+                            <RechartsTooltip 
+                              contentStyle={{ 
+                                borderRadius: 8, 
+                                border: 'none', 
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                fontSize: 12
+                              }}
+                              cursor={{ stroke: '#8b6cbc', strokeWidth: 1, strokeDasharray: '5 5' }}
+                            />
+                            <Legend 
+                              wrapperStyle={{ fontSize: 12, paddingTop: 10 }}
+                              iconType="circle"
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="publications" 
+                              stroke="#8b6cbc" 
+                              strokeWidth={3}
+                              dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                              activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="projects" 
+                              stroke="#FF6B6B" 
+                              strokeWidth={3}
+                              dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                              activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
+                            />
+                          </LineChart>
+                        )
+                      )}
+                      {analyticsTab === 1 && (
+                        <AreaChart data={dashboardData.analyticsData}>
+                          <defs>
+                            <linearGradient id="colorPubsOnly" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#8b6cbc" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#8b6cbc" stopOpacity={0.1}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
+                          <XAxis dataKey="month" stroke="#999" tick={{ fontSize: 12 }} />
+                          <YAxis stroke="#999" tick={{ fontSize: 12 }} />
+                          <RechartsTooltip 
+                            contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="publications" 
+                            stroke="#8b6cbc" 
+                            strokeWidth={3}
+                            fillOpacity={1} 
+                            fill="url(#colorPubsOnly)"
+                            activeDot={{ r: 6 }}
+                          />
+                        </AreaChart>
+                      )}
+                      {analyticsTab === 2 && (
+                        <AreaChart data={dashboardData.analyticsData}>
+                          <defs>
+                            <linearGradient id="colorManuscripts" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#FF6B6B" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#FF6B6B" stopOpacity={0.1}/>
+                            </linearGradient>
+                            <linearGradient id="colorProposals" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#42A5F5" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#42A5F5" stopOpacity={0.1}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
+                          <XAxis dataKey="month" stroke="#999" tick={{ fontSize: 12 }} />
+                          <YAxis stroke="#999" tick={{ fontSize: 12 }} />
+                          <RechartsTooltip 
+                            contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                          />
+                          <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} iconType="circle" />
+                          <Area 
+                            type="monotone" 
+                            dataKey="manuscripts" 
+                            stroke="#FF6B6B" 
+                            strokeWidth={2}
+                            fillOpacity={1} 
+                            fill="url(#colorManuscripts)"
+                            activeDot={{ r: 6 }}
+                            name="Manuscripts"
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="proposals" 
+                            stroke="#42A5F5" 
+                            strokeWidth={2}
+                            fillOpacity={1} 
+                            fill="url(#colorProposals)"
+                            activeDot={{ r: 6 }}
+                            name="Proposals"
+                          />
+                        </AreaChart>
+                      )}
+                      {analyticsTab === 3 && (
+                        <LineChart data={dashboardData.analyticsData.map((d, i) => ({
+                          ...d,
+                          citations: Math.floor(Math.random() * 20) + i * 5,
+                          hIndex: Math.floor(Math.random() * 5) + i
+                        }))}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
+                          <XAxis dataKey="month" stroke="#999" tick={{ fontSize: 12 }} />
+                          <YAxis stroke="#999" tick={{ fontSize: 12 }} />
+                          <RechartsTooltip 
+                            contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                          />
+                          <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                          <Line 
+                            type="monotone" 
+                            dataKey="citations" 
+                            stroke="#42A5F5" 
+                            strokeWidth={3}
+                            dot={{ r: 4 }}
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="hIndex" 
+                            stroke="#66BB6A" 
+                            strokeWidth={3}
+                            dot={{ r: 4 }}
+                          />
+                        </LineChart>
+                      )}
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </Box>
+
+              {/* Enhanced Notifications */}
+              <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: '300px' }}>
+                <Card sx={{ 
+                  height: '100%',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)'
+                  }
+                }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ 
+                          bgcolor: 'rgba(139, 108, 188, 0.1)', 
+                          borderRadius: 1.5, 
+                          p: 1, 
+                          display: 'flex',
+                          position: 'relative'
+                        }}>
+                          <Badge badgeContent={unreadCount} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.7rem' } }}>
+                            <NotificationsIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
+                          </Badge>
+                        </Box>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                            Notifications
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {unreadCount} unread
+                          </Typography>
+                        </Box>
+                      </Box>
+                      {unreadCount > 0 && (
+                        <Tooltip title="Mark all as read">
+                          <IconButton size="small" onClick={handleMarkAllAsRead}>
+                            <DoneAllIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
+                    
+                    {notificationsLoading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                        <Typography variant="body2" color="text.secondary">Loading...</Typography>
+                      </Box>
+                    ) : notifications.length === 0 ? (
+                      <Box sx={{ textAlign: 'center', py: 4 }}>
+                        <NotificationsIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 1 }} />
+                        <Typography variant="body2" color="text.secondary">
+                          No notifications yet
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+                        {notifications.map((notification) => (
+                          <ListItem 
+                            key={notification.id} 
+                            sx={{ 
+                              px: 0, 
+                              py: 1.5,
+                              bgcolor: !notification.isRead ? 'rgba(139, 108, 188, 0.05)' : 'transparent', 
+                              borderRadius: 1, 
+                              mb: 1,
+                              border: !notification.isRead ? '1px solid rgba(139, 108, 188, 0.1)' : '1px solid transparent',
+                              transition: 'all 0.2s ease',
                               '&:hover': {
-                                bgcolor: 'rgba(139, 108, 188, 0.05)',
-                                boxShadow: '0 2px 8px rgba(139, 108, 188, 0.15)',
-                                transform: 'translateY(-2px)'
+                                bgcolor: 'rgba(139, 108, 188, 0.08)',
+                                transform: 'translateX(4px)'
                               }
-                            }}>
-                              <Box sx={{ display: 'flex', alignItems: 'start', gap: 1, mb: 1 }}>
-                                <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 18, mt: 0.2 }} />
-                                <Box sx={{ flex: 1 }}>
-                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, color: '#2d3748', lineHeight: 1.4 }}>
-                                    {pub.title.length > 60 ? `${pub.title.substring(0, 60)}...` : pub.title}
-                                  </Typography>
-                                  <Typography variant="caption" sx={{ color: '#718096', display: 'block', mb: 0.5 }}>
-                                    {pub.journal} • {pub.year}
-                                  </Typography>
-                                </Box>
-                              </Box>
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
-                                <Chip 
-                                  label={`${pub.citations} citations`}
-                                  size="small"
-                                  sx={{ 
-                                    fontSize: '0.7rem',
-                                    height: 20,
-                                    bgcolor: 'rgba(76, 175, 80, 0.1)',
-                                    color: '#2e7d32',
-                                    fontWeight: 600
-                                  }}
-                                />
-                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                  <Tooltip title="View details">
+                            }}
+                            secondaryAction={
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                {!notification.isRead && (
+                                  <Tooltip title="Mark as read">
                                     <IconButton 
                                       size="small" 
-                                      sx={{ p: 0.5, color: '#8b6cbc' }}
-                                      onClick={() => handleViewDetails(pub, 'publication')}
+                                      onClick={() => handleMarkAsRead(notification.id)}
+                                      sx={{ '&:hover': { bgcolor: 'rgba(102, 187, 106, 0.1)' } }}
                                     >
-                                      <VisibilityIcon sx={{ fontSize: 16 }} />
+                                      <CheckCircleIcon sx={{ fontSize: 16, color: '#66BB6A' }} />
                                     </IconButton>
                                   </Tooltip>
+                                )}
+                                <Tooltip title="Delete">
+                                  <IconButton 
+                                    size="small" 
+                                    onClick={() => handleDeleteNotification(notification.id)}
+                                    sx={{ '&:hover': { bgcolor: 'rgba(239, 83, 80, 0.1)' } }}
+                                  >
+                                    <DeleteIcon sx={{ fontSize: 16, color: '#EF5350' }} />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            }
+                          >
+                            <ListItemAvatar>
+                              <Avatar sx={{ 
+                                bgcolor: !notification.isRead ? 'rgba(139, 108, 188, 0.15)' : 'rgba(139, 108, 188, 0.05)',
+                                width: 40,
+                                height: 40
+                              }}>
+                                {getNotificationIcon(notification.type)}
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText 
+                              primary={notification.title || notification.message}
+                              secondary={
+                                <Box component="span">
+                                  {notification.message && notification.title && (
+                                    <Typography variant="caption" component="span" display="block" sx={{ mb: 0.5 }}>
+                                      {notification.message}
+                                    </Typography>
+                                  )}
+                                  <Typography variant="caption" component="span" color="text.secondary">
+                                    {new Date(notification.createdAt).toLocaleString('en-US', { 
+                                      month: 'short', 
+                                      day: 'numeric', 
+                                      hour: '2-digit', 
+                                      minute: '2-digit' 
+                                    })}
+                                  </Typography>
+                                </Box>
+                              }
+                              primaryTypographyProps={{ 
+                                variant: 'body2', 
+                                fontWeight: !notification.isRead ? 600 : 400,
+                                sx: { pr: 6 }
+                              }}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    )}
+                  </CardContent>
+                </Card>
+              </Box>
+
+              {/* Enhanced Recent Activities */}
+              <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: '300px' }}>
+                <Card sx={{ 
+                  height: '100%',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)'
+                  }
+                }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ 
+                          bgcolor: 'rgba(139, 108, 188, 0.1)', 
+                          borderRadius: 1.5, 
+                          p: 1, 
+                          display: 'flex'
+                        }}>
+                          <TimelineIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
+                        </Box>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                            Recent Activities
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Your latest actions
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Tooltip title="Refresh">
+                        <IconButton size="small" onClick={handleRefreshActivities} disabled={activitiesLoading}>
+                          <RefreshIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    
+                    {activitiesLoading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                        <Typography variant="body2" color="text.secondary">Loading...</Typography>
+                      </Box>
+                    ) : activities.length === 0 ? (
+                      <Box sx={{ textAlign: 'center', py: 4 }}>
+                        <TimelineIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 1 }} />
+                        <Typography variant="body2" color="text.secondary">
+                          No recent activities
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+                        {activities.map((activity) => (
+                          <ListItem 
+                            key={activity.id} 
+                            sx={{ 
+                              px: 0, 
+                              py: 1.5,
+                              borderRadius: 1,
+                              transition: 'all 0.2s ease',
+                              cursor: activity.link ? 'pointer' : 'default',
+                              '&:hover': {
+                                bgcolor: 'rgba(139, 108, 188, 0.05)',
+                                transform: activity.link ? 'translateX(4px)' : 'none'
+                              }
+                            }}
+                            onClick={() => { if (activity.link) window.location.href = activity.link; }}
+                            secondaryAction={
+                              activity.link && (
+                                <Tooltip title="Open">
+                                  <IconButton size="small" sx={{ opacity: 0.6 }}>
+                                    <OpenInNewIcon sx={{ fontSize: 16 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )
+                            }
+                          >
+                            <ListItemAvatar>
+                              <Avatar sx={{ 
+                                bgcolor: activity.color ? `${activity.color}15` : 'rgba(139, 108, 188, 0.1)', 
+                                color: activity.color || '#8b6cbc',
+                                width: 40,
+                                height: 40
+                              }}>
+                                {getActivityIcon(activity.icon || activity.type)}
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={activity.title}
+                              secondary={
+                                <Box component="span">
+                                  {activity.description && (
+                                    <Typography variant="caption" component="span" display="block" sx={{ mb: 0.5 }}>
+                                      {activity.description}
+                                    </Typography>
+                                  )}
+                                  <Typography variant="caption" component="span" color="text.secondary">
+                                    {activity.timeAgo}
+                                  </Typography>
+                                </Box>
+                              }
+                              primaryTypographyProps={{ 
+                                variant: 'body2', 
+                                fontWeight: 500,
+                                sx: { pr: 4 }
+                              }}
+                              secondaryTypographyProps={{ component: 'div' }}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    )}
+                  </CardContent>
+                </Card>
+              </Box>
+
+              {/* Enhanced Pending Tasks */}
+              <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: '300px' }}>
+                <Card sx={{ 
+                  height: '100%',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)'
+                  }
+                }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ 
+                          bgcolor: 'rgba(139, 108, 188, 0.1)', 
+                          borderRadius: 1.5, 
+                          p: 1, 
+                          display: 'flex'
+                        }}>
+                          <ScheduleIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
+                        </Box>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                            Pending Tasks
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {tasks.length} task{tasks.length !== 1 ? 's' : ''} pending
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Tooltip title="Refresh">
+                        <IconButton size="small" onClick={handleRefreshTasks} disabled={tasksLoading}>
+                          <RefreshIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+
+                    {/* Priority Summary */}
+                    <Box sx={{ 
+                      display: 'flex', 
+                      gap: 1, 
+                      mb: 2, 
+                      p: 1.5, 
+                      bgcolor: 'rgba(139, 108, 188, 0.05)', 
+                      borderRadius: 1.5 
+                    }}>
+                      <Box sx={{ flex: 1, textAlign: 'center' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#EF5350', fontSize: '1.25rem' }}>
+                          {tasksSummary.high}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          High
+                        </Typography>
+                      </Box>
+                      <Divider orientation="vertical" flexItem />
+                      <Box sx={{ flex: 1, textAlign: 'center' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#FFA726', fontSize: '1.25rem' }}>
+                          {tasksSummary.medium}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          Medium
+                        </Typography>
+                      </Box>
+                      <Divider orientation="vertical" flexItem />
+                      <Box sx={{ flex: 1, textAlign: 'center' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#66BB6A', fontSize: '1.25rem' }}>
+                          {tasksSummary.low}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          Low
+                        </Typography>
+                      </Box>
+                    </Box>
+                    
+                    {tasksLoading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                        <Typography variant="body2" color="text.secondary">Loading...</Typography>
+                      </Box>
+                    ) : tasks.length === 0 ? (
+                      <Box sx={{ textAlign: 'center', py: 4 }}>
+                        <CheckCircleIcon sx={{ fontSize: 48, color: '#66BB6A', mb: 1 }} />
+                        <Typography variant="body2" color="text.secondary">
+                          All caught up! No pending tasks
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Stack spacing={2} sx={{ maxHeight: 400, overflow: 'auto' }}>
+                        {tasks.map((task) => {
+                          const isOverdue = task.daysUntilDue < 0;
+                          const isUrgent = task.daysUntilDue >= 0 && task.daysUntilDue <= 2;
+                          
+                          return (
+                            <Paper 
+                              key={task.id} 
+                              sx={{ 
+                                p: 2, 
+                                border: `1px solid ${isOverdue ? '#EF5350' : isUrgent ? '#FFA726' : '#e0e0e0'}`,
+                                borderLeft: `4px solid ${getPriorityColor(task.priority)}`,
+                                borderRadius: 1.5,
+                                transition: 'all 0.2s ease',
+                                cursor: task.link ? 'pointer' : 'default',
+                                '&:hover': {
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                  transform: task.link ? 'translateY(-2px)' : 'none'
+                                }
+                              }}
+                              onClick={() => { if (task.link) window.location.href = task.link; }}
+                            >
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                                <Box sx={{ flex: 1, pr: 2 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                    {task.title}
+                                  </Typography>
+                                  {task.description && (
+                                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                                      {task.description}
+                                    </Typography>
+                                  )}
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                    <Chip 
+                                      label={task.priority} 
+                                      size="small" 
+                                      sx={{ 
+                                        bgcolor: `${getPriorityColor(task.priority)}15`, 
+                                        color: getPriorityColor(task.priority),
+                                        fontWeight: 600,
+                                        fontSize: '0.65rem',
+                                        height: 20
+                                      }} 
+                                    />
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                      <CalendarTodayIcon sx={{ fontSize: 11 }} />
+                                      {isOverdue ? (
+                                        <span style={{ color: '#EF5350', fontWeight: 600 }}>
+                                          Overdue by {Math.abs(task.daysUntilDue)} day{Math.abs(task.daysUntilDue) !== 1 ? 's' : ''}
+                                        </span>
+                                      ) : isUrgent ? (
+                                        <span style={{ color: '#FFA726', fontWeight: 600 }}>
+                                          Due in {task.daysUntilDue} day{task.daysUntilDue !== 1 ? 's' : ''}
+                                        </span>
+                                      ) : (
+                                        `Due in ${task.daysUntilDue} day${task.daysUntilDue !== 1 ? 's' : ''}`
+                                      )}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                  <Tooltip title="Mark as complete">
+                                    <IconButton 
+                                      size="small" 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCompleteTask(task.id);
+                                      }}
+                                      sx={{ 
+                                        '&:hover': { 
+                                          bgcolor: 'rgba(102, 187, 106, 0.1)',
+                                          transform: 'scale(1.1)'
+                                        } 
+                                      }}
+                                    >
+                                      <CheckCircleIcon sx={{ fontSize: 18, color: '#66BB6A' }} />
+                                    </IconButton>
+                                  </Tooltip>
+                                  {task.link && (
+                                    <Tooltip title="Open">
+                                      <IconButton size="small" sx={{ opacity: 0.6 }}>
+                                        <OpenInNewIcon sx={{ fontSize: 16 }} />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
                                 </Box>
                               </Box>
                             </Paper>
-                          ))}
-                        </Box>
-                      )}
+                          );
+                        })}
+                      </Stack>
+                    )}
+                  </CardContent>
+                </Card>
+              </Box>
 
-                      {/* Projects */}
-                      {(recentWorkTab === 'all' || recentWorkTab === 'projects') && dashboardData.rawData?.allProjects && dashboardData.rawData.allProjects.length > 0 && (
-                        <Box>
-                          {recentWorkTab === 'all' && (
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#4a5568', display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <ProposalIcon sx={{ fontSize: 16 }} />
-                              Projects
-                            </Typography>
-                          )}
-                          {dashboardData.rawData.allProjects.slice(0, recentWorkTab === 'all' ? 2 : 5).map((project, index) => {
-                            const statusColor = {
-                              'DRAFT': '#FFA726',
-                              'UNDER_REVIEW': '#42A5F5',
-                              'APPROVED': '#66BB6A',
-                              'IN_PROGRESS': '#8b6cbc',
-                              'COMPLETED': '#26A69A',
-                              'REJECTED': '#EF5350'
-                            };
-                            const statusLabel = project.status?.replace('_', ' ');
-                            
-                            return (
-                              <Paper key={project.id} elevation={0} sx={{ 
-                                p: 2, 
-                                mb: 1.5,
-                                bgcolor: 'rgba(255, 107, 107, 0.02)',
-                                border: '1px solid rgba(255, 107, 107, 0.1)',
-                                borderRadius: 2,
-                                transition: 'all 0.2s',
-                                '&:hover': {
-                                  bgcolor: 'rgba(255, 107, 107, 0.05)',
-                                  boxShadow: '0 2px 8px rgba(255, 107, 107, 0.15)',
-                                  transform: 'translateY(-2px)'
-                                }
-                              }}>
-                                <Box sx={{ display: 'flex', alignItems: 'start', gap: 1, mb: 1 }}>
-                                  <ProposalIcon sx={{ color: '#FF6B6B', fontSize: 18, mt: 0.2 }} />
-                                  <Box sx={{ flex: 1 }}>
-                                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, color: '#2d3748', lineHeight: 1.4 }}>
-                                      {project.title.length > 60 ? `${project.title.substring(0, 60)}...` : project.title}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ color: '#718096', display: 'block', mb: 0.5 }}>
-                                      {project.type || 'Proposal'} • {new Date(project.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                                    </Typography>
-                                  </Box>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
-                                  <Chip 
-                                    label={statusLabel}
-                                    size="small"
-                                    icon={project.status === 'IN_PROGRESS' ? <ScheduleIcon /> : project.status === 'COMPLETED' ? <CheckCircleIcon /> : <RateReviewIcon />}
-                                    sx={{ 
-                                      fontSize: '0.7rem',
-                                      height: 20,
-                                      bgcolor: `${statusColor[project.status]}15`,
-                                      color: statusColor[project.status],
-                                      fontWeight: 600,
-                                      '& .MuiChip-icon': {
-                                        fontSize: 14,
-                                        color: statusColor[project.status]
-                                      }
-                                    }}
-                                  />
-                                  <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                    <Tooltip title="View details">
-                                      <IconButton 
-                                        size="small" 
-                                        sx={{ p: 0.5, color: '#FF6B6B' }}
-                                        onClick={() => handleViewDetails(project, 'project')}
-                                      >
-                                        <VisibilityIcon sx={{ fontSize: 16 }} />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </Box>
-                                </Box>
-                              </Paper>
-                            );
-                          })}
-                        </Box>
-                      )}
-
-                      {/* Empty State */}
-                      {((recentWorkTab === 'all' && dashboardData.recentPublications.length === 0 && (!dashboardData.rawData?.allProjects || dashboardData.rawData.allProjects.length === 0)) ||
-                        (recentWorkTab === 'publications' && dashboardData.recentPublications.length === 0) ||
-                        (recentWorkTab === 'projects' && (!dashboardData.rawData?.allProjects || dashboardData.rawData.allProjects.length === 0))) && (
-                        <Box sx={{ textAlign: 'center', py: 4 }}>
-                          {recentWorkTab === 'publications' ? (
-                            <>
-                              <ArticleIcon sx={{ fontSize: 48, color: '#cbd5e0', mb: 1 }} />
-                              <Typography variant="body2" color="text.secondary">
-                                No publications found
-                              </Typography>
-                            </>
-                          ) : recentWorkTab === 'projects' ? (
-                            <>
-                              <ProposalIcon sx={{ fontSize: 48, color: '#cbd5e0', mb: 1 }} />
-                              <Typography variant="body2" color="text.secondary">
-                                No projects found
-                              </Typography>
-                            </>
-                          ) : (
-                            <>
-                              <TimelineIcon sx={{ fontSize: 48, color: '#cbd5e0', mb: 1 }} />
-                              <Typography variant="body2" color="text.secondary">
-                                No recent work found
-                              </Typography>
-                            </>
-                          )}
-                        </Box>
-                      )}
-                    </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Research Collaboration Network */}
-          <Grid size={{ xs: 12 }}>
-                <Card elevation={4} sx={{
-                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(139, 108, 188, 0.1)',
-                  borderRadius: 3,
-                  overflow: 'hidden'
+              {/* Enhanced Upcoming Deadlines */}
+              <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: '300px' }}>
+                <Card sx={{ 
+                  height: '100%',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)'
+                  }
                 }}>
-                  <Box sx={{ 
-                    p: 3, 
-                    borderBottom: '1px solid rgba(139, 108, 188, 0.1)',
-                    background: 'linear-gradient(135deg, rgba(139, 108, 188, 0.02) 0%, rgba(139, 108, 188, 0.05) 100%)'
-                  }}>
-                    <Typography variant="h5" sx={{ 
-                      fontWeight: 700, 
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ 
+                          bgcolor: 'rgba(139, 108, 188, 0.1)', 
+                          borderRadius: 1.5, 
+                          p: 1, 
+                          display: 'flex'
+                        }}>
+                          <CalendarTodayIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
+                        </Box>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                            Upcoming Deadlines
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {deadlinesSummary.urgent} urgent, {deadlinesSummary.upcoming} upcoming
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Tooltip title="Refresh">
+                        <IconButton size="small" onClick={handleRefreshDeadlines} disabled={deadlinesLoading}>
+                          <RefreshIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    
+                    {deadlinesLoading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                        <Typography variant="body2" color="text.secondary">Loading...</Typography>
+                      </Box>
+                    ) : deadlines.length === 0 ? (
+                      <Box sx={{ textAlign: 'center', py: 4 }}>
+                        <CalendarTodayIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 1 }} />
+                        <Typography variant="body2" color="text.secondary">
+                          No upcoming deadlines
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Stack spacing={2} sx={{ maxHeight: 400, overflow: 'auto' }}>
+                        {deadlines.map((deadline) => {
+                          const isUrgent = deadline.daysUntil <= 7;
+                          const isOverdue = deadline.daysUntil < 0;
+                          
+                          return (
+                            <Paper 
+                              key={deadline.id} 
+                              sx={{ 
+                                p: 2, 
+                                border: `1px solid ${isOverdue ? '#EF5350' : isUrgent ? '#FFA726' : '#e0e0e0'}`,
+                                borderLeft: `4px solid ${isOverdue ? '#EF5350' : isUrgent ? '#FFA726' : '#8b6cbc'}`,
+                                borderRadius: 1.5,
+                                transition: 'all 0.2s ease',
+                                cursor: deadline.link ? 'pointer' : 'default',
+                                '&:hover': {
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                  transform: deadline.link ? 'translateY(-2px)' : 'none'
+                                }
+                              }}
+                              onClick={() => { if (deadline.link) window.location.href = deadline.link; }}
+                            >
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600, flex: 1, pr: 1 }}>
+                                  {deadline.title}
+                                </Typography>
+                                {deadline.link && (
+                                  <Tooltip title="Open">
+                                    <IconButton size="small" sx={{ opacity: 0.6, mt: -0.5 }}>
+                                      <OpenInNewIcon sx={{ fontSize: 14 }} />
+                                    </IconButton>
+                                  </Tooltip>
+                                )}
+                              </Box>
+                              {deadline.description && (
+                                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                                  {deadline.description}
+                                </Typography>
+                              )}
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    <CalendarTodayIcon sx={{ fontSize: 11 }} />
+                                    {new Date(deadline.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ 
+                                    fontWeight: 600,
+                                    color: isOverdue ? '#EF5350' : isUrgent ? '#FFA726' : 'text.secondary'
+                                  }}>
+                                    {isOverdue ? (
+                                      `Overdue by ${Math.abs(deadline.daysUntil)} day${Math.abs(deadline.daysUntil) !== 1 ? 's' : ''}`
+                                    ) : (
+                                      `${deadline.daysUntil} day${deadline.daysUntil !== 1 ? 's' : ''} left`
+                                    )}
+                                  </Typography>
+                                </Box>
+                                <Chip 
+                                  label={deadline.type} 
+                                  size="small" 
+                                  sx={{ 
+                                    fontSize: '0.65rem',
+                                    height: 20,
+                                    bgcolor: `${deadline.color}15`,
+                                    color: deadline.color,
+                                    fontWeight: 600
+                                  }} 
+                                />
+                              </Box>
+                            </Paper>
+                          );
+                        })}
+                      </Stack>
+                    )}
+                  </CardContent>
+                </Card>
+              </Box>
+
+              {/* Enhanced Project Health */}
+              <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px' }}>
+                <Card sx={{ 
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)'
+                  }
+                }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ 
+                          bgcolor: 'rgba(139, 108, 188, 0.1)', 
+                          borderRadius: 1.5, 
+                          p: 1, 
+                          display: 'flex'
+                        }}>
+                          <FolderIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
+                        </Box>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                            Project Health
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {projectHealthSummary.total} active projects
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Tooltip title="Refresh">
+                        <IconButton size="small" onClick={handleRefreshProjectHealth} disabled={projectHealthLoading}>
+                          <RefreshIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+
+                    {/* Status Summary */}
+                    <Box sx={{ 
                       display: 'flex', 
-                      alignItems: 'center', 
-                      gap: 1.5, 
-                      color: '#2d3748' 
+                      gap: 1, 
+                      mb: 3, 
+                      p: 1.5, 
+                      bgcolor: 'rgba(139, 108, 188, 0.05)', 
+                      borderRadius: 1.5 
                     }}>
-                      <NetworkIcon sx={{ color: '#8b6cbc', fontSize: 28 }} />
-                      Research Collaboration Network
+                      <Box sx={{ flex: 1, textAlign: 'center' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#66BB6A', fontSize: '1.25rem' }}>
+                          {projectHealthSummary.onTrack}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          On Track
+                        </Typography>
+                      </Box>
+                      <Divider orientation="vertical" flexItem />
+                      <Box sx={{ flex: 1, textAlign: 'center' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#FFA726', fontSize: '1.25rem' }}>
+                          {projectHealthSummary.needsAttention}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          Needs Attention
+                        </Typography>
+                      </Box>
+                      <Divider orientation="vertical" flexItem />
+                      <Box sx={{ flex: 1, textAlign: 'center' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#EF5350', fontSize: '1.25rem' }}>
+                          {projectHealthSummary.atRisk}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          At Risk
+                        </Typography>
+                      </Box>
+                    </Box>
+                    
+                    {projectHealthLoading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                        <Typography variant="body2" color="text.secondary">Loading...</Typography>
+                      </Box>
+                    ) : projectHealth.length === 0 ? (
+                      <Box sx={{ textAlign: 'center', py: 4 }}>
+                        <FolderIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 1 }} />
+                        <Typography variant="body2" color="text.secondary">
+                          No active projects
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Stack spacing={2.5} sx={{ maxHeight: 450, overflow: 'auto' }}>
+                        {projectHealth.map((project) => (
+                          <Paper 
+                            key={project.id}
+                            sx={{ 
+                              p: 2, 
+                              border: `1px solid ${getStatusColor(project.status)}30`,
+                              borderLeft: `4px solid ${getStatusColor(project.status)}`,
+                              borderRadius: 1.5,
+                              transition: 'all 0.2s ease',
+                              cursor: project.link ? 'pointer' : 'default',
+                              '&:hover': {
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                transform: project.link ? 'translateY(-2px)' : 'none'
+                              }
+                            }}
+                            onClick={() => { if (project.link) window.location.href = project.link; }}
+                          >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1.5 }}>
+                              <Box sx={{ flex: 1, pr: 1 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                  {project.name.length > 45 ? `${project.name.substring(0, 45)}...` : project.name}
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                  <Chip 
+                                    label={project.status.replace('-', ' ')} 
+                                    size="small" 
+                                    sx={{ 
+                                      bgcolor: `${getStatusColor(project.status)}15`,
+                                      color: getStatusColor(project.status),
+                                      fontWeight: 600,
+                                      fontSize: '0.65rem',
+                                      height: 20,
+                                      textTransform: 'capitalize'
+                                    }} 
+                                  />
+                                  <Chip 
+                                    label={project.type} 
+                                    size="small" 
+                                    sx={{ 
+                                      bgcolor: `${project.color}15`,
+                                      color: project.color,
+                                      fontSize: '0.65rem',
+                                      height: 20,
+                                      textTransform: 'capitalize'
+                                    }} 
+                                  />
+                                  {project.daysSinceUpdate > 7 && (
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                      Updated {project.daysSinceUpdate} days ago
+                                    </Typography>
+                                  )}
+                                </Box>
+                              </Box>
+                              {project.link && (
+                                <Tooltip title="Open">
+                                  <IconButton size="small" sx={{ opacity: 0.6 }}>
+                                    <OpenInNewIcon sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </Box>
+                            
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
+                              <LinearProgress 
+                                variant="determinate" 
+                                value={project.progress} 
+                                sx={{ 
+                                  flex: 1, 
+                                  height: 8, 
+                                  borderRadius: 4,
+                                  bgcolor: '#e0e0e0',
+                                  '& .MuiLinearProgress-bar': {
+                                    bgcolor: getStatusColor(project.status),
+                                    borderRadius: 4
+                                  }
+                                }} 
+                              />
+                              <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 45, color: getStatusColor(project.status) }}>
+                                {project.progress}%
+                              </Typography>
+                            </Box>
+                            
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <AvatarGroup max={5} sx={{ '& .MuiAvatar-root': { width: 26, height: 26, fontSize: '0.7rem', border: '2px solid white' } }}>
+                                {project.team.map((member, idx) => (
+                                  <Tooltip key={idx} title={`${member.name} (${member.role})`}>
+                                    <Avatar sx={{ bgcolor: project.color }}>
+                                      {member.initials}
+                                    </Avatar>
+                                  </Tooltip>
+                                ))}
+                              </AvatarGroup>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                {project.teamSize} member{project.teamSize !== 1 ? 's' : ''}
+                              </Typography>
+                            </Box>
+                          </Paper>
+                        ))}
+                      </Stack>
+                    )}
+                  </CardContent>
+                </Card>
+              </Box>
+
+              {/* Research Collaboration Network - Original */}
+              <Box sx={{ flex: '1 1 100%' }}>
+                <Card>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <NetworkIcon sx={{ color: '#8b6cbc' }} />
+                      Research Collaboration Network (Original)
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#718096', mt: 1 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                       Interactive visualization of your research connections and collaborations
                     </Typography>
-                  </Box>
-            <KenyaNetworkVisualization />
+                    <Box sx={{ width: '100%', overflow: 'hidden', position: 'relative' }}>
+                      <KenyaNetworkVisualization />
+                    </Box>
+                  </CardContent>
                 </Card>
-          </Grid>
-        </Grid>
+              </Box>
+
+              {/* Research Collaboration Network - New Widget */}
+              <Box sx={{ flex: '1 1 100%', mt: 3 }}>
+                <Card>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <NetworkIcon sx={{ color: '#6366f1' }} />
+                      Research Collaboration Network (New - Testing)
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Enhanced interactive network with anti-clamping collision detection
+                    </Typography>
+                    <Box sx={{ width: '100%', minHeight: 700 }}>
+                      <ResearchNetworkWidget />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Box>
+            </Box>
           </>
         )}
       </Container>
-
-      {/* Details Dialog */}
-      <Dialog
-        open={detailsDialog.open}
-        onClose={handleCloseDetails}
-        maxWidth="md"
-        fullWidth
-        disableScrollLock={true}
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          pb: 2, 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(0,0,0,0.08)',
-          background: detailsDialog.type === 'publication' 
-            ? 'linear-gradient(135deg, rgba(139, 108, 188, 0.05) 0%, rgba(139, 108, 188, 0.02) 100%)'
-            : 'linear-gradient(135deg, rgba(255, 107, 107, 0.05) 0%, rgba(255, 107, 107, 0.02) 100%)'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            {detailsDialog.type === 'publication' ? (
-              <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 28 }} />
-            ) : (
-              <ProposalIcon sx={{ color: '#FF6B6B', fontSize: 28 }} />
-            )}
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#2d3748' }}>
-              {detailsDialog.type === 'publication' ? 'Publication Details' : 'Project Details'}
-            </Typography>
-          </Box>
-          <IconButton onClick={handleCloseDetails} size="small">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent sx={{ p: 3, mt: 2 }}>
-          {detailsDialog.item && detailsDialog.type === 'publication' && (
-            <Box>
-              {/* Publication Details */}
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2d3748', lineHeight: 1.4 }}>
-                {detailsDialog.item.title}
-              </Typography>
-
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-                <Chip
-                  icon={<CalendarTodayIcon />}
-                  label={`Year: ${detailsDialog.item.year}`}
-                  size="small"
-                  sx={{ bgcolor: 'rgba(139, 108, 188, 0.1)', color: '#8b6cbc', fontWeight: 600 }}
-                />
-                <Chip
-                  label={`${detailsDialog.item.citations || 0} citations`}
-                  size="small"
-                  sx={{ bgcolor: 'rgba(76, 175, 80, 0.1)', color: '#2e7d32', fontWeight: 600 }}
-                />
-              </Box>
-
-              <Divider sx={{ my: 2 }} />
-
-              {/* Journal */}
-              {detailsDialog.item.journal && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <BusinessIcon sx={{ fontSize: 18 }} />
-                    Journal
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#718096' }}>
-                    {detailsDialog.item.journal}
-                  </Typography>
-                </Box>
-              )}
-
-              {/* Authors */}
-              {detailsDialog.item.authors && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <PersonIcon sx={{ fontSize: 18 }} />
-                    Authors
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#718096' }}>
-                    {detailsDialog.item.authors}
-                  </Typography>
-                </Box>
-              )}
-
-              {/* DOI */}
-              {detailsDialog.item.doi && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5 }}>
-                    DOI
-                  </Typography>
-                  <Link 
-                    href={`https://doi.org/${detailsDialog.item.doi}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    sx={{ 
-                      color: '#8b6cbc', 
-                      textDecoration: 'none',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                      '&:hover': { textDecoration: 'underline' }
-                    }}
-                  >
-                    {detailsDialog.item.doi}
-                    <OpenInNewIcon sx={{ fontSize: 16 }} />
-                  </Link>
-                </Box>
-              )}
-            </Box>
-          )}
-
-          {detailsDialog.item && detailsDialog.type === 'project' && (
-            <Box>
-              {/* Project Details */}
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#2d3748', lineHeight: 1.4 }}>
-                {detailsDialog.item.title}
-              </Typography>
-
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-                <Chip
-                  icon={detailsDialog.item.status === 'IN_PROGRESS' ? <ScheduleIcon /> : detailsDialog.item.status === 'COMPLETED' ? <CheckCircleIcon /> : <RateReviewIcon />}
-                  label={detailsDialog.item.status?.replace('_', ' ')}
-                  size="small"
-                  sx={{ 
-                    bgcolor: `${
-                      {
-                        'DRAFT': '#FFA726',
-                        'UNDER_REVIEW': '#42A5F5',
-                        'APPROVED': '#66BB6A',
-                        'IN_PROGRESS': '#8b6cbc',
-                        'COMPLETED': '#26A69A',
-                        'REJECTED': '#EF5350'
-                      }[detailsDialog.item.status]
-                    }15`,
-                    color: {
-                      'DRAFT': '#FFA726',
-                      'UNDER_REVIEW': '#42A5F5',
-                      'APPROVED': '#66BB6A',
-                      'IN_PROGRESS': '#8b6cbc',
-                      'COMPLETED': '#26A69A',
-                      'REJECTED': '#EF5350'
-                    }[detailsDialog.item.status],
-                    fontWeight: 600
-                  }}
-                />
-                {detailsDialog.item.type && (
-                  <Chip
-                    icon={<DescriptionIcon />}
-                    label={detailsDialog.item.type}
-                    size="small"
-                    sx={{ bgcolor: 'rgba(255, 107, 107, 0.1)', color: '#FF6B6B', fontWeight: 600 }}
-                  />
-                )}
-              </Box>
-
-              <Divider sx={{ my: 2 }} />
-
-              {/* Principal Investigator */}
-              {detailsDialog.item.principalInvestigator && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <PersonIcon sx={{ fontSize: 18 }} />
-                    Principal Investigator
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#718096' }}>
-                    {detailsDialog.item.principalInvestigator}
-                  </Typography>
-                </Box>
-              )}
-
-              {/* Dates */}
-              <Box sx={{ display: 'flex', gap: 3, mb: 2, flexWrap: 'wrap' }}>
-                {detailsDialog.item.startDate && (
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5 }}>
-                      Start Date
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#718096' }}>
-                      {new Date(detailsDialog.item.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </Typography>
-                  </Box>
-                )}
-                {detailsDialog.item.endDate && (
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5 }}>
-                      End Date
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#718096' }}>
-                      {new Date(detailsDialog.item.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-
-              {/* Created Date */}
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#4a5568', mb: 0.5 }}>
-                  Created
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#718096' }}>
-                  {new Date(detailsDialog.item.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </Typography>
-              </Box>
-            </Box>
-          )}
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
-          <Button onClick={handleCloseDetails} variant="outlined" sx={{ textTransform: 'none' }}>
-            Close
-          </Button>
-          {detailsDialog.type === 'publication' && detailsDialog.item?.doi && (
-            <Button 
-              variant="contained"
-              startIcon={<OpenInNewIcon />}
-              href={`https://doi.org/${detailsDialog.item.doi}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{ 
-                textTransform: 'none',
-                bgcolor: '#8b6cbc',
-                '&:hover': { bgcolor: '#7a5caa' }
-              }}
-            >
-              Open Publication
-            </Button>
-          )}
-          {detailsDialog.type === 'project' && (
-            <Button 
-              variant="contained"
-              startIcon={<WriteIcon />}
-              sx={{ 
-                textTransform: 'none',
-                bgcolor: '#FF6B6B',
-                '&:hover': { bgcolor: '#EF5350' }
-              }}
-            >
-              Edit Project
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };
