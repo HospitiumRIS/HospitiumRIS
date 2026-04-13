@@ -1710,31 +1710,13 @@ const ResearcherDashboard = () => {
                 </Card>
               </Box>
 
-              {/* Research Collaboration Network - Original */}
-              <Box sx={{ flex: '1 1 100%' }}>
-                <Card>
-                  <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <NetworkIcon sx={{ color: '#8b6cbc' }} />
-                      Research Collaboration Network (Original)
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      Interactive visualization of your research connections and collaborations
-                    </Typography>
-                    <Box sx={{ width: '100%', overflow: 'hidden', position: 'relative' }}>
-                      <KenyaNetworkVisualization />
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Box>
-
               {/* Research Collaboration Network - New Widget */}
               <Box sx={{ flex: '1 1 100%', mt: 3 }}>
                 <Card>
                   <CardContent sx={{ p: 3 }}>
                     <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                       <NetworkIcon sx={{ color: '#6366f1' }} />
-                      Research Collaboration Network (New - Testing)
+                      Research Collaboration Network
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                       Enhanced interactive network with anti-clamping collision detection
