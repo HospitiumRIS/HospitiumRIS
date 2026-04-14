@@ -125,14 +125,15 @@ const GlobalAdminPage = () => {
 
   return (
     <GlobalAdminLayout>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: 'background.default', minHeight: '100vh' }}>
-        <Box sx={{ 
-          mb: 4,
-          pb: 3,
-          borderBottom: '2px solid',
-          borderColor: 'divider'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Container maxWidth="xl" sx={{ pt: { xs: 3, sm: 4, md: 5 } }}>
+        <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: 'background.default', minHeight: '100vh' }}>
+          <Box sx={{ 
+            mb: 4,
+            pb: 3,
+            borderBottom: '2px solid',
+            borderColor: 'divider'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
               <Typography 
                 variant="h4" 
@@ -162,10 +163,10 @@ const GlobalAdminPage = () => {
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
+            </Box>
           </Box>
-        </Box>
 
-        {loading && <LinearProgress sx={{ mb: 3 }} />}
+          {loading && <LinearProgress sx={{ mb: 3 }} />}
 
         <Box sx={{ 
           display: 'flex', 
@@ -290,9 +291,9 @@ const GlobalAdminPage = () => {
               All systems operational
             </Typography>
           </Paper>
-        </Box>
+          </Box>
 
-        <Paper sx={{ mt: 3, p: 3 }}>
+          <Paper sx={{ mt: 3, p: 3 }}>
           <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
             System Health Metrics
           </Typography>
@@ -393,11 +394,11 @@ const GlobalAdminPage = () => {
               </TableBody>
             </Table>
           </TableContainer>
-        </Paper>
+          </Paper>
 
-        {/* Quick Actions */}
-        <Grid container spacing={3} sx={{ mt: 1 }}>
-          <Grid item xs={12} md={6}>
+          {/* Quick Actions */}
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                 Quick Actions
@@ -441,8 +442,8 @@ const GlobalAdminPage = () => {
                 </Button>
               </Box>
             </Paper>
-          </Grid>
-          <Grid item xs={12} md={6}>
+            </Grid>
+            <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                 System Information
@@ -469,9 +470,10 @@ const GlobalAdminPage = () => {
                 </Box>
               </Box>
             </Paper>
+            </Grid>
           </Grid>
-        </Grid>
-      </Box>
+        </Box>
+      </Container>
     </GlobalAdminLayout>
   );
 };
