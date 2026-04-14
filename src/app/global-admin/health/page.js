@@ -26,9 +26,7 @@ import {
   CheckCircle as CheckIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
-  NetworkCheck as NetworkIcon,
-  Database as DatabaseIcon,
-  Cloud as CloudIcon
+  NetworkCheck as NetworkIcon
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../../components/AuthProvider';

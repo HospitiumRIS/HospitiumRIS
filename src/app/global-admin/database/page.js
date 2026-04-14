@@ -28,9 +28,9 @@ import {
   Storage as DatabaseIcon,
   Refresh as RefreshIcon,
   Backup as BackupIcon,
-  RestorePage as RestoreIcon,
+  Restore as RestoreIcon,
   DeleteSweep as CleanupIcon,
-  Analytics as AnalyticsIcon,
+  Assessment as AnalyticsIcon,
   CheckCircle as CheckIcon,
   Warning as WarningIcon,
   CloudDownload as ExportIcon
