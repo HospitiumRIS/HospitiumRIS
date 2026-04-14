@@ -13,10 +13,10 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function createAdminUser() {
-  console.log('🔧 Creating Super Admin user with secure credentials...\n');
+  console.log('🔧 Creating Institution Admin user with secure credentials...\n');
 
   const adminUserData = {
-    accountType: 'SUPER_ADMIN', // Super admin with full system access
+    accountType: 'INSTITUTION_ADMIN', // Institution admin with institution-level access
     givenName: 'System',
     familyName: 'Administrator', 
     email: 'admin@admin.com',
@@ -42,11 +42,11 @@ async function createAdminUser() {
     });
 
     if (existingUser) {
-      console.log(`⚠️  Super Admin user ${adminUserData.email} already exists!`);
+      console.log(`⚠️  Institution Admin user ${adminUserData.email} already exists!`);
       console.log('✅ You can use these updated credentials to login:');
       console.log(`📧 Email: ${adminUserData.email}`);
       console.log(`🔑 Password: ${adminUserData.password} (8+ characters - secure)`);
-      console.log(`🔗 Super Admin Dashboard: http://localhost:3000/super-admin`);
+      console.log(`🔗 Institution Admin Dashboard: http://localhost:3000/institution-admin`);
       console.log(`🔗 Activity Logs: http://localhost:3000/logs\n`);
       
       // Update password and account type if needed
@@ -57,12 +57,12 @@ async function createAdminUser() {
           passwordHash: newPasswordHash,
           status: 'ACTIVE',
           emailVerified: true,
-          accountType: adminUserData.accountType, // Update to SUPER_ADMIN
+          accountType: adminUserData.accountType, // Update to INSTITUTION_ADMIN
           givenName: adminUserData.givenName,
           familyName: adminUserData.familyName
         }
       });
-      console.log('✅ Admin user updated with SUPER_ADMIN privileges!');
+      console.log('✅ Admin user updated with INSTITUTION_ADMIN privileges!');
       
       return;
     }
@@ -95,22 +95,22 @@ async function createAdminUser() {
       console.log(`✅ Created admin user: ${adminUserData.email}`);
     });
 
-    console.log('\n🎉 Super Admin user creation completed!');
-    console.log('\n📋 Super Admin Login Credentials:');
+    console.log('\n🎉 Institution Admin user creation completed!');
+    console.log('\n📋 Institution Admin Login Credentials:');
     console.log(`📧 Email: ${adminUserData.email}`);
     console.log(`🔑 Password: ${adminUserData.password} (8+ characters - secure)`);
     console.log(`👤 Account Type: ${adminUserData.accountType}`);
     console.log('\n🔗 Access your admin dashboards at:');
-    console.log('- Super Admin Dashboard: http://localhost:3000/super-admin');
+    console.log('- Institution Admin Dashboard: http://localhost:3000/institution-admin');
     console.log('- Activity Logs: http://localhost:3000/logs');
-    console.log('\n📝 What you can do as Super Admin:');
-    console.log('- Full system administration access');
-    console.log('- View all activity logs with advanced filtering');
+    console.log('\n📝 What you can do as Institution Admin:');
+    console.log('- Manage users within your institution');
+    console.log('- View institution activity logs with advanced filtering');
     console.log('- Export logs as JSON');
     console.log('- Clear logs (with automatic backup)');
     console.log('- Real-time auto-refresh monitoring');
-    console.log('- User management and system settings');
-    console.log('- Security monitoring and analytics');
+    console.log('- Institution settings and analytics');
+    console.log('- Manage proposals and ethics applications');
 
   } catch (error) {
     console.error('❌ Error creating admin user:', error);

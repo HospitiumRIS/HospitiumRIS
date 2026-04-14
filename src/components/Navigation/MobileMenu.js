@@ -309,7 +309,7 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
               </ListItem>
 
               {/* Admin-only Activity Logs */}
-              {(user?.accountType === 'RESEARCH_ADMIN' || user?.accountType === 'FOUNDATION_ADMIN' || user?.accountType === 'SUPER_ADMIN') && (
+              {(user?.accountType === 'RESEARCH_ADMIN' || user?.accountType === 'FOUNDATION_ADMIN' || user?.accountType === 'INSTITUTION_ADMIN' || user?.accountType === 'GLOBAL_ADMIN') && (
                 <ListItem disablePadding>
                   <ListItemButton onClick={(event) => handleMenuItemClick(event, '/logs')} sx={{ borderRadius: 1 }}>
                     <ListItemIcon>

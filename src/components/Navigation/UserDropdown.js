@@ -365,7 +365,7 @@ const UserDropdown = () => {
           </MenuItem>
 
           {/* Admin-only Logs menu item */}
-          {(user?.accountType === 'RESEARCH_ADMIN' || user?.accountType === 'FOUNDATION_ADMIN' || user?.accountType === 'SUPER_ADMIN') && (
+          {(user?.accountType === 'RESEARCH_ADMIN' || user?.accountType === 'FOUNDATION_ADMIN' || user?.accountType === 'INSTITUTION_ADMIN' || user?.accountType === 'GLOBAL_ADMIN') && (
             <MenuItem 
               onClick={(event) => handleUserMenuItemClick(event, 'logs', '/logs')}
               sx={{

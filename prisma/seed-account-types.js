@@ -70,18 +70,37 @@ async function seedAccountTypes() {
       isActive: true
     },
     {
-      name: 'SUPER_ADMIN',
-      displayName: 'Super Admin',
-      description: 'System administrators with full access to all features',
+      name: 'INSTITUTION_ADMIN',
+      displayName: 'Institution Admin',
+      description: 'Institution administrators managing users and operations within their institution',
+      permissions: JSON.stringify([
+        'manage_institution_users',
+        'manage_institution_account_types',
+        'view_institution_data',
+        'manage_institution_settings',
+        'view_institution_analytics',
+        'manage_institution_proposals',
+        'manage_institution_ethics',
+        'view_institution_logs'
+      ]),
+      isSystem: true,
+      isActive: true
+    },
+    {
+      name: 'GLOBAL_ADMIN',
+      displayName: 'Global Admin',
+      description: 'System-wide administrators with full access to manage system health and create institution admins',
       permissions: JSON.stringify([
         'full_system_access',
-        'manage_users',
+        'manage_all_users',
+        'create_institution_admins',
         'manage_account_types',
-        'manage_institutions',
-        'manage_foundations',
+        'manage_all_institutions',
+        'manage_all_foundations',
         'view_all_data',
         'system_configuration',
-        'database_management'
+        'database_management',
+        'system_health_monitoring'
       ]),
       isSystem: true,
       isActive: true

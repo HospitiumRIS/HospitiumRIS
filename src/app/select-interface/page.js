@@ -37,7 +37,8 @@ const SelectInterfacePage = () => {
         'RESEARCHER': '/researcher',
         'RESEARCH_ADMIN': '/institution',
         'FOUNDATION_ADMIN': '/foundation',
-        'SUPER_ADMIN': '/super-admin'
+        'INSTITUTION_ADMIN': '/institution-admin',
+        'GLOBAL_ADMIN': '/global-admin'
       };
       router.push(defaultRoutes[user.accountType] || '/dashboard');
     }

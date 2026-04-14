@@ -1,0 +1,228 @@
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+import { getAuthenticatedUser } from '@/lib/auth-server';
+
+const prisma = new PrismaClient();
+
+// Helper function to check Institution Admin access
+async function checkInstitutionAdminAccess(request) {
+  try {
+    const user = await getAuthenticatedUser(request);
+    
+    if (!user) {
+      return { authorized: false, error: 'Unauthorized' };
+    }
+
+    if (user.accountType !== 'INSTITUTION_ADMIN') {
+      return { authorized: false, error: 'Insufficient privileges' };
+    }
+
+    return { authorized: true, user };
+  } catch (error) {
+    return { authorized: false, error: 'Authentication error' };
+  }
+}
+
+// GET - Fetch single user details
+export async function GET(request, { params }) {
+  try {
+    // Check Institution Admin access
+    const { authorized, error } = await checkInstitutionAdminAccess(request);
+    if (!authorized) {
+      return NextResponse.json(
+        { success: false, message: error },
+        { status: 403 }
+      );
+    }
+
+    const resolvedParams = await params;
+    const userId = resolvedParams.id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        institution: true,
+        foundation: true,
+        researchProfile: true,
+        _count: {
+          select: {
+            manuscripts: true,
+            publications: true,
+            sentInvitations: true,
+            receivedInvitations: true,
+            notifications: true,
+            comments: true,
+            createdVersions: true
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Remove sensitive data
+    const { passwordHash, emailVerifyToken, ...safeUser } = user;
+
+    return NextResponse.json({
+      success: true,
+      user: safeUser
+    });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to fetch user', error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH - Update user
+export async function PATCH(request, { params }) {
+  try {
+    // Check Institution Admin access
+    const { authorized, error } = await checkInstitutionAdminAccess(request);
+    if (!authorized) {
+      return NextResponse.json(
+        { success: false, message: error },
+        { status: 403 }
+      );
+    }
+
+    const resolvedParams = await params;
+    const userId = resolvedParams.id;
+    const body = await request.json();
+
+    // Validate user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!existingUser) {
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Prevent modification of other institution admins (optional security measure)
+    if (existingUser.accountType === 'INSTITUTION_ADMIN' && body.status === 'SUSPENDED') {
+      return NextResponse.json(
+        { success: false, message: 'Cannot suspend other institution admins' },
+        { status: 403 }
+      );
+    }
+
+    // Validate account type if provided
+    if (body.accountType) {
+      const accountTypeExists = await prisma.accountType.findUnique({
+        where: { name: body.accountType }
+      });
+      
+      if (!accountTypeExists) {
+        return NextResponse.json(
+          { success: false, message: 'Invalid account type' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Only allow specific fields to be updated
+    const allowedUpdates = {
+      status: body.status,
+      emailVerified: body.emailVerified,
+      givenName: body.givenName,
+      familyName: body.familyName,
+      accountType: body.accountType
+    };
+
+    // Remove undefined values
+    Object.keys(allowedUpdates).forEach(key => 
+      allowedUpdates[key] === undefined && delete allowedUpdates[key]
+    );
+
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: allowedUpdates,
+      include: {
+        institution: true,
+        foundation: true,
+        researchProfile: true
+      }
+    });
+
+    // Remove sensitive data
+    const { passwordHash, emailVerifyToken, ...safeUser } = updatedUser;
+
+    return NextResponse.json({
+      success: true,
+      message: 'User updated successfully',
+      user: safeUser
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to update user', error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE - Delete user (with cascade)
+export async function DELETE(request, { params }) {
+  try {
+    // Check Institution Admin access
+    const { authorized, error } = await checkInstitutionAdminAccess(request);
+    if (!authorized) {
+      return NextResponse.json(
+        { success: false, message: error },
+        { status: 403 }
+      );
+    }
+
+    const resolvedParams = await params;
+    const userId = resolvedParams.id;
+
+    // Validate user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!existingUser) {
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Prevent deletion of institution admins
+    if (existingUser.accountType === 'INSTITUTION_ADMIN') {
+      return NextResponse.json(
+        { success: false, message: 'Cannot delete institution admin accounts' },
+        { status: 403 }
+      );
+    }
+
+    // Delete user (will cascade to related records)
+    await prisma.user.delete({
+      where: { id: userId }
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to delete user', error: error.message },
+      { status: 500 }
+    );
+  }
+}
+

@@ -182,8 +182,10 @@ export const AuthProvider = ({ children }) => {
         return '/institution';
       case 'foundation_admin':
         return '/foundation';
-      case 'super_admin':
-        return '/super-admin';
+      case 'institution_admin':
+        return '/institution-admin';
+      case 'global_admin':
+        return '/global-admin';
       default:
         return '/dashboard';
     }
