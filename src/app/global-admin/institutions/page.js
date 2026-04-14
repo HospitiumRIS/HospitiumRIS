@@ -116,7 +116,7 @@ const InstitutionsPage = () => {
         }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: '#8b6cbc', width: 56, height: 56, boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)' }}>
+              <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
                 <InstitutionIcon fontSize="large" />
               </Avatar>
               <Box>
@@ -134,14 +134,7 @@ const InstitutionsPage = () => {
                 variant="outlined"
                 startIcon={<RefreshIcon />}
                 onClick={fetchInstitutions}
-                sx={{
-                  borderColor: '#8b6cbc',
-                  color: '#8b6cbc',
-                  '&:hover': {
-                    borderColor: '#7b1fa2',
-                    bgcolor: '#f3e5f5'
-                  }
-                }}
+                color="primary"
               >
                 Refresh
               </Button>
@@ -149,13 +142,7 @@ const InstitutionsPage = () => {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={handleCreateInstitution}
-                sx={{
-                  bgcolor: '#8b6cbc',
-                  '&:hover': {
-                    bgcolor: '#7b1fa2'
-                  },
-                  boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
-                }}
+                color="primary"
               >
                 Create Institution Admin
               </Button>
@@ -191,7 +178,7 @@ const InstitutionsPage = () => {
         <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
           <TableContainer>
             <Table>
-              <TableHead sx={{ bgcolor: '#8b6cbc' }}>
+              <TableHead sx={{ bgcolor: 'primary.main' }}>
                 <TableRow>
                   <TableCell sx={{ color: 'white', fontWeight: 600 }}>Admin Name</TableCell>
                   <TableCell sx={{ color: 'white', fontWeight: 600 }}>Email</TableCell>
@@ -215,7 +202,7 @@ const InstitutionsPage = () => {
                     <TableRow key={institution.id} hover>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.light' }}>
                             <PersonIcon fontSize="small" />
                           </Avatar>
                           {institution.name}

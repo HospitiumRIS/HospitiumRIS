@@ -11,21 +11,19 @@ import {
   InputAdornment,
   IconButton,
   Alert,
-  CircularProgress,
-  Divider,
-  Avatar
+  CircularProgress
 } from '@mui/material';
 import {
   Visibility,
-  VisibilityOff,
-  Email as EmailIcon,
-  Lock as LockIcon,
-  AdminPanelSettings as AdminIcon
+  VisibilityOff
 } from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../components/AuthProvider';
+import Image from 'next/image';
 
 const GlobalAdminLoginPage = () => {
+  const theme = useTheme();
   const router = useRouter();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
@@ -91,66 +89,47 @@ const GlobalAdminLoginPage = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #8b6cbc 0%, #7b1fa2 50%, #6a1b9a 100%)',
-        position: 'relative',
-        overflow: 'hidden',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%)',
-          pointerEvents: 'none'
-        }
+        backgroundColor: theme.palette.background.default,
+        py: 4
       }}
     >
-      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
+      <Container maxWidth="sm">
         <Paper
-          elevation={24}
+          elevation={0}
           sx={{
-            p: 5,
-            borderRadius: 4,
-            background: 'rgba(255, 255, 255, 0.98)',
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+            p: { xs: 3, sm: 4 },
+            backgroundColor: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.mode === 'dark' ? '#404040' : 'rgba(0,0,0,0.1)'}`
           }}
         >
-          {/* Header */}
+          {/* Logo and Title */}
           <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Avatar
-              sx={{
-                width: 80,
-                height: 80,
-                margin: '0 auto',
-                mb: 2,
-                background: 'linear-gradient(135deg, #8b6cbc 0%, #7b1fa2 100%)',
-                boxShadow: '0 8px 24px rgba(139, 108, 188, 0.4)'
-              }}
-            >
-              <AdminIcon sx={{ fontSize: 48, color: '#fff' }} />
-            </Avatar>
+            <Image
+              src="/hospitium-logo.png"
+              alt="Hospitium RIS"
+              width={160}
+              height={36}
+              style={{ marginBottom: '16px' }}
+              priority
+            />
             <Typography
               variant="h4"
+              component="h1"
               sx={{
-                fontWeight: 700,
-                mb: 1,
-                background: 'linear-gradient(135deg, #8b6cbc 0%, #7b1fa2 100%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                letterSpacing: '-0.02em'
+                fontWeight: 600,
+                color: theme.palette.text.primary,
+                mb: 1
               }}
             >
               Global Admin Portal
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
               System Administration Access
             </Typography>
           </Box>
-
-          <Divider sx={{ mb: 4 }} />
 
           {/* Error Alert */}
           {error && (
@@ -172,13 +151,6 @@ const GlobalAdminLoginPage = () => {
               autoComplete="email"
               autoFocus
               sx={{ mb: 3 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <EmailIcon color="primary" />
-                  </InputAdornment>
-                ),
-              }}
             />
 
             <TextField
@@ -190,13 +162,8 @@ const GlobalAdminLoginPage = () => {
               onChange={handleChange}
               required
               autoComplete="current-password"
-              sx={{ mb: 4 }}
+              sx={{ mb: 3 }}
               InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LockIcon color="primary" />
-                  </InputAdornment>
-                ),
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
@@ -206,7 +173,7 @@ const GlobalAdminLoginPage = () => {
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
-                ),
+                )
               }}
             />
 
@@ -218,29 +185,17 @@ const GlobalAdminLoginPage = () => {
               disabled={loading}
               sx={{
                 py: 1.5,
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                background: 'linear-gradient(135deg, #8b6cbc 0%, #7b1fa2 100%)',
-                boxShadow: '0 4px 12px rgba(139, 108, 188, 0.4)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%)',
-                  boxShadow: '0 6px 16px rgba(139, 108, 188, 0.5)',
-                  transform: 'translateY(-2px)'
-                },
-                transition: 'all 0.3s ease',
-                textTransform: 'none'
+                mb: 3,
+                fontSize: '1rem',
+                fontWeight: 600
               }}
             >
-              {loading ? (
-                <CircularProgress size={24} sx={{ color: 'white' }} />
-              ) : (
-                'Sign In to Admin Portal'
-              )}
+              {loading ? 'Signing In...' : 'Sign In to Admin Portal'}
             </Button>
           </form>
 
           {/* Footer */}
-          <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <Box sx={{ textAlign: 'center' }}>
             <Typography variant="caption" color="text.secondary" display="block">
               Authorized Personnel Only
             </Typography>
@@ -249,16 +204,6 @@ const GlobalAdminLoginPage = () => {
             </Typography>
           </Box>
         </Paper>
-
-        {/* Bottom Info */}
-        <Box sx={{ mt: 3, textAlign: 'center' }}>
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>
-            HospitiumRIS Global Administration
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-            © 2026 All rights reserved
-          </Typography>
-        </Box>
       </Container>
     </Box>
   );
