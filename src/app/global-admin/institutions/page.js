@@ -108,7 +108,7 @@ const InstitutionsPage = () => {
 
   return (
     <GlobalAdminLayout>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: 'background.default', minHeight: '100vh' }}>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, pt: { xs: 3, sm: 4, md: 5 }, bgcolor: 'background.default', minHeight: '100vh' }}>
         {/* Header */}
         <Box sx={{ 
           mb: 4,

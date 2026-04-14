@@ -102,7 +102,7 @@ const DatabaseManagementPage = () => {
 
   return (
     <GlobalAdminLayout>
-      <Container maxWidth="xl">
+      <Container maxWidth="xl" sx={{ pt: { xs: 3, sm: 4, md: 5 } }}>
         {/* Header */}
         <Box sx={{ 
           mb: 4,
