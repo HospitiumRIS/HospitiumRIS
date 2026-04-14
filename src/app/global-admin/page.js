@@ -13,7 +13,15 @@ import {
   Avatar,
   LinearProgress,
   IconButton,
-  Tooltip
+  Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Divider,
+  Button
 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
@@ -25,7 +33,10 @@ import {
   Storage as StorageIcon,
   Speed as SpeedIcon,
   Refresh as RefreshIcon,
-  HealthAndSafety as HealthIcon
+  HealthAndSafety as HealthIcon,
+  Article as ManuscriptsIcon,
+  Science as ResearchIcon,
+  AccountBalance as FoundationIcon
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../components/AuthProvider';
@@ -38,6 +49,7 @@ const GlobalAdminPage = () => {
   const router = useRouter();
   const [stats, setStats] = useState({});
   const [systemHealth, setSystemHealth] = useState({});
+  const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,6 +75,7 @@ const GlobalAdminPage = () => {
           const data = await response.json();
           setStats(data.stats || {});
           setSystemHealth(data.systemHealth || {});
+          setRecentActivity(data.recentActivity || []);
         } else {
           setStats({
             totalInstitutions: 0,
@@ -303,6 +316,128 @@ const GlobalAdminPage = () => {
             </Grid>
           </Grid>
         </Paper>
+
+        {/* Recent Activity */}
+        <Paper sx={{ mt: 3, p: 3 }}>
+          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+            Recent System Activity
+          </Typography>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Timestamp</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Event Type</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Details</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {recentActivity.length > 0 ? (
+                  recentActivity.map((activity, index) => (
+                    <TableRow key={index} hover>
+                      <TableCell>{new Date(activity.timestamp).toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={activity.type} 
+                          size="small" 
+                          color="primary" 
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>{activity.user}</TableCell>
+                      <TableCell>{activity.details}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={activity.status} 
+                          size="small" 
+                          color={activity.status === 'Success' ? 'success' : 'error'}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No recent activity to display
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+
+        {/* Quick Actions */}
+        <Grid container spacing={3} sx={{ mt: 1 }}>
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                Quick Actions
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Button 
+                  variant="outlined" 
+                  fullWidth 
+                  sx={{ justifyContent: 'flex-start', py: 1.5 }}
+                  onClick={() => router.push('/global-admin/institutions')}
+                >
+                  <InstitutionsIcon sx={{ mr: 2 }} />
+                  Manage Institutions
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  fullWidth 
+                  sx={{ justifyContent: 'flex-start', py: 1.5 }}
+                  onClick={() => router.push('/global-admin/health')}
+                >
+                  <HealthIcon sx={{ mr: 2 }} />
+                  System Health Check
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  fullWidth 
+                  sx={{ justifyContent: 'flex-start', py: 1.5 }}
+                  onClick={() => router.push('/global-admin/database')}
+                >
+                  <StorageIcon sx={{ mr: 2 }} />
+                  Database Management
+                </Button>
+              </Box>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                System Information
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">Platform</Typography>
+                  <Chip label={systemHealth.platform || 'Unknown'} size="small" />
+                </Box>
+                <Divider />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">CPU Cores</Typography>
+                  <Typography variant="body2" fontWeight={600}>{systemHealth.cpuCount || 0}</Typography>
+                </Box>
+                <Divider />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">Total Memory</Typography>
+                  <Typography variant="body2" fontWeight={600}>{systemHealth.totalMemoryGB || 0} GB</Typography>
+                </Box>
+                <Divider />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">Uptime</Typography>
+                  <Typography variant="body2" fontWeight={600}>{systemHealth.uptime || 0} hours</Typography>
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
+        </Grid>
       </Box>
     </GlobalAdminLayout>
   );
