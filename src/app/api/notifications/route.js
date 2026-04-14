@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getUserId } from '../../../lib/auth-server.js';
 import { logApiActivity, logDatabaseActivity, logError, getRequestMetadata } from '../../../utils/activityLogger.js';
+import { notificationService } from '../../../services/notificationService.js';
 
 const prisma = new PrismaClient();
 
@@ -21,11 +22,17 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
+    const category = searchParams.get('category');
+    const priority = searchParams.get('priority');
     const limit = parseInt(searchParams.get('limit')) || 20;
+    const offset = parseInt(searchParams.get('offset')) || 0;
 
     const whereClause = {
       userId,
-      ...(unreadOnly && { isRead: false })
+      isArchived: false,
+      ...(unreadOnly && { isRead: false }),
+      ...(category && { category }),
+      ...(priority && { priority })
     };
 
     console.log(`🔔 API: Fetching notifications for user ${userId}`, {
@@ -33,22 +40,35 @@ export async function GET(request) {
       limit: limit
     });
 
-    // Get notifications with manuscript info if applicable
+    // Get notifications with all related entities
     const notifications = await prisma.notification.findMany({
       where: whereClause,
       include: {
         manuscript: {
-          select: {
-            id: true,
-            title: true,
-            type: true
-          }
+          select: { id: true, title: true, type: true }
+        },
+        proposal: {
+          select: { id: true, title: true }
+        },
+        ethicsApplication: {
+          select: { id: true, title: true, referenceNumber: true }
+        },
+        grantApplication: {
+          select: { id: true, applicationTitle: true, grantorName: true }
+        },
+        training: {
+          select: { id: true, title: true, startDate: true }
+        },
+        preprint: {
+          select: { id: true, title: true, server: true }
         }
       },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: limit
+      orderBy: [
+        { priority: 'desc' },
+        { createdAt: 'desc' }
+      ],
+      take: limit,
+      skip: offset
     });
 
     console.log(`🔔 Found ${notifications.length} notifications for user ${userId}:`, 
@@ -68,20 +88,23 @@ export async function GET(request) {
       console.log(`🔔 Sample notifications with user IDs:`, sampleNotifications);
     }
 
-    // Get unread count
-    const unreadCount = await prisma.notification.count({
-      where: {
-        userId,
-        isRead: false
-      }
-    });
+    // Get counts
+    const [unreadCount, totalCount] = await Promise.all([
+      prisma.notification.count({
+        where: { userId, isRead: false, isArchived: false }
+      }),
+      prisma.notification.count({
+        where: whereClause
+      })
+    ]);
 
     return NextResponse.json({
       success: true,
       data: {
         notifications,
         unreadCount,
-        hasMore: notifications.length === limit
+        total: totalCount,
+        hasMore: offset + notifications.length < totalCount
       }
     });
 
@@ -118,115 +141,14 @@ export async function POST(request) {
     await logApiActivity('POST', '/api/notifications', 200, requestMetadata);
     
     const body = await request.json();
-    const { 
-      type, 
-      title, 
-      message, 
-      recipientId, 
-      recipientEmail, 
-      recipientRole, 
-      metadata = {} 
-    } = body;
-
-    let targetUserId = recipientId;
-
-    // If recipientRole is provided, find users with that role
-    if (recipientRole && !recipientId) {
-      const users = await prisma.user.findMany({
-        where: {
-          role: recipientRole
-        },
-        select: {
-          id: true,
-          email: true,
-          givenName: true,
-          familyName: true
-        }
-      });
-
-      await logDatabaseActivity('SELECT', 'User', { success: true, count: users.length }, {
-        ...requestMetadata,
-        operation: 'Find users by role',
-        role: recipientRole
-      });
-
-      // Create notifications for all users with the specified role
-      const notifications = [];
-      for (const user of users) {
-        const notification = await prisma.notification.create({
-          data: {
-            type,
-            title,
-            message,
-            userId: user.id,
-            metadata: JSON.stringify(metadata),
-            isRead: false
-          }
-        });
-        notifications.push(notification);
-      }
-
-      await logDatabaseActivity('CREATE', 'Notification', { success: true, count: notifications.length }, {
-        ...requestMetadata,
-        operation: 'Create notifications for role',
-        role: recipientRole,
-        type
-      });
-
-      return NextResponse.json({
-        success: true,
-        message: `Notifications sent to ${notifications.length} ${recipientRole} users`,
-        notifications
-      });
-    }
-
-    // If recipientEmail is provided, find user by email
-    if (recipientEmail && !targetUserId) {
-      const user = await prisma.user.findUnique({
-        where: { email: recipientEmail },
-        select: { id: true }
-      });
-
-      if (user) {
-        targetUserId = user.id;
-      } else {
-        await logError('User not found for notification', {
-          ...requestMetadata,
-          recipientEmail,
-          type
-        });
-        
-        return NextResponse.json({
-          success: false,
-          error: 'Recipient not found'
-        }, { status: 404 });
-      }
-    }
-
-    if (!targetUserId) {
-      return NextResponse.json({
-        success: false,
-        error: 'No valid recipient specified'
-      }, { status: 400 });
-    }
-
-    // Create the notification
-    const notification = await prisma.notification.create({
-      data: {
-        type,
-        title,
-        message,
-        userId: targetUserId,
-        metadata: JSON.stringify(metadata),
-        isRead: false
-      }
-    });
+    
+    // Use notification service for creation
+    const notification = await notificationService.createNotification(body);
 
     await logDatabaseActivity('CREATE', 'Notification', { success: true, count: 1 }, {
       ...requestMetadata,
-      operation: 'Create notification',
-      recipientId: targetUserId,
-      type
+      operation: 'Create notification via service',
+      type: body.type
     });
 
     return NextResponse.json({

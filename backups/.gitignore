@@ -1,0 +1,12 @@
+# Ignore all SQL backup files
+*.sql
+
+# Ignore compressed backups
+*.sql.gz
+*.sql.zip
+*.tar.gz
+
+# Keep the scripts and documentation
+!create_backup.ps1
+!README.md
+!.gitignore

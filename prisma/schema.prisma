@@ -99,6 +99,9 @@ model User {
   trainingRegistrations TrainingRegistration[]
   trainingCertificates  TrainingCertificate[]
 
+  // Notification Preferences
+  notificationPreferences NotificationPreference?
+
   @@map("users")
 }
 
@@ -497,10 +500,120 @@ enum InvitationStatus {
 }
 
 enum NotificationType {
+  // Manuscript & Collaboration
   COLLABORATION_INVITATION
+  COLLABORATION_ACCEPTED
+  COLLABORATION_DECLINED
+  COLLABORATOR_ROLE_CHANGED
+  COLLABORATOR_REMOVED
   MANUSCRIPT_UPDATE
+  MANUSCRIPT_VERSION_CREATED
+  MANUSCRIPT_STATUS_CHANGED
+  COMMENT_ADDED
+  COMMENT_REPLY
   COMMENT_MENTION
+  TRACKED_CHANGE_ADDED
+  TRACKED_CHANGE_ACCEPTED
+  TRACKED_CHANGE_REJECTED
+  
+  // Proposals
+  PROPOSAL_SUBMITTED
+  PROPOSAL_REVIEW_ASSIGNED
+  PROPOSAL_REVIEWED
+  PROPOSAL_STATUS_CHANGED
+  PROPOSAL_APPROVED
+  PROPOSAL_REJECTED
+  PROPOSAL_REVISION_REQUESTED
+  PROPOSAL_DEADLINE_APPROACHING
+  
+  // Ethics
+  ETHICS_SUBMITTED
+  ETHICS_REVIEW_ASSIGNED
+  ETHICS_REVIEWED
+  ETHICS_APPROVED
+  ETHICS_CONDITIONAL_APPROVAL
+  ETHICS_REJECTED
+  ETHICS_REVISION_REQUESTED
+  ETHICS_EXPIRING_SOON
+  ETHICS_AMENDMENT_SUBMITTED
+  
+  // Grants
+  GRANT_STATUS_CHANGED
+  GRANT_DEADLINE_APPROACHING
+  GRANT_AWARDED
+  GRANT_REJECTED
+  GRANT_INFO_REQUESTED
+  GRANT_MILESTONE_DUE
+  GRANT_REPORT_DUE
+  GRANT_COMMUNICATION_RECEIVED
+  
+  // Training
+  TRAINING_AVAILABLE
+  TRAINING_REGISTERED
+  TRAINING_STARTING_SOON
+  TRAINING_MODULE_COMPLETED
+  TRAINING_CERTIFICATE_ISSUED
+  TRAINING_CANCELLED
+  TRAINING_MATERIALS_UPDATED
+  TRAINING_NEW_REGISTRATION
+  
+  // Publications
+  PUBLICATION_IMPORTED
+  PUBLICATION_IMPORT_FAILED
+  COAUTHOR_PUBLICATION_DETECTED
+  
+  // Preprints
+  PREPRINT_SUBMITTED
+  PREPRINT_UNDER_REVIEW
+  PREPRINT_ACCEPTED
+  PREPRINT_PUBLISHED
+  PREPRINT_REJECTED
+  
+  // User & Account
+  ACCOUNT_ACTIVATED
+  ACCOUNT_STATUS_CHANGED
+  ACCOUNT_TYPE_CHANGED
+  EMAIL_VERIFIED
+  NEW_USER_REGISTRATION
+  
+  // Campaigns & Donations
+  DONATION_RECEIVED
+  CAMPAIGN_MILESTONE_REACHED
+  CAMPAIGN_ACTIVITY_SCHEDULED
+  
+  // Internal Grants
+  INTERNAL_GRANT_SUBMITTED
+  INTERNAL_GRANT_APPROVED
+  INTERNAL_GRANT_REJECTED
+  INTERNAL_GRANT_REVIEW_ASSIGNED
+  
+  // System
   SYSTEM_NOTIFICATION
+  SYSTEM_MAINTENANCE
+  SYSTEM_ANNOUNCEMENT
+  SECURITY_ALERT
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum NotificationCategory {
+  GENERAL
+  COLLABORATION
+  PROPOSAL
+  ETHICS
+  GRANT
+  TRAINING
+  PUBLICATION
+  PREPRINT
+  CAMPAIGN
+  INTERNAL_GRANT
+  SYSTEM
+  ACCOUNT
 }
 
 model Manuscript {
@@ -614,28 +727,104 @@ model Notification {
   id String @id @default(cuid())
 
   // Relations
-  userId       String // User receiving notification
-  manuscriptId String? // Related manuscript (optional)
+  userId              String
+  manuscriptId        String?
+  proposalId          String?
+  ethicsApplicationId String?
+  grantApplicationId  String?
+  trainingId          String?
+  preprintId          String?
 
   // Notification Details
-  type    NotificationType
-  title   String
-  message String
-  data    Json? // Additional data as JSON
+  type     NotificationType
+  title    String
+  message  String
+  data     Json? // Additional structured data
 
-  // Notification Status
-  isRead Boolean   @default(false)
-  readAt DateTime?
+  // Priority & Category
+  priority NotificationPriority @default(NORMAL)
+  category NotificationCategory @default(GENERAL)
+
+  // Status
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  isArchived Boolean   @default(false)
+  archivedAt DateTime?
+
+  // Action tracking
+  actionRequired Boolean  @default(false)
+  actionUrl      String? // Deep link to relevant page
+  actionLabel    String? // Button text (e.g., "Review Proposal")
+  actionTaken    Boolean  @default(false)
+  actionTakenAt  DateTime?
+
+  // Delivery channels
+  sentViaEmail Boolean   @default(false)
+  emailSentAt  DateTime?
+
+  // Expiry (for time-sensitive notifications)
+  expiresAt DateTime?
 
   // Relations
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserNotifications")
-  manuscript Manuscript? @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserNotifications")
+  manuscript        Manuscript?         @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
+  proposal          Proposal?           @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  ethicsApplication EthicsApplication?  @relation(fields: [ethicsApplicationId], references: [id], onDelete: Cascade)
+  grantApplication  GrantApplication?   @relation(fields: [grantApplicationId], references: [id], onDelete: Cascade)
+  training          Training?           @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  preprint          PreprintSubmission? @relation(fields: [preprintId], references: [id], onDelete: Cascade)
 
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([type])
+  @@index([category])
   @@map("notifications")
+}
+
+enum EmailDigestFrequency {
+  IMMEDIATE
+  HOURLY
+  DAILY
+  WEEKLY
+  NEVER
+}
+
+model NotificationPreference {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  // Channel preferences
+  emailEnabled Boolean @default(true)
+  inAppEnabled Boolean @default(true)
+  pushEnabled  Boolean @default(false)
+
+  // Frequency preferences
+  emailDigest EmailDigestFrequency @default(IMMEDIATE)
+  digestTime  String? // Time of day for digest (e.g., "09:00")
+
+  // Category preferences (JSON for flexibility)
+  categoryPreferences Json @default("{}")
+
+  // Quiet hours
+  quietHoursEnabled Boolean @default(false)
+  quietHoursStart   String? // e.g., "22:00"
+  quietHoursEnd     String? // e.g., "08:00"
+
+  // Do not disturb
+  doNotDisturb Boolean @default(false)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }
 
 // Manuscript Citation Library
@@ -861,6 +1050,7 @@ model Proposal {
   reviews           ProposalReview[]
   ethicsLinks       ProposalEthicsLink[]
   grantApplications GrantApplication[]
+  notifications     Notification[]
 
   // TODO: Add userId when authentication is implemented
   // userId      String
@@ -1026,6 +1216,7 @@ model EthicsApplication {
   linkedProposals ProposalEthicsLink[]
   reviews         EthicsReview[]
   amendments      EthicsAmendment[]
+  notifications   Notification[]
   
   @@map("ethics_applications")
 }
@@ -1171,6 +1362,7 @@ model GrantApplication {
   communications  GrantCommunication[]
   milestones      GrantMilestone[]
   award           GrantAward?
+  notifications   Notification[]
   
   @@map("grant_applications")
 }
@@ -1494,7 +1686,8 @@ model PreprintSubmission {
   updatedAt   DateTime  @updatedAt
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifications Notification[]
 
   @@map("preprint_submissions")
 }
@@ -1563,6 +1756,7 @@ model Training {
   materials      TrainingMaterial[]
   registrations  TrainingRegistration[]
   certificates   TrainingCertificate[]
+  notifications  Notification[]
   
   @@map("trainings")
 }
