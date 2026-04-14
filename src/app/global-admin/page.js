@@ -4,24 +4,24 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
-  Paper,
   Typography,
   Card,
   CardContent,
   Grid,
-  Chip,
-  Avatar,
   LinearProgress,
   IconButton,
   Tooltip,
+  Button,
+  Avatar,
+  Chip,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Divider,
-  Button
+  Paper,
+  Divider
 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
@@ -167,99 +167,130 @@ const GlobalAdminPage = () => {
 
         {loading && <LinearProgress sx={{ mb: 3 }} />}
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              bgcolor: 'primary.main',
-              color: 'white'
-            }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-                      {stats.totalInstitutions || 0}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Total Institutions
-                    </Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 56, height: 56 }}>
-                    <InstitutionsIcon fontSize="large" />
-                  </Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2.5, 
+          flexWrap: { xs: 'wrap', sm: 'nowrap' },
+          '& > *': {
+            flex: {
+              xs: '1 1 100%',
+              sm: '1 1 0'
+            },
+            minWidth: 0
+          }
+        }}>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: theme.palette.primary.main,
+            boxShadow: `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(139, 108, 188, 0.2)'}`,
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Institutions
+              </Typography>
+              <InstitutionsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.totalInstitutions || 0}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Registered institutions
+            </Typography>
+          </Paper>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              bgcolor: 'success.main',
-              color: 'white'
-            }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-                      {stats.totalUsers || 0}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Total Users
-                    </Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 56, height: 56 }}>
-                    <UsersIcon fontSize="large" />
-                  </Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: theme.palette.primary.main,
+            boxShadow: `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(139, 108, 188, 0.2)'}`,
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Users
+              </Typography>
+              <UsersIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.totalUsers || 0}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              System-wide users
+            </Typography>
+          </Paper>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              bgcolor: 'warning.main',
-              color: 'white'
-            }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-                      {stats.activeUsers || 0}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Active Users
-                    </Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 56, height: 56 }}>
-                    <CheckIcon fontSize="large" />
-                  </Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: theme.palette.primary.main,
+            boxShadow: `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(139, 108, 188, 0.2)'}`,
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Active Users
+              </Typography>
+              <CheckIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.activeUsers || 0}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Currently active
+            </Typography>
+          </Paper>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              bgcolor: 'secondary.main',
-              color: 'white'
-            }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-                      {systemHealth.status === 'healthy' ? 'Healthy' : 'Warning'}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      System Status
-                    </Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 56, height: 56 }}>
-                    <HealthIcon fontSize="large" />
-                  </Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: theme.palette.primary.main,
+            boxShadow: `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(139, 108, 188, 0.2)'}`,
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                System Status
+              </Typography>
+              <HealthIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {systemHealth.status === 'healthy' ? 'Healthy' : 'Warning'}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              All systems operational
+            </Typography>
+          </Paper>
+        </Box>
 
         <Paper sx={{ mt: 3, p: 3 }}>
           <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
