@@ -139,7 +139,7 @@ const GlobalAdminPage = () => {
                 sx={{ 
                   fontWeight: 700, 
                   mb: 1,
-                  background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+                  background: 'linear-gradient(135deg, #8b6cbc 0%, #7b1fa2 100%)',
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
@@ -156,9 +156,9 @@ const GlobalAdminPage = () => {
               <IconButton 
                 onClick={handleRefresh} 
                 sx={{ 
-                  bgcolor: 'primary.main',
+                  bgcolor: '#8b6cbc',
                   color: 'white',
-                  '&:hover': { bgcolor: 'primary.dark' },
+                  '&:hover': { bgcolor: '#7b1fa2' },
                   boxShadow: 2
                 }}
               >
@@ -173,9 +173,9 @@ const GlobalAdminPage = () => {
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ 
-              background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+              background: 'linear-gradient(135deg, #8b6cbc 0%, #7b1fa2 100%)',
               color: 'white',
-              boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)'
+              boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
             }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -245,7 +245,7 @@ const GlobalAdminPage = () => {
 
           <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ 
-              background: 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)',
+              background: 'linear-gradient(135deg, #9c27b0 0%, #8b6cbc 100%)',
               color: 'white',
               boxShadow: '0 4px 12px rgba(156, 39, 176, 0.3)'
             }}>
@@ -382,7 +382,16 @@ const GlobalAdminPage = () => {
                 <Button 
                   variant="outlined" 
                   fullWidth 
-                  sx={{ justifyContent: 'flex-start', py: 1.5 }}
+                  sx={{ 
+                    justifyContent: 'flex-start', 
+                    py: 1.5,
+                    borderColor: '#8b6cbc',
+                    color: '#8b6cbc',
+                    '&:hover': {
+                      borderColor: '#7b1fa2',
+                      bgcolor: '#f3e5f5'
+                    }
+                  }}
                   onClick={() => router.push('/global-admin/institutions')}
                 >
                   <InstitutionsIcon sx={{ mr: 2 }} />
@@ -391,7 +400,16 @@ const GlobalAdminPage = () => {
                 <Button 
                   variant="outlined" 
                   fullWidth 
-                  sx={{ justifyContent: 'flex-start', py: 1.5 }}
+                  sx={{ 
+                    justifyContent: 'flex-start', 
+                    py: 1.5,
+                    borderColor: '#8b6cbc',
+                    color: '#8b6cbc',
+                    '&:hover': {
+                      borderColor: '#7b1fa2',
+                      bgcolor: '#f3e5f5'
+                    }
+                  }}
                   onClick={() => router.push('/global-admin/health')}
                 >
                   <HealthIcon sx={{ mr: 2 }} />
@@ -400,7 +418,16 @@ const GlobalAdminPage = () => {
                 <Button 
                   variant="outlined" 
                   fullWidth 
-                  sx={{ justifyContent: 'flex-start', py: 1.5 }}
+                  sx={{ 
+                    justifyContent: 'flex-start', 
+                    py: 1.5,
+                    borderColor: '#8b6cbc',
+                    color: '#8b6cbc',
+                    '&:hover': {
+                      borderColor: '#7b1fa2',
+                      bgcolor: '#f3e5f5'
+                    }
+                  }}
                   onClick={() => router.push('/global-admin/database')}
                 >
                   <StorageIcon sx={{ mr: 2 }} />

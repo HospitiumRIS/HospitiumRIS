@@ -91,7 +91,7 @@ const GlobalAdminLoginPage = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 50%, #0d47a1 100%)',
+        background: 'linear-gradient(135deg, #8b6cbc 0%, #7b1fa2 50%, #6a1b9a 100%)',
         position: 'relative',
         overflow: 'hidden',
         '&::before': {
@@ -125,18 +125,18 @@ const GlobalAdminLoginPage = () => {
                 height: 80,
                 margin: '0 auto',
                 mb: 2,
-                background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
-                boxShadow: '0 8px 24px rgba(25, 118, 210, 0.4)'
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #7b1fa2 100%)',
+                boxShadow: '0 8px 24px rgba(139, 108, 188, 0.4)'
               }}
             >
-              <AdminIcon sx={{ fontSize: 48 }} />
+              <AdminIcon sx={{ fontSize: 48, color: '#fff' }} />
             </Avatar>
             <Typography
               variant="h4"
               sx={{
                 fontWeight: 700,
                 mb: 1,
-                background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #7b1fa2 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -220,11 +220,11 @@ const GlobalAdminLoginPage = () => {
                 py: 1.5,
                 fontSize: '1.1rem',
                 fontWeight: 600,
-                background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
-                boxShadow: '0 4px 12px rgba(25, 118, 210, 0.4)',
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #7b1fa2 100%)',
+                boxShadow: '0 4px 12px rgba(139, 108, 188, 0.4)',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
-                  boxShadow: '0 6px 16px rgba(25, 118, 210, 0.5)',
+                  background: 'linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%)',
+                  boxShadow: '0 6px 16px rgba(139, 108, 188, 0.5)',
                   transform: 'translateY(-2px)'
                 },
                 transition: 'all 0.3s ease',

@@ -115,7 +115,7 @@ const GlobalAdminLayout = ({ children }) => {
           display: 'flex',
           alignItems: 'center',
           gap: 2,
-          background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+          background: 'linear-gradient(135deg, #8b6cbc 0%, #7b1fa2 100%)',
           color: 'white',
           position: 'relative',
           overflow: 'hidden',
@@ -205,11 +205,10 @@ const GlobalAdminLayout = ({ children }) => {
                   borderRadius: 2,
                   py: 1.5,
                   px: 2,
-                  bgcolor: isActive ? `${item.color}.main` : 'transparent',
-                  color: isActive ? 'white' : 'text.primary',
-                  boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
+                  color: isActive ? '#8b6cbc' : 'text.secondary',
+                  bgcolor: isActive ? '#f3e5f5' : 'transparent',
                   '&:hover': {
-                    bgcolor: isActive ? `${item.color}.dark` : 'action.hover',
+                    bgcolor: isActive ? '#f3e5f5' : '#f5f5f5',
                     transform: 'translateX(4px)',
                     boxShadow: isActive ? '0 6px 16px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.08)'
                   },
@@ -218,7 +217,7 @@ const GlobalAdminLayout = ({ children }) => {
               >
                 <ListItemIcon
                   sx={{
-                    color: isActive ? 'white' : `${item.color}.main`,
+                    color: isActive ? '#8b6cbc' : 'inherit',
                     minWidth: 44
                   }}
                 >

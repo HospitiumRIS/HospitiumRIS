@@ -116,7 +116,7 @@ const InstitutionsPage = () => {
         }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: '#1976d2', width: 56, height: 56, boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)' }}>
+              <Avatar sx={{ bgcolor: '#8b6cbc', width: 56, height: 56, boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)' }}>
                 <InstitutionIcon fontSize="large" />
               </Avatar>
               <Box>
@@ -135,11 +135,11 @@ const InstitutionsPage = () => {
                 startIcon={<RefreshIcon />}
                 onClick={fetchInstitutions}
                 sx={{
-                  borderColor: '#1976d2',
-                  color: '#1976d2',
+                  borderColor: '#8b6cbc',
+                  color: '#8b6cbc',
                   '&:hover': {
-                    borderColor: '#1565c0',
-                    bgcolor: '#e3f2fd'
+                    borderColor: '#7b1fa2',
+                    bgcolor: '#f3e5f5'
                   }
                 }}
               >
@@ -150,11 +150,11 @@ const InstitutionsPage = () => {
                 startIcon={<AddIcon />}
                 onClick={handleCreateInstitution}
                 sx={{
-                  bgcolor: '#1976d2',
+                  bgcolor: '#8b6cbc',
                   '&:hover': {
-                    bgcolor: '#1565c0'
+                    bgcolor: '#7b1fa2'
                   },
-                  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)'
+                  boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
                 }}
               >
                 Create Institution Admin
@@ -191,7 +191,7 @@ const InstitutionsPage = () => {
         <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
           <TableContainer>
             <Table>
-              <TableHead sx={{ bgcolor: 'primary.main' }}>
+              <TableHead sx={{ bgcolor: '#8b6cbc' }}>
                 <TableRow>
                   <TableCell sx={{ color: 'white', fontWeight: 600 }}>Admin Name</TableCell>
                   <TableCell sx={{ color: 'white', fontWeight: 600 }}>Email</TableCell>
