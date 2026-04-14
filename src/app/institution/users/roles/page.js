@@ -129,8 +129,8 @@ const RoleManagement = () => {
       ]
     },
     {
-      type: 'SUPER_ADMIN',
-      label: 'Super Admin',
+      type: 'INSTITUTION_ADMIN',
+      label: 'Institution Admin',
       icon: <SuperAdminIcon />,
       color: '#dc2626',
       description: 'System administrator with full platform access',
@@ -199,11 +199,11 @@ const RoleManagement = () => {
     setRoleForm({
       accountType: user.accountType,
       permissions: {
-        canManageUsers: user.accountType === 'RESEARCH_ADMIN' || user.accountType === 'SUPER_ADMIN',
-        canManageResearchers: user.accountType === 'RESEARCH_ADMIN' || user.accountType === 'SUPER_ADMIN',
+        canManageUsers: user.accountType === 'RESEARCH_ADMIN' || user.accountType === 'INSTITUTION_ADMIN',
+        canManageResearchers: user.accountType === 'RESEARCH_ADMIN' || user.accountType === 'INSTITUTION_ADMIN',
         canViewAnalytics: user.accountType !== 'RESEARCHER',
-        canManageProposals: user.accountType === 'RESEARCH_ADMIN' || user.accountType === 'SUPER_ADMIN',
-        canExportData: user.accountType === 'RESEARCH_ADMIN' || user.accountType === 'SUPER_ADMIN',
+        canManageProposals: user.accountType === 'RESEARCH_ADMIN' || user.accountType === 'INSTITUTION_ADMIN',
+        canExportData: user.accountType === 'RESEARCH_ADMIN' || user.accountType === 'INSTITUTION_ADMIN',
       }
     });
     setEditDialogOpen(true);
@@ -252,7 +252,7 @@ const RoleManagement = () => {
       researcher: users.filter(u => u.accountType === 'RESEARCHER').length,
       researchAdmin: users.filter(u => u.accountType === 'RESEARCH_ADMIN').length,
       foundationAdmin: users.filter(u => u.accountType === 'FOUNDATION_ADMIN').length,
-      superAdmin: users.filter(u => u.accountType === 'SUPER_ADMIN').length,
+      institutionAdmin: users.filter(u => u.accountType === 'INSTITUTION_ADMIN').length,
     };
   };
 
@@ -442,7 +442,7 @@ const RoleManagement = () => {
                   <MenuItem value="RESEARCHER">Researcher</MenuItem>
                   <MenuItem value="RESEARCH_ADMIN">Research Admin</MenuItem>
                   <MenuItem value="FOUNDATION_ADMIN">Foundation Admin</MenuItem>
-                  <MenuItem value="SUPER_ADMIN">Super Admin</MenuItem>
+                  <MenuItem value="INSTITUTION_ADMIN">Institution Admin</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

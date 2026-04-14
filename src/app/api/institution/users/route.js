@@ -17,7 +17,7 @@ export async function GET(request) {
       );
     }
 
-    if (user.accountType !== 'RESEARCH_ADMIN' && user.accountType !== 'SUPER_ADMIN') {
+    if (user.accountType !== 'RESEARCH_ADMIN' && user.accountType !== 'INSTITUTION_ADMIN') {
       return NextResponse.json(
         { error: 'Insufficient privileges' },
         { status: 403 }
@@ -127,7 +127,7 @@ export async function PATCH(request) {
       );
     }
 
-    if (user.accountType !== 'RESEARCH_ADMIN' && user.accountType !== 'SUPER_ADMIN') {
+    if (user.accountType !== 'RESEARCH_ADMIN' && user.accountType !== 'INSTITUTION_ADMIN') {
       return NextResponse.json(
         { error: 'Insufficient privileges' },
         { status: 403 }

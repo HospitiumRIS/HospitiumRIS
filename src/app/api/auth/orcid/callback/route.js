@@ -273,8 +273,11 @@ export async function GET(request) {
         case 'FOUNDATION_ADMIN':
           dashboardRoute = '/foundation';
           break;
-        case 'SUPER_ADMIN':
-          dashboardRoute = '/super-admin';
+        case 'INSTITUTION_ADMIN':
+          dashboardRoute = '/institution-admin';
+          break;
+        case 'GLOBAL_ADMIN':
+          dashboardRoute = '/global-admin';
           break;
       }
 

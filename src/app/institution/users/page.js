@@ -110,8 +110,8 @@ const UserManagement = () => {
   const filterUsers = () => {
     let filtered = [...users];
 
-    // Filter out super admin users
-    filtered = filtered.filter(user => user.accountType !== 'SUPER_ADMIN');
+    // Filter out institution admin users
+    filtered = filtered.filter(user => user.accountType !== 'INSTITUTION_ADMIN');
 
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
@@ -214,7 +214,7 @@ const UserManagement = () => {
       case 'RESEARCHER': return <PersonIcon sx={{ fontSize: 18 }} />;
       case 'RESEARCH_ADMIN': return <SchoolIcon sx={{ fontSize: 18 }} />;
       case 'FOUNDATION_ADMIN': return <BusinessIcon sx={{ fontSize: 18 }} />;
-      case 'SUPER_ADMIN': return <SuperAdminIcon sx={{ fontSize: 18 }} />;
+      case 'INSTITUTION_ADMIN': return <SuperAdminIcon sx={{ fontSize: 18 }} />;
       default: return <PersonIcon sx={{ fontSize: 18 }} />;
     }
   };
@@ -224,7 +224,7 @@ const UserManagement = () => {
       case 'RESEARCHER': return 'Researcher';
       case 'RESEARCH_ADMIN': return 'Research Admin';
       case 'FOUNDATION_ADMIN': return 'Foundation Admin';
-      case 'SUPER_ADMIN': return 'Super Admin';
+      case 'INSTITUTION_ADMIN': return 'Institution Admin';
       default: return accountType;
     }
   };

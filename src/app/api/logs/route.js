@@ -38,10 +38,11 @@ const isAdminUser = async (request) => {
       return { isAdmin: false, user: null };
     }
 
-    // Allow RESEARCH_ADMIN, FOUNDATION_ADMIN, and SUPER_ADMIN to access logs
+    // Allow RESEARCH_ADMIN, FOUNDATION_ADMIN, INSTITUTION_ADMIN, and GLOBAL_ADMIN to access logs
     const isAdmin = user.accountType === 'RESEARCH_ADMIN' || 
                    user.accountType === 'FOUNDATION_ADMIN' || 
-                   user.accountType === 'SUPER_ADMIN';
+                   user.accountType === 'INSTITUTION_ADMIN' || 
+                   user.accountType === 'GLOBAL_ADMIN';
     
     return { isAdmin, user };
   } catch (error) {

@@ -283,7 +283,7 @@ export async function POST(request) {
     // Log failed registration attempt
     try {
       // Ensure accountType is a valid enum value, default to RESEARCHER if invalid
-      const validAccountTypes = ['RESEARCHER', 'RESEARCH_ADMIN', 'FOUNDATION_ADMIN', 'SUPER_ADMIN'];
+      const validAccountTypes = ['RESEARCHER', 'RESEARCH_ADMIN', 'FOUNDATION_ADMIN', 'INSTITUTION_ADMIN', 'GLOBAL_ADMIN'];
       const logAccountType = validAccountTypes.includes(body?.accountType) 
         ? body.accountType 
         : 'RESEARCHER'; // Default to RESEARCHER for logging purposes
