@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/check-global-admin.js",
     "dev": "next dev --turbopack",
+    "prestart": "node scripts/check-global-admin.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -15,7 +17,8 @@
     "db:seed": "node prisma/seed.js",
     "db:studio": "prisma studio",
     "test:email": "node scripts/test-email.js",
-    "seed:network": "node scripts/seed-sample-network.js"
+    "seed:network": "node scripts/seed-sample-network.js",
+    "check:admin": "node scripts/check-global-admin.js"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
