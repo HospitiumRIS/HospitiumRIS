@@ -34,11 +34,13 @@ import {
   Email as EmailIcon,
   Person as PersonIcon
 } from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../../components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import GlobalAdminLayout from '../../../components/GlobalAdmin/GlobalAdminLayout';
 
 const InstitutionsPage = () => {
+  const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [institutions, setInstitutions] = useState([]);
@@ -115,18 +117,13 @@ const InstitutionsPage = () => {
           borderColor: 'divider'
         }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
-                <InstitutionIcon fontSize="large" />
-              </Avatar>
-              <Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, letterSpacing: '-0.02em' }}>
-                  Institution Management
-                </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                  Manage institution administrators and their access
-                </Typography>
-              </Box>
+            <Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, letterSpacing: '-0.02em', color: theme.palette.text.primary }}>
+                Institution Management
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Manage institution administrators and their access
+              </Typography>
             </Box>
             
             <Box sx={{ display: 'flex', gap: 2 }}>
