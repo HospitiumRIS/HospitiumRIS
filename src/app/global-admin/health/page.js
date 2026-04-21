@@ -37,14 +37,17 @@ const SystemHealthPage = () => {
   const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [healthData, setHealthData] = useState({
-    cpu: { usage: 45, status: 'healthy' },
-    memory: { usage: 62, status: 'healthy' },
-    disk: { usage: 38, status: 'healthy' },
-    database: { status: 'healthy', connections: 12, maxConnections: 100 },
-    network: { status: 'healthy', latency: 23 },
-    uptime: { days: 15, hours: 7, minutes: 32 }
+    cpu: { usage: 0, cores: 0 },
+    memory: { usage: 0, total: '0', used: '0', free: '0' },
+    disk: { usage: 0 },
+    network: { latency: 0 },
+    database: { status: 'unknown', connections: 0, maxConnections: 0 },
+    uptime: { days: 0, hours: 0, minutes: 0, formatted: '' },
+    platform: '',
+    hostname: '',
+    nodeVersion: ''
   });
 
   useEffect(() => {
@@ -53,12 +56,29 @@ const SystemHealthPage = () => {
     }
   }, [user, authLoading, router]);
 
-  const handleRefresh = () => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+  useEffect(() => {
+    if (user?.accountType === 'GLOBAL_ADMIN') {
+      fetchHealthData();
+    }
+  }, [user]);
+
+  const fetchHealthData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/global-admin/health');
+      if (response.ok) {
+        const data = await response.json();
+        setHealthData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching health data:', error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  const handleRefresh = () => {
+    fetchHealthData();
   };
 
   const getStatusColor = (status) => {
@@ -262,28 +282,20 @@ const SystemHealthPage = () => {
               <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                 Database Health
               </Typography>
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Status</Typography>
-                  <Chip 
-                    icon={getStatusIcon(healthData.database.status)}
-                    label={healthData.database.status.toUpperCase()} 
-                    color={getStatusColor(healthData.database.status)}
-                    size="small"
-                  />
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">Active Connections</Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {healthData.database.connections} / {healthData.database.maxConnections}
-                  </Typography>
-                </Box>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={(healthData.database.connections / healthData.database.maxConnections) * 100}
-                  sx={{ height: 8, borderRadius: 4 }}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Chip 
+                  icon={getStatusIcon(healthData.database.status)}
+                  label={healthData.database.status.toUpperCase()}
+                  color={getStatusColor(healthData.database.status)}
+                  sx={{ fontWeight: 600 }}
                 />
+                <Typography variant="body2" color="text.secondary">
+                  {healthData.database.connections} / {healthData.database.maxConnections} connections
+                </Typography>
               </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Platform: {healthData.platform} | Node: {healthData.nodeVersion}
+              </Typography>
             </Paper>
           </Grid>
 
@@ -292,26 +304,29 @@ const SystemHealthPage = () => {
               <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                 System Uptime
               </Typography>
-              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-around' }}>
-                <Box sx={{ textAlign: 'center' }}>
+              <Box sx={{ display: 'flex', gap: 4 }}>
+                <Box>
                   <Typography variant="h3" sx={{ fontWeight: 700, color: 'primary.main' }}>
                     {healthData.uptime.days}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">Days</Typography>
                 </Box>
-                <Box sx={{ textAlign: 'center' }}>
+                <Box>
                   <Typography variant="h3" sx={{ fontWeight: 700, color: 'primary.main' }}>
                     {healthData.uptime.hours}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">Hours</Typography>
                 </Box>
-                <Box sx={{ textAlign: 'center' }}>
+                <Box>
                   <Typography variant="h3" sx={{ fontWeight: 700, color: 'primary.main' }}>
                     {healthData.uptime.minutes}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">Minutes</Typography>
                 </Box>
               </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Hostname: {healthData.hostname}
+              </Typography>
             </Paper>
           </Grid>
         </Grid>

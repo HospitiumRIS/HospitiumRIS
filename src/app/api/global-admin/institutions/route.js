@@ -15,38 +15,32 @@ export async function GET(request) {
       );
     }
 
-    // Fetch all institution admins
+    // Get all institution admins with full institution details
     const institutionAdmins = await prisma.user.findMany({
       where: {
         accountType: 'INSTITUTION_ADMIN'
       },
-      select: {
-        id: true,
-        givenName: true,
-        familyName: true,
-        email: true,
-        status: true,
-        createdAt: true,
-        primaryInstitution: true
+      include: {
+        institution: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            country: true,
+            website: true,
+            createdAt: true,
+            updatedAt: true
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'
       }
     });
 
-    // Format the data
-    const institutions = institutionAdmins.map(admin => ({
-      id: admin.id,
-      name: `${admin.givenName} ${admin.familyName}`,
-      email: admin.email,
-      institution: admin.primaryInstitution || 'Not specified',
-      status: admin.status,
-      createdAt: admin.createdAt
-    }));
-
     return NextResponse.json({
       success: true,
-      institutions
+      institutions: institutionAdmins
     });
 
   } catch (error) {

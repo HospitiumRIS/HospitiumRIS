@@ -6,7 +6,6 @@ import {
   Container,
   Typography,
   Paper,
-  Grid,
   IconButton,
   Tooltip,
   Button,
@@ -17,12 +16,17 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField
+  TextField,
+  Alert,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  CircularProgress
 } from '@mui/material';
 import {
   Storage as DatabaseIcon,
@@ -31,8 +35,6 @@ import {
   Restore as RestoreIcon,
   DeleteSweep as CleanupIcon,
   Assessment as AnalyticsIcon,
-  CheckCircle as CheckIcon,
-  Warning as WarningIcon,
   CloudDownload as ExportIcon
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
@@ -44,22 +46,27 @@ const DatabaseManagementPage = () => {
   const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [backupDialogOpen, setBackupDialogOpen] = useState(false);
-  const [databaseStats, setDatabaseStats] = useState({
-    totalSize: '2.4 GB',
-    tables: 45,
-    records: 125430,
-    lastBackup: '2 hours ago'
+  const [backupFormat, setBackupFormat] = useState('sql');
+  const [backupInProgress, setBackupInProgress] = useState(false);
+  const [allTables, setAllTables] = useState([]);
+  const [stats, setStats] = useState({
+    totalRecords: 0,
+    users: 0,
+    institutions: 0,
+    publications: 0,
+    activityLogs: 0,
+    databaseSize: '0',
+    tableCount: 0
   });
-  const [tables, setTables] = useState([
-    { name: 'users', records: 1250, size: '45 MB', status: 'healthy' },
-    { name: 'institutions', records: 87, size: '12 MB', status: 'healthy' },
-    { name: 'manuscripts', records: 3420, size: '890 MB', status: 'healthy' },
-    { name: 'proposals', records: 2150, size: '560 MB', status: 'healthy' },
-    { name: 'publications', records: 1890, size: '420 MB', status: 'healthy' },
-    { name: 'activity_logs', records: 98450, size: '340 MB', status: 'warning' }
-  ]);
+  const [connections, setConnections] = useState({
+    active: 0,
+    max: 0,
+    usage: '0'
+  });
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [tableSizes, setTableSizes] = useState([]);
 
   useEffect(() => {
     if (!authLoading && user?.accountType !== 'GLOBAL_ADMIN') {
@@ -67,11 +74,41 @@ const DatabaseManagementPage = () => {
     }
   }, [user, authLoading, router]);
 
-  const handleRefresh = () => {
-    setLoading(true);
-    setTimeout(() => {
+  useEffect(() => {
+    if (user?.accountType === 'GLOBAL_ADMIN') {
+      fetchDatabaseData();
+    }
+  }, [user]);
+
+  const fetchDatabaseData = async () => {
+    try {
+      setLoading(true);
+      const [statsResponse, tablesResponse] = await Promise.all([
+        fetch('/api/global-admin/database'),
+        fetch('/api/global-admin/database/tables')
+      ]);
+      
+      if (statsResponse.ok) {
+        const data = await statsResponse.json();
+        setStats(data.stats);
+        setConnections(data.connections);
+        setRecentActivity(data.recentActivity || []);
+        setTableSizes(data.tableSizes || []);
+      }
+
+      if (tablesResponse.ok) {
+        const tablesData = await tablesResponse.json();
+        setAllTables(tablesData.tables || []);
+      }
+    } catch (error) {
+      console.error('Error fetching database data:', error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  const handleRefresh = () => {
+    fetchDatabaseData();
   };
 
   const handleBackup = () => {
@@ -82,9 +119,31 @@ const DatabaseManagementPage = () => {
     setBackupDialogOpen(false);
   };
 
-  const handleConfirmBackup = () => {
-    console.log('Creating database backup...');
-    setBackupDialogOpen(false);
+  const handleConfirmBackup = async () => {
+    try {
+      setBackupInProgress(true);
+      const response = await fetch('/api/global-admin/database/backup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ format: backupFormat }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`Backup created successfully!\nFile: ${data.backup.fileName}\nSize: ${data.backup.size}`);
+        setBackupDialogOpen(false);
+      } else {
+        alert(`Backup failed: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      alert('Failed to create backup');
+    } finally {
+      setBackupInProgress(false);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -173,15 +232,71 @@ const DatabaseManagementPage = () => {
             <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Records
+              </Typography>
+              <DatabaseIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.totalRecords?.toLocaleString() || 0}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              {stats.users} users, {stats.institutions} institutions
+            </Typography>
+          </Paper>
+
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: theme.palette.primary.main,
+            boxShadow: `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(139, 108, 188, 0.2)'}`,
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Connections
+              </Typography>
+              <AnalyticsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {connections.active}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              {connections.active} / {connections.max} ({connections.usage}%)
+            </Typography>
+          </Paper>
+
+          <Paper sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: theme.palette.primary.main,
+            boxShadow: `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(139, 108, 188, 0.2)'}`,
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
                 Database Size
               </Typography>
               <DatabaseIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
             <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {databaseStats.totalSize}
+              {stats.databaseSize} MB
             </Typography>
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Total storage used
+              {stats.tableCount} tables
             </Typography>
           </Paper>
 
@@ -201,188 +316,220 @@ const DatabaseManagementPage = () => {
             <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Total Tables
-              </Typography>
-              <AnalyticsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {databaseStats.tables}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Database tables
-            </Typography>
-          </Paper>
-
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: theme.palette.primary.main,
-            boxShadow: `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(139, 108, 188, 0.2)'}`,
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Total Records
-              </Typography>
-              <AnalyticsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {databaseStats.records.toLocaleString()}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Database records
-            </Typography>
-          </Paper>
-
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: theme.palette.primary.main,
-            boxShadow: `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(139, 108, 188, 0.2)'}`,
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Last Backup
+                Activity Logs
               </Typography>
               <BackupIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
             <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              2h
+              {stats.activityLogs?.toLocaleString() || 0}
             </Typography>
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              {databaseStats.lastBackup}
+              Activity log entries
             </Typography>
           </Paper>
         </Box>
 
-        {/* Quick Actions */}
-        <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+        {/* Recent Activity */}
+        <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
           <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-            Database Operations
+            Recent Database Activity
+          </Typography>
+          {loading ? (
+            <Typography variant="body2" color="text.secondary">Loading...</Typography>
+          ) : recentActivity.length > 0 ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {recentActivity.map((activity) => (
+                <Box 
+                  key={activity.id} 
+                  sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    p: 1.5,
+                    bgcolor: 'background.default',
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider'
+                  }}
+                >
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {activity.action} - {activity.entityType}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      by {activity.user}
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    {new Date(activity.timestamp).toLocaleString()}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Typography variant="body2" color="text.secondary">No recent activity</Typography>
+          )}
+        </Paper>
+
+        {/* All Database Tables */}
+        <Paper sx={{ borderRadius: 2, overflow: 'hidden', mb: 3 }}>
+          <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Database Tables ({allTables.length})
+            </Typography>
+          </Box>
+          {loading ? (
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+              <CircularProgress size={24} />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Loading tables...
+              </Typography>
+            </Box>
+          ) : allTables.length > 0 ? (
+            <TableContainer>
+              <Table>
+                <TableHead sx={{ bgcolor: 'primary.main' }}>
+                  <TableRow>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Table Name</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }} align="right">Rows</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }} align="right">Columns</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }} align="right">Size</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {allTables.map((table) => (
+                    <TableRow key={table.name} hover>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600}>
+                          {table.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2">
+                          {table.rowCount?.toLocaleString() || 0}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2">
+                          {table.columnCount || 0}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2" color="primary.main" fontWeight={600}>
+                          {table.size}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box sx={{ p: 3 }}>
+              <Typography variant="body2" color="text.secondary">No tables found</Typography>
+            </Box>
+          )}
+        </Paper>
+
+        {/* Database Operations */}
+        <Paper sx={{ p: 3, borderRadius: 2 }}>
+          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
+            Quick Operations
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <Button
               variant="contained"
               startIcon={<BackupIcon />}
               onClick={handleBackup}
-              sx={{ textTransform: 'none' }}
             >
               Create Backup
             </Button>
             <Button
               variant="outlined"
               startIcon={<RestoreIcon />}
-              sx={{ textTransform: 'none' }}
             >
               Restore Database
             </Button>
             <Button
               variant="outlined"
               startIcon={<CleanupIcon />}
-              sx={{ textTransform: 'none' }}
+              color="warning"
             >
-              Cleanup Old Data
+              Cleanup Logs
             </Button>
             <Button
               variant="outlined"
               startIcon={<ExportIcon />}
-              sx={{ textTransform: 'none' }}
+              color="info"
             >
               Export Data
             </Button>
           </Box>
         </Paper>
 
-        {/* Database Tables */}
-        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
-          <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Database Tables
-            </Typography>
-          </Box>
-          <TableContainer>
-            <Table>
-              <TableHead sx={{ bgcolor: 'primary.main' }}>
-                <TableRow>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Table Name</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Records</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Size</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }} align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {tables.map((table) => (
-                  <TableRow key={table.name} hover>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={600}>
-                        {table.name}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>{table.records.toLocaleString()}</TableCell>
-                    <TableCell>{table.size}</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={table.status.toUpperCase()} 
-                        color={getStatusColor(table.status)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Optimize">
-                        <IconButton size="small" color="primary">
-                          <AnalyticsIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Export">
-                        <IconButton size="small" color="primary">
-                          <ExportIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-
-        {/* Backup Confirmation Dialog */}
-        <Dialog open={backupDialogOpen} onClose={handleCloseBackupDialog}>
+        {/* Backup Dialog */}
+        <Dialog open={backupDialogOpen} onClose={handleCloseBackupDialog} maxWidth="sm" fullWidth>
           <DialogTitle>Create Database Backup</DialogTitle>
           <DialogContent>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3, mt: 1 }}>
               This will create a full backup of the database. The process may take several minutes.
             </Typography>
-            <Alert severity="info" sx={{ mb: 2 }}>
-              Current database size: {databaseStats.totalSize}
+            
+            <Alert severity="info" sx={{ mb: 3 }}>
+              Current database size: {stats.databaseSize} MB
             </Alert>
-            <TextField
-              fullWidth
-              label="Backup Name (Optional)"
-              placeholder="backup-2026-04-14"
-              sx={{ mt: 2 }}
-            />
+
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Backup Format</InputLabel>
+              <Select
+                value={backupFormat}
+                label="Backup Format"
+                onChange={(e) => setBackupFormat(e.target.value)}
+              >
+                <MenuItem value="sql">
+                  <Box>
+                    <Typography variant="body2" fontWeight={600}>SQL (.sql)</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Plain text SQL dump - Human readable, largest file size
+                    </Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value="custom">
+                  <Box>
+                    <Typography variant="body2" fontWeight={600}>Custom (.dump)</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Compressed binary format - Recommended for large databases
+                    </Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value="tar">
+                  <Box>
+                    <Typography variant="body2" fontWeight={600}>TAR (.tar)</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      TAR archive format - Good for portability
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              </Select>
+            </FormControl>
+
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              <Typography variant="caption">
+                Backups will be saved to the <strong>/backups</strong> directory in your project root.
+              </Typography>
+            </Alert>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseBackupDialog}>Cancel</Button>
-            <Button onClick={handleConfirmBackup} variant="contained">
-              Create Backup
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button onClick={handleCloseBackupDialog} disabled={backupInProgress}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmBackup} 
+              variant="contained"
+              disabled={backupInProgress}
+              startIcon={backupInProgress ? <CircularProgress size={16} /> : <BackupIcon />}
+            >
+              {backupInProgress ? 'Creating Backup...' : 'Create Backup'}
             </Button>
           </DialogActions>
         </Dialog>

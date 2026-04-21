@@ -155,12 +155,16 @@ const ProposalDetailsPage = () => {
         documents: data.documents || [],
         researchAreas: data.researchAreas || [],
         totalBudgetAmount: data.totalBudgetAmount || 0,
-        daysInReview: data.status === 'UNDER_REVIEW' && data.updatedAt 
-          ? Math.ceil((new Date() - new Date(data.updatedAt)) / (1000 * 60 * 60 * 24))
-          : 0
+        daysInReview: 0
       };
 
       setProposal(transformedProposal);
+      
+      // Calculate daysInReview after mount to avoid hydration mismatch
+      if (mounted && data.status === 'UNDER_REVIEW' && data.updatedAt) {
+        const days = Math.ceil((new Date() - new Date(data.updatedAt)) / (1000 * 60 * 60 * 24));
+        setProposal(prev => ({ ...prev, daysInReview: days }));
+      }
     } catch (error) {
       console.error('Error loading proposal:', error);
       setError(`Error loading proposal: ${error.message}`);
@@ -716,7 +720,7 @@ const ProposalDetailsPage = () => {
                               secondary={
                                 <Box component="span" sx={{ display: 'block' }}>
                                   <Typography variant="body2" component="span" color="text.secondary" sx={{ mb: 0.5, lineHeight: 1.6, display: 'block' }}>
-                                    {deliverable.description || deliverable}
+                                    {typeof deliverable === 'string' ? deliverable : (deliverable.description || '')}
                                   </Typography>
                                   {(deliverable.dueDate || deliverable.deliveryDate || deliverable.targetDate || deliverable.date) && (
                                     <Chip 

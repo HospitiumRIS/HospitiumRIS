@@ -126,14 +126,14 @@ const GlobalAdminPage = () => {
   return (
     <GlobalAdminLayout>
       <Container maxWidth="xl" sx={{ pt: { xs: 3, sm: 4, md: 5 } }}>
-        <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: 'background.default', minHeight: '100vh' }}>
-          <Box sx={{ 
-            mb: 4,
-            pb: 3,
-            borderBottom: '2px solid',
-            borderColor: 'divider'
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {/* Header */}
+        <Box sx={{ 
+          mb: 4,
+          pb: 3,
+          borderBottom: '2px solid',
+          borderColor: 'divider'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
               <Typography 
                 variant="h4" 
@@ -163,10 +163,10 @@ const GlobalAdminPage = () => {
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
-            </Box>
           </Box>
+        </Box>
 
-          {loading && <LinearProgress sx={{ mb: 3 }} />}
+        {loading && <LinearProgress sx={{ mb: 3 }} />}
 
         <Box sx={{ 
           display: 'flex', 
@@ -472,7 +472,6 @@ const GlobalAdminPage = () => {
             </Paper>
             </Grid>
           </Grid>
-        </Box>
       </Container>
     </GlobalAdminLayout>
   );

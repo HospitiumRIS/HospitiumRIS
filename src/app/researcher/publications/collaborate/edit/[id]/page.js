@@ -145,7 +145,6 @@ import InsertTableDialog from './components/InsertTableDialog';
 import TablePropertiesDialog from './components/TablePropertiesDialog';
 import CommentsSidebar from './components/CommentsSidebar';
 import CommentTooltip from './components/CommentTooltip';
-import TestHighlight from './components/TestHighlight';
 import VersionHistorySidebar from './components/VersionHistorySidebar';
 import TrackedChangesSidebar from './components/TrackedChangesSidebar';
 import CommentHighlight from './extensions/CommentHighlight';
@@ -154,6 +153,15 @@ import { CitationMark } from './extensions/CitationMark';
 import BibliographyGenerator from '@/components/Bibliography/BibliographyGenerator';
 import ReferencesHoverButton from '@/components/Bibliography/ReferencesHoverButton';
 import CitationHoverMenu from './components/CitationHoverMenu';
+import { 
+  formatCitationAPA, 
+  formatCitationMLA, 
+  formatCitationChicago,
+  formatCitationHarvard,
+  formatCitationVancouver,
+  formatCitationIEEE,
+  formatCitationAMA
+} from '@/utils/citationFormatters';
 
 // Custom TipTap Extensions Configuration
 const extensions = [
@@ -603,24 +611,38 @@ export default function ManuscriptEditor() {
 
   // Citation helper functions
   const formatCitation = useCallback((citation) => {
+    // Helper to safely get author string
+    const getAuthorName = (author) => {
+      if (!author) return 'Unknown';
+      const authorStr = typeof author === 'string' ? author : String(author);
+      return authorStr.split(',')[0];
+    };
+    
+    const firstAuthor = citation.authors && citation.authors.length > 0 
+      ? getAuthorName(citation.authors[0]) 
+      : 'Unknown';
+    const secondAuthor = citation.authors && citation.authors.length > 1 
+      ? getAuthorName(citation.authors[1]) 
+      : '';
+    
     switch (citationStyle) {
       case 'APA':
         if (citation.type === 'journal') {
-          return `(${citation.authors[0].split(',')[0]} et al., ${citation.year})`;
+          return `(${firstAuthor} et al., ${citation.year})`;
         } else if (citation.type === 'book') {
-          return `(${citation.authors[0].split(',')[0]} ${citation.authors.length > 1 ? '& ' + citation.authors[1].split(',')[0] : ''}, ${citation.year})`;
+          return `(${firstAuthor}${secondAuthor ? ' & ' + secondAuthor : ''}, ${citation.year})`;
         } else if (citation.type === 'conference') {
-          return `(${citation.authors[0].split(',')[0]} ${citation.authors.length > 1 ? '& ' + citation.authors[1].split(',')[0] : ''}, ${citation.year})`;
+          return `(${firstAuthor}${secondAuthor ? ' & ' + secondAuthor : ''}, ${citation.year})`;
         } else if (citation.type === 'book_chapter') {
-          return `(${citation.authors[0].split(',')[0]} ${citation.authors.length > 1 ? '& ' + citation.authors[1].split(',')[0] : ''}, ${citation.year})`;
+          return `(${firstAuthor}${secondAuthor ? ' & ' + secondAuthor : ''}, ${citation.year})`;
         }
         break;
       case 'MLA':
-        return `(${citation.authors[0].split(',')[0]} ${citation.year})`;
+        return `(${firstAuthor} ${citation.year})`;
       case 'Chicago':
-        return `(${citation.authors[0].split(',')[0]} ${citation.year})`;
+        return `(${firstAuthor} ${citation.year})`;
       default:
-        return `(${citation.authors[0].split(',')[0]} et al., ${citation.year})`;
+        return `(${firstAuthor} et al., ${citation.year})`;
     }
   }, [citationStyle]);
 
@@ -671,6 +693,11 @@ export default function ManuscriptEditor() {
     } catch (error) {
       console.error('Error removing citation:', error);
     }
+    
+    // Automatically update the References section after deletion
+    setTimeout(() => {
+      updateReferencesSection();
+    }, 100);
   };
 
   // Get citations used in document
@@ -691,6 +718,113 @@ export default function ManuscriptEditor() {
     });
     
     return Array.from(citationIds);
+  };
+
+  // Get all citations with their full data from the document
+  const getAllCitationsWithData = () => {
+    if (!editor) return [];
+    
+    const citationsMap = new Map();
+    const { doc } = editor.state;
+    
+    doc.descendants((node) => {
+      if (node.isText && node.marks) {
+        node.marks.forEach(mark => {
+          if (mark.type.name === 'citation' && mark.attrs.citationId && mark.attrs.citationData) {
+            if (!citationsMap.has(mark.attrs.citationId)) {
+              citationsMap.set(mark.attrs.citationId, mark.attrs.citationData);
+            }
+          }
+        });
+      }
+    });
+    
+    return Array.from(citationsMap.values());
+  };
+
+  // Update references section at the end of the document
+  const updateReferencesSection = () => {
+    if (!editor) return;
+    
+    const citations = getAllCitationsWithData();
+    if (citations.length === 0) return;
+    
+    // Sort citations alphabetically by first author's last name
+    const sortedCitations = [...citations].sort((a, b) => {
+      // Ensure authors is an array and convert to string if needed
+      const getAuthorString = (citation) => {
+        if (!citation.authors || citation.authors.length === 0) return '';
+        const firstAuthor = citation.authors[0];
+        return typeof firstAuthor === 'string' ? firstAuthor : String(firstAuthor);
+      };
+      
+      const authorA = getAuthorString(a);
+      const authorB = getAuthorString(b);
+      const lastNameA = authorA.split(' ').pop() || '';
+      const lastNameB = authorB.split(' ').pop() || '';
+      return lastNameA.localeCompare(lastNameB);
+    });
+    
+    // Get the appropriate formatter based on citation style
+    const formatter = {
+      'APA': formatCitationAPA,
+      'MLA': formatCitationMLA,
+      'Chicago': formatCitationChicago,
+      'Harvard': formatCitationHarvard,
+      'Vancouver': formatCitationVancouver,
+      'IEEE': formatCitationIEEE,
+      'AMA': formatCitationAMA
+    }[citationStyle] || formatCitationAPA;
+    
+    // Format each citation as a bibliography entry with error handling
+    const formattedReferences = sortedCitations.map(citation => {
+      try {
+        return formatter(citation, 'bibliography');
+      } catch (error) {
+        console.error('Error formatting citation:', citation, error);
+        return `${citation.title || 'Unknown'} (formatting error)`;
+      }
+    });
+    
+    // Get current document content
+    const currentContent = editor.getHTML();
+    
+    // Check if References section already exists
+    const referencesRegex = /<h[1-3][^>]*>References<\/h[1-3]>[\s\S]*$/i;
+    
+    // Build the references section HTML
+    let referencesHTML = '<h2>References</h2>';
+    formattedReferences.forEach(ref => {
+      // Convert markdown-style italics to HTML and make DOI/URLs clickable
+      const htmlRef = ref
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n/g, '<br>')
+        .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #8b6cbc; text-decoration: underline;">$1</a>');
+      referencesHTML += `<p style="margin-left: 2em; text-indent: -2em;">${htmlRef}</p>`;
+    });
+    
+    let newContent;
+    if (referencesRegex.test(currentContent)) {
+      // Replace existing References section
+      newContent = currentContent.replace(referencesRegex, referencesHTML);
+    } else {
+      // Append References section at the end
+      newContent = currentContent + referencesHTML;
+    }
+    
+    // Update editor content without triggering update events
+    const { from, to } = editor.state.selection;
+    editor.commands.setContent(newContent, false);
+    
+    // Restore cursor position
+    try {
+      const docLength = editor.state.doc.content.size;
+      const newFrom = Math.min(from, docLength);
+      const newTo = Math.min(to, docLength);
+      editor.commands.setTextSelection({ from: newFrom, to: newTo });
+    } catch (e) {
+      console.error('Error restoring cursor position:', e);
+    }
   };
 
   // Citation insertion function (defined as regular function to avoid dependency issues)
@@ -766,6 +900,11 @@ export default function ManuscriptEditor() {
     setSelectedCitationIndex(0);
     setTriggerPosition(null);
     setQuickCitations([]);
+    
+    // Automatically update the References section at the end of the document
+    setTimeout(() => {
+      updateReferencesSection();
+    }, 100);
   };
 
   // Citation detection logic (doesn't depend on editor)
@@ -4179,9 +4318,6 @@ export default function ManuscriptEditor() {
 
       {/* Comment Tooltip for highlighting */}
       <CommentTooltip />
-      
-      {/* Test component for debugging tooltips */}
-      <TestHighlight />
       
       {/* Global styles for comment highlights and tracked changes */}
       <style jsx global>{`

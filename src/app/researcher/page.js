@@ -377,7 +377,7 @@ const ResearcherDashboard = () => {
       <PageHeader
         title={`${greeting}, ${getUserDisplayName()}`}
         description={<>Your research dashboard overview<br /><span style={{ fontSize: '0.875rem', opacity: 0.8 }}>{currentDate}</span></>}
-        actionButton={actionButtons}
+       
         gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)"
       />
       

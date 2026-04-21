@@ -208,6 +208,7 @@ const InstitutionDashboard = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!mounted || !dateString) return '';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -247,6 +248,7 @@ const InstitutionDashboard = () => {
 
   // Format relative time (e.g., "2 hours ago", "3 days ago")
   const getRelativeTime = (dateString) => {
+    if (!mounted || !dateString) return '';
     const date = new Date(dateString);
     const now = new Date();
     const diffInSeconds = Math.floor((now - date) / 1000);

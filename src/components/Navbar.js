@@ -125,10 +125,162 @@ const Navbar = () => {
   const currentPath = pathname || '';
 
   // Determine if we're on a dashboard page and user is authenticated (only on client)
-  const isDashboardPage = isClient && isAuthenticated && (currentPath.includes('/researcher') || currentPath.includes('/institution') || currentPath.includes('/foundation'));
+  const isDashboardPage = isClient && isAuthenticated && (currentPath.includes('/institution') || currentPath.includes('/researcher') || currentPath.includes('/foundation'));
   
   // Get dashboard type and configuration for horizontal navbar
   const getDashboardConfig = () => {
+    // Check /institution first to avoid matching /institution/researchers as /researcher
+    if (currentPath.includes('/institution')) {
+      return {
+        type: 'institution',
+        title: 'Institution Portal',
+        menuItems: [
+          {
+            label: 'Publications',
+            categories: [
+              {
+                title: 'WRITING TRACKER',
+                items: [
+                  {
+                    label: 'Manuscripts',
+                    description: 'Track manuscripts from draft to published',
+                    icon: <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/publications/manuscripts'
+                  },
+                  {
+                    label: 'Proposals',
+                    description: 'Track proposals from drafting to approval',
+                    icon: <SubmitIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/publications/proposals'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            label: 'Projects',
+            categories: [
+              {
+                title: 'PROPOSAL REVIEW',
+                items: [
+                  {
+                    label: 'Review Proposals',
+                    description: 'Review and approve project proposals',
+                    icon: <ReviewIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/proposals/review'
+                  }
+                ]
+              },
+              {
+                title: 'ETHICS REVIEW',
+                items: [
+                  {
+                    label: 'Review Ethics Applications',
+                    description: 'Review and approve ethics applications',
+                    icon: <EthicsReviewIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/ethics/review'
+                  },
+                  {
+                    label: 'Ethics Applications',
+                    description: 'View all ethics applications',
+                    icon: <EthicsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/ethics/applications'
+                  }
+                ]
+              },
+              {
+                title: 'PROJECT TRACKING',
+                items: [
+                  {
+                    label: 'Track Projects',
+                    description: 'Monitor all ongoing projects and their progress',
+                    icon: <AssessmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/projects'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            label: 'Administration',
+            categories: [
+              {
+                title: 'RESEARCHER MANAGEMENT',
+                items: [
+                  {
+                    label: 'Manage Researchers',
+                    description: 'Add, edit, and manage researchers',
+                    icon: <GroupIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/researchers'
+                  },
+                  {
+                    label: 'Performance Review',
+                    description: 'Review researcher performance',
+                    icon: <AssessmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/researchers/review'
+                  }
+                ]
+              },
+              {
+                title: 'USER MANAGEMENT',
+                items: [
+                  {
+                    label: 'User Accounts',
+                    description: 'Manage user accounts and access',
+                    icon: <UserManagerIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/users'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            label: 'Reports & Analytics',
+            categories: [
+              {
+                title: 'INSTITUTIONAL ANALYTICS',
+                items: [
+                  {
+                    label: 'Institution Metrics',
+                    description: 'Overall institutional performance',
+                    icon: <ReportsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/analytics'
+                  },
+                  {
+                    label: 'Funding Reports',
+                    description: 'Track funding and grant performance',
+                    icon: <FundingIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/analytics/funding'
+                  },
+                  {
+                    label: 'Compliance Reports',
+                    description: 'Monitor regulatory compliance',
+                    icon: <AssignmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/analytics/compliance'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            label: 'Training',
+            categories: [
+              {
+                title: 'TRAINING MANAGEMENT',
+                items: [
+                  {
+                    label: 'Manage Trainings',
+                    description: 'Create and manage institutional trainings',
+                    icon: <SchoolIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/training'
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+    }
     if (currentPath.includes('/researcher')) {
       return {
         type: 'researcher',
@@ -305,242 +457,6 @@ const Navbar = () => {
                     description: 'Monitor project milestones',
                     icon: <ProgressIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
                     path: '/researcher/analytics/progress'
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      };
-    }
-    if (currentPath.includes('/institution')) {
-      return {
-        type: 'institution',
-        title: 'Institution Portal',
-        menuItems: [
-          {
-            label: 'Publications',
-            categories: [
-              {
-                title: 'WRITING PHASE',
-                items: [
-                  {
-                    label: 'Collaborative Writing',
-                    description: 'Monitor institutional collaborative writings',
-                    icon: <GroupsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/publications/collaborate'
-                  },
-                  {
-                    label: 'Submit to Preprint',
-                    description: 'Institutional preprint submissions',
-                    icon: <SubmitIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/publications/submit'
-                  },
-                  {
-                    label: 'Preprint Submissions',
-                    description: 'Track institutional preprint submissions',
-                    icon: <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/publications/preprints'
-                  }
-                ]
-              },
-              {
-                title: 'RESEARCH DISCOVERY',
-                items: [
-                  {
-                    label: 'Import Publications',
-                    description: 'Import institutional publications',
-                    icon: <ImportIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/publications/import'
-                  },
-                  {
-                    label: 'Manage Publications',
-                    description: 'View and edit institutional publications',
-                    icon: <ManageIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/publications/manage'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Projects',
-            categories: [
-              {
-                title: 'PROPOSALS',
-                items: [
-                  {
-                    label: 'View Proposals',
-                    description: 'Monitor institutional research proposals',
-                    icon: <ProposalIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/projects/proposals/list'
-                  },
-                  {
-                    label: 'Grant Follow-ups',
-                    description: 'Institutional grant application follow-ups',
-                    icon: <FollowUpIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/projects/proposals/liason'
-                  }
-                ]
-              },
-              {
-                title: 'TRACKING',
-                items: [
-                  {
-                    label: 'Project Status',
-                    description: 'Track institutional project milestones',
-                    icon: <StatusIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/projects/tracking/status'
-                  }
-                ]
-              },
-              {
-                title: 'BUDGET',
-                items: [
-                  {
-                    label: 'Budget Management',
-                    description: 'Monitor institutional budgets and expenses',
-                    icon: <BudgetIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/projects/budget/view'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Administration',
-            categories: [
-              {
-                title: 'PROPOSAL REVIEW',
-                items: [
-                  {
-                    label: 'Review Proposals',
-                    description: 'Review and approve project proposals',
-                    icon: <ReviewIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/proposals/review'
-                  }
-                ]
-              },
-              {
-                title: 'ETHICS REVIEW',
-                items: [
-                  {
-                    label: 'Review Ethics Applications',
-                    description: 'Review and approve ethics applications',
-                    icon: <EthicsReviewIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/ethics/review'
-                  },
-                  {
-                    label: 'Ethics Applications',
-                    description: 'View all ethics applications',
-                    icon: <EthicsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/ethics/applications'
-                  }
-                ]
-              },
-              {
-                title: 'PROJECT TRACKING',
-                items: [
-                  {
-                    label: 'Track Projects',
-                    description: 'Monitor all ongoing projects and their progress',
-                    icon: <AssessmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/projects'
-                  }
-                ]
-              },
-              {
-                title: 'RESEARCHER MANAGEMENT',
-                items: [
-                  {
-                    label: 'Manage Researchers',
-                    description: 'Add, edit, and manage researchers',
-                    icon: <GroupIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/researchers'
-                  },
-                  {
-                    label: 'Performance Review',
-                    description: 'Review researcher performance',
-                    icon: <AssessmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/researchers/review'
-                  }
-                ]
-              },
-              {
-                title: 'USER MANAGEMENT',
-                items: [
-                  {
-                    label: 'User Accounts',
-                    description: 'Manage user accounts and access',
-                    icon: <UserManagerIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/users'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Reports & Analytics',
-            categories: [
-              {
-                title: 'RESEARCH METRICS',
-                items: [
-                  {
-                    label: 'Research Impact',
-                    description: 'Track institutional research influence',
-                    icon: <ImpactIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/analytics/impact'
-                  },
-                  {
-                    label: 'Publication Reports',
-                    description: 'Analyze institutional publication performance',
-                    icon: <ChartIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/analytics/publications'
-                  },
-                  {
-                    label: 'Project Progress',
-                    description: 'Monitor institutional project milestones',
-                    icon: <ProgressIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/analytics/progress'
-                  }
-                ]
-              },
-              {
-                title: 'INSTITUTIONAL ANALYTICS',
-                items: [
-                  {
-                    label: 'Institution Metrics',
-                    description: 'Overall institutional performance',
-                    icon: <ReportsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/analytics'
-                  },
-                  {
-                    label: 'Funding Reports',
-                    description: 'Track funding and grant performance',
-                    icon: <FundingIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/analytics/funding'
-                  },
-                  {
-                    label: 'Compliance Reports',
-                    description: 'Monitor regulatory compliance',
-                    icon: <AssignmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/analytics/compliance'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Training',
-            categories: [
-              {
-                title: 'TRAINING MANAGEMENT',
-                items: [
-                  {
-                    label: 'Manage Trainings',
-                    description: 'Create and manage institutional trainings',
-                    icon: <SchoolIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/training'
                   }
                 ]
               }

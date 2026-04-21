@@ -393,14 +393,14 @@ export async function GET(request) {
           researchProfile: {
             select: {
               hIndex: true,
-              totalCitations: true
+              citationCount: true
             }
           },
           publications: { select: { id: true } }
         }
       });
 
-      totalCitations = allResearchers.reduce((sum, r) => sum + (r.researchProfile?.totalCitations || 0), 0);
+      totalCitations = allResearchers.reduce((sum, r) => sum + (r.researchProfile?.citationCount || 0), 0);
       averageHIndex = allResearchers.length > 0 
         ? Math.round(allResearchers.reduce((sum, r) => sum + (r.researchProfile?.hIndex || 0), 0) / allResearchers.length)
         : 0;

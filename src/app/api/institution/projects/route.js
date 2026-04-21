@@ -55,6 +55,7 @@ export async function GET(request) {
         principalInvestigator: proposal.principalInvestigator,
         department: proposal.departments?.[0] || 'Unknown',
         status: projectStatus,
+        proposalStatus: proposal.status,
         startDate: proposal.startDate,
         endDate: proposal.endDate,
         totalBudgetAmount: proposal.totalBudgetAmount,
