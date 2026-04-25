@@ -150,9 +150,11 @@ import TrackedChangesSidebar from './components/TrackedChangesSidebar';
 import CommentHighlight from './extensions/CommentHighlight';
 import TrackChanges from './extensions/TrackChanges';
 import { CitationMark } from './extensions/CitationMark';
+import { PageBreak, Pagination } from './extensions/Pagination';
 import BibliographyGenerator from '@/components/Bibliography/BibliographyGenerator';
 import ReferencesHoverButton from '@/components/Bibliography/ReferencesHoverButton';
 import CitationHoverMenu from './components/CitationHoverMenu';
+import PaginationControls from './components/PaginationControls';
 import { 
   formatCitationAPA, 
   formatCitationMLA, 
@@ -214,6 +216,17 @@ const extensions = [
     onChangeRejected: () => {},   // Will be set when editor initializes
   }),
   CitationMark,
+  PageBreak,
+  Pagination.configure({
+    enabled: true,
+    pageSize: 'A4',
+    orientation: 'portrait',
+    margins: { top: 72, right: 72, bottom: 72, left: 72 },
+    showPageNumbers: true,
+    pageNumberPosition: 'bottom-center',
+    wordsPerPage: 800,
+    autoCalculate: true,
+  }),
 ];
 
 // Toolbar Button Component
@@ -573,6 +586,9 @@ export default function ManuscriptEditor() {
   
   // Version history state
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  
+  // Pagination state
+  const [paginationEnabled, setPaginationEnabled] = useState(true);
   
   // Database citation state for Cite as You Write
   const [quickCitations, setQuickCitations] = useState([]);
@@ -2401,6 +2417,45 @@ export default function ManuscriptEditor() {
     }
   }, [showComments, trackChangesEnabled, trackedChanges, editor]);
 
+  // Ref for PaginationControls to access settings dialog
+  const paginationControlsRef = useRef(null);
+
+  // Handle page menu actions
+  const handlePageAction = useCallback((action) => {
+    switch(action) {
+      case 'toggle-pagination':
+        const newPaginationState = !paginationEnabled;
+        setPaginationEnabled(newPaginationState);
+        if (editor) {
+          editor.chain().focus().setPaginationEnabled(newPaginationState).run();
+        }
+        break;
+      case 'insert-page-break':
+        if (editor && paginationEnabled) {
+          editor.chain().focus().insertPageBreak().run();
+        }
+        break;
+      case 'auto-calculate':
+        if (editor && paginationEnabled) {
+          editor.chain().focus().autoCalculatePageBreaks().run();
+        }
+        break;
+      case 'remove-all-breaks':
+        if (editor && paginationEnabled) {
+          editor.chain().focus().removeAllPageBreaks().run();
+        }
+        break;
+      case 'settings':
+        // Trigger the settings dialog from PaginationControls
+        if (paginationControlsRef.current) {
+          paginationControlsRef.current.openSettings();
+        }
+        break;
+      default:
+        break;
+    }
+  }, [editor, paginationEnabled]);
+
   // Handle version restore
   const handleVersionRestore = useCallback((versionData) => {
     if (editor && versionData.content) {
@@ -2533,9 +2588,11 @@ export default function ManuscriptEditor() {
         onInsertAction={handleInsertAction}
         onFormatAction={handleFormatAction}
         onReviewAction={handleReviewAction}
+        onPageAction={handlePageAction}
         autosaveEnabled={autosaveEnabled}
         editor={editor}
         showComments={showComments}
+        paginationEnabled={paginationEnabled}
         setCitationMenuAnchor={setCitationMenuAnchor}
         onTableProperties={handleTableProperties}
       />
@@ -3009,6 +3066,13 @@ export default function ManuscriptEditor() {
             <ToolbarButton onClick={addTable} title="Insert Table">
               <TableIcon fontSize="small" />
             </ToolbarButton>
+            
+            <PaginationControls 
+              ref={paginationControlsRef}
+              editor={editor} 
+              enabled={paginationEnabled}
+              onToggle={setPaginationEnabled}
+            />
 
             <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
 
@@ -4381,6 +4445,79 @@ export default function ManuscriptEditor() {
         .track-changes-disabled .tracked-change {
           background: transparent !important;
           text-decoration: none !important;
+        }
+
+        /* Pagination Styles */
+        .page-break {
+          position: relative;
+          margin: 2rem 0;
+          padding: 1rem 0;
+          border-top: 2px dashed #8b6cbc;
+          border-bottom: 2px dashed #8b6cbc;
+          background: linear-gradient(to bottom, 
+            rgba(139, 108, 188, 0.05) 0%, 
+            rgba(139, 108, 188, 0.02) 50%, 
+            rgba(139, 108, 188, 0.05) 100%);
+          text-align: center;
+          color: #8b6cbc;
+          font-size: 0.875rem;
+          font-weight: 500;
+          user-select: none;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .page-break:hover {
+          background: rgba(139, 108, 188, 0.1);
+          border-color: #7a5cac;
+        }
+
+        .page-break::before {
+          content: '--- Page Break ---';
+          display: block;
+          opacity: 0.7;
+        }
+
+        .page-number {
+          position: absolute;
+          font-size: 0.75rem;
+          color: #666;
+          font-family: 'Times New Roman', serif;
+          user-select: none;
+          pointer-events: none;
+          z-index: 10;
+        }
+
+        /* Print styles for pagination */
+        @media print {
+          .page-break {
+            page-break-after: always;
+            break-after: page;
+            border: none !important;
+            background: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          .page-break::before {
+            display: none !important;
+          }
+
+          .page-number {
+            display: none !important;
+          }
+
+          .ProseMirror {
+            padding: 0 !important;
+          }
+        }
+
+        /* Page container for better visualization */
+        .pagination-enabled .ProseMirror {
+          max-width: 794px;
+          margin: 0 auto;
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+          background: white;
         }
       `}</style>
     </Box>

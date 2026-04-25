@@ -77,7 +77,11 @@ import {
   RateReview as GrammarCheckIcon,
   Language as LanguageIcon,
   CheckCircle as AcceptIcon,
-  Cancel as RejectIcon
+  Cancel as RejectIcon,
+  Description as PageIcon,
+  Settings as PageSettingsIcon,
+  AutoMode as AutoCalculateIcon,
+  Delete as RemoveBreaksIcon
 } from '@mui/icons-material';
 
 export default function DocumentMenuBar({ 
@@ -87,9 +91,11 @@ export default function DocumentMenuBar({
   onInsertAction, 
   onFormatAction,
   onReviewAction,
+  onPageAction,
   autosaveEnabled,
   editor,
   showComments,
+  paginationEnabled,
   // Menu anchor setters for menus not yet implemented in this component
   setCitationMenuAnchor,
   onTableProperties
@@ -102,6 +108,7 @@ export default function DocumentMenuBar({
   const [tableSubMenuAnchor, setTableSubMenuAnchor] = useState(null);
   const [quickTablesAnchor, setQuickTablesAnchor] = useState(null);
   const [tableTemplatesAnchor, setTableTemplatesAnchor] = useState(null);
+  const [pageMenuAnchor, setPageMenuAnchor] = useState(null);
   const [formatMenuAnchor, setFormatMenuAnchor] = useState(null);
   const [textAlignAnchor, setTextAlignAnchor] = useState(null);
   const [lineSpacingAnchor, setLineSpacingAnchor] = useState(null);
@@ -367,6 +374,9 @@ export default function DocumentMenuBar({
           </Button>
           <Button size="small" onClick={(e) => setReviewMenuAnchor(e.currentTarget)} sx={menuButtonStyle}>
             Review
+          </Button>
+          <Button size="small" onClick={(e) => setPageMenuAnchor(e.currentTarget)} sx={menuButtonStyle}>
+            Page
           </Button>
           <Button size="small" onClick={(e) => setCitationMenuAnchor && setCitationMenuAnchor(e.currentTarget)} sx={menuButtonStyle}>
             Citation
@@ -1851,6 +1861,74 @@ export default function DocumentMenuBar({
             <VisibilityIcon fontSize="small" sx={{ color: '#666' }} />
           </ListItemIcon>
           Show Comments
+        </MuiMenuItem>
+      </Menu>
+
+      {/* Page Menu */}
+      <Menu
+        anchorEl={pageMenuAnchor}
+        open={Boolean(pageMenuAnchor)}
+        onClose={() => setPageMenuAnchor(null)}
+        sx={{
+          '& .MuiPaper-root': {
+            minWidth: 200,
+          }
+        }}
+      >
+        <MuiMenuItem onClick={() => { onPageAction && onPageAction('toggle-pagination'); setPageMenuAnchor(null); }}>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <PageIcon fontSize="small" sx={{ color: paginationEnabled ? '#8b6cbc' : '#666' }} />
+          </ListItemIcon>
+          <Box sx={{ flexGrow: 1 }}>
+            {paginationEnabled ? 'Disable Pagination' : 'Enable Pagination'}
+          </Box>
+        </MuiMenuItem>
+
+        <Divider sx={{ my: 0.5 }} />
+
+        <MuiMenuItem 
+          onClick={() => { onPageAction && onPageAction('insert-page-break'); setPageMenuAnchor(null); }}
+          disabled={!paginationEnabled}
+        >
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <PageBreakIcon fontSize="small" sx={{ color: paginationEnabled ? '#666' : '#ccc' }} />
+          </ListItemIcon>
+          <Box sx={{ flexGrow: 1 }}>Insert Page Break</Box>
+          <Typography variant="caption" color="textSecondary" sx={{ ml: 2, fontSize: '0.75rem' }}>
+            Ctrl+Enter
+          </Typography>
+        </MuiMenuItem>
+
+        <MuiMenuItem 
+          onClick={() => { onPageAction && onPageAction('auto-calculate'); setPageMenuAnchor(null); }}
+          disabled={!paginationEnabled}
+        >
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <AutoCalculateIcon fontSize="small" sx={{ color: paginationEnabled ? '#666' : '#ccc' }} />
+          </ListItemIcon>
+          Auto-Calculate Page Breaks
+        </MuiMenuItem>
+
+        <MuiMenuItem 
+          onClick={() => { onPageAction && onPageAction('remove-all-breaks'); setPageMenuAnchor(null); }}
+          disabled={!paginationEnabled}
+        >
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <RemoveBreaksIcon fontSize="small" sx={{ color: paginationEnabled ? '#666' : '#ccc' }} />
+          </ListItemIcon>
+          Remove All Page Breaks
+        </MuiMenuItem>
+
+        <Divider sx={{ my: 0.5 }} />
+
+        <MuiMenuItem 
+          onClick={() => { onPageAction && onPageAction('settings'); setPageMenuAnchor(null); }}
+          disabled={!paginationEnabled}
+        >
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <PageSettingsIcon fontSize="small" sx={{ color: paginationEnabled ? '#666' : '#ccc' }} />
+          </ListItemIcon>
+          Pagination Settings...
         </MuiMenuItem>
       </Menu>
 
