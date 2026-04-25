@@ -1,536 +1,570 @@
 # Collaborative Manuscript Editor - Analysis & Improvement Plan
 
-Comprehensive analysis of the collaborative manuscript editing page at `/researcher/publications/collaborate/edit/[id]` with improvement suggestions for each component.
+**Last Updated**: April 25, 2026  
+**URL**: `/researcher/publications/collaborate/edit/[id]`  
+**Route**: `src/app/researcher/publications/collaborate/edit/[id]/page.js`
+
+Comprehensive analysis of the collaborative manuscript editing page with improvement suggestions for each component.
+
+---
 
 ## Page Overview
 
-This is a **Google Docs-style collaborative manuscript editor** built with Next.js, TipTap (rich text editor), and Material-UI. It enables real-time collaboration on research manuscripts with features including:
+A **Google Docs-style collaborative manuscript editor** built with:
+- **Next.js 14** (App Router, `'use client'`)
+- **TipTap** rich text editor with custom extensions
+- **Material-UI (MUI)** component library
+- **Prisma** + PostgreSQL backend
+- **REST API** polling for real-time sync
 
-- **Real-time presence tracking** (3-second polling)
-- **Document synchronization** across collaborators
-- **Citation management** with "Cite as You Write"
-- **Comment system** with text highlighting
-- **Track changes** functionality
-- **Version history**
-- **Rich text editing** with comprehensive formatting tools
+### Current Capabilities
+- Real-time presence tracking (3-second polling)
+- Document synchronization across collaborators
+- Citation management with "Cite as You Write" (`@author` / `cite:` triggers)
+- Comment system with text highlighting and threading
+- Track Changes with accept/reject per-change
+- Version history with restore
+- Rich text editing (headings, tables, images, lists, links, code)
+- Font family, font size, text color, highlight
+- **Pagination system** with manual/auto page breaks (added Apr 2026)
+- Bibliography/reference generation (APA, MLA, Chicago, Harvard, Vancouver, IEEE, AMA)
+- Document structure outline (left sidebar)
 
 ---
 
-## Component Analysis & Improvement Suggestions
+## Current File Inventory
 
-### 1. **Main Page Component** (`page.js` - 4,253 lines)
+| File | Size | Lines (approx) | Status |
+|------|------|---------|--------|
+| `page.js` | main orchestrator | ~4,526 lines | ⚠️ Monolithic |
+| `components/DocumentHeader.jsx` | 22 KB | ~633 lines | ✅ Stable |
+| `components/DocumentMenuBar.jsx` | 71 KB | ~1,938 lines | ⚠️ Very large |
+| `components/CommentsSidebar.jsx` | 31 KB | ~903 lines | ✅ Functional |
+| `components/CitationLibraryModal.jsx` | 32 KB | ~871 lines | ✅ Functional |
+| `components/ManageSourcesModal.jsx` | 28 KB | ~800 lines | ✅ Functional |
+| `components/VersionHistorySidebar.jsx` | 28 KB | ~777 lines | ✅ Functional |
+| `components/TrackedChangesSidebar.jsx` | 27 KB | ~737 lines | ✅ Functional |
+| `components/TablePropertiesDialog.jsx` | 32 KB | ~900 lines | ✅ Functional |
+| `components/PaginationControls.jsx` | 10 KB | ~330 lines | 🆕 New |
+| `components/CitationHoverMenu.jsx` | 7 KB | ~200 lines | ✅ Stable |
+| `components/CommentThread.jsx` | 25 KB | ~700 lines | ✅ Stable |
+| `components/CommentTooltip.jsx` | 10 KB | ~280 lines | ✅ Stable |
+| `components/AddCommentForm.jsx` | 10 KB | ~290 lines | ✅ Stable |
+| `components/InsertTableDialog.jsx` | 9 KB | ~260 lines | ✅ Stable |
+| `components/InviteCollaboratorDialog.jsx` | 14 KB | ~400 lines | ✅ Stable |
+| `extensions/CitationMark.js` | 3.5 KB | 128 lines | ✅ Stable |
+| `extensions/CommentHighlight.js` | 7 KB | 221 lines | ✅ Stable |
+| `extensions/TrackChanges.js` | 13 KB | 366 lines | ✅ Stable |
+| `extensions/Pagination.js` | 7 KB | ~210 lines | 🆕 New |
+| `utils/paginationHelper.js` | 4 KB | ~160 lines | 🆕 New |
 
-#### Current State:
-- Monolithic component handling all editor logic
-- TipTap editor with extensive extensions (StarterKit, Tables, Citations, Comments, Track Changes)
-- Real-time sync via polling (3-second intervals)
-- Auto-save functionality
-- Complex state management (25+ useState hooks)
+---
 
-#### Issues Identified:
-- **File size too large** (4,253 lines) - difficult to maintain
-- **Too many responsibilities** in single component
-- **Performance concerns** with 3-second polling for presence/sync
-- **State management complexity** - many interdependent states
-- **Memory leaks potential** with multiple intervals/timeouts
+## Component Analysis
 
-#### Improvement Suggestions:
+### 1. **Main Page Component** (`page.js` — ~4,526 lines)
+
+#### Current State
+- Monolithic component with **33+ `useState` hooks**
+- TipTap editor configured with 14 extensions
+- Real-time sync via 3-second polling interval
+- Auto-save with 2-second debounce
+- All toolbar JSX inline (not extracted)
+- Handles: editor setup, citations, comments, track changes, version history, pagination, sync, permissions
+
+#### State Inventory
+```
+Refs (5): lastKnownServerUpdateRef, lastLocalSaveTimeRef, isSavingRef, savedSelectionRef, paginationControlsRef
+useState (33+):
+  mounting/loading: mounted, loading, saving, savingTitle
+  document: manuscript, lastSaved, collaborators, pendingInvitations, onlineUserIds, userPermissions
+  UI toggles: inviteDialogOpen, showComments, menuAnchor, insertTableDialogOpen, tablePropertiesDialogOpen
+  menus: citationMenuAnchor, headingDropdownAnchor, fontFamilyAnchor, fontSizeAnchor
+  structure: documentStructure, showDocumentStructure
+  citations: citeAsYouWrite, citationStyle, zoteroConnected, citationPopupAnchor, citationSearch
+             selectedCitationIndex, triggerPosition, citationLibraryOpen, manageSourcesOpen, bibliographyGeneratorOpen
+  comments: selectedText, commentsData
+  tracking: trackChangesEnabled, trackedChanges, showTrackChanges, showTrackedChangesSidebar
+  versioning: showVersionHistory
+  pagination: paginationEnabled
+  quickCitations: quickCitations, quickCitationsLoading, quickCitationsError
+  autosave: autosaveEnabled
+```
+
+#### TipTap Extensions Registered
+```
+StarterKit, TextAlign, Underline, TextStyle, Color, Highlight (multicolor),
+Link, Image, Table (resizable), TableRow, TableHeader, TableCell,
+FontFamily, CharacterCount, Placeholder, CommentHighlight, TrackChanges,
+CitationMark, PageBreak, Pagination
+```
+
+#### Issues
+- **File size** (~4,526 lines) — very hard to maintain and navigate
+- **Inline toolbar** — all toolbar buttons are JSX directly in `page.js`, not a component
+- **Debug `console.log`** on every render (`params`, `manuscriptId`) left in
+- **No error boundaries** — a crash in any part breaks the full editor
+- **Polling vs WebSocket** — 3-second polling for sync and presence is expensive
+- **No `React.memo`** on heavy sub-components
+- **`autosaveEnabled` starts `false`** — user must manually enable auto-save
+
+#### Improvements Needed
 
 **High Priority:**
-1. **Split into smaller components**
-   - Extract toolbar into separate component
-   - Move citation logic to custom hook (`useCitations`)
-   - Move comment logic to custom hook (`useComments`)
-   - Move sync logic to custom hook (`useRealtimeSync`)
-   - Extract editor configuration to separate file
-
-2. **Optimize real-time sync**
-   - Replace polling with WebSocket connection
-   - Implement operational transformation (OT) or CRDT for conflict resolution
-   - Add debouncing to reduce server load
-   - Implement optimistic updates
-
-3. **State management refactoring**
-   - Use `useReducer` for complex state (comments, tracked changes)
-   - Consider Zustand or Jotai for global state
-   - Implement proper memoization with `useMemo` and `useCallback`
-
-4. **Performance optimization**
-   - Lazy load heavy components (sidebars, modals)
-   - Virtualize long lists (comments, version history)
-   - Debounce auto-save (currently 2 seconds)
-   - Add React.memo to prevent unnecessary re-renders
+1. Extract inline toolbar into `EditorToolbar.jsx`
+2. Move citation logic → `hooks/useCitations.js`
+3. Move comment logic → `hooks/useComments.js`
+4. Move sync/presence logic → `hooks/useRealtimeSync.js`
+5. Remove debug `console.log` statements
+6. Add error boundaries around editor, sidebars, modals
 
 **Medium Priority:**
-5. **Error handling**
-   - Add error boundaries
-   - Implement retry logic for failed saves
-   - Show user-friendly error messages
-   - Add offline mode detection
-
-6. **Accessibility**
-   - Add ARIA labels to toolbar buttons
-   - Improve keyboard navigation
-   - Add screen reader support
-   - Ensure color contrast meets WCAG standards
+6. Replace 3-second polling with WebSocket (Socket.io or native)
+7. Use `useReducer` for comments and tracked changes state
+8. Enable auto-save by default (`autosaveEnabled` starts `true`)
+9. Add `React.memo` to toolbar, sidebars, modals
 
 **Low Priority:**
-7. **Code quality**
-   - Extract magic numbers to constants
-   - Add TypeScript for type safety
-   - Improve code documentation
-   - Add unit tests for critical functions
+10. Convert to TypeScript
+11. Add unit tests for action handlers
 
 ---
 
-### 2. **DocumentHeader Component** (`DocumentHeader.jsx` - 633 lines)
+### 2. **DocumentHeader Component** (`DocumentHeader.jsx` — ~633 lines)
 
-#### Current State:
-- Displays document title (editable inline)
-- Shows collaborators with online status
-- Displays pending invitations
-- Real-time presence indicators with animated badges
+#### Current State
+- Editable inline title with save/cancel
+- Collaborator avatars with online/offline status (animated ripple)
+- Displays pending invitations count
+- Shows save status (last saved time or "Saving...")
+- Role-based invite button visibility
 
-#### Strengths:
-- Clean UI with good visual hierarchy
-- Inline title editing with save/cancel
-- Comprehensive team member display
-- Online status with animated ripple effect
+#### Strengths
+- Clean, professional UI matching Google Docs conventions
+- Online presence animated with ripple effect
+- Inline editing feels native
+- Shows max 6 avatars with overflow count
 
-#### Improvement Suggestions:
+#### Issues
+- No cursor/section indicator per collaborator ("Alice is editing Introduction")
+- No live typing indicators
+- Title save requires clicking ✓ — no auto-save on blur option
+
+#### Improvements
 
 **High Priority:**
-1. **Optimize avatar rendering**
-   - Lazy load avatar images if using photos
-   - Limit displayed avatars (currently shows 6 max - good)
-   - Add virtualization for large teams
-
-2. **Enhance collaboration features**
-   - Add cursor position indicators for active users
-   - Show what section each user is editing
-   - Add "follow user" feature to see their edits in real-time
+1. Add per-collaborator cursor position indicators
+2. Show "editing [section]" label per active user
 
 **Medium Priority:**
-3. **Title editing improvements**
-   - Add character limit indicator
-   - Implement title suggestions based on content
-   - Add version history for title changes
-   - Prevent duplicate titles
-
-4. **Team management**
-   - Add quick role change dropdown
-   - Show last active time for offline users
-   - Add filter/search for large teams
-   - Show user activity stats (edits, comments)
+3. Add character counter to title field
+4. Auto-save title on blur (with debounce)
+5. Show last active timestamp for offline users
 
 ---
 
-### 3. **DocumentMenuBar Component** (`DocumentMenuBar.jsx` - 1,860 lines)
+### 3. **DocumentMenuBar Component** (`DocumentMenuBar.jsx` — ~1,938 lines)
 
-#### Current State:
-- Traditional menu bar (File, Edit, View, Insert, Format, Review, Citation)
-- Nested submenus with hover behavior
-- Keyboard shortcuts
-- Table templates and quick tables
+#### Current State
+Full application-style menu bar with these menus:
 
-#### Strengths:
-- Familiar interface (like MS Word/Google Docs)
-- Comprehensive menu options
-- Good keyboard shortcut coverage
+| Menu | Items | Status |
+|------|-------|--------|
+| **File** | New, Open, Save, Save As, Export PDF, Export Word, Share, Print, Autosave | ✅ |
+| **Edit** | Undo, Redo, Cut, Copy, Paste, Find, Select All | ✅ |
+| **View** | Fullscreen, Zoom In/Out, Reset Zoom, Outline, Comments, Track Changes | ✅ |
+| **Insert** | Table (with templates & quick grid), Link, Image, Page Break, Horizontal Rule, Special Characters | ✅ |
+| **Format** | Text style, Bold, Italic, Underline, Strikethrough, Superscript, Subscript, Text Color, Highlight, Headings, Text Align, Line Spacing, Lists, Blockquote, Increase/Decrease Indent, Clear Formatting | ✅ |
+| **Review** | Spell Check, Grammar Check, Language, Track Changes, Accept/Reject All, New Comment, Show Comments | ✅ |
+| **Page** | Toggle Pagination, Insert Page Break (Ctrl+Enter), Auto-Calculate, Remove All Breaks, Pagination Settings | 🆕 |
+| **Citation** | Delegated to parent via `setCitationMenuAnchor` | ✅ |
 
-#### Issues Identified:
-- **Large file size** (1,860 lines)
-- **Complex hover logic** with multiple timeouts
-- **Accessibility concerns** - hover-only menus difficult for keyboard users
-- **Mobile unfriendly** - hover doesn't work on touch devices
+**Props:**
+```javascript
+{ onFileAction, onEditAction, onViewAction, onInsertAction,
+  onFormatAction, onReviewAction, onPageAction,
+  autosaveEnabled, editor, showComments,
+  paginationEnabled, setCitationMenuAnchor, onTableProperties }
+```
 
-#### Improvement Suggestions:
+#### Issues
+- **71 KB / ~1,938 lines** — the largest single file in the editor
+- Complex hover/timeout logic for table submenu
+- Citation menu still handled by parent (not migrated)
+- No keyboard navigation within menus (arrow keys)
+
+#### Improvements
 
 **High Priority:**
-1. **Split menu components**
-   - Create separate files for each menu (FileMenu.jsx, EditMenu.jsx, etc.)
-   - Extract menu items to configuration objects
-   - Create reusable MenuItem component
-
-2. **Improve accessibility**
-   - Add keyboard navigation (arrow keys)
-   - Support click-to-open in addition to hover
-   - Add focus indicators
-   - Implement ARIA menu patterns
-
-3. **Mobile optimization**
-   - Convert to hamburger menu on mobile
-   - Use click instead of hover on touch devices
-   - Add swipe gestures for common actions
+1. Split into separate menu files: `FileMenu.jsx`, `EditMenu.jsx`, etc.
+2. Migrate Citation menu into this component fully
+3. Add keyboard arrow-key navigation
 
 **Medium Priority:**
-4. **Menu organization**
-   - Add recently used items
-   - Implement command palette (Cmd+K)
-   - Add customizable toolbar
-   - Show context-sensitive menus
-
-5. **Visual improvements**
-   - Add icons to all menu items
-   - Show keyboard shortcuts consistently
-   - Add menu item descriptions
-   - Implement menu search
+4. Implement command palette (Ctrl+K / Cmd+K)
+5. Add recently used items per menu
+6. Mobile: convert to hamburger or bottom sheet
 
 ---
 
-### 4. **CommentsSidebar Component** (`CommentsSidebar.jsx` - 903 lines)
+### 4. **CommentsSidebar Component** (`CommentsSidebar.jsx` — ~903 lines)
 
-#### Current State:
-- Real-time comment sync (3-second polling)
-- Tabbed interface (All, Open, Resolved)
-- Search and filter functionality
-- Thread-based comments
-- Live notifications for new comments
+#### Current State
+- 3-second polling for live updates
+- Tabs: All / Open / Resolved
+- Search and filter
+- Thread-based with replies
+- Comment tooltips on highlighted text (`CommentTooltip.jsx`)
+- Supports `COMMENT`, `SUGGESTION` comment types
+- Linked to `CommentHighlight` extension for in-text highlighting
 
-#### Strengths:
-- Real-time updates
-- Good filtering options
-- Thread support
-- Visual notifications
+#### Issues
+- Polling creates server load (especially with many users)
+- No optimistic updates — new comments appear after next poll
+- Component is large and mixes data fetching with rendering
 
-#### Issues Identified:
-- **Polling overhead** - 3-second intervals inefficient
-- **No optimistic updates** - comments appear delayed
-- **Large component** - should be split
-
-#### Improvement Suggestions:
+#### Improvements
 
 **High Priority:**
-1. **Replace polling with WebSocket**
-   - Instant comment updates
-   - Reduce server load
-   - Better battery life on mobile
-
-2. **Implement optimistic updates**
-   - Show comments immediately
-   - Handle conflicts gracefully
-   - Add retry mechanism
-
-3. **Performance optimization**
-   - Virtualize comment list for large threads
-   - Lazy load comment threads
-   - Debounce search input
+1. Replace polling with WebSocket for instant updates
+2. Add optimistic comment insertion
+3. Extract data fetching → `hooks/useComments.js`
 
 **Medium Priority:**
-4. **Enhanced features**
-   - Add @mentions for collaborators
-   - Support rich text in comments
-   - Add emoji reactions
-   - Enable comment attachments
-   - Add voice comments
-
-5. **Better organization**
-   - Group by section/heading
-   - Sort by priority/urgency
-   - Add comment templates
-   - Enable comment export
+4. Add `@mention` support for collaborators
+5. Add emoji reactions on comments
+6. Group comments by document section/heading
+7. Virtualize list for documents with 100+ comments
 
 ---
 
-### 5. **CitationLibraryModal Component** (`CitationLibraryModal.jsx` - 871 lines)
+### 5. **CitationLibraryModal Component** (`CitationLibraryModal.jsx` — ~871 lines)
 
-#### Current State:
+#### Current State
 - Database-backed citation library
-- Search and filter functionality
-- Folder organization
-- Multiple citation styles (APA, MLA, Chicago)
-- Integration with publication database
+- Search with debounce
+- Folder/collection organization
+- Citation styles: APA, MLA, Chicago, Harvard, Vancouver, IEEE, AMA (7 styles)
+- Integration with `ManageSourcesModal` for CRUD
+- Linked to `CitationMark` TipTap extension
 
-#### Strengths:
-- Comprehensive citation management
-- Good search functionality
-- Folder organization
+#### Note
+The previous analysis listed only 3 citation styles. **All 7 styles are now fully implemented** in `@/utils/citationFormatters`.
 
-#### Issues Identified:
-- **No pagination** - could be slow with many citations
-- **Limited citation styles** - only 3 supported
-- **No citation import** - manual entry only
+#### Issues
+- No pagination/virtual scroll — full list loaded at once
+- No import from external sources (Zotero, DOI lookup)
+- No duplicate detection when adding citations
 
-#### Improvement Suggestions:
-
-**High Priority:**
-1. **Add pagination/infinite scroll**
-   - Load citations in batches
-   - Implement virtual scrolling
-   - Add "load more" button
-
-2. **Expand citation styles**
-   - Add IEEE, Harvard, Vancouver
-   - Support custom citation styles
-   - Add citation style preview
-
-3. **Import/export features**
-   - Import from Zotero, Mendeley, EndNote
-   - Export to BibTeX, RIS, EndNote XML
-   - Bulk import from DOI/PMID
-   - Import from PDF metadata
-
-**Medium Priority:**
-4. **Smart citation features**
-   - Auto-complete author names
-   - Suggest citations based on content
-   - Detect duplicate citations
-   - Auto-fetch metadata from DOI
-
-5. **Better organization**
-   - Tags and labels
-   - Smart folders (auto-categorize)
-   - Citation notes
-   - Related citations
-
----
-
-### 6. **VersionHistorySidebar Component** (`VersionHistorySidebar.jsx` - 777 lines)
-
-#### Current State:
-- Manual and auto version creation
-- Version comparison
-- Restore functionality
-- Version metadata (author, timestamp, description)
-
-#### Strengths:
-- Clear version listing
-- Restore capability
-- Version descriptions
-
-#### Issues Identified:
-- **No diff view** - can't see what changed
-- **No auto-versioning** - relies on manual saves
-- **Limited metadata** - no word count changes, etc.
-
-#### Improvement Suggestions:
+#### Improvements
 
 **High Priority:**
-1. **Add visual diff**
-   - Side-by-side comparison
-   - Inline diff with highlighting
-   - Show added/removed/changed content
-   - Track formatting changes
-
-2. **Implement auto-versioning**
-   - Save version every N edits
-   - Time-based auto-save (hourly, daily)
-   - Save before major changes
-   - Configurable versioning rules
+1. Implement virtual scrolling / pagination
+2. Add DOI auto-fetch (CrossRef API)
+3. Import from BibTeX / RIS files
 
 **Medium Priority:**
-3. **Enhanced metadata**
-   - Word count changes
-   - Section changes
-   - Contributor breakdown
-   - Change summary (AI-generated)
-
-4. **Version management**
-   - Branch versions (like Git)
-   - Merge versions
-   - Tag important versions
-   - Version comparison matrix
+4. Add duplicate detection on insert
+5. Suggest citations based on current text context
+6. Add citation preview before inserting
 
 ---
 
-### 7. **TrackedChangesSidebar Component** (`TrackedChangesSidebar.jsx` - 737 lines)
+### 6. **ManageSourcesModal Component** (`ManageSourcesModal.jsx` — ~800 lines)
 
-#### Current State:
-- Track insertions, deletions, formatting changes
-- Accept/reject individual changes
-- Filter by status (pending, accepted, rejected)
-- Change attribution
+#### Current State
+- Full CRUD for citation sources
+- Separate from CitationLibraryModal
+- Supports all citation fields per type
 
-#### Strengths:
-- Clear change visualization
-- Individual change control
-- Good filtering
+#### Issues
+- Overlaps responsibility with CitationLibraryModal
+- Two modals to manage one concept (sources ↔ citations)
 
-#### Issues Identified:
-- **No bulk operations** - can't accept/reject all
-- **Limited change types** - doesn't track all formatting
-- **No change comments** - can't explain why change was made
+#### Improvement
+1. Consider merging or clearly separating responsibilities
+2. Add batch edit/delete
 
-#### Improvement Suggestions:
+---
+
+### 7. **VersionHistorySidebar Component** (`VersionHistorySidebar.jsx` — ~777 lines)
+
+#### Current State
+- Manual version creation with description
+- Auto-versions triggered by save
+- Version restore (replaces editor content)
+- Shows author, timestamp, description
+
+#### Issues
+- **No visual diff** between versions — user must restore to see changes
+- No auto-versioning on a time schedule
+- Restore is destructive with no "undo restore" option
+
+#### Improvements
 
 **High Priority:**
-1. **Add bulk operations**
-   - Accept/reject all changes
-   - Accept/reject by author
-   - Accept/reject by type
-   - Accept/reject by date range
-
-2. **Expand change tracking**
-   - Track table changes
-   - Track image changes
-   - Track citation changes
-   - Track style changes
+1. Add inline diff view (highlight added/removed text)
+2. Implement undo-restore (keep previous content in history)
 
 **Medium Priority:**
-3. **Change annotations**
-   - Add comments to changes
-   - Explain reasoning
-   - Link to related changes
-   - Add change categories
-
-4. **Better visualization**
-   - Color-code by author
-   - Timeline view of changes
-   - Heat map of edit activity
-   - Change statistics
+3. Time-based auto-versioning (every 30 min or every 100 edits)
+4. Word count delta per version
+5. Branch/fork version (non-destructive exploration)
 
 ---
 
-### 8. **Custom Extensions**
+### 8. **TrackedChangesSidebar Component** (`TrackedChangesSidebar.jsx` — ~737 lines)
 
-#### **TrackChanges Extension** (`TrackChanges.js` - 366 lines)
+#### Current State
+- Lists insertions and deletions with author and timestamp
+- Accept / Reject per change
+- Filter: Pending / Accepted / Rejected
+- Linked to `TrackChanges` TipTap extension
 
-**Current State:**
-- Tracks insertions and deletions
-- Change decorations
-- Accept/reject commands
+#### Issues
+- No bulk accept/reject all
+- Formatting changes not tracked (only text insertions/deletions)
+- No reasoning/annotation per change
 
-**Improvements:**
-1. Add conflict resolution
-2. Track formatting changes
-3. Improve performance with large documents
-4. Add change merging logic
+#### Improvements
 
-#### **CommentHighlight Extension** (`CommentHighlight.js` - 221 lines)
+**High Priority:**
+1. Add "Accept All" / "Reject All" buttons
+2. Accept/Reject by author
+3. Track formatting and citation changes
 
-**Current State:**
-- Highlights commented text
-- Different colors for comment types
-- Click to view comment
-
-**Improvements:**
-1. Add hover preview
-2. Support overlapping comments
-3. Add comment threading in highlights
-4. Improve performance with many comments
-
-#### **CitationMark Extension** (`CitationMark.js`)
-
-**Improvements:**
-1. Add citation preview on hover
-2. Support multiple citation formats
-3. Add citation editing inline
-4. Track citation usage
+**Medium Priority:**
+4. Allow annotating a change with a note
+5. Add author color-coding
+6. Timeline view of edits
 
 ---
 
-## Critical Issues to Address Immediately
+### 9. **Pagination System** (🆕 Added April 2026)
 
-### 1. **Performance Bottlenecks**
-- **3-second polling** creates unnecessary server load
-- **Large component files** slow down development
-- **No code splitting** increases initial load time
-- **Missing memoization** causes unnecessary re-renders
+#### Current State — fully implemented
 
-### 2. **Scalability Concerns**
-- **No pagination** in citation library
-- **Polling doesn't scale** to many concurrent users
-- **No conflict resolution** for simultaneous edits
-- **Memory leaks** from uncleared intervals
+**Files:**
+- `extensions/Pagination.js` — `PageBreak` node + `Pagination` ProseMirror plugin
+- `components/PaginationControls.jsx` — Toolbar dropdown + Settings dialog
+- `utils/paginationHelper.js` — Page size, word count, print CSS utilities
 
-### 3. **User Experience Issues**
-- **No offline support** - loses work without connection
-- **No autosave indicator** - unclear if changes saved
-- **Slow sync** - 3-second delay for changes
-- **No undo for destructive actions** (delete version, etc.)
+**Features:**
+- Enabled by default
+- Manual page break insertion (`Ctrl/Cmd + Enter`)
+- Auto-calculate breaks based on word count (~800 words/page)
+- Remove all breaks
+- Settings: page size (A4/Letter/Legal), orientation, margins, page number position
+- Visual indicator: dashed purple border with "--- Page Break ---" label
+- Print CSS: `break-after: page`, removes visual markers in print
 
----
+**Menu integration:**
+- Accessible via **Page** menu in DocumentMenuBar
+- Also accessible via toolbar `<PaginationControls>` button
 
-## Recommended Implementation Priority
+#### Issues
+- Auto-calculate uses **word count only** — not actual rendered element height
+- Page breaks don't reflow when text is edited (must re-run auto-calculate)
+- No page count in status bar
+- No page-based navigation ("jump to page X")
+- Page number decorations (`Page X`) not yet correctly positioned relative to break
 
-### Phase 1: Critical Fixes (Week 1-2)
-1. Implement WebSocket for real-time sync
-2. Split main component into smaller pieces
-3. Add error boundaries and error handling
-4. Implement optimistic updates
+#### Improvements
 
-### Phase 2: Performance (Week 3-4)
-1. Add code splitting and lazy loading
-2. Implement virtualization for long lists
-3. Add proper memoization
-4. Optimize re-renders
+**High Priority:**
+1. Add page count display in status bar / header
+2. Fix page number decoration positioning
+3. Persist pagination settings to database
 
-### Phase 3: Features (Week 5-8)
-1. Add visual diff for versions
-2. Implement citation import/export
-3. Add bulk operations for tracked changes
-4. Enhance collaboration features
-
-### Phase 4: Polish (Week 9-12)
-1. Improve accessibility
-2. Add mobile optimization
-3. Implement command palette
-4. Add comprehensive testing
+**Medium Priority:**
+4. Auto-reflow breaks on document change (debounced)
+5. Page navigation control (jump to page)
+6. Use rendered element heights for more accurate breaks
 
 ---
 
-## Architecture Recommendations
+### 10. **Custom TipTap Extensions**
 
-### Suggested File Structure:
+#### `CitationMark.js` (128 lines)
+- Mark extension storing `citationId` and `citationData`
+- Commands: `setCitation`, `updateCitation`, `removeCitation`
+- Renders as purple dotted underline
+- **Missing:** hover preview card, inline editing
+
+#### `CommentHighlight.js` (221 lines)
+- Mark extension storing `commentId` and `commentType`
+- Works with `CommentTooltip` for click-to-view
+- **Missing:** overlapping comment support, hover preview
+
+#### `TrackChanges.js` (366 lines)
+- Extension tracking text insertions/deletions via ProseMirror steps
+- Decorations for visual diff in editor
+- Commands: `enableTrackChanges`, `disableTrackChanges`, `acceptChange`, `rejectChange`, `acceptAllChanges`, `rejectAllChanges`
+- **Missing:** formatting change tracking, conflict resolution
+
+#### `Pagination.js` (🆕 ~210 lines)
+- `PageBreak` block node — renders `<div class="page-break">`
+- `Pagination` extension — ProseMirror plugin managing state and decorations
+- Commands: `insertPageBreak`, `removeAllPageBreaks`, `setPaginationEnabled`, `setPaginationOptions`, `autoCalculatePageBreaks`, `getPageCount`
+- Keyboard shortcut: `Mod+Enter`
+
+---
+
+## Critical Issues — Current Priority
+
+### 🔴 High (Address Now)
+1. **`page.js` too large** (~4,526 lines) — extract toolbar, extract hooks
+2. **Debug `console.log`** on every render — remove immediately
+3. **No error boundaries** — single crash breaks entire editor
+4. **Auto-save disabled by default** — users may lose work
+5. **Pagination page count not in UI** — users can't see total pages
+
+### 🟡 Medium (Next Sprint)
+6. **3-second polling** — replace with WebSocket
+7. **No visual diff** in version history
+8. **No bulk accept/reject** in tracked changes
+9. **CitationLibraryModal** has no pagination/virtual scroll
+10. **Pagination breaks don't reflow** on content edit
+
+### 🟢 Low (Backlog)
+11. No TypeScript
+12. No unit tests for action handlers
+13. Mobile optimization (menu bar, toolbar)
+14. Accessibility (ARIA, keyboard navigation in menus)
+15. No offline mode / offline-first support
+
+---
+
+## Recommended Implementation Roadmap
+
+### Phase 1 — Pagination ✅ Complete (Apr 2026)
+- [x] Pagination extension (`PageBreak` + `Pagination`)
+- [x] PaginationControls component
+- [x] Page menu in DocumentMenuBar
+- [x] Auto-enabled by default
+- [x] Print-friendly CSS
+
+### Phase 2 — Auto-References (Next)
+- [ ] `hooks/useAutoReferences.js`
+- [ ] `utils/referencesManager.js`
+- [ ] Auto-detect citations → auto-update References section
+- [ ] Toggle auto-update on/off
+- [ ] Manual refresh button
+
+### Phase 3 — Housekeeping
+- [ ] Remove debug `console.log`
+- [ ] Enable auto-save by default
+- [ ] Add error boundaries
+- [ ] Extract `EditorToolbar.jsx` from `page.js`
+- [ ] Extract hooks: `useCitations`, `useComments`, `useRealtimeSync`
+
+### Phase 4 — Real-time Upgrade
+- [ ] Replace polling with WebSocket (Socket.io)
+- [ ] Optimistic comment updates
+- [ ] CRDT conflict resolution (Yjs)
+
+### Phase 5 — Features
+- [ ] Visual diff in version history
+- [ ] Bulk accept/reject in tracked changes
+- [ ] DOI auto-fetch in citation library
+- [ ] Command palette (Ctrl+K)
+- [ ] Page count in status bar
+- [ ] Per-collaborator cursor indicators
+
+---
+
+## Architecture — Current vs Target
+
+### Current Structure
 ```
 /edit/[id]/
-├── page.js (main orchestrator - 200 lines max)
+├── page.js                          (~4,526 lines — monolithic)
 ├── components/
-│   ├── Editor/
-│   │   ├── EditorToolbar.jsx
-│   │   ├── EditorContent.jsx
-│   │   └── EditorStatusBar.jsx
-│   ├── Header/
-│   │   └── DocumentHeader.jsx
-│   ├── MenuBar/
-│   │   ├── DocumentMenuBar.jsx
-│   │   ├── FileMenu.jsx
-│   │   ├── EditMenu.jsx
-│   │   └── ... (other menus)
-│   ├── Sidebars/
-│   │   ├── CommentsSidebar.jsx
-│   │   ├── VersionHistorySidebar.jsx
-│   │   └── TrackedChangesSidebar.jsx
-│   └── Modals/
-│       ├── CitationLibraryModal.jsx
-│       └── ... (other modals)
-├── hooks/
-│   ├── useRealtimeSync.js
-│   ├── useCitations.js
-│   ├── useComments.js
-│   ├── useTrackChanges.js
-│   └── useVersionHistory.js
+│   ├── DocumentHeader.jsx
+│   ├── DocumentMenuBar.jsx          (~1,938 lines — oversized)
+│   ├── CommentsSidebar.jsx
+│   ├── CommentThread.jsx
+│   ├── CommentTooltip.jsx
+│   ├── AddCommentForm.jsx
+│   ├── CitationLibraryModal.jsx
+│   ├── CitationHoverMenu.jsx
+│   ├── ManageSourcesModal.jsx
+│   ├── VersionHistorySidebar.jsx
+│   ├── TrackedChangesSidebar.jsx
+│   ├── InsertTableDialog.jsx
+│   ├── TablePropertiesDialog.jsx
+│   ├── InviteCollaboratorDialog.jsx
+│   └── PaginationControls.jsx       (🆕 new)
 ├── extensions/
 │   ├── CitationMark.js
 │   ├── CommentHighlight.js
-│   └── TrackChanges.js
+│   ├── TrackChanges.js
+│   └── Pagination.js                (🆕 new)
 └── utils/
-    ├── editorConfig.js
-    ├── citationFormatter.js
-    └── syncManager.js
+    └── paginationHelper.js          (🆕 new)
 ```
 
-### Technology Stack Additions:
-- **Socket.io** - Real-time communication
-- **Yjs** or **Automerge** - CRDT for conflict-free sync
-- **Zustand** - Lightweight state management
-- **React Query** - Server state management
-- **Vitest** - Unit testing
-- **Playwright** - E2E testing
+### Target Structure
+```
+/edit/[id]/
+├── page.js                          (orchestrator only, ~200 lines)
+├── components/
+│   ├── EditorToolbar.jsx            (extracted from page.js)
+│   ├── DocumentHeader.jsx
+│   ├── DocumentMenuBar.jsx
+│   ├── menus/
+│   │   ├── FileMenu.jsx
+│   │   ├── EditMenu.jsx
+│   │   ├── ViewMenu.jsx
+│   │   ├── InsertMenu.jsx
+│   │   ├── FormatMenu.jsx
+│   │   ├── ReviewMenu.jsx
+│   │   ├── PageMenu.jsx
+│   │   └── CitationMenu.jsx
+│   ├── PaginationControls.jsx
+│   ├── sidebars/
+│   │   ├── CommentsSidebar.jsx
+│   │   ├── VersionHistorySidebar.jsx
+│   │   └── TrackedChangesSidebar.jsx
+│   └── modals/
+│       ├── CitationLibraryModal.jsx
+│       ├── ManageSourcesModal.jsx
+│       └── InviteCollaboratorDialog.jsx
+├── hooks/
+│   ├── useCitations.js
+│   ├── useComments.js
+│   ├── useRealtimeSync.js
+│   ├── useTrackChanges.js
+│   ├── useVersionHistory.js
+│   └── useAutoReferences.js        (next phase)
+├── extensions/
+│   ├── CitationMark.js
+│   ├── CommentHighlight.js
+│   ├── TrackChanges.js
+│   └── Pagination.js
+└── utils/
+    ├── paginationHelper.js
+    └── referencesManager.js        (next phase)
+```
+
+### Recommended Tech Additions
+| Technology | Purpose |
+|-----------|---------|
+| **Socket.io** | Replace polling for real-time sync |
+| **Yjs** | CRDT conflict-free collaborative editing |
+| **React Query** | Server state caching + invalidation |
+| **Zustand** | Lightweight shared editor state |
+| **Vitest** | Unit testing |
+| **Playwright** | End-to-end testing |
 
 ---
 
 ## Conclusion
 
-The collaborative manuscript editor is **feature-rich and functional** but suffers from:
-- **Architectural issues** (monolithic components)
-- **Performance problems** (polling, no optimization)
-- **Scalability limitations** (no conflict resolution)
+The editor is **fully functional and feature-rich**. The key strengths are the comprehensive citation system, comment threading, track changes, version history, and the newly added pagination system. The main structural debt is the monolithic `page.js` and the oversized `DocumentMenuBar.jsx`.
 
-**Priority actions:**
-1. Replace polling with WebSocket
-2. Refactor large components
-3. Add proper error handling
-4. Implement optimistic updates
-
-These improvements will create a **more maintainable, performant, and scalable** collaborative editing experience.
+**Immediate next steps in priority order:**
+1. 🔜 **Phase 2: Auto-References** — most impactful user feature
+2. 🔜 **Remove debug logs + enable auto-save** — quick wins
+3. 🔜 **Extract `EditorToolbar.jsx`** — biggest DX improvement
+4. 🔜 **Add page count to status bar** — complete pagination UX

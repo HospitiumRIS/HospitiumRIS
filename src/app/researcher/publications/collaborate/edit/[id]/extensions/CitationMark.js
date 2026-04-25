@@ -54,7 +54,7 @@ export const CitationMark = Mark.create({
       'span',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         class: 'citation-mark',
-        style: 'color: #8b6cbc; cursor: pointer; text-decoration: underline; text-decoration-style: dotted;',
+        style: 'color: #7c5cb5; cursor: pointer; background-color: rgba(139, 108, 188, 0.08); border-radius: 3px; padding: 1px 3px; border-bottom: 2px solid rgba(139, 108, 188, 0.4); transition: all 0.15s ease;',
       }),
       0,
     ];
@@ -77,20 +77,34 @@ export const CitationMark = Mark.create({
           ],
         });
       },
-      updateCitation: (citationId, formattedText) => ({ commands, state, tr }) => {
+      updateCitation: (citationId, formattedText, updatedCitationData) => ({ commands, state, tr }) => {
         const { doc } = state;
         let updated = false;
 
         doc.descendants((node, pos) => {
           if (node.isText && node.marks) {
-            node.marks.forEach(mark => {
-              if (mark.type.name === this.name && mark.attrs.citationId === citationId) {
-                const from = pos;
-                const to = pos + node.nodeSize;
-                tr.replaceWith(from, to, state.schema.text(formattedText, node.marks));
-                updated = true;
-              }
-            });
+            const citationMark = node.marks.find(
+              mark => mark.type.name === this.name && mark.attrs.citationId === citationId
+            );
+            
+            if (citationMark) {
+              const from = pos;
+              const to = pos + node.nodeSize;
+              
+              // Create updated marks with new citation data if provided
+              const newMarks = node.marks.map(mark => {
+                if (mark === citationMark && updatedCitationData) {
+                  return mark.type.create({
+                    citationId: mark.attrs.citationId,
+                    citationData: updatedCitationData,
+                  });
+                }
+                return mark;
+              });
+              
+              tr.replaceWith(from, to, state.schema.text(formattedText, newMarks));
+              updated = true;
+            }
           }
         });
 
@@ -103,6 +117,7 @@ export const CitationMark = Mark.create({
       removeCitation: (citationId) => ({ commands, state, tr }) => {
         const { doc } = state;
         let removed = false;
+        const positionsToDelete = [];
 
         doc.descendants((node, pos) => {
           if (node.isText && node.marks) {
@@ -111,14 +126,17 @@ export const CitationMark = Mark.create({
             );
             
             if (citationMark) {
-              const from = pos;
-              const to = pos + node.nodeSize;
-              const newMarks = node.marks.filter(mark => mark !== citationMark);
-              tr.replaceWith(from, to, state.schema.text(node.text, newMarks));
+              positionsToDelete.push({ from: pos, to: pos + node.nodeSize });
               removed = true;
             }
           }
         });
+
+        // Delete in reverse order to preserve positions
+        for (let i = positionsToDelete.length - 1; i >= 0; i--) {
+          const { from, to } = positionsToDelete[i];
+          tr.delete(from, to);
+        }
 
         return removed;
       },

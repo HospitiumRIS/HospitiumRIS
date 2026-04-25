@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Paper, IconButton, Tooltip, Typography, Divider } from '@mui/material';
+import { Box, Paper, Typography, Chip } from '@mui/material';
 import {
   Edit as EditIcon,
-  Delete as DeleteIcon,
-  Refresh as RefreshIcon,
-  Info as InfoIcon,
+  DeleteOutline as DeleteIcon,
+  MenuBook as JournalIcon,
+  CalendarToday as YearIcon,
+  OpenInNew as OpenIcon,
 } from '@mui/icons-material';
 
 export default function CitationHoverMenu({ editor, onUpdateCitation, onDeleteCitation }) {
@@ -45,7 +46,7 @@ export default function CitationHoverMenu({ editor, onUpdateCitation, onDeleteCi
               const rect = citationElement.getBoundingClientRect();
               setMenuPosition({
                 x: rect.left + rect.width / 2,
-                y: rect.bottom + 5,
+                y: rect.bottom + 8,
               });
               setCurrentCitation({
                 id: citationId,
@@ -121,122 +122,201 @@ export default function CitationHoverMenu({ editor, onUpdateCitation, onDeleteCi
 
   if (!showMenu || !currentCitation) return null;
 
+  // Extract citation metadata
+  const { data } = currentCitation;
+  const authors = Array.isArray(data.authors) ? data.authors : [];
+  const authorDisplay = authors.length > 2 
+    ? `${authors[0]} et al.` 
+    : authors.join(', ');
+  const journal = data.journal || data.source || data.publisher || '';
+  const doi = data.doi || '';
+
   return (
     <Paper
       ref={menuRef}
       onMouseEnter={handleMenuMouseEnter}
       onMouseLeave={handleMenuMouseLeave}
+      elevation={0}
       sx={{
         position: 'fixed',
         left: menuPosition.x,
         top: menuPosition.y,
         transform: 'translateX(-50%)',
         zIndex: 10000,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-        border: '1px solid #e0e0e0',
-        borderRadius: 2,
+        boxShadow: '0 4px 24px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
+        border: '1px solid rgba(139, 108, 188, 0.15)',
+        borderRadius: '12px',
         overflow: 'hidden',
-        minWidth: 280,
+        minWidth: 300,
+        maxWidth: 380,
+        animation: 'fadeInUp 0.15s ease-out',
+        '@keyframes fadeInUp': {
+          from: { opacity: 0, transform: 'translateX(-50%) translateY(4px)' },
+          to: { opacity: 1, transform: 'translateX(-50%) translateY(0)' },
+        },
       }}
     >
+      {/* Purple accent bar */}
+      <Box sx={{ height: 3, bgcolor: 'linear-gradient(90deg, #8b6cbc, #a78bda)', background: 'linear-gradient(90deg, #8b6cbc, #a78bda)' }} />
+
       {/* Citation Info */}
-      <Box sx={{ p: 1.5, bgcolor: '#f8f9fa' }}>
+      <Box sx={{ p: 2, pb: 1.5 }}>
         <Typography
           variant="body2"
           sx={{
             fontWeight: 600,
-            fontSize: '0.8rem',
-            color: '#2d3748',
-            mb: 0.5,
+            fontSize: '0.85rem',
+            color: '#1a202c',
+            lineHeight: 1.4,
+            mb: 0.75,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
           }}
         >
-          {currentCitation.data.title}
+          {data.title || 'Untitled'}
         </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            fontSize: '0.7rem',
-            color: '#64748b',
-            display: 'block',
-          }}
-        >
-          {currentCitation.data.authors?.[0]} {currentCitation.data.year && `(${currentCitation.data.year})`}
-        </Typography>
+
+        {/* Author */}
+        {authorDisplay && (
+          <Typography
+            variant="caption"
+            sx={{
+              fontSize: '0.78rem',
+              color: '#4a5568',
+              display: 'block',
+              mb: 0.5,
+              fontWeight: 500,
+            }}
+          >
+            {authorDisplay}
+          </Typography>
+        )}
+
+        {/* Metadata row */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mt: 0.75 }}>
+          {data.year && (
+            <Chip
+              icon={<YearIcon sx={{ fontSize: '0.75rem !important' }} />}
+              label={data.year}
+              size="small"
+              sx={{
+                height: 22,
+                fontSize: '0.7rem',
+                fontWeight: 500,
+                bgcolor: 'rgba(139, 108, 188, 0.08)',
+                color: '#7c5cb5',
+                border: '1px solid rgba(139, 108, 188, 0.15)',
+                '& .MuiChip-icon': { color: '#8b6cbc' },
+              }}
+            />
+          )}
+          {journal && (
+            <Chip
+              icon={<JournalIcon sx={{ fontSize: '0.75rem !important' }} />}
+              label={journal.length > 30 ? journal.substring(0, 30) + '...' : journal}
+              size="small"
+              sx={{
+                height: 22,
+                fontSize: '0.7rem',
+                fontWeight: 500,
+                bgcolor: 'rgba(33, 150, 243, 0.06)',
+                color: '#1976d2',
+                border: '1px solid rgba(33, 150, 243, 0.12)',
+                '& .MuiChip-icon': { color: '#1976d2' },
+              }}
+            />
+          )}
+        </Box>
       </Box>
 
-      <Divider />
+      {/* Divider */}
+      <Box sx={{ mx: 2, borderTop: '1px solid #f0f0f0' }} />
 
       {/* Action Buttons */}
-      <Box sx={{ display: 'flex', p: 0.5 }}>
-        <Tooltip title="Update Reference" placement="top">
-          <IconButton
-            size="small"
-            onClick={handleUpdate}
+      <Box sx={{ display: 'flex', p: 1, gap: 0.5 }}>
+        <Box
+          onClick={handleUpdate}
+          sx={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
+            py: 0.75,
+            px: 1,
+            borderRadius: '8px',
+            cursor: 'pointer',
+            color: '#7c5cb5',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            transition: 'all 0.15s ease',
+            '&:hover': {
+              bgcolor: 'rgba(139, 108, 188, 0.08)',
+            },
+          }}
+        >
+          <EditIcon sx={{ fontSize: '1rem' }} />
+          Edit
+        </Box>
+
+        {doi && (
+          <Box
+            component="a"
+            href={doi.startsWith('http') ? doi : `https://doi.org/${doi}`}
+            target="_blank"
+            rel="noopener noreferrer"
             sx={{
               flex: 1,
-              borderRadius: 1,
-              color: '#8b6cbc',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 0.5,
+              py: 0.75,
+              px: 1,
+              borderRadius: '8px',
+              cursor: 'pointer',
+              color: '#1976d2',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+              transition: 'all 0.15s ease',
               '&:hover': {
-                bgcolor: '#8b6cbc10',
+                bgcolor: 'rgba(33, 150, 243, 0.06)',
               },
             }}
           >
-            <RefreshIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+            <OpenIcon sx={{ fontSize: '1rem' }} />
+            DOI
+          </Box>
+        )}
 
-        <Tooltip title="Edit Citation" placement="top">
-          <IconButton
-            size="small"
-            onClick={handleUpdate}
-            sx={{
-              flex: 1,
-              borderRadius: 1,
-              color: '#2196f3',
-              '&:hover': {
-                bgcolor: '#2196f310',
-              },
-            }}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-
-        <Tooltip title="View Details" placement="top">
-          <IconButton
-            size="small"
-            sx={{
-              flex: 1,
-              borderRadius: 1,
-              color: '#64748b',
-              '&:hover': {
-                bgcolor: '#64748b10',
-              },
-            }}
-          >
-            <InfoIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-
-        <Tooltip title="Remove Citation" placement="top">
-          <IconButton
-            size="small"
-            onClick={handleDelete}
-            sx={{
-              flex: 1,
-              borderRadius: 1,
+        <Box
+          onClick={handleDelete}
+          sx={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
+            py: 0.75,
+            px: 1,
+            borderRadius: '8px',
+            cursor: 'pointer',
+            color: '#94a3b8',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            transition: 'all 0.15s ease',
+            '&:hover': {
+              bgcolor: 'rgba(239, 68, 68, 0.06)',
               color: '#ef4444',
-              '&:hover': {
-                bgcolor: '#ef444410',
-              },
-            }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+            },
+          }}
+        >
+          <DeleteIcon sx={{ fontSize: '1rem' }} />
+          Remove
+        </Box>
       </Box>
     </Paper>
   );

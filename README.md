@@ -12,14 +12,14 @@ HospitiumRIS serves as a centralized platform for:
 
 ## Features
 
-### 🤖 AI-Powered Insights
+### AI-Powered Insights
 
 - **AI Publication Summaries**: Automatically generate comprehensive summaries of research publications using Google Gemini AI
 - **Keyword Extraction**: AI-powered extraction of key terms and concepts from abstracts
 - **Batch Processing**: Generate summaries for multiple publications simultaneously
 - **Research Trends**: Identify emerging patterns and themes in your research portfolio
 
-### 📚 Publication Management
+### Publication Management
 
 - **Multi-Source Import**: Import from PubMed, CrossRef, OpenAlex, and Research4Life
 - **Format Support**: BibTeX, RIS (EndNote), Mendeley, and CSV formats
@@ -30,7 +30,7 @@ HospitiumRIS serves as a centralized platform for:
 - **Bibliography Generation**: Automatic bibliography with only cited references
 - **Cite-as-You-Write**: Real-time citation insertion while writing
 
-### ✍️ Manuscript Collaboration
+### Manuscript Collaboration
 
 - **Real-time Editing**: Collaborative document editing with TipTap rich text editor
 - **ORCID Integration**: Invite collaborators via ORCID search or direct email
@@ -41,7 +41,7 @@ HospitiumRIS serves as a centralized platform for:
 - **Presence Indicators**: See who's online and editing in real-time
 - **Citation Management**: Integrated citation insertion and bibliography generation
 
-### 🔬 Research Proposals
+### Research Proposals
 
 - **Structured Templates**: Create proposals with predefined sections
 - **Publication Linking**: Connect related publications and manuscripts
@@ -51,7 +51,7 @@ HospitiumRIS serves as a centralized platform for:
 - **Multi-Investigator**: Support for collaborative research teams
 - **Data Management Plans**: Create and manage DMP documents
 
-### 🌐 Network Visualization
+### Network Visualization
 
 - **Collaboration Network**: Interactive D3.js visualization of research connections
 - **ORCID Display**: Show researcher ORCID IDs in network profiles
@@ -60,7 +60,7 @@ HospitiumRIS serves as a centralized platform for:
 - **Relationship Levels**: Direct, secondary, and tertiary collaboration visualization
 - **Publication Sharing**: View shared publications between collaborators
 
-### 📊 Analytics & Reporting
+### Analytics & Reporting
 
 - **Research Analytics**: Professional bar charts with proper scaling
 - **Publication Trends**: Track publications and projects over time
@@ -69,7 +69,7 @@ HospitiumRIS serves as a centralized platform for:
 - **Custom Reports**: Generate reports for specific time periods
 - **Export Options**: Download data in multiple formats
 
-### 🔗 Integrations
+### Integrations
 
 - **ORCID**: Authentication and researcher profile lookup
 - **Zotero**: Library synchronization and import
@@ -79,7 +79,7 @@ HospitiumRIS serves as a centralized platform for:
 - **CrossRef**: Citation data and metadata retrieval
 - **Research4Life**: Access to research resources
 
-### 💰 Grant & Campaign Management
+### Grant & Campaign Management
 
 - **Funding Tracking**: Monitor grant opportunities and applications
 - **Campaign Management**: Manage fundraising campaigns with activity logs
@@ -141,13 +141,28 @@ npm run db:generate
 npm run db:push
 ```
 
-4. Start the development server:
+4. **IMPORTANT**: Seed the account types (required before first run):
+
+```bash
+node prisma/seed-account-types.js
+```
+
+This creates the necessary account type records (GLOBAL_ADMIN, RESEARCHER, RESEARCH_ADMIN, etc.) in the database. Without this step, user creation will fail with a foreign key constraint error.
+
+5. Start the development server:
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to access the application.
+On first run, you'll be prompted to create a **Global Admin** account interactively. This account has full system access and can create institution admins. The setup will ask for:
+- Full name
+- Email address
+- Password (minimum 8 characters)
+
+After creation, you can access:
+- Login: [http://localhost:3000/login](http://localhost:3000/login)
+- Global Admin Panel: [http://localhost:3000/global-admin](http://localhost:3000/global-admin)
 
 ## Available Scripts
 
@@ -177,6 +192,33 @@ src/
 ├── services/              # External API integrations
 └── utils/                 # Helper functions
 ```
+
+## Troubleshooting
+
+### Foreign Key Constraint Error on First Run
+
+If you encounter an error like `Foreign key constraint violated on the constraint: users_accountType_fkey` when starting the application:
+
+1. Ensure PostgreSQL is running
+2. Verify your `DATABASE_URL` in `.env` is correct
+3. Run the account types seed script:
+   ```bash
+   node prisma/seed-account-types.js
+   ```
+4. Try starting the application again with `npm run dev`
+
+### Database Connection Issues
+
+- Check that PostgreSQL service is running
+- Verify database credentials in `.env`
+- Ensure the database exists: `createdb hospitiumris`
+- Test connection with: `npx prisma db pull`
+
+### Email Configuration Issues
+
+- For Gmail, use an App Password instead of your regular password
+- Enable "Less secure app access" or use OAuth2
+- Test your configuration with: `npm run test:email`
 
 ## Documentation
 

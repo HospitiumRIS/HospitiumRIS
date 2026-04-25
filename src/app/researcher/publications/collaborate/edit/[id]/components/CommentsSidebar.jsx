@@ -55,6 +55,7 @@ export default function CommentsSidebar({
   onCommentCreated = null,
   onCommentDeleted = null
 }) {
+  
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

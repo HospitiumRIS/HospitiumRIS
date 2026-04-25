@@ -138,6 +138,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import DocumentHeader from './components/DocumentHeader';
 import DocumentMenuBar from './components/DocumentMenuBar';
+import ErrorBoundary from './components/ErrorBoundary';
+import EditorToolbar from './components/EditorToolbar';
 import CitationLibraryModal from './components/CitationLibraryModal';
 import InviteCollaboratorDialog from './components/InviteCollaboratorDialog';
 import ManageSourcesModal from './components/ManageSourcesModal';
@@ -154,6 +156,7 @@ import { PageBreak, Pagination } from './extensions/Pagination';
 import BibliographyGenerator from '@/components/Bibliography/BibliographyGenerator';
 import ReferencesHoverButton from '@/components/Bibliography/ReferencesHoverButton';
 import CitationHoverMenu from './components/CitationHoverMenu';
+import EditCitationDialog from './components/EditCitationDialog';
 import PaginationControls from './components/PaginationControls';
 import { 
   formatCitationAPA, 
@@ -228,89 +231,6 @@ const extensions = [
     autoCalculate: true,
   }),
 ];
-
-// Toolbar Button Component
-const ToolbarButton = ({ active, onClick, disabled, children, title }) => (
-  <Tooltip title={title}>
-    <span>
-      <IconButton
-        onClick={onClick}
-        disabled={disabled}
-        size="small"
-        sx={{
-          color: active ? '#8b6cbc' : '#666',
-          backgroundColor: active ? '#8b6cbc10' : 'transparent',
-          '&:hover': {
-            backgroundColor: active ? '#8b6cbc20' : '#f5f5f5',
-          },
-          borderRadius: 1,
-          mx: 0.25
-        }}
-      >
-        {children}
-      </IconButton>
-    </span>
-  </Tooltip>
-);
-
-// Color Picker Component
-const ColorPicker = ({ editor, type = 'color' }) => {
-  const [anchorEl, setAnchorEl] = useState(null);
-  
-  const colors = [
-    '#000000', '#434343', '#666666', '#999999', '#b7b7b7', '#cccccc', '#d9d9d9', '#efefef', '#f3f3f3', '#ffffff',
-    '#980000', '#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff', '#4a86e8', '#0000ff', '#9900ff', '#ff00ff',
-    '#e6b8af', '#f4cccc', '#fce5cd', '#fff2cc', '#d9ead3', '#d0e0e3', '#c9daf8', '#cfe2f3', '#d9d2e9', '#ead1dc'
-  ];
-
-  return (
-    <>
-      <ToolbarButton
-        active={false}
-        onClick={(e) => setAnchorEl(e.currentTarget)}
-        title={type === 'color' ? 'Text Color' : 'Highlight'}
-      >
-        {type === 'color' ? <TextColorIcon fontSize="small" /> : <HighlightIcon fontSize="small" />}
-      </ToolbarButton>
-      <Popover
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-      >
-        <Box sx={{ p: 1, display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 0.5, width: 250 }}>
-          {colors.map((color) => (
-            <Box
-              key={color}
-              sx={{
-                width: 20,
-                height: 20,
-                backgroundColor: color,
-                border: '1px solid #ccc',
-                borderRadius: 0.5,
-                cursor: 'pointer',
-                '&:hover': {
-                  transform: 'scale(1.1)',
-                }
-              }}
-              onClick={() => {
-                if (type === 'color') {
-                  editor.chain().focus().setColor(color).run();
-                } else {
-                  editor.chain().focus().setHighlight({ color }).run();
-                }
-                setAnchorEl(null);
-              }}
-            />
-          ))}
-        </Box>
-      </Popover>
-    </>
-  );
-};
 
 // Professional Heading Structure Display Component with Tree View
 const HeadingStructureDisplay = ({ headings, onNavigate, activeHeadingId }) => {
@@ -514,12 +434,6 @@ export default function ManuscriptEditor() {
   const params = useParams();
   const router = useRouter();
   const manuscriptId = params?.id || params?.manuscriptId;
-  
-  // Debug logging
-  useEffect(() => {
-    console.log('ManuscriptEditor - params:', params);
-    console.log('ManuscriptEditor - manuscriptId:', manuscriptId);
-  }, [params, manuscriptId]);
 
   // Prevent hydration mismatch by only rendering on client
   const [mounted, setMounted] = useState(false);
@@ -539,6 +453,7 @@ export default function ManuscriptEditor() {
   const lastKnownServerUpdateRef = useRef(null);
   const lastLocalSaveTimeRef = useRef(null);
   const isSavingRef = useRef(false);
+  const lastSavedContentRef = useRef(null);
   
   // Ref to store editor selection when opening dropdown menus
   const savedSelectionRef = useRef(null);
@@ -546,7 +461,7 @@ export default function ManuscriptEditor() {
   const [comments, setComments] = useState([]);
   const [showComments, setShowComments] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState(null);
-  const [autosaveEnabled, setAutosaveEnabled] = useState(false);
+  const [autosaveEnabled, setAutosaveEnabled] = useState(true);
   const [insertTableDialogOpen, setInsertTableDialogOpen] = useState(false);
   const [tablePropertiesDialogOpen, setTablePropertiesDialogOpen] = useState(false);
   
@@ -571,6 +486,8 @@ export default function ManuscriptEditor() {
   const [citationLibraryOpen, setCitationLibraryOpen] = useState(false);
   const [manageSourcesOpen, setManageSourcesOpen] = useState(false);
   const [bibliographyGeneratorOpen, setBibliographyGeneratorOpen] = useState(false);
+  const [editCitationDialogOpen, setEditCitationDialogOpen] = useState(false);
+  const [citationToEdit, setCitationToEdit] = useState(null);
   
   // Text selection for commenting
   const [selectedText, setSelectedText] = useState(null);
@@ -589,6 +506,7 @@ export default function ManuscriptEditor() {
   
   // Pagination state
   const [paginationEnabled, setPaginationEnabled] = useState(true);
+  const [pageCount, setPageCount] = useState(1);
   
   // Database citation state for Cite as You Write
   const [quickCitations, setQuickCitations] = useState([]);
@@ -641,25 +559,67 @@ export default function ManuscriptEditor() {
       ? getAuthorName(citation.authors[1]) 
       : '';
     
+    // Extract edit options
+    const { prefix, suffix, pageNumbers, suppressAuthor } = citation;
+    
+    let citationText = '';
+    
+    // Build base citation
     switch (citationStyle) {
       case 'APA':
-        if (citation.type === 'journal') {
-          return `(${firstAuthor} et al., ${citation.year})`;
+        if (suppressAuthor) {
+          citationText = citation.year || '2020';
+        } else if (citation.type === 'journal') {
+          citationText = `${firstAuthor} et al., ${citation.year}`;
         } else if (citation.type === 'book') {
-          return `(${firstAuthor}${secondAuthor ? ' & ' + secondAuthor : ''}, ${citation.year})`;
+          citationText = `${firstAuthor}${secondAuthor ? ' & ' + secondAuthor : ''}, ${citation.year}`;
         } else if (citation.type === 'conference') {
-          return `(${firstAuthor}${secondAuthor ? ' & ' + secondAuthor : ''}, ${citation.year})`;
+          citationText = `${firstAuthor}${secondAuthor ? ' & ' + secondAuthor : ''}, ${citation.year}`;
         } else if (citation.type === 'book_chapter') {
-          return `(${firstAuthor}${secondAuthor ? ' & ' + secondAuthor : ''}, ${citation.year})`;
+          citationText = `${firstAuthor}${secondAuthor ? ' & ' + secondAuthor : ''}, ${citation.year}`;
+        } else {
+          citationText = `${firstAuthor} et al., ${citation.year}`;
+        }
+        // Add page numbers for APA
+        if (pageNumbers) {
+          citationText += `, p. ${pageNumbers}`;
         }
         break;
       case 'MLA':
-        return `(${firstAuthor} ${citation.year})`;
+        if (suppressAuthor) {
+          citationText = pageNumbers || citation.year || '2020';
+        } else {
+          citationText = `${firstAuthor} ${pageNumbers || citation.year}`;
+        }
+        break;
       case 'Chicago':
-        return `(${firstAuthor} ${citation.year})`;
+        if (suppressAuthor) {
+          citationText = citation.year || '2020';
+        } else {
+          citationText = `${firstAuthor} ${citation.year}`;
+        }
+        if (pageNumbers) {
+          citationText += `, ${pageNumbers}`;
+        }
+        break;
       default:
-        return `(${firstAuthor} et al., ${citation.year})`;
+        if (suppressAuthor) {
+          citationText = citation.year || '2020';
+        } else {
+          citationText = `${firstAuthor} et al., ${citation.year}`;
+        }
+        if (pageNumbers) {
+          citationText += `, ${pageNumbers}`;
+        }
     }
+    
+    // Add prefix and suffix
+    let finalText = '';
+    if (prefix) finalText += prefix + ' ';
+    finalText += citationText;
+    if (suffix) finalText += ' ' + suffix;
+    
+    return `(${finalText})`;
   }, [citationStyle]);
 
   const filterCitations = useCallback((searchTerm) => {
@@ -673,22 +633,44 @@ export default function ManuscriptEditor() {
     [filterCitations, citationSearch]
   );
 
-  // Handle citation update
+  // Handle citation update - opens edit dialog
   const handleUpdateCitation = (citationId, citationData) => {
+    setCitationToEdit({ id: citationId, data: citationData });
+    setEditCitationDialogOpen(true);
+  };
+
+  // Save edited citation with page numbers, prefix, suffix
+  const handleSaveEditedCitation = (citationId, citationData, editOptions) => {
     if (!editor) return;
     
-    const formattedCitation = formatCitation(citationData);
-    editor.chain().focus().updateCitation(citationId, formattedCitation).run();
+    // Merge citation data with edit options
+    const updatedCitationData = {
+      ...citationData,
+      ...editOptions,
+    };
+    
+    const formattedCitation = formatCitation(updatedCitationData);
+    editor.chain().focus().updateCitation(citationId, formattedCitation, updatedCitationData).run();
+    
+    // Update the References section to reflect the changes
+    setTimeout(() => {
+      updateReferencesSection();
+    }, 300);
   };
 
   // Handle citation deletion
   const handleDeleteCitation = async (citationId) => {
     if (!editor) return;
     
-    // Remove citation mark from document
+    // Remove citation text and mark from document
     editor.chain().focus().removeCitation(citationId).run();
     
-    // Decrement citation count in database
+    // Update the References section after editor processes the deletion
+    setTimeout(() => {
+      updateReferencesSection();
+    }, 300);
+    
+    // Remove citation from database
     try {
       if (!manuscriptId) return;
       
@@ -709,11 +691,6 @@ export default function ManuscriptEditor() {
     } catch (error) {
       console.error('Error removing citation:', error);
     }
-    
-    // Automatically update the References section after deletion
-    setTimeout(() => {
-      updateReferencesSection();
-    }, 100);
   };
 
   // Get citations used in document
@@ -763,7 +740,24 @@ export default function ManuscriptEditor() {
     if (!editor) return;
     
     const citations = getAllCitationsWithData();
-    if (citations.length === 0) return;
+    
+    // If no citations remain, remove the References section entirely
+    if (citations.length === 0) {
+      const currentContent = editor.getHTML();
+      const referencesRegex = /<h[1-3][^>]*>References<\/h[1-3]>[\s\S]*$/i;
+      if (referencesRegex.test(currentContent)) {
+        const { from, to } = editor.state.selection;
+        const newContent = currentContent.replace(referencesRegex, '');
+        editor.commands.setContent(newContent, false);
+        try {
+          const docLength = editor.state.doc.content.size;
+          editor.commands.setTextSelection({ from: Math.min(from, docLength), to: Math.min(to, docLength) });
+        } catch (e) {
+          // Cursor position may not be restorable
+        }
+      }
+      return;
+    }
     
     // Sort citations alphabetically by first author's last name
     const sortedCitations = [...citations].sort((a, b) => {
@@ -808,15 +802,18 @@ export default function ManuscriptEditor() {
     // Check if References section already exists
     const referencesRegex = /<h[1-3][^>]*>References<\/h[1-3]>[\s\S]*$/i;
     
-    // Build the references section HTML
+    // Build the references section HTML with numbering
     let referencesHTML = '<h2>References</h2>';
-    formattedReferences.forEach(ref => {
+    formattedReferences.forEach((ref, index) => {
       // Convert markdown-style italics to HTML and make DOI/URLs clickable
       const htmlRef = ref
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/\n/g, '<br>')
         .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #8b6cbc; text-decoration: underline;">$1</a>');
-      referencesHTML += `<p style="margin-left: 2em; text-indent: -2em;">${htmlRef}</p>`;
+      
+      // Add number prefix to each reference
+      const number = index + 1;
+      referencesHTML += `<p style="margin-left: 2.5em; text-indent: -2.5em;"><strong style="color: #8b6cbc;">${number}.</strong> ${htmlRef}</p>`;
     });
     
     let newContent;
@@ -856,10 +853,16 @@ export default function ManuscriptEditor() {
         .focus()
         .setTextSelection({ from: triggerPosition.startPos, to: triggerPosition.endPos })
         .setCitation(citation.id, citation, formattedCitation)
+        .insertContent(' ') // Add space after citation
         .run();
     } else {
       // Fallback to inserting at current position
-      editor.chain().focus().setCitation(citation.id, citation, formattedCitation).run();
+      editor
+        .chain()
+        .focus()
+        .setCitation(citation.id, citation, formattedCitation)
+        .insertContent(' ') // Add space after citation
+        .run();
     }
     
     // Automatically add citation to manuscript library
@@ -929,7 +932,8 @@ export default function ManuscriptEditor() {
     const beforeCursor = text.slice(0, cursorPos);
     
     // Pattern 1: @author - triggers when typing @ followed by letters
-    const atMatch = beforeCursor.match(/@([\w\s]*)$/);
+    // Match @ followed by word characters/spaces, but stop at any punctuation or special char
+    const atMatch = beforeCursor.match(/@([a-zA-Z0-9\s]*)$/);
     if (atMatch) {
       const query = atMatch[1].trim();
       // Only trigger if we have @ or @ followed by at least 1 character
@@ -945,7 +949,7 @@ export default function ManuscriptEditor() {
     }
     
     // Pattern 2: cite: - triggers when typing cite: followed by optional text
-    const citeMatch = beforeCursor.match(/cite:\s*([\w\s]*)$/i);
+    const citeMatch = beforeCursor.match(/cite:\s*([a-zA-Z0-9\s]*)$/i);
     if (citeMatch) {
       const query = citeMatch[1].trim();
       console.log('Citation trigger detected: cite:', query);
@@ -1027,6 +1031,8 @@ export default function ManuscriptEditor() {
           // Load content into editor if it exists
           if (editor && manuscriptData.content) {
             editor.commands.setContent(manuscriptData.content);
+            // Initialize the last saved content ref to prevent immediate auto-save
+            lastSavedContentRef.current = manuscriptData.content;
           }
           
           // Load existing comment highlights
@@ -1482,6 +1488,13 @@ export default function ManuscriptEditor() {
   const handleAutoSave = useCallback(async () => {
     if (!editor || saving || !manuscriptId) return;
     
+    const content = editor.getHTML();
+    
+    // Only save if content has actually changed
+    if (content === lastSavedContentRef.current) {
+      return;
+    }
+    
     setSaving(true);
     isSavingRef.current = true;
     // Track when we started saving to prevent sync conflicts
@@ -1489,7 +1502,6 @@ export default function ManuscriptEditor() {
     lastLocalSaveTimeRef.current = saveStartTime;
     
     try {
-      const content = editor.getHTML();
       
       const response = await fetch(`/api/manuscripts/${manuscriptId}`, {
         method: 'PATCH',
@@ -1508,6 +1520,8 @@ export default function ManuscriptEditor() {
         setLastSaved(savedTime);
         // Update the last known server update to prevent re-syncing our own changes
         lastKnownServerUpdateRef.current = new Date(data.data.updatedAt).getTime();
+        // Store the saved content to prevent unnecessary saves
+        lastSavedContentRef.current = content;
         setManuscript(prev => ({
           ...prev,
           wordCount: data.data.wordCount,
@@ -2207,6 +2221,66 @@ export default function ManuscriptEditor() {
     // TODO: Implement actual table styling application
   }, [editor]);
 
+  // Track citation removals (keyboard delete, cut, etc.) and update references
+  const previousCitationIdsRef = useRef(new Set());
+  useEffect(() => {
+    if (!editor) return;
+
+    const handleCitationTracking = () => {
+      const currentIds = new Set();
+      editor.state.doc.descendants((node) => {
+        if (node.isText && node.marks) {
+          node.marks.forEach(mark => {
+            if (mark.type.name === 'citation' && mark.attrs.citationId) {
+              currentIds.add(mark.attrs.citationId);
+            }
+          });
+        }
+      });
+
+      const prevIds = previousCitationIdsRef.current;
+
+      // Detect removed citations
+      const removedIds = [];
+      for (const id of prevIds) {
+        if (!currentIds.has(id)) {
+          removedIds.push(id);
+        }
+      }
+
+      // If citations were removed (by keyboard, cut, etc.), clean up
+      if (removedIds.length > 0) {
+        // Delete from database
+        removedIds.forEach(async (citationId) => {
+          try {
+            if (!manuscriptId) return;
+            await fetch(`/api/manuscripts/${manuscriptId}/citations/${citationId}`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+            });
+          } catch (error) {
+            console.error('Error removing citation from DB:', error);
+          }
+        });
+
+        // Update References section
+        setTimeout(() => {
+          updateReferencesSection();
+        }, 300);
+      }
+
+      previousCitationIdsRef.current = currentIds;
+    };
+
+    // Initialize with current citations
+    handleCitationTracking();
+
+    editor.on('update', handleCitationTracking);
+    return () => {
+      editor.off('update', handleCitationTracking);
+    };
+  }, [editor, manuscriptId]);
+
   // Auto-save when content changes
   useEffect(() => {
     if (autosaveEnabled && editor) {
@@ -2217,6 +2291,28 @@ export default function ManuscriptEditor() {
       return () => clearTimeout(timer);
     }
   }, [editor?.getHTML(), autosaveEnabled, handleAutoSave]);
+
+  // Update page count when content or pagination changes
+  useEffect(() => {
+    if (editor && paginationEnabled) {
+      const updatePageCount = () => {
+        const count = editor.commands.getPageCount();
+        setPageCount(count);
+      };
+
+      // Update immediately
+      updatePageCount();
+
+      // Listen for editor updates
+      editor.on('update', updatePageCount);
+
+      return () => {
+        editor.off('update', updatePageCount);
+      };
+    } else {
+      setPageCount(1);
+    }
+  }, [editor, paginationEnabled]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -2551,6 +2647,7 @@ export default function ManuscriptEditor() {
             />
             <Typography variant="body2" color="textSecondary" sx={{ fontSize: '0.8rem' }}>
               {manuscript?.type || 'Research Article'} • {manuscript?.wordCount || 0} words
+              {paginationEnabled && ` • Page ${pageCount}`}
             </Typography>
             <Typography variant="body2" color={saving ? 'primary' : 'textSecondary'} sx={{ fontSize: '0.8rem' }}>
               {saving ? 'Saving...' : `Last saved ${lastSaved ? format(lastSaved, 'HH:mm') : 'Never'}`}
@@ -2851,255 +2948,25 @@ export default function ManuscriptEditor() {
         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           
           {/* Editor Toolbar */}
-          <Paper sx={{ 
-            borderRadius: 0,
-            borderBottom: '1px solid #e0e0e0',
-            p: 1,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            flexWrap: 'wrap'
-          }}>
-            
-            {/* Document Structure Toggle */}
-            <ToolbarButton
-              active={showDocumentStructure}
-              onClick={() => setShowDocumentStructure(!showDocumentStructure)}
-              title="Document Structure"
-            >
-              <ViewSidebarIcon fontSize="small" />
-            </ToolbarButton>
-
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
-            {/* Undo/Redo */}
-            <ToolbarButton
-              onClick={() => editor.chain().focus().undo().run()}
-              disabled={!editor?.can().undo()}
-              title="Undo"
-            >
-              <UndoIcon fontSize="small" />
-            </ToolbarButton>
-            <ToolbarButton
-              onClick={() => editor.chain().focus().redo().run()}
-              disabled={!editor?.can().redo()}
-              title="Redo"
-            >
-              <RedoIcon fontSize="small" />
-            </ToolbarButton>
-
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
-            {/* Text Formatting */}
-            <ToolbarButton
-              active={editor?.isActive('bold')}
-              onClick={() => editor.chain().focus().toggleBold().run()}
-              title="Bold"
-            >
-              <BoldIcon fontSize="small" />
-            </ToolbarButton>
-            <ToolbarButton
-              active={editor?.isActive('italic')}
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-              title="Italic"
-            >
-              <ItalicIcon fontSize="small" />
-            </ToolbarButton>
-            <ToolbarButton
-              active={editor?.isActive('underline')}
-              onClick={() => editor.chain().focus().toggleUnderline().run()}
-              title="Underline"
-            >
-              <UnderlineIcon fontSize="small" />
-            </ToolbarButton>
-
-            {/* Color Tools */}
-            <ColorPicker editor={editor} type="color" />
-            <ColorPicker editor={editor} type="highlight" />
-
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
-            {/* Heading Dropdown */}
-            <Button
-              size="small"
-              onMouseDown={(e) => {
-                e.preventDefault(); // Prevent focus loss
-                saveEditorSelection();
-              }}
-              onClick={(e) => setHeadingDropdownAnchor(e.currentTarget)}
-              endIcon={<ArrowDropDownIcon />}
-              variant="outlined"
-              sx={{
-                color: '#666',
-                borderColor: '#e0e0e0',
-                '&:hover': {
-                  backgroundColor: '#f5f5f5',
-                  borderColor: '#8b6cbc'
-                },
-                borderRadius: 1,
-                mx: 0.25,
-                minWidth: 90,
-                fontSize: '0.75rem',
-                textTransform: 'none',
-                height: 32
-              }}
-            >
-              {editor?.isActive('heading', { level: 1 }) ? 'H1' :
-               editor?.isActive('heading', { level: 2 }) ? 'H2' :
-               editor?.isActive('heading', { level: 3 }) ? 'H3' :
-               editor?.isActive('heading', { level: 4 }) ? 'H4' :
-               editor?.isActive('heading', { level: 5 }) ? 'H5' :
-               editor?.isActive('heading', { level: 6 }) ? 'H6' :
-               'Normal'}
-            </Button>
-
-            {/* Font Family Dropdown */}
-            <Button
-              size="small"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                saveEditorSelection();
-              }}
-              onClick={(e) => setFontFamilyAnchor(e.currentTarget)}
-              endIcon={<ArrowDropDownIcon />}
-              variant="outlined"
-              sx={{
-                color: '#666',
-                borderColor: '#e0e0e0',
-                '&:hover': {
-                  backgroundColor: '#f5f5f5',
-                  borderColor: '#8b6cbc'
-                },
-                borderRadius: 1,
-                mx: 0.25,
-                minWidth: 120,
-                fontSize: '0.75rem',
-                textTransform: 'none',
-                height: 32,
-                justifyContent: 'space-between'
-              }}
-            >
-              {editor?.getAttributes('textStyle')?.fontFamily || 'Default Font'}
-            </Button>
-
-            {/* Font Size Dropdown */}
-            <Button
-              size="small"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                saveEditorSelection();
-              }}
-              onClick={(e) => setFontSizeAnchor(e.currentTarget)}
-              endIcon={<ArrowDropDownIcon />}
-              variant="outlined"
-              sx={{
-                color: '#666',
-                borderColor: '#e0e0e0',
-                '&:hover': {
-                  backgroundColor: '#f5f5f5',
-                  borderColor: '#8b6cbc'
-                },
-                borderRadius: 1,
-                mx: 0.25,
-                minWidth: 70,
-                fontSize: '0.75rem',
-                textTransform: 'none',
-                height: 32,
-                justifyContent: 'space-between'
-              }}
-            >
-              {editor?.getAttributes('textStyle')?.fontSize?.replace('px', 'pt') || '12pt'}
-            </Button>
-
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
-            {/* Alignment */}
-            <ToolbarButton
-              active={editor?.isActive({ textAlign: 'left' })}
-              onClick={() => editor.chain().focus().setTextAlign('left').run()}
-              title="Align Left"
-            >
-              <AlignLeftIcon fontSize="small" />
-            </ToolbarButton>
-            <ToolbarButton
-              active={editor?.isActive({ textAlign: 'center' })}
-              onClick={() => editor.chain().focus().setTextAlign('center').run()}
-              title="Align Center"
-            >
-              <AlignCenterIcon fontSize="small" />
-            </ToolbarButton>
-            <ToolbarButton
-              active={editor?.isActive({ textAlign: 'right' })}
-              onClick={() => editor.chain().focus().setTextAlign('right').run()}
-              title="Align Right"
-            >
-              <AlignRightIcon fontSize="small" />
-            </ToolbarButton>
-
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
-            {/* Lists */}
-            <ToolbarButton
-              active={editor?.isActive('bulletList')}
-              onClick={() => editor.chain().focus().toggleBulletList().run()}
-              title="Bullet List"
-            >
-              <BulletListIcon fontSize="small" />
-            </ToolbarButton>
-            <ToolbarButton
-              active={editor?.isActive('orderedList')}
-              onClick={() => editor.chain().focus().toggleOrderedList().run()}
-              title="Numbered List"
-            >
-              <NumberListIcon fontSize="small" />
-            </ToolbarButton>
-
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
-            {/* Insert Tools */}
-            <ToolbarButton onClick={addLink} title="Insert Link">
-              <LinkIcon fontSize="small" />
-            </ToolbarButton>
-            <ToolbarButton onClick={addImage} title="Insert Image">
-              <ImageIcon fontSize="small" />
-            </ToolbarButton>
-            <ToolbarButton onClick={addTable} title="Insert Table">
-              <TableIcon fontSize="small" />
-            </ToolbarButton>
-            
-            <PaginationControls 
-              ref={paginationControlsRef}
-              editor={editor} 
-              enabled={paginationEnabled}
-              onToggle={setPaginationEnabled}
-            />
-
-            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
-            {/* Quote & Code */}
-            <ToolbarButton
-              active={editor?.isActive('blockquote')}
-              onClick={() => editor.chain().focus().toggleBlockquote().run()}
-              title="Quote"
-            >
-              <QuoteIcon fontSize="small" />
-            </ToolbarButton>
-            <ToolbarButton
-              active={editor?.isActive('code')}
-              onClick={() => editor.chain().focus().toggleCode().run()}
-              title="Inline Code"
-            >
-              <CodeIcon fontSize="small" />
-            </ToolbarButton>
-
-            {/* Clear Formatting */}
-            <ToolbarButton
-              onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
-              title="Clear Format"
-            >
-              <ClearFormatIcon fontSize="small" />
-            </ToolbarButton>
-          </Paper>
+          <EditorToolbar
+            editor={editor}
+            showDocumentStructure={showDocumentStructure}
+            onToggleDocumentStructure={() => setShowDocumentStructure(!showDocumentStructure)}
+            headingDropdownAnchor={headingDropdownAnchor}
+            setHeadingDropdownAnchor={setHeadingDropdownAnchor}
+            fontFamilyAnchor={fontFamilyAnchor}
+            setFontFamilyAnchor={setFontFamilyAnchor}
+            fontSizeAnchor={fontSizeAnchor}
+            setFontSizeAnchor={setFontSizeAnchor}
+            saveEditorSelection={saveEditorSelection}
+            addLink={addLink}
+            addImage={addImage}
+            addTable={addTable}
+            paginationControlsRef={paginationControlsRef}
+            paginationEnabled={paginationEnabled}
+            setPaginationEnabled={setPaginationEnabled}
+            PaginationControls={PaginationControls}
+          />
 
           {/* Editor Content */}
           <Box 
@@ -3166,64 +3033,85 @@ export default function ManuscriptEditor() {
               }
             }
           }}>
-            <EditorContent editor={editor} />
-            
-            {/* References Hover Button */}
-            <ReferencesHoverButton
-              editor={editor}
-              onOpenBibliographyGenerator={() => {
-                if (!manuscriptId) {
-                  console.error('Cannot open bibliography generator: manuscriptId is missing');
-                  return;
-                }
-                setBibliographyGeneratorOpen(true);
-              }}
-            />
-            
-            {/* Citation Hover Menu */}
-            <CitationHoverMenu
-              editor={editor}
-              onUpdateCitation={handleUpdateCitation}
-              onDeleteCitation={handleDeleteCitation}
-            />
+            <ErrorBoundary
+              title="Editor Error"
+              message="The editor encountered an error. Your work is saved. Try refreshing the page."
+              showReload={true}
+            >
+              <EditorContent editor={editor} />
+              
+              {/* References Hover Button */}
+              <ReferencesHoverButton
+                editor={editor}
+                onOpenBibliographyGenerator={() => {
+                  if (!manuscriptId) {
+                    console.error('Cannot open bibliography generator: manuscriptId is missing');
+                    return;
+                  }
+                  setBibliographyGeneratorOpen(true);
+                }}
+              />
+              
+              {/* Citation Hover Menu */}
+              <CitationHoverMenu
+                editor={editor}
+                onUpdateCitation={handleUpdateCitation}
+                onDeleteCitation={handleDeleteCitation}
+              />
+            </ErrorBoundary>
           </Box>
         </Box>
 
         {/* Right Sidebar - Comments */}
         {showComments && (
-          <CommentsSidebar
-            manuscriptId={manuscriptId}
-            currentUserId={user?.id}
-            selectedText={selectedText}
-            onClearSelection={clearTextSelection}
-            onCommentCreated={addCommentHighlight}
-            onCommentDeleted={removeCommentHighlight}
-          />
+          <ErrorBoundary
+            title="Comments Error"
+            message="The comments sidebar encountered an error. You can continue editing."
+          >
+            <CommentsSidebar
+              manuscriptId={manuscriptId}
+              currentUserId={user?.id}
+              selectedText={selectedText}
+              onClearSelection={clearTextSelection}
+              onCommentCreated={addCommentHighlight}
+              onCommentDeleted={removeCommentHighlight}
+            />
+          </ErrorBoundary>
         )}
         
         {/* Right Sidebar - Version History */}
         {showVersionHistory && (
-          <VersionHistorySidebar
-            manuscriptId={manuscriptId}
-            open={showVersionHistory}
-            onClose={() => setShowVersionHistory(false)}
-            onVersionRestore={handleVersionRestore}
-            currentContent={editor?.getHTML()}
-            currentTitle={manuscript?.title}
-          />
+          <ErrorBoundary
+            title="Version History Error"
+            message="The version history sidebar encountered an error. You can continue editing."
+          >
+            <VersionHistorySidebar
+              manuscriptId={manuscriptId}
+              open={showVersionHistory}
+              onClose={() => setShowVersionHistory(false)}
+              onVersionRestore={handleVersionRestore}
+              currentContent={editor?.getHTML()}
+              currentTitle={manuscript?.title}
+            />
+          </ErrorBoundary>
         )}
         
         {/* Right Sidebar - Tracked Changes */}
         {showTrackedChangesSidebar && (
-          <TrackedChangesSidebar
-            manuscriptId={manuscriptId}
-            open={showTrackedChangesSidebar}
-            onClose={() => setShowTrackedChangesSidebar(false)}
-            trackChangesEnabled={trackChangesEnabled}
-            onToggleTrackChanges={handleToggleTrackChanges}
-            onChangeAccepted={handleTrackedChangeAccepted}
-            onChangeRejected={handleTrackedChangeRejected}
-          />
+          <ErrorBoundary
+            title="Tracked Changes Error"
+            message="The tracked changes sidebar encountered an error. You can continue editing."
+          >
+            <TrackedChangesSidebar
+              manuscriptId={manuscriptId}
+              open={showTrackedChangesSidebar}
+              onClose={() => setShowTrackedChangesSidebar(false)}
+              trackChangesEnabled={trackChangesEnabled}
+              onToggleTrackChanges={handleToggleTrackChanges}
+              onChangeAccepted={handleTrackedChangeAccepted}
+              onChangeRejected={handleTrackedChangeRejected}
+            />
+          </ErrorBoundary>
         )}
       </Box>
 
@@ -4164,34 +4052,67 @@ export default function ManuscriptEditor() {
       </Popover>
 
       {/* Citation Library Modal */}
-      <CitationLibraryModal
-        open={citationLibraryOpen}
-        onClose={() => setCitationLibraryOpen(false)}
-        onCiteInsert={insertCitation}
-        citationStyle={citationStyle}
-      />
+      <ErrorBoundary
+        title="Citation Library Error"
+        message="The citation library encountered an error. You can continue editing."
+      >
+        <CitationLibraryModal
+          open={citationLibraryOpen}
+          onClose={() => setCitationLibraryOpen(false)}
+          onCiteInsert={insertCitation}
+          citationStyle={citationStyle}
+        />
+      </ErrorBoundary>
 
       {/* Manage Sources Modal */}
-      <ManageSourcesModal
-        open={manageSourcesOpen}
-        onClose={() => setManageSourcesOpen(false)}
-        manuscriptId={manuscriptId}
-        citationStyle={citationStyle}
-      />
+      <ErrorBoundary
+        title="Manage Sources Error"
+        message="The manage sources modal encountered an error. You can continue editing."
+      >
+        <ManageSourcesModal
+          open={manageSourcesOpen}
+          onClose={() => setManageSourcesOpen(false)}
+          manuscriptId={manuscriptId}
+          citationStyle={citationStyle}
+        />
+      </ErrorBoundary>
 
       {/* Bibliography Generator */}
-      <BibliographyGenerator
-        open={bibliographyGeneratorOpen}
-        onClose={() => setBibliographyGeneratorOpen(false)}
-        onInsert={(bibliography) => {
-          if (editor) {
-            // Insert bibliography at cursor position
-            editor.chain().focus().insertContent(bibliography).run();
-          }
-          setBibliographyGeneratorOpen(false);
+      <ErrorBoundary
+        title="Bibliography Generator Error"
+        message="The bibliography generator encountered an error. You can continue editing."
+      >
+        <BibliographyGenerator
+          open={bibliographyGeneratorOpen}
+          onClose={() => setBibliographyGeneratorOpen(false)}
+          onInsert={(bibliography) => {
+            if (editor) {
+              // Insert bibliography at cursor position
+              editor.chain().focus().insertContent(bibliography).run();
+            }
+            setBibliographyGeneratorOpen(false);
+          }}
+          manuscriptId={manuscriptId}
+          title="Bibliography Generator"
+        />
+      </ErrorBoundary>
+
+      {/* Edit Citation Dialog */}
+      <EditCitationDialog
+        open={editCitationDialogOpen}
+        onClose={() => {
+          setEditCitationDialogOpen(false);
+          setCitationToEdit(null);
         }}
-        manuscriptId={manuscriptId}
-        title="Bibliography Generator"
+        citation={citationToEdit?.data}
+        onSave={(editOptions) => {
+          if (citationToEdit) {
+            handleSaveEditedCitation(citationToEdit.id, citationToEdit.data, editOptions);
+          }
+          setEditCitationDialogOpen(false);
+          setCitationToEdit(null);
+        }}
+        currentStyle={citationStyle}
       />
 
       {/* Citation Popup */}
@@ -4385,6 +4306,19 @@ export default function ManuscriptEditor() {
       
       {/* Global styles for comment highlights and tracked changes */}
       <style jsx global>{`
+        /* Citation Mark Styles */
+        .ProseMirror .citation-mark {
+          position: relative;
+          z-index: 1;
+          font-weight: 500;
+        }
+
+        .ProseMirror .citation-mark:hover {
+          background-color: rgba(139, 108, 188, 0.15) !important;
+          border-bottom-color: rgba(139, 108, 188, 0.7) !important;
+          box-shadow: 0 1px 3px rgba(139, 108, 188, 0.2);
+        }
+
         .comment-highlight:hover {
           box-shadow: 0 0 0 2px rgba(139, 108, 188, 0.3) !important;
           transform: scale(1.02);
