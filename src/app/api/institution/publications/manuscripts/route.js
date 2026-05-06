@@ -9,11 +9,11 @@ export async function GET() {
       orderBy: { updatedAt: 'desc' },
       include: {
         creator: {
-          select: { id: true, fullName: true, email: true }
+          select: { id: true, givenName: true, familyName: true, email: true }
         },
         collaborators: {
           include: {
-            user: { select: { id: true, fullName: true, email: true } }
+            user: { select: { id: true, givenName: true, familyName: true, email: true } }
           }
         }
       }
@@ -26,10 +26,10 @@ export async function GET() {
       field: m.field,
       status: m.status,
       wordCount: m.wordCount || 0,
-      createdBy: m.creator?.fullName || m.creator?.email || 'Unknown',
+      createdBy: m.creator ? `${m.creator.givenName} ${m.creator.familyName}`.trim() || m.creator.email : 'Unknown',
       collaboratorCount: m.collaborators?.length || 0,
       collaborators: (m.collaborators || []).map(c => ({
-        name: c.user?.fullName || c.user?.email || 'Unknown',
+        name: c.user ? `${c.user.givenName} ${c.user.familyName}`.trim() || c.user.email : 'Unknown',
         role: c.role
       })),
       createdAt: m.createdAt,

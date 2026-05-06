@@ -64,6 +64,16 @@ import {
   NoteAdd as InternalGrantIcon,
   Shield as EthicsIcon,
   Gavel as EthicsReviewIcon,
+  Science as TrialIcon,
+  AppRegistration as RegistrationIcon,
+  VerifiedUser as ComplianceIcon,
+  SupervisedUserCircle as TeamIcon,
+  FolderShared as DocumentIcon,
+  PeopleAlt as RecruitmentIcon,
+  HealthAndSafety as SafetyIcon,
+  CloudSync as RegistryIcon,
+  Insights as ResultsIcon,
+  Dashboard as IntelligenceIcon,
 } from '@mui/icons-material';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
@@ -180,12 +190,7 @@ const Navbar = () => {
                     icon: <EthicsReviewIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
                     path: '/institution/ethics/review'
                   },
-                  {
-                    label: 'Ethics Applications',
-                    description: 'View all ethics applications',
-                    icon: <EthicsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/ethics/applications'
-                  }
+                  
                 ]
               },
               {
@@ -196,6 +201,101 @@ const Navbar = () => {
                     description: 'Monitor all ongoing projects and their progress',
                     icon: <AssessmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
                     path: '/institution/projects'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            label: 'Clinical Trials',
+            categories: [
+              {
+                title: 'PORTFOLIO OVERSIGHT',
+                items: [
+                  {
+                    label: 'Trial Portfolio',
+                    description: 'All institutional trials — pipeline view',
+                    icon: <TrialIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/clinical-trials'
+                  }
+                ]
+              },
+              {
+                title: 'GOVERNANCE & COMPLIANCE',
+                items: [
+                  {
+                    label: 'Ethics Approvals',
+                    description: 'Track IRB/ethics applications and routing',
+                    icon: <EthicsReviewIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/clinical-trials/approvals'
+                  },
+                  {
+                    label: 'Compliance Dashboard',
+                    description: 'Live flags: ethics expiry, GCP certs, SAE deadlines',
+                    icon: <ComplianceIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/clinical-trials/compliance'
+                  },
+                  {
+                    label: 'Registry Oversight',
+                    description: 'TRN tracking, submission deadlines, PACTR/CT.gov status',
+                    icon: <RegistryIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/clinical-trials/registry'
+                  }
+                ]
+              },
+              {
+                title: 'OPERATIONS OVERSIGHT',
+                items: [
+                  {
+                    label: 'Recruitment Performance',
+                    description: 'Cross-trial enrollment vs target, site benchmarks',
+                    icon: <RecruitmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/clinical-trials/recruitment'
+                  },
+                  {
+                    label: 'Safety & Deviations',
+                    description: 'SAE flag tracker, protocol deviations, corrective actions',
+                    icon: <SafetyIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/clinical-trials/safety'
+                  },
+                  {
+                    label: 'Document Repository',
+                    description: 'TMF review, version-controlled protocols, audit trail',
+                    icon: <DocumentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/clinical-trials/documents'
+                  }
+                ]
+              },
+              {
+                title: 'REPORTING & OUTPUTS',
+                items: [
+                  {
+                    label: 'Results & Reporting',
+                    description: 'Results submission deadlines, output-to-publication linkage',
+                    icon: <ResultsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/clinical-trials/results'
+                  },
+                  {
+                    label: 'Team & GCP Certification',
+                    description: 'Institution-wide GCP certification status, delegation logs',
+                    icon: <TeamIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/clinical-trials/team'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            label: 'Training',
+            categories: [
+              {
+                title: 'TRAINING MANAGEMENT',
+                items: [
+                  {
+                    label: 'Manage Trainings',
+                    description: 'Create and manage institutional trainings',
+                    icon: <SchoolIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/training'
                   }
                 ]
               }
@@ -218,6 +318,17 @@ const Navbar = () => {
                     description: 'Review researcher performance',
                     icon: <AssessmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
                     path: '/institution/researchers/review'
+                  }
+                ]
+              },
+              {
+                title: 'PROPOSAL REVIEW PIPELINE',
+                items: [
+                  {
+                    label: 'Review Pipeline Settings',
+                    description: 'Configure proposal review stages and workflow',
+                    icon: <StatusIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/administration/proposal-review-pipeline'
                   }
                 ]
               },
@@ -257,22 +368,6 @@ const Navbar = () => {
                     description: 'Monitor regulatory compliance',
                     icon: <AssignmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
                     path: '/institution/analytics/compliance'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Training',
-            categories: [
-              {
-                title: 'TRAINING MANAGEMENT',
-                items: [
-                  {
-                    label: 'Manage Trainings',
-                    description: 'Create and manage institutional trainings',
-                    icon: <SchoolIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/training'
                   }
                 ]
               }
@@ -395,6 +490,75 @@ const Navbar = () => {
                     description: 'Submit new ethics application',
                     icon: <CreateIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
                     path: '/researcher/ethics/applications/create'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            label: 'Clinical Trials',
+            
+            categories: [
+              {
+                title: 'TRIAL GOVERNANCE',
+                items: [
+                  {
+                    label: 'Trial Intake & Registration',
+                    description: 'Register study concepts and initiate trial setup',
+                    icon: <RegistrationIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/clinical-trials/intake'
+                  },
+                  {
+                    label: 'Ethics & Regulatory Clearance',
+                    description: 'Track IRB/Ethics approvals and regulatory submissions',
+                    icon: <EthicsReviewIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/clinical-trials/approvals'
+                  },
+                  {
+                    label: 'Study Team & Site Setup',
+                    description: 'Manage delegation of authority and verify GCP credentials',
+                    icon: <TeamIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/clinical-trials/team'
+                  },
+                  {
+                    label: 'Master Trial File (eTMF)',
+                    description: 'Store version-controlled protocols and regulatory documents',
+                    icon: <DocumentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/clinical-trials/documents'
+                  }
+                ]
+              },
+              {
+                title: 'OPERATIONS & MONITORING',
+                items: [
+                  {
+                    label: 'Trial Progress & Recruitment',
+                    description: 'Track enrollment metrics and site performance benchmarks',
+                    icon: <RecruitmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/clinical-trials/recruitment'
+                  },
+                  {
+                    label: 'Safety & Compliance Desk',
+                    description: 'Monitor SAE reporting and document protocol deviations',
+                    icon: <SafetyIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/clinical-trials/safety'
+                  },
+                  {
+                    label: 'Regulatory Reporting',
+                    description: 'Export metadata to public registries like PACTR and ClinicalTrials.gov',
+                    icon: <RegistryIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/clinical-trials/registry'
+                  }
+                ]
+              },
+              {
+                title: 'IMPACT & INSTITUTIONAL MEMORY',
+                items: [
+                  {
+                    label: 'Dissemination & Outputs',
+                    description: 'Link trials to publications, datasets, and funding sources',
+                    icon: <ResultsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/researcher/clinical-trials/results'
                   }
                 ]
               }

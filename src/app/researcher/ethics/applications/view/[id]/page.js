@@ -881,13 +881,25 @@ export default function ViewEthicsApplicationPage() {
                           },
                         }}
                         secondaryAction={
-                          <IconButton
-                            edge="end"
-                            onClick={() => window.open(doc.url || doc.path, '_blank')}
-                            sx={{ color: '#8b6cbc' }}
-                          >
-                            <DownloadIcon />
-                          </IconButton>
+                          doc.url || doc.path ? (
+                            <IconButton
+                              edge="end"
+                              onClick={() => window.open(doc.url || doc.path, '_blank')}
+                              sx={{ color: '#8b6cbc' }}
+                            >
+                              <DownloadIcon />
+                            </IconButton>
+                          ) : (
+                            <Tooltip title="File storage not yet implemented">
+                              <IconButton
+                                edge="end"
+                                disabled
+                                sx={{ color: '#999' }}
+                              >
+                                <DownloadIcon />
+                              </IconButton>
+                            </Tooltip>
+                          )
                         }
                       >
                         <ListItemIcon>

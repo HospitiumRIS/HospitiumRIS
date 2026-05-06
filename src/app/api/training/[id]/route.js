@@ -69,8 +69,28 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Check institution access
-    if (training.institutionId !== user.primaryInstitution) {
+    // Debug logging
+    console.log('Training access check:', {
+      trainingId: training.id,
+      trainingInstitutionId: training.institutionId,
+      userPrimaryInstitution: user.primaryInstitution,
+      userAccountType: user.accountType,
+      userId: user.id
+    });
+
+    // Check institution access (allow if user has primaryInstitution matching or if user is admin)
+    const hasInstitutionAccess = 
+      !training.institutionId || // Public training
+      training.institutionId === user.primaryInstitution ||
+      user.accountType === 'RESEARCH_ADMIN' ||
+      user.accountType === 'INSTITUTION_ADMIN';
+    
+    if (!hasInstitutionAccess) {
+      console.error('Access denied:', {
+        reason: 'Institution mismatch',
+        trainingInstitutionId: training.institutionId,
+        userPrimaryInstitution: user.primaryInstitution
+      });
       return NextResponse.json(
         { error: 'Access denied - Training belongs to different institution' },
         { status: 403 }

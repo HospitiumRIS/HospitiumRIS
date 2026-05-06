@@ -157,7 +157,9 @@ import BibliographyGenerator from '@/components/Bibliography/BibliographyGenerat
 import ReferencesHoverButton from '@/components/Bibliography/ReferencesHoverButton';
 import CitationHoverMenu from './components/CitationHoverMenu';
 import EditCitationDialog from './components/EditCitationDialog';
+import CommandPalette from './components/CommandPalette';
 import PaginationControls from './components/PaginationControls';
+// TODO (Phase 5): import { useManuscriptSync } from './hooks/useManuscriptSync'; // Enable when backend /api/manuscripts/[id]/sync is implemented
 import { 
   formatCitationAPA, 
   formatCitationMLA, 
@@ -488,6 +490,7 @@ export default function ManuscriptEditor() {
   const [bibliographyGeneratorOpen, setBibliographyGeneratorOpen] = useState(false);
   const [editCitationDialogOpen, setEditCitationDialogOpen] = useState(false);
   const [citationToEdit, setCitationToEdit] = useState(null);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   
   // Text selection for commenting
   const [selectedText, setSelectedText] = useState(null);
@@ -683,9 +686,7 @@ export default function ManuscriptEditor() {
       
       const result = await response.json();
       
-      if (result.success) {
-        console.log('Citation removed from manuscript');
-      } else {
+      if (!result.success) {
         console.error('Failed to remove citation:', result.error);
       }
     } catch (error) {
@@ -867,11 +868,6 @@ export default function ManuscriptEditor() {
     
     // Automatically add citation to manuscript library
     try {
-      console.log('=== Citation Insertion Debug ===');
-      console.log('Full citation object:', citation);
-      console.log('manuscriptId:', manuscriptId);
-      console.log('citation.id:', citation?.id);
-      
       // Validate required data
       if (!manuscriptId) {
         console.error('❌ Cannot add citation: manuscriptId is missing');
@@ -887,10 +883,6 @@ export default function ManuscriptEditor() {
         publicationId: citation.id
       };
       
-      console.log('✓ Validation passed');
-      console.log('Request URL:', `/api/manuscripts/${manuscriptId}/citations`);
-      console.log('Request body:', requestBody);
-      
       const response = await fetch(`/api/manuscripts/${manuscriptId}/citations`, {
         method: 'POST',
         headers: {
@@ -899,13 +891,9 @@ export default function ManuscriptEditor() {
         body: JSON.stringify(requestBody)
       });
       
-      console.log('Response status:', response.status);
       const result = await response.json();
-      console.log('API Response:', result);
       
-      if (result.success) {
-        console.log(result.isNew ? 'Citation added to manuscript library' : 'Citation count updated');
-      } else {
+      if (!result.success) {
         console.error('Failed to add citation to manuscript library:', result.error);
         console.error('Error details:', result.details);
         console.error('Error code:', result.code);
@@ -938,7 +926,6 @@ export default function ManuscriptEditor() {
       const query = atMatch[1].trim();
       // Only trigger if we have @ or @ followed by at least 1 character
       if (query.length >= 0) {
-        console.log('Citation trigger detected: @', query);
         return {
           found: true,
           query: query,
@@ -952,7 +939,6 @@ export default function ManuscriptEditor() {
     const citeMatch = beforeCursor.match(/cite:\s*([a-zA-Z0-9\s]*)$/i);
     if (citeMatch) {
       const query = citeMatch[1].trim();
-      console.log('Citation trigger detected: cite:', query);
       return {
         found: true,
         query: query,
@@ -1003,6 +989,102 @@ export default function ManuscriptEditor() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Command palette command handler
+  const handleCommand = useCallback(async (commandId) => {
+    switch (commandId) {
+      case 'save':
+        // Trigger manual save
+        if (editor && manuscriptId) {
+          const content = editor.getHTML();
+          try {
+            const response = await fetch(`/api/manuscripts/${manuscriptId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content })
+            });
+            const data = await response.json();
+            if (!data.success) {
+              console.error('Save failed:', data.error);
+            }
+          } catch (error) {
+            console.error('Error saving:', error);
+          }
+        }
+        break;
+      case 'exportPdf':
+        // TODO: Implement PDF export
+        break;
+      case 'exportWord':
+        // TODO: Implement Word export
+        break;
+      case 'print':
+        window.print();
+        break;
+      case 'find':
+        // TODO: Implement find & replace
+        break;
+      case 'insertLink':
+        if (editor) {
+          const url = window.prompt('Enter URL:');
+          if (url) {
+            editor.chain().focus().setLink({ href: url }).run();
+          }
+        }
+        break;
+      case 'insertImage':
+        // TODO: Implement image upload
+        break;
+      case 'insertTable':
+        setInsertTableDialogOpen(true);
+        break;
+      case 'insertCitation':
+        setCitationLibraryOpen(true);
+        break;
+      case 'manageSources':
+        setManageSourcesOpen(true);
+        break;
+      case 'bibliography':
+        setBibliographyGeneratorOpen(true);
+        break;
+      case 'addComment':
+        // TODO: Trigger comment mode
+        break;
+      case 'toggleComments':
+        setShowComments(prev => !prev);
+        break;
+      case 'toggleTrackChanges':
+        setTrackChangesEnabled(prev => !prev);
+        break;
+      case 'showTrackedChanges':
+        setShowTrackedChangesSidebar(true);
+        break;
+      case 'createVersion':
+        // TODO: Open create version dialog
+        break;
+      case 'showVersions':
+        setShowVersionHistory(true);
+        break;
+      case 'toggleFullscreen':
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else {
+          document.documentElement.requestFullscreen();
+        }
+        break;
+      case 'zoomIn':
+        // TODO: Implement zoom
+        break;
+      case 'zoomOut':
+        // TODO: Implement zoom
+        break;
+      case 'toggleOutline':
+        setShowDocumentStructure(prev => !prev);
+        break;
+      default:
+        console.warn('Unknown command:', commandId);
+    }
+  }, [editor, manuscriptId]);
 
   // Load manuscript data from API
   useEffect(() => {
@@ -1098,6 +1180,7 @@ export default function ManuscriptEditor() {
     loadManuscript();
   }, [manuscriptId, editor]);
 
+  // TODO (Phase 5): Replace with useManuscriptSync WebSocket hook once backend /api/manuscripts/[id]/sync is implemented
   // Presence tracking - send heartbeat, receive online users, and sync document state
   useEffect(() => {
     if (!manuscriptId || !user?.id || !editor) return;
@@ -1105,7 +1188,6 @@ export default function ManuscriptEditor() {
     let isActive = true;
     let heartbeatInterval = null;
 
-    // Function to update presence (heartbeat) and sync document state
     const updatePresence = async () => {
       if (!isActive) return;
       
@@ -1118,34 +1200,24 @@ export default function ManuscriptEditor() {
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data) {
-            // Extract user IDs from online users
             if (data.data.onlineUsers) {
               const onlineIds = data.data.onlineUsers.map(u => u.id);
               setOnlineUserIds(onlineIds);
             }
             
-            // Check for document updates from server
             if (data.data.manuscript) {
               const serverManuscript = data.data.manuscript;
               const serverUpdateTime = serverManuscript.updatedAt ? new Date(serverManuscript.updatedAt).getTime() : null;
               
-              // Sync title if changed
               if (serverManuscript.title) {
                 setManuscript(prev => {
                   if (prev && prev.title !== serverManuscript.title) {
-                    console.log('📝 Title synced from server:', serverManuscript.title);
                     return { ...prev, title: serverManuscript.title };
                   }
                   return prev;
                 });
               }
               
-              // Sync content if server has newer changes
-              // Only sync if:
-              // 1. We have a server update time
-              // 2. Server update is newer than our last known update
-              // 3. We haven't saved in the last 3 seconds (to avoid sync conflicts)
-              // 4. We're not currently saving
               if (serverUpdateTime && serverManuscript.content !== undefined) {
                 const lastKnown = lastKnownServerUpdateRef.current;
                 const lastSaveTime = lastLocalSaveTimeRef.current;
@@ -1155,47 +1227,28 @@ export default function ManuscriptEditor() {
                 const isNewerFromServer = !lastKnown || serverUpdateTime > lastKnown;
                 const notRecentlySaved = timeSinceLastSave > 3000;
                 
-                console.log('🔄 Sync check:', { 
-                  serverUpdateTime, 
-                  lastKnown, 
-                  isNewerFromServer, 
-                  timeSinceLastSave, 
-                  notRecentlySaved, 
-                  currentlySaving 
-                });
-                
                 if (isNewerFromServer && notRecentlySaved && !currentlySaving) {
                   const currentContent = editor.getHTML();
                   const serverContent = serverManuscript.content || '';
                   
-                  // Only update if content actually changed
                   if (currentContent !== serverContent) {
-                    console.log('📄 Content synced from server (another user made changes)');
-                    
-                    // Save cursor position
                     const { from, to } = editor.state.selection;
+                    editor.commands.setContent(serverContent, false);
                     
-                    // Update content
-                    editor.commands.setContent(serverContent, false); // false = don't emit update event
-                    
-                    // Try to restore cursor position (may not be exact if content changed significantly)
                     try {
                       const docLength = editor.state.doc.content.size;
                       const newFrom = Math.min(from, docLength);
                       const newTo = Math.min(to, docLength);
                       editor.commands.setTextSelection({ from: newFrom, to: newTo });
                     } catch (e) {
-                      // If cursor restoration fails, just move to end
                       editor.commands.focus('end');
                     }
                     
-                    // Update word count
                     if (serverManuscript.wordCount !== undefined) {
                       setManuscript(prev => prev ? { ...prev, wordCount: serverManuscript.wordCount } : prev);
                     }
                   }
                   
-                  // Update our last known server time
                   lastKnownServerUpdateRef.current = serverUpdateTime;
                 }
               }
@@ -1207,26 +1260,20 @@ export default function ManuscriptEditor() {
       }
     };
 
-    // Initial presence update
     updatePresence();
-
-    // Set up heartbeat interval (every 3 seconds for better content sync responsiveness)
     heartbeatInterval = setInterval(updatePresence, 3000);
 
-    // Cleanup function - remove presence when leaving
     return () => {
       isActive = false;
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
       }
-      
-      // Send leave signal
       fetch(`/api/manuscripts/${manuscriptId}/presence`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-      }).catch(() => {}); // Ignore errors on cleanup
+      }).catch(() => {});
     };
-  }, [manuscriptId, user?.id, editor]); // Removed state dependencies - using refs instead
+  }, [manuscriptId, user?.id, editor]);
 
   // Configure TrackChanges extension when user data is available
   useEffect(() => {
@@ -1238,11 +1285,9 @@ export default function ManuscriptEditor() {
         trackChangesExtension.options.userId = user.id;
         trackChangesExtension.options.userName = `${user.givenName} ${user.familyName}`;
         trackChangesExtension.options.onChangeCreated = (change) => {
-          console.log('Change created:', change);
           setTrackedChanges(prev => new Map(prev.set(change.id, change)));
         };
         trackChangesExtension.options.onChangeAccepted = (change) => {
-          console.log('Change accepted:', change);
           setTrackedChanges(prev => {
             const newMap = new Map(prev);
             newMap.delete(change.id);
@@ -1250,7 +1295,6 @@ export default function ManuscriptEditor() {
           });
         };
         trackChangesExtension.options.onChangeRejected = (change) => {
-          console.log('Change rejected:', change);
           setTrackedChanges(prev => {
             const newMap = new Map(prev);
             newMap.delete(change.id);
@@ -1401,19 +1445,6 @@ export default function ManuscriptEditor() {
     // Listen to editor updates
     editor.on('update', updateStructure);
 
-    return () => {
-      editor.off('update', updateStructure);
-    };
-  }, [editor, extractDocumentStructure]);
-
-  // Citation detection useEffect
-  useEffect(() => {
-    if (!editor || !citeAsYouWrite) {
-      console.log('Citation detection disabled:', { editor: !!editor, citeAsYouWrite });
-      return;
-    }
-
-    console.log('Citation detection enabled');
 
     const handleEditorUpdate = async () => {
       if (!editor.isFocused) return;
@@ -1427,7 +1458,6 @@ export default function ManuscriptEditor() {
       const detection = detectCitationTrigger(text, from);
       
       if (detection.found) {
-        console.log('Citation trigger found, fetching citations for:', detection.query);
         // Get cursor position for popup placement
         const coords = editor.view.coordsAtPos(from);
         setCitationSearch(detection.query);
@@ -1466,9 +1496,16 @@ export default function ManuscriptEditor() {
     };
   }, [editor, citeAsYouWrite, detectCitationTrigger, citationPopupAnchor, fetchQuickCitations]);
 
-  // Keyboard shortcuts for citation
+  // Keyboard shortcuts for citation and command palette
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Ctrl+K / Cmd+K for command palette
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(true);
+        return;
+      }
+      
       // Ctrl+Shift+C for manual citation insertion
       if (e.ctrlKey && e.shiftKey && e.key === 'C') {
         e.preventDefault();
@@ -1527,7 +1564,6 @@ export default function ManuscriptEditor() {
           wordCount: data.data.wordCount,
           updatedAt: data.data.updatedAt
         }));
-        console.log('💾 Document saved successfully');
       } else {
         console.error('Save failed:', data.error);
         // Could show a toast notification here
@@ -1558,7 +1594,6 @@ export default function ManuscriptEditor() {
       if (data.success) {
         // Update local manuscript state
         setManuscript(prev => ({ ...prev, title: newTitle.trim() }));
-        console.log('Title updated successfully');
       } else {
         console.error('Failed to update title:', data.error);
       }
@@ -1753,16 +1788,13 @@ export default function ManuscriptEditor() {
       case 'save-as':
         const newTitle = prompt('Enter document title:', manuscript?.title || 'Untitled Document');
         if (newTitle) {
-          console.log('Saving as:', newTitle);
           handleAutoSave();
         }
         break;
       case 'export-pdf':
-        console.log('Exporting as PDF');
         window.print(); // Simple print dialog for PDF export
         break;
       case 'export-word':
-        console.log('Exporting as Word document');
         // Future implementation for Word export
         break;
       case 'share':
@@ -1770,7 +1802,7 @@ export default function ManuscriptEditor() {
           title: manuscript?.title || 'Document',
           text: 'Check out this collaborative document',
           url: window.location.href
-        }) || console.log('Sharing document');
+        });
         break;
       case 'print':
         window.print();
@@ -1864,14 +1896,12 @@ export default function ManuscriptEditor() {
         break;
       case 'show-outline':
         // Toggle document outline (could show/hide left sidebar)
-        console.log('Toggle outline view');
         break;
       case 'comments':
         setShowComments(!showComments);
         break;
       case 'track-changes':
         // Toggle track changes mode
-        console.log('Toggle track changes');
         break;
       default:
         break;
@@ -2217,7 +2247,6 @@ export default function ManuscriptEditor() {
   const handleTablePropertiesApply = useCallback((settings) => {
     // Apply table settings to the currently selected table
     // This would involve updating the table's styling through TipTap commands
-    console.log('Applying table properties:', settings);
     // TODO: Implement actual table styling application
   }, [editor]);
 
@@ -2446,17 +2475,14 @@ export default function ManuscriptEditor() {
     switch(action) {
       case 'spell-check':
         // Implement spell check functionality
-        console.log('Spell check activated');
         // TODO: Integrate with browser spell check or external service
         break;
       case 'grammar-check':
         // Implement grammar check functionality
-        console.log('Grammar check activated');
         // TODO: Integrate with grammar checking service
         break;
       case 'language-settings':
         // Open language settings dialog
-        console.log('Language settings opened');
         // TODO: Implement language settings dialog
         break;
       case 'track-changes':
@@ -2471,24 +2497,17 @@ export default function ManuscriptEditor() {
             editor.commands.disableTrackChanges();
           }
         }
-        console.log('Track changes', newTrackChangesState ? 'enabled' : 'disabled');
         break;
       case 'accept-changes':
         // Accept all changes
         if (editor && trackedChanges.size > 0) {
           editor.commands.acceptAllChanges();
-          console.log('All changes accepted');
-        } else {
-          console.log('No changes to accept');
         }
         break;
       case 'reject-changes':
         // Reject all changes
         if (editor && trackedChanges.size > 0) {
           editor.commands.rejectAllChanges();
-          console.log('All changes rejected');
-        } else {
-          console.log('No changes to reject');
         }
         break;
       case 'new-comment':
@@ -2581,7 +2600,6 @@ export default function ManuscriptEditor() {
 
   // Handle tracked change accepted
   const handleTrackedChangeAccepted = useCallback((change) => {
-    console.log('Tracked change accepted:', change);
     setTrackedChanges(prev => {
       const newMap = new Map(prev);
       newMap.delete(change.changeId);
@@ -2591,7 +2609,6 @@ export default function ManuscriptEditor() {
 
   // Handle tracked change rejected
   const handleTrackedChangeRejected = useCallback((change) => {
-    console.log('Tracked change rejected:', change);
     setTrackedChanges(prev => {
       const newMap = new Map(prev);
       newMap.delete(change.changeId);
@@ -3924,12 +3941,8 @@ export default function ManuscriptEditor() {
                   );
                 } else if (e.key === 'Enter') {
                   e.preventDefault();
-                  console.log('Enter pressed, selectedIndex:', selectedCitationIndex, 'filteredCitations length:', filteredCitations.length);
                   if (filteredCitations[selectedCitationIndex]) {
-                    console.log('Inserting citation:', filteredCitations[selectedCitationIndex].title);
                     insertCitation(filteredCitations[selectedCitationIndex]);
-                  } else {
-                    console.log('No citation found at index:', selectedCitationIndex);
                   }
                 } else if (e.key === 'Escape') {
                   setCitationPopupAnchor(null);
@@ -4115,6 +4128,14 @@ export default function ManuscriptEditor() {
         currentStyle={citationStyle}
       />
 
+      {/* Command Palette */}
+      <CommandPalette
+        open={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        editor={editor}
+        onCommand={handleCommand}
+      />
+
       {/* Citation Popup */}
       <Popover
         anchorEl={citationPopupAnchor}
@@ -4172,12 +4193,8 @@ export default function ManuscriptEditor() {
                   );
                 } else if (e.key === 'Enter') {
                   e.preventDefault();
-                  console.log('Enter pressed, selectedIndex:', selectedCitationIndex, 'filteredCitations length:', filteredCitations.length);
                   if (filteredCitations[selectedCitationIndex]) {
-                    console.log('Inserting citation:', filteredCitations[selectedCitationIndex].title);
                     insertCitation(filteredCitations[selectedCitationIndex]);
-                  } else {
-                    console.log('No citation found at index:', selectedCitationIndex);
                   }
                 } else if (e.key === 'Escape') {
                   setCitationPopupAnchor(null);

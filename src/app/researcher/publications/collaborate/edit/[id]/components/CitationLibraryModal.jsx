@@ -70,8 +70,14 @@ const CitationLibraryModal = ({
   // Database state
   const [citations, setCitations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [totalCount, setTotalCount] = useState(0);
+  
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [hasMore, setHasMore] = useState(true);
 
   // Fetch library folders
   useEffect(() => {
@@ -85,8 +91,6 @@ const CitationLibraryModal = ({
         if (data.success) {
           setFolders(data.folders || []);
           setFolderPublications(data.folderPublications || {});
-          console.log('Loaded folders:', data.folders);
-          console.log('Folder publications mapping:', data.folderPublications);
         }
       } catch (err) {
         console.error('Error fetching library:', err);
@@ -98,26 +102,42 @@ const CitationLibraryModal = ({
 
   // Fetch citations from database
   useEffect(() => {
-    const fetchCitations = async () => {
-      if (!open) return; // Only fetch when modal is open
+    const fetchCitations = async (resetPage = false) => {
+      if (!open) return;
       
-      setLoading(true);
+      const currentPage = resetPage ? 1 : page;
+      const isInitialLoad = currentPage === 1;
+      
+      if (isInitialLoad) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError(null);
       
       try {
+        const offset = (currentPage - 1) * pageSize;
         const params = new URLSearchParams({
           search: searchTerm,
           type: selectedFilter,
-          limit: '100', // Fetch up to 100 citations
-          offset: '0'
+          limit: String(pageSize),
+          offset: String(offset)
         });
         
         const response = await fetch(`/api/citations?${params}`);
         const data = await response.json();
         
         if (data.success) {
-          setCitations(data.citations || []);
+          const newCitations = data.citations || [];
+          
+          if (isInitialLoad) {
+            setCitations(newCitations);
+          } else {
+            setCitations(prev => [...prev, ...newCitations]);
+          }
+          
           setTotalCount(data.pagination?.total || 0);
+          setHasMore(newCitations.length === pageSize);
         } else {
           setError(data.error || 'Failed to fetch citations');
         }
@@ -126,11 +146,27 @@ const CitationLibraryModal = ({
         setError('Failed to connect to database. Please try again.');
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     };
 
     fetchCitations();
-  }, [open, searchTerm, selectedFilter]); // Refetch when search or filter changes
+  }, [open, page, pageSize, searchTerm, selectedFilter]);
+  
+  // Reset page when search/filter changes
+  useEffect(() => {
+    if (open) {
+      setPage(1);
+      setCitations([]);
+    }
+  }, [searchTerm, selectedFilter, open]);
+  
+  // Load more handler
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      setPage(prev => prev + 1);
+    }
+  };
 
   // Get publications in selected folder
   const getPublicationsInFolder = (folderId) => {
@@ -160,11 +196,7 @@ const CitationLibraryModal = ({
     // Filter by folder if in folder view mode
     if (viewMode === 'folders' && selectedFolder) {
       const pubIds = folderPublications[selectedFolder] || [];
-      console.log('Selected folder:', selectedFolder);
-      console.log('Publication IDs in this folder:', pubIds);
-      console.log('Total citations available:', citations.length);
       filtered = filtered.filter(cit => pubIds.includes(cit.id));
-      console.log('Filtered citations count:', filtered.length);
     }
 
     // Client-side sorting (since we get pre-filtered data from API)
@@ -609,6 +641,7 @@ const CitationLibraryModal = ({
 
             {/* Citations List */}
             {!loading && !error && filteredAndSortedCitations.length > 0 && (
+              <>
               <Stack spacing={1.5}>
                 {filteredAndSortedCitations.map((citation, index) => (
                 <Card 
@@ -770,6 +803,38 @@ const CitationLibraryModal = ({
                 </Card>
               ))}
               </Stack>
+              
+              {/* Load More Button */}
+              {hasMore && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 2 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    startIcon={loadingMore ? <CircularProgress size={16} /> : null}
+                    sx={{
+                      textTransform: 'none',
+                      borderRadius: 2,
+                      px: 4,
+                      py: 1,
+                      fontWeight: 600,
+                      borderColor: '#8b6cbc',
+                      color: '#8b6cbc',
+                      '&:hover': {
+                        borderColor: '#7a5ba8',
+                        bgcolor: '#8b6cbc10'
+                      },
+                      '&:disabled': {
+                        borderColor: '#e2e8f0',
+                        color: '#94a3b8'
+                      }
+                    }}
+                  >
+                    {loadingMore ? 'Loading...' : `Load More (${totalCount - citations.length} remaining)`}
+                  </Button>
+                </Box>
+              )}
+              </>            
             )}
             </Box>
           </Box>
@@ -787,7 +852,7 @@ const CitationLibraryModal = ({
             <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500, fontSize: '0.75rem' }}>
               {loading ? 'Loading...' : viewMode === 'folders' && selectedFolder
                 ? `${filteredAndSortedCitations.length} citation(s) in ${folders.find(f => f.id === selectedFolder)?.name || 'folder'}`
-                : `${filteredAndSortedCitations.length} of ${totalCount} sources`
+                : `Showing ${citations.length} of ${totalCount} total sources`
               }
             </Typography>
             <Button 

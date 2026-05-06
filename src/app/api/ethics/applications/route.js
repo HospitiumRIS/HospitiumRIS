@@ -119,7 +119,15 @@ export async function POST(request) {
         
         status: data.status || 'DRAFT',
         committeeName: data.committeeName,
-        documents: data.documents || []
+        documents: [
+          ...(data.participantInfoSheet || []).map(file => ({ ...file, type: 'Participant Information Sheet' })),
+          ...(data.consentForm || []).map(file => ({ ...file, type: 'Consent Form' })),
+          ...(data.researchProtocol || []).map(file => ({ ...file, type: 'Research Protocol' })),
+          ...(data.recruitmentMaterials || []).map(file => ({ ...file, type: 'Recruitment Materials' })),
+          ...(data.dataCollectionTools || []).map(file => ({ ...file, type: 'Data Collection Tools' })),
+          ...(data.lettersOfSupport || []).map(file => ({ ...file, type: 'Letters of Support' })),
+          ...(data.investigatorCVs || []).map(file => ({ ...file, type: 'Investigator CVs' })),
+        ]
       }
     });
 

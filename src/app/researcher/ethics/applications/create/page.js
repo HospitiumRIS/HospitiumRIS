@@ -122,14 +122,43 @@ export default function CreateEthicsApplicationPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Convert File objects to metadata for JSON serialization
+  const convertFilesToMetadata = (files) => {
+    return files.map(file => ({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified,
+      uploadedAt: new Date().toISOString(),
+      // In production, upload to storage and store URL
+      url: null,
+      path: null
+    }));
+  };
+
+  const prepareFormDataForSubmission = () => {
+    return {
+      ...formData,
+      participantInfoSheet: convertFilesToMetadata(formData.participantInfoSheet),
+      consentForm: convertFilesToMetadata(formData.consentForm),
+      researchProtocol: convertFilesToMetadata(formData.researchProtocol),
+      recruitmentMaterials: convertFilesToMetadata(formData.recruitmentMaterials),
+      dataCollectionTools: convertFilesToMetadata(formData.dataCollectionTools),
+      lettersOfSupport: convertFilesToMetadata(formData.lettersOfSupport),
+      investigatorCVs: convertFilesToMetadata(formData.investigatorCVs),
+      userId: user?.id
+    };
+  };
+
   const handleSaveDraft = async () => {
     try {
       setLoading(true);
       setError('');
+      const submissionData = prepareFormDataForSubmission();
       const response = await fetch('/api/ethics/applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, userId: user?.id, status: 'DRAFT' }),
+        body: JSON.stringify({ ...submissionData, status: 'DRAFT' }),
       });
       const data = await response.json();
       if (data.success) {
@@ -149,10 +178,11 @@ export default function CreateEthicsApplicationPage() {
     try {
       setLoading(true);
       setError('');
+      const submissionData = prepareFormDataForSubmission();
       const response = await fetch('/api/ethics/applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, userId: user?.id, status: 'DRAFT' }),
+        body: JSON.stringify({ ...submissionData, status: 'DRAFT' }),
       });
       const data = await response.json();
       if (data.success) {

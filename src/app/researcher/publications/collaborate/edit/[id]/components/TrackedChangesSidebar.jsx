@@ -35,9 +35,12 @@ import {
   FilterList as FilterIcon,
   MoreVert as MoreIcon,
   PendingActions as PendingIcon,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
+  Group as GroupIcon,
+  DoneAll as DoneAllIcon,
+  RemoveDone as RemoveDoneIcon
 } from '@mui/icons-material';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 
 export default function TrackedChangesSidebar({ 
@@ -55,6 +58,8 @@ export default function TrackedChangesSidebar({
   const [filterMenuAnchor, setFilterMenuAnchor] = useState(null);
   const [changeMenuAnchor, setChangeMenuAnchor] = useState(null);
   const [selectedChange, setSelectedChange] = useState(null);
+  const [authorMenuAnchor, setAuthorMenuAnchor] = useState(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   // Fetch tracked changes
   const fetchChanges = useCallback(async () => {
@@ -137,21 +142,64 @@ export default function TrackedChangesSidebar({
 
   // Accept all pending changes
   const handleAcceptAll = async () => {
+    setBulkLoading(true);
     const pendingChanges = changes.filter(change => change.status === 'PENDING');
-    
     for (const change of pendingChanges) {
       await handleAcceptChange(change.changeId);
     }
+    setBulkLoading(false);
   };
 
   // Reject all pending changes
   const handleRejectAll = async () => {
+    setBulkLoading(true);
     const pendingChanges = changes.filter(change => change.status === 'PENDING');
-    
     for (const change of pendingChanges) {
       await handleRejectChange(change.changeId);
     }
+    setBulkLoading(false);
   };
+
+  // Accept all pending changes by a specific author
+  const handleAcceptByAuthor = async (authorKey) => {
+    setBulkLoading(true);
+    setAuthorMenuAnchor(null);
+    const authorPending = changes.filter(c =>
+      c.status === 'PENDING' &&
+      `${c.author?.givenName} ${c.author?.familyName}` === authorKey
+    );
+    for (const change of authorPending) {
+      await handleAcceptChange(change.changeId);
+    }
+    setBulkLoading(false);
+  };
+
+  // Reject all pending changes by a specific author
+  const handleRejectByAuthor = async (authorKey) => {
+    setBulkLoading(true);
+    setAuthorMenuAnchor(null);
+    const authorPending = changes.filter(c =>
+      c.status === 'PENDING' &&
+      `${c.author?.givenName} ${c.author?.familyName}` === authorKey
+    );
+    for (const change of authorPending) {
+      await handleRejectChange(change.changeId);
+    }
+    setBulkLoading(false);
+  };
+
+  // Unique authors who have pending changes
+  const authorsWithPending = useMemo(() => {
+    const map = {};
+    changes.forEach(change => {
+      if (change.status === 'PENDING' && change.author) {
+        const key = `${change.author.givenName} ${change.author.familyName}`;
+        if (!map[key]) map[key] = { key, author: change.author, count: 0 };
+        map[key].count++;
+      }
+    });
+    return Object.values(map);
+  }, [changes]);
 
   const getChangeTypeIcon = (type) => {
     switch (type) {
@@ -356,42 +404,63 @@ export default function TrackedChangesSidebar({
             </Button>
             
             {pendingChangesCount > 0 && (
-              <ButtonGroup size="small" variant="outlined">
-                <Button
-                  onClick={handleAcceptAll}
-                  sx={{ 
-                    fontSize: '0.75rem', 
-                    px: 1.5,
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    borderColor: '#10b981',
-                    color: '#10b981',
-                    '&:hover': {
-                      borderColor: '#059669',
-                      bgcolor: '#10b98110'
-                    }
-                  }}
-                >
-                  Accept All
-                </Button>
-                <Button
-                  onClick={handleRejectAll}
-                  sx={{ 
-                    fontSize: '0.75rem', 
-                    px: 1.5,
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    borderColor: '#ef4444',
-                    color: '#ef4444',
-                    '&:hover': {
-                      borderColor: '#dc2626',
-                      bgcolor: '#ef444410'
-                    }
-                  }}
-                >
-                  Reject All
-                </Button>
-              </ButtonGroup>
+              <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                <ButtonGroup size="small" variant="outlined">
+                  <Button
+                    onClick={handleAcceptAll}
+                    disabled={bulkLoading}
+                    sx={{ 
+                      fontSize: '0.75rem', 
+                      px: 1.5,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      borderColor: '#10b981',
+                      color: '#10b981',
+                      '&:hover': { borderColor: '#059669', bgcolor: '#10b98110' }
+                    }}
+                  >
+                    Accept All
+                  </Button>
+                  <Button
+                    onClick={handleRejectAll}
+                    disabled={bulkLoading}
+                    sx={{ 
+                      fontSize: '0.75rem', 
+                      px: 1.5,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      borderColor: '#ef4444',
+                      color: '#ef4444',
+                      '&:hover': { borderColor: '#dc2626', bgcolor: '#ef444410' }
+                    }}
+                  >
+                    Reject All
+                  </Button>
+                </ButtonGroup>
+
+                {authorsWithPending.length > 1 && (
+                  <Tooltip title="Accept or reject by author">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<GroupIcon />}
+                      onClick={(e) => setAuthorMenuAnchor(e.currentTarget)}
+                      disabled={bulkLoading}
+                      sx={{
+                        fontSize: '0.75rem',
+                        px: 1.5,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        borderColor: '#8b6cbc',
+                        color: '#8b6cbc',
+                        '&:hover': { borderColor: '#7a5cac', bgcolor: '#8b6cbc10' }
+                      }}
+                    >
+                      By Author
+                    </Button>
+                  </Tooltip>
+                )}
+              </Box>
             )}
           </Box>
         </Box>
@@ -664,6 +733,60 @@ export default function TrackedChangesSidebar({
           )}
         </Box>
       </Paper>
+
+      {/* By Author Menu */}
+      <Menu
+        anchorEl={authorMenuAnchor}
+        open={Boolean(authorMenuAnchor)}
+        onClose={() => setAuthorMenuAnchor(null)}
+        PaperProps={{ sx: { borderRadius: 2, minWidth: 260 } }}
+      >
+        <Box sx={{ px: 2, py: 1, borderBottom: '1px solid #f1f5f9' }}>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Accept / Reject by Author
+          </Typography>
+        </Box>
+        {authorsWithPending.map(({ key, author, count }) => (
+          <Box key={key} sx={{ px: 1.5, py: 1, display: 'flex', alignItems: 'center', gap: 1.5, borderBottom: '1px solid #f8fafc' }}>
+            <Box sx={{
+              width: 32, height: 32, borderRadius: '50%',
+              bgcolor: '#8b6cbc20',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <PersonIcon sx={{ fontSize: '1rem', color: '#8b6cbc' }} />
+            </Box>
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#2d3748' }} noWrap>
+                {key}
+              </Typography>
+              <Typography sx={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                {count} pending change{count !== 1 ? 's' : ''}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <Tooltip title={`Accept all from ${key}`}>
+                <IconButton
+                  size="small"
+                  onClick={() => handleAcceptByAuthor(key)}
+                  sx={{ color: '#10b981', '&:hover': { bgcolor: '#10b98115' } }}
+                >
+                  <DoneAllIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={`Reject all from ${key}`}>
+                <IconButton
+                  size="small"
+                  onClick={() => handleRejectByAuthor(key)}
+                  sx={{ color: '#ef4444', '&:hover': { bgcolor: '#ef444415' } }}
+                >
+                  <RemoveDoneIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
+        ))}
+      </Menu>
 
       {/* Filter Menu */}
       <Menu

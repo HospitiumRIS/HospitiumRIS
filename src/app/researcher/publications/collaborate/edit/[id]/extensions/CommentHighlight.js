@@ -150,20 +150,12 @@ const CommentHighlight = Mark.create({
           handleDOMEvents: {
             mouseenter: (view, event) => {
               const target = event.target;
-              console.log('Mouse enter event:', target, target.classList);
               
               if (target.classList.contains('comment-highlight')) {
                 const commentId = target.getAttribute('data-comment-id');
                 const commentType = target.getAttribute('data-comment-type');
                 const authorName = target.getAttribute('data-author-name');
                 const commentContent = target.getAttribute('data-comment-content');
-                
-                console.log('Comment highlight hovered:', {
-                  commentId,
-                  commentType,
-                  authorName,
-                  commentContent
-                });
                 
                 if (commentId && commentContent) {
                   // Dispatch custom event for tooltip
@@ -178,7 +170,6 @@ const CommentHighlight = Mark.create({
                       y: event.clientY,
                     }
                   });
-                  console.log('Dispatching tooltip event:', tooltipEvent.detail);
                   document.dispatchEvent(tooltipEvent);
                 }
               }

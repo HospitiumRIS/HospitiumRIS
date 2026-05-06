@@ -63,12 +63,14 @@ import {
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import PageHeader from '../../../../../components/common/PageHeader';
+import ProposalReviewStatus from '../../../../../components/Proposals/ProposalReviewStatus';
 
 const ProposalsListPage = () => {
   const router = useRouter();
   
   // State management
   const [proposals, setProposals] = useState([]);
+  const [proposalTracking, setProposalTracking] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Statuses');
@@ -116,6 +118,27 @@ const ProposalsListPage = () => {
       
       if (data.success) {
         setProposals(data.proposals);
+        
+        // Fetch review tracking for each proposal
+        const trackingPromises = data.proposals.map(async (proposal) => {
+          try {
+            const trackingRes = await fetch(`/api/proposals/${proposal.id}/review-status`);
+            if (trackingRes.ok) {
+              const trackingData = await trackingRes.json();
+              return { id: proposal.id, tracking: trackingData.tracking };
+            }
+          } catch (err) {
+            console.error(`Failed to fetch tracking for proposal ${proposal.id}:`, err);
+          }
+          return { id: proposal.id, tracking: null };
+        });
+        
+        const trackingResults = await Promise.all(trackingPromises);
+        const trackingMap = {};
+        trackingResults.forEach(({ id, tracking }) => {
+          trackingMap[id] = tracking;
+        });
+        setProposalTracking(trackingMap);
         
         // Calculate statistics
         const total = data.proposals.length;
@@ -713,6 +736,7 @@ const ProposalsListPage = () => {
                     <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Title</TableCell>
                     <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Principal Investigator</TableCell>
                     <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Review Pipeline</TableCell>
                     <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Fields</TableCell>
                     <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Date Range</TableCell>
                     <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem', textAlign: 'center' }}>Actions</TableCell>
@@ -785,6 +809,15 @@ const ProposalsListPage = () => {
                             }
                           }}
                         />
+                      </TableCell>
+                      <TableCell sx={{ py: 2 }}>
+                        {proposalTracking[proposal.id] ? (
+                          <ProposalReviewStatus tracking={proposalTracking[proposal.id]} compact={true} />
+                        ) : (
+                          <Typography variant="caption" sx={{ color: '#999', fontStyle: 'italic' }}>
+                            {proposal.status === 'DRAFT' ? 'Not submitted' : 'No pipeline assigned'}
+                          </Typography>
+                        )}
                       </TableCell>
                       <TableCell sx={{ py: 2 }}>
                         <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>

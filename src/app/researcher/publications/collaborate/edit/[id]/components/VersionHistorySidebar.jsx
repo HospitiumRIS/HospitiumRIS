@@ -37,7 +37,11 @@ import {
   Description as DescriptionIcon,
   CheckCircle as CheckCircleIcon,
   Timeline as TimelineIcon,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
+  CompareArrows as DiffIcon,
+  AddCircle as AddedIcon,
+  RemoveCircle as RemovedIcon,
+  SwapHoriz as SwapIcon
 } from '@mui/icons-material';
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
@@ -59,6 +63,80 @@ export default function VersionHistorySidebar({
     description: '',
     versionType: 'MANUAL'
   });
+  const [diffDialogOpen, setDiffDialogOpen] = useState(false);
+  const [diffVersion, setDiffVersion] = useState(null);
+  const [diffMode, setDiffMode] = useState('unified'); // 'unified' | 'sidebyside'
+
+  // Strip HTML tags to get plain text
+  const stripHtml = (html) => {
+    if (!html) return '';
+    return html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<\/h[1-6]>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  };
+
+  // Word-level diff algorithm (LCS based)
+  const computeWordDiff = (oldText, newText) => {
+    const oldWords = oldText.split(/\s+/).filter(Boolean);
+    const newWords = newText.split(/\s+/).filter(Boolean);
+
+    // Limit for performance on large docs
+    if (oldWords.length + newWords.length > 4000) {
+      return [{ type: 'info', text: 'Document too large for word-level diff. Showing paragraph comparison.' }];
+    }
+
+    const m = oldWords.length;
+    const n = newWords.length;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        if (oldWords[i - 1] === newWords[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+        } else {
+          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+    }
+
+    const result = [];
+    let i = m, j = n;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && oldWords[i - 1] === newWords[j - 1]) {
+        result.unshift({ type: 'equal', text: oldWords[i - 1] });
+        i--; j--;
+      } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+        result.unshift({ type: 'insert', text: newWords[j - 1] });
+        j--;
+      } else {
+        result.unshift({ type: 'delete', text: oldWords[i - 1] });
+        i--;
+      }
+    }
+    return result;
+  };
+
+  const handleOpenDiff = async (versionId) => {
+    try {
+      const response = await fetch(`/api/manuscripts/${manuscriptId}/versions/${versionId}`);
+      const data = await response.json();
+      if (data.success) {
+        setDiffVersion(data.data);
+        setDiffDialogOpen(true);
+      }
+    } catch (error) {
+      console.error('Error fetching version for diff:', error);
+    }
+  };
 
   // Fetch versions
   const fetchVersions = useCallback(async () => {
@@ -429,16 +507,22 @@ export default function VersionHistorySidebar({
                         )}
                       </Box>
                       <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        <Tooltip title="View Version">
+                        <Tooltip title="Compare with current">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenDiff(version.id)}
+                            sx={{ color: '#64748b', '&:hover': { color: '#8b6cbc', bgcolor: '#8b6cbc10' } }}
+                          >
+                            <DiffIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="View version content">
                           <IconButton 
                             size="small" 
                             onClick={() => handleViewVersion(version.id)}
-                            sx={{
+                            sx={{ 
                               color: '#64748b',
-                              '&:hover': {
-                                color: '#8b6cbc',
-                                bgcolor: '#8b6cbc10'
-                              }
+                              '&:hover': { color: '#8b6cbc', bgcolor: '#8b6cbc10' }
                             }}
                           >
                             <ViewIcon fontSize="small" />
@@ -613,6 +697,189 @@ export default function VersionHistorySidebar({
           >
             Create Version
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Diff Dialog */}
+      <Dialog
+        open={diffDialogOpen}
+        onClose={() => { setDiffDialogOpen(false); setDiffVersion(null); }}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3, maxHeight: '90vh', boxShadow: '0 24px 80px rgba(139,108,188,0.15)' } }}
+      >
+        <DialogTitle sx={{ background: 'linear-gradient(135deg, #8b6cbc 0%, #9d7ec9 100%)', color: 'white', py: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <DiffIcon />
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem' }}>
+                  Comparing: Version {diffVersion?.versionNumber} vs Current
+                </Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  {diffVersion && format(new Date(diffVersion.createdAt), 'MMM d, yyyy h:mm a')}
+                </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 0.75 }}>
+              <Chip
+                label="Unified"
+                size="small"
+                onClick={() => setDiffMode('unified')}
+                sx={{
+                  cursor: 'pointer',
+                  bgcolor: diffMode === 'unified' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
+                  color: 'white', fontWeight: 600, fontSize: '0.72rem',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' }
+                }}
+              />
+              <Chip
+                label="Side by Side"
+                size="small"
+                onClick={() => setDiffMode('sidebyside')}
+                sx={{
+                  cursor: 'pointer',
+                  bgcolor: diffMode === 'sidebyside' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
+                  color: 'white', fontWeight: 600, fontSize: '0.72rem',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' }
+                }}
+              />
+            </Box>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 0 }}>
+          {diffVersion && (() => {
+            const oldText = stripHtml(diffVersion.content);
+            const newText = stripHtml(currentContent);
+
+            if (diffMode === 'sidebyside') {
+              return (
+                <Box sx={{ display: 'flex', height: '100%' }}>
+                  {/* Old version */}
+                  <Box sx={{ flex: 1, borderRight: '2px solid #e9ecef', display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ px: 2, py: 1.5, bgcolor: '#fff5f5', borderBottom: '1px solid #fecaca', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <RemovedIcon sx={{ fontSize: '1rem', color: '#ef4444' }} />
+                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#991b1b' }}>
+                        Version {diffVersion.versionNumber} (older)
+                      </Typography>
+                    </Box>
+                    <Box sx={{ p: 2.5, overflow: 'auto', flexGrow: 1, maxHeight: '60vh', fontFamily: 'Georgia, serif', fontSize: '0.9rem', lineHeight: 1.8, color: '#2d3748', whiteSpace: 'pre-wrap' }}>
+                      {oldText}
+                    </Box>
+                  </Box>
+                  {/* Current version */}
+                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ px: 2, py: 1.5, bgcolor: '#f0fdf4', borderBottom: '1px solid #a7f3d0', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AddedIcon sx={{ fontSize: '1rem', color: '#10b981' }} />
+                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#065f46' }}>
+                        Current Version
+                      </Typography>
+                    </Box>
+                    <Box sx={{ p: 2.5, overflow: 'auto', flexGrow: 1, maxHeight: '60vh', fontFamily: 'Georgia, serif', fontSize: '0.9rem', lineHeight: 1.8, color: '#2d3748', whiteSpace: 'pre-wrap' }}>
+                      {newText}
+                    </Box>
+                  </Box>
+                </Box>
+              );
+            }
+
+            // Unified diff
+            const diffResult = computeWordDiff(oldText, newText);
+            const addedCount = diffResult.filter(d => d.type === 'insert').length;
+            const removedCount = diffResult.filter(d => d.type === 'delete').length;
+
+            return (
+              <Box>
+                {/* Stats bar */}
+                <Box sx={{ px: 3, py: 1.5, bgcolor: '#f8f9fa', borderBottom: '1px solid #e9ecef', display: 'flex', gap: 3, alignItems: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <Box sx={{ width: 10, height: 10, borderRadius: 1, bgcolor: '#10b981' }} />
+                    <Typography sx={{ fontSize: '0.8rem', color: '#065f46', fontWeight: 600 }}>
+                      +{addedCount} word{addedCount !== 1 ? 's' : ''} added
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <Box sx={{ width: 10, height: 10, borderRadius: 1, bgcolor: '#ef4444' }} />
+                    <Typography sx={{ fontSize: '0.8rem', color: '#991b1b', fontWeight: 600 }}>
+                      -{removedCount} word{removedCount !== 1 ? 's' : ''} removed
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Diff output */}
+                <Box sx={{
+                  p: 3,
+                  maxHeight: '60vh',
+                  overflow: 'auto',
+                  fontFamily: 'Georgia, serif',
+                  fontSize: '0.95rem',
+                  lineHeight: 2,
+                  color: '#2d3748',
+                }}>
+                  {diffResult.map((token, idx) => {
+                    if (token.type === 'equal') {
+                      return <span key={idx}>{token.text} </span>;
+                    } else if (token.type === 'insert') {
+                      return (
+                        <span key={idx} style={{
+                          backgroundColor: '#d1fae5',
+                          color: '#065f46',
+                          borderRadius: 3,
+                          padding: '1px 3px',
+                          marginRight: 3,
+                          fontWeight: 500,
+                          border: '1px solid #a7f3d0'
+                        }}>{token.text}</span>
+                      );
+                    } else if (token.type === 'delete') {
+                      return (
+                        <span key={idx} style={{
+                          backgroundColor: '#fee2e2',
+                          color: '#991b1b',
+                          borderRadius: 3,
+                          padding: '1px 3px',
+                          marginRight: 3,
+                          textDecoration: 'line-through',
+                          fontWeight: 500,
+                          border: '1px solid #fecaca'
+                        }}>{token.text}</span>
+                      );
+                    } else {
+                      return <Box key={idx} sx={{ p: 1.5, bgcolor: '#f8f9fa', borderRadius: 1, mb: 1, fontSize: '0.8rem', color: '#64748b' }}>{token.text}</Box>;
+                    }
+                  })}
+                </Box>
+              </Box>
+            );
+          })()}
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f8f9fa', borderTop: '1px solid #e9ecef' }}>
+          <Button
+            onClick={() => { setDiffDialogOpen(false); setDiffVersion(null); }}
+            variant="outlined"
+            sx={{ textTransform: 'none', borderColor: '#e2e8f0', color: '#64748b', fontWeight: 600, borderRadius: 2 }}
+          >
+            Close
+          </Button>
+          {diffVersion && (
+            <Button
+              onClick={() => {
+                setDiffDialogOpen(false);
+                handleRestoreVersion(diffVersion.id);
+              }}
+              variant="contained"
+              startIcon={<RestoreIcon />}
+              sx={{
+                textTransform: 'none', bgcolor: '#10b981', fontWeight: 600, borderRadius: 2, px: 3,
+                boxShadow: '0 2px 8px rgba(16,185,129,0.25)',
+                '&:hover': { bgcolor: '#059669' }
+              }}
+            >
+              Restore This Version
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 

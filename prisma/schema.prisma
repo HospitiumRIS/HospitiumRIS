@@ -144,9 +144,52 @@ model Institution {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifiedDomains VerifiedDomain[]
 
   @@map("institutions")
+}
+
+enum DomainStatus {
+  PENDING
+  VERIFIED
+  SUSPENDED
+}
+
+model VerifiedDomain {
+  id            String @id @default(cuid())
+  institutionId String
+
+  // Domain Details
+  domain        String // e.g., "university.edu", "hospital.org"
+  status        DomainStatus @default(PENDING)
+  verifiedAt    DateTime?
+  verifiedBy    String? // User ID who verified
+  
+  // Verification Details
+  verificationMethod String? // DNS, Email, Manual
+  verificationToken  String? @unique
+  verificationData   Json? // Store verification-specific data
+  
+  // Domain Settings
+  autoApproveUsers Boolean @default(false) // Auto-approve users with this domain
+  allowedAccountTypes String[] // Account types allowed for this domain
+  
+  // Metadata
+  notes         String?
+  suspendedAt   DateTime?
+  suspendedBy   String?
+  suspensionReason String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@unique([institutionId, domain])
+  @@map("verified_domains")
 }
 
 model Foundation {
@@ -1051,6 +1094,7 @@ model Proposal {
   ethicsLinks       ProposalEthicsLink[]
   grantApplications GrantApplication[]
   notifications     Notification[]
+  reviewTracking    ProposalReviewTracking?
 
   // TODO: Add userId when authentication is implemented
   // userId      String
@@ -1861,4 +1905,170 @@ model TrainingCertificate {
   registration TrainingRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
   
   @@map("training_certificates")
+}
+
+// Proposal Review Pipeline Models
+enum ReviewStageType {
+  ADMINISTRATIVE_REVIEW
+  SCIENTIFIC_REVIEW
+  IRB_ETHICS_REVIEW
+  BIOSAFETY_REVIEW
+  RADIATION_SAFETY_REVIEW
+  CONFLICT_OF_INTEREST_REVIEW
+  SPONSORED_PROGRAMS_REVIEW
+  CLINICAL_TRIALS_REVIEW
+  CUSTOM
+}
+
+enum ReviewStageStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  APPROVED
+  APPROVED_WITH_CONTINGENCIES
+  DEFERRED
+  DISAPPROVED
+  SKIPPED
+}
+
+model ProposalReviewPipeline {
+  id            String @id @default(cuid())
+  institutionId String // Institution that owns this pipeline
+  
+  // Pipeline Details
+  name          String
+  description   String?
+  isActive      Boolean @default(true)
+  isDefault     Boolean @default(false) // Default pipeline for new proposals
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  stages            ProposalReviewStage[]
+  proposalTracking  ProposalReviewTracking[]
+  
+  @@map("proposal_review_pipelines")
+}
+
+model ProposalReviewStage {
+  id         String @id @default(cuid())
+  pipelineId String
+  
+  // Stage Details
+  name           String
+  description    String?
+  stageType      ReviewStageType
+  order          Int // Order in the pipeline (1, 2, 3, etc.)
+  
+  // Stage Configuration
+  isRequired     Boolean @default(true) // Can this stage be skipped?
+  autoApprove    Boolean @default(false) // Auto-approve if conditions met
+  daysToComplete Int? // Expected days to complete this stage
+  
+  // Reviewer Assignment
+  reviewerRoles  String[] // Account types that can review this stage
+  reviewerEmails String[] // Specific email addresses of reviewers
+  
+  // Approval Requirements
+  requiresAllReviewers Boolean @default(false) // All reviewers must approve
+  minimumApprovals     Int     @default(1) // Minimum number of approvals needed
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  pipeline         ProposalReviewPipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  stageProgress    ProposalStageProgress[]
+  stageReviews     ProposalStageReview[]
+  
+  @@unique([pipelineId, order])
+  @@map("proposal_review_stages")
+}
+
+model ProposalReviewTracking {
+  id         String @id @default(cuid())
+  proposalId String @unique
+  pipelineId String
+  
+  // Current Status
+  currentStageId    String?
+  currentStageOrder Int     @default(1)
+  overallStatus     String  @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, COMPLETED, REJECTED
+  
+  // Timestamps
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  proposal       Proposal                @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  pipeline       ProposalReviewPipeline  @relation(fields: [pipelineId], references: [id])
+  stageProgress  ProposalStageProgress[]
+  
+  @@map("proposal_review_tracking")
+}
+
+model ProposalStageProgress {
+  id         String @id @default(cuid())
+  trackingId String
+  stageId    String
+  
+  // Progress Details
+  status         ReviewStageStatus @default(NOT_STARTED)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  
+  // Review Outcome
+  outcome        String? // Detailed outcome description
+  conditions     String? // Conditions if approved with contingencies
+  rejectionReason String? @db.Text
+  
+  // Metadata
+  assignedReviewers String[] // User IDs or emails of assigned reviewers
+  completedReviewers String[] // User IDs or emails who completed review
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  tracking ProposalReviewTracking @relation(fields: [trackingId], references: [id], onDelete: Cascade)
+  stage    ProposalReviewStage    @relation(fields: [stageId], references: [id])
+  reviews  ProposalStageReview[]
+  
+  @@unique([trackingId, stageId])
+  @@map("proposal_stage_progress")
+}
+
+model ProposalStageReview {
+  id              String @id @default(cuid())
+  stageProgressId String
+  stageId         String
+  
+  // Reviewer Information
+  reviewerId    String // User ID
+  reviewerName  String
+  reviewerEmail String
+  reviewerRole  String? // Their role/title
+  
+  // Review Decision
+  decision      ReviewStageStatus
+  comments      String? @db.Text
+  conditions    String? @db.Text // If approved with contingencies
+  
+  // Review Metadata
+  reviewDate DateTime @default(now())
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  stageProgress ProposalStageProgress @relation(fields: [stageProgressId], references: [id], onDelete: Cascade)
+  stage         ProposalReviewStage   @relation(fields: [stageId], references: [id])
+  
+  @@map("proposal_stage_reviews")
 }

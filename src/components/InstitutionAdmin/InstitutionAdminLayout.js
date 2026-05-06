@@ -29,7 +29,8 @@ import {
   Storage as DatabaseIcon,
   ListAlt as LogsIcon,
   AdminPanelSettings as AdminIcon,
-  ChevronLeft as ChevronLeftIcon
+  ChevronLeft as ChevronLeftIcon,
+  Verified as VerifiedIcon
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../AuthProvider';
@@ -62,6 +63,12 @@ const InstitutionAdminLayout = ({ children }) => {
       icon: <SecurityIcon />,
       path: '/institution-admin/account-types',
       color: 'secondary'
+    },
+    {
+      text: 'Verified Domains',
+      icon: <VerifiedIcon />,
+      path: '/institution-admin/verified-domains',
+      color: 'success'
     },
     {
       text: 'Database',

@@ -194,6 +194,33 @@ export async function GET(request) {
                 };
             });
 
+        // Determine current user's role and permissions
+        const isOwner = manuscript.createdBy === userId;
+        const currentUserCollaborator = (manuscript.collaborators || []).find(
+            collab => collab.user && collab.user.id === userId
+        );
+        const currentUserRole = isOwner ? 'OWNER' : (currentUserCollaborator?.role || null);
+        
+        // Get individual permission flags from database (if user is a collaborator)
+        // ADMIN role defaults: all permissions enabled
+        const dbCanEdit = currentUserCollaborator?.canEdit ?? true;
+        const dbCanInvite = currentUserCollaborator?.canInvite ?? (currentUserRole === 'ADMIN');
+        const dbCanDelete = currentUserCollaborator?.canDelete ?? (currentUserRole === 'ADMIN');
+        
+        // Define permissions based on role AND individual permission flags
+        // Owner always has all permissions
+        // ADMIN has all permissions by default (can be customized)
+        // For others, combine role-based defaults with individual permissions
+        const canEdit = isOwner || (
+            ['ADMIN', 'EDITOR', 'CONTRIBUTOR'].includes(currentUserRole) && dbCanEdit
+        );
+        const canManageTeam = isOwner || (
+            currentUserRole === 'ADMIN' && dbCanInvite
+        );
+        const canDelete = isOwner || (
+            currentUserRole === 'ADMIN' && dbCanDelete
+        );
+
         // Process pending invitations
         const pendingInvitationsList = (manuscript.invitations || []).map(invitation => ({
             id: invitation.id,
@@ -230,7 +257,21 @@ export async function GET(request) {
             authors: [creatorName, ...processedCollaborators.map(c => c.name)].join(', '),
             lastUpdated: manuscript.updatedAt?.toISOString() || new Date().toISOString(),
             collaboratorCount: processedCollaborators.length,
-            totalCollaborators: processedCollaborators.length
+            totalCollaborators: processedCollaborators.length,
+            // Current user's role and permissions
+            currentUserRole,
+            isOwner,
+            permissions: {
+                canEdit,
+                canManageTeam,
+                canDelete
+            },
+            // Individual permission flags from database (for displaying in UI)
+            individualPermissions: currentUserCollaborator ? {
+                canEdit: dbCanEdit,
+                canInvite: dbCanInvite,
+                canDelete: dbCanDelete
+            } : null
         };
     });
 

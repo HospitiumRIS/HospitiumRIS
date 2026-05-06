@@ -331,6 +331,11 @@ export default function CollaborativeWriting() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  // Pending invitations state
+  const [pendingInvitations, setPendingInvitations] = useState([]);
+  const [invitationsLoading, setInvitationsLoading] = useState(false);
+  const [respondingInvitationId, setRespondingInvitationId] = useState(null);
+
 
   // New proposal modal state
   const [newProposalOpen, setNewProposalOpen] = useState(false);
@@ -466,6 +471,86 @@ export default function CollaborativeWriting() {
     }
   }, []);
 
+  // Fetch pending invitations for current user
+  const fetchPendingInvitations = useCallback(async () => {
+    try {
+      setInvitationsLoading(true);
+      
+      const response = await fetch('/api/manuscripts/invitations/pending', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setPendingInvitations(result.data.invitations || []);
+      } else {
+        throw new Error(result.error || 'Failed to fetch pending invitations');
+      }
+      
+    } catch (error) {
+      console.error('Error fetching pending invitations:', error);
+      setPendingInvitations([]);
+    } finally {
+      setInvitationsLoading(false);
+    }
+  }, []);
+
+  // Handle responding to invitation (accept/decline)
+  const handleRespondToInvitation = useCallback(async (invitationId, action) => {
+    setRespondingInvitationId(invitationId);
+
+    try {
+      const response = await fetch(`/api/manuscripts/invitations/${invitationId}/respond`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to ${action} invitation`);
+      }
+
+      showSnackbar(
+        action === 'accept' 
+          ? `Invitation accepted! You are now a collaborator.` 
+          : 'Invitation declined',
+        'success'
+      );
+
+      // Refresh both invitations and manuscripts
+      await Promise.all([
+        fetchPendingInvitations(),
+        fetchManuscripts()
+      ]);
+
+      // If accepted, optionally navigate to the manuscript
+      if (action === 'accept' && data.data?.manuscriptId) {
+        // User can choose to navigate or stay on the page
+        setTimeout(() => {
+          router.push(`/researcher/publications/collaborate/edit/${data.data.manuscriptId}`);
+        }, 1500);
+      }
+
+    } catch (error) {
+      console.error(`Failed to ${action} invitation:`, error);
+      showSnackbar(error.message || `Failed to ${action} invitation`, 'error');
+    } finally {
+      setRespondingInvitationId(null);
+    }
+  }, [fetchPendingInvitations, fetchManuscripts, router]);
+
   // Handler for new proposal modal
   const handleNewProposal = () => {
     console.log('handleNewProposal function called - modal should open');
@@ -551,8 +636,9 @@ export default function CollaborativeWriting() {
   useEffect(() => {
     if (user) {
       fetchManuscripts();
+      fetchPendingInvitations();
     }
-  }, [user, fetchManuscripts]);
+  }, [user, fetchManuscripts, fetchPendingInvitations]);
 
   // Filter and search manuscripts
   const filteredManuscripts = manuscripts.filter(manuscript => {
@@ -1342,7 +1428,7 @@ export default function CollaborativeWriting() {
         
         <CardContent sx={{ p: 2 }}>
           {/* Header with status chips */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
               <Chip
               icon={<StatusIcon sx={{ fontSize: 12 }} />}
                 label={manuscript.status}
@@ -1370,6 +1456,30 @@ export default function CollaborativeWriting() {
                   backgroundColor: 'rgba(139, 108, 188, 0.04)'
                 }}
               />
+              {/* User Role Badge */}
+              {manuscript.currentUserRole && (
+                <Chip
+                  label={manuscript.currentUserRole}
+                  size="small"
+                  icon={manuscript.isOwner ? <AdminPanelSettingsIcon sx={{ fontSize: 12 }} /> : undefined}
+                  sx={{
+                    backgroundColor: manuscript.isOwner 
+                      ? '#ff6b35' 
+                      : manuscript.currentUserRole === 'ADMIN' 
+                        ? '#f44336' 
+                        : manuscript.currentUserRole === 'EDITOR'
+                          ? '#ff9800'
+                          : manuscript.currentUserRole === 'CONTRIBUTOR'
+                            ? '#4caf50'
+                            : '#2196f3',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.65rem',
+                    height: 20,
+                    borderRadius: 1.5
+                  }}
+                />
+              )}
           </Box>
 
           {/* Title */}
@@ -1512,6 +1622,7 @@ export default function CollaborativeWriting() {
             size="small"
             startIcon={<EditIcon sx={{ fontSize: 14 }} />}
             onClick={() => handleEditManuscript(manuscript)}
+            disabled={manuscript.permissions && !manuscript.permissions.canEdit}
             sx={{
               bgcolor: '#8b6cbc',
               '&:hover': {
@@ -1532,57 +1643,63 @@ export default function CollaborativeWriting() {
             Edit
           </Button>
           
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<GroupsIcon sx={{ fontSize: 14 }} />}
-            onClick={() => handleManageTeam(manuscript)}
-            sx={{
-              borderColor: '#8b6cbc',
-              color: '#8b6cbc',
-              '&:hover': {
+          {/* Only show Team button if user has permission */}
+          {manuscript.permissions?.canManageTeam && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<GroupsIcon sx={{ fontSize: 14 }} />}
+              onClick={() => handleManageTeam(manuscript)}
+              sx={{
                 borderColor: '#8b6cbc',
-                backgroundColor: 'rgba(139, 108, 188, 0.08)',
-                transform: 'translateY(-1px)'
-              },
-              textTransform: 'none',
-              fontSize: '0.7rem',
-              borderRadius: 1.5,
-              px: 1.5,
-              py: 0.5,
-              minWidth: 'auto',
-              fontWeight: 500,
-              transition: 'all 0.2s ease'
-            }}
-          >
-            Team
-          </Button>
+                color: '#8b6cbc',
+                '&:hover': {
+                  borderColor: '#8b6cbc',
+                  backgroundColor: 'rgba(139, 108, 188, 0.08)',
+                  transform: 'translateY(-1px)'
+                },
+                textTransform: 'none',
+                fontSize: '0.7rem',
+                borderRadius: 1.5,
+                px: 1.5,
+                py: 0.5,
+                minWidth: 'auto',
+                fontWeight: 500,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Team
+            </Button>
+          )}
 
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<DeleteIcon sx={{ fontSize: 14 }} />}
-            onClick={() => handleDeleteManuscript(manuscript)}
-            sx={{
-              borderColor: '#f44336',
-              color: '#f44336',
-              '&:hover': {
+          {/* Only show Delete button if user has permission */}
+          {manuscript.permissions?.canDelete && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<DeleteIcon sx={{ fontSize: 14 }} />}
+              onClick={() => handleDeleteManuscript(manuscript)}
+              sx={{
                 borderColor: '#f44336',
-                backgroundColor: 'rgba(244, 67, 54, 0.08)',
-                transform: 'translateY(-1px)'
-              },
-              textTransform: 'none',
-              fontSize: '0.7rem',
-              borderRadius: 1.5,
-              px: 1.5,
-              py: 0.5,
-              minWidth: 'auto',
-              fontWeight: 500,
-              transition: 'all 0.2s ease'
-            }}
-          >
-            Delete
-          </Button>
+                color: '#f44336',
+                '&:hover': {
+                  borderColor: '#f44336',
+                  backgroundColor: 'rgba(244, 67, 54, 0.08)',
+                  transform: 'translateY(-1px)'
+                },
+                textTransform: 'none',
+                fontSize: '0.7rem',
+                borderRadius: 1.5,
+                px: 1.5,
+                py: 0.5,
+                minWidth: 'auto',
+                fontWeight: 500,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Delete
+            </Button>
+          )}
         </CardActions>
       </Card>
     );
@@ -1935,6 +2052,169 @@ export default function CollaborativeWriting() {
           </Box>
         </Box>
       </Paper>
+
+      {/* Pending Invitations Section */}
+      {!invitationsLoading && pendingInvitations.length > 0 && (
+        <Paper sx={{ 
+          mb: 3, 
+          p: 3, 
+          borderRadius: 3, 
+          boxShadow: '0 4px 20px rgba(255, 152, 0, 0.15)',
+          border: '2px solid rgba(255, 152, 0, 0.3)',
+          background: 'linear-gradient(135deg, #fff9e6 0%, #ffffff 100%)'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <EmailIcon sx={{ color: '#ff9800', fontSize: 28 }} />
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#e65100' }}>
+              Pending Invitations ({pendingInvitations.length})
+            </Typography>
+            <Chip 
+              label="Action Required" 
+              size="small" 
+              sx={{ 
+                bgcolor: '#ff9800', 
+                color: 'white',
+                fontWeight: 600,
+                fontSize: '0.7rem'
+              }} 
+            />
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            You have been invited to collaborate on the following manuscripts/proposals
+          </Typography>
+          
+          <Grid container spacing={2}>
+            {pendingInvitations.map((invitation) => (
+              <Grid size={{ xs: 12, md: 6 }} key={invitation.id}>
+                <Card sx={{
+                  borderRadius: 2,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  border: '1px solid rgba(255, 152, 0, 0.2)',
+                  '&:hover': {
+                    boxShadow: '0 4px 16px rgba(255, 152, 0, 0.2)',
+                    borderColor: 'rgba(255, 152, 0, 0.4)'
+                  },
+                  transition: 'all 0.3s ease'
+                }}>
+                  <CardContent sx={{ pb: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1.5 }}>
+                      <Chip
+                        label={invitation.manuscriptType}
+                        size="small"
+                        sx={{
+                          bgcolor: invitation.manuscriptType === 'Proposal' ? '#8b6cbc' : '#2196f3',
+                          color: 'white',
+                          fontWeight: 600,
+                          fontSize: '0.7rem'
+                        }}
+                      />
+                      <Chip
+                        label={invitation.role}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          borderColor: '#ff9800',
+                          color: '#ff9800',
+                          fontWeight: 500,
+                          fontSize: '0.7rem'
+                        }}
+                      />
+                    </Box>
+                    
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: '#2D3748' }}>
+                      {invitation.manuscriptTitle}
+                    </Typography>
+                    
+                    {invitation.manuscriptField && (
+                      <Chip
+                        label={invitation.manuscriptField}
+                        size="small"
+                        sx={{
+                          bgcolor: 'rgba(139, 108, 188, 0.1)',
+                          color: '#8b6cbc',
+                          fontSize: '0.7rem',
+                          mb: 1.5
+                        }}
+                      />
+                    )}
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                      <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                      <Typography variant="caption" color="text.secondary">
+                        Invited by: <strong>{invitation.inviterName}</strong>
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <ScheduleIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(invitation.invitedAt).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                  
+                  <CardActions sx={{ px: 2, pb: 2, pt: 0, gap: 1 }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={respondingInvitationId === invitation.id ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+                      onClick={() => handleRespondToInvitation(invitation.id, 'accept')}
+                      disabled={respondingInvitationId === invitation.id}
+                      sx={{
+                        bgcolor: '#4caf50',
+                        '&:hover': { bgcolor: '#43a047' },
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        flex: 1,
+                        fontSize: '0.8rem'
+                      }}
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={respondingInvitationId === invitation.id ? <CircularProgress size={14} /> : <CloseIcon />}
+                      onClick={() => handleRespondToInvitation(invitation.id, 'decline')}
+                      disabled={respondingInvitationId === invitation.id}
+                      sx={{
+                        borderColor: '#f44336',
+                        color: '#f44336',
+                        '&:hover': { 
+                          borderColor: '#d32f2f',
+                          bgcolor: 'rgba(244, 67, 54, 0.04)'
+                        },
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        flex: 1,
+                        fontSize: '0.8rem'
+                      }}
+                    >
+                      Decline
+                    </Button>
+                    <Tooltip title="View details">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setViewingManuscript(invitation.manuscript);
+                          setViewDialogOpen(true);
+                        }}
+                        sx={{ color: '#8b6cbc' }}
+                      >
+                        <VisibilityIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </CardActions>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Paper>
+      )}
 
       {/* Manuscripts Display */}
       {loading ? (
@@ -2359,6 +2639,7 @@ export default function CollaborativeWriting() {
                                 <IconButton
                                   size="small"
                                   onClick={() => handleEditManuscript(manuscript)}
+                                  disabled={manuscript.permissions && !manuscript.permissions.canEdit}
                                   sx={{ 
                                     color: '#666',
                                     '&:hover': { bgcolor: '#66666610' }
@@ -2367,30 +2648,36 @@ export default function CollaborativeWriting() {
                                   <EditIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title="Manage Team" arrow>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleManageTeam(manuscript)}
-                                  sx={{ 
-                                    color: '#4caf50',
-                                    '&:hover': { bgcolor: '#4caf5010' }
-                                  }}
-                                >
-                                  <GroupsIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Delete" arrow>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleDeleteManuscript(manuscript)}
-                                  sx={{ 
-                                    color: '#f44336',
-                                    '&:hover': { bgcolor: '#f4433610' }
-                                  }}
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
+                              {/* Only show Team button if user has permission */}
+                              {manuscript.permissions?.canManageTeam && (
+                                <Tooltip title="Manage Team" arrow>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleManageTeam(manuscript)}
+                                    sx={{ 
+                                      color: '#4caf50',
+                                      '&:hover': { bgcolor: '#4caf5010' }
+                                    }}
+                                  >
+                                    <GroupsIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                              {/* Only show Delete button if user has permission */}
+                              {manuscript.permissions?.canDelete && (
+                                <Tooltip title="Delete" arrow>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDeleteManuscript(manuscript)}
+                                    sx={{ 
+                                      color: '#f44336',
+                                      '&:hover': { bgcolor: '#f4433610' }
+                                    }}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
                             </Box>
                           </TableCell>
                         </TableRow>
@@ -3431,7 +3718,17 @@ export default function CollaborativeWriting() {
                     );
                     return matchedRole ? matchedRole.value : 'Contributor';
                   })()}
-                  onChange={(e) => setEditingCollaborator(prev => ({ ...prev, role: e.target.value }))}
+                  onChange={(e) => {
+                    const newRole = e.target.value;
+                    setEditingCollaborator(prev => ({
+                      ...prev,
+                      role: newRole,
+                      // ADMIN role gets all permissions by default
+                      canEdit: newRole === 'Admin' ? true : prev.canEdit,
+                      canInvite: newRole === 'Admin' ? true : prev.canInvite,
+                      canDelete: newRole === 'Admin' ? true : prev.canDelete
+                    }));
+                  }}
                   MenuProps={{ disableScrollLock: true }}
                   renderValue={(selected) => {
                     const selectedRole = COLLABORATOR_ROLES.find(r => r.value === selected);

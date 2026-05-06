@@ -60,6 +60,12 @@ import {
   Delete as DeleteIcon,
   OpenInNew as OpenInNewIcon,
   Refresh as RefreshIcon,
+  Science as TrialIcon,
+  PeopleAlt as EnrollmentIcon,
+  HealthAndSafety as SafetyIcon,
+  Gavel as EthicsIcon,
+  Description as ProtocolIcon,
+  CloudSync as RegistryIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../components/AuthProvider';
@@ -93,6 +99,7 @@ const ResearcherDashboard = () => {
   const [projectHealth, setProjectHealth] = useState([]);
   const [projectHealthLoading, setProjectHealthLoading] = useState(true);
   const [projectHealthSummary, setProjectHealthSummary] = useState({ total: 0, onTrack: 0, needsAttention: 0, atRisk: 0, avgProgress: 0 });
+  const [respondingInvitationId, setRespondingInvitationId] = useState(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -120,13 +127,155 @@ const ResearcherDashboard = () => {
         const deadlinesData = deadlinesRes.ok ? await deadlinesRes.json() : { deadlines: [], summary: { total: 0, urgent: 0, upcoming: 0, future: 0 } };
         const projectHealthData = projectHealthRes.ok ? await projectHealthRes.json() : { projects: [], summary: { total: 0, onTrack: 0, needsAttention: 0, atRisk: 0, avgProgress: 0 } };
 
-        setActivities(activitiesData.activities || []);
+        // Add clinical trial mock data
+        const clinicalTrialActivities = [
+          {
+            id: 'ct-act-1',
+            title: 'Enrolled 8 new participants',
+            description: 'Trial CT-2024-001: HIV Prevention Study',
+            type: 'enrollment',
+            icon: 'enrollment',
+            color: '#8b6cbc',
+            timeAgo: '2 hours ago',
+            link: '/researcher/clinical-trials/recruitment'
+          },
+          {
+            id: 'ct-act-2',
+            title: 'Trial moved to Phase II',
+            description: 'Trial CT-2024-003: Malaria Vaccine Study',
+            type: 'trial',
+            icon: 'trial',
+            color: '#66BB6A',
+            timeAgo: '5 hours ago',
+            link: '/researcher/clinical-trials/intake'
+          },
+          {
+            id: 'ct-act-3',
+            title: 'Safety report submitted',
+            description: 'Trial CT-2024-002: TB Treatment Protocol',
+            type: 'safety',
+            icon: 'safety',
+            color: '#42A5F5',
+            timeAgo: '1 day ago',
+            link: '/researcher/clinical-trials/safety'
+          },
+          {
+            id: 'ct-act-4',
+            title: 'Ethics approval received',
+            description: 'Trial CT-2024-004: Diabetes Management Study',
+            type: 'ethics',
+            icon: 'ethics',
+            color: '#FFA726',
+            timeAgo: '2 days ago',
+            link: '/researcher/clinical-trials/intake'
+          }
+        ];
+
+        const clinicalTrialTasks = [
+          {
+            id: 'ct-task-1',
+            title: 'Submit SAE report',
+            description: 'Serious Adverse Event reported in Trial CT-2024-001',
+            priority: 'high',
+            daysUntilDue: 1,
+            link: '/researcher/clinical-trials/safety'
+          },
+          {
+            id: 'ct-task-2',
+            title: 'Complete GCP training renewal',
+            description: 'Good Clinical Practice certification expires soon',
+            priority: 'medium',
+            daysUntilDue: 5,
+            link: '/researcher/clinical-trials/team'
+          },
+          {
+            id: 'ct-task-3',
+            title: 'Review protocol deviation',
+            description: 'Trial CT-2024-002: Minor protocol deviation flagged',
+            priority: 'high',
+            daysUntilDue: 2,
+            link: '/researcher/clinical-trials/safety'
+          },
+          {
+            id: 'ct-task-4',
+            title: 'Update eTMF documents',
+            description: 'Upload latest informed consent forms',
+            priority: 'low',
+            daysUntilDue: 10,
+            link: '/researcher/clinical-trials/documents'
+          }
+        ];
+
+        const clinicalTrialDeadlines = [
+          {
+            id: 'ct-dl-1',
+            title: 'Trial CT-2024-001 enrollment deadline',
+            description: 'Target: 120 participants (currently 87)',
+            date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+            daysUntil: 5,
+            type: 'Enrollment',
+            color: '#8b6cbc',
+            link: '/researcher/clinical-trials/recruitment'
+          },
+          {
+            id: 'ct-dl-2',
+            title: 'IRB renewal for Trial CT-2024-003',
+            description: 'Annual ethics committee review',
+            date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            daysUntil: 14,
+            type: 'Ethics',
+            color: '#FFA726',
+            link: '/researcher/clinical-trials/intake'
+          },
+          {
+            id: 'ct-dl-3',
+            title: 'Data lock for Trial CT-2024-002',
+            description: 'Final data entry and query resolution',
+            date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+            daysUntil: 3,
+            type: 'Data',
+            color: '#42A5F5',
+            link: '/researcher/clinical-trials/results'
+          },
+          {
+            id: 'ct-dl-4',
+            title: 'Registry submission to ClinicalTrials.gov',
+            description: 'Trial CT-2024-004: Initial registration',
+            date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            daysUntil: 7,
+            type: 'Registry',
+            color: '#66BB6A',
+            link: '/researcher/clinical-trials/registry'
+          }
+        ];
+
+        // Merge with existing data
+        const mergedActivities = [...clinicalTrialActivities, ...(activitiesData.activities || [])].slice(0, 10);
+        const mergedTasks = [...clinicalTrialTasks, ...(tasksData.tasks || [])];
+        const mergedDeadlines = [...clinicalTrialDeadlines, ...(deadlinesData.deadlines || [])];
+
+        // Update task summary
+        const updatedTaskSummary = {
+          high: (tasksData.summary?.high || 0) + clinicalTrialTasks.filter(t => t.priority === 'high').length,
+          medium: (tasksData.summary?.medium || 0) + clinicalTrialTasks.filter(t => t.priority === 'medium').length,
+          low: (tasksData.summary?.low || 0) + clinicalTrialTasks.filter(t => t.priority === 'low').length,
+        };
+
+        // Update deadline summary
+        const updatedDeadlineSummary = {
+          total: mergedDeadlines.length,
+          urgent: mergedDeadlines.filter(d => d.daysUntil <= 7).length,
+          upcoming: mergedDeadlines.filter(d => d.daysUntil > 7 && d.daysUntil <= 30).length,
+          future: mergedDeadlines.filter(d => d.daysUntil > 30).length,
+        };
+
+        setActivities(mergedActivities);
         setNotifications(notificationsData.data?.notifications || []);
         setUnreadCount(notificationsData.data?.unreadCount || 0);
-        setTasks(tasksData.tasks || []);
-        setTasksSummary(tasksData.summary || { high: 0, medium: 0, low: 0 });
-        setDeadlines(deadlinesData.deadlines || []);
-        setDeadlinesSummary(deadlinesData.summary || { total: 0, urgent: 0, upcoming: 0, future: 0 });
+        setTasks(mergedTasks);
+        setTasksSummary(updatedTaskSummary);
+        setDeadlines(mergedDeadlines);
+        setDeadlinesSummary(updatedDeadlineSummary);
         setProjectHealth(projectHealthData.projects || []);
         setProjectHealthSummary(projectHealthData.summary || { total: 0, onTrack: 0, needsAttention: 0, atRisk: 0, avgProgress: 0 });
         setActivitiesLoading(false);
@@ -216,6 +365,12 @@ const ResearcherDashboard = () => {
       case 'group': return <CollaborationIcon sx={{ fontSize: 20 }} />;
       case 'check': return <CheckCircleIcon sx={{ fontSize: 20 }} />;
       case 'rate': return <ScheduleIcon sx={{ fontSize: 20 }} />;
+      case 'trial': return <TrialIcon sx={{ fontSize: 20 }} />;
+      case 'enrollment': return <EnrollmentIcon sx={{ fontSize: 20 }} />;
+      case 'safety': return <SafetyIcon sx={{ fontSize: 20 }} />;
+      case 'ethics': return <EthicsIcon sx={{ fontSize: 20 }} />;
+      case 'protocol': return <ProtocolIcon sx={{ fontSize: 20 }} />;
+      case 'registry': return <RegistryIcon sx={{ fontSize: 20 }} />;
       default: return <InfoIcon sx={{ fontSize: 20 }} />;
     }
   };
@@ -293,6 +448,49 @@ const ResearcherDashboard = () => {
       console.error('Error refreshing activities:', error);
     } finally {
       setActivitiesLoading(false);
+    }
+  };
+
+  const handleRespondToInvitation = async (notification, action) => {
+    const invitationId = notification.data?.invitationId;
+    if (!invitationId) {
+      console.error('No invitation ID found in notification data');
+      return;
+    }
+
+    setRespondingInvitationId(notification.id);
+
+    try {
+      const response = await fetch(`/api/manuscripts/invitations/${invitationId}/respond`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to ${action} invitation`);
+      }
+
+      // Mark the notification as read and remove it from the list
+      await handleMarkAsRead(notification.id);
+
+      // Refresh notifications to get updated list
+      const notificationsRes = await fetch('/api/notifications?limit=10', { credentials: 'include' });
+      const notificationsData = await notificationsRes.json();
+      setNotifications(notificationsData.data?.notifications || []);
+      setUnreadCount(notificationsData.data?.unreadCount || 0);
+
+      // Show success message (you can add a snackbar here if needed)
+      console.log(`Invitation ${action}ed successfully`);
+
+    } catch (error) {
+      console.error(`Failed to ${action} invitation:`, error);
+    } finally {
+      setRespondingInvitationId(null);
     }
   };
 
@@ -655,6 +853,7 @@ const ResearcherDashboard = () => {
                       <Tab label="Overview" />
                       <Tab label="Publications" />
                       <Tab label="Projects" />
+                      <Tab label="Clinical Trials" />
                       <Tab label="Impact" />
                     </Tabs>
 
@@ -922,6 +1121,66 @@ const ResearcherDashboard = () => {
                         </AreaChart>
                       )}
                       {analyticsTab === 3 && (
+                        <AreaChart data={dashboardData.analyticsData.map((d, i) => ({
+                          ...d,
+                          enrollment: Math.floor(Math.random() * 30) + 10 + i * 3,
+                          completed: Math.floor(Math.random() * 5) + i,
+                          active: Math.floor(Math.random() * 8) + 2
+                        }))}>
+                          <defs>
+                            <linearGradient id="colorEnrollment" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#8b6cbc" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#8b6cbc" stopOpacity={0.1}/>
+                            </linearGradient>
+                            <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#66BB6A" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#66BB6A" stopOpacity={0.1}/>
+                            </linearGradient>
+                            <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#FFA726" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#FFA726" stopOpacity={0.1}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
+                          <XAxis dataKey="month" stroke="#999" tick={{ fontSize: 12 }} />
+                          <YAxis stroke="#999" tick={{ fontSize: 12 }} />
+                          <RechartsTooltip 
+                            contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                          />
+                          <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} iconType="circle" />
+                          <Area 
+                            type="monotone" 
+                            dataKey="enrollment" 
+                            stroke="#8b6cbc" 
+                            strokeWidth={2}
+                            fillOpacity={1} 
+                            fill="url(#colorEnrollment)"
+                            activeDot={{ r: 6 }}
+                            name="Enrollment"
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="completed" 
+                            stroke="#66BB6A" 
+                            strokeWidth={2}
+                            fillOpacity={1} 
+                            fill="url(#colorCompleted)"
+                            activeDot={{ r: 6 }}
+                            name="Completed Trials"
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="active" 
+                            stroke="#FFA726" 
+                            strokeWidth={2}
+                            fillOpacity={1} 
+                            fill="url(#colorActive)"
+                            activeDot={{ r: 6 }}
+                            name="Active Trials"
+                          />
+                        </AreaChart>
+                      )}
+                      {analyticsTab === 4 && (
                         <LineChart data={dashboardData.analyticsData.map((d, i) => ({
                           ...d,
                           citations: Math.floor(Math.random() * 20) + i * 5,
@@ -1011,15 +1270,22 @@ const ResearcherDashboard = () => {
                       </Box>
                     ) : (
                       <List sx={{ maxHeight: 400, overflow: 'auto' }}>
-                        {notifications.map((notification) => (
+                        {notifications.map((notification) => {
+                          const isInvitation = notification.type === 'COLLABORATION_INVITATION' && 
+                                              notification.data?.invitationId && 
+                                              notification.data?.action === 'pending' &&
+                                              !notification.isRead;
+                          const isResponding = respondingInvitationId === notification.id;
+                          
+                          return (
+                          <Box key={notification.id}>
                           <ListItem 
-                            key={notification.id} 
                             sx={{ 
                               px: 0, 
                               py: 1.5,
                               bgcolor: !notification.isRead ? 'rgba(139, 108, 188, 0.05)' : 'transparent', 
                               borderRadius: 1, 
-                              mb: 1,
+                              mb: isInvitation ? 0.5 : 1,
                               border: !notification.isRead ? '1px solid rgba(139, 108, 188, 0.1)' : '1px solid transparent',
                               transition: 'all 0.2s ease',
                               '&:hover': {
@@ -1028,6 +1294,7 @@ const ResearcherDashboard = () => {
                               }
                             }}
                             secondaryAction={
+                              !isInvitation && (
                               <Box sx={{ display: 'flex', gap: 0.5 }}>
                                 {!notification.isRead && (
                                   <Tooltip title="Mark as read">
@@ -1050,6 +1317,7 @@ const ResearcherDashboard = () => {
                                   </IconButton>
                                 </Tooltip>
                               </Box>
+                              )
                             }
                           >
                             <ListItemAvatar>
@@ -1083,11 +1351,63 @@ const ResearcherDashboard = () => {
                               primaryTypographyProps={{ 
                                 variant: 'body2', 
                                 fontWeight: !notification.isRead ? 600 : 400,
-                                sx: { pr: 6 }
+                                sx: { pr: isInvitation ? 0 : 6 }
                               }}
                             />
                           </ListItem>
-                        ))}
+                          {isInvitation && (
+                            <Box sx={{ px: 0, pb: 1.5, mb: 1, display: 'flex', gap: 1 }}>
+                              <Button
+                                variant="contained"
+                                size="small"
+                                disabled={isResponding}
+                                onClick={() => handleRespondToInvitation(notification, 'accept')}
+                                sx={{
+                                  bgcolor: '#4caf50',
+                                  '&:hover': { bgcolor: '#43a047' },
+                                  textTransform: 'none',
+                                  fontWeight: 600,
+                                  flex: 1,
+                                  fontSize: '0.75rem',
+                                  py: 0.5
+                                }}
+                              >
+                                {isResponding ? 'Processing...' : 'Accept'}
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                disabled={isResponding}
+                                onClick={() => handleRespondToInvitation(notification, 'decline')}
+                                sx={{
+                                  borderColor: '#f44336',
+                                  color: '#f44336',
+                                  '&:hover': { 
+                                    borderColor: '#d32f2f',
+                                    bgcolor: 'rgba(244, 67, 54, 0.04)'
+                                  },
+                                  textTransform: 'none',
+                                  fontWeight: 600,
+                                  flex: 1,
+                                  fontSize: '0.75rem',
+                                  py: 0.5
+                                }}
+                              >
+                                Decline
+                              </Button>
+                              <Tooltip title="Delete">
+                                <IconButton 
+                                  size="small" 
+                                  onClick={() => handleDeleteNotification(notification.id)}
+                                  sx={{ '&:hover': { bgcolor: 'rgba(239, 83, 80, 0.1)' } }}
+                                >
+                                  <DeleteIcon sx={{ fontSize: 16, color: '#EF5350' }} />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          )}
+                          </Box>
+                        )})}
                       </List>
                     )}
                   </CardContent>

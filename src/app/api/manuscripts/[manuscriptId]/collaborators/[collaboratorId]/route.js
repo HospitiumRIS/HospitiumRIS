@@ -92,13 +92,25 @@ export async function PATCH(request, { params }) {
       );
     }
 
+    // Convert role to uppercase to match Prisma enum (Admin -> ADMIN)
+    const normalizedRole = updateData.role 
+      ? updateData.role.toUpperCase() 
+      : collaborator.role;
+
+    // Track what changed for notification
+    const roleChanged = normalizedRole !== collaborator.role;
+    const permissionsChanged = 
+      (updateData.canEdit !== undefined && updateData.canEdit !== collaborator.canEdit) ||
+      (updateData.canInvite !== undefined && updateData.canInvite !== collaborator.canInvite) ||
+      (updateData.canDelete !== undefined && updateData.canDelete !== collaborator.canDelete);
+
     // Update the collaborator
     const updatedCollaborator = await prisma.manuscriptCollaborator.update({
       where: {
         id: collaboratorId
       },
       data: {
-        role: updateData.role || collaborator.role,
+        role: normalizedRole,
         canEdit: updateData.canEdit !== undefined ? updateData.canEdit : collaborator.canEdit,
         canInvite: updateData.canInvite !== undefined ? updateData.canInvite : collaborator.canInvite,
         canDelete: updateData.canDelete !== undefined ? updateData.canDelete : collaborator.canDelete,
@@ -118,19 +130,51 @@ export async function PATCH(request, { params }) {
       }
     });
 
-    // Create notification for the updated user (if not updating yourself)
-    if (collaborator.userId !== userId) {
+    // Create notification for the updated user (if not updating yourself and something changed)
+    if (collaborator.userId !== userId && (roleChanged || permissionsChanged)) {
+      // Build detailed message about what changed
+      let changeDetails = [];
+      
+      if (roleChanged) {
+        changeDetails.push(`Role changed to ${normalizedRole}`);
+      }
+      
+      if (permissionsChanged) {
+        const newPerms = [];
+        if (updateData.canEdit !== undefined && updateData.canEdit !== collaborator.canEdit) {
+          newPerms.push(`Can Edit: ${updateData.canEdit ? 'Enabled' : 'Disabled'}`);
+        }
+        if (updateData.canInvite !== undefined && updateData.canInvite !== collaborator.canInvite) {
+          newPerms.push(`Can Invite: ${updateData.canInvite ? 'Enabled' : 'Disabled'}`);
+        }
+        if (updateData.canDelete !== undefined && updateData.canDelete !== collaborator.canDelete) {
+          newPerms.push(`Can Delete: ${updateData.canDelete ? 'Enabled' : 'Disabled'}`);
+        }
+        if (newPerms.length > 0) {
+          changeDetails.push(`Permissions updated: ${newPerms.join(', ')}`);
+        }
+      }
+
       await prisma.notification.create({
         data: {
           userId: collaborator.userId,
           manuscriptId,
-          type: 'MANUSCRIPT_UPDATE',
-          title: 'Role Updated',
-          message: `Your role in "${manuscript.title}" has been updated to ${updateData.role || collaborator.role}`,
+          type: 'COLLABORATOR_ROLE_CHANGED',
+          title: 'Role & Permissions Updated',
+          message: `Your role and permissions in "${manuscript.title}" have been updated. ${changeDetails.join('. ')}`,
+          priority: 'HIGH',
           data: {
             manuscriptTitle: manuscript.title,
-            newRole: updateData.role || collaborator.role,
-            updatedBy: userId
+            manuscriptId: manuscriptId,
+            oldRole: collaborator.role,
+            newRole: normalizedRole,
+            permissions: {
+              canEdit: updateData.canEdit !== undefined ? updateData.canEdit : collaborator.canEdit,
+              canInvite: updateData.canInvite !== undefined ? updateData.canInvite : collaborator.canInvite,
+              canDelete: updateData.canDelete !== undefined ? updateData.canDelete : collaborator.canDelete
+            },
+            updatedBy: userId,
+            changes: changeDetails
           }
         }
       });

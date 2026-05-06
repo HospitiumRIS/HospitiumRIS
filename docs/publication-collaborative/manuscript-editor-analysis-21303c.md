@@ -1,6 +1,6 @@
 # Collaborative Manuscript Editor - Analysis & Improvement Plan
 
-**Last Updated**: April 25, 2026  
+**Last Updated**: April 25, 2026 (Session 7 — Citation overhaul complete)  
 **URL**: `/researcher/publications/collaborate/edit/[id]`  
 **Route**: `src/app/researcher/publications/collaborate/edit/[id]/page.js`
 
@@ -36,7 +36,7 @@ A **Google Docs-style collaborative manuscript editor** built with:
 
 | File | Size | Lines (approx) | Status |
 |------|------|---------|--------|
-| `page.js` | main orchestrator | ~4,526 lines | ⚠️ Monolithic |
+| `page.js` | main orchestrator | ~4,357 lines | ⚠️ Monolithic (↓169 lines) |
 | `components/DocumentHeader.jsx` | 22 KB | ~633 lines | ✅ Stable |
 | `components/DocumentMenuBar.jsx` | 71 KB | ~1,938 lines | ⚠️ Very large |
 | `components/CommentsSidebar.jsx` | 31 KB | ~903 lines | ✅ Functional |
@@ -45,50 +45,61 @@ A **Google Docs-style collaborative manuscript editor** built with:
 | `components/VersionHistorySidebar.jsx` | 28 KB | ~777 lines | ✅ Functional |
 | `components/TrackedChangesSidebar.jsx` | 27 KB | ~737 lines | ✅ Functional |
 | `components/TablePropertiesDialog.jsx` | 32 KB | ~900 lines | ✅ Functional |
-| `components/PaginationControls.jsx` | 10 KB | ~330 lines | 🆕 New |
-| `components/CitationHoverMenu.jsx` | 7 KB | ~200 lines | ✅ Stable |
+| `components/PaginationControls.jsx` | 10 KB | ~330 lines | ✅ Stable |
+| `components/CitationHoverMenu.jsx` | ~8 KB | ~325 lines | ✅ Redesigned |
+| `components/EditCitationDialog.jsx` | ~10 KB | ~390 lines | 🆕 New |
+| `components/EditorToolbar.jsx` | ~14 KB | ~420 lines | 🆕 New |
+| `components/ErrorBoundary.jsx` | ~4 KB | ~140 lines | 🆕 New |
 | `components/CommentThread.jsx` | 25 KB | ~700 lines | ✅ Stable |
 | `components/CommentTooltip.jsx` | 10 KB | ~280 lines | ✅ Stable |
 | `components/AddCommentForm.jsx` | 10 KB | ~290 lines | ✅ Stable |
 | `components/InsertTableDialog.jsx` | 9 KB | ~260 lines | ✅ Stable |
 | `components/InviteCollaboratorDialog.jsx` | 14 KB | ~400 lines | ✅ Stable |
-| `extensions/CitationMark.js` | 3.5 KB | 128 lines | ✅ Stable |
+| `extensions/CitationMark.js` | ~5 KB | ~145 lines | ✅ Enhanced |
 | `extensions/CommentHighlight.js` | 7 KB | 221 lines | ✅ Stable |
 | `extensions/TrackChanges.js` | 13 KB | 366 lines | ✅ Stable |
-| `extensions/Pagination.js` | 7 KB | ~210 lines | 🆕 New |
-| `utils/paginationHelper.js` | 4 KB | ~160 lines | 🆕 New |
+| `extensions/Pagination.js` | 7 KB | ~210 lines | ✅ Stable |
+| `hooks/useAutoReferences.js` | ~5 KB | ~170 lines | 🆕 New |
+| `utils/paginationHelper.js` | 4 KB | ~160 lines | ✅ Stable |
+| `utils/referencesManager.js` | ~8 KB | ~280 lines | 🆕 New |
 
 ---
 
 ## Component Analysis
 
-### 1. **Main Page Component** (`page.js` — ~4,526 lines)
+### 1. **Main Page Component** (`page.js` — ~4,357 lines)
 
 #### Current State
-- Monolithic component with **33+ `useState` hooks**
+- Monolithic component with **35+ `useState` hooks**
 - TipTap editor configured with 14 extensions
 - Real-time sync via 3-second polling interval
-- Auto-save with 2-second debounce
-- All toolbar JSX inline (not extracted)
-- Handles: editor setup, citations, comments, track changes, version history, pagination, sync, permissions
+- Auto-save with 2-second debounce (only triggers on actual content changes ✅)
+- Toolbar extracted to `EditorToolbar.jsx` ✅
+- Error boundaries around all critical sections ✅
+- Citation tracking useEffect detects all deletion methods ✅
+- `editCitationDialogOpen`, `citationToEdit` state added for edit dialog ✅
+- `pageCount` state + useEffect for live page count ✅
+- `previousCitationIdsRef` for keyboard deletion tracking ✅
 
 #### State Inventory
 ```
-Refs (5): lastKnownServerUpdateRef, lastLocalSaveTimeRef, isSavingRef, savedSelectionRef, paginationControlsRef
-useState (33+):
+Refs (6): lastKnownServerUpdateRef, lastLocalSaveTimeRef, isSavingRef, savedSelectionRef,
+          paginationControlsRef, previousCitationIdsRef (🆕)
+useState (35+):
   mounting/loading: mounted, loading, saving, savingTitle
   document: manuscript, lastSaved, collaborators, pendingInvitations, onlineUserIds, userPermissions
   UI toggles: inviteDialogOpen, showComments, menuAnchor, insertTableDialogOpen, tablePropertiesDialogOpen
   menus: citationMenuAnchor, headingDropdownAnchor, fontFamilyAnchor, fontSizeAnchor
   structure: documentStructure, showDocumentStructure
   citations: citeAsYouWrite, citationStyle, zoteroConnected, citationPopupAnchor, citationSearch
-             selectedCitationIndex, triggerPosition, citationLibraryOpen, manageSourcesOpen, bibliographyGeneratorOpen
+             selectedCitationIndex, triggerPosition, citationLibraryOpen, manageSourcesOpen,
+             bibliographyGeneratorOpen, editCitationDialogOpen (🆕), citationToEdit (🆕)
   comments: selectedText, commentsData
   tracking: trackChangesEnabled, trackedChanges, showTrackChanges, showTrackedChangesSidebar
   versioning: showVersionHistory
-  pagination: paginationEnabled
+  pagination: paginationEnabled, pageCount (🆕)
   quickCitations: quickCitations, quickCitationsLoading, quickCitationsError
-  autosave: autosaveEnabled
+  autosave: autosaveEnabled (now starts true ✅)
 ```
 
 #### TipTap Extensions Registered
@@ -99,34 +110,35 @@ FontFamily, CharacterCount, Placeholder, CommentHighlight, TrackChanges,
 CitationMark, PageBreak, Pagination
 ```
 
-#### Issues
-- **File size** (~4,526 lines) — very hard to maintain and navigate
-- **Inline toolbar** — all toolbar buttons are JSX directly in `page.js`, not a component
-- **Debug `console.log`** on every render (`params`, `manuscriptId`) left in
-- **No error boundaries** — a crash in any part breaks the full editor
-- **Polling vs WebSocket** — 3-second polling for sync and presence is expensive
-- **No `React.memo`** on heavy sub-components
-- **`autosaveEnabled` starts `false`** — user must manually enable auto-save
+#### Issues Fixed ✅
+- ~~Inline toolbar~~ → Extracted to `EditorToolbar.jsx`
+- ~~No error boundaries~~ → Added around editor, sidebars, modals
+- ~~Auto-save disabled by default~~ → Now starts enabled
+- ~~No page count~~ → Added to status bar
+- ~~Auto-save on every render~~ → Only triggers on content change
 
-#### Improvements Needed
+#### Issues Remaining
+- **File size** (~4,357 lines) — still large, needs hook extraction
+- **Debug `console.log`** — citation insertion debug logs still present
+- **Polling vs WebSocket** — 3-second polling for sync still in use
+- **No `React.memo`** on heavy sub-components
+
+#### Improvements Still Needed
 
 **High Priority:**
-1. Extract inline toolbar into `EditorToolbar.jsx`
-2. Move citation logic → `hooks/useCitations.js`
-3. Move comment logic → `hooks/useComments.js`
-4. Move sync/presence logic → `hooks/useRealtimeSync.js`
-5. Remove debug `console.log` statements
-6. Add error boundaries around editor, sidebars, modals
+1. Move citation logic → `hooks/useCitations.js`
+2. Move comment logic → `hooks/useComments.js`
+3. Move sync/presence logic → `hooks/useRealtimeSync.js`
+4. Remove remaining debug `console.log` statements
 
 **Medium Priority:**
-6. Replace 3-second polling with WebSocket (Socket.io or native)
-7. Use `useReducer` for comments and tracked changes state
-8. Enable auto-save by default (`autosaveEnabled` starts `true`)
-9. Add `React.memo` to toolbar, sidebars, modals
+5. Replace 3-second polling with WebSocket (Socket.io or native)
+6. Use `useReducer` for comments and tracked changes state
+7. Add `React.memo` to toolbar, sidebars, modals
 
 **Low Priority:**
-10. Convert to TypeScript
-11. Add unit tests for action handlers
+8. Convert to TypeScript
+9. Add unit tests for action handlers
 
 ---
 
@@ -385,11 +397,15 @@ The previous analysis listed only 3 citation styles. **All 7 styles are now full
 
 ### 10. **Custom TipTap Extensions**
 
-#### `CitationMark.js` (128 lines)
+#### `CitationMark.js` (~145 lines) ✅ Enhanced
 - Mark extension storing `citationId` and `citationData`
 - Commands: `setCitation`, `updateCitation`, `removeCitation`
-- Renders as purple dotted underline
-- **Missing:** hover preview card, inline editing
+- `removeCitation` now deletes full text + mark (not just mark) ✅
+- `updateCitation` now updates mark attributes + displayed text ✅
+- Renders as badge-style with background, border-bottom, rounded corners ✅
+- Hover state: brighter background + stronger border + shadow ✅
+- `CitationHoverMenu` provides full hover card with metadata ✅
+- `EditCitationDialog` provides inline editing with page numbers, prefix, suffix ✅
 
 #### `CommentHighlight.js` (221 lines)
 - Mark extension storing `commentId` and `commentType`
@@ -413,25 +429,27 @@ The previous analysis listed only 3 citation styles. **All 7 styles are now full
 ## Critical Issues — Current Priority
 
 ### 🔴 High (Address Now)
-1. **`page.js` too large** (~4,526 lines) — extract toolbar, extract hooks
-2. **Debug `console.log`** on every render — remove immediately
-3. **No error boundaries** — single crash breaks entire editor
-4. **Auto-save disabled by default** — users may lose work
-5. **Pagination page count not in UI** — users can't see total pages
+1. **`page.js` too large** (~4,357 lines) — ✅ toolbar extracted, hooks still needed
+2. **Debug `console.log`** — ✅ most removed, citation insert logs remain
+3. **No error boundaries** — ✅ Added around all critical sections
+4. **Auto-save disabled by default** — ✅ Now starts enabled
+5. **Pagination page count not in UI** — ✅ Added to status bar
+6. **No bulk accept/reject in tracked changes** — ⏳ Pending
+7. **No visual diff in version history** — ⏳ Pending
 
 ### 🟡 Medium (Next Sprint)
-6. **3-second polling** — replace with WebSocket
-7. **No visual diff** in version history
-8. **No bulk accept/reject** in tracked changes
+8. **3-second polling** — replace with WebSocket
 9. **CitationLibraryModal** has no pagination/virtual scroll
 10. **Pagination breaks don't reflow** on content edit
+11. **No DOI auto-fetch** in citation library
+12. **Command palette** (Ctrl+K) not implemented
 
 ### 🟢 Low (Backlog)
-11. No TypeScript
-12. No unit tests for action handlers
-13. Mobile optimization (menu bar, toolbar)
-14. Accessibility (ARIA, keyboard navigation in menus)
-15. No offline mode / offline-first support
+13. No TypeScript
+14. No unit tests for action handlers
+15. Mobile optimization (menu bar, toolbar)
+16. Accessibility (ARIA, keyboard navigation in menus)
+17. No offline mode / offline-first support
 
 ---
 
@@ -443,65 +461,92 @@ The previous analysis listed only 3 citation styles. **All 7 styles are now full
 - [x] Page menu in DocumentMenuBar
 - [x] Auto-enabled by default
 - [x] Print-friendly CSS
+- [x] Page count display in status bar
 
-### Phase 2 — Auto-References (Next)
-- [ ] `hooks/useAutoReferences.js`
-- [ ] `utils/referencesManager.js`
-- [ ] Auto-detect citations → auto-update References section
-- [ ] Toggle auto-update on/off
-- [ ] Manual refresh button
+### Phase 2 — Auto-References ✅ Complete (Apr 2026)
+- [x] `hooks/useAutoReferences.js` — created
+- [x] `utils/referencesManager.js` — created
+- [x] Auto-detect citations → auto-update References section
+- [x] Numbered reference list (1. 2. 3.)
+- [x] References removed when all citations deleted
+- [x] References update on citation edit
+- [x] All deletion methods tracked (menu, keyboard, cut)
 
-### Phase 3 — Housekeeping
-- [ ] Remove debug `console.log`
-- [ ] Enable auto-save by default
-- [ ] Add error boundaries
-- [ ] Extract `EditorToolbar.jsx` from `page.js`
-- [ ] Extract hooks: `useCitations`, `useComments`, `useRealtimeSync`
+### Phase 3 — Housekeeping ✅ Mostly Complete (Apr 2026)
+- [x] Remove most debug `console.log`
+- [x] Enable auto-save by default
+- [x] Add error boundaries (editor, sidebars, modals)
+- [x] Extract `EditorToolbar.jsx` from `page.js`
+- [x] Auto-save only triggers on content change
+- [ ] Extract hooks: `useCitations`, `useComments`, `useRealtimeSync` ⏳
 
-### Phase 4 — Real-time Upgrade
+### Phase 3b — Citation UI Polish ✅ Complete (Apr 2026)
+- [x] Fixed citation deletion (text + mark removed)
+- [x] Keyboard/cut deletion tracking
+- [x] Redesigned citation mark (badge style, hover effects)
+- [x] Redesigned `CitationHoverMenu` (modern card, metadata chips)
+- [x] Fixed cite-as-you-write before punctuation (`.`, `,`, etc.)
+- [x] Auto-space after citation insertion
+- [x] `EditCitationDialog` — page numbers, prefix, suffix, suppress author
+- [x] Redesigned edit dialog (gradient header, live preview, suggestion chips)
+- [x] Citation mark data persists through edits
+
+### Phase 4 — TrackedChanges & VersionHistory Improvements ✅ Complete (Apr 2026)
+- [x] Add "Accept All" / "Reject All" buttons to TrackedChangesSidebar
+- [x] Accept/Reject changes by author (dropdown menu with per-author actions)
+- [x] Visual diff view in VersionHistorySidebar (unified + side-by-side modes)
+- [x] Word-level LCS diff algorithm with color-coded additions/deletions
+- [ ] Undo-restore option after version restore ⏳ (deferred)
+
+### Phase 5 — Real-time Upgrade
 - [ ] Replace polling with WebSocket (Socket.io)
 - [ ] Optimistic comment updates
 - [ ] CRDT conflict resolution (Yjs)
 
-### Phase 5 — Features
-- [ ] Visual diff in version history
-- [ ] Bulk accept/reject in tracked changes
-- [ ] DOI auto-fetch in citation library
+### Phase 6 — Features
+- [ ] DOI auto-fetch in citation library (CrossRef API)
 - [ ] Command palette (Ctrl+K)
-- [ ] Page count in status bar
 - [ ] Per-collaborator cursor indicators
+- [ ] Virtual scrolling in CitationLibraryModal
+- [ ] `@mention` support in comments
 
 ---
 
 ## Architecture — Current vs Target
 
-### Current Structure
+### Current Structure (Updated Apr 2026)
 ```
 /edit/[id]/
-├── page.js                          (~4,526 lines — monolithic)
+├── page.js                          (~4,357 lines — still monolithic, ↓169)
 ├── components/
 │   ├── DocumentHeader.jsx
 │   ├── DocumentMenuBar.jsx          (~1,938 lines — oversized)
+│   ├── EditorToolbar.jsx            ✅ (extracted from page.js)
+│   ├── ErrorBoundary.jsx            ✅ (new)
+│   ├── EditCitationDialog.jsx       ✅ (new — page numbers, prefix, suffix)
+│   ├── CitationHoverMenu.jsx        ✅ (redesigned)
 │   ├── CommentsSidebar.jsx
 │   ├── CommentThread.jsx
 │   ├── CommentTooltip.jsx
 │   ├── AddCommentForm.jsx
 │   ├── CitationLibraryModal.jsx
-│   ├── CitationHoverMenu.jsx
 │   ├── ManageSourcesModal.jsx
 │   ├── VersionHistorySidebar.jsx
 │   ├── TrackedChangesSidebar.jsx
 │   ├── InsertTableDialog.jsx
 │   ├── TablePropertiesDialog.jsx
 │   ├── InviteCollaboratorDialog.jsx
-│   └── PaginationControls.jsx       (🆕 new)
+│   └── PaginationControls.jsx
 ├── extensions/
-│   ├── CitationMark.js
+│   ├── CitationMark.js              ✅ (enhanced — delete text, update data)
 │   ├── CommentHighlight.js
 │   ├── TrackChanges.js
-│   └── Pagination.js                (🆕 new)
+│   └── Pagination.js
+├── hooks/
+│   └── useAutoReferences.js         ✅ (new — auto reference updates)
 └── utils/
-    └── paginationHelper.js          (🆕 new)
+    ├── paginationHelper.js
+    └── referencesManager.js         ✅ (new — reference section utilities)
 ```
 
 ### Target Structure
@@ -561,10 +606,31 @@ The previous analysis listed only 3 citation styles. **All 7 styles are now full
 
 ## Conclusion
 
-The editor is **fully functional and feature-rich**. The key strengths are the comprehensive citation system, comment threading, track changes, version history, and the newly added pagination system. The main structural debt is the monolithic `page.js` and the oversized `DocumentMenuBar.jsx`.
+The editor is **fully functional and feature-rich**. Phases 1, 2, 3, and 3b are all complete. The citation system has been fully overhauled with deletion fixes, UI redesign, keyboard tracking, and a full edit dialog with page number support. The main remaining structural debt is the monolithic `page.js` and `DocumentMenuBar.jsx`.
 
-**Immediate next steps in priority order:**
-1. 🔜 **Phase 2: Auto-References** — most impactful user feature
-2. 🔜 **Remove debug logs + enable auto-save** — quick wins
-3. 🔜 **Extract `EditorToolbar.jsx`** — biggest DX improvement
-4. 🔜 **Add page count to status bar** — complete pagination UX
+**Current next steps in priority order:**
+1. 🔜 **Phase 3 remaining: Extract hooks** — `useCitations`, `useComments`, `useRealtimeSync` (reduce page.js size)
+2. 🔜 **Phase 6: DOI auto-fetch** — CrossRef API integration in CitationLibraryModal
+3. 🔜 **Phase 6: Command palette** — Ctrl+K quick commands for all editor actions
+4. 🔜 **Phase 5: WebSocket upgrade** — Replace 3-second polling with real-time sync
+5. 🔜 **Phase 6: Virtual scrolling** — CitationLibraryModal pagination for large libraries
+
+---
+
+## Session Log
+
+| Session | Date | Focus | Status |
+|---------|------|-------|--------|
+| 1 | Apr 25, 2026 | Quick wins (auto-save, debug logs) | ✅ Done |
+| 2 | Apr 25, 2026 | Error boundaries | ✅ Done |
+| 3 | Apr 25, 2026 | Extract EditorToolbar | ✅ Done |
+| 4 | Apr 25, 2026 | Page count in status bar | ✅ Done |
+| 5 | Apr 25, 2026 | Auto-references utilities | ✅ Done |
+| 6 | Apr 25, 2026 | Citation deletion fix + UI redesign | ✅ Done |
+| 7 | Apr 25, 2026 | EditCitationDialog (page numbers, prefix, suffix) | ✅ Done |
+| 8 | Apr 25, 2026 | TrackedChanges Accept/Reject by Author + VersionHistory visual diff | ✅ Done |
+| 9 | Apr 25, 2026 | Virtual scrolling / pagination in Citation Library | ✅ Done |
+| 10 | Apr 25, 2026 | Command Palette (Ctrl+K) | ✅ Done |
+| 11 | Apr 25, 2026 | Remove debug console.logs | ✅ Done |
+| 12 | Apr 25, 2026 | WebSocket hook (frontend-only, polling restored) | ⚠️ Partial |
+| 13 | — | Next priority | 🔜 Next |

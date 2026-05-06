@@ -119,14 +119,38 @@ function StagePipeline({ currentStatus }) {
   );
 }
 
-function StatCard({ label, value, sub, color }) {
+function StatCard({ label, value, sub, icon }) {
   return (
-    <Paper sx={{ p: 2.5, borderRadius: 2.5, boxShadow: '0 1px 4px rgba(0,0,0,0.07)', borderTop: `3px solid ${color}`, flex: '1 1 0' }}>
-      <Typography variant="caption" sx={{ fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-        {label}
+    <Paper sx={{ 
+      p: 2, 
+      borderRadius: 2,
+      bgcolor: '#8b6cbc',
+      boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+      border: 'none',
+      position: 'relative',
+      overflow: 'hidden',
+      height: '100px',
+      flex: 1,
+      minWidth: '200px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between'
+    }}>
+      <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+          {label}
+        </Typography>
+        {icon}
+      </Box>
+      <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+        {value}
       </Typography>
-      <Typography variant="h4" sx={{ fontWeight: 800, color, mt: 0.5 }}>{value}</Typography>
-      {sub && <Typography variant="caption" sx={{ color: '#9ca3af' }}>{sub}</Typography>}
+      {sub && (
+        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+          {sub}
+        </Typography>
+      )}
     </Paper>
   );
 }
@@ -202,13 +226,43 @@ export default function InstitutionProposalsPage() {
           </Box>
         </Paper>
 
-        {/* Stat Cards */}
-        <Box sx={{ display: 'flex', gap: 2.5, mb: 3, flexWrap: 'wrap' }}>
-          <StatCard label="Total Proposals" value={stats.total} color="#8b6cbc" />
-          <StatCard label="Drafting" value={stats.drafting} sub="Being written" color="#f59e0b" />
-          <StatCard label="In Progress" value={stats.inProgress} sub="Submitted / Under review" color="#3b82f6" />
-          <StatCard label="Approved" value={stats.approved} sub="Active projects" color="#10b981" />
-          <StatCard label="Rejected" value={stats.rejected} sub="" color="#ef4444" />
+        {/* Statistics Cards */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2.5, 
+          flexWrap: 'wrap',
+          mb: 4
+        }}>
+          <StatCard 
+            label="Total Proposals" 
+            value={stats.total} 
+            sub="All submissions"
+            icon={<DescriptionIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />}
+          />
+          <StatCard 
+            label="Drafting" 
+            value={stats.drafting} 
+            sub="Being written" 
+            icon={<EditNoteIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />}
+          />
+          <StatCard 
+            label="In Progress" 
+            value={stats.inProgress} 
+            sub="Submitted / Under review" 
+            icon={<FindInPageIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />}
+          />
+          <StatCard 
+            label="Approved" 
+            value={stats.approved} 
+            sub="Active projects" 
+            icon={<CheckCircleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />}
+          />
+          <StatCard 
+            label="Rejected" 
+            value={stats.rejected} 
+            sub="Not approved"
+            icon={<CancelIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />}
+          />
         </Box>
 
         {/* Filters */}

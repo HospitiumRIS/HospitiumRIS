@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HospitiumRIS PID Integration Framework</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f4f1eb;
+      --surface: #ffffff;
+      --ink: #1a1a2e;
+      --ink-light: #4a4a6a;
+      --accent: #8f70bd;
+      --accent-mid: #683aad;
+      --accent-light: #e8f2fa;
+      --gold: #e0cdfd;
+      --border: #d8d4ca;
+      --code-bg: #000000;
+      --code-text: #e0cdfd;
+      --radius: 8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--accent);
+      color: #fff;
+      padding: 64px 48px 48px;
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+    }
+   
+    .header-tag {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: var(--gold);
+      color: var(--ink);
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+    header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 400;
+      line-height: 1.2;
+      margin-bottom: 18px;
+      position: relative;
+    }
+    header p {
+      font-size: 16px;
+      opacity: 0.82;
+      max-width: 660px;
+      line-height: 1.65;
+      position: relative;
+      margin-left: auto;
+      margin-right: auto;
+      color:#000000
+    }
+
+    /* ── Layout ── */
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* ── Sections ── */
+    section {
+      margin-bottom: 56px;
+    }
+
+    h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 26px;
+      font-weight: 400;
+      color: var(--accent);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border);
+      position: relative;
+    }
+    h2::after {
+      content: '';
+      position: absolute;
+      bottom: -2px; left: 0;
+      width: 48px; height: 2px;
+      background: var(--gold);
+    }
+
+    p { color: var(--ink-light); margin-bottom: 14px; }
+
+    /* ── Architecture Diagram ── */
+    .diagram-box {
+      background: var(--code-bg);
+      color: var(--code-text);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      padding: 28px 32px;
+      border-radius: var(--radius);
+      overflow-x: auto;
+      white-space: pre;
+      margin: 24px 0;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; margin: 20px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+    thead tr {
+      background: var(--accent);
+      color: #fff;
+    }
+    thead th {
+      padding: 14px 18px;
+      text-align: left;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:nth-child(even) { background: var(--accent-light); }
+    tbody td { padding: 14px 18px; color: var(--ink-light); vertical-align: top; }
+    tbody td strong { color: var(--accent); }
+
+    /* ── Architecture Steps ── */
+    .arch-steps {
+      display: grid;
+      gap: 14px;
+      margin: 20px 0;
+    }
+    .arch-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      transition: box-shadow 0.2s;
+    }
+    .arch-step:hover { box-shadow: 0 4px 16px rgba(13,59,110,0.08); }
+    .step-num {
+      flex-shrink: 0;
+      width: 36px; height: 36px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .step-body strong {
+      display: block;
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .step-body span { color: var(--ink-light); font-size: 14px; }
+    .step-body ul {
+      margin-top: 8px;
+      padding-left: 18px;
+      color: var(--ink-light);
+      font-size: 14px;
+    }
+    .step-body li { margin-bottom: 2px; }
+
+    /* ── Use Case Cards ── */
+    .usecase-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      margin: 20px 0;
+    }
+    .usecase-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      border-left: 4px solid var(--accent-mid);
+    }
+    .usecase-card .label {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .usecase-card .value {
+      font-size: 14px;
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    /* ── Strategic Value List ── */
+    .value-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .value-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--ink-light);
+    }
+    .value-item::before {
+      content: '✓';
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+    }
+
+    /* ── Callout ── */
+    .callout {
+      background: var(--accent);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      margin-top: 32px;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    .callout strong { color: var(--gold); }
+
+    /* ── Flow Diagram ── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      margin: 24px 0;
+    }
+    .flow-step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 13px 28px;
+      font-size: 14px;
+      color: var(--ink);
+      font-weight: 500;
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+      transition: background 0.2s;
+    }
+    .flow-step:hover { background: var(--accent-light); }
+    .flow-arrow {
+      color: var(--accent-mid);
+      font-size: 20px;
+      line-height: 1.2;
+      padding: 2px 0;
+    }
+
+    /* ── Description text ── */
+    .desc {
+      background: var(--accent-light);
+      border-left: 4px solid var(--accent-mid);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 16px 20px;
+      font-size: 14px;
+      color: var(--ink-light);
+      margin: 20px 0;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 28px;
+      font-size: 12px;
+      color: #999;
+      border-top: 1px solid var(--border);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 40px 24px 32px; }
+      .value-list { grid-template-columns: 1fr; }
+      .diagram-box { font-size: 11px; padding: 18px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-tag">Technical Framework</div>
+  <h1>HospitiumRIS PID Integration Framework</h1>
+  <p>A practical architecture showing where each PID provider sits, what data flows through them, and how hospitals use the outputs for research visibility, compliance, and reporting.</p>
+</header>
+
+<main>
+
+  <!-- Architecture Diagram -->
+  <section>
+    <h2>System Architecture</h2>
+    <p>Below is the technological framework for integrating ORCID, Crossref, and DataCite within HospitiumRIS.</p>
+    <div class="diagram-box">Hospital / University Teaching Hospital
+       │
+       ▼
+HospitiumRIS Core Platform
+Researcher Profiles │ Projects │ Publications │ Datasets │ Grants │ Ethics │ Clinical Studies
+       │
+       ├── ORCID Integration
+       │     ├─ Researcher authentication
+       │     ├─ ORCID iD capture
+       │     ├─ Researcher profile synchronization
+       │     └─ Push verified affiliations, works, funding, peer review
+       │
+       ├── Crossref Integration
+       │     ├─ Retrieve publication DOI metadata
+       │     ├─ Validate journal articles, conference papers, books
+       │     ├─ Link authors, affiliations, references, funders
+       │     └─ Support citation and publication reporting
+       │
+       └── DataCite Integration
+             ├─ Register or retrieve dataset DOIs
+             ├─ Link datasets to projects, grants, ethics approvals
+             ├─ Capture related identifiers and provenance
+             └─ Support FAIR data and Open Science reporting</div>
+  </section>
+
+  <!-- Role of Each PID Provider -->
+  <section>
+    <h2>Role of Each PID Provider</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>PID System</th>
+            <th>Function inside HospitiumRIS</th>
+            <th>Main Value to Hospitals</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>ORCID</strong></td>
+            <td>Identifies researchers, clinicians, students, and collaborators</td>
+            <td>Solves researcher name ambiguity and improves researcher visibility</td>
+          </tr>
+          <tr>
+            <td><strong>Crossref</strong></td>
+            <td>Connects publications with DOI metadata</td>
+            <td>Tracks journal articles, citations, funders, affiliations, and research outputs</td>
+          </tr>
+          <tr>
+            <td><strong>DataCite</strong></td>
+            <td>Connects datasets, software, instruments, reports, protocols, and clinical research objects</td>
+            <td>Supports FAIR data, dataset citation, and research reproducibility</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="desc">
+      ORCID supports API-based connections between systems and researcher records, including affiliations, outputs, funding, peer review, and research resources. Crossref provides DOI metadata retrieval through its REST API, including publication, citation, relationship, funder, and licence metadata. DataCite's REST API supports retrieval, creation, and update of DOI metadata, especially for datasets and research objects.
+    </div>
+  </section>
+
+  <!-- Suggested Architecture -->
+  <section>
+    <h2>Suggested HospitiumRIS Architecture</h2>
+    <div class="arch-steps">
+      <div class="arch-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Identity Layer</strong>
+          <span>ORCID iD for researchers, clinicians, students, supervisors</span>
+        </div>
+      </div>
+      <div class="arch-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Output Layer</strong>
+          <span>Crossref DOI for articles, books, conference papers, clinical publications</span>
+        </div>
+      </div>
+      <div class="arch-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Data Layer</strong>
+          <span>DataCite DOI for datasets, protocols, software, registries, reports</span>
+        </div>
+      </div>
+      <div class="arch-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Institutional Layer</strong>
+          <span>Hospital departments, research offices, ethics boards, grants offices</span>
+        </div>
+      </div>
+      <div class="arch-step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Reporting Layer</strong>
+          <span>Dashboards for:</span>
+          <ul>
+            <li>Researcher productivity</li>
+            <li>Hospital research output</li>
+            <li>Grants-to-publications tracking</li>
+            <li>Ethics-to-output tracking</li>
+            <li>Dataset reuse</li>
+            <li>Open Science compliance</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Data Flow -->
+  <section>
+    <h2>How the Data Flow Works</h2>
+    <div class="flow">
+      <div class="flow-step">Researcher logs into HospitiumRIS</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">Connects ORCID iD</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">HospitiumRIS imports researcher profile and verified works</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">Publications are checked against Crossref DOI metadata</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">Datasets and research objects are checked or registered through DataCite</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">HospitiumRIS creates a unified research record</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">Hospital leadership gets dashboards and reports</div>
+    </div>
+  </section>
+
+  <!-- Practical Use Case -->
+  <section>
+    <h2>Practical Use Case</h2>
+    <p>A clinician-researcher at a university teaching hospital conducts a funded clinical study. HospitiumRIS would connect:</p>
+    <div class="usecase-grid">
+      <div class="usecase-card">
+        <div class="label">Entity</div>
+        <div class="value">Researcher</div>
+        <div class="label" style="margin-top:10px">Identifier</div>
+        <div class="value">ORCID</div>
+      </div>
+      <div class="usecase-card">
+        <div class="label">Entity</div>
+        <div class="value">Publication</div>
+        <div class="label" style="margin-top:10px">Identifier</div>
+        <div class="value">Crossref DOI</div>
+      </div>
+      <div class="usecase-card">
+        <div class="label">Entity</div>
+        <div class="value">Dataset</div>
+        <div class="label" style="margin-top:10px">Identifier</div>
+        <div class="value">DataCite DOI</div>
+      </div>
+      <div class="usecase-card">
+        <div class="label">Entity</div>
+        <div class="value">Grant</div>
+        <div class="label" style="margin-top:10px">Identifier</div>
+        <div class="value">Funder ID</div>
+      </div>
+      <div class="usecase-card">
+        <div class="label">Entity</div>
+        <div class="value">Ethics Approval</div>
+        <div class="label" style="margin-top:10px">Identifier</div>
+        <div class="value">Hospital Ethics Record</div>
+      </div>
+      <div class="usecase-card">
+        <div class="label">Entity</div>
+        <div class="value">Department</div>
+        <div class="label" style="margin-top:10px">Identifier</div>
+        <div class="value">Hospital Research Unit</div>
+      </div>
+    </div>
+    <p>This creates a <strong>trusted research intelligence record</strong> showing who did the research, where it was done, what was produced, what data supports it, who funded it, and how it contributes to hospital research visibility.</p>
+  </section>
+
+  <!-- Strategic Value -->
+  <section>
+    <h2>Strategic Value for HospitiumRIS</h2>
+    <p>HospitiumRIS becomes the hospital's <strong>PID-enabled Research Information Management System</strong>, helping hospitals:</p>
+    <div class="value-list">
+      <div class="value-item">Improve researcher visibility</div>
+      <div class="value-item">Reduce duplicate researcher records</div>
+      <div class="value-item">Track publications and datasets</div>
+      <div class="value-item">Link grants to outputs</div>
+      <div class="value-item">Support Open Science and FAIR data</div>
+      <div class="value-item">Strengthen institutional reporting</div>
+      <div class="value-item">Prepare for funder and ministry reporting</div>
+      <div class="value-item">Make hospital research discoverable globally</div>
+    </div>
+
+    <div class="callout">
+      <strong>In short:</strong> ORCID identifies the <strong>people</strong>, Crossref identifies the <strong>publications</strong>, and DataCite identifies the <strong>datasets and research objects</strong>. HospitiumRIS brings them together into one institutional research intelligence system.
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  HospitiumRIS · PID Integration Framework · Research Information Management
+</footer>
+
+</body>
+</html>

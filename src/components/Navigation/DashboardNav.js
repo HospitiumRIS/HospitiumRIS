@@ -56,7 +56,7 @@ const DashboardNav = ({ dashboardConfig }) => {
       return menuItem.categories.map((category, categoryIndex) => (
         <Box key={categoryIndex}>
           {/* Category Header */}
-          <Box sx={{ px: 3, py: 1.5, backgroundColor: theme.palette.grey[50] }}>
+          <Box sx={{ px: { xs: 2, sm: 2.5, md: 3 }, py: 1.5, backgroundColor: theme.palette.grey[50] }}>
             <Typography 
               variant="overline" 
               sx={{ 
@@ -77,8 +77,8 @@ const DashboardNav = ({ dashboardConfig }) => {
               onClick={item.disabled ? undefined : (event) => handleMenuItemClick(event, item.path)}
               disabled={item.disabled}
               sx={{
-                px: 3,
-                py: 2,
+                px: { xs: 2, sm: 2.5, md: 3 },
+                py: { xs: 1.5, sm: 1.75, md: 2 },
                 minHeight: 'auto',
                 cursor: item.disabled ? 'not-allowed' : 'pointer',
                 '&:hover': {
@@ -186,19 +186,63 @@ const DashboardNav = ({ dashboardConfig }) => {
             onClose={() => handleMenuClose(menuItem.label)}
             disableAutoFocusItem
             disableScrollLock
+            slotProps={{
+              paper: {
+                style: {
+                  maxHeight: 'calc(100vh - 120px)', // Responsive max height
+                  overflowY: 'auto',
+                },
+              },
+            }}
             sx={{
               '& .MuiPaper-root': {
-                minWidth: menuItem.categories ? 380 : 280, // Wider for categorized menus
+                minWidth: {
+                  xs: '280px', // Mobile
+                  sm: '320px', // Tablet
+                  md: menuItem.categories ? 380 : 280, // Desktop
+                },
+                maxWidth: {
+                  xs: 'calc(100vw - 32px)', // Mobile with padding
+                  sm: 'calc(100vw - 64px)', // Tablet with padding
+                  md: '90vw', // Desktop
+                },
                 mt: 1,
-                overflow: 'hidden',
                 borderRadius: 3,
                 boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
                 border: `1px solid ${theme.palette.divider}`,
+                // Custom scrollbar styling
+                '&::-webkit-scrollbar': {
+                  width: '8px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  backgroundColor: theme.palette.grey[100],
+                  borderRadius: '4px',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  backgroundColor: theme.palette.grey[400],
+                  borderRadius: '4px',
+                  '&:hover': {
+                    backgroundColor: theme.palette.grey[500],
+                  },
+                },
+                // Firefox scrollbar
+                scrollbarWidth: 'thin',
+                scrollbarColor: `${theme.palette.grey[400]} ${theme.palette.grey[100]}`,
               }
             }}
           >
-            {/* Menu Header */}
-            <Box sx={{ px: 3, py: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
+            {/* Menu Header - Sticky */}
+            <Box 
+              sx={{ 
+                px: { xs: 2, sm: 2.5, md: 3 }, 
+                py: { xs: 1.5, sm: 1.75, md: 2 }, 
+                borderBottom: `1px solid ${theme.palette.divider}`,
+                position: 'sticky',
+                top: 0,
+                backgroundColor: 'white',
+                zIndex: 1,
+              }}
+            >
               <Typography 
                 variant="h6" 
                 sx={{ 
@@ -225,8 +269,8 @@ const DashboardNav = ({ dashboardConfig }) => {
               </Typography>
             </Box>
 
-            {/* Menu Content */}
-            <Box sx={{ py: 1 }}>
+            {/* Menu Content - Scrollable */}
+            <Box sx={{ py: 1, overflowY: 'auto' }}>
               {renderMenuContent(menuItem)}
             </Box>
           </Menu>

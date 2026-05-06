@@ -133,7 +133,7 @@ export async function POST(request, { params }) {
             invitedBy: invitation.invitedBy,
             canEdit: ['ADMIN', 'EDITOR', 'CONTRIBUTOR'].includes(invitation.role),
             canInvite: ['ADMIN', 'OWNER'].includes(invitation.role),
-            canDelete: invitation.role === 'OWNER'
+            canDelete: ['ADMIN', 'OWNER'].includes(invitation.role)
           }
         }),
         prisma.manuscriptInvitation.update({
