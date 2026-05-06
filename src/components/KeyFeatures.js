@@ -1,8 +1,10 @@
 'use client';
 
 import React from "react";
+import Link from 'next/link';
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 import { keyframes } from '@mui/system';
 import Container from "@mui/material/Container";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
@@ -12,6 +14,7 @@ import SecurityIcon from '@mui/icons-material/Security';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import GroupsIcon from '@mui/icons-material/Groups';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { styled, useTheme } from '@mui/material/styles';
 
 // Define animation
@@ -118,9 +121,10 @@ const KeyFeatures = () => {
     },
     {
       icon: <GroupsIcon />,
-      title: "Collaboration Tools",
-      description: "Foster seamless collaboration with integrated tools for team communication and document sharing.",
-      highlights: ['Team Workspace', 'Document Sharing', 'Real-time Updates']
+      title: "PID Integration Framework",
+      description: "ORCID identifies the people, Crossref identifies the publications, and DataCite identifies the datasets and research objects. HospitiumRIS brings them together into one institutional research intelligence system.",
+      highlights: ['ORCID Researcher Identity', 'Crossref Publication Tracking', 'DataCite Dataset Management'],
+      link: '/docs/hospitiumris_pid_Integration_framework.html'
     }
   ];
 
@@ -230,6 +234,29 @@ const KeyFeatures = () => {
                       • {highlight}
                     </Typography>
                   ))}
+                  {feature.link && (
+                    <Box sx={{ mt: 2 }}>
+                      <Button
+                        component="a"
+                        href={feature.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        variant="outlined"
+                        size="small"
+                        endIcon={<OpenInNewIcon />}
+                        sx={{
+                          borderColor: theme.palette.mode === 'dark' ? 'rgba(157, 127, 212, 0.4)' : 'rgba(139, 108, 188, 0.3)',
+                          color: theme.palette.primary.main,
+                          '&:hover': {
+                            borderColor: theme.palette.primary.main,
+                            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(157, 127, 212, 0.1)' : 'rgba(139, 108, 188, 0.05)',
+                          },
+                        }}
+                      >
+                        Learn More
+                      </Button>
+                    </Box>
+                  )}
                 </Box>
               </StyledFeatureBox>
             </Box>
