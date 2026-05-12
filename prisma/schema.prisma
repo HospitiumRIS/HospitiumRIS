@@ -2072,3 +2072,320 @@ model ProposalStageReview {
   
   @@map("proposal_stage_reviews")
 }
+
+// ============================================
+// AUTO-REVIEW SYSTEM MODELS
+// ============================================
+
+enum WorkflowType {
+  CLINICAL_TRIAL
+  RESEARCH_PROPOSAL
+  ETHICS_APPLICATION
+  CUSTOM
+}
+
+enum ValidationParameterType {
+  FIELD_COMPLETENESS
+  DOCUMENT_REQUIREMENTS
+  BUDGET_VALIDATION
+  TIMELINE_VALIDATION
+  RISK_ASSESSMENT
+  REGULATORY_COMPLIANCE
+  TEAM_QUALIFICATIONS
+  CUSTOM_RULE
+}
+
+enum WorkflowExecutionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum StageExecutionStatus {
+  NOT_STARTED
+  AUTO_CHECKING
+  AWAITING_REVIEW
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  REQUIRES_CHANGES
+  SKIPPED
+}
+
+enum ReviewerRoleType {
+  PRIMARY_REVIEWER
+  SECONDARY_REVIEWER
+  COMMITTEE_CHAIR
+  TECHNICAL_REVIEWER
+  ETHICS_REVIEWER
+  SAFETY_REVIEWER
+  SCIENTIFIC_REVIEWER
+  CUSTOM
+}
+
+model AutoReviewWorkflow {
+  id          String       @id @default(cuid())
+  name        String
+  description String?      @db.Text
+  type        WorkflowType
+  
+  // Configuration
+  isActive           Boolean @default(true)
+  isDefault          Boolean @default(false) // Default workflow for this type
+  autoRouteOnPass    Boolean @default(false) // Auto-route to next stage if all checks pass
+  requireHumanReview Boolean @default(true)  // Always require human review even if auto-checks pass
+  
+  // Metadata
+  createdBy String? // User ID
+  version   Int     @default(1)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  stages     AutoReviewStage[]
+  executions WorkflowExecution[]
+  
+  @@map("auto_review_workflows")
+}
+
+model AutoReviewStage {
+  id          String  @id @default(cuid())
+  workflowId  String
+  name        String
+  description String? @db.Text
+  
+  // Stage Configuration
+  order              Int
+  isRequired         Boolean @default(true)
+  allowSkip          Boolean @default(false)
+  autoApproveOnPass  Boolean @default(false) // Auto-approve if all validations pass
+  daysToComplete     Int?    // Expected days to complete this stage
+  
+  // Reviewer Requirements
+  requiresAllReviewers Boolean @default(false) // All reviewers must approve
+  minimumApprovals     Int     @default(1)     // Minimum number of approvals needed
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  workflow           AutoReviewWorkflow      @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  parameters         ValidationParameter[]
+  reviewers          StageReviewer[]
+  stageExecutions    StageExecution[]
+  
+  @@unique([workflowId, order])
+  @@map("auto_review_stages")
+}
+
+model ValidationParameter {
+  id       String                  @id @default(cuid())
+  stageId  String
+  name     String
+  type     ValidationParameterType
+  
+  // Configuration (stored as JSON for flexibility)
+  config Json // Different config based on type
+  
+  // Validation Settings
+  isRequired      Boolean @default(true)
+  failOnError     Boolean @default(true) // Fail stage if this validation fails
+  weight          Int     @default(1)    // Weight for scoring (1-10)
+  errorMessage    String? @db.Text       // Custom error message
+  successMessage  String? @db.Text       // Custom success message
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  stage              AutoReviewStage       @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  validationResults  ValidationResult[]
+  
+  @@map("validation_parameters")
+}
+
+model ReviewerRole {
+  id          String           @id @default(cuid())
+  name        String
+  type        ReviewerRoleType
+  description String?          @db.Text
+  
+  // Permissions
+  canApprove       Boolean @default(true)
+  canReject        Boolean @default(true)
+  canRequestChange Boolean @default(true)
+  canComment       Boolean @default(true)
+  canOverride      Boolean @default(false) // Can override auto-review results
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  stageReviewers StageReviewer[]
+  
+  @@unique([name])
+  @@map("reviewer_roles")
+}
+
+model StageReviewer {
+  id      String  @id @default(cuid())
+  stageId String
+  userId  String? // Null if external reviewer
+  roleId  String
+  
+  // External Reviewer Info (if userId is null)
+  externalEmail String?
+  externalName  String?
+  
+  // Assignment Details
+  isRequired Boolean @default(true) // Is this reviewer required for approval
+  order      Int     @default(0)    // Order of review (0 = parallel)
+  
+  // Invitation Status
+  invitedAt  DateTime?
+  acceptedAt DateTime?
+  declinedAt DateTime?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  stage           AutoReviewStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  role            ReviewerRole    @relation(fields: [roleId], references: [id])
+  reviewDecisions ReviewDecision[]
+  
+  @@map("stage_reviewers")
+}
+
+model WorkflowExecution {
+  id         String                   @id @default(cuid())
+  workflowId String
+  
+  // Submission Reference
+  submissionType String // 'clinical_trial', 'proposal', 'ethics_application'
+  submissionId   String // ID of the clinical trial, proposal, or ethics application
+  
+  // Execution Status
+  status        WorkflowExecutionStatus @default(PENDING)
+  currentStage  Int?                    // Current stage order
+  
+  // Results
+  overallScore     Float?   @default(0) // 0-100 score based on validation weights
+  autoChecksPassed Boolean  @default(false)
+  finalDecision    String?  // APPROVED, REJECTED, REQUIRES_CHANGES
+  
+  // Metadata
+  startedAt   DateTime?
+  completedAt DateTime?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  workflow        AutoReviewWorkflow @relation(fields: [workflowId], references: [id])
+  stageExecutions StageExecution[]
+  
+  @@unique([submissionType, submissionId])
+  @@map("workflow_executions")
+}
+
+model StageExecution {
+  id          String @id @default(cuid())
+  executionId String
+  stageId     String
+  
+  // Execution Status
+  status      StageExecutionStatus @default(NOT_STARTED)
+  stageOrder  Int
+  
+  // Results
+  autoChecksPassed Boolean @default(false)
+  score            Float?  @default(0) // 0-100 score for this stage
+  
+  // Review Summary
+  totalReviewers     Int @default(0)
+  completedReviewers Int @default(0)
+  approvals          Int @default(0)
+  rejections         Int @default(0)
+  
+  // Metadata
+  startedAt   DateTime?
+  completedAt DateTime?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  execution         WorkflowExecution    @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  stage             AutoReviewStage      @relation(fields: [stageId], references: [id])
+  validationResults ValidationResult[]
+  reviewDecisions   ReviewDecision[]
+  
+  @@unique([executionId, stageId])
+  @@map("stage_executions")
+}
+
+model ValidationResult {
+  id                String @id @default(cuid())
+  stageExecutionId  String
+  parameterId       String
+  
+  // Result
+  passed        Boolean
+  score         Float?  @default(0) // 0-100
+  message       String? @db.Text
+  details       Json?   // Detailed validation results
+  
+  // Metadata
+  executedAt DateTime @default(now())
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  stageExecution StageExecution      @relation(fields: [stageExecutionId], references: [id], onDelete: Cascade)
+  parameter      ValidationParameter @relation(fields: [parameterId], references: [id])
+  
+  @@map("validation_results")
+}
+
+model ReviewDecision {
+  id               String @id @default(cuid())
+  stageExecutionId String
+  reviewerId       String
+  
+  // Decision
+  decision String // APPROVED, REJECTED, REQUIRES_CHANGES
+  comments String? @db.Text
+  
+  // Conditions (if approved with conditions)
+  conditions String? @db.Text
+  
+  // Override
+  overrideAutoReview Boolean @default(false)
+  overrideReason     String? @db.Text
+  
+  // Metadata
+  reviewedAt DateTime @default(now())
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  stageExecution StageExecution @relation(fields: [stageExecutionId], references: [id], onDelete: Cascade)
+  reviewer       StageReviewer  @relation(fields: [reviewerId], references: [id])
+  
+  @@map("review_decisions")
+}

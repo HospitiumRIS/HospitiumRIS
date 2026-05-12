@@ -27,8 +27,6 @@ const Footer = () => {
     { name: 'About Us', href: '/about' },
     { name: 'Features', href: '#' },
     { name: 'Documentation', href: '/docs/index.html' },
-    
-    
   ];
 
 

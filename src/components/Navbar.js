@@ -13,6 +13,8 @@ import {
   useMediaQuery,
   Badge,
   Tooltip,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   Settings as SettingsIcon,
@@ -74,6 +76,7 @@ import {
   CloudSync as RegistryIcon,
   Insights as ResultsIcon,
   Dashboard as IntelligenceIcon,
+  KeyboardArrowDown as ArrowDownIcon,
 } from '@mui/icons-material';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
@@ -121,6 +124,7 @@ const Navbar = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationAnchor, setNotificationAnchor] = useState(null);
   const [isClient, setIsClient] = useState(false);
+  const [resourcesAnchor, setResourcesAnchor] = useState(null);
   
   // Responsive breakpoints
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -322,8 +326,14 @@ const Navbar = () => {
                 ]
               },
               {
-                title: 'PROPOSAL REVIEW PIPELINE',
+                title: 'REVIEW AUTOMATION',
                 items: [
+                  {
+                    label: 'Auto-Review Configuration',
+                    description: 'Configure automated review workflows and parameters',
+                    icon: <SettingsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
+                    path: '/institution/administration/auto-review'
+                  },
                   {
                     label: 'Review Pipeline Settings',
                     description: 'Configure proposal review stages and workflow',
@@ -1020,6 +1030,50 @@ const Navbar = () => {
               >
                 About HospitiumRIS
               </Button>
+
+              <Button
+                onClick={(e) => setResourcesAnchor(e.currentTarget)}
+                endIcon={<ArrowDownIcon sx={{ fontSize: 18 }} />}
+                sx={{
+                  color: theme.palette.text.primary,
+                  fontWeight: 500,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  '&:hover': {
+                    backgroundColor: 'transparent',
+                    color: theme.palette.primary.main,
+                  },
+                }}
+              >
+                Resources
+              </Button>
+              <Menu
+                anchorEl={resourcesAnchor}
+                open={Boolean(resourcesAnchor)}
+                onClose={() => setResourcesAnchor(null)}
+                disableScrollLock
+                PaperProps={{
+                  elevation: 3,
+                  sx: {
+                    mt: 1,
+                    minWidth: 180,
+                    borderRadius: 2,
+                  },
+                }}
+              >
+                <MenuItem
+                  onClick={() => { setResourcesAnchor(null); router.push('/news'); }}
+                  sx={{ fontSize: '0.95rem', py: 1.2 }}
+                >
+                  News
+                </MenuItem>
+                <MenuItem
+                  onClick={() => { setResourcesAnchor(null); router.push('/contact'); }}
+                  sx={{ fontSize: '0.95rem', py: 1.2 }}
+                >
+                  Contact Us
+                </MenuItem>
+              </Menu>
 
               {/* Settings Button */}
               <IconButton
