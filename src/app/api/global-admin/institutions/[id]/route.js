@@ -2,15 +2,26 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { getAuthenticatedUser } from '@/lib/auth-server';
+import { logApiActivity, logDatabaseActivity, getRequestMetadata } from '@/utils/activityLogger';
 
 const prisma = new PrismaClient();
 
 export async function PUT(request, { params }) {
+  const startTime = Date.now();
+  let requestMetadata;
+  
   try {
     // Check authentication and authorization
     const currentUser = await getAuthenticatedUser();
     
+    // Get request metadata with user details for audit trail
+    requestMetadata = getRequestMetadata(request, currentUser);
+    
     if (!currentUser) {
+      await logApiActivity('PUT', '/api/global-admin/institutions/[id]', 401, {
+        ...requestMetadata,
+        reason: 'No authenticated user'
+      });
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -18,15 +29,36 @@ export async function PUT(request, { params }) {
     }
 
     if (currentUser.accountType !== 'GLOBAL_ADMIN') {
+      await logApiActivity('PUT', '/api/global-admin/institutions/[id]', 403, {
+        ...requestMetadata,
+        reason: 'Insufficient permissions',
+        requiredRole: 'GLOBAL_ADMIN',
+        userRole: currentUser.accountType
+      });
       return NextResponse.json(
         { error: 'Forbidden - Global Admin access required' },
         { status: 403 }
       );
     }
 
-    const { id } = params;
+    // Await params in Next.js 15+
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
     const body = await request.json();
     const { givenName, familyName, email, institutionName, institutionType, country, password } = body;
+    
+    // Log the update attempt
+    await logApiActivity('PUT', `/api/global-admin/institutions/${id}`, 200, {
+      ...requestMetadata,
+      action: 'UPDATE_INSTITUTION_ADMIN',
+      targetUserId: id,
+      changes: {
+        institutionName,
+        institutionType,
+        email,
+        passwordChanged: !!password
+      }
+    });
 
     // Validate required fields
     if (!givenName || !familyName || !email || !institutionName || !country) {
@@ -104,6 +136,15 @@ export async function PUT(request, { params }) {
         data: updateData
       });
 
+      // Log user update
+      await logDatabaseActivity('UPDATE', 'User', { success: true, count: 1 }, {
+        ...requestMetadata,
+        action: 'UPDATE_INSTITUTION_ADMIN_USER',
+        targetUserId: id,
+        updatedFields: Object.keys(updateData),
+        duration: Date.now() - startTime
+      });
+
       // Update institution
       const updatedInstitution = await tx.institution.update({
         where: { id: existingUser.institution.id },
@@ -112,6 +153,35 @@ export async function PUT(request, { params }) {
           type: finalType,
           country: country
         }
+      });
+
+      // Log institution update
+      await logDatabaseActivity('UPDATE', 'Institution', { success: true, count: 1 }, {
+        ...requestMetadata,
+        action: 'UPDATE_INSTITUTION',
+        institutionId: existingUser.institution.id,
+        institutionName,
+        institutionType: finalType,
+        duration: Date.now() - startTime
+      });
+
+      // Create notification for the global admin
+      await tx.notification.create({
+        data: {
+          userId: currentUser.id,
+          type: 'SYSTEM_NOTIFICATION',
+          title: 'Institution Updated',
+          message: `Successfully updated institution admin for ${institutionName}`,
+          isRead: false
+        }
+      });
+
+      // Log notification creation
+      await logDatabaseActivity('CREATE', 'Notification', { success: true, count: 1 }, {
+        ...requestMetadata,
+        action: 'CREATE_UPDATE_NOTIFICATION',
+        notificationType: 'SYSTEM_NOTIFICATION',
+        duration: Date.now() - startTime
       });
 
       return { user: updatedUser, institution: updatedInstitution };
@@ -131,6 +201,16 @@ export async function PUT(request, { params }) {
 
   } catch (error) {
     console.error('Error updating institution admin:', error);
+    
+    // Log the error with full context for audit trail
+    await logApiActivity('PUT', '/api/global-admin/institutions/[id]', 500, {
+      ...requestMetadata,
+      error: error.message,
+      errorStack: error.stack,
+      action: 'UPDATE_INSTITUTION_ADMIN_FAILED',
+      duration: Date.now() - startTime
+    });
+    
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

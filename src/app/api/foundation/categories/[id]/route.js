@@ -26,7 +26,8 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    const { id } = params;
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
 
     // Fetch specific category with campaigns and activities
     const category = await prisma.campaignCategory.findUnique({
@@ -120,7 +121,8 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    const { id } = params;
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
 
     // Parse request body
     const body = await request.json();
@@ -231,7 +233,8 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    const { id } = params;
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
 
     // Check if category exists and has campaigns
     const category = await prisma.campaignCategory.findUnique({

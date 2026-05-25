@@ -6,9 +6,6 @@ import {
   Container,
   Typography,
   Button,
-  Card,
-  CardContent,
-  Grid,
   Paper,
   IconButton,
   Chip,
@@ -43,13 +40,6 @@ import {
   Step,
   StepLabel,
   StepContent,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Collapse,
-  Badge,
-  InputAdornment as MuiInputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -479,77 +469,73 @@ const InternalGrantRequestsPage = () => {
       </Box>
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Stats Cards */}
-        <Box sx={{ display: 'flex', gap: 2.5, mb: 4, flexWrap: 'wrap' }}>
-          {statCards.map((card, i) => (
-            <Paper 
-              key={i}
-              elevation={0} 
-              sx={{ 
-                flex: '1 1 200px',
-                p: 2, 
-                borderRadius: 2,
-                bgcolor: '#8b6cbc',
-                boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-                border: 'none',
-                position: 'relative',
-                overflow: 'hidden',
-                height: '100px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                transition: 'all 0.2s',
-                '&:hover': { 
-                  boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)',
-                  transform: 'translateY(-2px)' 
-                }
-              }}
-            >
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  {card.label}
-                </Typography>
-                <Box sx={{ color: 'white', opacity: 0.9, fontSize: 18 }}>
-                  {card.icon}
-                </Box>
-              </Box>
-              <Typography variant={card.isAmount ? 'h6' : 'h4'} sx={{ fontWeight: 700, color: 'white', fontSize: card.isAmount ? '1.25rem' : '1.75rem' }}>
-                {card.value}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                {card.isAmount ? 'Total funding approved' : `${card.label.toLowerCase()}`}
-              </Typography>
-            </Paper>
-          ))}
-        </Box>
+        {/* Compact Summary + Filter + Tabs Panel */}
+        <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, mb: 3, overflow: 'hidden' }}>
+          {/* Summary bar */}
+          <Box sx={{ px: 3, py: 1.5, background: 'linear-gradient(135deg, rgba(139,108,188,0.06) 0%, rgba(160,132,209,0.04) 100%)', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
+            {[
+              { label: 'Total', value: stats.total || 0, color: '#8b6cbc', key: null },
+              { label: 'Under Review', value: (stats.submitted || 0) + (stats.under_review || 0), color: '#f59e0b', key: 'under_review' },
+              { label: 'Approved', value: stats.approved || 0, color: '#22c55e', key: 'approved' },
+              { label: 'Rejected', value: stats.rejected || 0, color: '#ef4444', key: 'rejected' },
+              { label: 'Drafts', value: stats.draft || 0, color: '#94a3b8', key: 'draft' },
+              { label: 'Total Approved Funding', value: fmt(stats.totalApprovedAmount), color: '#059669', key: null },
+            ].map((item, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />}
+                <Stack
+                  direction="row" spacing={0.75} alignItems="center"
+                  onClick={item.key ? () => setFilterStatus(filterStatus === item.key ? 'all' : item.key) : undefined}
+                  sx={item.key ? {
+                    cursor: 'pointer', px: 1, py: 0.3, borderRadius: 1,
+                    bgcolor: filterStatus === item.key ? alpha(item.color, 0.1) : 'transparent',
+                    outline: filterStatus === item.key ? `1.5px solid ${alpha(item.color, 0.35)}` : 'none',
+                    transition: 'all 0.15s',
+                    '&:hover': { bgcolor: alpha(item.color, 0.07) }
+                  } : { px: 1, py: 0.3 }}
+                >
+                  <Typography variant="caption" sx={{ fontSize: '0.76rem', color: 'text.secondary', fontWeight: 500 }}>{item.label}</Typography>
+                  <Typography variant="caption" sx={{ fontSize: '0.85rem', fontWeight: 800, color: item.color }}>{item.value}</Typography>
+                </Stack>
+              </React.Fragment>
+            ))}
+          </Box>
 
-        {/* Filters & Tabs */}
-        <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, mb: 3 }}>
+          {/* Filter row */}
           <Box sx={{ px: 3, pt: 2, pb: 0 }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" sx={{ mb: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', mb: 2 }}>
               <TextField
                 size="small"
-                placeholder="Search requests…"
+                placeholder="Search by title, applicant, department, purpose…"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment> }}
-                sx={{ flex: 1, minWidth: 220 }}
+                sx={{ flex: '1 1 220px', minWidth: 200, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
               <FormControl size="small" sx={{ minWidth: 180 }}>
-                <InputLabel>Filter by Status</InputLabel>
-                <Select value={filterStatus} label="Filter by Status" onChange={(e) => setFilterStatus(e.target.value)}>
+                <Select value={filterStatus} displayEmpty onChange={(e) => setFilterStatus(e.target.value)} sx={{ borderRadius: 2 }}>
                   <MenuItem value="all">All Statuses</MenuItem>
                   {Object.entries(STATUS_CONFIG).map(([k, v]) => (
                     <MenuItem key={k} value={k}>{v.label}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
-            </Stack>
+              {(searchTerm || filterStatus !== 'all') && (
+                <Button size="small" variant="outlined"
+                  onClick={() => { setSearchTerm(''); setFilterStatus('all'); }}
+                  sx={{ borderColor: alpha('#8b6cbc', 0.4), color: '#8b6cbc', borderRadius: 2, whiteSpace: 'nowrap' }}
+                >
+                  Clear
+                </Button>
+              )}
+            </Box>
             <Tabs
               value={selectedTab}
               onChange={(_, v) => setSelectedTab(v)}
-              sx={{ '& .MuiTab-root': { fontWeight: 600 }, '& .MuiTabs-indicator': { backgroundColor: '#8b6cbc' } }}
+              sx={{
+                '& .MuiTab-root': { fontWeight: 600, fontSize: '0.84rem', minHeight: 44, '&.Mui-selected': { color: '#8b6cbc' } },
+                '& .MuiTabs-indicator': { backgroundColor: '#8b6cbc', height: 2.5 }
+              }}
             >
               <Tab label={`All (${filteredRequests.length})`} />
               <Tab label={`In Progress (${filteredRequests.filter(r => ['submitted', 'under_review'].includes(r.status)).length})`} />
@@ -578,14 +564,14 @@ const InternalGrantRequestsPage = () => {
             <TableContainer>
               <Table>
                 <TableHead>
-                  <TableRow sx={{ bgcolor: alpha('#8b6cbc', 0.04) }}>
-                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>Request</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>Applicant</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>Amount</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>Stage</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>Submitted</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: 'text.secondary', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.5 }} align="right">Actions</TableCell>
+                  <TableRow sx={{ bgcolor: '#8b6cbc' }}>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Request</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Applicant</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Amount</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Stage</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Submitted</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }} align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -697,7 +683,7 @@ const InternalGrantRequestsPage = () => {
       </Container>
 
       {/* ── Intake / Edit Dialog ────────────────────────────────────────────── */}
-      <Dialog open={intakeOpen} onClose={() => setIntakeOpen(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={intakeOpen} onClose={() => setIntakeOpen(false)} maxWidth="md" fullWidth disableScrollLock PaperProps={{ sx: { borderRadius: 3 } }}>
         <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Stack direction="row" spacing={1.5} alignItems="center">
             <Avatar sx={{ bgcolor: alpha('#8b6cbc', 0.12), color: '#8b6cbc', width: 40, height: 40 }}>
@@ -712,63 +698,61 @@ const InternalGrantRequestsPage = () => {
           <Typography variant="subtitle2" color="#8b6cbc" fontWeight={700} sx={{ mb: 2, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
             Applicant Information
           </Typography>
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+            <Box sx={{ flex: '1 1 200px' }}>
               <TextField fullWidth size="small" label="Full Name *" value={formData.applicantName} onChange={handleFormChange('applicantName')} error={!!formErrors.applicantName} helperText={formErrors.applicantName} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ flex: '1 1 200px' }}>
               <TextField fullWidth size="small" label="Email Address *" type="email" value={formData.applicantEmail} onChange={handleFormChange('applicantEmail')} error={!!formErrors.applicantEmail} helperText={formErrors.applicantEmail} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ flex: '1 1 200px' }}>
               <TextField fullWidth size="small" label="Job Title" value={formData.applicantTitle} onChange={handleFormChange('applicantTitle')} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ flex: '1 1 200px' }}>
               <TextField fullWidth size="small" label="Department *" value={formData.department} onChange={handleFormChange('department')} error={!!formErrors.department} helperText={formErrors.department} />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
 
           <Divider sx={{ mb: 3 }} />
           <Typography variant="subtitle2" color="#8b6cbc" fontWeight={700} sx={{ mb: 2, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
             Request Details
           </Typography>
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12}>
-              <TextField fullWidth size="small" label="Project / Request Title *" value={formData.title} onChange={handleFormChange('title')} error={!!formErrors.title} helperText={formErrors.title} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth size="small" error={!!formErrors.purpose}>
-                <InputLabel>Purpose / Category *</InputLabel>
-                <Select value={formData.purpose} label="Purpose / Category *" onChange={handleFormChange('purpose')}>
-                  {PURPOSE_OPTIONS.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
-                </Select>
-                {formErrors.purpose && <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>{formErrors.purpose}</Typography>}
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth size="small" label="Requested Amount (USD) *" type="number"
-                value={formData.requestedAmount} onChange={handleFormChange('requestedAmount')}
-                error={!!formErrors.requestedAmount} helperText={formErrors.requestedAmount}
-                InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField fullWidth multiline rows={4} size="small" label="Description & Justification *" value={formData.description} onChange={handleFormChange('description')} error={!!formErrors.description} helperText={formErrors.description} placeholder="Describe the purpose of this funding request, expected outcomes, and justification…" />
-            </Grid>
-          </Grid>
+          <Stack spacing={2} sx={{ mb: 3 }}>
+            <TextField fullWidth size="small" label="Project / Request Title *" value={formData.title} onChange={handleFormChange('title')} error={!!formErrors.title} helperText={formErrors.title} />
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <FormControl fullWidth size="small" error={!!formErrors.purpose}>
+                  <InputLabel>Purpose / Category *</InputLabel>
+                  <Select value={formData.purpose} label="Purpose / Category *" onChange={handleFormChange('purpose')}>
+                    {PURPOSE_OPTIONS.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
+                  </Select>
+                  {formErrors.purpose && <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>{formErrors.purpose}</Typography>}
+                </FormControl>
+              </Box>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <TextField
+                  fullWidth size="small" label="Requested Amount (USD) *" type="number"
+                  value={formData.requestedAmount} onChange={handleFormChange('requestedAmount')}
+                  error={!!formErrors.requestedAmount} helperText={formErrors.requestedAmount}
+                  InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                />
+              </Box>
+            </Box>
+            <TextField fullWidth multiline rows={4} size="small" label="Description & Justification *" value={formData.description} onChange={handleFormChange('description')} error={!!formErrors.description} helperText={formErrors.description} placeholder="Describe the purpose of this funding request, expected outcomes, and justification…" />
+          </Stack>
 
           <Divider sx={{ mb: 3 }} />
           <Typography variant="subtitle2" color="#8b6cbc" fontWeight={700} sx={{ mb: 2, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>
             Project Timeline (Optional)
           </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ flex: '1 1 200px' }}>
               <TextField fullWidth size="small" label="Start Date" type="date" value={formData.projectStartDate} onChange={handleFormChange('projectStartDate')} InputLabelProps={{ shrink: true }} />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            </Box>
+            <Box sx={{ flex: '1 1 200px' }}>
               <TextField fullWidth size="small" label="End Date" type="date" value={formData.projectEndDate} onChange={handleFormChange('projectEndDate')} InputLabelProps={{ shrink: true }} />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </DialogContent>
         <Divider />
         <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
@@ -795,51 +779,48 @@ const InternalGrantRequestsPage = () => {
       </Dialog>
 
       {/* ── Detail Dialog ───────────────────────────────────────────────────── */}
-      <Dialog open={detailOpen} onClose={() => setDetailOpen(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={detailOpen} onClose={() => setDetailOpen(false)} maxWidth="md" fullWidth disableScrollLock PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
         {selectedRequest && (
           <>
-            <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Avatar sx={{ bgcolor: alpha('#8b6cbc', 0.12), color: '#8b6cbc', width: 40, height: 40 }}>
-                  <AssignmentIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" fontWeight={700}>{selectedRequest.title}</Typography>
-                  <Typography variant="caption" color="text.secondary">{selectedRequest.department} · {selectedRequest.purpose}</Typography>
+            {/* Gradient Hero Header */}
+            <Box sx={{ background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)', px: 3, pt: 3, pb: 2.5, color: 'white' }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                    <AssignmentIcon sx={{ fontSize: 18, opacity: 0.85 }} />
+                    <Typography variant="caption" sx={{ opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.72rem' }}>
+                      Internal Grant Request
+                    </Typography>
+                  </Stack>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, lineHeight: 1.25 }}>
+                    {selectedRequest.title}
+                  </Typography>
+                  <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                    <Chip label={STATUS_CONFIG[selectedRequest.status]?.label} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 700, height: 22, fontSize: '0.72rem' }} />
+                    <Chip label={selectedRequest.department} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', height: 22, fontSize: '0.70rem' }} />
+                    <Chip label={selectedRequest.purpose} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', height: 22, fontSize: '0.70rem' }} />
+                  </Stack>
                 </Box>
-              </Stack>
-              <IconButton onClick={() => setDetailOpen(false)}><CloseIcon /></IconButton>
-            </DialogTitle>
-            <Divider />
+                <IconButton onClick={() => setDetailOpen(false)} sx={{ color: 'white', mt: -0.5 }}><CloseIcon /></IconButton>
+              </Box>
+            </Box>
+
+            {/* Metrics Strip */}
+            <Box sx={{ display: 'flex', borderBottom: '1px solid', borderColor: 'divider', bgcolor: alpha('#8b6cbc', 0.02), flexWrap: 'wrap' }}>
+              {[
+                { label: 'Stage', value: STAGE_LABELS[selectedRequest.stage], color: '#8b6cbc' },
+                { label: 'Requested', value: fmt(selectedRequest.requestedAmount), color: '#6366f1' },
+                { label: 'Approved', value: selectedRequest.approvedAmount ? fmt(selectedRequest.approvedAmount) : '—', color: '#22c55e' },
+                { label: 'Submitted', value: selectedRequest.submittedAt ? fmtDate(selectedRequest.submittedAt) : '—', color: '#1e293b' },
+              ].map((m, i) => (
+                <Box key={i} sx={{ flex: '1 1 0', px: 2, py: 1.5, borderRight: i < 3 ? '1px solid' : 'none', borderColor: 'divider', textAlign: 'center', minWidth: 100 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>{m.label}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 800, color: m.color, fontSize: '0.9rem', mt: 0.25 }}>{m.value}</Typography>
+                </Box>
+              ))}
+            </Box>
+
             <DialogContent sx={{ pt: 3 }}>
-              {/* Status & Amount Row */}
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
-                <Paper variant="outlined" sx={{ flex: 1, p: 2, borderRadius: 2 }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={600}>STATUS</Typography>
-                  <Box sx={{ mt: 0.5 }}>
-                    <Chip
-                      size="small"
-                      label={STATUS_CONFIG[selectedRequest.status]?.label}
-                      color={STATUS_CONFIG[selectedRequest.status]?.color}
-                      sx={{ fontWeight: 700 }}
-                    />
-                  </Box>
-                </Paper>
-                <Paper variant="outlined" sx={{ flex: 1, p: 2, borderRadius: 2 }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={600}>CURRENT STAGE</Typography>
-                  <Typography variant="body2" fontWeight={700} sx={{ mt: 0.5 }}>{STAGE_LABELS[selectedRequest.stage]}</Typography>
-                </Paper>
-                <Paper variant="outlined" sx={{ flex: 1, p: 2, borderRadius: 2 }}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={600}>REQUESTED</Typography>
-                  <Typography variant="body2" fontWeight={700} color="#8b6cbc" sx={{ mt: 0.5 }}>{fmt(selectedRequest.requestedAmount)}</Typography>
-                </Paper>
-                {selectedRequest.approvedAmount && (
-                  <Paper variant="outlined" sx={{ flex: 1, p: 2, borderRadius: 2 }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>APPROVED</Typography>
-                    <Typography variant="body2" fontWeight={700} color="success.main" sx={{ mt: 0.5 }}>{fmt(selectedRequest.approvedAmount)}</Typography>
-                  </Paper>
-                )}
-              </Stack>
 
               {/* Applicant */}
               <Typography variant="subtitle2" fontWeight={700} color="#8b6cbc" sx={{ mb: 1.5, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: 1 }}>Applicant</Typography>
@@ -982,7 +963,7 @@ const InternalGrantRequestsPage = () => {
       </Dialog>
 
       {/* ── Review Dialog ───────────────────────────────────────────────────── */}
-      <Dialog open={reviewOpen} onClose={() => setReviewOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={reviewOpen} onClose={() => setReviewOpen(false)} maxWidth="sm" fullWidth disableScrollLock PaperProps={{ sx: { borderRadius: 3 } }}>
         {selectedRequest && (
           <>
             <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1002,61 +983,53 @@ const InternalGrantRequestsPage = () => {
               <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
                 Reviewing: <strong>{selectedRequest.title}</strong> — {fmt(selectedRequest.requestedAmount)} by {selectedRequest.applicantName}
               </Alert>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField fullWidth size="small" label="Reviewer Name *" value={reviewData.reviewerName} onChange={handleReviewChange('reviewerName')} error={!!reviewErrors.reviewerName} helperText={reviewErrors.reviewerName} />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField fullWidth size="small" label="Reviewer Email" value={reviewData.reviewerEmail} onChange={handleReviewChange('reviewerEmail')} />
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControl fullWidth size="small" error={!!reviewErrors.decision}>
-                    <InputLabel>Decision *</InputLabel>
-                    <Select value={reviewData.decision} label="Decision *" onChange={handleReviewChange('decision')}>
-                      {getDecisionOptions(selectedRequest).map(opt => (
-                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                      ))}
-                    </Select>
-                    {reviewErrors.decision && <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>{reviewErrors.decision}</Typography>}
-                  </FormControl>
-                </Grid>
+              <Stack spacing={2}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                  <Box sx={{ flex: '1 1 180px' }}>
+                    <TextField fullWidth size="small" label="Reviewer Name *" value={reviewData.reviewerName} onChange={handleReviewChange('reviewerName')} error={!!reviewErrors.reviewerName} helperText={reviewErrors.reviewerName} />
+                  </Box>
+                  <Box sx={{ flex: '1 1 180px' }}>
+                    <TextField fullWidth size="small" label="Reviewer Email" value={reviewData.reviewerEmail} onChange={handleReviewChange('reviewerEmail')} />
+                  </Box>
+                </Box>
+                <FormControl fullWidth size="small" error={!!reviewErrors.decision}>
+                  <InputLabel>Decision *</InputLabel>
+                  <Select value={reviewData.decision} label="Decision *" onChange={handleReviewChange('decision')}>
+                    {getDecisionOptions(selectedRequest).map(opt => (
+                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                    ))}
+                  </Select>
+                  {reviewErrors.decision && <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>{reviewErrors.decision}</Typography>}
+                </FormControl>
                 {reviewData.decision === 'approved' && (
                   <>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth size="small" label="Approved Amount *" type="number"
-                        value={reviewData.approvedAmount} onChange={handleReviewChange('approvedAmount')}
-                        error={!!reviewErrors.approvedAmount} helperText={reviewErrors.approvedAmount}
-                        InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField fullWidth size="small" label="Report Due Date" type="date" value={reviewData.reportDueDate} onChange={handleReviewChange('reportDueDate')} InputLabelProps={{ shrink: true }} />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <FormControl size="small">
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <input type="checkbox" id="reportingRequired" checked={reviewData.reportingRequired} onChange={handleReviewChange('reportingRequired')} />
-                          <label htmlFor="reportingRequired" style={{ fontSize: 14, cursor: 'pointer' }}>Reporting required for this grant</label>
-                        </Stack>
-                      </FormControl>
-                    </Grid>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                      <Box sx={{ flex: '1 1 180px' }}>
+                        <TextField
+                          fullWidth size="small" label="Approved Amount *" type="number"
+                          value={reviewData.approvedAmount} onChange={handleReviewChange('approvedAmount')}
+                          error={!!reviewErrors.approvedAmount} helperText={reviewErrors.approvedAmount}
+                          InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                        />
+                      </Box>
+                      <Box sx={{ flex: '1 1 180px' }}>
+                        <TextField fullWidth size="small" label="Report Due Date" type="date" value={reviewData.reportDueDate} onChange={handleReviewChange('reportDueDate')} InputLabelProps={{ shrink: true }} />
+                      </Box>
+                    </Box>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <input type="checkbox" id="reportingRequired" checked={reviewData.reportingRequired} onChange={handleReviewChange('reportingRequired')} />
+                      <label htmlFor="reportingRequired" style={{ fontSize: 14, cursor: 'pointer' }}>Reporting required for this grant</label>
+                    </Stack>
                   </>
                 )}
                 {reviewData.decision === 'revision_requested' && (
-                  <Grid item xs={12}>
-                    <TextField fullWidth multiline rows={2} size="small" label="Revision Requirements" value={reviewData.revisionNotes} onChange={handleReviewChange('revisionNotes')} placeholder="Describe what changes are required…" />
-                  </Grid>
+                  <TextField fullWidth multiline rows={2} size="small" label="Revision Requirements" value={reviewData.revisionNotes} onChange={handleReviewChange('revisionNotes')} placeholder="Describe what changes are required…" />
                 )}
-                <Grid item xs={12}>
-                  <TextField fullWidth multiline rows={3} size="small" label="Review Comments *" value={reviewData.comments} onChange={handleReviewChange('comments')} error={!!reviewErrors.comments} helperText={reviewErrors.comments} placeholder="Provide detailed review comments…" />
-                </Grid>
+                <TextField fullWidth multiline rows={3} size="small" label="Review Comments *" value={reviewData.comments} onChange={handleReviewChange('comments')} error={!!reviewErrors.comments} helperText={reviewErrors.comments} placeholder="Provide detailed review comments…" />
                 {['approved', 'rejected'].includes(reviewData.decision) && (
-                  <Grid item xs={12}>
-                    <TextField fullWidth multiline rows={2} size="small" label="Decision Notes (optional)" value={reviewData.decisionNotes} onChange={handleReviewChange('decisionNotes')} placeholder="Additional notes for the decision record…" />
-                  </Grid>
+                  <TextField fullWidth multiline rows={2} size="small" label="Decision Notes (optional)" value={reviewData.decisionNotes} onChange={handleReviewChange('decisionNotes')} placeholder="Additional notes for the decision record…" />
                 )}
-              </Grid>
+              </Stack>
             </DialogContent>
             <Divider />
             <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
@@ -1076,7 +1049,7 @@ const InternalGrantRequestsPage = () => {
       </Dialog>
 
       {/* ── Delete Confirm ──────────────────────────────────────────────────── */}
-      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} maxWidth="xs" fullWidth disableScrollLock PaperProps={{ sx: { borderRadius: 3 } }}>
         <DialogTitle>Delete Request?</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary">

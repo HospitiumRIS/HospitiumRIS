@@ -531,6 +531,84 @@ export default function ProposalEditor() {
         </Toolbar>
       </AppBar>
       
+      {/* Proposal metadata strip */}
+      {proposal && (
+        <Box sx={{
+          bgcolor: '#fafafa',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          px: 3, py: 1,
+          display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap'
+        }}>
+          {proposal.status && (
+            <Chip
+              label={proposal.status.replace(/_/g, ' ')}
+              size="small"
+              sx={{
+                height: 20, fontSize: '0.67rem', fontWeight: 700,
+                bgcolor: alpha(
+                  proposal.status === 'DRAFT' ? '#9e9e9e' :
+                  proposal.status === 'IN_PROGRESS' ? '#ff9800' :
+                  proposal.status === 'UNDER_REVIEW' ? '#2196f3' :
+                  proposal.status === 'SUBMITTED' ? '#4caf50' :
+                  proposal.status === 'AWARDED' ? '#059669' :
+                  proposal.status === 'REJECTED' ? '#f44336' : '#8b6cbc', 0.12
+                ),
+                color:
+                  proposal.status === 'DRAFT' ? '#757575' :
+                  proposal.status === 'IN_PROGRESS' ? '#e65100' :
+                  proposal.status === 'UNDER_REVIEW' ? '#1565c0' :
+                  proposal.status === 'SUBMITTED' ? '#2e7d32' :
+                  proposal.status === 'AWARDED' ? '#059669' :
+                  proposal.status === 'REJECTED' ? '#c62828' : '#8b6cbc',
+              }}
+            />
+          )}
+          {proposal.type && (
+            <>
+              <Divider orientation="vertical" flexItem />
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>
+                {proposal.type}
+              </Typography>
+            </>
+          )}
+          {proposal.researchAreas?.length > 0 && (
+            <>
+              <Divider orientation="vertical" flexItem />
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                {proposal.researchAreas.slice(0, 3).map((area, i) => (
+                  <Chip key={i} label={area} size="small" sx={{
+                    height: 18, fontSize: '0.62rem',
+                    bgcolor: alpha('#8b6cbc', 0.07), color: '#8b6cbc',
+                    '& .MuiChip-label': { px: 0.6 }
+                  }} />
+                ))}
+                {proposal.researchAreas.length > 3 && (
+                  <Chip label={`+${proposal.researchAreas.length - 3}`} size="small" sx={{
+                    height: 18, fontSize: '0.62rem',
+                    bgcolor: alpha('#64748b', 0.08), color: '#64748b',
+                    '& .MuiChip-label': { px: 0.6 }
+                  }} />
+                )}
+              </Box>
+            </>
+          )}
+          {proposal.principalInvestigator && (
+            <>
+              <Divider orientation="vertical" flexItem />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                <Avatar sx={{ width: 18, height: 18, fontSize: '0.6rem', bgcolor: '#8b6cbc' }}>
+                  {proposal.principalInvestigator.charAt(0)}
+                </Avatar>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>
+                  {proposal.principalInvestigator}
+                </Typography>
+              </Box>
+            </>
+          )}
+        </Box>
+      )}
+
       {/* Editor Content */}
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Paper

@@ -24,9 +24,7 @@ import {
   Search as SearchIcon,
   FilterList as FilterIcon,
   Clear as ClearIcon,
-  Refresh as RefreshIcon,
-  Category as CategoryIcon,
-  Campaign as CampaignIcon
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 
 const SearchFilters = ({
@@ -97,20 +95,6 @@ const SearchFilters = ({
             <Typography variant="h6" sx={{ fontWeight: 500, color: '#333', fontSize: '1.1rem' }}>
               Search & Filter
             </Typography>
-            <Box sx={{ 
-              width: 20, 
-              height: 20, 
-              borderRadius: '50%', 
-              backgroundColor: '#8b6cbc', 
-              color: 'white', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              fontSize: '0.75rem',
-              fontWeight: 'bold'
-            }}>
-              i
-            </Box>
             <Box sx={{ flex: 1 }} />
             <Tooltip title="Reset">
               <Button 
@@ -359,40 +343,6 @@ const SearchFilters = ({
             </Box>
           )}
 
-          {/* Quick Stats */}
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 2, 
-            mt: 2, 
-            pt: 2, 
-            borderTop: '1px solid rgba(0,0,0,0.06)' 
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CategoryIcon sx={{ fontSize: 16, color: '#8b6cbc' }} />
-              <Typography variant="caption" color="text.secondary">
-                {categories.length} Categories
-              </Typography>
-            </Box>
-            
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CampaignIcon sx={{ fontSize: 16, color: '#4caf50' }} />
-              <Typography variant="caption" color="text.secondary">
-                {categories.reduce((sum, cat) => sum + (cat.campaignCount || 0), 0)} Total Campaigns
-              </Typography>
-            </Box>
-            
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ 
-                width: 12, 
-                height: 12, 
-                borderRadius: '50%', 
-                backgroundColor: '#4caf50' 
-              }} />
-              <Typography variant="caption" color="text.secondary">
-                {categories.reduce((sum, cat) => sum + (cat.activeCampaigns || 0), 0)} Active
-              </Typography>
-            </Box>
-          </Box>
         </CardContent>
       </Card>
   );

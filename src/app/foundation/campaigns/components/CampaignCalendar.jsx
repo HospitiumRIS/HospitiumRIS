@@ -2,8 +2,6 @@
 
 import React, { useState, useMemo } from 'react';
 import {
-  Card,
-  CardContent,
   Box,
   Typography,
   Chip,
@@ -11,10 +9,8 @@ import {
   Tooltip,
   Button,
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
-  Grid,
   Stack,
   Fade,
   IconButton
@@ -22,16 +18,15 @@ import {
 import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
-  Today as TodayIcon,
   Campaign as CampaignIcon,
   Event as EventIcon,
   Close as CloseIcon,
   CalendarToday as CalendarTodayIcon,
   Schedule as ScheduleIcon,
   LocationOn as LocationIcon,
-  Person as PersonIcon,
   Description as DescriptionIcon,
   FileDownload as DownloadIcon,
+  CalendarMonth as CalendarMonthIcon,
   Launch as LaunchIcon
 } from '@mui/icons-material';
 
@@ -72,10 +67,6 @@ const CampaignCalendar = ({
   // Generate calendar events
   const calendarEvents = useMemo(() => {
     const events = [];
-    
-    // Debug: Log the campaigns and activities data
-    console.log('Calendar - Campaigns:', campaigns);
-    console.log('Calendar - Activities:', activities);
     
     // Add campaign start/end dates
     campaigns.forEach(campaign => {
@@ -139,37 +130,6 @@ const CampaignCalendar = ({
       }
     });
     
-    // Add sample events if no real events exist (for testing)
-    if (events.length === 0) {
-      const sampleEvents = [
-        {
-          type: 'campaign-start',
-          date: new Date(year, month, 5),
-          title: 'Sample Campaign Launch',
-          color: '#8b6cbc',
-          icon: 'start'
-        },
-        {
-          type: 'activity',
-          date: new Date(year, month, 12),
-          title: 'Fundraising Event',
-          color: '#e91e63',
-          phase: 'Pre-Campaign',
-          status: 'Planned'
-        },
-        {
-          type: 'activity',
-          date: new Date(year, month, 20),
-          title: 'Donor Meeting',
-          color: '#3f51b5',
-          phase: 'Post-Campaign',
-          status: 'Scheduled'
-        }
-      ];
-      events.push(...sampleEvents);
-    }
-    
-    console.log('Calendar - Final Events:', events);
     return events;
   }, [campaigns, activities, DASHBOARD_COLORS, year, month]);
 
@@ -204,10 +164,6 @@ const CampaignCalendar = ({
       
       current.setDate(current.getDate() + 1);
     }
-    
-    console.log('Calendar - Generated Days:', days.length, 'days');
-    console.log('Calendar - First Day:', days[0]?.date.toDateString());
-    console.log('Calendar - Last Day:', days[41]?.date.toDateString());
     
     return days;
   }, [startDate, month, today, eventsByDate]);
@@ -298,277 +254,171 @@ const CampaignCalendar = ({
     URL.revokeObjectURL(url);
   };
 
+  const PRIMARY = DASHBOARD_COLORS?.primary || '#8b6cbc';
+
+  const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
   if (loading) {
     return (
-      <Card sx={{ height, borderRadius: 3 }}>
-        <CardContent sx={{ p: 3, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Typography variant="body1" color="text.secondary">
-            Loading calendar...
-          </Typography>
-        </CardContent>
-      </Card>
+      <Box sx={{ height, borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)', bgcolor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography variant="body2" color="text.secondary">Loading calendar…</Typography>
+      </Box>
     );
   }
 
   return (
     <>
-      <Fade in timeout={600}>
-        <Card sx={{ 
-          height, 
-          borderRadius: hideHeader ? 0 : 3,
-          background: 'linear-gradient(145deg, #ffffff 0%, #fafbfc 100%)',
-          boxShadow: hideHeader ? 'none' : '0 4px 16px rgba(0,0,0,0.06)',
-          border: hideHeader ? 'none' : '1px solid rgba(139, 108, 188, 0.08)'
+      <Fade in timeout={400}>
+        <Box sx={{ 
+          height,
+          borderRadius: hideHeader ? 0 : 2,
+          border: hideHeader ? 'none' : '1px solid rgba(0,0,0,0.1)',
+          boxShadow: hideHeader ? 'none' : '0 2px 12px rgba(0,0,0,0.06)',
+          bgcolor: '#ffffff',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
         }}>
-          <CardContent sx={{ p: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {!hideHeader && (
-            <Box sx={{ 
-              p: 3, 
-              borderBottom: '1px solid rgba(0,0,0,0.06)',
-                background: `linear-gradient(135deg, ${DASHBOARD_COLORS?.primary || '#8b6cbc'} 0%, ${DASHBOARD_COLORS?.primaryLight || '#a084d1'} 100%)`,
-              color: 'white'
+          {/* Unified Navigation Bar */}
+          {!hideHeader && (
+            <Box sx={{
+              px: 2.5, py: 1.75,
+              borderBottom: '1px solid rgba(0,0,0,0.08)',
+              backgroundColor: PRIMARY,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <EventIcon />
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Campaign Calendar
-                  </Typography>
-                </Box>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <IconButton
-                    onClick={() => navigateMonth(-1)}
-                    sx={{ color: 'white' }}
-                    size="small"
-                  >
-                    <ChevronLeftIcon />
-                  </IconButton>
-                  
-                  <Button
-                    onClick={goToToday}
-                    startIcon={<TodayIcon />}
-                    sx={{ 
-                      color: 'white',
-                      fontWeight: 600,
-                      minWidth: 100
-                    }}
-                  >
-                    Today
-                  </Button>
-                  
-                  <IconButton
-                    onClick={() => navigateMonth(1)}
-                    sx={{ color: 'white' }}
-                    size="small"
-                  >
-                    <ChevronRightIcon />
-                  </IconButton>
-                </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CalendarMonthIcon sx={{ color: 'white', fontSize: 20 }} />
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'white', fontSize: '0.95rem' }}>
+                  Campaign Calendar
+                </Typography>
               </Box>
-              
-              <Typography variant="h4" sx={{ 
-                fontWeight: 700, 
-                mt: 1,
-                textAlign: 'center'
-              }}>
-                {currentDate.toLocaleDateString('en-US', { 
-                  month: 'long', 
-                  year: 'numeric' 
-                })}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <IconButton onClick={() => navigateMonth(-1)} size="small" sx={{ color: 'rgba(255,255,255,0.85)', '&:hover': { backgroundColor: 'rgba(255,255,255,0.12)' } }}>
+                  <ChevronLeftIcon fontSize="small" />
+                </IconButton>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'white', minWidth: 150, textAlign: 'center', fontSize: '0.9rem' }}>
+                  {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </Typography>
+                <IconButton onClick={() => navigateMonth(1)} size="small" sx={{ color: 'rgba(255,255,255,0.85)', '&:hover': { backgroundColor: 'rgba(255,255,255,0.12)' } }}>
+                  <ChevronRightIcon fontSize="small" />
+                </IconButton>
+              </Box>
+              <Button
+                onClick={goToToday}
+                size="small"
+                variant="outlined"
+                sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: 600, py: 0.5,
+                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.6)' } }}
+              >
+                Today
+              </Button>
             </Box>
-            )}
+          )}
 
-            {/* Calendar Navigation (when header is hidden) */}
-            {hideHeader && (
-              <Box sx={{ 
-                p: 2, 
-                borderBottom: '1px solid rgba(0,0,0,0.06)',
-                background: 'rgba(139, 108, 188, 0.05)'
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <IconButton
-                    onClick={() => navigateMonth(-1)}
-                    sx={{ color: '#8b6cbc' }}
-                  >
-                    <ChevronLeftIcon />
-                  </IconButton>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Button
-                      onClick={goToToday}
-                      startIcon={<TodayIcon />}
-                      variant="outlined"
-                      size="small"
-                      sx={{ 
-                        color: '#8b6cbc',
-                        borderColor: '#8b6cbc',
-                        fontWeight: 600,
-                        '&:hover': {
-                          backgroundColor: 'rgba(139, 108, 188, 0.1)',
-                          borderColor: '#8b6cbc'
-                        }
-                      }}
-                    >
-                      Today
-                    </Button>
-                    
-                    <Typography variant="h5" sx={{ 
-                      fontWeight: 700, 
-                      color: '#8b6cbc'
+          {hideHeader && (
+            <Box sx={{
+              px: 2, py: 1.5,
+              borderBottom: '1px solid rgba(0,0,0,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <IconButton onClick={() => navigateMonth(-1)} size="small" sx={{ color: PRIMARY }}>
+                <ChevronLeftIcon fontSize="small" />
+              </IconButton>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: PRIMARY }}>
+                  {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </Typography>
+                <Button onClick={goToToday} size="small" variant="outlined"
+                  sx={{ color: PRIMARY, borderColor: `${PRIMARY}50`, fontSize: '0.72rem', fontWeight: 600, py: 0.25,
+                    '&:hover': { backgroundColor: `${PRIMARY}10`, borderColor: PRIMARY } }}
+                >
+                  Today
+                </Button>
+              </Box>
+              <IconButton onClick={() => navigateMonth(1)} size="small" sx={{ color: PRIMARY }}>
+                <ChevronRightIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          )}
+            
+          {/* Days of Week Header */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid rgba(0,0,0,0.07)', backgroundColor: '#fafbfc' }}>
+            {WEEKDAYS.map(day => (
+              <Box key={day} sx={{ py: 1, textAlign: 'center' }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.7rem', color: '#94a3b8', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  {day}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+            
+          {/* Calendar Grid */}
+          <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridTemplateRows: 'repeat(6, 1fr)', minHeight: 0, overflow: 'hidden' }}>
+            {calendarDays.map((day) => (
+              <Box
+                key={`day-${day.date.getTime()}`}
+                sx={{
+                  borderRight: '1px solid rgba(0,0,0,0.06)',
+                  borderBottom: '1px solid rgba(0,0,0,0.06)',
+                  p: '6px 6px 4px',
+                  backgroundColor: !day.isCurrentMonth ? '#fafbfc' : 'transparent',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0.5,
+                  minHeight: 0,
+                  '&:hover': { backgroundColor: !day.isCurrentMonth ? '#f5f6f8' : `${PRIMARY}08` }
+                }}
+              >
+                {/* Date number */}
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.25 }}>
+                  <Box sx={{
+                    width: 22, height: 22,
+                    borderRadius: '50%',
+                    backgroundColor: day.isToday ? PRIMARY : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <Typography variant="caption" sx={{
+                      fontSize: '0.72rem',
+                      fontWeight: day.isToday ? 700 : day.isCurrentMonth ? 500 : 400,
+                      color: day.isToday ? 'white' : day.isCurrentMonth ? '#334155' : '#cbd5e1',
+                      lineHeight: 1
                     }}>
-                      {currentDate.toLocaleDateString('en-US', { 
-                        month: 'long', 
-                        year: 'numeric' 
-                      })}
+                      {day.date.getDate()}
                     </Typography>
                   </Box>
-                  
-                  <IconButton
-                    onClick={() => navigateMonth(1)}
-                    sx={{ color: '#8b6cbc' }}
-                  >
-                    <ChevronRightIcon />
-                  </IconButton>
                 </Box>
-              </Box>
-            )}
-            
-            {/* Days of Week Header */}
-            <Box sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(7, 1fr)',
-              borderBottom: '1px solid rgba(0,0,0,0.06)'
-            }}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <Box key={day} sx={{ 
-                  p: 2, 
-                  textAlign: 'center',
-                  backgroundColor: 'rgba(139, 108, 188, 0.05)'
-                }}>
-                  <Typography variant="subtitle2" sx={{ 
-                    fontWeight: 600,
-                    color: DASHBOARD_COLORS.primary
-                  }}>
-                    {day}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-            
-            {/* Calendar Grid */}
-            <Box sx={{ 
-              flex: 1,
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(7, 1fr)',
-              gridTemplateRows: 'repeat(6, 1fr)',
-              minHeight: 0,
-              overflow: 'hidden',
-              gap: 0
-            }}>
-              {calendarDays.map((day, index) => (
-                <Box
-                  key={`calendar-day-${day.date.getTime()}`}
-                  sx={{
-                    border: '1px solid rgba(0,0,0,0.06)',
-                    p: 1,
-                    backgroundColor: !day.isCurrentMonth 
-                      ? 'rgba(0,0,0,0.02)' 
-                      : day.isToday 
-                        ? 'rgba(139, 108, 188, 0.1)'
-                        : 'transparent',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    cursor: day.events.length > 0 ? 'pointer' : 'default',
-                    minHeight: '90px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    '&:hover': {
-                      backgroundColor: day.events.length > 0 
-                        ? 'rgba(139, 108, 188, 0.08)'
-                        : 'rgba(0,0,0,0.02)'
-                    }
-                  }}
-                >
-                  <Typography variant="body2" sx={{ 
-                    fontWeight: day.isToday ? 700 : day.isCurrentMonth ? 500 : 400,
-                    color: day.isToday 
-                      ? DASHBOARD_COLORS?.primary || '#8b6cbc'
-                      : day.isCurrentMonth 
-                        ? 'text.primary' 
-                        : 'text.disabled',
-                    mb: 0.5,
-                    fontSize: '0.9rem'
-                  }}>
-                    {day.date.getDate()}
-                  </Typography>
-                  
-                  {/* Events */}
-                  <Stack spacing={0.5} sx={{ flex: 1, minHeight: 0 }}>
-                    {day.events.slice(0, 3).map((event, eventIndex) => (
-                      <Tooltip 
-                        key={eventIndex}
-                        title={`${event.title} - ${event.type.replace('-', ' ')}`}
-                        arrow
-                      >
-                        <Box
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEventClick(event);
-                          }}
-                          sx={{
-                            px: 0.5,
-                            py: 0.25,
-                            borderRadius: 0.5,
-                            backgroundColor: event.color + '30',
-                            color: event.color,
-                            border: `1px solid ${event.color}60`,
-                            cursor: 'pointer',
-                            fontSize: '0.65rem',
-                            fontWeight: 600,
-                            lineHeight: 1,
-                              overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.25,
-                            minHeight: 16,
-                            '&:hover': {
-                              backgroundColor: event.color + '50',
-                              transform: 'scale(1.02)'
-                            },
-                            transition: 'all 0.2s ease'
-                          }}
-                        >
-                          <Typography variant="caption" sx={{ 
-                            fontSize: '0.6rem',
-                            fontWeight: 600,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {event.title}
-                          </Typography>
-                        </Box>
-                      </Tooltip>
-                    ))}
-                    
-                    {day.events.length > 3 && (
-                      <Typography variant="caption" sx={{ 
-                        color: 'text.secondary',
-                        fontSize: '0.6rem'
-                      }}>
-                        +{day.events.length - 3} more
+
+                {/* Events */}
+                {day.events.slice(0, 3).map((event, i) => (
+                  <Tooltip key={i} title={event.title} arrow placement="top">
+                    <Box
+                      onClick={() => handleEventClick(event)}
+                      sx={{
+                        display: 'flex', alignItems: 'center', gap: 0.5,
+                        px: 0.75, py: 0.25, borderRadius: 0.5,
+                        backgroundColor: `${event.color}18`,
+                        borderLeft: `2px solid ${event.color}`,
+                        cursor: 'pointer', overflow: 'hidden',
+                        '&:hover': { backgroundColor: `${event.color}28` }
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: event.color, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.5 }}>
+                        {event.title}
                       </Typography>
-                    )}
-                  </Stack>
-                </Box>
-              ))}
-            </Box>
-          </CardContent>
-        </Card>
+                    </Box>
+                  </Tooltip>
+                ))}
+                {day.events.length > 3 && (
+                  <Typography sx={{ fontSize: '0.58rem', color: '#94a3b8', pl: 0.5 }}>
+                    +{day.events.length - 3} more
+                  </Typography>
+                )}
+              </Box>
+            ))}
+          </Box>
+        </Box>
       </Fade>
 
       {/* Event Details Dialog - Professional Redesign */}

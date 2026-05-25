@@ -61,6 +61,7 @@ import {
   AccountBalance as BudgetIcon,
   Assignment as AwardIcon,
   People as DonorManagementIcon,
+  ContactPage as FundersCRMIcon,
   RateReview as ReviewIcon,
   Assessment as AssessmentIcon,
   NoteAdd as InternalGrantIcon,
@@ -663,6 +664,10 @@ const Navbar = () => {
                 title:"DONORS AND DONATIONS MANAGEMENT",
                 
             items: [
+              { label: 'Funders CRM',
+                description:'Unified donor profiles, giving history & relationship intelligence',
+                icon:<FundersCRMIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }} />,
+                 path: '/foundation/funders' },
               { label: 'Donations',
                 description:'Profiles, donations & relationships',
                 icon:<DonorManagementIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }} />,
@@ -756,15 +761,17 @@ const Navbar = () => {
             ]
           },
         
-          //{
-           // label: 'Reports & Analytics',
-           // items: [
-           //   { label: 'Funding Impact', path: '/foundation/analytics' },
-           //  { label: 'Grant Reports', path: '/foundation/analytics/grants' },
-           //   { label: 'Portfolio Analysis', path: '/foundation/analytics/portfolio' },
-           //   { label: 'ROI Analysis', path: '/foundation/analytics/roi' }
-           // ]
-          //},
+          {
+            label: 'Reports & Analytics',
+            items: [
+              {
+                label: 'Reports & Analytics',
+                description: 'Trends, campaign performance & funder-ready insights',
+                icon: <AssessmentIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }} />,
+                path: '/foundation/reports',
+              },
+            ]
+          },
           // {
           //   label: 'User Manager',
           //   icon: <UserManagerIcon />,
@@ -1066,6 +1073,18 @@ const Navbar = () => {
                   sx={{ fontSize: '0.95rem', py: 1.2 }}
                 >
                   News
+                </MenuItem>
+                <MenuItem
+                  onClick={() => { setResourcesAnchor(null); router.push('/faq'); }}
+                  sx={{ fontSize: '0.95rem', py: 1.2 }}
+                >
+                  Frequently Asked Questions
+                </MenuItem>
+                <MenuItem
+                  onClick={() => { setResourcesAnchor(null); window.open('/handbook/hospitiumris-brandbook.pdf', '_blank'); }}
+                  sx={{ fontSize: '0.95rem', py: 1.2 }}
+                >
+                  HospitiumRIS Brandbook
                 </MenuItem>
                 <MenuItem
                   onClick={() => { setResourcesAnchor(null); router.push('/contact'); }}

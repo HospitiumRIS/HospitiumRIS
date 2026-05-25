@@ -8,7 +8,6 @@ import {
   Button,
   Card,
   CardContent,
-  Grid,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -194,22 +193,6 @@ const CampaignsSkeleton = memo(() => (
   </Box>
 ));
 
-const StatsSkeleton = memo(() => (
-  <Grid container spacing={3} sx={{ mb: 4 }}>
-    {[1, 2, 3, 4, 5].map((index) => (
-      <Grid item xs={12} sm={6} md={2.4} key={index}>
-        <Card sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ p: 1.5, textAlign: 'center' }}>
-            <Skeleton variant="text" width="40%" height={32} sx={{ mx: 'auto', mb: 0.5 }} />
-            <Skeleton variant="text" width="60%" height={20} sx={{ mx: 'auto', mb: 0.25 }} />
-            <Skeleton variant="text" width="50%" height={16} sx={{ mx: 'auto' }} />
-          </CardContent>
-        </Card>
-      </Grid>
-    ))}
-  </Grid>
-));
-
 // Debounce hook for search/filter operations
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -254,6 +237,7 @@ export default function DonationManagement() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [donorTypeFilter, setDonorTypeFilter] = useState('');
+  const [dateRangeFilter, setDateRangeFilter] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   // Accordion states
@@ -296,6 +280,7 @@ export default function DonationManagement() {
   const debouncedCategoryFilter = useDebounce(categoryFilter, 200);
   const debouncedStatusFilter = useDebounce(statusFilter, 200);
   const debouncedDonorTypeFilter = useDebounce(donorTypeFilter, 200);
+  const debouncedDateRangeFilter = useDebounce(dateRangeFilter, 200);
 
   // Load data
   const loadData = useCallback(async () => {
@@ -316,21 +301,16 @@ export default function DonationManagement() {
       if (categoriesData.success) setCategories(categoriesData.data || []);
       if (campaignsData.success) setCampaigns(campaignsData.data || []);
       if (donationsData) {
-        console.log('Donations API response:', donationsData);
-        // Handle different API response formats
         if (Array.isArray(donationsData)) {
           setDonations(donationsData);
         } else if (donationsData.success && Array.isArray(donationsData.donations)) {
-          console.log('Setting donations:', donationsData.donations);
-          setDonations(donationsData.donations); // Fixed: use 'donations' field instead of 'data'
+          setDonations(donationsData.donations);
         } else if (donationsData.success && Array.isArray(donationsData.data)) {
           setDonations(donationsData.data);
         } else {
-          console.warn('Unexpected donations API response format:', donationsData);
           setDonations([]);
         }
       } else {
-        console.warn('No donations data received');
         setDonations([]);
       }
     } catch (error) {
@@ -379,6 +359,14 @@ export default function DonationManagement() {
       }
     });
 
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const thisMonthAmount = completedDonations
+      .filter(d => new Date(d.donationDate) >= startOfMonth)
+      .reduce((sum, d) => sum + (d.amount || 0), 0);
+    const pendingAmount = pendingDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
+    const completedAvgDonation = completedDonations.length > 0 ? completedAmount / completedDonations.length : 0;
+
     return {
       totalCategories: categoriesArray.length,
       totalInitiatives: campaignsArray.length,
@@ -388,7 +376,9 @@ export default function DonationManagement() {
       completedDonations: completedDonations.length,
       completedAmount,
       pendingDonations: pendingDonations.length,
-      averageDonation
+      pendingAmount,
+      thisMonthAmount,
+      averageDonation: completedAvgDonation
     };
   }, [donations, campaigns, categories]);
 
@@ -417,25 +407,30 @@ export default function DonationManagement() {
   }, [campaigns, debouncedSearchTerm, debouncedCategoryFilter, debouncedStatusFilter]);
 
   const filteredDonations = useMemo(() => {
-    // Ensure both donations and campaigns are arrays to prevent runtime errors
     const donationsArray = Array.isArray(donations) ? donations : [];
-    let filtered = [...donationsArray]; // Create a copy to avoid mutations
+    let filtered = [...donationsArray];
 
     if (debouncedDonorTypeFilter && debouncedDonorTypeFilter.trim()) {
-      filtered = filtered.filter(donation => donation.donorType === debouncedDonorTypeFilter);
+      filtered = filtered.filter(d => d.donorType === debouncedDonorTypeFilter);
     }
 
-    // Ensure filtered is still an array before sorting
-    if (!Array.isArray(filtered)) {
-      filtered = [];
+    if (debouncedDateRangeFilter) {
+      const now = new Date();
+      let startDate = null;
+      switch (debouncedDateRangeFilter) {
+        case 'today':   startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()); break;
+        case 'week':    startDate = new Date(now); startDate.setDate(now.getDate() - 7); break;
+        case 'month':   startDate = new Date(now.getFullYear(), now.getMonth(), 1); break;
+        case 'quarter': startDate = new Date(now); startDate.setMonth(now.getMonth() - 3); break;
+        case 'year':    startDate = new Date(now.getFullYear(), 0, 1); break;
+        default:        startDate = null;
+      }
+      if (startDate) filtered = filtered.filter(d => new Date(d.donationDate) >= startDate);
     }
 
-    return filtered.sort((a, b) => {
-      const dateA = new Date(a.donationDate);
-      const dateB = new Date(b.donationDate);
-      return dateB - dateA;
-    });
-  }, [donations, debouncedDonorTypeFilter]);
+    if (!Array.isArray(filtered)) filtered = [];
+    return filtered.sort((a, b) => new Date(b.donationDate) - new Date(a.donationDate));
+  }, [donations, debouncedDonorTypeFilter, debouncedDateRangeFilter]);
 
   const getCampaignName = useCallback((campaignId) => {
     const campaignsArray = Array.isArray(campaigns) ? campaigns : [];
@@ -548,9 +543,6 @@ export default function DonationManagement() {
         taxDeductible: true // Default to true
       };
 
-      console.log('Sending donation data:', donationData);
-      console.log('Campaign ID being sent:', donationData.campaignId);
-
       let response;
 
       if (selectedDonation) {
@@ -573,11 +565,7 @@ export default function DonationManagement() {
         });
       }
 
-      console.log('API Response status:', response.status);
-      console.log('API Response headers:', response.headers);
-
       const result = await response.json();
-      console.log('API Response result:', result);
 
       if (response.ok) {
         setSnackbar({
@@ -614,21 +602,36 @@ export default function DonationManagement() {
     setDonorDialog(true);
   }, []);
 
+  const handleMarkComplete = useCallback(async (donation, e) => {
+    if (e) e.stopPropagation();
+    try {
+      const response = await fetch(`/api/foundation/donations/${donation.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...donation, status: 'COMPLETED', amount: donation.amount }),
+      });
+      if (response.ok) {
+        setSnackbar({ open: true, message: 'Donation marked as completed', severity: 'success' });
+        await loadData();
+      } else throw new Error('Failed to update');
+    } catch {
+      setSnackbar({ open: true, message: 'Failed to update donation status', severity: 'error' });
+    }
+  }, [loadData]);
+
   // Remove the mounted check to prevent hydration issues
   // The loading state will handle the initial render
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       {/* Full-width PageHeader */}
-      <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)', mt: 8, mb: 4 }} >
+      <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }} >
         <PageHeader
           title="Donation Management"
-          description="Track donations by campaign initiatives and manage donor relationships"
+          description="Track and record gifts by campaign — see what's received, pending, and outstanding"
           icon={<PeopleIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
             { label: 'Foundation', path: '/foundation' },
-            { label: 'Fundraising', path: '/foundation/fundraising' },
-            { label: 'Donors', path: '/foundation/fundraising/donors' },
             { label: 'Donation Management' }
           ]}
           gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
@@ -636,32 +639,29 @@ export default function DonationManagement() {
             <Stack direction="row" spacing={2}>
               <Button
                 variant="contained"
-                startIcon={<AssessmentIcon />}
-                onClick={() => router.push('/foundation/donations-analytics')}
+                startIcon={<AddIcon />}
+                onClick={() => handleAddDonation('')}
                 sx={{
-                  background: 'rgba(255,255,255,0.15)',
+                  background: 'rgba(255,255,255,0.22)',
                   backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255,255,255,0.3)',
+                  border: '1px solid rgba(255,255,255,0.45)',
                   color: 'white',
-                  '&:hover': {
-                    background: 'rgba(255,255,255,0.25)',
-                  },
+                  fontWeight: 700,
+                  '&:hover': { background: 'rgba(255,255,255,0.35)' },
                 }}
               >
-                Donations Analytics
+                Record Donation
               </Button>
               <Button
                 variant="contained"
                 startIcon={<UploadIcon />}
                 onClick={() => { setImportCampaign(null); setImportDialog(true); }}
                 sx={{
-                  background: 'rgba(255,255,255,0.2)',
+                  background: 'rgba(255,255,255,0.13)',
                   backdropFilter: 'blur(10px)',
                   border: '1px solid rgba(255,255,255,0.3)',
                   color: 'white',
-                  '&:hover': {
-                    background: 'rgba(255,255,255,0.3)',
-                  },
+                  '&:hover': { background: 'rgba(255,255,255,0.25)' },
                 }}
               >
                 Import Data
@@ -674,179 +674,51 @@ export default function DonationManagement() {
       {/* Main content within container */}
       <Container maxWidth="xl" sx={{ py: 4 }}>
 
-        {/* Statistics Cards */}
-        {loading ? (
-          <StatsSkeleton />
-        ) : (
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 2.5, 
-            flexWrap: 'wrap',
-            mb: 4,
-            '& > *': { 
-              flex: '1 1 calc(20% - 20px)',
-              minWidth: '200px'
+        {/* Pending donations alert */}
+        {!loading && stats.pendingDonations > 0 && (
+          <Alert
+            severity="warning"
+            sx={{ mb: 3, borderRadius: 2, border: '1px solid rgba(237,108,2,0.3)' }}
+            action={
+              <Button color="inherit" size="small" onClick={() => setDonorTypeFilter('')}>
+                Review
+              </Button>
             }
-          }}>
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: '#8b6cbc',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Categories
-                </Typography>
-                <CategoryIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                {stats.totalCategories || 0}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Donation categories
-              </Typography>
-            </Paper>
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: '#8b6cbc',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Initiatives
-                </Typography>
-                <CampaignIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                {stats.totalInitiatives || 0}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Active campaigns
-              </Typography>
-            </Paper>
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: '#8b6cbc',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Total Donations
-                </Typography>
-                <ReceiptIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                {stats.totalDonations || 0}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Donation count
-              </Typography>
-            </Paper>
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: '#8b6cbc',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Total Raised
-                </Typography>
-                <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                {formatCurrency(stats.totalAmount || 0)}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Total amount
-              </Typography>
-            </Paper>
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: '#8b6cbc',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Unique Donors
-                </Typography>
-                <PeopleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                {stats.uniqueDonors || 0}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Active donors
-              </Typography>
-            </Paper>
-          </Box>
+          >
+            <strong>{stats.pendingDonations}</strong> donation{stats.pendingDonations !== 1 ? 's' : ''} totalling{' '}
+            <strong>{formatCurrency(stats.pendingAmount)}</strong> are pending confirmation — mark as completed once payment is received.
+          </Alert>
         )}
 
-        {/* Search and Filters */}
-        <Card sx={{ mb: 4, borderRadius: 3, background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', border: '1px solid #e2e8f0' }}>
-          <CardContent sx={{ p: 3 }}>
-            {/* Header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <SearchIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8b6cbc' }}>
-                Search & Filter
-              </Typography>
-              <Tooltip title="Filter campaigns and donations to find specific data" arrow>
-                <InfoIcon sx={{ color: '#8b6cbc', fontSize: 16, cursor: 'help' }} />
-              </Tooltip>
-            </Box>
+        {/* Unified summary + filter panel */}
+        <Paper elevation={0} sx={{ mb: 4, borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
 
-            {/* Filter Controls */}
-            <Box sx={{
-              display: 'flex',
-              gap: 2,
-              alignItems: 'center',
-              flexWrap: 'wrap'
-            }}>
+          {/* Compact stats summary bar */}
+          {!loading && (
+            <Box sx={{ px: 3, py: 1.5, background: `linear-gradient(135deg, ${alpha('#8b6cbc', 0.06)} 0%, ${alpha('#8b6cbc', 0.03)} 100%)`, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap', rowGap: 0.5 }}>
+              {[
+                { label: 'Total Gifts',  value: stats.totalDonations,                      icon: <MoneyIcon sx={{ fontSize: 15 }} />,       color: '#8b6cbc' },
+                { label: 'Received',     value: formatCurrency(stats.completedAmount || 0), icon: <CheckCircleIcon sx={{ fontSize: 15 }} />, color: '#16a34a' },
+                { label: 'Pending',      value: formatCurrency(stats.pendingAmount || 0),   icon: <ScheduleIcon sx={{ fontSize: 15 }} />,    color: '#d97706' },
+                { label: 'Total Raised', value: formatCurrency(stats.totalAmount || 0),     icon: <TrendingUpIcon sx={{ fontSize: 15 }} />,  color: '#0369a1' },
+                { label: 'Avg Gift',     value: formatCurrency(stats.averageDonation || 0), icon: <MoneyIcon sx={{ fontSize: 15 }} />,       color: '#059669' },
+                { label: 'Funders',      value: stats.uniqueDonors || 0,                    icon: <PeopleIcon sx={{ fontSize: 15 }} />,      color: '#7c3aed' },
+                { label: 'This Month',   value: formatCurrency(stats.thisMonthAmount || 0), icon: <CalendarIcon sx={{ fontSize: 15 }} />,    color: '#0891b2' },
+              ].map((item, i) => (
+                <React.Fragment key={i}>
+                  {i > 0 && <Divider orientation="vertical" flexItem sx={{ mx: 2, my: 0.5 }} />}
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    <Box sx={{ color: item.color, display: 'flex', opacity: 0.9 }}>{item.icon}</Box>
+                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }}>{item.label}:</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: '#1e293b', fontSize: '0.8rem' }}>{item.value}</Typography>
+                  </Stack>
+                </React.Fragment>
+              ))}
+            </Box>
+          )}
+
+          {/* Filter controls */}
+          <Box sx={{ p: 2.5, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
               {/* Search Input */}
               <TextField
                 placeholder="Search initiatives and donations..."
@@ -965,6 +837,29 @@ export default function DonationManagement() {
                 </Select>
               </FormControl>
 
+              {/* Date Range Filter */}
+              <FormControl size="small" sx={{ minWidth: 145 }}>
+                <Select
+                  value={dateRangeFilter}
+                  onChange={(e) => setDateRangeFilter(e.target.value)}
+                  displayEmpty
+                  sx={{
+                    borderRadius: 2,
+                    backgroundColor: 'white',
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#8b6cbc' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#8b6cbc' }
+                  }}
+                  MenuProps={{ disableScrollLock: true, PaperProps: { sx: { maxHeight: 220 } } }}
+                >
+                  <MenuItem value="">All Time</MenuItem>
+                  <MenuItem value="today">Today</MenuItem>
+                  <MenuItem value="week">This Week</MenuItem>
+                  <MenuItem value="month">This Month</MenuItem>
+                  <MenuItem value="quarter">This Quarter</MenuItem>
+                  <MenuItem value="year">This Year</MenuItem>
+                </Select>
+              </FormControl>
+
               {/* Reset Button */}
               <Button
                 variant="outlined"
@@ -975,6 +870,7 @@ export default function DonationManagement() {
                   setCategoryFilter('');
                   setStatusFilter('');
                   setDonorTypeFilter('');
+                  setDateRangeFilter('');
                 }}
                 sx={{
                   borderRadius: 2,
@@ -988,9 +884,8 @@ export default function DonationManagement() {
               >
                 Reset
               </Button>
-            </Box>
-          </CardContent>
-        </Card>
+          </Box>
+        </Paper>
 
         {/* Campaign Cards */}
         {loading ? (
@@ -1014,12 +909,7 @@ export default function DonationManagement() {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {filteredCampaigns.filter(campaign => campaign && campaign.id).map((campaign) => {
                   const campaignDonations = donations.filter(d => d && d.campaignId === campaign.id);
-                  console.log(`Campaign ${campaign.name} (${campaign.id}):`, {
-                    totalDonations: donations.length,
-                    campaignDonations: campaignDonations.length,
-                    campaignDonationsData: campaignDonations
-                  });
-                  const totalRaised = campaignDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
+                  const totalRaised = campaignDonations.filter(d => d.status === 'COMPLETED').reduce((sum, d) => sum + (d.amount || 0), 0);
                   const uniqueDonorsForCampaign = new Set();
                   campaignDonations.forEach(donation => {
                     if (!donation.isAnonymous && donation.donorEmail) {
@@ -1087,22 +977,23 @@ export default function DonationManagement() {
                               }}>
                                 {(campaign.name || 'Campaign').charAt(0).toUpperCase()}
                               </Avatar>
-                              <Chip
-                                label="INITIA..."
-                                size="small"
-                                sx={{
-                                  position: 'absolute',
-                                  top: -6,
-                                  right: -6,
-                                  fontSize: '0.55rem',
-                                  fontWeight: 700,
-                                  height: 20,
-                                  backgroundColor: '#8b6cbc',
-                                  color: 'white',
-                                  '& .MuiChip-label': { px: 0.75 },
-                                  display: { xs: 'none', sm: 'flex' }
-                                }}
-                              />
+                              {campaign.status && (
+                                <Chip
+                                  label={campaign.status}
+                                  size="small"
+                                  color={getStatusColor(campaign.status)}
+                                  sx={{
+                                    position: 'absolute',
+                                    top: -6,
+                                    right: -6,
+                                    fontSize: '0.55rem',
+                                    fontWeight: 700,
+                                    height: 20,
+                                    '& .MuiChip-label': { px: 0.75 },
+                                    display: { xs: 'none', sm: 'flex' }
+                                  }}
+                                />
+                              )}
                             </Box>
 
                             <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -1220,39 +1111,34 @@ export default function DonationManagement() {
                             </Box>
 
                             <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
+                              {campaign.targetAmount > 0 && (
+                                <Box sx={{ textAlign: 'center', minWidth: { xs: 70, md: 80 } }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                    <LinearProgress
+                                      variant="determinate"
+                                      value={Math.min(100, (totalRaised / campaign.targetAmount) * 100)}
+                                      sx={{
+                                        flex: 1, height: 6, borderRadius: 3,
+                                        bgcolor: 'rgba(139,108,188,0.15)',
+                                        '& .MuiLinearProgress-bar': { bgcolor: totalRaised >= campaign.targetAmount ? '#16a34a' : '#8b6cbc', borderRadius: 3 }
+                                      }}
+                                    />
+                                    <Typography variant="caption" sx={{ fontSize: '0.65rem', color: '#8b6cbc', fontWeight: 700, flexShrink: 0 }}>
+                                      {Math.round((totalRaised / campaign.targetAmount) * 100)}%
+                                    </Typography>
+                                  </Box>
+                                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem' }}>
+                                    of {formatCurrency(campaign.targetAmount)}
+                                  </Typography>
+                                </Box>
+                              )}
+
                               <Chip
                                 label={campaign.status || 'Active'}
                                 color={getStatusColor(campaign.status || 'Active')}
                                 size="medium"
-                                sx={{
-                                  fontWeight: 600,
-                                  fontSize: '0.8rem',
-                                  height: 32,
-                                  minWidth: 80
-                                }}
+                                sx={{ fontWeight: 600, fontSize: '0.8rem', height: 32, minWidth: 80 }}
                               />
-
-                              <Box
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // Handle menu actions here
-                                }}
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  width: 32,
-                                  height: 32,
-                                  borderRadius: '50%',
-                                  color: '#9c27b0',
-                                  cursor: 'pointer',
-                                  '&:hover': {
-                                    backgroundColor: alpha('#9c27b0', 0.1)
-                                  }
-                                }}
-                              >
-                                <MoreVertIcon fontSize="medium" />
-                              </Box>
                             </Stack>
                           </Stack>
                         </Stack>
@@ -1272,17 +1158,29 @@ export default function DonationManagement() {
                             sx={{ mb: 3 }}
                           >
                             <Box>
-                              <Typography variant="h6" sx={{
-                                fontWeight: 700,
-                                color: '#2c3e50',
-                                mb: 0.5
-                              }}>
+                              <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', mb: 0.5 }}>
                                 Donations for {campaign.name || 'Campaign'}
                               </Typography>
-                              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem' }}>
-                                {campaignDonations.length} donation{campaignDonations.length !== 1 ? 's' : ''} •
-                                {uniqueDonorsForCampaign.size} unique donor{uniqueDonorsForCampaign.size !== 1 ? 's' : ''}
-                              </Typography>
+                              <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem' }}>
+                                  {campaignDonations.length} donation{campaignDonations.length !== 1 ? 's' : ''} ·
+                                  {uniqueDonorsForCampaign.size} unique donor{uniqueDonorsForCampaign.size !== 1 ? 's' : ''}
+                                </Typography>
+                                {campaignDonations.filter(d => d.status === 'PENDING').length > 0 && (
+                                  <Chip
+                                    label={`${campaignDonations.filter(d => d.status === 'PENDING').length} pending`}
+                                    size="small"
+                                    sx={{ height: 20, fontSize: '0.7rem', bgcolor: '#fef3c7', color: '#d97706', fontWeight: 600, '& .MuiChip-label': { px: 0.75 } }}
+                                  />
+                                )}
+                                {campaignDonations.filter(d => d.status === 'COMPLETED').length > 0 && (
+                                  <Chip
+                                    label={`${formatCurrency(campaignDonations.filter(d => d.status === 'COMPLETED').reduce((s, d) => s + (d.amount || 0), 0))} received`}
+                                    size="small"
+                                    sx={{ height: 20, fontSize: '0.7rem', bgcolor: '#dcfce7', color: '#16a34a', fontWeight: 600, '& .MuiChip-label': { px: 0.75 } }}
+                                  />
+                                )}
+                              </Stack>
                             </Box>
                             <Button
                               variant="contained"
@@ -1403,22 +1301,13 @@ export default function DonationManagement() {
                                     }}>
                                       Date
                                     </TableCell>
-                                    <TableCell sx={{
-                                      fontWeight: 700,
-                                      color: '#8b6cbc',
-                                      fontSize: '0.9rem',
-                                      textTransform: 'uppercase',
-                                      letterSpacing: '0.5px'
-                                    }}>
+                                    <TableCell sx={{ fontWeight: 700, color: '#8b6cbc', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                       Status
                                     </TableCell>
-                                    <TableCell align="center" sx={{
-                                      fontWeight: 700,
-                                      color: '#8b6cbc',
-                                      fontSize: '0.9rem',
-                                      textTransform: 'uppercase',
-                                      letterSpacing: '0.5px'
-                                    }}>
+                                    <TableCell sx={{ fontWeight: 700, color: '#8b6cbc', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px', maxWidth: 180 }}>
+                                      Notes
+                                    </TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 700, color: '#8b6cbc', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                       Actions
                                     </TableCell>
                                   </TableRow>
@@ -1515,27 +1404,38 @@ export default function DonationManagement() {
                                           label={donation.status || 'PENDING'}
                                           size="small"
                                           color={getDonationStatusColor(donation.status || 'PENDING')}
-                                          sx={{
-                                            fontWeight: 600,
-                                            textTransform: 'uppercase',
-                                            fontSize: '0.7rem',
-                                            letterSpacing: '0.5px'
-                                          }}
+                                          sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.5px' }}
                                         />
+                                      </TableCell>
+                                      <TableCell sx={{ maxWidth: 180 }}>
+                                        {donation.message ? (
+                                          <Tooltip title={donation.message} arrow placement="top">
+                                            <Typography variant="caption" sx={{ color: '#64748b', fontStyle: 'italic', fontSize: '0.78rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', cursor: 'default' }}>
+                                              "{donation.message}"
+                                            </Typography>
+                                          </Tooltip>
+                                        ) : (
+                                          <Typography variant="caption" color="text.disabled">—</Typography>
+                                        )}
                                       </TableCell>
                                       <TableCell align="center">
                                         <Stack direction="row" spacing={0.5} justifyContent="center">
+                                          {donation.status !== 'COMPLETED' && (
+                                            <Tooltip title="Mark as completed" arrow>
+                                              <IconButton
+                                                size="small"
+                                                onClick={(e) => handleMarkComplete(donation, e)}
+                                                sx={{ color: '#16a34a', '&:hover': { backgroundColor: 'rgba(22,163,74,0.1)', transform: 'scale(1.1)' } }}
+                                              >
+                                                <CheckCircleIcon fontSize="small" />
+                                              </IconButton>
+                                            </Tooltip>
+                                          )}
                                           <Tooltip title="View donation details" arrow>
                                             <IconButton
                                               size="small"
                                               onClick={() => handleViewDonation(donation)}
-                                              sx={{
-                                                color: '#8b6cbc',
-                                                '&:hover': {
-                                                  backgroundColor: alpha('#8b6cbc', 0.1),
-                                                  transform: 'scale(1.1)'
-                                                }
-                                              }}
+                                              sx={{ color: '#8b6cbc', '&:hover': { backgroundColor: alpha('#8b6cbc', 0.1), transform: 'scale(1.1)' } }}
                                             >
                                               <ViewIcon fontSize="small" />
                                             </IconButton>
@@ -1544,13 +1444,7 @@ export default function DonationManagement() {
                                             <IconButton
                                               size="small"
                                               onClick={() => handleEditDonation(donation)}
-                                              sx={{
-                                                color: '#4caf50',
-                                                '&:hover': {
-                                                  backgroundColor: alpha('#4caf50', 0.1),
-                                                  transform: 'scale(1.1)'
-                                                }
-                                              }}
+                                              sx={{ color: '#4caf50', '&:hover': { backgroundColor: alpha('#4caf50', 0.1), transform: 'scale(1.1)' } }}
                                             >
                                               <EditIcon fontSize="small" />
                                             </IconButton>

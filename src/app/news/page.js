@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   Container,
@@ -8,7 +9,6 @@ import {
   Box,
   Card,
   CardContent,
-  CardMedia,
   Chip,
   useTheme,
 } from '@mui/material';
@@ -107,27 +107,26 @@ const NewsPage = () => {
                   },
                 }}
               >
-                <CardMedia
-                  component="div"
+                <Box
                   sx={{
                     height: 200,
-                    backgroundColor: theme.palette.primary.light,
+                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(139,108,188,0.12)' : 'rgba(139,108,188,0.06)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
+                    overflow: 'hidden',
+                    px: 4,
                   }}
                 >
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      color: 'white',
-                      fontWeight: 600,
-                    }}
-                  >
-                    News
-                  </Typography>
-                </CardMedia>
+                  <Image
+                    src={article.image || '/hospitium-logo.png'}
+                    alt={article.title}
+                    width={260}
+                    height={120}
+                    style={{ objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }}
+                  />
+                </Box>
                 <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                   <Box sx={{ mb: 2 }}>
                     <Chip

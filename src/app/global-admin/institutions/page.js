@@ -248,6 +248,8 @@ const InstitutionsPage = () => {
           showAlert('Institution admin updated successfully', 'success');
           handleCloseDialog();
           fetchInstitutions();
+          // Trigger notification refresh
+          window.dispatchEvent(new Event('refreshNotifications'));
         } else {
           showAlert(data.error || 'Failed to update institution admin', 'error');
         }

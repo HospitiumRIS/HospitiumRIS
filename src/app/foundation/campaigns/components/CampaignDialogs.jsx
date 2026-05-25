@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Button,
@@ -14,21 +13,17 @@ import {
   MenuItem,
   Box,
   Typography,
-  Grid,
-  Chip,
-  Avatar,
   CircularProgress,
-  Alert,
   InputAdornment,
-  Autocomplete
+  IconButton,
+  Divider
 } from '@mui/material';
 import {
   Category as CategoryIcon,
   Campaign as CampaignIcon,
   Event as ActivityIcon,
-  ColorLens as ColorIcon,
   AttachMoney as MoneyIcon,
-  CalendarToday as CalendarIcon,
+  Close as CloseIcon,
   MeetingRoom,
   Event,
   Email,
@@ -47,6 +42,76 @@ const iconMapping = {
   Presentation,
   LocationOn,
   FollowTheSigns
+};
+
+// Shared status color map
+const statusColorMap = {
+  Planning: '#757575',
+  Active: '#4caf50',
+  Paused: '#ff9800',
+  Completed: '#2196f3',
+  Cancelled: '#ef5350'
+};
+
+// Shared field styling
+const fieldSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: 1.5,
+    backgroundColor: 'white',
+    '& fieldset': { borderColor: '#e0e0e0' },
+    '&:hover fieldset': { borderColor: '#bdbdbd' },
+    '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
+  },
+  '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
+};
+
+const selectSx = {
+  borderRadius: 1.5,
+  backgroundColor: 'white',
+  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#e0e0e0' },
+  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bdbdbd' },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#8b6cbc' }
+};
+
+const formControlSx = {
+  '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
+};
+
+// Reusable dialog header with icon, dynamic title and close button
+const DialogHeader = ({ icon: Icon, title, onClose }) => (
+  <Box sx={{
+    background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)',
+    px: 3,
+    py: 2.5,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexShrink: 0
+  }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      {Icon && <Icon sx={{ color: 'white', fontSize: 22, opacity: 0.92 }} />}
+      <Typography variant="h6" sx={{ fontWeight: 600, color: 'white', letterSpacing: '-0.2px' }}>
+        {title}
+      </Typography>
+    </Box>
+    <IconButton
+      onClick={onClose}
+      size="small"
+      sx={{
+        color: 'rgba(255,255,255,0.75)',
+        p: 0.75,
+        '&:hover': { color: 'white', backgroundColor: 'rgba(255,255,255,0.15)' }
+      }}
+    >
+      <CloseIcon sx={{ fontSize: 18 }} />
+    </IconButton>
+  </Box>
+);
+
+const paperSx = {
+  borderRadius: '12px',
+  boxShadow: '0 12px 40px rgba(0,0,0,0.14)',
+  overflow: 'hidden'
 };
 
 const CampaignDialogs = ({
@@ -111,187 +176,113 @@ const CampaignDialogs = ({
   }, [colorPickerOpen]);
   
   const predefinedColors = [
-    '#8b6cbc', '#4fc3f7', '#66bb6a', '#ff9800', 
+    '#8b6cbc', '#4fc3f7', '#66bb6a', '#ff9800',
     '#ef5350', '#ab47bc', '#26a69a', '#ffa726'
   ];
 
   const statusOptions = [
-    { value: 'Planning', label: 'Planning', color: 'default' },
-    { value: 'Active', label: 'Active', color: 'success' },
-    { value: 'Paused', label: 'Paused', color: 'warning' },
-    { value: 'Completed', label: 'Completed', color: 'info' },
-    { value: 'Cancelled', label: 'Cancelled', color: 'error' }
+    { value: 'Planning', label: 'Planning' },
+    { value: 'Active', label: 'Active' },
+    { value: 'Paused', label: 'Paused' },
+    { value: 'Completed', label: 'Completed' },
+    { value: 'Cancelled', label: 'Cancelled' }
   ];
 
   return (
     <>
-      {/* Category Dialog */}
+      {/* ── Category Dialog ─────────────────────────────────── */}
       <Dialog
         open={categoryDialog}
         onClose={() => setCategoryDialog(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 0,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-            overflow: 'hidden'
-          }
-        }}
+        PaperProps={{ sx: paperSx }}
       >
-        <Box sx={{
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)',
-          p: 3,
-          color: 'white',
-          textAlign: 'center'
-        }}>
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            Create New Category
-          </Typography>
-        </Box>
+        <DialogHeader
+          icon={CategoryIcon}
+          title={selectedCategory ? 'Edit Category' : 'New Category'}
+          onClose={() => setCategoryDialog(false)}
+        />
         
-        <DialogContent sx={{ p: 4, backgroundColor: '#fafafa' }}>
-          <Box sx={{ mb: 3 }}>
+        <DialogContent sx={{ p: 3, pt: 2.5, backgroundColor: '#fafafa' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 0.5 }}>
             <TextField
               fullWidth
-              placeholder="Category Name *"
+              label="Category Name"
+              required
               value={categoryForm.name}
               onChange={(e) => setCategoryForm(prev => ({ ...prev, name: e.target.value }))}
-              required
               variant="outlined"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 1,
-                  backgroundColor: 'white',
-                  '& fieldset': {
-                    borderColor: '#e0e0e0',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#bdbdbd',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#8b6cbc',
-                  },
-                }
-              }}
+              sx={fieldSx}
             />
-          </Box>
-          
-          <Box sx={{ mb: 3 }}>
+
             <TextField
               fullWidth
-              placeholder="Description"
+              label="Description"
               value={categoryForm.description}
               onChange={(e) => setCategoryForm(prev => ({ ...prev, description: e.target.value }))}
               multiline
               rows={3}
               variant="outlined"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 1,
-                  backgroundColor: 'white',
-                  '& fieldset': {
-                    borderColor: '#e0e0e0',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#bdbdbd',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#8b6cbc',
-                  },
-                }
-              }}
+              sx={fieldSx}
             />
-          </Box>
-          
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontSize: '0.75rem' }}>
-                Icon
+
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontWeight: 500, fontSize: '0.8rem' }}>
+                Category Color
               </Typography>
-              <FormControl fullWidth>
-                <Select
-                  value="General"
-                  displayEmpty
-                  sx={{
-                    borderRadius: 1,
-                    backgroundColor: 'white',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#bdbdbd',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8b6cbc',
-                    },
-                  }}
-                >
-                  <MenuItem value="General">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ 
-                        width: 20, 
-                        height: 20, 
-                        borderRadius: 1,
-                        backgroundColor: '#666',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <Typography variant="caption" sx={{ color: 'white', fontSize: '0.7rem' }}>
-                          G
-                        </Typography>
-                      </Box>
-                      General
-                    </Box>
-                  </MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-            
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontSize: '0.75rem' }}>
-                Color
-              </Typography>
-              <Box 
+              <Box
                 ref={colorPickerRef}
                 sx={{
-                  height: 56,
-                  borderRadius: 1,
+                  height: 52,
+                  borderRadius: 1.5,
                   backgroundColor: categoryForm.color,
-                  border: '1px solid #e0e0e0',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  boxShadow: `0 2px 10px ${categoryForm.color}55`,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  justifyContent: 'space-between',
+                  px: 2,
                   position: 'relative',
-                  overflow: 'visible'
+                  overflow: 'visible',
+                  transition: 'box-shadow 0.2s ease',
+                  '&:hover': { boxShadow: `0 4px 16px ${categoryForm.color}88` }
                 }}
                 onClick={() => setColorPickerOpen(!colorPickerOpen)}
               >
-                <Typography variant="body2" sx={{ 
-                  color: 'white', 
-                  fontWeight: 'bold',
-                  textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                <Typography variant="body2" sx={{
+                  color: 'white',
+                  fontWeight: 600,
+                  letterSpacing: '0.5px',
+                  textShadow: '0 1px 3px rgba(0,0,0,0.4)'
                 }}>
                   {categoryForm.color}
                 </Typography>
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                  {predefinedColors.slice(0, 4).map(c => (
+                    <Box key={c} sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: c, border: '1.5px solid rgba(255,255,255,0.7)', opacity: 0.9 }} />
+                  ))}
+                </Box>
                 
                 {/* Color Picker Dropdown */}
                 {colorPickerOpen && (
                   <Box sx={{
                     position: 'absolute',
-                    top: '100%',
+                    top: '110%',
                     left: 0,
                     right: 0,
                     backgroundColor: 'white',
                     border: '1px solid #e0e0e0',
-                    borderRadius: 1,
+                    borderRadius: 2,
                     p: 2,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    zIndex: 1000
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    zIndex: 1300
                   }}>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: '#64748b', mb: 1.5, display: 'block' }}>
+                      Select Color
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                       {predefinedColors.map(color => (
                         <Box
                           key={color}
@@ -301,17 +292,15 @@ const CampaignDialogs = ({
                             setColorPickerOpen(false);
                           }}
                           sx={{
-                            width: 32,
-                            height: 32,
+                            width: 34,
+                            height: 34,
                             borderRadius: '50%',
                             backgroundColor: color,
                             cursor: 'pointer',
-                            border: categoryForm.color === color ? '3px solid #333' : '2px solid #fff',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                            transition: 'all 0.2s ease',
-                            '&:hover': {
-                              transform: 'scale(1.1)'
-                            }
+                            border: categoryForm.color === color ? '3px solid #1e293b' : '2px solid white',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
+                            transition: 'transform 0.15s ease',
+                            '&:hover': { transform: 'scale(1.15)' }
                           }}
                         />
                       ))}
@@ -321,8 +310,8 @@ const CampaignDialogs = ({
                       fullWidth
                       value={categoryForm.color}
                       onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
-                      placeholder="#8b6cbc"
-                      label="Custom Color"
+                      label="Custom hex color"
+                      sx={fieldSx}
                     />
                   </Box>
                 )}
@@ -330,27 +319,18 @@ const CampaignDialogs = ({
             </Box>
           </Box>
         </DialogContent>
-        
-        <DialogActions sx={{ 
-          p: 3,
-          backgroundColor: '#fafafa',
-          justifyContent: 'flex-end',
-          gap: 2
-        }}>
-          <Button 
+
+        <Divider />
+        <DialogActions sx={{ px: 3, py: 2, backgroundColor: '#fafafa', gap: 1 }}>
+          <Button
             onClick={() => setCategoryDialog(false)}
             disabled={loading}
             variant="text"
-            sx={{ 
-              color: '#8b6cbc',
-              fontWeight: 500,
-              textTransform: 'none',
-              px: 3
-            }}
+            sx={{ color: '#8b6cbc', fontWeight: 500, textTransform: 'none', px: 2 }}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             variant="contained"
             onClick={handleCategorySubmit}
             disabled={loading || !categoryForm.name}
@@ -358,158 +338,78 @@ const CampaignDialogs = ({
             sx={{
               backgroundColor: '#8b6cbc',
               color: 'white',
-              fontWeight: 500,
+              fontWeight: 600,
               textTransform: 'none',
-              px: 4,
-              borderRadius: 1,
-              boxShadow: 'none',
-              '&:hover': {
-                backgroundColor: '#7b5ca7',
-                boxShadow: 'none'
-              },
-              '&:disabled': {
-                backgroundColor: '#bdbdbd',
-                color: 'white'
-              }
+              px: 3.5,
+              borderRadius: 1.5,
+              boxShadow: '0 2px 8px rgba(139,108,188,0.3)',
+              '&:hover': { backgroundColor: '#7b5ca7', boxShadow: '0 4px 12px rgba(139,108,188,0.4)' },
+              '&:disabled': { backgroundColor: '#c5b4e3', color: 'white', boxShadow: 'none' }
             }}
           >
-            Create Category
+            {selectedCategory ? 'Save Changes' : 'Create Category'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Campaign Dialog */}
+      {/* ── Campaign Dialog ──────────────────────────────────── */}
       <Dialog
         open={campaignDialog}
         onClose={() => setCampaignDialog(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 0,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-            overflow: 'hidden'
-          }
-        }}
+        PaperProps={{ sx: paperSx }}
       >
-        <Box sx={{
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)',
-          p: 3,
-          color: 'white',
-          textAlign: 'center'
-        }}>
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            Create New Initiative
-          </Typography>
-        </Box>
+        <DialogHeader
+          icon={CampaignIcon}
+          title={selectedCampaign ? 'Edit Initiative' : 'New Initiative'}
+          onClose={() => setCampaignDialog(false)}
+        />
         
-        <DialogContent sx={{ p: 4, backgroundColor: '#fafafa' }}>
-          <Box sx={{ mb: 3 }}>
+        <DialogContent sx={{ p: 3, pt: 2.5, backgroundColor: '#fafafa' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 0.5 }}>
             <TextField
               fullWidth
-              placeholder="Initiative Name *"
+              label="Initiative Name"
+              required
               value={campaignForm.name}
               onChange={(e) => setCampaignForm(prev => ({ ...prev, name: e.target.value }))}
-              required
               variant="outlined"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 1,
-                  backgroundColor: 'white',
-                  '& fieldset': {
-                    borderColor: '#e0e0e0',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#bdbdbd',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#8b6cbc',
-                  },
-                }
-              }}
+              sx={fieldSx}
             />
-          </Box>
-          
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-            <Box sx={{ flex: 1 }}>
-              <FormControl fullWidth>
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <FormControl fullWidth sx={formControlSx}>
+                <InputLabel>Category</InputLabel>
                 <Select
                   value={campaignForm.categoryId}
                   onChange={(e) => setCampaignForm(prev => ({ ...prev, categoryId: e.target.value }))}
-                  displayEmpty
-                  sx={{
-                    borderRadius: 1,
-                    backgroundColor: 'white',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#bdbdbd',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8b6cbc',
-                    },
-                  }}
+                  label="Category"
+                  sx={selectSx}
                 >
-                  <MenuItem value="">
-                    Select Category
-                  </MenuItem>
                   {categories.map(category => (
                     <MenuItem key={category.id} value={category.id}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Box sx={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: 1,
-                          backgroundColor: category.color,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <Typography variant="caption" sx={{ color: 'white', fontSize: '0.7rem' }}>
-                            {category.name ? category.name.charAt(0).toUpperCase() : 'C'}
-                          </Typography>
-                        </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: category.color, flexShrink: 0 }} />
                         {category.name}
                       </Box>
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
-            </Box>
-            
-            <Box sx={{ flex: 1 }}>
-              <FormControl fullWidth>
+
+              <FormControl fullWidth sx={formControlSx}>
+                <InputLabel>Status</InputLabel>
                 <Select
                   value={campaignForm.status}
                   onChange={(e) => setCampaignForm(prev => ({ ...prev, status: e.target.value }))}
-                  displayEmpty
-                  sx={{
-                    borderRadius: 1,
-                    backgroundColor: 'white',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#bdbdbd',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8b6cbc',
-                    },
-                  }}
+                  label="Status"
+                  sx={selectSx}
                 >
-                  <MenuItem value="">
-                    Status
-                  </MenuItem>
                   {statusOptions.map(option => (
                     <MenuItem key={option.value} value={option.value}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          backgroundColor: option.color
-                        }} />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: statusColorMap[option.value] || '#757575', flexShrink: 0 }} />
                         {option.label}
                       </Box>
                     </MenuItem>
@@ -517,145 +417,65 @@ const CampaignDialogs = ({
                 </Select>
               </FormControl>
             </Box>
-          </Box>
-          
-          <Box sx={{ mb: 3 }}>
+
             <TextField
               fullWidth
-              placeholder="Description"
+              label="Description"
               value={campaignForm.description}
               onChange={(e) => setCampaignForm(prev => ({ ...prev, description: e.target.value }))}
               multiline
               rows={3}
               variant="outlined"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 1,
-                  backgroundColor: 'white',
-                  '& fieldset': {
-                    borderColor: '#e0e0e0',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#bdbdbd',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#8b6cbc',
-                  },
-                }
-              }}
+              sx={fieldSx}
             />
-          </Box>
-          
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontSize: '0.75rem' }}>
-                Start Date
-              </Typography>
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 fullWidth
+                label="Start Date"
                 type="date"
                 value={campaignForm.startDate}
                 onChange={(e) => setCampaignForm(prev => ({ ...prev, startDate: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
                 variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 1,
-                    backgroundColor: 'white',
-                    '& fieldset': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#bdbdbd',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                  }
-                }}
+                sx={fieldSx}
               />
-            </Box>
-            
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontSize: '0.75rem' }}>
-                End Date
-              </Typography>
               <TextField
                 fullWidth
+                label="End Date"
                 type="date"
                 value={campaignForm.endDate}
                 onChange={(e) => setCampaignForm(prev => ({ ...prev, endDate: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
                 variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 1,
-                    backgroundColor: 'white',
-                    '& fieldset': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#bdbdbd',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                  }
-                }}
+                sx={fieldSx}
               />
             </Box>
-          </Box>
-          
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontSize: '0.75rem' }}>
-              Target Amount
-            </Typography>
+
             <TextField
               fullWidth
-              placeholder="$"
+              label="Target Amount"
               value={campaignForm.targetAmount}
               onChange={(e) => setCampaignForm(prev => ({ ...prev, targetAmount: e.target.value }))}
+              type="number"
               variant="outlined"
-              InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 1,
-                  backgroundColor: 'white',
-                  '& fieldset': {
-                    borderColor: '#e0e0e0',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#bdbdbd',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#8b6cbc',
-                  },
-                }
-              }}
+              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+              sx={fieldSx}
             />
           </Box>
         </DialogContent>
-        
-        <DialogActions sx={{ 
-          p: 3,
-          backgroundColor: '#fafafa',
-          justifyContent: 'flex-end',
-          gap: 2
-        }}>
-          <Button 
+
+        <Divider />
+        <DialogActions sx={{ px: 3, py: 2, backgroundColor: '#fafafa', gap: 1 }}>
+          <Button
             onClick={() => setCampaignDialog(false)}
             disabled={loading}
             variant="text"
-            sx={{ 
-              color: '#8b6cbc',
-              fontWeight: 500,
-              textTransform: 'none',
-              px: 3
-            }}
+            sx={{ color: '#8b6cbc', fontWeight: 500, textTransform: 'none', px: 2 }}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             variant="contained"
             onClick={handleCampaignSubmit}
             disabled={loading || !campaignForm.name || !campaignForm.categoryId}
@@ -663,82 +483,51 @@ const CampaignDialogs = ({
             sx={{
               backgroundColor: '#8b6cbc',
               color: 'white',
-              fontWeight: 500,
+              fontWeight: 600,
               textTransform: 'none',
-              px: 4,
-              borderRadius: 1,
-              boxShadow: 'none',
-              '&:hover': {
-                backgroundColor: '#7b5ca7',
-                boxShadow: 'none'
-              },
-              '&:disabled': {
-                backgroundColor: '#bdbdbd',
-                color: 'white'
-              }
+              px: 3.5,
+              borderRadius: 1.5,
+              boxShadow: '0 2px 8px rgba(139,108,188,0.3)',
+              '&:hover': { backgroundColor: '#7b5ca7', boxShadow: '0 4px 12px rgba(139,108,188,0.4)' },
+              '&:disabled': { backgroundColor: '#c5b4e3', color: 'white', boxShadow: 'none' }
             }}
           >
-            Create Initiative
+            {selectedCampaign ? 'Save Changes' : 'Create Initiative'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Activity Dialog */}
+      {/* ── Activity Dialog ───────────────────────────────────── */}
       <Dialog
         open={activityDialog}
         onClose={() => setActivityDialog(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 0,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-            overflow: 'hidden'
-          }
-        }}
+        PaperProps={{ sx: paperSx }}
       >
-        <Box sx={{
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)',
-          p: 3,
-          color: 'white',
-          textAlign: 'center'
-        }}>
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            Create New Activity
-          </Typography>
-        </Box>
-        
-        <DialogContent sx={{ p: 4, backgroundColor: '#fafafa' }}>
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-            <Box sx={{ flex: 1 }}>
-              <FormControl fullWidth>
+        <DialogHeader
+          icon={ActivityIcon}
+          title={selectedActivity ? 'Edit Activity' : 'New Activity'}
+          onClose={() => setActivityDialog(false)}
+        />
+
+        <DialogContent sx={{ p: 3, pt: 2.5, backgroundColor: '#fafafa' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 0.5 }}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <FormControl fullWidth sx={formControlSx}>
+                <InputLabel>Activity Type</InputLabel>
                 <Select
                   value={activityForm.type}
                   onChange={(e) => setActivityForm(prev => ({ ...prev, type: e.target.value }))}
-                  displayEmpty
-                  sx={{
-                    borderRadius: 1,
-                    backgroundColor: 'white',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#bdbdbd',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8b6cbc',
-                    },
-                  }}
+                  label="Activity Type"
+                  sx={selectSx}
                 >
-                  <MenuItem value="">
-                    Activity Type
-                  </MenuItem>
                   {activityTypes.map(type => {
                     const IconComponent = iconMapping[type.icon];
                     return (
                       <MenuItem key={type.value} value={type.value}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          {IconComponent && <IconComponent sx={{ fontSize: 20, color: type.color }} />}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          {IconComponent && <IconComponent sx={{ fontSize: 18, color: type.color }} />}
                           {type.label}
                         </Box>
                       </MenuItem>
@@ -746,281 +535,123 @@ const CampaignDialogs = ({
                   })}
                 </Select>
               </FormControl>
-            </Box>
-            
-            <Box sx={{ flex: 1 }}>
-              <FormControl fullWidth>
+
+              <FormControl fullWidth sx={formControlSx}>
+                <InputLabel>Phase</InputLabel>
                 <Select
                   value={activityForm.phase}
                   onChange={(e) => setActivityForm(prev => ({ ...prev, phase: e.target.value }))}
-                  displayEmpty
-                  sx={{
-                    borderRadius: 1,
-                    backgroundColor: 'white',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#bdbdbd',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8b6cbc',
-                    },
-                  }}
+                  label="Phase"
+                  sx={selectSx}
                 >
-                  <MenuItem value="">
-                    Campaign Phase
-                  </MenuItem>
                   <MenuItem value="Pre-Campaign">Pre-Campaign</MenuItem>
                   <MenuItem value="Post-Campaign">Post-Campaign</MenuItem>
                 </Select>
               </FormControl>
             </Box>
-          </Box>
-          
-          <Box sx={{ mb: 3 }}>
+
             <TextField
               fullWidth
-              placeholder="Activity Title *"
+              label="Activity Title"
+              required
               value={activityForm.title}
               onChange={(e) => setActivityForm(prev => ({ ...prev, title: e.target.value }))}
-              required
               variant="outlined"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 1,
-                  backgroundColor: 'white',
-                  '& fieldset': {
-                    borderColor: '#e0e0e0',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#bdbdbd',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#8b6cbc',
-                  },
-                }
-              }}
+              sx={fieldSx}
             />
-          </Box>
-          
-          <Box sx={{ mb: 3 }}>
+
             <TextField
               fullWidth
-              placeholder="Description"
+              label="Description"
               value={activityForm.description}
               onChange={(e) => setActivityForm(prev => ({ ...prev, description: e.target.value }))}
               multiline
               rows={3}
               variant="outlined"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 1,
-                  backgroundColor: 'white',
-                  '& fieldset': {
-                    borderColor: '#e0e0e0',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#bdbdbd',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#8b6cbc',
-                  },
-                }
-              }}
+              sx={fieldSx}
             />
-          </Box>
-          
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontSize: '0.75rem' }}>
-                Date
-              </Typography>
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 fullWidth
+                label="Date"
                 type="date"
+                required
                 value={activityForm.date}
                 onChange={(e) => setActivityForm(prev => ({ ...prev, date: e.target.value }))}
-                required
+                InputLabelProps={{ shrink: true }}
                 variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 1,
-                    backgroundColor: 'white',
-                    '& fieldset': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#bdbdbd',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                  }
-                }}
+                sx={fieldSx}
               />
-            </Box>
-            
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontSize: '0.75rem' }}>
-                Time
-              </Typography>
               <TextField
                 fullWidth
+                label="Time"
                 type="time"
                 value={activityForm.time}
                 onChange={(e) => setActivityForm(prev => ({ ...prev, time: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
                 variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 1,
-                    backgroundColor: 'white',
-                    '& fieldset': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#bdbdbd',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                  }
-                }}
+                sx={fieldSx}
               />
             </Box>
-          </Box>
-          
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-            <Box sx={{ flex: 1 }}>
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 fullWidth
-                placeholder="Location"
+                label="Location"
                 value={activityForm.location}
                 onChange={(e) => setActivityForm(prev => ({ ...prev, location: e.target.value }))}
                 variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 1,
-                    backgroundColor: 'white',
-                    '& fieldset': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#bdbdbd',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                  }
-                }}
+                sx={fieldSx}
               />
-            </Box>
-            
-            <Box sx={{ flex: 1 }}>
-              <FormControl fullWidth>
+              <FormControl fullWidth sx={formControlSx}>
+                <InputLabel>Status</InputLabel>
                 <Select
                   value={activityForm.status}
                   onChange={(e) => setActivityForm(prev => ({ ...prev, status: e.target.value }))}
-                  displayEmpty
-                  sx={{
-                    borderRadius: 1,
-                    backgroundColor: 'white',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#e0e0e0',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#bdbdbd',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8b6cbc',
-                    },
-                  }}
+                  label="Status"
+                  sx={selectSx}
                 >
-                  <MenuItem value="">
-                    Status
-                  </MenuItem>
-                  <MenuItem value="Planned">Planned</MenuItem>
-                  <MenuItem value="In Progress">In Progress</MenuItem>
-                  <MenuItem value="Completed">Completed</MenuItem>
-                  <MenuItem value="Cancelled">Cancelled</MenuItem>
+                  {['Planned', 'In Progress', 'Completed', 'Cancelled'].map(s => (
+                    <MenuItem key={s} value={s}>{s}</MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Box>
-          </Box>
-          
-          <Box sx={{ mb: 3 }}>
+
             <TextField
               fullWidth
-              placeholder="Attendees/Participants"
+              label="Attendees / Participants"
               value={activityForm.attendees}
               onChange={(e) => setActivityForm(prev => ({ ...prev, attendees: e.target.value }))}
               variant="outlined"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 1,
-                  backgroundColor: 'white',
-                  '& fieldset': {
-                    borderColor: '#e0e0e0',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#bdbdbd',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#8b6cbc',
-                  },
-                }
-              }}
+              sx={fieldSx}
             />
-          </Box>
-          
-          <Box sx={{ mb: 3 }}>
+
             <TextField
               fullWidth
-              placeholder="Notes"
+              label="Notes"
               value={activityForm.notes}
               onChange={(e) => setActivityForm(prev => ({ ...prev, notes: e.target.value }))}
               multiline
               rows={3}
               variant="outlined"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 1,
-                  backgroundColor: 'white',
-                  '& fieldset': {
-                    borderColor: '#e0e0e0',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: '#bdbdbd',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#8b6cbc',
-                  },
-                }
-              }}
+              sx={fieldSx}
             />
           </Box>
         </DialogContent>
-        
-        <DialogActions sx={{ 
-          p: 3,
-          backgroundColor: '#fafafa',
-          justifyContent: 'flex-end',
-          gap: 2
-        }}>
-          <Button 
+
+        <Divider />
+        <DialogActions sx={{ px: 3, py: 2, backgroundColor: '#fafafa', gap: 1 }}>
+          <Button
             onClick={() => setActivityDialog(false)}
             disabled={loading}
             variant="text"
-            sx={{ 
-              color: '#8b6cbc',
-              fontWeight: 500,
-              textTransform: 'none',
-              px: 3
-            }}
+            sx={{ color: '#8b6cbc', fontWeight: 500, textTransform: 'none', px: 2 }}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             variant="contained"
             onClick={handleActivitySubmit}
             disabled={loading || !activityForm.title || !activityForm.type || !activityForm.date}
@@ -1028,22 +659,16 @@ const CampaignDialogs = ({
             sx={{
               backgroundColor: '#8b6cbc',
               color: 'white',
-              fontWeight: 500,
+              fontWeight: 600,
               textTransform: 'none',
-              px: 4,
-              borderRadius: 1,
-              boxShadow: 'none',
-              '&:hover': {
-                backgroundColor: '#7b5ca7',
-                boxShadow: 'none'
-              },
-              '&:disabled': {
-                backgroundColor: '#bdbdbd',
-                color: 'white'
-              }
+              px: 3.5,
+              borderRadius: 1.5,
+              boxShadow: '0 2px 8px rgba(139,108,188,0.3)',
+              '&:hover': { backgroundColor: '#7b5ca7', boxShadow: '0 4px 12px rgba(139,108,188,0.4)' },
+              '&:disabled': { backgroundColor: '#c5b4e3', color: 'white', boxShadow: 'none' }
             }}
           >
-            Create Activity
+            {selectedActivity ? 'Save Changes' : 'Create Activity'}
           </Button>
         </DialogActions>
       </Dialog>

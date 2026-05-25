@@ -1,16 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Container,
   Typography,
   Button,
-  Card,
-  CardContent,
-  Grid,
   Paper,
-  IconButton,
   Chip,
   Tooltip,
   Stack,
@@ -22,110 +18,61 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Avatar,
+  TablePagination,
   alpha,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Divider,
-  Alert,
   CircularProgress,
   Snackbar,
+  Alert,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
   LinearProgress,
-  Tabs,
-  Tab,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemButton,
-  Badge,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
+  useTheme,
+  Avatar,
 } from '@mui/material';
 import {
-  Add as AddIcon,
   Search as SearchIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Visibility as ViewIcon,
   EmojiEvents as TrophyIcon,
   AttachMoney as MoneyIcon,
-  Assignment as AssignmentIcon,
-  Schedule as ScheduleIcon,
+  CalendarToday as CalendarIcon,
+  Visibility as ViewIcon,
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
-  Info as InfoIcon,
   Business as BusinessIcon,
   Person as PersonIcon,
-  CalendarToday as CalendarIcon,
-  AccessTime as TimeIcon,
-  TrendingUp as TrendingUpIcon,
-  Assessment as AssessmentIcon,
   Timeline as TimelineIcon,
-  Comment as CommentIcon,
-  AttachFile as AttachFileIcon,
-  Send as SendIcon,
-  Close as CloseIcon,
-  Save as SaveIcon,
+  Assessment as AssessmentIcon,
+  Download as DownloadIcon,
   Refresh as RefreshIcon,
-  FilterList as FilterIcon,
-  Flag as FlagIcon,
+  Close as CloseIcon,
+  TrendingUp as TrendingUpIcon,
   PlayArrow as PlayArrowIcon,
-  Pause as PauseIcon,
-  Stop as StopIcon,
-  FileDownload as DownloadIcon,
-  Upload as UploadIcon,
-  Folder as FolderIcon,
-  ExpandMore as ExpandMoreIcon,
   AccountBalance as AccountBalanceIcon,
+  Assignment as AssignmentIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
 
-const GrantAwardsWon = () => {
+const GrantAwardsWonPage = () => {
+  const theme = useTheme();
+  
+  // State management
+  const [awards, setAwards] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterYear, setFilterYear] = useState('all');
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [awards, setAwards] = useState([]);
-  const [milestones, setMilestones] = useState([]);
-  const [reports, setReports] = useState([]);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [expandedAwards, setExpandedAwards] = useState({});
-
-  // Dialog states
-  const [newMilestoneDialog, setNewMilestoneDialog] = useState(false);
-  const [viewAwardDialog, setViewAwardDialog] = useState(false);
-  const [reportDialog, setReportDialog] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
   const [selectedAward, setSelectedAward] = useState(null);
-
-  // Form states
-  const [milestoneForm, setMilestoneForm] = useState({
-    awardId: '',
-    title: '',
-    description: '',
-    dueDate: '',
-    status: 'pending',
-    deliverables: '',
-    budget: ''
-  });
-
-  const [reportForm, setReportForm] = useState({
-    awardId: '',
-    type: '',
-    period: '',
-    status: '',
-    submissionDate: '',
-    notes: ''
-  });
+  const [viewDialog, setViewDialog] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   // Load data
   useEffect(() => {
@@ -135,13 +82,7 @@ const GrantAwardsWon = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      // Simulate API calls
-      const [awardsRes, milestonesRes, reportsRes] = await Promise.all([
-        fetch(`/api/foundation/grant-awards?search=${searchTerm}&status=${filterStatus}&year=${filterYear}`),
-        fetch('/api/foundation/grant-milestones'),
-        fetch('/api/foundation/grant-reports')
-      ]);
-
+      
       // Mock data for demonstration
       setAwards([
         {
@@ -307,69 +248,6 @@ const GrantAwardsWon = () => {
         }
       ]);
 
-      setMilestones([
-        {
-          id: 1,
-          awardId: 1,
-          title: 'Q1 Progress Report',
-          description: 'Quarterly progress report detailing research activities and preliminary findings',
-          dueDate: '2024-03-31',
-          status: 'pending',
-          deliverables: 'Progress report, financial summary, research data',
-          budget: 625000
-        },
-        {
-          id: 2,
-          awardId: 1,
-          title: 'Algorithm Development Phase 1',
-          description: 'Complete development of initial machine learning algorithms',
-          dueDate: '2024-05-15',
-          status: 'in_progress',
-          deliverables: 'Algorithm documentation, test results, code repository',
-          budget: 300000
-        },
-        {
-          id: 3,
-          awardId: 2,
-          title: 'Platform Beta Release',
-          description: 'Release beta version of the medical education platform',
-          dueDate: '2024-04-15',
-          status: 'pending',
-          deliverables: 'Beta platform, user documentation, testing protocols',
-          budget: 400000
-        }
-      ]);
-
-      setReports([
-        {
-          id: 1,
-          awardId: 1,
-          type: 'Progress Report',
-          period: 'Q4 2023',
-          status: 'submitted',
-          submissionDate: '2024-01-15',
-          notes: 'Report submitted on time with all required documentation'
-        },
-        {
-          id: 2,
-          awardId: 2,
-          type: 'Financial Report',
-          period: 'Q4 2023',
-          status: 'approved',
-          submissionDate: '2024-01-20',
-          notes: 'Financial report approved with no issues'
-        },
-        {
-          id: 3,
-          awardId: 3,
-          type: 'Progress Report',
-          period: 'Q1 2024',
-          status: 'overdue',
-          submissionDate: null,
-          notes: 'Report is overdue - follow up required'
-        }
-      ]);
-
     } catch (error) {
       console.error('Error loading data:', error);
       showSnackbar('Error loading data', 'error');
@@ -382,7 +260,46 @@ const GrantAwardsWon = () => {
     setSnackbar({ open: true, message, severity });
   };
 
+  // Filter and search logic
+  const filteredAwards = useMemo(() => {
+    return awards.filter(award => {
+      // Search filter
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = !searchTerm || 
+        award.title?.toLowerCase().includes(searchLower) ||
+        award.grantor?.toLowerCase().includes(searchLower) ||
+        award.principalInvestigator?.toLowerCase().includes(searchLower) ||
+        award.grantNumber?.toLowerCase().includes(searchLower) ||
+        award.department?.toLowerCase().includes(searchLower);
+
+      // Status filter
+      const matchesStatus = filterStatus === 'all' || award.status === filterStatus;
+
+      // Year filter
+      const awardYear = new Date(award.awardDate).getFullYear().toString();
+      const matchesYear = filterYear === 'all' || awardYear === filterYear;
+
+      return matchesSearch && matchesStatus && matchesYear;
+    });
+  }, [awards, searchTerm, filterStatus, filterYear]);
+
+  // Pagination
+  const paginatedAwards = useMemo(() => {
+    const start = page * rowsPerPage;
+    return filteredAwards.slice(start, start + rowsPerPage);
+  }, [filteredAwards, page, rowsPerPage]);
+
+  // Statistics
+  const stats = useMemo(() => ({
+    total: awards.length,
+    active: awards.filter(a => a.status === 'active').length,
+    completed: awards.filter(a => a.status === 'completed').length,
+    totalValue: awards.reduce((sum, a) => sum + a.totalAmount, 0),
+    totalDisbursed: awards.reduce((sum, a) => sum + a.disbursedAmount, 0),
+  }), [awards]);
+
   const formatCurrency = (amount) => {
+    if (!amount) return '$0';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -420,64 +337,44 @@ const GrantAwardsWon = () => {
     }
   };
 
-  const handleNewMilestone = () => {
-    setMilestoneForm({
-      awardId: '',
-      title: '',
-      description: '',
-      dueDate: '',
-      status: 'pending',
-      deliverables: '',
-      budget: ''
-    });
-    setNewMilestoneDialog(true);
+  const getStatusHex = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'active': return '#22c55e';
+      case 'completed': return '#3b82f6';
+      case 'on_hold': return '#f59e0b';
+      case 'cancelled': return '#ef4444';
+      default: return '#94a3b8';
+    }
   };
 
-  const handleSaveMilestone = async () => {
-    try {
-      setSaving(true);
-      
-      if (!milestoneForm.awardId || !milestoneForm.title || !milestoneForm.dueDate) {
-        showSnackbar('Please fill in all required fields', 'error');
-        return;
-      }
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      showSnackbar('Milestone created successfully!', 'success');
-      setNewMilestoneDialog(false);
-      loadData();
-    } catch (error) {
-      showSnackbar('Error creating milestone', 'error');
-    } finally {
-      setSaving(false);
+  const getProjectStatusHex = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'on_track': return '#22c55e';
+      case 'at_risk': return '#f59e0b';
+      case 'delayed': return '#ef4444';
+      case 'completed': return '#3b82f6';
+      default: return '#94a3b8';
     }
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   const handleViewAward = (award) => {
     setSelectedAward(award);
-    setViewAwardDialog(true);
+    setViewDialog(true);
   };
 
-  const handleAwardAccordion = (awardId) => {
-    setExpandedAwards(prev => ({
-      ...prev,
-      [awardId]: !prev[awardId]
-    }));
+  const handleCloseViewDialog = () => {
+    setViewDialog(false);
+    setSelectedAward(null);
   };
-
-  const handleTabChange = (event, newValue) => {
-    setSelectedTab(newValue);
-  };
-
-  // Calculate statistics
-  const totalAwards = awards.length;
-  const activeAwards = awards.filter(award => award.status === 'active').length;
-  const completedAwards = awards.filter(award => award.status === 'completed').length;
-  const totalValue = awards.reduce((sum, award) => sum + award.totalAmount, 0);
-  const totalDisbursed = awards.reduce((sum, award) => sum + award.disbursedAmount, 0);
-  const overdueReports = reports.filter(report => report.status === 'overdue').length;
 
   if (loading) {
     return (
@@ -504,7 +401,7 @@ const GrantAwardsWon = () => {
 
   return (
     <>
-      {/* Full-width Page Header */}
+      {/* Full-width PageHeader */}
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
           title="Grant Awards Won"
@@ -520,19 +417,19 @@ const GrantAwardsWon = () => {
             <Stack direction="row" spacing={2}>
               <Button
                 variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleNewMilestone}
+                startIcon={<RefreshIcon />}
+                onClick={loadData}
                 sx={{
-                  background: 'rgba(255,255,255,0.15)',
+                  background: 'rgba(255,255,255,0.2)',
                   backdropFilter: 'blur(10px)',
                   border: '1px solid rgba(255,255,255,0.3)',
                   color: 'white',
                   '&:hover': {
-                    background: 'rgba(255,255,255,0.25)',
+                    background: 'rgba(255,255,255,0.3)',
                   },
                 }}
               >
-                Add Milestone
+                Refresh
               </Button>
               <Button
                 variant="outlined"
@@ -546,1292 +443,457 @@ const GrantAwardsWon = () => {
                   },
                 }}
               >
-                Export Report
+                Export
               </Button>
             </Stack>
           }
         />
       </Box>
 
-      {/* Main Content */}
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Key Metrics Cards */}
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 3, 
-          mb: 5, 
-          flexWrap: 'wrap',
-          '& > *': {
-            flex: {
-              xs: '1 1 100%',
-              sm: '1 1 calc(50% - 12px)',
-              md: '1 1 calc(20% - 19.2px)'
-            }
-          }
-        }}>
-          <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: 2, 
-            height: 120,
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-3px)',
-              boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
-            }
-          }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <TrophyIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, color: 'white' }}>
-                {totalAwards}
-              </Typography>
-              <Typography variant="subtitle1" sx={{ fontSize: '1rem', color: 'rgba(255,255,255,0.9)' }}>
-                Total Awards
-              </Typography>
-            </CardContent>
-          </Card>
-          
-          <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: 2, 
-            height: 120,
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-3px)',
-              boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
-            }
-          }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <PlayArrowIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, color: 'white' }}>
-                {activeAwards}
-              </Typography>
-              <Typography variant="subtitle1" sx={{ fontSize: '1rem', color: 'rgba(255,255,255,0.9)' }}>
-                Active Projects
-              </Typography>
-            </CardContent>
-          </Card>
-          
-          <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: 2, 
-            height: 120,
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-3px)',
-              boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
-            }
-          }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <CheckCircleIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, color: 'white' }}>
-                {completedAwards}
-              </Typography>
-              <Typography variant="subtitle1" sx={{ fontSize: '1rem', color: 'rgba(255,255,255,0.9)' }}>
-                Completed
-              </Typography>
-            </CardContent>
-          </Card>
-          
-          <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: 2, 
-            height: 120,
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-3px)',
-              boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
-            }
-          }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <MoneyIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: '1.2rem', md: '1.5rem' }, color: 'white' }}>
-                {formatCurrency(totalValue)}
-              </Typography>
-              <Typography variant="subtitle1" sx={{ fontSize: '1rem', color: 'rgba(255,255,255,0.9)' }}>
-                Total Award Value
-              </Typography>
-            </CardContent>
-          </Card>
-          
-          <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: 2, 
-            height: 120,
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-            color: 'white',
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-3px)',
-              boxShadow: '0 8px 25px rgba(139, 108, 188, 0.3)'
-            }
-          }}>
-            <CardContent sx={{ textAlign: 'center', py: 3 }}>
-              <AccountBalanceIcon sx={{ fontSize: 28, color: 'rgba(255,255,255,0.9)', mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold" sx={{ fontSize: { xs: '1.2rem', md: '1.5rem' }, color: 'white' }}>
-                {formatCurrency(totalDisbursed)}
-              </Typography>
-              <Typography variant="subtitle1" sx={{ fontSize: '1rem', color: 'rgba(255,255,255,0.9)' }}>
-                Funds Received
-              </Typography>
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* Search and Filters */}
-        <Paper sx={{ borderRadius: 3, p: 3, mb: 3 }}>
-          <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3} alignItems="stretch">
-            <Box sx={{ flex: 2 }}>
-              <TextField
-                fullWidth
-                placeholder="Search grants, grantors, or investigators..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                }}
-              />
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 200 }}>
-              <FormControl fullWidth size="medium">
-                <InputLabel>Status Filter</InputLabel>
-                <Select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  label="Status Filter"
-                  sx={{
-                    borderRadius: 2,
-                  }}
+        {/* Compact Summary + Filter Panel */}
+        <Paper sx={{ borderRadius: 3, mb: 3, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', border: '1px solid', borderColor: 'divider' }}>
+          {/* Summary bar */}
+          <Box sx={{ px: 3, py: 1.5, background: 'linear-gradient(135deg, rgba(139,108,188,0.06) 0%, rgba(160,132,209,0.04) 100%)', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
+            {[
+              { label: 'Total Awards', value: stats.total, color: '#8b6cbc', key: null },
+              { label: 'Active', value: stats.active, color: '#22c55e', key: 'active' },
+              { label: 'Completed', value: stats.completed, color: '#3b82f6', key: 'completed' },
+              { label: 'Total Value', value: formatCurrency(stats.totalValue), color: '#059669', key: null },
+              { label: 'Disbursed', value: formatCurrency(stats.totalDisbursed), color: '#6366f1', key: null },
+            ].map((item, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />}
+                <Stack
+                  direction="row" spacing={0.75} alignItems="center"
+                  onClick={item.key ? () => setFilterStatus(filterStatus === item.key ? 'all' : item.key) : undefined}
+                  sx={item.key ? {
+                    cursor: 'pointer', px: 1, py: 0.3, borderRadius: 1,
+                    bgcolor: filterStatus === item.key ? alpha(item.color, 0.1) : 'transparent',
+                    outline: filterStatus === item.key ? `1.5px solid ${alpha(item.color, 0.35)}` : 'none',
+                    transition: 'all 0.15s',
+                    '&:hover': { bgcolor: alpha(item.color, 0.07) }
+                  } : { px: 1, py: 0.3 }}
                 >
-                  <MenuItem value="all">All Status</MenuItem>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="on_hold">On Hold</MenuItem>
-                  <MenuItem value="cancelled">Cancelled</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 150 }}>
-              <FormControl fullWidth size="medium">
-                <InputLabel>Year Filter</InputLabel>
-                <Select
-                  value={filterYear}
-                  onChange={(e) => setFilterYear(e.target.value)}
-                  label="Year Filter"
-                  sx={{
-                    borderRadius: 2,
-                  }}
-                >
-                  <MenuItem value="all">All Years</MenuItem>
-                  <MenuItem value="2024">2024</MenuItem>
-                  <MenuItem value="2023">2023</MenuItem>
-                  <MenuItem value="2022">2022</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Tooltip title="Table View">
-                <IconButton 
-                  sx={{ 
-                    border: '1px solid #e0e0e0',
-                    borderRadius: 2,
-                    backgroundColor: '#f8f9fa',
-                    '&:hover': { backgroundColor: '#e9ecef' }
-                  }}
-                >
-                  <ViewIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Chart View">
-                <IconButton 
-                  sx={{ 
-                    border: '1px solid #e0e0e0',
-                    borderRadius: 2,
-                    backgroundColor: 'white',
-                    '&:hover': { backgroundColor: '#f8f9fa' }
-                  }}
-                >
-                  <AssessmentIcon />
-                </IconButton>
-              </Tooltip>
-            </Box>
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              sx={{
-                borderRadius: 2,
-                px: 3,
-                py: 1.5,
-                borderColor: '#8b6cbc',
-                color: '#8b6cbc',
-                minWidth: 120,
-                '&:hover': {
-                  borderColor: '#7a5ba8',
-                  backgroundColor: 'rgba(139, 108, 188, 0.08)',
-                }
-              }}
-            >
-              Export
-            </Button>
-          </Stack>
-        </Paper>
+                  <Typography variant="caption" sx={{ fontSize: '0.76rem', color: 'text.secondary', fontWeight: 500 }}>{item.label}</Typography>
+                  <Typography variant="caption" sx={{ fontSize: '0.85rem', fontWeight: 800, color: item.color }}>{item.value}</Typography>
+                </Stack>
+              </React.Fragment>
+            ))}
+          </Box>
 
-        {/* Main Content Tabs */}
-        <Paper sx={{ borderRadius: 3, overflow: 'hidden', border: '1px solid', borderColor: 'divider', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-          <Tabs
-            value={selectedTab}
-            onChange={handleTabChange}
-            sx={{
-              backgroundColor: alpha('#8b6cbc', 0.05),
-              p: 4,
-              '& .MuiTab-root': {
-                fontWeight: 600,
-                fontSize: '1rem',
-                '&.Mui-selected': {
-                  color: '#8b6cbc'
-                }
-              },
-              '& .MuiTabs-indicator': {
-                backgroundColor: '#8b6cbc',
-                height: 3
-              }
-            }}
-          >
-            <Tab label="Active Awards" icon={<TrophyIcon />} />
-            <Tab label="Project Management" icon={<AssignmentIcon />} />
-            <Tab label="Financial Tracking" icon={<MoneyIcon />} />
-            <Tab label="Reports & Compliance" icon={<FolderIcon />} />
-          </Tabs>
-
-          {/* Tab Content */}
-          <Box sx={{ p: 4 }}>
-            {selectedTab === 0 && (
-              <Box>
-                {awards.map((award, index) => (
-                  <Accordion
-                    key={award.id}
-                    expanded={expandedAwards[award.id] || false}
-                    onChange={() => handleAwardAccordion(award.id)}
-                    sx={{
-                      mb: 2,
-                      borderRadius: 3,
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      border: `2px solid ${alpha('#8b6cbc', 0.2)}`,
-                      '&:before': { display: 'none' },
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <AccordionSummary
-                      expandIcon={<ExpandMoreIcon sx={{ fontSize: 28, color: '#8b6cbc' }} />}
-                      sx={{ 
-                        backgroundColor: alpha('#8b6cbc', 0.08),
-                        minHeight: 80,
-                        px: 3,
-                        py: 2,
-                        '&:hover': { 
-                          backgroundColor: alpha('#8b6cbc', 0.15),
-                          transform: 'translateY(-1px)',
-                          boxShadow: '0 6px 16px rgba(0,0,0,0.15)'
-                        },
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      <Grid container alignItems="center" spacing={3}>
-                        <Grid item xs={12} md={6}>
-                          <Stack direction="row" alignItems="center" spacing={2}>
-                            <Avatar sx={{ 
-                              bgcolor: '#8b6cbc',
-                              width: 56,
-                              height: 56,
-                              fontSize: '1.2rem',
-                              boxShadow: '0 3px 8px rgba(0,0,0,0.2)',
-                              border: '3px solid white'
-                            }}>
-                              <TrophyIcon />
-                            </Avatar>
-                            <Box>
-                              <Typography variant="h6" sx={{ 
-                                fontWeight: 700, 
-                                color: '#1a1a1a',
-                                mb: 0.5,
-                                letterSpacing: '-0.5px'
-                              }}>
-                                {award.title}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" sx={{ 
-                                fontSize: '0.95rem',
-                                opacity: 0.8,
-                                mb: 1
-                              }}>
-                                {award.grantor}
-                              </Typography>
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                <Chip 
-                                  label={award.status}
-                                  color={getStatusColor(award.status)}
-                                  size="small"
-                                />
-                                <Chip 
-                                  label={award.projectStatus.replace('_', ' ')}
-                                  color={getProjectStatusColor(award.projectStatus)}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              </Stack>
-                            </Box>
-                          </Stack>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                          <Grid container spacing={2}>
-                            <Grid item xs={6}>
-                              <Typography variant="caption" color="text.secondary">
-                                Total Award
-                              </Typography>
-                              <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>
-                                {formatCurrency(award.totalAmount)}
-                              </Typography>
-                            </Grid>
-                            <Grid item xs={6}>
-                              <Typography variant="caption" color="text.secondary">
-                                Progress
-                              </Typography>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <LinearProgress 
-                                  variant="determinate" 
-                                  value={award.completionPercentage} 
-                                  sx={{ 
-                                    flex: 1,
-                                    height: 8, 
-                                    borderRadius: 4,
-                                    backgroundColor: alpha('#8b6cbc', 0.1),
-                                    '& .MuiLinearProgress-bar': {
-                                      backgroundColor: '#8b6cbc',
-                                      borderRadius: 4
-                                    }
-                                  }} 
-                                />
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                                  {award.completionPercentage}%
-                                </Typography>
-                              </Box>
-                            </Grid>
-                          </Grid>
-                        </Grid>
-                      </Grid>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ p: 0 }}>
-                      <Box sx={{ p: 4, backgroundColor: '#fafafa' }}>
-                        <Grid container spacing={4}>
-                          {/* Left Column - Project Details */}
-                          <Grid item xs={12} md={8}>
-                            <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-                              Project Overview
-                            </Typography>
-                            
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 3, lineHeight: 1.6 }}>
-                              {award.description}
-                            </Typography>
-
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-                              Project Objectives
-                            </Typography>
-                            <List dense sx={{ mb: 3 }}>
-                              {award.objectives.map((objective, idx) => (
-                                <ListItem key={idx} sx={{ py: 0.5 }}>
-                                  <ListItemIcon sx={{ minWidth: 32 }}>
-                                    <CheckCircleIcon fontSize="small" sx={{ color: '#8b6cbc' }} />
-                                  </ListItemIcon>
-                                  <ListItemText 
-                                    primary={objective} 
-                                    sx={{ '& .MuiListItemText-primary': { fontSize: '0.9rem' } }}
-                                  />
-                                </ListItem>
-                              ))}
-                            </List>
-
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-                              Key Personnel
-                            </Typography>
-                            <TableContainer component={Paper} sx={{ borderRadius: 2, mb: 3 }}>
-                              <Table size="small">
-                                <TableHead>
-                                  <TableRow sx={{ backgroundColor: alpha('#8b6cbc', 0.05) }}>
-                                    <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
-                                    <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
-                                    <TableCell sx={{ fontWeight: 600 }}>Effort</TableCell>
-                                  </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                  {award.keyPersonnel.map((person, idx) => (
-                                    <TableRow key={idx} hover>
-                                      <TableCell>{person.name}</TableCell>
-                                      <TableCell>{person.role}</TableCell>
-                                      <TableCell>{person.effort}</TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </TableContainer>
-
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-                              Budget Breakdown
-                            </Typography>
-                            <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-                              <Table size="small">
-                                <TableHead>
-                                  <TableRow sx={{ backgroundColor: alpha('#8b6cbc', 0.05) }}>
-                                    <TableCell sx={{ fontWeight: 600 }}>Category</TableCell>
-                                    <TableCell sx={{ fontWeight: 600 }}>Allocated</TableCell>
-                                    <TableCell sx={{ fontWeight: 600 }}>Spent</TableCell>
-                                    <TableCell sx={{ fontWeight: 600 }}>Remaining</TableCell>
-                                    <TableCell sx={{ fontWeight: 600 }}>% Used</TableCell>
-                                  </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                  {award.budgetBreakdown.map((budget, idx) => {
-                                    const percentUsed = ((budget.spent / budget.allocated) * 100).toFixed(1);
-                                    return (
-                                      <TableRow key={idx} hover>
-                                        <TableCell sx={{ fontWeight: 600 }}>{budget.category}</TableCell>
-                                        <TableCell>{formatCurrency(budget.allocated)}</TableCell>
-                                        <TableCell sx={{ color: 'error.main' }}>{formatCurrency(budget.spent)}</TableCell>
-                                        <TableCell sx={{ color: 'success.main' }}>{formatCurrency(budget.remaining)}</TableCell>
-                                        <TableCell>
-                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <LinearProgress 
-                                              variant="determinate" 
-                                              value={parseFloat(percentUsed)} 
-                                              sx={{ 
-                                                flex: 1,
-                                                height: 6, 
-                                                borderRadius: 3,
-                                                backgroundColor: alpha('#8b6cbc', 0.1),
-                                                '& .MuiLinearProgress-bar': {
-                                                  backgroundColor: parseFloat(percentUsed) > 80 ? '#f44336' : '#8b6cbc',
-                                                  borderRadius: 3
-                                                }
-                                              }} 
-                                            />
-                                            <Typography variant="caption" sx={{ fontWeight: 600, minWidth: 40 }}>
-                                              {percentUsed}%
-                                            </Typography>
-                                          </Box>
-                                        </TableCell>
-                                      </TableRow>
-                                    );
-                                  })}
-                                </TableBody>
-                              </Table>
-                            </TableContainer>
-                          </Grid>
-
-                          {/* Right Column - Award Details */}
-                          <Grid item xs={12} md={4}>
-                            <Box sx={{ 
-                              p: 3, 
-                              backgroundColor: alpha('#8b6cbc', 0.05),
-                              borderRadius: 2,
-                              border: `1px solid ${alpha('#8b6cbc', 0.1)}`,
-                              mb: 3
-                            }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-                                Award Information
-                              </Typography>
-                              <Stack spacing={2}>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Grant Number
-                                  </Typography>
-                                  <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: 'monospace' }}>
-                                    {award.grantNumber}
-                                  </Typography>
-                                </Box>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Award Date
-                                  </Typography>
-                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                    {formatDate(award.awardDate)}
-                                  </Typography>
-                                </Box>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Project Period
-                                  </Typography>
-                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                    {formatDate(award.startDate)} - {formatDate(award.endDate)}
-                                  </Typography>
-                                </Box>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Principal Investigator
-                                  </Typography>
-                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                    {award.principalInvestigator}
-                                  </Typography>
-                                </Box>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Department
-                                  </Typography>
-                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                    {award.department}
-                                  </Typography>
-                                </Box>
-                              </Stack>
-                            </Box>
-
-                            <Box sx={{ 
-                              p: 3, 
-                              backgroundColor: alpha('#4caf50', 0.05),
-                              borderRadius: 2,
-                              border: `1px solid ${alpha('#4caf50', 0.1)}`,
-                              mb: 3
-                            }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-                                Financial Summary
-                              </Typography>
-                              <Stack spacing={2}>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Total Award
-                                  </Typography>
-                                  <Typography variant="h6" sx={{ fontWeight: 600, color: 'success.main' }}>
-                                    {formatCurrency(award.totalAmount)}
-                                  </Typography>
-                                </Box>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Funds Received
-                                  </Typography>
-                                  <Typography variant="body1" sx={{ fontWeight: 600, color: 'info.main' }}>
-                                    {formatCurrency(award.disbursedAmount)}
-                                  </Typography>
-                                </Box>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Remaining Balance
-                                  </Typography>
-                                  <Typography variant="body1" sx={{ fontWeight: 600, color: 'warning.main' }}>
-                                    {formatCurrency(award.remainingAmount)}
-                                  </Typography>
-                                </Box>
-                              </Stack>
-                            </Box>
-
-                            <Box sx={{ 
-                              p: 3, 
-                              backgroundColor: alpha('#2196f3', 0.05),
-                              borderRadius: 2,
-                              border: `1px solid ${alpha('#2196f3', 0.1)}`
-                            }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-                                Next Milestone
-                              </Typography>
-                              <Stack spacing={1}>
-                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                  {award.nextMilestone}
-                                </Typography>
-                                <Stack direction="row" alignItems="center" spacing={1}>
-                                  <CalendarIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                                  <Typography variant="body2" sx={{ 
-                                    color: new Date(award.nextMilestoneDate) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) 
-                                      ? 'error.main' : 'text.primary'
-                                  }}>
-                                    Due: {formatDate(award.nextMilestoneDate)}
-                                  </Typography>
-                                </Stack>
-                              </Stack>
-                            </Box>
-                          </Grid>
-                        </Grid>
-
-                        <Divider sx={{ my: 3 }} />
-
-                        <Stack direction="row" spacing={2} justifyContent="flex-end">
-                          <Button
-                            variant="outlined"
-                            startIcon={<ViewIcon />}
-                            onClick={() => handleViewAward(award)}
-                            sx={{
-                              borderColor: '#8b6cbc',
-                              color: '#8b6cbc',
-                              '&:hover': {
-                                borderColor: '#7b5cac',
-                                backgroundColor: alpha('#8b6cbc', 0.08)
-                              }
-                            }}
-                          >
-                            View Details
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            startIcon={<EditIcon />}
-                            sx={{
-                              borderColor: '#8b6cbc',
-                              color: '#8b6cbc',
-                              '&:hover': {
-                                borderColor: '#7b5cac',
-                                backgroundColor: alpha('#8b6cbc', 0.08)
-                              }
-                            }}
-                          >
-                            Update Status
-                          </Button>
-                          <Button
-                            variant="contained"
-                            startIcon={<DownloadIcon />}
-                            sx={{
-                              backgroundColor: '#8b6cbc',
-                              '&:hover': { backgroundColor: '#7b5cac' }
-                            }}
-                          >
-                            Generate Report
-                          </Button>
-                        </Stack>
-                      </Box>
-                    </AccordionDetails>
-                  </Accordion>
-                ))}
-              </Box>
-            )}
-
-            {selectedTab === 1 && (
-              <Box>
-                <Alert severity="info" sx={{ mb: 4, borderRadius: 2 }}>
-                  <Typography variant="body2">
-                    Track project milestones, deliverables, and timeline management for all active awards.
-                  </Typography>
-                </Alert>
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: 4, 
-                  flexWrap: 'wrap',
-                  '& > *': {
-                    flex: {
-                      xs: '1 1 100%',
-                      md: '1 1 calc(50% - 16px)',
-                      lg: '1 1 calc(33.333% - 21.33px)'
-                    }
-                  }
-                }}>
-                  {milestones.map((milestone) => {
-                    const award = awards.find(a => a.id === milestone.awardId);
-                    return (
-                      <Box key={milestone.id}>
-                        <Card sx={{ 
-                          borderRadius: 3, 
-                          boxShadow: 2,
-                          border: `2px solid ${alpha('#8b6cbc', 0.2)}`,
-                          '&:hover': { boxShadow: 4, transform: 'translateY(-2px)' },
-                          transition: 'all 0.3s ease'
-                        }}>
-                          <CardContent sx={{ p: 3 }}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
-                              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
-                                {milestone.title}
-                              </Typography>
-                              <Chip
-                                label={milestone.status}
-                                color={milestone.status === 'completed' ? 'success' : milestone.status === 'in_progress' ? 'warning' : 'default'}
-                                size="small"
-                              />
-                            </Stack>
-                            
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                              Award: {award?.title}
-                            </Typography>
-
-                            <Typography variant="body2" sx={{ mb: 2, lineHeight: 1.5 }}>
-                              {milestone.description}
-                            </Typography>
-
-                            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-                              <CalendarIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                              <Typography variant="body2" sx={{ 
-                                fontWeight: 600,
-                                color: new Date(milestone.dueDate) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ? 'error.main' : 'text.primary'
-                              }}>
-                                Due: {formatDate(milestone.dueDate)}
-                              </Typography>
-                            </Stack>
-
-                            {milestone.budget && (
-                              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 3 }}>
-                                <MoneyIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                                <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main' }}>
-                                  Budget: {formatCurrency(milestone.budget)}
-                                </Typography>
-                              </Stack>
-                            )}
-
-                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                              Deliverables
-                            </Typography>
-                            <Typography variant="body2" sx={{ mb: 3, fontSize: '0.85rem' }}>
-                              {milestone.deliverables}
-                            </Typography>
-
-                            <Stack direction="row" spacing={1} justifyContent="flex-end">
-                              <Button
-                                variant="outlined"
-                                size="small"
-                                startIcon={<EditIcon />}
-                                sx={{
-                                  borderColor: '#8b6cbc',
-                                  color: '#8b6cbc',
-                                  '&:hover': {
-                                    borderColor: '#7b5cac',
-                                    backgroundColor: alpha('#8b6cbc', 0.08)
-                                  }
-                                }}
-                              >
-                                Update
-                              </Button>
-                              {milestone.status !== 'completed' && (
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  startIcon={<CheckCircleIcon />}
-                                  sx={{
-                                    backgroundColor: '#8b6cbc',
-                                    '&:hover': { backgroundColor: '#7b5cac' }
-                                  }}
-                                >
-                                  Complete
-                                </Button>
-                              )}
-                            </Stack>
-                          </CardContent>
-                        </Card>
-                      </Box>
-                    );
-                  })}
-                </Box>
-              </Box>
-            )}
-
-            {selectedTab === 2 && (
-              <Box>
-                <Alert severity="info" sx={{ mb: 4, borderRadius: 2 }}>
-                  <Typography variant="body2">
-                    Monitor financial performance, budget utilization, and funding disbursements across all awarded grants.
-                  </Typography>
-                </Alert>
-                
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: 4, 
-                    flexWrap: 'wrap',
-                    '& > *': {
-                      flex: {
-                        xs: '1 1 100%',
-                        md: '1 1 calc(50% - 16px)'
-                      }
-                    }
-                  }}>
-                    <Card sx={{ borderRadius: 3, boxShadow: 2, p: 4, height: 400, border: '1px solid', borderColor: 'divider' }}>
-                      <Typography variant="h6" sx={{ mb: 4, fontSize: '1.25rem' }}>
-                        Budget Utilization Overview
-                      </Typography>
-                      <Box sx={{ 
-                        height: 300, 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        backgroundColor: alpha('#8b6cbc', 0.05),
-                        borderRadius: 2
-                      }}>
-                        <AssessmentIcon sx={{ fontSize: 120, color: alpha('#8b6cbc', 0.3) }} />
-                      </Box>
-                    </Card>
-
-                    <Card sx={{ borderRadius: 3, boxShadow: 2, p: 4, height: 400, border: '1px solid', borderColor: 'divider' }}>
-                      <Typography variant="h6" sx={{ mb: 4, fontSize: '1.25rem' }}>
-                        Funding Timeline
-                      </Typography>
-                      <Box sx={{ 
-                        height: 300, 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        backgroundColor: alpha('#8b6cbc', 0.05),
-                        borderRadius: 2
-                      }}>
-                        <TimelineIcon sx={{ fontSize: 120, color: alpha('#8b6cbc', 0.3) }} />
-                      </Box>
-                    </Card>
-                  </Box>
-
-                  <Box>
-                    <Card sx={{ borderRadius: 3, boxShadow: 2, p: 4, border: '1px solid', borderColor: 'divider' }}>
-                      <Typography variant="h6" sx={{ mb: 4, fontSize: '1.25rem' }}>
-                        Financial Summary by Award
-                      </Typography>
-                      <TableContainer>
-                        <Table>
-                          <TableHead>
-                            <TableRow sx={{ backgroundColor: alpha('#8b6cbc', 0.05) }}>
-                              <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Award Title</TableCell>
-                              <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Total Amount</TableCell>
-                              <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Received</TableCell>
-                              <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Remaining</TableCell>
-                              <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Utilization</TableCell>
-                              <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Status</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {awards.map((award) => {
-                              const utilization = ((award.disbursedAmount / award.totalAmount) * 100).toFixed(1);
-                              return (
-                                <TableRow key={award.id} hover>
-                                  <TableCell>
-                                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                      {award.title}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      {award.grantor}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                                      {formatCurrency(award.totalAmount)}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'info.main' }}>
-                                      {formatCurrency(award.disbursedAmount)}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'warning.main' }}>
-                                      {formatCurrency(award.remainingAmount)}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                      <LinearProgress 
-                                        variant="determinate" 
-                                        value={parseFloat(utilization)} 
-                                        sx={{ 
-                                          flex: 1,
-                                          height: 8, 
-                                          borderRadius: 4,
-                                          backgroundColor: alpha('#8b6cbc', 0.1),
-                                          '& .MuiLinearProgress-bar': {
-                                            backgroundColor: '#8b6cbc',
-                                            borderRadius: 4
-                                          }
-                                        }} 
-                                      />
-                                      <Typography variant="caption" sx={{ fontWeight: 600, minWidth: 40 }}>
-                                        {utilization}%
-                                      </Typography>
-                                    </Box>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Chip
-                                      label={award.status}
-                                      color={getStatusColor(award.status)}
-                                      size="small"
-                                    />
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    </Card>
-                  </Box>
-                </Box>
-              </Box>
-            )}
-
-            {selectedTab === 3 && (
-              <Box>
-                <Alert severity={overdueReports > 0 ? 'warning' : 'info'} sx={{ mb: 4, borderRadius: 2 }}>
-                  <Typography variant="body2">
-                    {overdueReports > 0 
-                      ? `${overdueReports} reports are overdue. Please submit them as soon as possible to maintain compliance.`
-                      : 'All reports are up to date. Monitor upcoming deadlines to maintain compliance requirements.'
-                    }
-                  </Typography>
-                </Alert>
-                
-                <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 2, border: '1px solid', borderColor: 'divider' }}>
-                  <Table>
-                    <TableHead>
-                      <TableRow sx={{ backgroundColor: alpha('#8b6cbc', 0.05) }}>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Award</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Report Type</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Period</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Status</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Submission Date</TableCell>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {reports.map((report) => {
-                        const award = awards.find(a => a.id === report.awardId);
-                        return (
-                          <TableRow key={report.id} hover>
-                            <TableCell>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                {award?.title}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {award?.grantNumber}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Chip 
-                                label={report.type} 
-                                size="small"
-                                sx={{
-                                  backgroundColor: alpha('#8b6cbc', 0.1),
-                                  color: '#8b6cbc',
-                                  fontWeight: 500
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell>{report.period}</TableCell>
-                            <TableCell>
-                              <Chip
-                                label={report.status}
-                                color={
-                                  report.status === 'approved' ? 'success' : 
-                                  report.status === 'submitted' ? 'info' : 
-                                  report.status === 'overdue' ? 'error' : 'warning'
-                                }
-                                size="small"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2">
-                                {report.submissionDate ? formatDate(report.submissionDate) : 'Not submitted'}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Stack direction="row" spacing={1}>
-                                <Tooltip title="View Report">
-                                  <IconButton size="small" sx={{ color: '#8b6cbc' }}>
-                                    <ViewIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Download">
-                                  <IconButton size="small" sx={{ color: '#2196f3' }}>
-                                    <DownloadIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                                {report.status === 'overdue' && (
-                                  <Tooltip title="Submit Report">
-                                    <IconButton size="small" sx={{ color: '#4caf50' }}>
-                                      <UploadIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                )}
-                              </Stack>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Box>
+          {/* Filter row */}
+          <Box sx={{ px: 3, py: 2, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+            <TextField
+              size="small"
+              placeholder="Search by title, grantor, PI, grant number, department..."
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setPage(0); }}
+              InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} /></InputAdornment> }}
+              sx={{ flex: '1 1 260px', minWidth: 200, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            />
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <Select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }} displayEmpty sx={{ borderRadius: 2 }}>
+                <MenuItem value="all">All Status</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+                <MenuItem value="on_hold">On Hold</MenuItem>
+                <MenuItem value="cancelled">Cancelled</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <Select value={filterYear} onChange={(e) => { setFilterYear(e.target.value); setPage(0); }} displayEmpty sx={{ borderRadius: 2 }}>
+                <MenuItem value="all">All Years</MenuItem>
+                <MenuItem value="2024">2024</MenuItem>
+                <MenuItem value="2023">2023</MenuItem>
+                <MenuItem value="2022">2022</MenuItem>
+              </Select>
+            </FormControl>
+            {(searchTerm || filterStatus !== 'all' || filterYear !== 'all') && (
+              <Button size="small" variant="outlined"
+                onClick={() => { setSearchTerm(''); setFilterStatus('all'); setFilterYear('all'); setPage(0); }}
+                sx={{ borderColor: alpha('#8b6cbc', 0.4), color: '#8b6cbc', borderRadius: 2, whiteSpace: 'nowrap' }}
+              >
+                Clear
+              </Button>
             )}
           </Box>
+          <Typography variant="caption" sx={{ px: 3, pb: 1.5, display: 'block', color: 'text.secondary' }}>
+            Showing <strong>{filteredAwards.length}</strong> of <strong>{awards.length}</strong> awards
+            {(searchTerm || filterStatus !== 'all' || filterYear !== 'all') && ' \u2014 filters active'}
+          </Typography>
+        </Paper>
+
+        {/* Awards Table */}
+        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+          <TableContainer>
+            <Table>
+              <TableHead sx={{ bgcolor: 'primary.main' }}>
+                <TableRow>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Grant Title</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Grantor</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Principal Investigator</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Award Amount</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Period</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Progress</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {paginatedAwards.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
+                      <Typography variant="body1" color="text.secondary">
+                        No awards found matching your filters
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedAwards.map((award, index) => (
+                    <TableRow 
+                      key={award.id}
+                      hover
+                      sx={{ 
+                        '&:nth-of-type(odd)': { bgcolor: alpha('#8b6cbc', 0.02) },
+                        '&:hover': { bgcolor: alpha('#8b6cbc', 0.05) }
+                      }}
+                    >
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50', mb: 0.5 }}>
+                          {award.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {award.grantNumber} • {award.department}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <BusinessIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                          <Typography variant="body2">{award.grantor}</Typography>
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                          <Typography variant="body2">{award.principalInvestigator}</Typography>
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {formatCurrency(award.totalAmount)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatCurrency(award.disbursedAmount)} received
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <CalendarIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                          <Typography variant="body2">{award.projectPeriod}</Typography>
+                        </Stack>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDate(award.startDate)} - {formatDate(award.endDate)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ width: '100%', mb: 0.5 }}>
+                          <LinearProgress 
+                            variant="determinate" 
+                            value={award.completionPercentage}
+                            sx={{ 
+                              height: 6, 
+                              borderRadius: 3,
+                              bgcolor: alpha('#e0e0e0', 0.3),
+                              '& .MuiLinearProgress-bar': {
+                                bgcolor: award.projectStatus === 'at_risk' ? '#ff9800' : '#4caf50',
+                                borderRadius: 3
+                              }
+                            }}
+                          />
+                        </Box>
+                        <Typography variant="caption" color="text.secondary">
+                          {award.completionPercentage}% complete
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Stack spacing={0.5}>
+                          <Chip
+                            label={award.status}
+                            color={getStatusColor(award.status)}
+                            size="small"
+                          />
+                          <Chip
+                            label={award.projectStatus.replace('_', ' ')}
+                            color={getProjectStatusColor(award.projectStatus)}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title="View Details">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleViewAward(award)}
+                            sx={{ 
+                              color: '#8b6cbc',
+                              '&:hover': { bgcolor: alpha('#8b6cbc', 0.1) }
+                            }}
+                          >
+                            <ViewIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <TablePagination
+            component="div"
+            count={filteredAwards.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 20, 50, 100]}
+            sx={{
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              bgcolor: alpha('#8b6cbc', 0.02)
+            }}
+          />
         </Paper>
       </Container>
 
-      {/* New Milestone Dialog */}
-      <Dialog 
-        open={newMilestoneDialog} 
-        onClose={() => setNewMilestoneDialog(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
-          }
-        }}
-      >
-        <DialogTitle sx={{
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-          color: 'white',
-          py: 3
-        }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <FlagIcon sx={{ fontSize: 28 }} />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Add New Milestone
-            </Typography>
-          </Stack>
-        </DialogTitle>
-        
-        <DialogContent sx={{ p: 4 }}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Award *</InputLabel>
-                <Select
-                  value={milestoneForm.awardId}
-                  onChange={(e) => setMilestoneForm(prev => ({ ...prev, awardId: e.target.value }))}
-                  label="Award *"
-                  sx={{ borderRadius: 2 }}
-                >
-                  {awards.filter(award => award.status === 'active').map((award) => (
-                    <MenuItem key={award.id} value={award.id}>
-                      {award.title} - {award.grantor}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Milestone Title *"
-                value={milestoneForm.title}
-                onChange={(e) => setMilestoneForm(prev => ({ ...prev, title: e.target.value }))}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="Description"
-                value={milestoneForm.description}
-                onChange={(e) => setMilestoneForm(prev => ({ ...prev, description: e.target.value }))}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Due Date *"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-                value={milestoneForm.dueDate}
-                onChange={(e) => setMilestoneForm(prev => ({ ...prev, dueDate: e.target.value }))}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={milestoneForm.status}
-                  onChange={(e) => setMilestoneForm(prev => ({ ...prev, status: e.target.value }))}
-                  label="Status"
-                  sx={{ borderRadius: 2 }}
-                >
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="in_progress">In Progress</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                multiline
-                rows={2}
-                label="Deliverables"
-                value={milestoneForm.deliverables}
-                onChange={(e) => setMilestoneForm(prev => ({ ...prev, deliverables: e.target.value }))}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Associated Budget"
-                type="number"
-                value={milestoneForm.budget}
-                onChange={(e) => setMilestoneForm(prev => ({ ...prev, budget: e.target.value }))}
-                InputProps={{
-                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                }}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        
-        <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button 
-            onClick={() => setNewMilestoneDialog(false)}
-            variant="outlined"
-            disabled={saving}
-            sx={{ borderRadius: 2, borderColor: '#8b6cbc', color: '#8b6cbc' }}
-          >
-            Cancel
-          </Button>
-          <Button 
-            variant="contained" 
-            onClick={handleSaveMilestone}
-            disabled={saving || !milestoneForm.awardId || !milestoneForm.title || !milestoneForm.dueDate}
-            startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
-            sx={{ 
-              backgroundColor: '#8b6cbc',
-              borderRadius: 2,
-              '&:hover': { backgroundColor: '#7b5cac' }
-            }}
-          >
-            {saving ? 'Creating...' : 'Create Milestone'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
       {/* View Award Dialog */}
-      <Dialog 
-        open={viewAwardDialog} 
-        onClose={() => setViewAwardDialog(false)}
+      <Dialog
+        open={viewDialog}
+        onClose={handleCloseViewDialog}
         maxWidth="lg"
         fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
-          }
-        }}
+        disableScrollLock
+        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
       >
-        <DialogTitle sx={{
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
-          color: 'white',
-          py: 3,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <TrophyIcon sx={{ fontSize: 28 }} />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Award Details
-            </Typography>
-          </Stack>
-          <IconButton onClick={() => setViewAwardDialog(false)} sx={{ color: 'white' }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        
-        <DialogContent sx={{ p: 4 }}>
-          {selectedAward && (
-            <Grid container spacing={4}>
-              <Grid item xs={12}>
-                <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
-                  {selectedAward.title}
-                </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                  {selectedAward.grantor}
-                </Typography>
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                  Grant Number
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600, mb: 2, fontFamily: 'monospace' }}>
-                  {selectedAward.grantNumber}
-                </Typography>
-                
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                  Principal Investigator
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>
-                  {selectedAward.principalInvestigator}
-                </Typography>
-                
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                  Department
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>
-                  {selectedAward.department}
-                </Typography>
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                  Award Amount
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 600, color: 'success.main', mb: 2 }}>
-                  {formatCurrency(selectedAward.totalAmount)}
-                </Typography>
-                
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                  Project Period
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>
-                  {formatDate(selectedAward.startDate)} - {formatDate(selectedAward.endDate)}
-                </Typography>
-                
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                  Current Status
-                </Typography>
-                <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-                  <Chip 
-                    label={selectedAward.status} 
-                    color={getStatusColor(selectedAward.status)}
-                  />
-                  <Chip 
-                    label={selectedAward.projectStatus.replace('_', ' ')} 
-                    color={getProjectStatusColor(selectedAward.projectStatus)}
-                    variant="outlined"
-                  />
+        {selectedAward && (
+          <>
+            {/* Gradient Hero Header */}
+            <Box sx={{ background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)', px: 3, pt: 3, pb: 2.5, color: 'white' }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                    <TrophyIcon sx={{ fontSize: 18, opacity: 0.85 }} />
+                    <Typography variant="caption" sx={{ opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.72rem' }}>
+                      Grant Award Details
+                    </Typography>
+                  </Stack>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, lineHeight: 1.25 }}>
+                    {selectedAward.title}
+                  </Typography>
+                  <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                    <Chip label={selectedAward.status} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 700, backdropFilter: 'blur(4px)', height: 22, fontSize: '0.72rem', textTransform: 'capitalize' }} />
+                    <Chip label={selectedAward.projectStatus.replace(/_/g, ' ')} size="small" variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.5)', color: 'white', fontWeight: 600, height: 22, fontSize: '0.72rem', textTransform: 'capitalize' }} />
+                    <Chip label={selectedAward.grantNumber} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', height: 22, fontSize: '0.70rem' }} />
+                  </Stack>
+                </Box>
+                <IconButton onClick={handleCloseViewDialog} sx={{ color: 'white', mt: -0.5 }}>
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+            </Box>
+
+            {/* Metrics Strip */}
+            <Box sx={{ display: 'flex', borderBottom: '1px solid', borderColor: 'divider', bgcolor: alpha('#8b6cbc', 0.02), flexWrap: 'wrap' }}>
+              {[
+                { label: 'Total Award', value: formatCurrency(selectedAward.totalAmount), color: '#059669' },
+                { label: 'Disbursed', value: formatCurrency(selectedAward.disbursedAmount), color: '#3b82f6' },
+                { label: 'Remaining', value: formatCurrency(selectedAward.remainingAmount), color: '#8b5cf6' },
+                { label: 'Period', value: selectedAward.projectPeriod, color: '#1e293b' },
+                { label: 'Completion', value: `${selectedAward.completionPercentage}%`, color: getProjectStatusHex(selectedAward.projectStatus) },
+              ].map((m, i) => (
+                <Box key={i} sx={{ flex: '1 1 0', px: 2, py: 1.5, borderRight: i < 4 ? '1px solid' : 'none', borderColor: 'divider', textAlign: 'center', minWidth: 100 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>{m.label}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 800, color: m.color, fontSize: '0.95rem', mt: 0.25 }}>{m.value}</Typography>
+                </Box>
+              ))}
+            </Box>
+
+            <DialogContent sx={{ p: 3 }}>
+              {/* Two-column body */}
+              <Box sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap', '& > *': { flex: '1 1 280px' } }}>
+                {/* Left — Description + Objectives */}
+                <Stack spacing={2.5}>
+                  <Box sx={{ p: 2, bgcolor: alpha('#8b6cbc', 0.04), borderRadius: 2, border: `1px solid ${alpha('#8b6cbc', 0.1)}` }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', mb: 0.75 }}>Description</Typography>
+                    <Typography variant="body2" sx={{ lineHeight: 1.65, color: '#374151' }}>{selectedAward.description}</Typography>
+                  </Box>
+
+                  {selectedAward.objectives?.length > 0 && (
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', mb: 1 }}>Project Objectives</Typography>
+                      <Stack spacing={0.85}>
+                        {selectedAward.objectives.map((obj, i) => (
+                          <Box key={i} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                            <Box sx={{ width: 20, height: 20, borderRadius: '50%', bgcolor: alpha('#8b6cbc', 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, mt: 0.15 }}>
+                              <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#8b6cbc' }}>{i + 1}</Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ lineHeight: 1.55 }}>{obj}</Typography>
+                          </Box>
+                        ))}
+                      </Stack>
+                    </Box>
+                  )}
                 </Stack>
-              </Grid>
-              
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                  Project Description
-                </Typography>
-                <Typography variant="body2" sx={{ 
-                  p: 2, 
-                  backgroundColor: alpha('#8b6cbc', 0.05),
-                  borderRadius: 2,
-                  border: `1px solid ${alpha('#8b6cbc', 0.1)}`,
-                  lineHeight: 1.6
-                }}>
-                  {selectedAward.description}
-                </Typography>
-              </Grid>
-            </Grid>
-          )}
-        </DialogContent>
+
+                {/* Right — Grantor/Team + Timeline */}
+                <Stack spacing={2.5}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', mb: 1 }}>Grantor & Team</Typography>
+                    <Stack spacing={1.5}>
+                      {[
+                        { icon: <BusinessIcon sx={{ fontSize: 15 }} />, label: 'Grantor', value: selectedAward.grantor },
+                        { icon: <PersonIcon sx={{ fontSize: 15 }} />, label: 'Principal Investigator', value: selectedAward.principalInvestigator },
+                        { icon: <PersonIcon sx={{ fontSize: 15 }} />, label: 'Co-Principal Investigator', value: selectedAward.coPrincipalInvestigator },
+                        { icon: <AssignmentIcon sx={{ fontSize: 15 }} />, label: 'Department', value: selectedAward.department },
+                      ].map(({ icon, label, value }) => (
+                        <Box key={label} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                          <Box sx={{ color: '#8b6cbc', mt: 0.15, flexShrink: 0 }}>{icon}</Box>
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', lineHeight: 1 }}>{label}</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>{value}</Typography>
+                          </Box>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', mb: 1 }}>Timeline</Typography>
+                    <Stack spacing={0.85}>
+                      {[
+                        { label: 'Award Date', value: formatDate(selectedAward.awardDate) },
+                        { label: 'Start Date', value: formatDate(selectedAward.startDate) },
+                        { label: 'End Date', value: formatDate(selectedAward.endDate) },
+                        { label: 'Next Milestone', value: selectedAward.nextMilestone },
+                        { label: 'Milestone Due', value: formatDate(selectedAward.nextMilestoneDate) },
+                      ].map(({ label, value }) => (
+                        <Box key={label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem', flexShrink: 0 }}>{label}</Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.78rem', textAlign: 'right' }}>{value}</Typography>
+                        </Box>
+                      ))}
+                    </Stack>
+                    <Box sx={{ mt: 1.5 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>Overall Progress</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: getProjectStatusHex(selectedAward.projectStatus), fontSize: '0.78rem' }}>{selectedAward.completionPercentage}%</Typography>
+                      </Box>
+                      <LinearProgress value={selectedAward.completionPercentage} variant="determinate" sx={{ height: 7, borderRadius: 4, bgcolor: alpha('#8b6cbc', 0.1), '& .MuiLinearProgress-bar': { bgcolor: getProjectStatusHex(selectedAward.projectStatus), borderRadius: 4 } }} />
+                    </Box>
+                  </Box>
+                </Stack>
+              </Box>
+
+              {/* Budget Breakdown */}
+              {selectedAward.budgetBreakdown?.length > 0 && (
+                <Box sx={{ mb: 2.5 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', mb: 1 }}>Budget Breakdown</Typography>
+                  <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: '#8b6cbc' }}>
+                          <TableCell sx={{ color: 'white', fontWeight: 600 }}>Category</TableCell>
+                          <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>Allocated</TableCell>
+                          <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>Spent</TableCell>
+                          <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>Remaining</TableCell>
+                          <TableCell sx={{ color: 'white', fontWeight: 600, minWidth: 110 }}>Usage</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {selectedAward.budgetBreakdown.map((item, idx) => {
+                          const pct = item.allocated > 0 ? Math.round((item.spent / item.allocated) * 100) : 0;
+                          const barColor = pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#22c55e';
+                          return (
+                            <TableRow key={idx} hover sx={{ '&:nth-of-type(odd)': { bgcolor: alpha('#8b6cbc', 0.02) } }}>
+                              <TableCell sx={{ fontWeight: 600, fontSize: '0.84rem' }}>{item.category}</TableCell>
+                              <TableCell align="right" sx={{ fontSize: '0.84rem' }}>{formatCurrency(item.allocated)}</TableCell>
+                              <TableCell align="right" sx={{ fontSize: '0.84rem' }}>{formatCurrency(item.spent)}</TableCell>
+                              <TableCell align="right" sx={{ fontSize: '0.84rem', fontWeight: item.remaining === 0 ? 700 : 400, color: item.remaining === 0 ? '#22c55e' : 'text.primary' }}>{formatCurrency(item.remaining)}</TableCell>
+                              <TableCell>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <LinearProgress value={pct} variant="determinate" sx={{ flex: 1, height: 5, borderRadius: 3, bgcolor: alpha('#8b6cbc', 0.1), '& .MuiLinearProgress-bar': { bgcolor: barColor, borderRadius: 3 } }} />
+                                  <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.72rem', minWidth: 28, textAlign: 'right', color: barColor }}>{pct}%</Typography>
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              )}
+
+              {/* Key Personnel */}
+              {selectedAward.keyPersonnel?.length > 0 && (
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', mb: 1 }}>Key Personnel</Typography>
+                  <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: '#8b6cbc' }}>
+                          <TableCell sx={{ color: 'white', fontWeight: 600 }}>Name</TableCell>
+                          <TableCell sx={{ color: 'white', fontWeight: 600 }}>Role</TableCell>
+                          <TableCell align="right" sx={{ color: 'white', fontWeight: 600 }}>Effort</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {selectedAward.keyPersonnel.map((person, idx) => (
+                          <TableRow key={idx} hover sx={{ '&:nth-of-type(odd)': { bgcolor: alpha('#8b6cbc', 0.02) } }}>
+                            <TableCell>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Avatar sx={{ width: 26, height: 26, fontSize: '0.65rem', bgcolor: '#8b6cbc', flexShrink: 0 }}>{person.name.charAt(0)}</Avatar>
+                                <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.84rem' }}>{person.name}</Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell><Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.84rem' }}>{person.role}</Typography></TableCell>
+                            <TableCell align="right">
+                              <Chip label={person.effort} size="small" sx={{ bgcolor: alpha('#8b6cbc', 0.1), color: '#8b6cbc', fontWeight: 700, height: 20, fontSize: '0.72rem', '& .MuiChip-label': { px: 0.75 } }} />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              )}
+            </DialogContent>
+
+            <DialogActions sx={{ px: 3, py: 2, bgcolor: alpha('#8b6cbc', 0.03), borderTop: '1px solid', borderColor: 'divider' }}>
+              <Button onClick={handleCloseViewDialog} variant="outlined" sx={{ borderColor: alpha('#8b6cbc', 0.35), color: '#8b6cbc', borderRadius: 2 }}>
+                Close
+              </Button>
+              <Button variant="contained" startIcon={<DownloadIcon />} sx={{ bgcolor: '#8b6cbc', borderRadius: 2, '&:hover': { bgcolor: '#7a5caa' } }}>
+                Export Report
+              </Button>
+            </DialogActions>
+          </>
+        )}
       </Dialog>
 
-      {/* Snackbar for notifications */}
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
         <Alert 
           onClose={() => setSnackbar({ ...snackbar, open: false })} 
-          severity={snackbar.severity} 
+          severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
           {snackbar.message}
@@ -1841,4 +903,4 @@ const GrantAwardsWon = () => {
   );
 };
 
-export default GrantAwardsWon;
+export default GrantAwardsWonPage;

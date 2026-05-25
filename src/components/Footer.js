@@ -27,6 +27,8 @@ const Footer = () => {
     { name: 'About Us', href: '/about' },
     { name: 'Features', href: '#' },
     { name: 'Documentation', href: '/docs/index.html' },
+    { name: 'Frequently Asked Questions', href: '/faq' },
+    { name: 'HospitiumRIS Brandbook', href: '/handbook/hospitiumris-brandbook.pdf', target: '_blank' },
   ];
 
 
@@ -124,6 +126,8 @@ const Footer = () => {
                 <Link
                   key={link.name}
                   href={link.href}
+                  target={link.target || undefined}
+                  rel={link.target === '_blank' ? 'noopener noreferrer' : undefined}
                   sx={{
                     display: 'block',
                     color: '#a0aec0',

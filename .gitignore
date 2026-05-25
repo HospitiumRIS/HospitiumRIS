@@ -37,6 +37,12 @@ env
 # vercel
 .vercel
 
+# user-generated content and runtime logs (preserved on server)
+/uploads/proposals/
+/uploads/ethics/
+/uploads/training/materials/
+/logs/*.log
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

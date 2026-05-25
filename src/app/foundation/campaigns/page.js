@@ -53,7 +53,9 @@ import {
   VisibilityOff as VisibilityOffIcon,
   FilterList as FilterListIcon,
   Refresh as RefreshIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Delete as DeleteIcon,
+  WarningAmber as WarningAmberIcon
 } from '@mui/icons-material';
 
 import PageHeader from '@/components/common/PageHeader';
@@ -130,6 +132,7 @@ export default function CampaignManagement() {
   // Modal states
   const [calendarModal, setCalendarModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState({ open: false, category: null });
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -353,6 +356,10 @@ export default function CampaignManagement() {
   const filteredCategories = useMemo(() => {
     let filtered = categories;
     
+    if (debouncedCategoryFilter) {
+      filtered = filtered.filter(category => category.id === debouncedCategoryFilter);
+    }
+    
     if (debouncedSearchTerm) {
       const searchLower = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(category => 
@@ -362,7 +369,7 @@ export default function CampaignManagement() {
     }
     
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
-  }, [categories, debouncedSearchTerm]);
+  }, [categories, debouncedSearchTerm, debouncedCategoryFilter]);
 
   const filteredCampaigns = useMemo(() => {
     let filtered = campaigns;
@@ -423,8 +430,13 @@ export default function CampaignManagement() {
 
   const getActivityIcon = useCallback((type) => {
     const activityType = activityTypes.find(t => t.value === type);
-    const emoji = activityType ? '📋' : '📅';
-    return <span>{emoji}</span>;
+    const color = activityType?.color || '#8b6cbc';
+    const initial = (activityType?.label || type || '?').charAt(0).toUpperCase();
+    return (
+      <Typography variant="caption" sx={{ fontWeight: 700, color, fontSize: '0.8rem', lineHeight: 1 }}>
+        {initial}
+      </Typography>
+    );
   }, []);
 
   // Category icons are now letter-based initials
@@ -436,6 +448,26 @@ export default function CampaignManagement() {
       [categoryId]: !prev[categoryId]
     }));
   }, []);
+
+  const handleDeleteCategory = useCallback(async () => {
+    const category = deleteCategoryConfirm.category;
+    if (!category) return;
+    const prevCategories = categories;
+    setCategories(prev => prev.filter(c => c.id !== category.id));
+    setDeleteCategoryConfirm({ open: false, category: null });
+    try {
+      const res = await fetch(`/api/foundation/categories/${category.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('campaigns_data_v2');
+        localStorage.removeItem('campaigns_data_timestamp_v2');
+      }
+      setSnackbar({ open: true, message: `"${category.name}" deleted successfully`, severity: 'success' });
+    } catch (error) {
+      setCategories(prevCategories);
+      setSnackbar({ open: true, message: 'Failed to delete category', severity: 'error' });
+    }
+  }, [deleteCategoryConfirm, categories]);
 
   const handleCampaignToggle = useCallback((campaignId) => {
     setExpandedCampaigns(prev => ({
@@ -911,7 +943,7 @@ export default function CampaignManagement() {
               mb: 2,
               border: `2px dashed ${alpha(color, 0.3)}`
             }}>
-              <Typography sx={{ fontSize: '1.5rem', opacity: 0.5 }}>📋</Typography>
+              <TimelineIcon sx={{ fontSize: 22, color, opacity: 0.5 }} />
             </Box>
             <Typography variant="body2" sx={{ 
               color: 'text.secondary', 
@@ -1512,12 +1544,12 @@ export default function CampaignManagement() {
             width: '48px', 
             height: '48px', 
             borderRadius: '12px', 
-            backgroundColor: '#e0e0e0',
+            backgroundColor: '#8b6cbc',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            📊
+            <span style={{ color: 'white', fontSize: '22px', fontWeight: '700' }}>C</span>
           </div>
           <div>
             <div style={{ fontSize: '32px', fontWeight: '600', marginBottom: '4px' }}>
@@ -1717,6 +1749,11 @@ export default function CampaignManagement() {
           </Box>
         </Collapse>
 
+        {/* Statistics Overview */}
+        <Suspense fallback={<Box sx={{ height: 100, mb: 4 }} />}>
+          <LazyStatisticsCards statistics={statistics} loading={loading} />
+        </Suspense>
+
         {/* Categories and Campaigns */}
         <Card sx={{ 
           borderRadius: 4, 
@@ -1744,100 +1781,86 @@ export default function CampaignManagement() {
               pointerEvents: 'none'
             }} />
             
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ position: 'relative', zIndex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1, flexWrap: 'wrap', gap: 2 }}>
               <Box>
                 <Typography variant="h5" sx={{ 
-                  fontWeight: 700, 
-                  mb: 1,
+                  fontWeight: 700,
+                  mb: 0.5,
                   letterSpacing: '-0.5px',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  color: 'white'
                 }}>
                   Campaign Categories & Initiatives
                 </Typography>
                 <Typography variant="body2" sx={{ 
-                  opacity: 0.9, 
-                  fontSize: '0.95rem',
+                  color: 'rgba(255,255,255,0.85)',
+                  fontSize: '0.88rem',
                   fontWeight: 400
                 }}>
-                  Organize and track your fundraising efforts with comprehensive campaign management
+                  {statistics.totalCategories} {statistics.totalCategories === 1 ? 'category' : 'categories'} &middot; {statistics.totalCampaigns} {statistics.totalCampaigns === 1 ? 'campaign' : 'campaigns'} &middot; {statistics.activeCampaigns} active
                 </Typography>
               </Box>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Box sx={{ 
-                  textAlign: 'center',
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleAddCategory}
+                sx={{
                   background: 'rgba(255,255,255,0.15)',
                   backdropFilter: 'blur(10px)',
-                  borderRadius: 3,
-                  p: 2,
-                  minWidth: 80,
-                  border: '1px solid rgba(255,255,255,0.2)'
-                }}>
-                  <Typography variant="h4" sx={{ 
-                    fontWeight: 800, 
-                    lineHeight: 1,
-                    textShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                  }}>
-                    {statistics.totalCategories}
-                  </Typography>
-                  <Typography variant="caption" sx={{ 
-                    fontWeight: 600, 
-                    fontSize: '0.7rem',
-                    opacity: 0.9
-                  }}>
-                    CATEGORIES
-                  </Typography>
-                </Box>
-                <Box sx={{ 
-                  textAlign: 'center',
-                  background: 'rgba(255,255,255,0.15)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: 3,
-                  p: 2,
-                  minWidth: 80,
-                  border: '1px solid rgba(255,255,255,0.2)'
-                }}>
-                  <Typography variant="h4" sx={{ 
-                    fontWeight: 800, 
-                    lineHeight: 1,
-                    textShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                  }}>
-                    {statistics.totalCampaigns}
-                  </Typography>
-                  <Typography variant="caption" sx={{ 
-                    fontWeight: 600, 
-                    fontSize: '0.7rem',
-                    opacity: 0.9
-                  }}>
-                    CAMPAIGNS
-                  </Typography>
-                </Box>
-                <Box sx={{ 
-                  textAlign: 'center',
-                  background: 'rgba(255,255,255,0.2)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: 3,
-                  p: 2,
-                  minWidth: 80,
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                }}>
-                  <Typography variant="h4" sx={{ 
-                    fontWeight: 800, 
-                    lineHeight: 1,
-                    textShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                  }}>
-                    {statistics.activeCampaigns}
-                  </Typography>
-                  <Typography variant="caption" sx={{ 
-                    fontWeight: 600, 
-                    fontSize: '0.7rem',
-                    opacity: 0.9
-                  }}>
-                    ACTIVE
-                  </Typography>
-                </Box>
-              </Stack>
-            </Stack>
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  color: 'white',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  flexShrink: 0,
+                  boxShadow: 'none',
+                  '&:hover': { background: 'rgba(255,255,255,0.25)', boxShadow: 'none' }
+                }}
+              >
+                New Category
+              </Button>
+            </Box>
+
+            {/* Category filter chips */}
+            {categories.length > 0 && (
+              <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(255,255,255,0.15)', position: 'relative', zIndex: 1 }}>
+                <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75 }}>
+                  <Chip
+                    label="All"
+                    size="small"
+                    onClick={() => setCategoryFilter('')}
+                    sx={{
+                      backgroundColor: !categoryFilter ? 'white' : 'rgba(255,255,255,0.15)',
+                      color: !categoryFilter ? '#8b6cbc' : 'rgba(255,255,255,0.9)',
+                      fontWeight: !categoryFilter ? 700 : 500,
+                      border: !categoryFilter ? 'none' : '1px solid rgba(255,255,255,0.3)',
+                      cursor: 'pointer',
+                      '&:hover': { backgroundColor: !categoryFilter ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)' }
+                    }}
+                  />
+                  {categories.map(cat => {
+                    const count = campaigns.filter(c => c.categoryId === cat.id).length;
+                    const isActive = categoryFilter === cat.id;
+                    return (
+                      <Chip
+                        key={cat.id}
+                        label={`${cat.name} (${count})`}
+                        size="small"
+                        onClick={() => setCategoryFilter(isActive ? '' : cat.id)}
+                        sx={{
+                          backgroundColor: isActive ? 'white' : 'rgba(255,255,255,0.15)',
+                          color: isActive ? (cat.color || '#8b6cbc') : 'rgba(255,255,255,0.9)',
+                          fontWeight: isActive ? 700 : 500,
+                          border: isActive ? 'none' : '1px solid rgba(255,255,255,0.3)',
+                          cursor: 'pointer',
+                          '&:hover': { backgroundColor: isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)' }
+                        }}
+                      />
+                    );
+                  })}
+                </Stack>
+              </Box>
+            )}
           </Box>
 
           {!mounted || loading ? (
@@ -1936,27 +1959,26 @@ export default function CampaignManagement() {
                       <AccordionSummary
                         expandIcon={
                           <Box sx={{
-                            background: `linear-gradient(135deg, ${category.color || DASHBOARD_COLORS.primary} 0%, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.8)} 100%)`,
+                            width: 28,
+                            height: 28,
                             borderRadius: '50%',
-                            width: 36,
-                            height: 36,
+                            border: `1px solid ${alpha(category.color || DASHBOARD_COLORS.primary, 0.3)}`,
+                            backgroundColor: alpha(category.color || DASHBOARD_COLORS.primary, 0.06),
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: 'white',
-                            transition: 'all 0.3s ease',
-                            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                            boxShadow: `0 2px 8px ${alpha(category.color || DASHBOARD_COLORS.primary, 0.3)}`
+                            color: category.color || DASHBOARD_COLORS.primary,
+                            flexShrink: 0
                           }}>
-                            <ExpandMoreIcon sx={{ fontSize: 22 }} />
+                            <ExpandMoreIcon sx={{ fontSize: 16 }} />
                           </Box>
                         }
                         sx={{ 
                           background: `linear-gradient(135deg, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.03)} 0%, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.08)} 100%)`,
                           borderRadius: isExpanded ? '12px 12px 0 0' : '12px',
-                          minHeight: 88,
-                          px: 4,
-                          py: 3,
+                          minHeight: 64,
+                          px: 3,
+                          py: 1.5,
                           position: 'relative',
                           '&::before': {
                             content: '""',
@@ -1974,160 +1996,106 @@ export default function CampaignManagement() {
                           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                         }}
                       >
-                        <Stack direction="row" alignItems="center" spacing={3} sx={{ width: '100%' }}>
-                          <Tooltip title={`${category.name} category`} arrow>
-                            <Box sx={{ position: 'relative' }}>
-                              <Avatar sx={{ 
-                                background: `linear-gradient(135deg, ${category.color || DASHBOARD_COLORS.primary} 0%, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.8)} 100%)`,
-                                width: 64,
-                                height: 64,
-                                fontSize: '1.4rem',
-                                fontWeight: 700,
-                                border: `4px solid white`,
-                                boxShadow: `0 8px 24px ${alpha(category.color || DASHBOARD_COLORS.primary, 0.3)}, 0 4px 8px rgba(0,0,0,0.1)`,
-                                position: 'relative',
-                                '&::before': {
-                                  content: '""',
-                                  position: 'absolute',
-                                  top: -2,
-                                  left: -2,
-                                  right: -2,
-                                  bottom: -2,
-                                  background: `linear-gradient(135deg, ${category.color || DASHBOARD_COLORS.primary} 0%, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.6)} 100%)`,
-                                  borderRadius: '50%',
-                                  zIndex: -1,
-                                  opacity: 0.3
-                                }
-                              }}>
-                                <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>
-                                  {category.name ? category.name.charAt(0).toUpperCase() : 'C'}
-                                </Typography>
-                              </Avatar>
-                              <Chip 
-                                label="CATEGORY"
-                                size="small"
-                                sx={{
-                                  position: 'absolute',
-                                  top: -6,
-                                  right: -10,
-                                  fontSize: '0.6rem',
-                                  fontWeight: 800,
-                                  height: 20,
-                                  background: `linear-gradient(135deg, ${category.color || DASHBOARD_COLORS.primary} 0%, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.8)} 100%)`,
-                                  color: 'white',
-                                  boxShadow: `0 2px 8px ${alpha(category.color || DASHBOARD_COLORS.primary, 0.4)}`,
-                                  border: '2px solid white',
-                                  '& .MuiChip-label': { px: 1.2 }
-                                }}
-                              />
-                            </Box>
-                          </Tooltip>
+                        <Stack direction="row" alignItems="center" spacing={2} sx={{ width: '100%' }}>
+                          <Avatar sx={{ 
+                            background: `linear-gradient(135deg, ${category.color || DASHBOARD_COLORS.primary} 0%, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.8)} 100%)`,
+                            width: 40,
+                            height: 40,
+                            fontSize: '1rem',
+                            fontWeight: 700,
+                            flexShrink: 0,
+                            boxShadow: `0 2px 8px ${alpha(category.color || DASHBOARD_COLORS.primary, 0.3)}`
+                          }}>
+                            <Typography variant="body1" sx={{ color: 'white', fontWeight: 700, fontSize: '1rem' }}>
+                              {category.name ? category.name.charAt(0).toUpperCase() : 'C'}
+                            </Typography>
+                          </Avatar>
                           
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="h5" sx={{ 
-                              fontWeight: 800, 
-                              color: '#1a1a1a',
-                              mb: 1,
-                              letterSpacing: '-0.8px',
-                              lineHeight: 1.2
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography variant="subtitle1" sx={{ 
+                              fontWeight: 700, 
+                              color: '#1e293b',
+                              letterSpacing: '-0.1px',
+                              lineHeight: 1.3
                             }}>
                               {category.name}
                             </Typography>
-                            <Typography variant="body1" sx={{ 
-                              fontSize: '1rem',
+                            <Typography variant="body2" sx={{ 
                               color: '#64748b',
-                              lineHeight: 1.5,
-                              fontWeight: 400
+                              lineHeight: 1.4,
+                              mt: 0.25,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
                             }}>
                               {category.description || 'No description provided'}
                             </Typography>
                           </Box>
                           
-                          <Stack direction="row" spacing={2} alignItems="center">
-                            <Tooltip title={`${categoryCampaigns.length} campaigns in this category`} arrow>
-                              <Chip 
-                                label={`${categoryCampaigns.length} campaigns`}
-                                size="medium"
-                                variant="filled"
-                                icon={<CampaignIcon sx={{ fontSize: '1rem' }} />}
-                                sx={{
-                                  fontWeight: 700,
-                                  fontSize: '0.85rem',
-                                  height: 36,
-                                  px: 2,
-                                  background: `linear-gradient(135deg, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.1)} 0%, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.2)} 100%)`,
-                                  color: category.color || DASHBOARD_COLORS.primary,
-                                  border: `2px solid ${alpha(category.color || DASHBOARD_COLORS.primary, 0.3)}`,
-                                  '&:hover': {
-                                    background: `linear-gradient(135deg, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.2)} 0%, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.3)} 100%)`,
-                                    transform: 'translateY(-1px)',
-                                    boxShadow: `0 4px 12px ${alpha(category.color || DASHBOARD_COLORS.primary, 0.25)}`
-                                  }
-                                }}
-                              />
-                            </Tooltip>
+                          <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
+                            <Chip 
+                              label={`${categoryCampaigns.length} campaign${categoryCampaigns.length !== 1 ? 's' : ''}`}
+                              size="small"
+                              icon={<CampaignIcon sx={{ fontSize: '0.8rem !important' }} />}
+                              sx={{
+                                fontWeight: 600,
+                                fontSize: '0.75rem',
+                                height: 26,
+                                backgroundColor: alpha(category.color || DASHBOARD_COLORS.primary, 0.1),
+                                color: category.color || DASHBOARD_COLORS.primary,
+                                border: `1px solid ${alpha(category.color || DASHBOARD_COLORS.primary, 0.2)}`
+                              }}
+                            />
                             
-                            <Tooltip title="Edit category details" arrow>
+                            <Tooltip title="Edit category" arrow>
                               <Box
                                 component="div"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditCategory(category);
-                                }}
+                                onClick={(e) => { e.stopPropagation(); handleEditCategory(category); }}
                                 sx={{ 
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  width: 44,
-                                  height: 44,
-                                  borderRadius: '12px',
+                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                  width: 32, height: 32, borderRadius: '8px',
                                   color: category.color || DASHBOARD_COLORS.primary,
-                                  background: `linear-gradient(135deg, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.1)} 0%, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.15)} 100%)`,
-                                  cursor: 'pointer',
-                                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                  border: `2px solid ${alpha(category.color || DASHBOARD_COLORS.primary, 0.2)}`,
-                                  '&:hover': {
-                                    background: `linear-gradient(135deg, ${category.color || DASHBOARD_COLORS.primary} 0%, ${alpha(category.color || DASHBOARD_COLORS.primary, 0.8)} 100%)`,
-                                    color: 'white',
-                                    transform: 'translateY(-2px) scale(1.05)',
-                                    boxShadow: `0 8px 24px ${alpha(category.color || DASHBOARD_COLORS.primary, 0.3)}`,
-                                    borderColor: category.color || DASHBOARD_COLORS.primary
-                                  }
+                                  backgroundColor: alpha(category.color || DASHBOARD_COLORS.primary, 0.08),
+                                  cursor: 'pointer', transition: 'all 0.15s ease',
+                                  border: `1px solid ${alpha(category.color || DASHBOARD_COLORS.primary, 0.2)}`,
+                                  '&:hover': { backgroundColor: category.color || DASHBOARD_COLORS.primary, color: 'white', borderColor: category.color || DASHBOARD_COLORS.primary }
                                 }}
                               >
-                                <EditIcon sx={{ fontSize: 20 }} />
+                                <EditIcon sx={{ fontSize: 15 }} />
                               </Box>
                             </Tooltip>
                             
-                            <Tooltip title="Add new campaign to this category" arrow>
+                            <Tooltip title="Add campaign" arrow>
                               <Box
                                 component="div"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleAddCampaign(category.id);
-                                }}
+                                onClick={(e) => { e.stopPropagation(); handleAddCampaign(category.id); }}
                                 sx={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  width: 44,
-                                  height: 44,
-                                  borderRadius: '12px',
-                                  color: '#10b981',
-                                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.15) 100%)',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                  border: '2px solid rgba(16, 185, 129, 0.2)',
-                                  '&:hover': { 
-                                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                                    color: 'white',
-                                    transform: 'translateY(-2px) scale(1.05)',
-                                    boxShadow: '0 8px 24px rgba(16, 185, 129, 0.3)',
-                                    borderColor: '#10b981'
-                                  }
+                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                  width: 32, height: 32, borderRadius: '8px',
+                                  color: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)',
+                                  cursor: 'pointer', transition: 'all 0.15s ease',
+                                  border: '1px solid rgba(16,185,129,0.2)',
+                                  '&:hover': { backgroundColor: '#10b981', color: 'white', borderColor: '#10b981' }
                                 }}
                               >
-                                <AddIcon sx={{ fontSize: 20 }} />
+                                <AddIcon sx={{ fontSize: 15 }} />
+                              </Box>
+                            </Tooltip>
+
+                            <Tooltip title="Delete category" arrow>
+                              <Box
+                                component="div"
+                                onClick={(e) => { e.stopPropagation(); setDeleteCategoryConfirm({ open: true, category }); }}
+                                sx={{
+                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                  width: 32, height: 32, borderRadius: '8px',
+                                  color: '#ef4444', backgroundColor: 'rgba(239,68,68,0.08)',
+                                  cursor: 'pointer', transition: 'all 0.15s ease',
+                                  border: '1px solid rgba(239,68,68,0.2)',
+                                  '&:hover': { backgroundColor: '#ef4444', color: 'white', borderColor: '#ef4444' }
+                                }}
+                              >
+                                <DeleteIcon sx={{ fontSize: 15 }} />
                               </Box>
                             </Tooltip>
                           </Stack>
@@ -2254,6 +2222,51 @@ export default function CampaignManagement() {
             handleActivitySubmit={handleActivitySubmit}
           />
         </Suspense>
+
+        {/* Delete Category Confirmation */}
+        <Dialog
+          open={deleteCategoryConfirm.open}
+          onClose={() => setDeleteCategoryConfirm({ open: false, category: null })}
+          maxWidth="xs"
+          fullWidth
+          PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+        >
+          <Box sx={{ p: 3, borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ width: 40, height: 40, borderRadius: 2, backgroundColor: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <WarningAmberIcon sx={{ color: '#ef4444', fontSize: 22 }} />
+            </Box>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1e293b' }}>Delete Category</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>This action cannot be undone</Typography>
+            </Box>
+          </Box>
+          <Box sx={{ px: 3, py: 2.5 }}>
+            <Typography variant="body2" color="text.secondary">
+              Are you sure you want to delete{' '}
+              <Typography component="span" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                &ldquo;{deleteCategoryConfirm.category?.name}&rdquo;
+              </Typography>
+              ? All campaigns and activities in this category will also be removed.
+            </Typography>
+          </Box>
+          <Box sx={{ px: 3, py: 2, display: 'flex', gap: 1.5, justifyContent: 'flex-end', borderTop: '1px solid rgba(0,0,0,0.06)', backgroundColor: 'rgba(0,0,0,0.015)' }}>
+            <Button
+              onClick={() => setDeleteCategoryConfirm({ open: false, category: null })}
+              size="small"
+              sx={{ color: 'text.secondary', fontWeight: 500 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteCategory}
+              variant="contained"
+              size="small"
+              sx={{ backgroundColor: '#ef4444', '&:hover': { backgroundColor: '#dc2626' }, fontWeight: 600, px: 2.5 }}
+            >
+              Delete
+            </Button>
+          </Box>
+        </Dialog>
 
         {/* Snackbar */}
         <Snackbar

@@ -22,6 +22,7 @@ import {
   AccountCircle as AccountCircleIcon,
   Settings as SettingsIcon,
   ListAlt as LogsIcon,
+  HelpOutline as FaqIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
@@ -349,6 +350,16 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
                     <PersonAddIcon color="primary" />
                   </ListItemIcon>
                   <ListItemText primary="Register" />
+                </ListItemButton>
+              </ListItem>
+
+              {/* FAQ */}
+              <ListItem disablePadding>
+                <ListItemButton onClick={(event) => handleMenuItemClick(event, '/faq')} sx={{ borderRadius: 1 }}>
+                  <ListItemIcon>
+                    <FaqIcon color="primary" />
+                  </ListItemIcon>
+                  <ListItemText primary="Frequently Asked Questions" />
                 </ListItemButton>
               </ListItem>
             </>

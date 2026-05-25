@@ -169,18 +169,22 @@ export async function GET(request) {
       });
     }
 
-    const categoryDistribution = categories.map(cat => {
-      const catCampaigns = campaigns.filter(c => c.categoryId === cat.id);
-      const catAmount = catCampaigns.reduce((sum, c) => sum + parseFloat(c.raisedAmount), 0);
-      const totalAmount = totalRaisedFromCampaigns + totalGrantOpportunityAmount;
-      
-      return {
-        category: cat.name,
-        amount: catAmount,
-        percentage: totalAmount > 0 ? ((catAmount / totalAmount) * 100).toFixed(1) : 0,
+    const categoryAmountMap = {};
+    donations.forEach(d => {
+      const catName = d.campaign?.category?.name || 'General';
+      categoryAmountMap[catName] = (categoryAmountMap[catName] || 0) + (parseFloat(d.amount) || 0);
+    });
+
+    const categoryDistribution = Object.entries(categoryAmountMap)
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        percentage: totalRaisedFromDonations > 0
+          ? ((amount / totalRaisedFromDonations) * 100).toFixed(1)
+          : 0,
         color: '#8b6cbc'
-      };
-    }).sort((a, b) => b.amount - a.amount);
+      }))
+      .sort((a, b) => b.amount - a.amount);
 
     const donorsByAmount = donations.reduce((acc, d) => {
       const donor = d.donorEmail || d.donorName;

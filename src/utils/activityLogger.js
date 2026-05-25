@@ -101,8 +101,8 @@ export const logApiActivity = async (method, endpoint, statusCode, metadata = {}
   }
 };
 
-// Get request metadata helper
-export const getRequestMetadata = (req) => {
+// Get request metadata helper with optional user details
+export const getRequestMetadata = (req, user = null) => {
   // Handle Next.js API route requests
   let ip = 'Unknown';
   let userAgent = 'Unknown';
@@ -142,11 +142,24 @@ export const getRequestMetadata = (req) => {
     }
   }
 
-  return {
+  const metadata = {
     ip: ip || 'Unknown',
     userAgent: userAgent || 'Unknown',
     method: req?.method || 'Unknown',
     url: req?.url || 'Unknown',
     timestamp: new Date().toISOString()
   };
+
+  // Add user account details if provided for audit trail
+  if (user) {
+    metadata.user = {
+      id: user.id,
+      email: user.email,
+      accountType: user.accountType,
+      name: `${user.givenName || ''} ${user.familyName || ''}`.trim(),
+      institutionId: user.primaryInstitution || null
+    };
+  }
+
+  return metadata;
 };

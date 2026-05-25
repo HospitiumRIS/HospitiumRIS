@@ -140,219 +140,355 @@ export default function ApprovalsEthicsPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const breadcrumbs = [
-    { label: 'Dashboard', path: '/researcher' },
-    { label: 'Clinical Trials', path: '/researcher/clinical-trials' },
-    { label: 'Approvals & Ethics' },
-  ];
+  const stats = {
+    total: approvals.length,
+    approved: approvals.filter(a => a.status === 'IRB_APPROVED' || a.status === 'FULLY_APPROVED').length,
+    underReview: approvals.filter(a => a.status === 'UNDER_IRB_REVIEW').length,
+    draft: approvals.filter(a => a.status === 'DRAFT').length,
+  };
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f5f5', pt: 10 }}>
-      <Container maxWidth="xl">
-        <PageHeader
-          title="Approvals & Ethics"
-          subtitle="Route protocols through IRB/IEC and track institutional clearances"
-          icon={<ComplianceIcon sx={{ fontSize: 40, color: '#8b6cbc' }} />}
-          breadcrumbs={breadcrumbs}
-          actions={
-            <Button
-              variant="contained"
-              startIcon={<SubmitIcon />}
-              onClick={() => router.push('/researcher/clinical-trials/approvals/submit')}
-              sx={{
-                backgroundColor: '#8b6cbc',
-                '&:hover': { backgroundColor: '#7a5caa' },
-              }}
-            >
-              Submit for IRB Review
-            </Button>
-          }
-        />
+    <Box>
+      {/* Page Header */}
+      <PageHeader
+        title="Approvals & Ethics"
+        description="Route protocols through IRB/IEC and track institutional clearances"
+        icon={<ComplianceIcon sx={{ fontSize: 32 }} />}
+        breadcrumbs={[
+          { label: 'Home', path: '/researcher' },
+          { label: 'Clinical Trials', path: '/researcher/clinical-trials' },
+          { label: 'Approvals & Ethics' }
+        ]}
+        actionButton={
+          <Button
+            variant="contained"
+            startIcon={<SubmitIcon />}
+            onClick={() => router.push('/researcher/clinical-trials/approvals/submit')}
+            sx={{ 
+              bgcolor: 'white',
+              color: '#8b6cbc',
+              boxShadow: '0 4px 12px rgba(255, 255, 255, 0.3)',
+              '&:hover': { 
+                bgcolor: 'rgba(255, 255, 255, 0.9)',
+                boxShadow: '0 6px 16px rgba(255, 255, 255, 0.4)',
+              }
+            }}
+          >
+            Submit for IRB Review
+          </Button>
+        }
+      />
 
-        <Box sx={{ mt: 4 }}>
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} md={3}>
-              <Card sx={{ height: '100%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-                <CardContent>
-                  <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-                    {approvals.length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-                    Total Applications
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Card sx={{ height: '100%', background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
-                <CardContent>
-                  <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-                    {approvals.filter(a => a.status === 'IRB_APPROVED' || a.status === 'FULLY_APPROVED').length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-                    Approved
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Card sx={{ height: '100%', background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
-                <CardContent>
-                  <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-                    {approvals.filter(a => a.status === 'UNDER_IRB_REVIEW').length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-                    Under Review
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Card sx={{ height: '100%', background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }}>
-                <CardContent>
-                  <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-                    {approvals.filter(a => a.status === 'DRAFT').length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-                    Pending Submission
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-                <TextField
-                  placeholder="Search approvals..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ flexGrow: 1, minWidth: 250 }}
-                />
-                <TextField
-                  select
-                  label="Status"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  sx={{ minWidth: 200 }}
-                >
-                  <MenuItem value="All">All Statuses</MenuItem>
-                  <MenuItem value="DRAFT">Draft</MenuItem>
-                  <MenuItem value="SUBMITTED_TO_IRB">Submitted to IRB</MenuItem>
-                  <MenuItem value="UNDER_IRB_REVIEW">Under IRB Review</MenuItem>
-                  <MenuItem value="IRB_APPROVED">IRB Approved</MenuItem>
-                  <MenuItem value="FULLY_APPROVED">Fully Approved</MenuItem>
-                </TextField>
-              </Box>
-
-              {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-                  <CircularProgress sx={{ color: '#8b6cbc' }} />
-                </Box>
-              ) : filteredApprovals.length === 0 ? (
-                <Alert severity="info">No approval records found matching your criteria.</Alert>
-              ) : (
-                <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell><strong>Trial ID</strong></TableCell>
-                        <TableCell><strong>Title</strong></TableCell>
-                        <TableCell><strong>IRB Number</strong></TableCell>
-                        <TableCell><strong>Status</strong></TableCell>
-                        <TableCell><strong>Progress</strong></TableCell>
-                        <TableCell><strong>Submitted</strong></TableCell>
-                        <TableCell><strong>Approval Date</strong></TableCell>
-                        <TableCell><strong>Expiry</strong></TableCell>
-                        <TableCell align="right"><strong>Actions</strong></TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {filteredApprovals.map((approval) => (
-                        <TableRow key={approval.id} hover>
-                          <TableCell>
-                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#8b6cbc' }}>
-                              {approval.trialId}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2">{approval.title}</Typography>
-                          </TableCell>
-                          <TableCell>
-                            {approval.irbNumber ? (
-                              <Chip
-                                icon={<IRBIcon />}
-                                label={approval.irbNumber}
-                                size="small"
-                                color="primary"
-                              />
-                            ) : (
-                              <Chip label="Not Assigned" size="small" variant="outlined" />
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              label={approval.status.replace(/_/g, ' ')}
-                              size="small"
-                              sx={{
-                                backgroundColor: statusColors[approval.status],
-                                color: 'white',
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <LinearProgress
-                                variant="determinate"
-                                value={approval.progress}
-                                sx={{ flexGrow: 1, height: 8, borderRadius: 4 }}
-                              />
-                              <Typography variant="caption">{approval.progress}%</Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            {approval.submittedDate ? format(approval.submittedDate, 'MMM dd, yyyy') : '-'}
-                          </TableCell>
-                          <TableCell>
-                            {approval.approvalDate ? format(approval.approvalDate, 'MMM dd, yyyy') : '-'}
-                          </TableCell>
-                          <TableCell>
-                            {approval.expiryDate ? (
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  color: new Date(approval.expiryDate) < new Date() ? 'error.main' : 'text.primary'
-                                }}
-                              >
-                                {format(approval.expiryDate, 'MMM dd, yyyy')}
-                              </Typography>
-                            ) : '-'}
-                          </TableCell>
-                          <TableCell align="right">
-                            <IconButton
-                              size="small"
-                              onClick={(e) => handleMenuOpen(e, approval)}
-                            >
-                              <MoreVertIcon />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-            </CardContent>
-          </Card>
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        {/* Statistics Cards */}
+        <Box sx={{ display: 'flex', gap: 2.5, mb: 4, flexWrap: 'wrap' }}>
+          <Paper sx={{ 
+            flex: '1 1 200px',
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Total Applications
+              </Typography>
+              <ComplianceIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.total}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              All IRB applications
+            </Typography>
+          </Paper>
+          
+          <Paper sx={{ 
+            flex: '1 1 200px',
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                IRB Approved
+              </Typography>
+              <ApprovedIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.approved}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Approved protocols
+            </Typography>
+          </Paper>
+          
+          <Paper sx={{ 
+            flex: '1 1 200px',
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Under Review
+              </Typography>
+              <WarningIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.underReview}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Awaiting IRB decision
+            </Typography>
+          </Paper>
+          
+          <Paper sx={{ 
+            flex: '1 1 200px',
+            p: 2, 
+            borderRadius: 2,
+            bgcolor: '#8b6cbc',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+            border: 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            height: '100px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                Draft
+              </Typography>
+              <EditIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+              {stats.draft}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+              Pending submission
+            </Typography>
+          </Paper>
         </Box>
+
+        {/* Search and Filter */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: 3,
+          flexWrap: 'wrap',
+          gap: 2
+        }}>
+          <TextField
+            placeholder="Search by trial ID or title..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            size="small"
+            sx={{ 
+              width: { xs: '100%', sm: 350 },
+              '& .MuiOutlinedInput-root': {
+                '&:hover fieldset': {
+                  borderColor: '#8b6cbc',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#8b6cbc',
+                },
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: '#8b6cbc' }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+          
+          <TextField
+            select
+            label="Status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            size="small"
+            sx={{ 
+              minWidth: 200,
+              '& .MuiOutlinedInput-root': {
+                '&:hover fieldset': { borderColor: '#8b6cbc' },
+                '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
+              },
+              '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
+            }}
+          >
+            <MenuItem value="All">All Statuses</MenuItem>
+            <MenuItem value="DRAFT">Draft</MenuItem>
+            <MenuItem value="SUBMITTED_TO_IRB">Submitted to IRB</MenuItem>
+            <MenuItem value="UNDER_IRB_REVIEW">Under IRB Review</MenuItem>
+            <MenuItem value="IRB_APPROVED">IRB Approved</MenuItem>
+            <MenuItem value="FULLY_APPROVED">Fully Approved</MenuItem>
+          </TextField>
+        </Box>
+
+        {/* Applications Table */}
+        {loading ? (
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            justifyContent: 'center', 
+            alignItems: 'center',
+            py: 8,
+            bgcolor: 'white',
+            borderRadius: 2,
+            border: '1px solid rgba(0, 0, 0, 0.12)'
+          }}>
+            <CircularProgress sx={{ color: '#8b6cbc' }} />
+            <Typography sx={{ mt: 2, color: '#718096' }}>Loading approvals...</Typography>
+          </Box>
+        ) : filteredApprovals.length === 0 ? (
+          <Paper sx={{ 
+            p: 6, 
+            textAlign: 'center',
+            bgcolor: 'rgba(139, 108, 188, 0.02)',
+            border: '2px dashed rgba(139, 108, 188, 0.3)',
+            borderRadius: 2
+          }}>
+            <ComplianceIcon sx={{ fontSize: 64, color: 'rgba(139, 108, 188, 0.3)', mb: 2 }} />
+            <Typography variant="h6" sx={{ color: '#2D3748', mb: 1 }}>
+              No approval records found
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#718096' }}>
+              {searchQuery || statusFilter !== 'All' 
+                ? 'Try adjusting your search or filter criteria' 
+                : 'Get started by submitting your first protocol for IRB review'}
+            </Typography>
+          </Paper>
+        ) : (
+          <Paper sx={{ borderRadius: 2, border: '1px solid rgba(0, 0, 0, 0.12)' }}>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
+                    <TableCell sx={{ fontWeight: 600, color: '#2D3748' }}>Trial ID</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#2D3748' }}>Title</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#2D3748' }}>IRB Number</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#2D3748' }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#2D3748' }}>Progress</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#2D3748' }}>Submitted</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#2D3748' }}>Approval Date</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#2D3748' }}>Expiry</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600, color: '#2D3748' }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredApprovals.map((approval) => (
+                    <TableRow key={approval.id} hover>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#8b6cbc' }}>
+                          {approval.trialId}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">{approval.title}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        {approval.irbNumber ? (
+                          <Chip
+                            icon={<IRBIcon />}
+                            label={approval.irbNumber}
+                            size="small"
+                            color="primary"
+                          />
+                        ) : (
+                          <Chip label="Not Assigned" size="small" variant="outlined" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={approval.status.replace(/_/g, ' ')}
+                          size="small"
+                          sx={{
+                            backgroundColor: statusColors[approval.status],
+                            color: 'white',
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={approval.progress}
+                            sx={{ 
+                              flexGrow: 1, 
+                              height: 8, 
+                              borderRadius: 4,
+                              backgroundColor: '#e2e8f0',
+                              '& .MuiLinearProgress-bar': { backgroundColor: '#8b6cbc' }
+                            }}
+                          />
+                          <Typography variant="caption">{approval.progress}%</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        {approval.submittedDate ? format(approval.submittedDate, 'MMM dd, yyyy') : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {approval.approvalDate ? format(approval.approvalDate, 'MMM dd, yyyy') : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {approval.expiryDate ? (
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: new Date(approval.expiryDate) < new Date() ? 'error.main' : 'text.primary'
+                            }}
+                          >
+                            {format(approval.expiryDate, 'MMM dd, yyyy')}
+                          </Typography>
+                        ) : '-'}
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleMenuOpen(e, approval)}
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        )}
 
         <Menu
           anchorEl={menuAnchor}
