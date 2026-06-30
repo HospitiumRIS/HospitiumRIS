@@ -4,6 +4,7 @@ import { ThemeContextProvider } from '../components/ThemeProvider';
 import NavigationProgressBar from '../components/NavigationProgressBar';
 import AuthProvider from '../components/AuthProvider';
 import AppNavbar from '../components/AppNavbar';
+import I18nProvider from '../components/I18nProvider';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,13 +28,15 @@ export default function RootLayout({ children }) {
         <meta name="emotion-insertion-point" content="" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <ThemeContextProvider>
-          <AuthProvider>
-            <NavigationProgressBar />
-            <AppNavbar />
-            {children}
-          </AuthProvider>
-        </ThemeContextProvider>
+        <I18nProvider>
+          <ThemeContextProvider>
+            <AuthProvider>
+              <NavigationProgressBar />
+              <AppNavbar />
+              {children}
+            </AuthProvider>
+          </ThemeContextProvider>
+        </I18nProvider>
       </body>
     </html>
   );

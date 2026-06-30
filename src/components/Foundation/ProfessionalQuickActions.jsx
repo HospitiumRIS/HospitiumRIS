@@ -1,6 +1,7 @@
 'use client';
 
 import React, { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Card,
@@ -171,6 +172,7 @@ const ActionCard = memo(({ action, onClick, featured = false }) => {
 });
 
 const ProfessionalQuickActions = memo(({ onActionClick, customActions = [] }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   const defaultActions = [

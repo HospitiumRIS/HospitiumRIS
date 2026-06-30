@@ -59,8 +59,10 @@ import {
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import PageHeader from '../../../../components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 const ResearcherPublicProfile = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const params = useParams();
   const router = useRouter();

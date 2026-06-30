@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import {
   Box, Container, Typography, Button, Paper, TextField,
@@ -80,6 +81,7 @@ function SectionHeader({ icon: Icon, title, subtitle, color = '#8b6cbc', require
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CreateInternalGrantRequestPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');

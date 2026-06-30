@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Paper, Typography, Chip } from '@mui/material';
 import {
@@ -11,6 +12,7 @@ import {
 } from '@mui/icons-material';
 
 export default function CitationHoverMenu({ editor, onUpdateCitation, onDeleteCitation }) {
+  const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [currentCitation, setCurrentCitation] = useState(null);
@@ -175,7 +177,7 @@ export default function CitationHoverMenu({ editor, onUpdateCitation, onDeleteCi
             overflow: 'hidden',
           }}
         >
-          {data.title || 'Untitled'}
+          {data.title || t('collaborate_editor.untitled')}
         </Typography>
 
         {/* Author */}
@@ -258,7 +260,7 @@ export default function CitationHoverMenu({ editor, onUpdateCitation, onDeleteCi
           }}
         >
           <EditIcon sx={{ fontSize: '1rem' }} />
-          Edit
+          {t('collaborate_editor.edit_citation')}
         </Box>
 
         {doi && (
@@ -315,7 +317,7 @@ export default function CitationHoverMenu({ editor, onUpdateCitation, onDeleteCi
           }}
         >
           <DeleteIcon sx={{ fontSize: '1rem' }} />
-          Remove
+          {t('collaborate_editor.remove_citation')}
         </Box>
       </Box>
     </Paper>

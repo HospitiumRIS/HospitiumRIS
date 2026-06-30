@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useState, useCallback } from 'react';
 import {
   Dialog,
@@ -52,6 +53,7 @@ export default function InviteCollaboratorDialog({
   manuscriptTitle,
   onInviteSent
 }) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -211,7 +213,7 @@ export default function InviteCollaboratorDialog({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <PersonAddIcon />
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Invite Collaborator
+            {t('common.invite_collaborator')}
           </Typography>
         </Box>
         <IconButton onClick={handleClose} disabled={sending} sx={{ color: 'white' }}>
@@ -285,7 +287,7 @@ export default function InviteCollaboratorDialog({
             {/* Search input */}
             <TextField
               fullWidth
-              label="Search Researchers"
+              label={t('common.search')}
               placeholder="Search by name or ORCID ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -309,8 +311,8 @@ export default function InviteCollaboratorDialog({
                       disabled={!searchQuery.trim()}
                       sx={{ textTransform: 'none' }}
                     >
-                      Search
-                    </Button>
+                      {t('common.search')}
+</Button>
                   </InputAdornment>
                 )
               }}
@@ -402,7 +404,7 @@ export default function InviteCollaboratorDialog({
         {/* Personal message */}
         <TextField
           fullWidth
-          label="Personal Message (Optional)"
+          label={t('common.message_optional')}
           placeholder="Add a personal note to your invitation..."
           multiline
           rows={3}
@@ -419,8 +421,8 @@ export default function InviteCollaboratorDialog({
           disabled={sending}
           sx={{ textTransform: 'none' }}
         >
-          Cancel
-        </Button>
+          {t('common.cancel')}
+</Button>
         <Button
           variant="contained"
           onClick={handleSendInvitation}
@@ -432,7 +434,7 @@ export default function InviteCollaboratorDialog({
             '&:hover': { bgcolor: '#7a5ca7' }
           }}
         >
-          {sending ? 'Sending...' : 'Send Invitation'}
+          {sending ? t('common.submitting') : t('common.send')}
         </Button>
       </DialogActions>
     </Dialog>

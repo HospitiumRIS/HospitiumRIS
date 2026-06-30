@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import {
     Dialog,
@@ -41,6 +42,7 @@ const MultiPublicationPreviewDialog = ({
     onViewDetails,
     importing = false
 }) => {
+    const { t } = useTranslation();
     const [selectedLibrary, setSelectedLibrary] = useState('');
     const [selectedLibraryName, setSelectedLibraryName] = useState('');
     const [libraryModalOpen, setLibraryModalOpen] = useState(false);
@@ -67,9 +69,9 @@ const MultiPublicationPreviewDialog = ({
     };
 
     const formatAuthors = (authors) => {
-        if (!authors || authors.length === 0) return 'Unknown Author';
+        if (!authors || authors.length === 0) return t('common.unknown_author');
         const authorList = authors.slice(0, 3).join(', ');
-        return authors.length > 3 ? `${authorList} et al.` : authorList;
+        return authors.length > 3 ? `${authorList} ${t('common.et_al')}` : authorList;
     };
 
     return (
@@ -92,10 +94,10 @@ const MultiPublicationPreviewDialog = ({
             }}>
                 <Box>
                     <Typography variant="h6">
-                        Preview Selected Publications
+                        {t('import_tabs.preview_selected_title')}
                     </Typography>
                     <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                        {publications.length} publication{publications.length !== 1 ? 's' : ''} ready to import
+                        {t(publications.length === 1 ? 'import_tabs.publications_ready_one' : 'import_tabs.publications_ready_other', { count: publications.length })}
                     </Typography>
                 </Box>
                 <IconButton
@@ -137,7 +139,7 @@ const MultiPublicationPreviewDialog = ({
                                                         backgroundColor: 'rgba(139, 108, 188, 0.1)'
                                                     }
                                                 }}
-                                                title="View full details"
+                                                title={t('import_tabs.view_full_details')}
                                             >
                                                 <VisibilityIcon fontSize="small" />
                                             </IconButton>
@@ -205,7 +207,7 @@ const MultiPublicationPreviewDialog = ({
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <FolderIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
                             <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8b6cbc' }}>
-                                Add to My Library
+                                {t('import_tabs.add_to_library')}
                             </Typography>
                         </Box>
                         <Button
@@ -223,7 +225,7 @@ const MultiPublicationPreviewDialog = ({
                                 }
                             }}
                         >
-                            {selectedLibrary ? 'Change Folder' : 'Select Folder'}
+                            {selectedLibrary ? t('import_tabs.change_folder') : t('import_tabs.select_folder')}
                         </Button>
                     </Box>
                     {selectedLibrary ? (
@@ -234,16 +236,16 @@ const MultiPublicationPreviewDialog = ({
                             border: '1px solid rgba(139, 108, 188, 0.2)'
                         }}>
                             <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
-                                Selected: {selectedLibraryName}
+                                {t('import_tabs.selected_folder', { name: selectedLibraryName })}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
-                                All {publications.length} publication{publications.length !== 1 ? 's' : ''} will be imported and added to this library folder.
+                                {t(publications.length === 1 ? 'import_tabs.all_import_one' : 'import_tabs.all_import_other', { count: publications.length })}
                             </Typography>
                         </Box>
                     ) : (
                         <Alert severity="info" sx={{ mt: 1 }}>
                             <Typography variant="caption">
-                                Please select a library folder to import these publications.
+                                {t('import_tabs.select_folder_prompt')}
                             </Typography>
                         </Alert>
                     )}
@@ -255,7 +257,7 @@ const MultiPublicationPreviewDialog = ({
                     onClick={onClose}
                     disabled={importing}
                 >
-                    Cancel
+                    {t('common.cancel')}
                 </Button>
                 <Button
                     variant="contained"
@@ -273,7 +275,9 @@ const MultiPublicationPreviewDialog = ({
                         }
                     }}
                 >
-                    {importing ? 'Importing...' : `Import ${publications.length} Publication${publications.length !== 1 ? 's' : ''}`}
+                    {importing
+                        ? t('import_tabs.importing')
+                        : t(publications.length === 1 ? 'import_tabs.import_publications_one' : 'import_tabs.import_publications_other', { count: publications.length })}
                 </Button>
             </DialogActions>
 

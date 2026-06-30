@@ -38,8 +38,10 @@ import {
 import { useTheme } from '@mui/material/styles';
 import PageHeader from '@/components/common/PageHeader';
 import { Home as HomeIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 export default function TrainingPage() {
+  const { t } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -154,8 +156,8 @@ export default function TrainingPage() {
   return (
     <>
       <PageHeader
-        title="Training Portal"
-        description="Register for trainings and track your progress"
+        title={t('researcher.training')}
+        description={t('researcher.training_browse_desc')}
         icon={<TrainingIcon sx={{ fontSize: 40 }} />}
         breadcrumbs={[
           { label: 'Home', path: '/researcher', icon: <HomeIcon /> },

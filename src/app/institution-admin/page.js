@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -40,6 +41,7 @@ import { useRouter } from 'next/navigation';
 import InstitutionAdminLayout from '../../components/InstitutionAdmin/InstitutionAdminLayout';
 
 const InstitutionAdminPage = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -181,10 +183,10 @@ const InstitutionAdminPage = () => {
                   letterSpacing: '-0.02em'
                 }}
               >
-                Dashboard Overview
+                {t('institution_admin.dashboard')}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                Real-time system performance and user activity monitoring
+                {t('common.dashboard')}
               </Typography>
             </Box>
             <Tooltip title="Refresh data">
@@ -256,7 +258,7 @@ const InstitutionAdminPage = () => {
                   {stats.totalUsers || 0}
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
-                  Total Users
+                  {t('global_admin.total_users')}
                 </Typography>
               </CardContent>
             </Card>
@@ -359,7 +361,7 @@ const InstitutionAdminPage = () => {
                   {stats.activeUsers || 0}
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                  Active Users
+                  {t('global_admin.active_users')}
                 </Typography>
               </CardContent>
             </Card>

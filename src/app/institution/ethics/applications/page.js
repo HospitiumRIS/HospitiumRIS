@@ -51,8 +51,10 @@ import {
 import { useTheme } from '@mui/material/styles';
 import PageHeader from '@/components/common/PageHeader';
 import { useAuth } from '@/components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const EthicsApplicationsPage = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
@@ -232,8 +234,8 @@ const EthicsApplicationsPage = () => {
   return (
     <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
       <PageHeader
-        title="Ethics Applications"
-        description="Review and manage research ethics applications"
+        title={t('institution.review_ethics')}
+        description={t('institution.review_ethics_desc')}
         gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
       />
 
@@ -256,11 +258,11 @@ const EthicsApplicationsPage = () => {
             <Typography variant="h3" sx={{ fontWeight: 700 }}>{tabCounts.underReview}</Typography>
           </Paper>
           <Paper sx={{ flex: '1 1 200px', p: 2.5, borderRadius: 2, bgcolor: '#10b981', color: 'white' }}>
-            <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>Approved</Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>{t('common.approved')}</Typography>
             <Typography variant="h3" sx={{ fontWeight: 700 }}>{tabCounts.approved}</Typography>
           </Paper>
           <Paper sx={{ flex: '1 1 200px', p: 2.5, borderRadius: 2, bgcolor: '#6b7280', color: 'white' }}>
-            <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>Pending</Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>{t('common.pending')}</Typography>
             <Typography variant="h3" sx={{ fontWeight: 700 }}>{tabCounts.pending}</Typography>
           </Paper>
         </Box>
@@ -269,7 +271,7 @@ const EthicsApplicationsPage = () => {
         <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
             <TextField
-              placeholder="Search applications..."
+              placeholder={t('common.search') + ' applications...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               size="small"
@@ -287,13 +289,13 @@ const EthicsApplicationsPage = () => {
               startIcon={<RefreshIcon />}
               onClick={loadApplications}
             >
-              Refresh
+              {t('common.refresh')}
             </Button>
             <Button
               variant="outlined"
               startIcon={<ExportIcon />}
             >
-              Export
+              {t('common.export')}
             </Button>
             <Button
               variant="contained"
@@ -310,12 +312,12 @@ const EthicsApplicationsPage = () => {
           <Tabs value={selectedTab} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tab label={
               <Badge badgeContent={tabCounts.all} color="primary">
-                <span style={{ marginRight: 8 }}>All</span>
+                <span style={{ marginRight: 8 }}>{t('common.all')}</span>
               </Badge>
             } />
             <Tab label={
               <Badge badgeContent={tabCounts.pending} color="default">
-                <span style={{ marginRight: 8 }}>Pending</span>
+                <span style={{ marginRight: 8 }}>{t('common.pending')}</span>
               </Badge>
             } />
             <Tab label={
@@ -325,7 +327,7 @@ const EthicsApplicationsPage = () => {
             } />
             <Tab label={
               <Badge badgeContent={tabCounts.approved} color="success">
-                <span style={{ marginRight: 8 }}>Approved</span>
+                <span style={{ marginRight: 8 }}>{t('common.approved')}</span>
               </Badge>
             } />
             <Tab label={
@@ -347,8 +349,8 @@ const EthicsApplicationsPage = () => {
                   <TableCell sx={{ color: 'white', fontWeight: 600 }}>Title</TableCell>
                   <TableCell sx={{ color: 'white', fontWeight: 600 }}>Principal Investigator</TableCell>
                   <TableCell sx={{ color: 'white', fontWeight: 600 }}>Submitted</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }} align="right">Actions</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.status')}</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }} align="right">{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -356,7 +358,7 @@ const EthicsApplicationsPage = () => {
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
                       <Typography variant="body2" color="text.secondary">
-                        No applications found
+                        {t('common.no_results')}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -398,7 +400,7 @@ const EthicsApplicationsPage = () => {
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <Tooltip title="View">
+                        <Tooltip title={t('common.view')}>
                           <IconButton
                             size="small"
                             color="primary"
@@ -407,7 +409,7 @@ const EthicsApplicationsPage = () => {
                             <ViewIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="More">
+                        <Tooltip title={t('common.more')}>
                           <IconButton
                             size="small"
                             onClick={(e) => handleMenuOpen(e, application)}
@@ -440,13 +442,13 @@ const EthicsApplicationsPage = () => {
             <ListItemIcon>
               <EditIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Edit</ListItemText>
+            <ListItemText>{t('common.edit')}</ListItemText>
           </MenuItem>
           <MenuItem onClick={() => handleDelete(selectedApplication)}>
             <ListItemIcon>
               <DeleteIcon fontSize="small" color="error" />
             </ListItemIcon>
-            <ListItemText>Delete</ListItemText>
+            <ListItemText>{t('common.delete')}</ListItemText>
           </MenuItem>
         </Menu>
       </Container>

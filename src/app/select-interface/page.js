@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -19,6 +20,7 @@ import { useAuth } from '../../components/AuthProvider';
 import Image from 'next/image';
 
 const SelectInterfacePage = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [selectedInterface, setSelectedInterface] = useState(null);
@@ -47,7 +49,7 @@ const SelectInterfacePage = () => {
   const interfaces = [
     {
       id: 'researcher',
-      title: 'Researcher',
+      title: t('common.researcher'),
       description: 'Individual researcher or academic',
       icon: <ResearcherIcon sx={{ fontSize: 40, color: '#8b6cbc' }} />,
       route: '/researcher',
@@ -61,7 +63,7 @@ const SelectInterfacePage = () => {
     },
     {
       id: 'foundation',
-      title: 'Foundation Administrator',
+      title: t('common.foundation_admin'),
       description: 'Manage foundation research programs',
       icon: <FoundationIcon sx={{ fontSize: 40, color: '#8b6cbc' }} />,
       route: '/foundation',

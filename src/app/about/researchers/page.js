@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Box,
   Container,
@@ -8,9 +8,52 @@ import {
   Paper,
   useTheme,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 const ResearchersPage = () => {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
+
+  const ns = 'about_researchers';
+
+  const f1Items = useMemo(() => [
+    t(`${ns}.f1_item1`),
+    t(`${ns}.f1_item2`),
+  ], [t, i18n.language]);
+
+  const f2Items = useMemo(() => [
+    t(`${ns}.f2_item1`),
+    t(`${ns}.f2_item2`),
+  ], [t, i18n.language]);
+
+  const f3Items = useMemo(() => [
+    t(`${ns}.f3_item1`),
+    t(`${ns}.f3_item2`),
+  ], [t, i18n.language]);
+
+  const f4Items = useMemo(() => [
+    t(`${ns}.f4_item1`),
+    t(`${ns}.f4_item2`),
+  ], [t, i18n.language]);
+
+  const f5Items = useMemo(() => [
+    t(`${ns}.f5_item1`),
+    t(`${ns}.f5_item2`),
+  ], [t, i18n.language]);
+
+  const f6Items = useMemo(() => [
+    t(`${ns}.f6_item1`),
+    t(`${ns}.f6_item2`),
+  ], [t, i18n.language]);
+
+  const conclusionItems = useMemo(() => [
+    t(`${ns}.conclusion_item1`),
+    t(`${ns}.conclusion_item2`),
+    t(`${ns}.conclusion_item3`),
+    t(`${ns}.conclusion_item4`),
+    t(`${ns}.conclusion_item5`),
+    t(`${ns}.conclusion_item6`),
+  ], [t, i18n.language]);
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
@@ -54,7 +97,7 @@ const ResearchersPage = () => {
               textShadow: '0 2px 10px rgba(0,0,0,0.1)',
             }}
           >
-            Value Proposition for Researchers
+            {t(`${ns}.hero_title`)}
           </Typography>
           <Typography
             variant="h5"
@@ -68,7 +111,7 @@ const ResearchersPage = () => {
               fontSize: { xs: '1.1rem', md: '1.25rem' },
             }}
           >
-            HospitiumRIS is a specialized Current Research Information System (CRIS) designed to empower researchers—especially within hospital settings—by streamlining how research activities are managed, shared, governed, and evaluated. It combines digital infrastructure with research workflows so researchers can focus on generating high impact, visible, and compliant outputs.
+            {t(`${ns}.hero_subtitle`)}
           </Typography>
         </Container>
       </Box>
@@ -85,7 +128,7 @@ const ResearchersPage = () => {
               fontSize: { xs: '1.75rem', md: '2rem' },
             }}
           >
-            Why it matters
+            {t(`${ns}.why_matters_title`)}
           </Typography>
           <Typography
             variant="body1"
@@ -96,7 +139,7 @@ const ResearchersPage = () => {
               fontWeight: 500,
             }}
           >
-            Researchers in hospitals often lack integrated tools for managing research activities, which limits productivity and visibility. HospitiumRIS directly addresses this gap by providing a research centric digital backbone that turns isolated projects into structured, visible, and impactful scholarly contributions.
+            {t(`${ns}.why_matters_content`)}
           </Typography>
         </Box>
 
@@ -110,7 +153,7 @@ const ResearchersPage = () => {
             fontSize: { xs: '1.75rem', md: '2rem' },
           }}
         >
-          Core Features for Researchers
+          {t(`${ns}.features_title`)}
         </Typography>
 
         {/* Feature Cards */}
@@ -127,23 +170,20 @@ const ResearchersPage = () => {
             }}
           >
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: '#8b6cbc' }}>
-              1. Centralized Research Management Hub
+              {t(`${ns}.f1_title`)}
             </Typography>
             <Typography variant="body1" sx={{ fontSize: '1.05rem', lineHeight: 1.8, mb: 2 }}>
-              HospitiumRIS provides a unified platform where you can:
+              {t(`${ns}.f1_intro`)}
             </Typography>
             <Box component="ul" sx={{ pl: 3, mb: 2 }}>
-              {[
-                'Create and maintain a detailed researcher profile with expertise, CV, publications, and impact metrics.',
-                'Track all research projects, timelines, resources, and outputs in one place.',
-              ].map((item, index) => (
+              {f1Items.map((item, index) => (
                 <Typography component="li" key={index} sx={{ fontSize: '1.05rem', lineHeight: 1.8, mb: 0.5 }}>
                   {item}
                 </Typography>
               ))}
             </Box>
             <Typography variant="body1" sx={{ fontSize: '1.05rem', lineHeight: 1.8, fontStyle: 'italic', color: theme.palette.text.secondary }}>
-              This centralization eliminates scattered systems and reduces administrative burden, enabling more time for actual research.
+              {t(`${ns}.f1_footer`)}
             </Typography>
           </Paper>
 
@@ -159,20 +199,17 @@ const ResearchersPage = () => {
             }}
           >
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: '#8b6cbc' }}>
-              2. Enhanced Research Visibility & Collaboration
+              {t(`${ns}.f2_title`)}
             </Typography>
             <Box component="ul" sx={{ pl: 3, mb: 2 }}>
-              {[
-                'Share your profiles, publications, and outputs with peers and stakeholders across hospitals and institutions.',
-                'Use built in collaboration tools such as team workspaces and document sharing to facilitate real time interactions.',
-              ].map((item, index) => (
+              {f2Items.map((item, index) => (
                 <Typography component="li" key={index} sx={{ fontSize: '1.05rem', lineHeight: 1.8, mb: 0.5 }}>
                   {item}
                 </Typography>
               ))}
             </Box>
             <Typography variant="body1" sx={{ fontSize: '1.05rem', lineHeight: 1.8, fontStyle: 'italic', color: theme.palette.text.secondary }}>
-              This increases your network and opens doors for multidisciplinary partnerships.
+              {t(`${ns}.f2_footer`)}
             </Typography>
           </Paper>
 
@@ -188,23 +225,20 @@ const ResearchersPage = () => {
             }}
           >
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: '#8b6cbc' }}>
-              3. Streamlined Project and Workflow Management
+              {t(`${ns}.f3_title`)}
             </Typography>
             <Typography variant="body1" sx={{ fontSize: '1.05rem', lineHeight: 1.8, mb: 2 }}>
-              Researchers get tools tailored to academic needs:
+              {t(`${ns}.f3_intro`)}
             </Typography>
             <Box component="ul" sx={{ pl: 3, mb: 2 }}>
-              {[
-                'Timeline planning, resource allocation, and progress tracking support every project phase.',
-                'Structured templates and dashboards help monitor milestones and risks.',
-              ].map((item, index) => (
+              {f3Items.map((item, index) => (
                 <Typography component="li" key={index} sx={{ fontSize: '1.05rem', lineHeight: 1.8, mb: 0.5 }}>
                   {item}
                 </Typography>
               ))}
             </Box>
             <Typography variant="body1" sx={{ fontSize: '1.05rem', lineHeight: 1.8, fontStyle: 'italic', color: theme.palette.text.secondary }}>
-              These features help you meet deadlines and stay aligned with project goals.
+              {t(`${ns}.f3_footer`)}
             </Typography>
           </Paper>
 
@@ -220,23 +254,20 @@ const ResearchersPage = () => {
             }}
           >
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: '#8b6cbc' }}>
-              4. Compliance, Governance & Ethics Built In
+              {t(`${ns}.f4_title`)}
             </Typography>
             <Typography variant="body1" sx={{ fontSize: '1.05rem', lineHeight: 1.8, mb: 2 }}>
-              HospitiumRIS incorporates important governance features that protect research integrity and fulfill institutional requirements:
+              {t(`${ns}.f4_intro`)}
             </Typography>
             <Box component="ul" sx={{ pl: 3, mb: 2 }}>
-              {[
-                'Ethics approvals and regulatory compliance checks',
-                'Data protection and robust audit trails',
-              ].map((item, index) => (
+              {f4Items.map((item, index) => (
                 <Typography component="li" key={index} sx={{ fontSize: '1.05rem', lineHeight: 1.8, mb: 0.5 }}>
                   {item}
                 </Typography>
               ))}
             </Box>
             <Typography variant="body1" sx={{ fontSize: '1.05rem', lineHeight: 1.8, fontStyle: 'italic', color: theme.palette.text.secondary }}>
-              These reduce administrative friction and help you satisfy both internal and external oversight expectations.
+              {t(`${ns}.f4_footer`)}
             </Typography>
           </Paper>
 
@@ -252,20 +283,17 @@ const ResearchersPage = () => {
             }}
           >
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: '#8b6cbc' }}>
-              5. Analytics & Impact Insights
+              {t(`${ns}.f5_title`)}
             </Typography>
             <Box component="ul" sx={{ pl: 3, mb: 2 }}>
-              {[
-                'Comprehensive analytics dashboards show performance metrics, trends, and impact indicators for your research.',
-                'Custom reports help you articulate research contributions to funders, administrators, and collaborators.',
-              ].map((item, index) => (
+              {f5Items.map((item, index) => (
                 <Typography component="li" key={index} sx={{ fontSize: '1.05rem', lineHeight: 1.8, mb: 0.5 }}>
                   {item}
                 </Typography>
               ))}
             </Box>
             <Typography variant="body1" sx={{ fontSize: '1.05rem', lineHeight: 1.8, fontStyle: 'italic', color: theme.palette.text.secondary }}>
-              Insightful analytics enable data driven decisions and strengthen future proposals.
+              {t(`${ns}.f5_footer`)}
             </Typography>
           </Paper>
 
@@ -281,23 +309,20 @@ const ResearchersPage = () => {
             }}
           >
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: '#8b6cbc' }}>
-              6. Publishing & Output Management
+              {t(`${ns}.f6_title`)}
             </Typography>
             <Typography variant="body1" sx={{ fontSize: '1.05rem', lineHeight: 1.8, mb: 2 }}>
-              HospitiumRIS supports your research dissemination strategy:
+              {t(`${ns}.f6_intro`)}
             </Typography>
             <Box component="ul" sx={{ pl: 3, mb: 2 }}>
-              {[
-                'Manage citations and publication records',
-                'Facilitate open access outputs',
-              ].map((item, index) => (
+              {f6Items.map((item, index) => (
                 <Typography component="li" key={index} sx={{ fontSize: '1.05rem', lineHeight: 1.8, mb: 0.5 }}>
                   {item}
                 </Typography>
               ))}
             </Box>
             <Typography variant="body1" sx={{ fontSize: '1.05rem', lineHeight: 1.8, fontStyle: 'italic', color: theme.palette.text.secondary }}>
-              This boosts discoverability and influence within your field.
+              {t(`${ns}.f6_footer`)}
             </Typography>
           </Paper>
         </Box>
@@ -324,7 +349,7 @@ const ResearchersPage = () => {
               fontSize: { xs: '1.75rem', md: '2rem' },
             }}
           >
-            In Conclusion — What You Gain as a Researcher
+            {t(`${ns}.conclusion_title`)}
           </Typography>
           <Typography
             variant="body1"
@@ -335,17 +360,10 @@ const ResearchersPage = () => {
               mb: 2,
             }}
           >
-            HospitiumRIS helps you:
+            {t(`${ns}.conclusion_intro`)}
           </Typography>
           <Box component="ul" sx={{ pl: 3, mb: 3 }}>
-            {[
-              'Consolidate your research profile and outputs in a single, searchable system',
-              'Improve project organization and collaboration',
-              'Stay compliant with ethics and governance standards',
-              'Monitor research performance with meaningful data',
-              'Increase the visibility and impact of your work — both locally and globally',
-              'Present stronger proposals and reports to stakeholders and funders',
-            ].map((item, index) => (
+            {conclusionItems.map((item, index) => (
               <Typography
                 component="li"
                 key={index}

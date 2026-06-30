@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Typography,
@@ -19,6 +20,7 @@ import {
 } from '@mui/icons-material';
 
 const UpcomingEvents = () => {
+  const { t } = useTranslation();
   const events = [
     {
       id: 1,
@@ -79,7 +81,7 @@ const UpcomingEvents = () => {
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 3, p: 3, height: 500 }}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, fontSize: '1.25rem' }}>
-        Upcoming Events & Deadlines
+        {t('foundation_dashboard.upcoming_events_deadlines')}
       </Typography>
       <Stack spacing={2} sx={{ maxHeight: 420, overflow: 'auto', pr: 1 }}>
         {events.map((event) => (

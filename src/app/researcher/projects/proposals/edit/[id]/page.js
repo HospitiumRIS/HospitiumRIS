@@ -71,6 +71,7 @@ import {
 import PageHeader from '../../../../../../components/common/PageHeader';
 import { useAuth } from '../../../../../../components/AuthProvider';
 import OrcidSearchModal from '../../create/components/OrcidSearchModal';
+import { useTranslation } from 'react-i18next';
 
 const RESEARCH_FIELDS = [
   'Cardiology',
@@ -179,6 +180,7 @@ const steps = [
 ];
 
 const EditProposalPage = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const { user } = useAuth();
@@ -2160,8 +2162,8 @@ const EditProposalPage = () => {
       {/* Page Header */}
       <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
         <PageHeader
-          title="Edit Project Proposal"
-          description="Update your research proposal details"
+          title={t("researcher.edit_proposal")}
+          description={t("researcher.edit_proposal_desc")}
           icon={<AssignmentIcon />}
           breadcrumbs={[
             { label: 'Dashboard', href: '/researcher' },

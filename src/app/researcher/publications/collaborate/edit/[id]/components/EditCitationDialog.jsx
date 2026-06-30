@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -42,6 +43,7 @@ export default function EditCitationDialog({
   onSave,
   currentStyle = 'APA'
 }) {
+  const { t } = useTranslation();
   const [pageNumbers, setPageNumbers] = useState('');
   const [prefix, setPrefix] = useState('');
   const [suffix, setSuffix] = useState('');
@@ -182,8 +184,8 @@ export default function EditCitationDialog({
           <CheckIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem', flexShrink: 0 }} />
           <Box>
             <Typography sx={{ fontSize: '0.7rem', color: '#8b6cbc', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.25 }}>
-              Preview
-            </Typography>
+              t('common.preview')
+</Typography>
             <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: '#2d3748', fontFamily: 'Georgia, serif' }}>
               {generatePreview()}
             </Typography>
@@ -364,8 +366,8 @@ export default function EditCitationDialog({
             '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' },
           }}
         >
-          Cancel
-        </Button>
+          t('common.cancel')
+</Button>
         <Button
           onClick={handleSave}
           variant="contained"

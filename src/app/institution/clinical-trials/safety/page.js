@@ -20,6 +20,7 @@ import {
   BugReport as DeviationIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 const PURPLE = '#8b6cbc';
 
@@ -41,37 +42,6 @@ const mockDeviations = [
   { id: 'DEV-006', trial: 'Maternal Health Study',       pi: 'Dr. Fatima Diop',   deviation: 'Eligibility criteria not fully verified at enrolment', type: 'CONSENT', severity: 'MAJOR',    reportedDate: '2024-06-13', status: 'CAPA_OPEN',  caAction: 'Screening checklist revised and re-trained' },
 ];
 
-const getSeverityConfig = (severity) => {
-  switch (severity) {
-    case 'LIFE_THREATENING': return { color: '#7c3aed', label: 'Life-Threatening' };
-    case 'SERIOUS':          return { color: '#ef4444', label: 'Serious' };
-    case 'UNEXPECTED':       return { color: '#f59e0b', label: 'Unexpected' };
-    case 'CRITICAL':         return { color: '#ef4444', label: 'Critical' };
-    case 'MAJOR':            return { color: '#f59e0b', label: 'Major' };
-    case 'MINOR':            return { color: '#10b981', label: 'Minor' };
-    default:                 return { color: '#6b7280', label: severity };
-  }
-};
-
-const getSaeStatusConfig = (status) => {
-  switch (status) {
-    case 'OVERDUE':   return { color: '#ef4444', icon: <CriticalIcon sx={{ fontSize: 14 }} />, label: 'Overdue' };
-    case 'IN_REVIEW': return { color: '#f59e0b', icon: <WarningIcon  sx={{ fontSize: 14 }} />, label: 'In Review' };
-    case 'PENDING':   return { color: '#3b82f6', icon: <PendingIcon  sx={{ fontSize: 14 }} />, label: 'Pending' };
-    case 'RESOLVED':  return { color: '#10b981', icon: <ResolvedIcon sx={{ fontSize: 14 }} />, label: 'Resolved' };
-    default:          return { color: '#6b7280', icon: null, label: status };
-  }
-};
-
-const getDevStatusConfig = (status) => {
-  switch (status) {
-    case 'OPEN':      return { color: '#ef4444', label: 'Open' };
-    case 'CAPA_OPEN': return { color: '#f59e0b', label: 'CAPA Open' };
-    case 'RESOLVED':  return { color: '#10b981', label: 'Resolved' };
-    default:          return { color: '#6b7280', label: status };
-  }
-};
-
 const statCardSx = {
   p: 2, borderRadius: 2, bgcolor: PURPLE,
   boxShadow: '0 2px 8px rgba(139,108,188,0.2)',
@@ -80,8 +50,40 @@ const statCardSx = {
 };
 
 export default function SafetyAndDeviationsMonitorPage() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [tab, setTab] = useState(0);
+
+  const getSeverityConfig = (severity) => {
+    switch (severity) {
+      case 'LIFE_THREATENING': return { color: '#7c3aed', label: 'Life-Threatening' };
+      case 'SERIOUS':          return { color: '#ef4444', label: 'Serious' };
+      case 'UNEXPECTED':       return { color: '#f59e0b', label: 'Unexpected' };
+      case 'CRITICAL':         return { color: '#ef4444', label: 'Critical' };
+      case 'MAJOR':            return { color: '#f59e0b', label: 'Major' };
+      case 'MINOR':            return { color: '#10b981', label: 'Minor' };
+      default:                 return { color: '#6b7280', label: severity };
+    }
+  };
+
+  const getSaeStatusConfig = (status) => {
+    switch (status) {
+      case 'OVERDUE':   return { color: '#ef4444', icon: <CriticalIcon sx={{ fontSize: 14 }} />, label: 'Overdue' };
+      case 'IN_REVIEW': return { color: '#f59e0b', icon: <WarningIcon  sx={{ fontSize: 14 }} />, label: 'In Review' };
+      case 'PENDING':   return { color: '#3b82f6', icon: <PendingIcon  sx={{ fontSize: 14 }} />, label: t('common.pending') };
+      case 'RESOLVED':  return { color: '#10b981', icon: <ResolvedIcon sx={{ fontSize: 14 }} />, label: 'Resolved' };
+      default:          return { color: '#6b7280', icon: null, label: status };
+    }
+  };
+
+  const getDevStatusConfig = (status) => {
+    switch (status) {
+      case 'OPEN':      return { color: '#ef4444', label: 'Open' };
+      case 'CAPA_OPEN': return { color: '#f59e0b', label: 'CAPA Open' };
+      case 'RESOLVED':  return { color: '#10b981', label: 'Resolved' };
+      default:          return { color: '#6b7280', label: status };
+    }
+  };
 
   const saeOpen     = mockSAEs.filter(s => s.status !== 'RESOLVED').length;
   const saeOverdue  = mockSAEs.filter(s => s.status === 'OVERDUE').length;

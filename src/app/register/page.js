@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useThemeMode } from '../../components/ThemeProvider';
 import dynamic from 'next/dynamic';
+import { useTranslation } from 'react-i18next';
 
 // Dynamic imports for step components with loading fallbacks
 const AccountTypeStep = dynamic(() => import('../../components/Registration/AccountTypeStep'), {
@@ -115,6 +116,7 @@ const RegisterPage = () => {
   const theme = useTheme();
   const router = useRouter();
   const { isDarkMode, isClient } = useThemeMode();
+  const { t, i18n } = useTranslation();
   
   // Multi-step form state
   const [activeStep, setActiveStep] = useState(0);
@@ -182,16 +184,16 @@ const RegisterPage = () => {
 
   // Define steps based on account type
   const getSteps = () => {
-    const baseSteps = ['Account Type'];
+    const baseSteps = [t('auth.step_account_type')];
     
     if (accountType === 'RESEARCHER') {
-      return [...baseSteps, 'ORCID Search', 'Account Details', 'Password'];
+      return [...baseSteps, t('auth.step_orcid_search'), t('auth.step_account_details'), t('auth.step_password')];
     } else if (accountType === 'RESEARCH_ADMIN') {
-      return [...baseSteps, 'ORCID Search', 'Account Details', 'Institution Details', 'Password'];
+      return [...baseSteps, t('auth.step_orcid_search'), t('auth.step_account_details'), t('auth.step_institution_details'), t('auth.step_password')];
     } else if (accountType === 'FOUNDATION_ADMIN') {
-      return [...baseSteps, 'Email & Password'];
+      return [...baseSteps, t('auth.step_email_password')];
     } else if (accountType === 'OPERATIONS') {
-      return [...baseSteps, 'Email & Password'];
+      return [...baseSteps, t('auth.step_email_password')];
     }
     
     return baseSteps;
@@ -200,20 +202,20 @@ const RegisterPage = () => {
   const steps = getSteps();
 
   // Generate month options
-  const monthOptions = [
-    { value: '01', label: 'January' },
-    { value: '02', label: 'February' },
-    { value: '03', label: 'March' },
-    { value: '04', label: 'April' },
-    { value: '05', label: 'May' },
-    { value: '06', label: 'June' },
-    { value: '07', label: 'July' },
-    { value: '08', label: 'August' },
-    { value: '09', label: 'September' },
-    { value: '10', label: 'October' },
-    { value: '11', label: 'November' },
-    { value: '12', label: 'December' },
-  ];
+  const monthOptions = React.useMemo(() => [
+    { value: '01', label: t('auth.month_january') },
+    { value: '02', label: t('auth.month_february') },
+    { value: '03', label: t('auth.month_march') },
+    { value: '04', label: t('auth.month_april') },
+    { value: '05', label: t('auth.month_may') },
+    { value: '06', label: t('auth.month_june') },
+    { value: '07', label: t('auth.month_july') },
+    { value: '08', label: t('auth.month_august') },
+    { value: '09', label: t('auth.month_september') },
+    { value: '10', label: t('auth.month_october') },
+    { value: '11', label: t('auth.month_november') },
+    { value: '12', label: t('auth.month_december') },
+  ], [t, i18n.language]);
 
   // Generate year options (current year back to 1950)
   const currentYear = new Date().getFullYear();
@@ -297,7 +299,7 @@ const RegisterPage = () => {
     switch (step) {
       case 0: // Account Type
         if (!formData.accountType) {
-          newErrors.accountType = 'Please select an account type';
+          newErrors.accountType = t('auth.error_account_type_required');
         }
         break;
         
@@ -305,30 +307,30 @@ const RegisterPage = () => {
         if (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') {
           // Email & Password validation for Foundation Admins and Operations
           if (!formData.email) {
-            newErrors.email = 'Email is required';
+            newErrors.email = t('auth.error_email_required');
           } else if (accountType === 'FOUNDATION_ADMIN' && !validateFoundationEmail(formData.email)) {
-            newErrors.email = 'Please enter a valid @hospitium.org email address';
+            newErrors.email = t('auth.error_email_hospitium');
           } else if (accountType === 'OPERATIONS' && !validateEmail(formData.email)) {
-            newErrors.email = 'Please enter a valid email address';
+            newErrors.email = t('auth.error_email_invalid');
           }
           
           if (!formData.password) {
-            newErrors.password = 'Password is required';
+            newErrors.password = t('auth.error_password_required');
           } else {
             const validation = validatePassword(formData.password);
             if (!validation.isValid) {
-              newErrors.password = 'Password must contain at least 8 characters, including uppercase, lowercase, number, and special character';
+              newErrors.password = t('auth.error_password_weak');
             }
           }
           if (!formData.confirmPassword) {
-            newErrors.confirmPassword = 'Please confirm your password';
+            newErrors.confirmPassword = t('auth.error_confirm_password_required');
           } else if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
+            newErrors.confirmPassword = t('auth.error_passwords_mismatch');
           }
         } else {
           // ORCID Search validation for RESEARCHER and RESEARCH_ADMIN
           if (!selectedOrcidProfile) {
-            newErrors.orcidSearch = 'Please search for and select your ORCID profile to continue';
+            newErrors.orcidSearch = t('auth.error_orcid_required');
           }
         }
         break;
@@ -336,26 +338,26 @@ const RegisterPage = () => {
       case 2: 
         // Personal/Account Details for RESEARCHER and RESEARCH_ADMIN only
         if (!formData.givenName.trim()) {
-          newErrors.givenName = 'Given name is required';
+          newErrors.givenName = t('auth.error_given_name_required');
         }
         if (!formData.familyName.trim()) {
-          newErrors.familyName = 'Family name is required';
+          newErrors.familyName = t('auth.error_family_name_required');
         }
         if (!formData.email) {
-          newErrors.email = 'Email is required';
+          newErrors.email = t('auth.error_email_required');
         } else if (!validateEmail(formData.email)) {
-          newErrors.email = 'Please enter a valid email address';
+          newErrors.email = t('auth.error_email_invalid');
         }
         
         // Additional validation for institution and dates
         if (!formData.primaryInstitution.trim()) {
-          newErrors.primaryInstitution = 'Primary institution is required';
+          newErrors.primaryInstitution = t('auth.error_institution_required');
         }
         if (!formData.startMonth) {
-          newErrors.startMonth = 'Start month is required';
+          newErrors.startMonth = t('auth.error_start_month_required');
         }
         if (!formData.startYear) {
-          newErrors.startYear = 'Start year is required';
+          newErrors.startYear = t('auth.error_start_year_required');
         }
         break;
         
@@ -363,28 +365,28 @@ const RegisterPage = () => {
         if (accountType === 'RESEARCHER') {
           // Researcher password validation
           if (!formData.password) {
-            newErrors.password = 'Password is required';
+            newErrors.password = t('auth.error_password_required');
           } else {
             const validation = validatePassword(formData.password);
             if (!validation.isValid) {
-              newErrors.password = 'Password must contain at least 8 characters, including uppercase, lowercase, number, and special character';
+              newErrors.password = t('auth.error_password_weak');
             }
           }
           if (!formData.confirmPassword) {
-            newErrors.confirmPassword = 'Please confirm your password';
+            newErrors.confirmPassword = t('auth.error_confirm_password_required');
           } else if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
+            newErrors.confirmPassword = t('auth.error_passwords_mismatch');
           }
         } else if (accountType === 'RESEARCH_ADMIN') {
           // Research Admin institution validation
           if (!formData.institutionName.trim()) {
-            newErrors.institutionName = 'Institution name is required';
+            newErrors.institutionName = t('auth.error_institution_name_required');
           }
           if (!formData.institutionType) {
-            newErrors.institutionType = 'Institution type is required';
+            newErrors.institutionType = t('auth.error_institution_type_required');
           }
           if (!formData.institutionCountry) {
-            newErrors.institutionCountry = 'Country is required';
+            newErrors.institutionCountry = t('auth.error_institution_country_required');
           }
         }
         break;
@@ -392,17 +394,17 @@ const RegisterPage = () => {
       case 4: // Password (final step for Research Admins only)
         if (accountType === 'RESEARCH_ADMIN') {
           if (!formData.password) {
-            newErrors.password = 'Password is required';
+            newErrors.password = t('auth.error_password_required');
           } else {
             const validation = validatePassword(formData.password);
             if (!validation.isValid) {
-              newErrors.password = 'Password must contain at least 8 characters, including uppercase, lowercase, number, and special character';
+              newErrors.password = t('auth.error_password_weak');
             }
           }
           if (!formData.confirmPassword) {
-            newErrors.confirmPassword = 'Please confirm your password';
+            newErrors.confirmPassword = t('auth.error_confirm_password_required');
           } else if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
+            newErrors.confirmPassword = t('auth.error_passwords_mismatch');
           }
         }
         break;
@@ -519,12 +521,12 @@ const RegisterPage = () => {
           }
         }
         
-        setFormError(data.message || 'Registration failed. Please check your information and try again.');
+        setFormError(data.message || t('errors.server_error'));
       }
       
     } catch (error) {
       console.error('Registration error:', error);
-      setFormError('Network error. Please check your connection and try again.');
+      setFormError(t('errors.network_error'));
     } finally {
       setIsLoading(false);
     }
@@ -659,14 +661,14 @@ const RegisterPage = () => {
                 fontSize: { xs: '1.75rem', sm: '2rem' },
               }}
             >
-              Create Account
+              {t('auth.register_title')}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ fontSize: '0.875rem' }}
             >
-              Join our research community today
+              {t('auth.register_subtitle')}
             </Typography>
           </Box>
 
@@ -715,9 +717,9 @@ const RegisterPage = () => {
               startIcon={<ArrowBackIcon />}
               sx={{ visibility: activeStep === 0 ? 'hidden' : 'visible' }}
             >
-              Back
+              {t('common.back')}
             </Button>
-            
+
             <Button
               variant="contained"
               onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
@@ -732,20 +734,20 @@ const RegisterPage = () => {
                 )
               }
             >
-              {isLoading ? 'Creating Account...' : activeStep === steps.length - 1 ? 'Create Account' : 'Continue'}
+              {isLoading ? t('common.loading') : activeStep === steps.length - 1 ? t('common.create') : t('common.next')}
             </Button>
           </Box>
 
           {/* Sign In Link */}
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-              Already have an account?{' '}
+              {t('auth.have_account')}{' '}
               <Button
                 variant="text"
                 onClick={() => router.push('/login')}
                 sx={{ textTransform: 'none', p: 0, minWidth: 'auto', fontSize: '0.875rem' }}
               >
-                Sign in here
+                {t('auth.sign_in')}
               </Button>
             </Typography>
           </Box>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -362,8 +363,8 @@ const CommentItem = ({
                   fontSize: '0.8rem'
                 }}
               >
-                Cancel
-              </Button>
+                t('common.cancel')
+</Button>
               <Button 
                 size="small" 
                 variant="contained"
@@ -376,8 +377,8 @@ const CommentItem = ({
                   '&:hover': { bgcolor: '#7a5ca7' }
                 }}
               >
-              Save
-            </Button>
+              t('common.save')
+</Button>
           </Stack>
         </Box>
       ) : (
@@ -419,8 +420,8 @@ const CommentItem = ({
                       '&:hover': { bgcolor: '#f5f5f5' }
                     }}
           >
-            Reply
-          </Button>
+            t('common.reply')
+</Button>
           
           {comment.type !== 'COMMENT' && (
             <Button
@@ -438,8 +439,8 @@ const CommentItem = ({
                         '&:hover': { bgcolor: '#e8f5e9' }
                       }}
             >
-              Resolve
-            </Button>
+              t('common.resolve')
+</Button>
                   )}
                 </>
               )}
@@ -514,8 +515,8 @@ const CommentItem = ({
                   fontSize: '0.8rem'
                 }}
               >
-                Cancel
-              </Button>
+                t('common.cancel')
+</Button>
               <Button 
                 size="small" 
                 variant="contained"
@@ -529,8 +530,8 @@ const CommentItem = ({
                   '&:hover': { bgcolor: '#7a5ca7' }
                 }}
               >
-                Send Reply
-              </Button>
+                t('common.send')
+</Button>
             </Stack>
           </Box>
         </Collapse>
@@ -561,8 +562,8 @@ const CommentItem = ({
             sx={{ fontSize: '0.85rem', py: 1 }}
           >
             <EditIcon sx={{ mr: 1.5, fontSize: 18, color: '#666' }} />
-            Edit
-          </MenuItem>
+            t('common.edit')
+</MenuItem>
         )}
         
         {isAuthor && (
@@ -571,8 +572,8 @@ const CommentItem = ({
             sx={{ fontSize: '0.85rem', py: 1, color: '#e74c3c' }}
           >
             <DeleteIcon sx={{ mr: 1.5, fontSize: 18 }} />
-            Delete
-          </MenuItem>
+            t('common.delete')
+</MenuItem>
         )}
         
         {!isResolved && comment.type !== 'COMMENT' && (
@@ -581,8 +582,8 @@ const CommentItem = ({
             sx={{ fontSize: '0.85rem', py: 1, color: '#27ae60' }}
           >
             <CheckIcon sx={{ mr: 1.5, fontSize: 18 }} />
-            Resolve
-          </MenuItem>
+            t('common.resolve')
+</MenuItem>
         )}
       </Menu>
     </Box>
@@ -598,6 +599,7 @@ export default function CommentThread({
   currentUserId,
   isLast = false
 }) {
+  const { t } = useTranslation();
   const [showReplies, setShowReplies] = useState(true);
   const repliesCount = comment.replies?.length || 0;
   const parentAuthorName = `${comment.author?.givenName || ''} ${comment.author?.familyName || ''}`.trim() || 'Unknown';

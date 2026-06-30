@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   CardContent,
@@ -38,14 +39,14 @@ const SearchFilters = ({
   setStatusFilter,
   loadData
 }) => {
-  
-  const statusOptions = [
-    { value: 'Planning', label: 'Planning', color: '#757575' },
-    { value: 'Active', label: 'Active', color: '#4caf50' },
-    { value: 'Paused', label: 'Paused', color: '#ff9800' },
-    { value: 'Completed', label: 'Completed', color: '#2196f3' },
-    { value: 'Cancelled', label: 'Cancelled', color: '#f44336' }
-  ];
+  const { t, i18n } = useTranslation();
+  const statusOptions = React.useMemo(() => [
+    { value: 'Planning', label: t('foundation_dashboard.status_planning'), color: '#757575' },
+    { value: 'Active', label: t('foundation_dashboard.status_active'), color: '#4caf50' },
+    { value: 'Paused', label: t('foundation_dashboard.status_paused'), color: '#ff9800' },
+    { value: 'Completed', label: t('foundation_dashboard.status_completed'), color: '#2196f3' },
+    { value: 'Cancelled', label: t('foundation_dashboard.status_cancelled'), color: '#f44336' }
+  ], [t, i18n.language]);
 
   const handleClearFilters = () => {
     setSearchTerm('');
@@ -58,13 +59,13 @@ const SearchFilters = ({
   };
 
   const activeFilters = [
-    searchTerm && { type: 'search', label: `Search: ${searchTerm}`, value: searchTerm },
+    searchTerm && { type: 'search', label: `${t('foundation_dashboard.search_label')}: ${searchTerm}`, value: searchTerm },
     categoryFilter && { 
       type: 'category', 
-      label: `Category: ${categories.find(c => c.id === categoryFilter)?.name || 'Unknown'}`, 
+      label: `${t('foundation_dashboard.category_label')}: ${categories.find(c => c.id === categoryFilter)?.name || 'Unknown'}`, 
       value: categoryFilter 
     },
-    statusFilter && { type: 'status', label: `Status: ${statusFilter}`, value: statusFilter }
+    statusFilter && { type: 'status', label: `${t('foundation_dashboard.status_label')}: ${statusFilter}`, value: statusFilter }
   ].filter(Boolean);
 
   const removeFilter = (filterType, value) => {
@@ -93,10 +94,10 @@ const SearchFilters = ({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
             <SearchIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
             <Typography variant="h6" sx={{ fontWeight: 500, color: '#333', fontSize: '1.1rem' }}>
-              Search & Filter
+              {t('foundation_dashboard.search_and_filter')}
             </Typography>
             <Box sx={{ flex: 1 }} />
-            <Tooltip title="Reset">
+            <Tooltip title={t('foundation_dashboard.reset')}>
               <Button 
                 startIcon={<RefreshIcon />}
                 onClick={handleClearFilters}
@@ -110,7 +111,7 @@ const SearchFilters = ({
                   fontSize: '0.875rem'
                 }}
               >
-                Reset
+                {t('foundation_dashboard.reset')}
               </Button>
             </Tooltip>
           </Box>
@@ -120,7 +121,7 @@ const SearchFilters = ({
             <Box sx={{ flex: 1, minWidth: 300 }}>
               <TextField
                 fullWidth
-                placeholder="Search categories and initiatives..."
+                placeholder={t('foundation_dashboard.search_categories_initiatives')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
@@ -200,7 +201,7 @@ const SearchFilters = ({
                   }}
                 >
                   <MenuItem value="">
-                    Filter by Category
+                    {t('foundation_dashboard.filter_by_category')}
                   </MenuItem>
                   {categories.map(category => (
                     <MenuItem key={category.id} value={category.id}>
@@ -274,7 +275,7 @@ const SearchFilters = ({
                   }}
                 >
                   <MenuItem value="">
-                    Filter by Status
+                    {t('foundation_dashboard.filter_by_status')}
                   </MenuItem>
                   {statusOptions.map(status => (
                     <MenuItem key={status.value} value={status.value}>
@@ -298,7 +299,7 @@ const SearchFilters = ({
           {activeFilters.length > 0 && (
             <Box sx={{ mb: 0 }}>
               <Typography variant="body2" sx={{ mb: 1, fontWeight: 600, color: '#64748b' }}>
-                Active Filters ({activeFilters.length}):
+                {t('foundation_dashboard.active_filters')} ({activeFilters.length}):
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 {activeFilters.map((filter, index) => (
@@ -337,7 +338,7 @@ const SearchFilters = ({
                     }
                   }}
                 >
-                  Clear All
+                  {t('foundation_dashboard.clear_all')}
                 </Button>
               </Stack>
             </Box>

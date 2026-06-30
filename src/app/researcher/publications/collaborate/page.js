@@ -119,6 +119,7 @@ import OrcidCollaboratorInvite from '../../../../components/Manuscripts/OrcidCol
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 // Dynamic imports for DND components
 const DragDropContextComponent = dynamic(
@@ -218,6 +219,7 @@ const useDebounce = (value, delay) => {
 export default function CollaborativeWriting() {
   const { user } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
   
   // Hydration-safe client detection (must be at top with other hooks)
   const [isClient, setIsClient] = useState(false);
@@ -1708,10 +1710,10 @@ export default function CollaborativeWriting() {
   return (
     <>
       {/* Full-width PageHeader */}
-      <Box sx={{ width: '100%',mt:8, mb: 0 }}>
+      <Box sx={{ width: '100%', mb: 0 }}>
         <PageHeader
-          title="Collaborative Writing"
-          description="Create and manage your collaborative manuscripts with colleagues"
+          title={t("researcher.collaborate")}
+          description={t("researcher.collaborate_desc")}
           icon={<CreateIcon />}
           breadcrumbs={[
             { label: 'Dashboard', href: '/researcher' },

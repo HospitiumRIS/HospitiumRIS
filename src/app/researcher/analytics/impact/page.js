@@ -46,8 +46,10 @@ import { format, subMonths } from 'date-fns';
 
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const ResearchImpactPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [currentTab, setCurrentTab] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -114,8 +116,8 @@ const ResearchImpactPage = () => {
   return (
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
       <PageHeader
-        title="Research Impact Analytics"
-        description="Track your research influence, citations, collaborations, and scholarly impact metrics"
+        title={t("researcher.impact_analytics")}
+        description={t("researcher.impact_analytics_desc")}
         icon={<ImpactIcon />}
         breadcrumbs={[
           { label: 'Dashboard', path: '/researcher', icon: <BusinessIcon /> },

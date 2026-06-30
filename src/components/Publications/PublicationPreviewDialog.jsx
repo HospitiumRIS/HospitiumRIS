@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import {
     Dialog,
@@ -42,6 +43,7 @@ const PublicationPreviewDialog = ({
     onImport,
     importing = false
 }) => {
+  const { t } = useTranslation();
     const [error, setError] = useState(null);
     const [aiSummary, setAiSummary] = useState(null);
     const [aiKeywords, setAiKeywords] = useState([]);
@@ -721,8 +723,8 @@ const PublicationPreviewDialog = ({
                     onClick={onClose}
                     disabled={importing}
                 >
-                    Cancel
-                </Button>
+                    t('common.cancel')
+</Button>
                 <Button
                     variant="contained"
                     onClick={handleImport}

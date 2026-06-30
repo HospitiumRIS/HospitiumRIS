@@ -13,6 +13,7 @@ import {
   Chip,
   Divider
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import {
   Notifications as NotificationsIcon,
   Science as ScienceIcon,
@@ -23,6 +24,7 @@ import {
 } from '@mui/icons-material';
 
 export default function TestNotificationsPage() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);

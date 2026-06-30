@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   CardContent,
@@ -18,33 +19,35 @@ import {
 } from '@mui/icons-material';
 
 const MetricsCards = ({ dashboardData, formatCurrency }) => {
+  const { t } = useTranslation();
+
   const metrics = [
     {
-      title: 'Total Funds',
+      title: t('foundation_dashboard.total_funds'),
       value: formatCurrency(dashboardData.totalFunds),
       icon: <MoneyIcon sx={{ fontSize: 28, color: '#8b6cbc', mb: 1 }} />,
       trend: `+${dashboardData.monthlyGrowth}%`,
       trendColor: '#2e7d32',
     },
     {
-      title: 'Total Donations',
+      title: t('foundation_dashboard.total_donations'),
       value: formatCurrency(dashboardData.totalDonations),
       icon: <CampaignIcon sx={{ fontSize: 28, color: '#2e7d32', mb: 1 }} />,
       trend: `+${dashboardData.donationGrowth}%`,
       trendColor: '#2e7d32',
     },
     {
-      title: 'Grant Opportunities',
+      title: t('foundation_dashboard.grant_opportunities'),
       value: dashboardData.grantOpportunities,
       icon: <GrantIcon sx={{ fontSize: 28, color: '#ff9800', mb: 1 }} />,
-      subtitle: `${dashboardData.activeGrants} active grants`,
+      subtitle: `${dashboardData.activeGrants} ${t('common.active').toLowerCase()} grants`,
       valueColor: '#ff9800',
     },
     {
-      title: 'Total Donors',
+      title: t('foundation_dashboard.total_donors'),
       value: dashboardData.totalDonors,
       icon: <GroupIcon sx={{ fontSize: 28, color: '#1976d2', mb: 1 }} />,
-      subtitle: 'Active contributors',
+      subtitle: t('foundation_dashboard.active_contributors'),
       valueColor: '#1976d2',
     },
   ];

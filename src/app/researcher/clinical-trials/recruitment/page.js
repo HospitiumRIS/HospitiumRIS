@@ -52,8 +52,10 @@ import {
 import { format } from 'date-fns';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 export default function RecruitmentProgressPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [trials, setTrials] = useState([]);
@@ -192,8 +194,8 @@ export default function RecruitmentProgressPage() {
     <>
       <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
         <PageHeader
-          title="Trial Progress & Recruitment"
-          description="Track enrollment metrics and site performance benchmarks"
+          title={t("researcher.recruitment")}
+          description={t("researcher.recruitment_desc")}
           icon={<PersonAddIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={breadcrumbs}
           actionButton={
@@ -570,7 +572,10 @@ export default function RecruitmentProgressPage() {
           open={Boolean(menuAnchor)}
           onClose={handleMenuClose}
         >
-          <MenuItem onClick={handleMenuClose}>
+          <MenuItem onClick={() => {
+            if (selectedTrial) router.push(`/researcher/clinical-trials/recruitment/view/${selectedTrial.id}`);
+            handleMenuClose();
+          }}>
             <ViewIcon sx={{ mr: 1 }} /> View Details
           </MenuItem>
           <MenuItem onClick={handleMenuClose}>

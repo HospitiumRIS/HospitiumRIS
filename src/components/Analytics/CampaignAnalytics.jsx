@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo, useState, useMemo } from 'react';
 import {
   Box,
@@ -48,6 +49,7 @@ import {
 } from '@mui/icons-material';
 
 const CampaignAnalytics = memo(({ analyticsData, loading }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -181,20 +183,20 @@ const CampaignAnalytics = memo(({ analyticsData, loading }) => {
               color: theme.palette.text.primary,
               mb: 0.5
             }}>
-              Campaign Analytics
+              {t('analytics.campaign_analytics')}
             </Typography>
             <Typography variant="body1" sx={{ 
               color: theme.palette.text.secondary
             }}>
-              In-depth analysis of individual campaign performance and ROI
+              {t('analytics.campaign_analytics_desc')}
             </Typography>
           </Box>
         </Stack>
 
         <Alert severity="info" sx={{ borderRadius: 3 }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>No Campaign Data Available</Typography>
+          <Typography variant="h6" sx={{ mb: 1 }}>{t('analytics.no_campaign_data_title')}</Typography>
           <Typography>
-            Create some campaigns and start collecting donations to see comprehensive analytics here.
+            {t('analytics.no_campaign_data_desc')}
           </Typography>
         </Alert>
       </Box>
@@ -212,12 +214,12 @@ const CampaignAnalytics = memo(({ analyticsData, loading }) => {
             color: theme.palette.text.primary,
             mb: 0.5
           }}>
-            Campaign Analytics
+            {t('analytics.campaign_analytics')}
           </Typography>
           <Typography variant="body1" sx={{ 
             color: theme.palette.text.secondary
           }}>
-            In-depth analysis of individual campaign performance and ROI
+            {t('analytics.campaign_analytics_desc')}
           </Typography>
         </Box>
       </Stack>
@@ -234,25 +236,25 @@ const CampaignAnalytics = memo(({ analyticsData, loading }) => {
       }}>
         {[
           {
-            title: 'Total Campaigns',
+            title: t('analytics.total_campaigns'),
             value: statistics.totalCampaigns,
             icon: CampaignIcon,
             color: '#8b6cbc'
           },
           {
-            title: 'Active Campaigns',
+            title: t('analytics.active_campaigns'),
             value: statistics.activeCampaigns,
             icon: ActiveIcon,
             color: '#4caf50'
           },
           {
-            title: 'Total Raised',
+            title: t('analytics.total_raised'),
             value: formatCurrency(statistics.totalRaised),
             icon: MoneyIcon,
             color: '#2196f3'
           },
           {
-            title: 'Total Donors',
+            title: t('analytics.donors'),
             value: statistics.totalDonors,
             icon: PeopleIcon,
             color: '#ff9800'
@@ -311,7 +313,7 @@ const CampaignAnalytics = memo(({ analyticsData, loading }) => {
             }
           }}>
             <TextField
-              placeholder="Search campaigns..."
+              placeholder={t('analytics.search_campaigns')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               size="small"
@@ -331,28 +333,28 @@ const CampaignAnalytics = memo(({ analyticsData, loading }) => {
             />
 
             <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Status</InputLabel>
+              <InputLabel>{t('common.status')}</InputLabel>
               <Select
                 value={statusFilter}
-                label="Status"
+                label={t('common.status')}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <MenuItem value="">All Status</MenuItem>
-                <MenuItem value="Active">Active</MenuItem>
-                <MenuItem value="Completed">Completed</MenuItem>
-                <MenuItem value="Paused">Paused</MenuItem>
-                <MenuItem value="Planning">Planning</MenuItem>
+                <MenuItem value="">{t('analytics.all_status')}</MenuItem>
+                <MenuItem value="Active">{t('analytics.status_active')}</MenuItem>
+                <MenuItem value="Completed">{t('analytics.status_completed')}</MenuItem>
+                <MenuItem value="Paused">{t('analytics.status_paused')}</MenuItem>
+                <MenuItem value="Planning">{t('analytics.status_planning')}</MenuItem>
               </Select>
             </FormControl>
 
             <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Category</InputLabel>
+              <InputLabel>{t('common.category')}</InputLabel>
               <Select
                 value={categoryFilter}
-                label="Category"
+                label={t('common.category')}
                 onChange={(e) => setCategoryFilter(e.target.value)}
               >
-                <MenuItem value="">All Categories</MenuItem>
+                <MenuItem value="">{t('analytics.all_categories')}</MenuItem>
                 {categories.map(category => (
                   <MenuItem key={category} value={category}>{category}</MenuItem>
                 ))}
@@ -367,7 +369,7 @@ const CampaignAnalytics = memo(({ analyticsData, loading }) => {
         <CardContent sx={{ p: 0 }}>
           <Box sx={{ p: 3, borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Campaign Performance Details
+              {t('analytics.campaign_performance_details')}
           </Typography>
           </Box>
           
@@ -375,14 +377,14 @@ const CampaignAnalytics = memo(({ analyticsData, loading }) => {
             <Table>
               <TableHead>
                 <TableRow sx={{ backgroundColor: 'rgba(139, 108, 188, 0.05)' }}>
-                  <TableCell sx={{ fontWeight: 600 }}>Campaign</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Category</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>Target</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>Raised</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 600 }}>Progress</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 600 }}>Donors</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 600 }}>Status</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 600 }}>Actions</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('analytics.campaign')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('common.category')}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.target')}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.raised')}</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 600 }}>{t('analytics.progress')}</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 600 }}>{t('analytics.donors')}</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 600 }}>{t('common.status')}</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 600 }}>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -407,7 +409,7 @@ const CampaignAnalytics = memo(({ analyticsData, loading }) => {
                             {campaign.name}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {campaign.donationCount || 0} donations
+                            {t('analytics.donations_count', { count: campaign.donationCount || 0 })}
                           </Typography>
                         </Box>
                       </Box>
@@ -415,7 +417,7 @@ const CampaignAnalytics = memo(({ analyticsData, loading }) => {
                     
                     <TableCell>
                       <Chip 
-                        label={campaign.categoryName || 'Unknown'} 
+                        label={campaign.categoryName || t('analytics.unknown')} 
                         size="small"
                         sx={{
                           backgroundColor: `${campaign.categoryColor || '#8b6cbc'}20`,
@@ -483,12 +485,12 @@ const CampaignAnalytics = memo(({ analyticsData, loading }) => {
                     
                     <TableCell align="center">
                       <Stack direction="row" spacing={0.5} justifyContent="center">
-                        <Tooltip title="View Details">
+                        <Tooltip title={t('analytics.view_details')}>
                           <IconButton size="small" sx={{ color: '#8b6cbc' }}>
                             <ViewIcon />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Edit Campaign">
+                        <Tooltip title={t('analytics.edit_campaign')}>
                           <IconButton size="small" sx={{ color: '#8b6cbc' }}>
                             <EditIcon />
                           </IconButton>
@@ -505,10 +507,10 @@ const CampaignAnalytics = memo(({ analyticsData, loading }) => {
             <Box sx={{ p: 6, textAlign: 'center' }}>
               <CampaignIcon sx={{ fontSize: 64, color: 'rgba(139, 108, 188, 0.3)', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-                No campaigns found
+                {t('analytics.no_campaigns_found')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Try adjusting your search or filter criteria.
+                {t('analytics.adjust_search_filter')}
               </Typography>
             </Box>
           )}

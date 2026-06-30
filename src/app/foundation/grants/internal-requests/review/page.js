@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -72,6 +73,7 @@ const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-US', { year: 'num
 const stageIdx = (s) => STAGE_ORDER.indexOf(s);
 
 export default function InternalGrantReviewPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState({});

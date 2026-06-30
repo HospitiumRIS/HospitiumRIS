@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -55,6 +56,7 @@ export default function CommentsSidebar({
   onCommentCreated = null,
   onCommentDeleted = null
 }) {
+  const { t } = useTranslation();
   
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -437,7 +439,9 @@ export default function CommentsSidebar({
 
   return (
     <Paper sx={{ 
-      width: 400, 
+      width: 420,
+      minWidth: 420,
+      flexShrink: 0,
       borderRadius: 0, 
       borderLeft: '1px solid #e8e8e8',
       display: 'flex',
@@ -674,7 +678,7 @@ export default function CommentsSidebar({
             }
           }}
         >
-          {showAddForm ? 'Cancel' : 'New Comment'}
+          {showAddForm ? t('common.cancel') : t('common.add')}
         </Button>
       </Box>
 
@@ -760,7 +764,7 @@ export default function CommentsSidebar({
           }}>
             <CircularProgress size={32} sx={{ color: '#8b6cbc', mb: 2 }} />
             <Typography sx={{ fontSize: '0.85rem', color: '#888' }}>
-              Loading comments...
+              {t('common.loading')}
             </Typography>
           </Box>
         ) : filteredComments.length === 0 ? (
@@ -788,10 +792,10 @@ export default function CommentsSidebar({
               fontSize: '0.95rem',
               mb: 0.75
             }}>
-              {searchQuery ? 'No matches found' : 
+              {searchQuery ? t('common.no_results') : 
                activeTab === 1 ? 'No open comments' : 
                activeTab === 2 ? 'No resolved comments' : 
-               'Start the conversation'}
+               t('common.no_data')}
             </Typography>
             <Typography sx={{ 
               color: '#888', 
@@ -821,7 +825,7 @@ export default function CommentsSidebar({
                   }
                 }}
               >
-                Add a comment
+                {t('common.add')} comment
               </Button>
             )}
           </Box>

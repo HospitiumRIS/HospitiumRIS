@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -38,6 +39,7 @@ import { useRouter } from 'next/navigation';
 import GlobalAdminLayout from '../../../components/GlobalAdmin/GlobalAdminLayout';
 
 const SettingsPage = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -208,10 +210,10 @@ const SettingsPage = () => {
                   letterSpacing: '-0.02em'
                 }}
               >
-                System Settings
+                {t('global_admin.settings')}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                Configure system-wide settings and preferences
+                {t('global_admin.settings_subtitle')}
               </Typography>
             </Box>
             <Tooltip title="Refresh settings">

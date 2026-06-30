@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo, useState, useMemo } from 'react';
 import {
   Box,
@@ -41,6 +42,7 @@ import {
 } from '@mui/icons-material';
 
 const TrendAnalytics = memo(({ analyticsData, loading }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [timeframe, setTimeframe] = useState('12months');
   const [metric, setMetric] = useState('donations');
@@ -170,20 +172,20 @@ const TrendAnalytics = memo(({ analyticsData, loading }) => {
               color: theme.palette.text.primary,
               mb: 0.5
             }}>
-              Trend Analytics
+              {t('analytics.trend_analytics')}
             </Typography>
             <Typography variant="body1" sx={{ 
               color: theme.palette.text.secondary
             }}>
-              Time-based analysis and forecasting of donation patterns
+              {t('analytics.trend_analytics_desc')}
             </Typography>
           </Box>
         </Stack>
 
         <Alert severity="info" sx={{ borderRadius: 3 }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>No Trend Data Available</Typography>
+          <Typography variant="h6" sx={{ mb: 1 }}>{t('analytics.no_trend_data_title')}</Typography>
           <Typography>
-            Collect donations over time to see comprehensive trend analysis and patterns.
+            {t('analytics.no_trend_data_desc')}
           </Typography>
         </Alert>
       </Box>
@@ -201,12 +203,12 @@ const TrendAnalytics = memo(({ analyticsData, loading }) => {
             color: theme.palette.text.primary,
             mb: 0.5
           }}>
-            Trend Analytics
+            {t('analytics.trend_analytics')}
           </Typography>
           <Typography variant="body1" sx={{ 
             color: theme.palette.text.secondary
           }}>
-            Time-based analysis and forecasting of donation patterns
+            {t('analytics.trend_analytics_desc')}
           </Typography>
         </Box>
       </Stack>
@@ -223,31 +225,31 @@ const TrendAnalytics = memo(({ analyticsData, loading }) => {
       }}>
         {[
           {
-            title: 'Overall Growth',
+            title: t('analytics.overall_growth'),
             value: formatPercentage(trendStatistics.overallGrowth),
             icon: getTrendIcon(trendStatistics.overallGrowth),
             iconColor: getTrendColor(trendStatistics.overallGrowth),
             color: getTrendColor(trendStatistics.overallGrowth),
-            subtitle: 'Year over year'
+            subtitle: t('analytics.year_over_year')
           },
           {
-            title: 'Peak Month',
-            value: trendStatistics.peakMonth?.monthName || 'N/A',
+            title: t('analytics.peak_month'),
+            value: trendStatistics.peakMonth?.monthName || t('common.not_available'),
             subtitle: trendStatistics.peakMonth ? formatCurrency(trendStatistics.peakMonth.total_amount) : '',
             icon: CalendarIcon,
             color: '#ff9800'
           },
           {
-            title: 'Monthly Average',
+            title: t('analytics.monthly_average'),
             value: formatCurrency(trendStatistics.avgMonthlyDonations),
             icon: AssessmentIcon,
             color: '#2196f3'
           },
           {
-            title: 'Best Growth',
-            value: trendStatistics.strongestGrowthMonth?.monthName || 'N/A',
+            title: t('analytics.best_growth'),
+            value: trendStatistics.strongestGrowthMonth?.monthName || t('common.not_available'),
             subtitle: trendStatistics.strongestGrowthMonth ? 
-              `${formatPercentage(trendStatistics.strongestGrowthMonth.monthlyGrowth)} growth` : '',
+              t('analytics.growth_label', { percent: formatPercentage(trendStatistics.strongestGrowthMonth.monthlyGrowth) }) : '',
             icon: SpeedIcon,
             color: '#4caf50'
           }
@@ -306,29 +308,29 @@ const TrendAnalytics = memo(({ analyticsData, loading }) => {
         alignItems: 'center'
       }}>
         <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Timeframe</InputLabel>
+          <InputLabel>{t('analytics.timeframe')}</InputLabel>
           <Select
             value={timeframe}
-            label="Timeframe"
+            label={t('analytics.timeframe')}
             onChange={(e) => setTimeframe(e.target.value)}
           >
-            <MenuItem value="6months">Last 6 Months</MenuItem>
-            <MenuItem value="12months">Last 12 Months</MenuItem>
-            <MenuItem value="24months">Last 24 Months</MenuItem>
+            <MenuItem value="6months">{t('analytics.last_6_months')}</MenuItem>
+            <MenuItem value="12months">{t('analytics.last_12_months')}</MenuItem>
+            <MenuItem value="24months">{t('analytics.last_24_months')}</MenuItem>
           </Select>
         </FormControl>
 
         <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Metric</InputLabel>
+          <InputLabel>{t('analytics.metric')}</InputLabel>
           <Select
             value={metric}
-            label="Metric"
+            label={t('analytics.metric')}
             onChange={(e) => setMetric(e.target.value)}
           >
-            <MenuItem value="donations">Donation Amount</MenuItem>
-            <MenuItem value="count">Donation Count</MenuItem>
-            <MenuItem value="donors">Unique Donors</MenuItem>
-            <MenuItem value="average">Average Donation</MenuItem>
+            <MenuItem value="donations">{t('analytics.donation_amount')}</MenuItem>
+            <MenuItem value="count">{t('analytics.donation_count')}</MenuItem>
+            <MenuItem value="donors">{t('analytics.unique_donors')}</MenuItem>
+            <MenuItem value="average">{t('analytics.average_donation')}</MenuItem>
           </Select>
         </FormControl>
       </Box>
@@ -345,7 +347,7 @@ const TrendAnalytics = memo(({ analyticsData, loading }) => {
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 3 }}>
               <ShowChartIcon sx={{ color: '#8b6cbc' }} />
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Monthly Trends
+                {t('analytics.monthly_trends')}
               </Typography>
             </Stack>
 
@@ -379,7 +381,7 @@ const TrendAnalytics = memo(({ analyticsData, loading }) => {
                           color: getTrendColor(month.monthlyGrowth),
                           fontWeight: 600 
                         }}>
-                          {month.monthlyGrowth !== 0 ? formatPercentage(month.monthlyGrowth) : 'N/A'}
+                          {month.monthlyGrowth !== 0 ? formatPercentage(month.monthlyGrowth) : t('common.not_available')}
                         </Typography>
                       </Stack>
                     </Box>
@@ -401,10 +403,10 @@ const TrendAnalytics = memo(({ analyticsData, loading }) => {
 
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
                       <Typography variant="caption" color="text.secondary">
-                        {month.total_donations} donations
+                        {t('analytics.donations_donors_count', { donations: month.total_donations })}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {month.donor_count} donors
+                        {t('analytics.donors_count_label', { count: month.donor_count })}
                       </Typography>
                     </Box>
                   </Box>
@@ -420,7 +422,7 @@ const TrendAnalytics = memo(({ analyticsData, loading }) => {
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 3 }}>
               <InsightsIcon sx={{ color: '#8b6cbc' }} />
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Trend Insights
+                {t('analytics.trend_insights')}
               </Typography>
             </Stack>
 
@@ -428,7 +430,7 @@ const TrendAnalytics = memo(({ analyticsData, loading }) => {
               {/* Recent Trends */}
               <ListItem sx={{ px: 0, flexDirection: 'column', alignItems: 'stretch' }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-                  Recent Performance
+                  {t('analytics.recent_performance')}
           </Typography>
           
                 {trendStatistics.recentTrends?.slice(0, 3).map((month, index) => (
@@ -459,7 +461,7 @@ const TrendAnalytics = memo(({ analyticsData, loading }) => {
                         color: getTrendColor(month.monthlyGrowth),
                         fontWeight: 600 
                       }}>
-                        {month.monthlyGrowth !== 0 ? formatPercentage(month.monthlyGrowth) : 'N/A'}
+                        {month.monthlyGrowth !== 0 ? formatPercentage(month.monthlyGrowth) : t('common.not_available')}
                       </Typography>
                     </Stack>
                   </Box>
@@ -471,29 +473,29 @@ const TrendAnalytics = memo(({ analyticsData, loading }) => {
               {/* Key Metrics */}
               <ListItem sx={{ px: 0, flexDirection: 'column', alignItems: 'stretch' }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-                  Key Metrics
+                  {t('analytics.key_metrics')}
           </Typography>
 
                 {[
                   {
-                    label: 'Average Donation',
+                    label: t('analytics.average_donation'),
                     value: formatCurrency(monthlyTrends.reduce((sum, m) => sum + m.avgDonation, 0) / monthlyTrends.length),
                     icon: MoneyIcon,
                     color: '#4caf50'
                   },
                   {
-                    label: 'Peak Donations',
+                    label: t('analytics.peak_donations'),
                     value: trendStatistics.peakMonth ? trendStatistics.peakMonth.total_donations : 0,
                     icon: AnalyticsIcon,
                     color: '#2196f3'
                   },
                   {
-                    label: 'Growth Rate',
+                    label: t('analytics.growth_rate'),
                     value: formatPercentage(trendStatistics.overallGrowth),
                     icon: SpeedIcon,
                     color: getTrendColor(trendStatistics.overallGrowth)
                   }
-                ].map((metric, index) => (
+                ].map((metricItem, index) => (
                   <Box key={index} sx={{ 
                     display: 'flex', 
                     alignItems: 'center',
@@ -503,19 +505,19 @@ const TrendAnalytics = memo(({ analyticsData, loading }) => {
                     '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.02)' }
                   }}>
                     <Avatar sx={{ 
-                      backgroundColor: `${metric.color}20`,
+                      backgroundColor: `${metricItem.color}20`,
                       width: 32,
                       height: 32,
                       mr: 2
                     }}>
-                      <metric.icon sx={{ fontSize: 16, color: metric.color }} />
+                      <metricItem.icon sx={{ fontSize: 16, color: metricItem.color }} />
                     </Avatar>
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {metric.label}
+                        {metricItem.label}
                       </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: metric.color }}>
-                        {metric.value}
+                      <Typography variant="h6" sx={{ fontWeight: 600, color: metricItem.color }}>
+                        {metricItem.value}
                       </Typography>
                     </Box>
                   </Box>

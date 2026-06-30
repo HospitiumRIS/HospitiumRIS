@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo } from 'react';
 import {
   Box,
@@ -16,11 +17,11 @@ import {
 } from '@mui/icons-material';
 
 const RetentionAnalytics = memo(({ analyticsData, loading }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   return (
     <Box>
-      {/* Page Title */}
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 4 }}>
         <AssessmentIcon sx={{ fontSize: 32, color: '#8b6cbc' }} />
         <Box>
@@ -29,17 +30,16 @@ const RetentionAnalytics = memo(({ analyticsData, loading }) => {
             color: theme.palette.text.primary,
             mb: 0.5
           }}>
-            Retention Analytics
+            {t('analytics.retention_analysis')}
           </Typography>
           <Typography variant="body1" sx={{ 
             color: theme.palette.text.secondary
           }}>
-            Donor retention analysis and engagement optimization strategies
+            {t('analytics.retention_analytics_desc')}
           </Typography>
         </Box>
       </Stack>
 
-      {/* Coming Soon Card */}
       <Card sx={{ 
         borderRadius: 3,
         border: '2px dashed rgba(139, 108, 188, 0.3)',
@@ -57,7 +57,7 @@ const RetentionAnalytics = memo(({ analyticsData, loading }) => {
             color: theme.palette.text.primary,
             mb: 2
           }}>
-            Retention Analytics Coming Soon
+            {t('analytics.retention_coming_soon')}
           </Typography>
           
           <Typography variant="body1" sx={{ 
@@ -66,16 +66,15 @@ const RetentionAnalytics = memo(({ analyticsData, loading }) => {
             maxWidth: 500,
             mx: 'auto'
           }}>
-            Comprehensive retention analysis including cohort analysis, churn prediction,
-            re-engagement strategies, and loyalty program optimization.
+            {t('analytics.retention_coming_desc')}
           </Typography>
 
           <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap">
-            <Chip label="Cohort Analysis" variant="outlined" color="primary" />
-            <Chip label="Churn Prediction" variant="outlined" color="primary" />
-            <Chip label="Re-engagement" variant="outlined" color="primary" />
-            <Chip label="Loyalty Programs" variant="outlined" color="primary" />
-            <Chip label="Retention Strategies" variant="outlined" color="primary" />
+            <Chip label={t('analytics.cohort_analysis')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.churn_prediction')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.re_engagement')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.loyalty_programs')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.retention_strategies')} variant="outlined" color="primary" />
           </Stack>
         </CardContent>
       </Card>

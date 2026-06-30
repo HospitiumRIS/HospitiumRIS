@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import {
   Box,
@@ -12,6 +12,7 @@ import {
   Button,
   Divider,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import {
   Science as ScienceIcon,
   TrendingUp as TrendingUpIcon,
@@ -60,78 +61,103 @@ const IconBox = ({ children, theme }) => (
 );
 
 const AboutPage = () => {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
 
-  const benefits = [
-    {
-      icon: <HubIcon />,
-      title: 'Streamlined Administration',
-      description: 'Centralize research administration and ethics workflows — reducing manual processes and administrative burden.',
-    },
-    {
-      icon: <VisibilityIcon />,
-      title: 'Institutional Visibility',
-      description: 'Showcase publications, datasets, and researcher profiles globally to strengthen your institution\'s academic reputation.',
-    },
-    {
-      icon: <AnalyticsIcon />,
-      title: 'Data-Driven Decisions',
-      description: 'Leverage analytics dashboards for citation metrics, research trends, and departmental performance reporting.',
-    },
-    {
-      icon: <HandshakeIcon />,
-      title: 'Enhanced Collaboration',
-      description: 'Connect researchers, funders, ethics committees, and regulatory bodies on a single secure platform.',
-    },
-    {
-      icon: <GavelIcon />,
-      title: 'Compliance & Governance',
-      description: 'Built-in ethics tracking, audit trails, and compliance workflows for regulatory-ready research governance.',
-    },
-    {
-      icon: <SecurityIcon />,
-      title: 'Secure & Resilient',
-      description: 'Enterprise-grade access controls, data protection workflows, and governance structures you can trust.',
-    },
-  ];
+  const benefits = useMemo(() => [
+    { icon: <HubIcon />, title: t('about.benefit_admin_title'), description: t('about.benefit_admin_desc') },
+    { icon: <VisibilityIcon />, title: t('about.benefit_visibility_title'), description: t('about.benefit_visibility_desc') },
+    { icon: <AnalyticsIcon />, title: t('about.benefit_data_title'), description: t('about.benefit_data_desc') },
+    { icon: <HandshakeIcon />, title: t('about.benefit_collab_title'), description: t('about.benefit_collab_desc') },
+    { icon: <GavelIcon />, title: t('about.benefit_compliance_title'), description: t('about.benefit_compliance_desc') },
+    { icon: <SecurityIcon />, title: t('about.benefit_secure_title'), description: t('about.benefit_secure_desc') },
+  ], [t, i18n.language]);
 
-  const userRoles = [
+  const userRoles = useMemo(() => [
     {
-      title: 'Research Manager',
+      title: t('about.role_manager_title'),
       icon: <TrendingUpIcon />,
-      description: 'Oversee institutional research activities, manage workflows, and monitor research output with comprehensive analytics dashboards.',
+      description: t('about.role_manager_desc'),
       href: '/about/research-manager',
     },
     {
-      title: 'Researchers',
+      title: t('about.role_researchers_title'),
       icon: <ScienceIcon />,
-      description: 'Manage publications, track projects, conduct research, and ensure compliance & ethics approvals through an integrated researcher portal.',
+      description: t('about.role_researchers_desc'),
       href: '/about/researchers',
     },
     {
-      title: 'Foundation Manager',
+      title: t('about.role_foundation_title'),
       icon: <AccountBalanceIcon />,
-      description: 'Coordinate grants, manage fundraising campaigns, track donors, and measure the impact of research investments.',
+      description: t('about.role_foundation_desc'),
       href: '/about/foundation-manager',
     },
-  ];
+  ], [t, i18n.language]);
 
-  const values = [
-    { icon: <InnovationIcon />, title: 'Innovative', description: 'Leveraging cutting-edge technology and AI to transform hospital research management.' },
-    { icon: <HubIcon />,        title: 'Centralized', description: 'One unified platform for the entire research lifecycle — from proposal to publication.' },
-    { icon: <VerifiedIcon />,   title: 'Proactive',   description: 'Anticipating institutional needs and enabling data-driven research excellence.' },
-  ];
+  const values = useMemo(() => [
+    { icon: <InnovationIcon />, title: t('about.value_innovative_title'), description: t('about.value_innovative_desc') },
+    { icon: <HubIcon />, title: t('about.value_centralized_title'), description: t('about.value_centralized_desc') },
+    { icon: <VerifiedIcon />, title: t('about.value_proactive_title'), description: t('about.value_proactive_desc') },
+  ], [t, i18n.language]);
 
-  const institutions = [
-    { icon: <HospitalIcon />,     label: 'University Teaching Hospitals' },
-    { icon: <SchoolIcon />,       label: 'Medical Schools' },
-    { icon: <ClinicalIcon />,     label: 'Clinical Trial Centres' },
-    { icon: <GavelIcon />,        label: 'Ethics Review Boards' },
-    { icon: <EcosystemIcon />,    label: 'Health Research Institutes' },
-    { icon: <AccountBalanceIcon />, label: 'Health Ministries' },
-    { icon: <HubIcon />,          label: 'Research Support Offices' },
-    { icon: <HandshakeIcon />,    label: 'International Research Partners' },
-  ];
+  const institutions = useMemo(() => [
+    { icon: <HospitalIcon />, label: t('about.inst_hospitals') },
+    { icon: <SchoolIcon />, label: t('about.inst_medical_schools') },
+    { icon: <ClinicalIcon />, label: t('about.inst_clinical_trials') },
+    { icon: <GavelIcon />, label: t('about.inst_ethics') },
+    { icon: <EcosystemIcon />, label: t('about.inst_research_institutes') },
+    { icon: <AccountBalanceIcon />, label: t('about.inst_health_ministries') },
+    { icon: <HubIcon />, label: t('about.inst_support_offices') },
+    { icon: <HandshakeIcon />, label: t('about.inst_partners') },
+  ], [t, i18n.language]);
+
+  const problemSolution = useMemo(() => [
+    {
+      title: t('about.problem_title'),
+      points: [
+        t('about.problem_p1'),
+        t('about.problem_p2'),
+        t('about.problem_p3'),
+        t('about.problem_p4'),
+        t('about.problem_p5'),
+      ],
+      accent: theme.palette.mode === 'dark' ? 'rgba(239,83,80,0.15)' : 'rgba(239,83,80,0.06)',
+      border: 'rgba(239,83,80,0.25)',
+    },
+    {
+      title: t('about.solution_title'),
+      points: [
+        t('about.solution_p1'),
+        t('about.solution_p2'),
+        t('about.solution_p3'),
+        t('about.solution_p4'),
+        t('about.solution_p5'),
+      ],
+      accent: theme.palette.mode === 'dark' ? PURPLE_MEDIUM : PURPLE_LIGHT,
+      border: 'rgba(139,108,188,0.3)',
+    },
+  ], [t, i18n.language, theme.palette.mode]);
+
+  const contactItems = useMemo(() => [
+    {
+      icon: <LocationIcon sx={{ fontSize: 18, color: PURPLE, mt: 0.3, flexShrink: 0 }} />,
+      content: t('footer.address_text'),
+    },
+    {
+      icon: <PhoneIcon sx={{ fontSize: 18, color: PURPLE, flexShrink: 0 }} />,
+      content: '+254 (0)20 8086820\n+254 (0)20 2697401',
+    },
+    {
+      icon: <EmailIcon sx={{ fontSize: 18, color: PURPLE, flexShrink: 0 }} />,
+      content: 'info@tcc-africa.org',
+      href: 'mailto:info@tcc-africa.org',
+    },
+    {
+      icon: <WebIcon sx={{ fontSize: 18, color: PURPLE, flexShrink: 0 }} />,
+      content: 'www.tcc-africa.org',
+      href: 'https://www.tcc-africa.org',
+    },
+  ], [t, i18n.language]);
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
@@ -156,7 +182,7 @@ const AboutPage = () => {
       >
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
           <Chip
-            label="About HospitiumRIS"
+            label={t('about.title')}
             sx={{
               mb: 3,
               backgroundColor: 'rgba(255,255,255,0.15)',
@@ -178,7 +204,7 @@ const AboutPage = () => {
               textShadow: '0 2px 12px rgba(0,0,0,0.12)',
             }}
           >
-            Transforming Hospital<br />Research Management
+            {t('about.hero_title_line1')}<br />{t('about.hero_title_line2')}
           </Typography>
           <Typography
             variant="h6"
@@ -188,9 +214,7 @@ const AboutPage = () => {
               fontSize: { xs: '1rem', md: '1.2rem' },
             }}
           >
-            HospitiumRIS is a healthcare-focused Research Information System designed to help hospitals,
-            medical schools, and health research organisations manage the entire research lifecycle through
-            a centralized digital infrastructure.
+            {t('about.hero_subtitle')}
           </Typography>
           <Box sx={{ mt: 5, display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Button
@@ -206,7 +230,7 @@ const AboutPage = () => {
                 transition: 'all 0.25s ease',
               }}
             >
-              Get Started
+              {t('hero.cta_start')}
             </Button>
             <Button
               variant="outlined"
@@ -219,7 +243,7 @@ const AboutPage = () => {
                 transition: 'all 0.25s ease',
               }}
             >
-              Learn More
+              {t('hero.cta_learn')}
             </Button>
           </Box>
         </Container>
@@ -232,46 +256,18 @@ const AboutPage = () => {
             variant="h3"
             sx={{ fontWeight: 700, mb: 2, color: theme.palette.text.primary, fontSize: { xs: '1.9rem', md: '2.5rem' }, letterSpacing: '-0.02em' }}
           >
-            What is HospitiumRIS?
+            {t('about.what_is_title')}
           </Typography>
           <Typography
             variant="body1"
             sx={{ color: theme.palette.text.secondary, maxWidth: '820px', mx: 'auto', lineHeight: 1.9, fontSize: { xs: '1rem', md: '1.1rem' } }}
           >
-            HospitiumRIS (Research Information System) is an integrated digital infrastructure designed to
-            manage, track, monitor, and showcase the entire research lifecycle in hospitals and health research
-            institutions. It enables seamless coordination between clinicians, researchers, ethics committees,
-            funders, and regulators through one centralized and secure platform.
+            {t('about.what_is_desc')}
           </Typography>
         </Box>
 
         <Box sx={{ display: 'flex', gap: 3, flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
-          {[
-            {
-              title: 'The Problem',
-              points: [
-                'Fragmented research data across departments',
-                'Manual, error-prone reporting systems',
-                'Poor research visibility and discoverability',
-                'Compliance and ethics management challenges',
-                'No centralized researcher profiles',
-              ],
-              accent: theme.palette.mode === 'dark' ? 'rgba(239,83,80,0.15)' : 'rgba(239,83,80,0.06)',
-              border: 'rgba(239,83,80,0.25)',
-            },
-            {
-              title: 'Our Solution',
-              points: [
-                'Unified research administration platform',
-                'Real-time analytics and institutional dashboards',
-                'Global visibility via ORCID, Crossref & DataCite',
-                'Built-in ethics, compliance & audit workflows',
-                'AI-powered publication summaries & insights',
-              ],
-              accent: theme.palette.mode === 'dark' ? PURPLE_MEDIUM : PURPLE_LIGHT,
-              border: 'rgba(139,108,188,0.3)',
-            },
-          ].map((col, i) => (
+          {problemSolution.map((col, i) => (
             <Paper
               key={i}
               elevation={0}
@@ -318,10 +314,10 @@ const AboutPage = () => {
             variant="h3"
             sx={{ fontWeight: 700, mb: 1.5, textAlign: 'center', color: theme.palette.text.primary, fontSize: { xs: '1.9rem', md: '2.5rem' }, letterSpacing: '-0.02em' }}
           >
-            Our Values
+            {t('about.values_title')}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', mb: 6, fontSize: { xs: '1rem', md: '1.1rem' } }}>
-            Innovative. Centralized. Proactive.
+            {t('about.values_tagline')}
           </Typography>
           <Box sx={{ display: 'flex', gap: 3, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
             {values.map((v, i) => (
@@ -364,10 +360,10 @@ const AboutPage = () => {
           variant="h3"
           sx={{ fontWeight: 700, mb: 1.5, textAlign: 'center', color: theme.palette.text.primary, fontSize: { xs: '1.9rem', md: '2.5rem' }, letterSpacing: '-0.02em' }}
         >
-          Strategic Benefits
+          {t('about.benefits_title')}
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', mb: 6, fontSize: { xs: '1rem', md: '1.1rem' } }}>
-          What HospitiumRIS delivers for your institution
+          {t('about.benefits_subtitle')}
         </Typography>
         <Box
           sx={{
@@ -418,10 +414,10 @@ const AboutPage = () => {
             variant="h3"
             sx={{ fontWeight: 700, mb: 1.5, textAlign: 'center', color: theme.palette.text.primary, fontSize: { xs: '1.9rem', md: '2.5rem' }, letterSpacing: '-0.02em' }}
           >
-            Who Uses HospitiumRIS?
+            {t('about.who_uses_title')}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', mb: 6, maxWidth: 640, mx: 'auto', fontSize: { xs: '1rem', md: '1.1rem' } }}>
-            Built for the full spectrum of health research institutions — from small research units to national referral hospitals.
+            {t('about.who_uses_subtitle')}
           </Typography>
 
           {/* Institutions grid */}
@@ -457,7 +453,7 @@ const AboutPage = () => {
             variant="h5"
             sx={{ fontWeight: 700, mb: 4, textAlign: 'center', color: theme.palette.text.primary, letterSpacing: '-0.01em' }}
           >
-            Platform User Roles
+            {t('about.roles_title')}
           </Typography>
           <Box sx={{ display: 'flex', gap: 3, flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
             {userRoles.map((role, i) => (
@@ -504,7 +500,7 @@ const AboutPage = () => {
                     {role.description}
                   </Typography>
                   <Typography variant="body2" sx={{ color: PURPLE, fontWeight: 600, fontSize: '0.88rem' }}>
-                    Learn more →
+                    {t('about.learn_more_link')}
                   </Typography>
                 </Paper>
               </Link>
@@ -519,10 +515,10 @@ const AboutPage = () => {
           variant="h3"
           sx={{ fontWeight: 700, mb: 1.5, textAlign: 'center', color: theme.palette.text.primary, fontSize: { xs: '1.9rem', md: '2.5rem' }, letterSpacing: '-0.02em' }}
         >
-          Developed By
+          {t('about.developed_by_title')}
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', mb: 6, fontSize: { xs: '1rem', md: '1.1rem' } }}>
-          A product of open infrastructure and research visibility expertise
+          {t('about.developed_by_subtitle')}
         </Typography>
         <Paper
           elevation={0}
@@ -537,17 +533,13 @@ const AboutPage = () => {
             {/* About TCC */}
             <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
               <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: PURPLE }}>
-                Training Centre in Communication Africa
+                {t('about.tcc_title')}
               </Typography>
               <Typography variant="body1" sx={{ color: theme.palette.text.secondary, lineHeight: 1.9, mb: 2 }}>
-                TCC Africa is a leading African research communication and capacity-building organisation
-                based at the University of Nairobi. It supports African and Global South researchers,
-                institutions, and publishers to improve research quality, visibility, and impact through
-                training, tools, and open infrastructure.
+                {t('about.tcc_desc1')}
               </Typography>
               <Typography variant="body1" sx={{ color: theme.palette.text.secondary, lineHeight: 1.9 }}>
-                HospitiumRIS was developed as part of TCC Africa&apos;s broader mission to advance Open
-                Infrastructure and research visibility for health institutions across Africa and the Global South.
+                {t('about.tcc_desc2')}
               </Typography>
             </Box>
 
@@ -556,14 +548,9 @@ const AboutPage = () => {
             {/* Contact Info */}
             <Box sx={{ flex: '0 1 280px', minWidth: { xs: '100%', md: 250 } }}>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 2.5, color: theme.palette.text.primary }}>
-                Get in Touch
+                {t('about.get_in_touch')}
               </Typography>
-              {[
-                { icon: <LocationIcon sx={{ fontSize: 18, color: PURPLE, mt: 0.3, flexShrink: 0 }} />, content: 'Chiromo Campus, University of Nairobi\nGecaga Institute Bldg.\nP.O Box 21553-00100, Nairobi, Kenya' },
-                { icon: <PhoneIcon sx={{ fontSize: 18, color: PURPLE, flexShrink: 0 }} />, content: '+254 (0)20 8086820\n+254 (0)20 2697401' },
-                { icon: <EmailIcon sx={{ fontSize: 18, color: PURPLE, flexShrink: 0 }} />, content: 'info@tcc-africa.org', href: 'mailto:info@tcc-africa.org' },
-                { icon: <WebIcon sx={{ fontSize: 18, color: PURPLE, flexShrink: 0 }} />, content: 'www.tcc-africa.org', href: 'https://www.tcc-africa.org' },
-              ].map((item, i) => (
+              {contactItems.map((item, i) => (
                 <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 2 }}>
                   {item.icon}
                   {item.href ? (
@@ -606,13 +593,13 @@ const AboutPage = () => {
             variant="h3"
             sx={{ fontWeight: 800, mb: 2, color: 'white', fontSize: { xs: '2rem', md: '2.8rem' }, letterSpacing: '-0.02em' }}
           >
-            Ready to Transform Your Institution?
+            {t('about.cta_title')}
           </Typography>
           <Typography
             variant="h6"
             sx={{ color: 'rgba(255,255,255,0.88)', mb: 5, fontWeight: 300, lineHeight: 1.7, fontSize: { xs: '1rem', md: '1.15rem' } }}
           >
-            Join hospitals, universities, and research institutes building data-driven research ecosystems with HospitiumRIS.
+            {t('about.cta_subtitle')}
           </Typography>
           <Box sx={{ display: 'flex', gap: 2.5, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Button
@@ -628,7 +615,7 @@ const AboutPage = () => {
                 transition: 'all 0.25s ease',
               }}
             >
-              Get Started
+              {t('hero.cta_start')}
             </Button>
             <Button
               variant="outlined"
@@ -641,7 +628,7 @@ const AboutPage = () => {
                 transition: 'all 0.25s ease',
               }}
             >
-              Request a Demo
+              {t('about.request_demo')}
             </Button>
           </Box>
         </Container>

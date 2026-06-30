@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -60,6 +61,7 @@ const STAGE_TYPES = [
 ];
 
 export default function ProposalReviewPipelinePage() {
+  const { t } = useTranslation();
   const [pipelines, setPipelines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);

@@ -4,6 +4,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 import Navbar from './Navbar';
+import TopBar from './TopBar';
 
 const AppNavbar = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -25,7 +26,12 @@ const AppNavbar = () => {
   
   // Show navbar for both authenticated and non-authenticated users
   // The Navbar component itself will handle the different states
-  return <Navbar />;
+  return (
+    <>
+      <TopBar />
+      <Navbar />
+    </>
+  );
 };
 
 export default AppNavbar;

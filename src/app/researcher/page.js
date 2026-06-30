@@ -68,6 +68,7 @@ import {
   CloudSync as RegistryIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../components/AuthProvider';
 import PageHeader from '../../components/common/PageHeader';
 import KenyaNetworkVisualization from '../../components/KenyaNetworkVisualization';
@@ -75,6 +76,7 @@ import ResearchNetworkWidget from '../../components/ResearchNetwork';
 import { LineChart, Line, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 
 const ResearcherDashboard = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { user, isLoading } = useAuth();
   const [currentDate, setCurrentDate] = useState('');
@@ -294,7 +296,7 @@ const ResearcherDashboard = () => {
         const recentPublications = (statsData?.recentPublications || []).slice(0, 5);
         const allProjects = (statsData?.recentProjects?.manuscripts || []).concat(statsData?.recentProjects?.proposals || []);
 
-        const analyticsData = statsData?.monthlyTimeline || Array.from({ length: 6 }, (_, i) => {
+        const analyticsData = (statsData?.monthlyTimeline || Array.from({ length: 6 }, (_, i) => {
           const date = new Date();
           date.setMonth(date.getMonth() - (5 - i));
           return {
@@ -304,7 +306,11 @@ const ResearcherDashboard = () => {
             proposals: 0,
             projects: 0,
           };
-        });
+        })).map(item => ({
+          ...item,
+          publicationsAndManuscripts: (item.publications || 0) + (item.manuscripts || 0),
+          projects: item.proposals || 0
+        }));
 
 
 
@@ -562,10 +568,10 @@ const ResearcherDashboard = () => {
   const actionButtons = (
     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
       <Button variant="contained" startIcon={<AddIcon />} sx={{ bgcolor: 'rgba(255,255,255,0.2)', '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' } }}>
-        New Publication
+        {t('researcher.new_publication')}
       </Button>
       <Button variant="contained" startIcon={<ProposalIcon />} sx={{ bgcolor: 'rgba(255,255,255,0.2)', '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' } }}>
-        New Project
+        {t('researcher.new_project')}
       </Button>
     </Stack>
   );
@@ -574,7 +580,7 @@ const ResearcherDashboard = () => {
     <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f7fa', mt: 8 }}>
       <PageHeader
         title={`${greeting}, ${getUserDisplayName()}`}
-        description={<>Your research dashboard overview<br /><span style={{ fontSize: '0.875rem', opacity: 0.8 }}>{currentDate}</span></>}
+        description={<>{t('researcher.dashboard_subtitle')}<br /><span style={{ fontSize: '0.875rem', opacity: 0.8 }}>{currentDate}</span></>}
        
         gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)"
       />
@@ -582,7 +588,7 @@ const ResearcherDashboard = () => {
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {dataLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-            <Typography variant="h6" color="text.secondary">Loading dashboard...</Typography>
+            <Typography variant="h6" color="text.secondary">{t('common.loading')}</Typography>
           </Box>
         ) : error ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -609,7 +615,7 @@ const ResearcherDashboard = () => {
                   <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                      Total Publications
+                      {t('researcher.total_publications')}
                     </Typography>
                     <ArticleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
                   </Box>
@@ -638,7 +644,7 @@ const ResearcherDashboard = () => {
                   <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                      Active Projects
+                      {t('researcher.active_projects')}
                     </Typography>
                     <ProjectIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
                   </Box>
@@ -667,7 +673,7 @@ const ResearcherDashboard = () => {
                   <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                      Collaborators
+                      {t('researcher.collaborators')}
                     </Typography>
                     <CollaborationIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
                   </Box>
@@ -696,7 +702,7 @@ const ResearcherDashboard = () => {
                   <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                      Citations
+                      {t('researcher.citations')}
                     </Typography>
                     <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
                   </Box>
@@ -737,10 +743,10 @@ const ResearcherDashboard = () => {
                         </Box>
                         <Box>
                           <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                            Research Analytics
+                            {t('researcher.research_analytics')}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            Track your research output over time
+                            {t('researcher.analytics_subtitle')}
                           </Typography>
                         </Box>
                       </Box>
@@ -850,11 +856,11 @@ const ResearcherDashboard = () => {
                         }
                       }}
                     >
-                      <Tab label="Overview" />
-                      <Tab label="Publications" />
-                      <Tab label="Projects" />
-                      <Tab label="Clinical Trials" />
-                      <Tab label="Impact" />
+                      <Tab label={t('researcher.overview')} />
+                      <Tab label={t('researcher.publications')} />
+                      <Tab label={t('researcher.projects')} />
+                      <Tab label={t('researcher.clinical_trials')} />
+                      <Tab label={t('researcher.impact')} />
                     </Tabs>
 
                     {/* Summary Stats Row */}
@@ -869,10 +875,10 @@ const ResearcherDashboard = () => {
                     }}>
                       <Box sx={{ flex: 1, minWidth: 100 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                          Total Output
+                          {t('researcher.total_output')}
                         </Typography>
                         <Typography variant="h5" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
-                          {dashboardData.analyticsData.reduce((sum, d) => sum + d.publications + d.projects, 0)}
+                          {dashboardData.analyticsData.reduce((sum, d) => sum + (d.publicationsAndManuscripts || 0) + (d.projects || 0), 0)}
                         </Typography>
                         <Typography variant="caption" sx={{ color: '#66BB6A', display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <TrendingUpIcon sx={{ fontSize: 12 }} />
@@ -882,10 +888,10 @@ const ResearcherDashboard = () => {
                       <Divider orientation="vertical" flexItem />
                       <Box sx={{ flex: 1, minWidth: 100 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                          Avg per Month
+                          {t('researcher.avg_per_month')}
                         </Typography>
                         <Typography variant="h5" sx={{ fontWeight: 700, color: '#FF6B6B' }}>
-                          {(dashboardData.analyticsData.reduce((sum, d) => sum + d.publications + d.projects, 0) / 6).toFixed(1)}
+                          {(dashboardData.analyticsData.reduce((sum, d) => sum + (d.publicationsAndManuscripts || 0) + (d.projects || 0), 0) / 6).toFixed(1)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           Last 6 months
@@ -894,16 +900,16 @@ const ResearcherDashboard = () => {
                       <Divider orientation="vertical" flexItem />
                       <Box sx={{ flex: 1, minWidth: 100 }}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                          Peak Month
+                          {t('researcher.peak_month')}
                         </Typography>
                         <Typography variant="h5" sx={{ fontWeight: 700, color: '#42A5F5' }}>
                           {dashboardData.analyticsData.reduce((max, d) => 
-                            Math.max(max, d.publications + d.projects), 0
+                            Math.max(max, (d.publicationsAndManuscripts || 0) + (d.projects || 0)), 0
                           )}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           {dashboardData.analyticsData.reduce((max, d) => 
-                            (d.publications + d.projects) > (max.publications + max.projects) ? d : max
+                            ((d.publicationsAndManuscripts || 0) + (d.projects || 0)) > ((max.publicationsAndManuscripts || 0) + (max.projects || 0)) ? d : max
                           ).month}
                         </Typography>
                       </Box>
@@ -1037,7 +1043,8 @@ const ResearcherDashboard = () => {
                             />
                             <Line 
                               type="monotone" 
-                              dataKey="publications" 
+                              dataKey="publicationsAndManuscripts" 
+                              name="Publications/Manuscripts"
                               stroke="#8b6cbc" 
                               strokeWidth={3}
                               dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
@@ -1046,6 +1053,7 @@ const ResearcherDashboard = () => {
                             <Line 
                               type="monotone" 
                               dataKey="projects" 
+                              name="Projects"
                               stroke="#FF6B6B" 
                               strokeWidth={3}
                               dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
@@ -1241,7 +1249,7 @@ const ResearcherDashboard = () => {
                         </Box>
                         <Box>
                           <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                            Notifications
+                            {t('researcher.notifications')}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {unreadCount} unread
@@ -1249,7 +1257,7 @@ const ResearcherDashboard = () => {
                         </Box>
                       </Box>
                       {unreadCount > 0 && (
-                        <Tooltip title="Mark all as read">
+                        <Tooltip title={t('researcher.mark_all_read')}>
                           <IconButton size="small" onClick={handleMarkAllAsRead}>
                             <DoneAllIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
                           </IconButton>
@@ -1265,7 +1273,7 @@ const ResearcherDashboard = () => {
                       <Box sx={{ textAlign: 'center', py: 4 }}>
                         <NotificationsIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 1 }} />
                         <Typography variant="body2" color="text.secondary">
-                          No notifications yet
+                          {t('researcher.no_notifications')}
                         </Typography>
                       </Box>
                     ) : (
@@ -1438,10 +1446,10 @@ const ResearcherDashboard = () => {
                         </Box>
                         <Box>
                           <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                            Recent Activities
+                            {t('researcher.recent_activities')}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            Your latest actions
+                            {t('researcher.activities_subtitle')}
                           </Typography>
                         </Box>
                       </Box>
@@ -1460,7 +1468,7 @@ const ResearcherDashboard = () => {
                       <Box sx={{ textAlign: 'center', py: 4 }}>
                         <TimelineIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 1 }} />
                         <Typography variant="body2" color="text.secondary">
-                          No recent activities
+                          {t('researcher.no_activities')}
                         </Typography>
                       </Box>
                     ) : (
@@ -1553,7 +1561,7 @@ const ResearcherDashboard = () => {
                         </Box>
                         <Box>
                           <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                            Pending Tasks
+                            {t('researcher.pending_tasks')}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {tasks.length} task{tasks.length !== 1 ? 's' : ''} pending
@@ -1581,7 +1589,7 @@ const ResearcherDashboard = () => {
                           {tasksSummary.high}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                          High
+                          {t('common.high')}
                         </Typography>
                       </Box>
                       <Divider orientation="vertical" flexItem />
@@ -1590,7 +1598,7 @@ const ResearcherDashboard = () => {
                           {tasksSummary.medium}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                          Medium
+                          {t('common.medium')}
                         </Typography>
                       </Box>
                       <Divider orientation="vertical" flexItem />
@@ -1599,7 +1607,7 @@ const ResearcherDashboard = () => {
                           {tasksSummary.low}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                          Low
+                          {t('common.low')}
                         </Typography>
                       </Box>
                     </Box>
@@ -2008,19 +2016,26 @@ const ResearcherDashboard = () => {
                               </Typography>
                             </Box>
                             
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <AvatarGroup max={5} sx={{ '& .MuiAvatar-root': { width: 26, height: 26, fontSize: '0.7rem', border: '2px solid white' } }}>
-                                {project.team.map((member, idx) => (
-                                  <Tooltip key={idx} title={`${member.name} (${member.role})`}>
-                                    <Avatar sx={{ bgcolor: project.color }}>
-                                      {member.initials}
-                                    </Avatar>
-                                  </Tooltip>
-                                ))}
-                              </AvatarGroup>
-                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                                {project.teamSize} member{project.teamSize !== 1 ? 's' : ''}
-                              </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <AvatarGroup max={5} sx={{ '& .MuiAvatar-root': { width: 26, height: 26, fontSize: '0.7rem', border: '2px solid white' } }}>
+                                  {project.team.map((member, idx) => (
+                                    <Tooltip key={idx} title={`${member.name} (${member.role})`}>
+                                      <Avatar sx={{ bgcolor: project.color }}>
+                                        {member.initials}
+                                      </Avatar>
+                                    </Tooltip>
+                                  ))}
+                                </AvatarGroup>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                  {project.teamSize} member{project.teamSize !== 1 ? 's' : ''}
+                                </Typography>
+                              </Box>
+                              {project.metadata && (
+                                <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#8b6cbc' }}>
+                                  {project.metadata}
+                                </Typography>
+                              )}
                             </Box>
                           </Paper>
                         ))}

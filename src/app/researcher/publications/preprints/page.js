@@ -36,6 +36,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import ArticleIcon from '@mui/icons-material/Article';
 import AddIcon from '@mui/icons-material/Add';
 import PageHeader from '../../../../components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_CONFIG = {
     PENDING: { label: 'Pending', color: '#ff9800', bgColor: '#fff3e0' },
@@ -53,6 +54,7 @@ const SERVER_CONFIG = {
 };
 
 const StatusChip = ({ status }) => {
+    const { t } = useTranslation();
     const config = STATUS_CONFIG[status] || STATUS_CONFIG.PENDING;
     return (
         <Chip
@@ -89,6 +91,7 @@ const ServerChip = ({ server }) => {
 };
 
 export default function PreprintSubmissionsPage() {
+    const { t } = useTranslation();
     const [submissions, setSubmissions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(0);
@@ -165,8 +168,8 @@ export default function PreprintSubmissionsPage() {
     return (
         <Box sx={{ width: '100%', mt: 8, mb: 4 }}>
             <PageHeader
-                title="Preprint Submissions"
-                description="Track and manage your preprint submissions across all servers"
+                title={t("researcher.preprints")}
+                description={t("researcher.preprints_desc")}
                 icon={<ArticleIcon />}
                 breadcrumbs={[
                     { label: 'Dashboard', href: '/researcher' },

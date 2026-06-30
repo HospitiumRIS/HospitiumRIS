@@ -1,6 +1,6 @@
 'use client';
 
-import React from "react";
+import React, { useMemo } from "react";
 import Link from 'next/link';
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -16,6 +16,7 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { styled, useTheme } from '@mui/material/styles';
+import { useTranslation } from 'react-i18next';
 
 // Define animation
 const fadeInUp = keyframes`
@@ -87,46 +88,71 @@ const IconWrapper = styled(Box)(({ theme }) => ({
 
 const KeyFeatures = () => {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
 
-  const featuresData = [
+  const featuresData = useMemo(() => [
     {
       icon: <AccountCircleIcon />,
-      title: "Researcher Profiles",
-      description: "Create comprehensive profiles showcasing expertise, publications, and research impact. Connect with peers and build your academic network.",
-      highlights: ['Detailed CV Generation', 'Publication Tracking', 'Citation Metrics']
+      title: t('features.researcher_profiles_title'),
+      description: t('features.researcher_profiles_desc'),
+      highlights: [
+        t('features.researcher_profiles_h1'),
+        t('features.researcher_profiles_h2'),
+        t('features.researcher_profiles_h3'),
+      ],
     },
     {
       icon: <TaskIcon />,
-      title: "Project Management",
-      description: "Streamline research workflows with powerful project management tools designed specifically for academic research.",
-      highlights: ['Timeline Planning', 'Resource Allocation', 'Progress Tracking']
+      title: t('features.project_mgmt_title'),
+      description: t('features.project_mgmt_desc'),
+      highlights: [
+        t('features.project_mgmt_h1'),
+        t('features.project_mgmt_h2'),
+        t('features.project_mgmt_h3'),
+      ],
     },
     {
       icon: <MenuBookIcon />,
-      title: "Publishing & Outputs",
-      description: "Manage your research outputs effectively, from pre-prints to final publications, ensuring maximum visibility and impact.",
-      highlights: ['Citation Management', 'Open Access Support', 'Impact Metrics']
+      title: t('features.publishing_title'),
+      description: t('features.publishing_desc'),
+      highlights: [
+        t('features.publishing_h1'),
+        t('features.publishing_h2'),
+        t('features.publishing_h3'),
+      ],
     },
     {
       icon: <AutoAwesomeIcon />,
-      title: "AI-Powered Insights",
-      description: "Leverage artificial intelligence to automatically generate summaries and extract key insights from your publications and research.",
-      highlights: ['AI Publication Summaries', 'Keyword Extraction', 'Research Trends']
+      title: t('features.ai_title'),
+      description: t('features.ai_desc'),
+      highlights: [
+        t('features.ai_h1'),
+        t('features.ai_h2'),
+        t('features.ai_h3'),
+      ],
     },
     {
       icon: <SecurityIcon />,
-      title: "Compliance & Governance",
-      description: "Ensure your research meets all regulatory requirements with built-in compliance checking and governance tools.",
-      highlights: ['Ethics Approval', 'Data Protection', 'Audit Trails']
+      title: t('features.compliance_title'),
+      description: t('features.compliance_desc'),
+      highlights: [
+        t('features.compliance_h1'),
+        t('features.compliance_h2'),
+        t('features.compliance_h3'),
+      ],
     },
     {
       icon: <GroupsIcon />,
-      title: "PID Integration Framework",
-      description: "ORCID identifies the people, Crossref identifies the publications, and DataCite identifies the datasets and research objects. HospitiumRIS brings them together into one institutional research intelligence system.",
-      highlights: ['ORCID Researcher Identity', 'Crossref Publication Tracking', 'DataCite Dataset Management'],
-      link: '/docs/hospitiumris_pid_Integration_framework.html'
-    }
-  ];
+      title: t('features.pid_title'),
+      description: t('features.pid_desc'),
+      highlights: [
+        t('features.pid_h1'),
+        t('features.pid_h2'),
+        t('features.pid_h3'),
+      ],
+      link: '/docs/hospitiumris_pid_Integration_framework.html',
+    },
+  ], [t, i18n.language]);
 
   return (
     <Box 
@@ -152,7 +178,7 @@ const KeyFeatures = () => {
               color: theme.palette.text.primary,
             }}
           >
-            Key Features
+            {t('features.heading')}
           </Typography>
           <Typography 
             variant="h5" 
@@ -164,7 +190,7 @@ const KeyFeatures = () => {
               fontSize: { xs: '1.1rem', md: '1.25rem' },
             }}
           >
-            Everything you need to manage your research effectively
+            {t('features.subheading')}
           </Typography>
         </Box>
 
@@ -253,7 +279,7 @@ const KeyFeatures = () => {
                           },
                         }}
                       >
-                        Learn More
+                        {t('hero.cta_learn')}
                       </Button>
                     </Box>
                   )}

@@ -24,6 +24,7 @@ import {
   History as AuditIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 const PURPLE = '#8b6cbc';
 
@@ -49,38 +50,6 @@ const mockAudit = [
   { id: 'AUD-006', trial: 'Maternal Health Study',       document: 'Informed Consent Form v1.0',   action: 'Review Overdue', user: 'System',             date: '2024-06-08', notes: 'ICF v2 available but not yet uploaded' },
 ];
 
-const getCategoryConfig = (category) => {
-  switch (category) {
-    case 'PROTOCOL':   return { label: 'Protocol',    color: PURPLE,    icon: <ProtocolIcon    sx={{ fontSize: 14 }} /> };
-    case 'CONSENT':    return { label: 'Consent',     color: '#3b82f6', icon: <ConsentIcon     sx={{ fontSize: 14 }} /> };
-    case 'REGULATORY': return { label: 'Regulatory',  color: '#f59e0b', icon: <RegulatoryIcon  sx={{ fontSize: 14 }} /> };
-    case 'LAB':        return { label: 'Lab',         color: '#10b981', icon: <LabIcon         sx={{ fontSize: 14 }} /> };
-    case 'SAFETY':     return { label: 'Safety',      color: '#ef4444', icon: <SafetyIcon      sx={{ fontSize: 14 }} /> };
-    default:           return { label: category,      color: '#6b7280', icon: null };
-  }
-};
-
-const getStatusConfig = (status) => {
-  switch (status) {
-    case 'APPROVED':  return { color: '#10b981', icon: <ApprovedIcon sx={{ fontSize: 14 }} />, label: 'Approved' };
-    case 'PENDING':   return { color: '#f59e0b', icon: <PendingIcon  sx={{ fontSize: 14 }} />, label: 'Pending Review' };
-    case 'OVERDUE':   return { color: '#ef4444', icon: <OverdueIcon  sx={{ fontSize: 14 }} />, label: 'Review Overdue' };
-    case 'CONFLICT':  return { color: '#7c3aed', icon: <ConflictIcon sx={{ fontSize: 14 }} />, label: 'Version Conflict' };
-    default:          return { color: '#6b7280', icon: null, label: status };
-  }
-};
-
-const getAuditActionColor = (action) => {
-  switch (action) {
-    case 'Approved':        return '#10b981';
-    case 'Uploaded':        return PURPLE;
-    case 'Downloaded':      return '#3b82f6';
-    case 'Review Overdue':  return '#ef4444';
-    case 'Version Conflict':return '#7c3aed';
-    default:                return '#6b7280';
-  }
-};
-
 const statCardSx = {
   p: 2, borderRadius: 2, bgcolor: PURPLE,
   boxShadow: '0 2px 8px rgba(139,108,188,0.2)',
@@ -89,10 +58,43 @@ const statCardSx = {
 };
 
 export default function DocumentRepositoryPage() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm]     = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [tab, setTab] = useState(0);
+
+  const getCategoryConfig = (category) => {
+    switch (category) {
+      case 'PROTOCOL':   return { label: 'Protocol',    color: PURPLE,    icon: <ProtocolIcon    sx={{ fontSize: 14 }} /> };
+      case 'CONSENT':    return { label: 'Consent',     color: '#3b82f6', icon: <ConsentIcon     sx={{ fontSize: 14 }} /> };
+      case 'REGULATORY': return { label: 'Regulatory',  color: '#f59e0b', icon: <RegulatoryIcon  sx={{ fontSize: 14 }} /> };
+      case 'LAB':        return { label: 'Lab',         color: '#10b981', icon: <LabIcon         sx={{ fontSize: 14 }} /> };
+      case 'SAFETY':     return { label: 'Safety',      color: '#ef4444', icon: <SafetyIcon      sx={{ fontSize: 14 }} /> };
+      default:           return { label: category,      color: '#6b7280', icon: null };
+    }
+  };
+
+  const getStatusConfig = (status) => {
+    switch (status) {
+      case 'APPROVED':  return { color: '#10b981', icon: <ApprovedIcon sx={{ fontSize: 14 }} />, label: t('common.approved') };
+      case 'PENDING':   return { color: '#f59e0b', icon: <PendingIcon  sx={{ fontSize: 14 }} />, label: 'Pending Review' };
+      case 'OVERDUE':   return { color: '#ef4444', icon: <OverdueIcon  sx={{ fontSize: 14 }} />, label: 'Review Overdue' };
+      case 'CONFLICT':  return { color: '#7c3aed', icon: <ConflictIcon sx={{ fontSize: 14 }} />, label: 'Version Conflict' };
+      default:          return { color: '#6b7280', icon: null, label: status };
+    }
+  };
+
+  const getAuditActionColor = (action) => {
+    switch (action) {
+      case 'Approved':        return '#10b981';
+      case 'Uploaded':        return PURPLE;
+      case 'Downloaded':      return '#3b82f6';
+      case 'Review Overdue':  return '#ef4444';
+      case 'Version Conflict':return '#7c3aed';
+      default:                return '#6b7280';
+    }
+  };
 
   const filteredDocs = mockDocuments.filter((d) => {
     const matchesSearch =

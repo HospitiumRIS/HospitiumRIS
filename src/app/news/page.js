@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
@@ -31,6 +32,7 @@ const newsArticles = [
 ];
 
 const NewsPage = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
 
@@ -54,7 +56,7 @@ const NewsPage = () => {
               fontSize: { xs: '2rem', md: '3rem' },
             }}
           >
-            Latest News & Updates
+            {t('news_page.title')}
           </Typography>
           <Typography
             variant="h6"

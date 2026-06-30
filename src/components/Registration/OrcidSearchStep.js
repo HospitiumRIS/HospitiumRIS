@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
 import {
   Box,
@@ -19,6 +22,7 @@ import {
 import { useTheme, alpha } from '@mui/material/styles';
 
 const OrcidSearchStep = ({ onOrcidSelect, onSkipOrcid, selectedOrcidProfile, errors }) => {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const [orcidSearchData, setOrcidSearchData] = useState({
     givenNames: '',
@@ -63,13 +67,13 @@ const OrcidSearchStep = ({ onOrcidSelect, onSkipOrcid, selectedOrcidProfile, err
       const data = await response.json();
       
       if (!data || typeof data['num-found'] === 'undefined') {
-        setOrcidError('Received invalid data format from ORCID API');
+        setOrcidError(t('auth.orcid_api_error'));
         return;
       }
 
       if (data['num-found'] === 0 || !data['expanded-result'] || !data['expanded-result'].length) {
         setOrcidResults([]);
-        setOrcidError('No matching ORCID profiles found. Please try different search terms.');
+        setOrcidError(t('auth.orcid_no_results'));
         return;
       }
 
@@ -90,11 +94,11 @@ const OrcidSearchStep = ({ onOrcidSelect, onSkipOrcid, selectedOrcidProfile, err
       }
 
       if (processedResults.length === 0) {
-        setOrcidError('No valid ORCID profiles found. Please try different search terms.');
+        setOrcidError(t('auth.orcid_no_valid_results'));
       }
     } catch (err) {
       console.error('ORCID search error:', err);
-      setOrcidError('Failed to search ORCID. Please try again later.');
+      setOrcidError(t('auth.orcid_search_failed'));
     } finally {
       setOrcidLoading(false);
     }
@@ -120,15 +124,15 @@ const OrcidSearchStep = ({ onOrcidSelect, onSkipOrcid, selectedOrcidProfile, err
   return (
     <Box>
       <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, textAlign: 'center' }}>
-        Find Your ORCID Profile
+        {t('auth.orcid_search_title')}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
-        Search for your ORCID profile using your name
+        {t('auth.orcid_search_subtitle')}
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
         <TextField
-          label="Given Names"
+          label={t('auth.orcid_given_names')}
           name="givenNames"
           value={orcidSearchData.givenNames}
           onChange={handleOrcidInputChange}
@@ -136,7 +140,7 @@ const OrcidSearchStep = ({ onOrcidSelect, onSkipOrcid, selectedOrcidProfile, err
           size="small"
         />
         <TextField
-          label="Family Name"
+          label={t('auth.orcid_family_name')}
           name="familyName"
           value={orcidSearchData.familyName}
           onChange={handleOrcidInputChange}
@@ -158,15 +162,18 @@ const OrcidSearchStep = ({ onOrcidSelect, onSkipOrcid, selectedOrcidProfile, err
             fontWeight: 600,
           }}
         >
-          Search ORCID
+          {t('common.search')}
         </Button>
       </Box>
 
 
       {selectedOrcidProfile && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          Selected: {selectedOrcidProfile['given-names']} {selectedOrcidProfile['family-names']} 
-          (ORCID: {selectedOrcidProfile['orcid-id']})
+          {t('auth.orcid_selected', {
+            givenNames: selectedOrcidProfile['given-names'],
+            familyNames: selectedOrcidProfile['family-names'],
+            orcidId: selectedOrcidProfile['orcid-id']
+          })}
         </Alert>
       )}
 
@@ -189,7 +196,7 @@ const OrcidSearchStep = ({ onOrcidSelect, onSkipOrcid, selectedOrcidProfile, err
         >
           <IconButton
             onClick={handleClearOrcidResults}
-            aria-label="clear search results"
+            aria-label={t('auth.orcid_clear_results')}
             size="small"
             sx={{
               position: 'absolute',
@@ -238,7 +245,7 @@ const OrcidSearchStep = ({ onOrcidSelect, onSkipOrcid, selectedOrcidProfile, err
                           display="block"
                           sx={{ mt: 0.25 }}
                         >
-                          Affiliations: {result['institution-name'].join(', ')}
+                          {t('auth.orcid_affiliations')} {result['institution-name'].join(', ')}
                         </Typography>
                       )}
                     </Box>
@@ -252,7 +259,7 @@ const OrcidSearchStep = ({ onOrcidSelect, onSkipOrcid, selectedOrcidProfile, err
 
       {orcidResults.length === 0 && hasSearchedOrcid && !orcidLoading && orcidSearchData.givenNames && orcidSearchData.familyName && (
         <Alert severity="info" sx={{ mb: 2 }}>
-          No ORCID profiles found matching your search. Please try different names or continue with manual registration.
+          {t('auth.orcid_no_results_info')}
         </Alert>
       )}
 
@@ -268,7 +275,7 @@ const OrcidSearchStep = ({ onOrcidSelect, onSkipOrcid, selectedOrcidProfile, err
         }}
       >
         <Typography variant="body2" color="text.secondary">
-          Don't have an ORCID?
+          {t('auth.orcid_dont_have')}
         </Typography>
         <Button
           variant="outlined"
@@ -285,7 +292,7 @@ const OrcidSearchStep = ({ onOrcidSelect, onSkipOrcid, selectedOrcidProfile, err
             },
           }}
         >
-          Register for ORCID
+          {t('auth.orcid_register')}
         </Button>
       </Box>
 

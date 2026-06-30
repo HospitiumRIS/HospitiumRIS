@@ -76,6 +76,7 @@ import { useRouter } from 'next/navigation';
 import PageHeader from '../../../../../components/common/PageHeader';
 import { useAuth } from '../../../../../components/AuthProvider';
 import TipTapEditor from '../../../../../components/common/TipTapEditor';
+import { useTranslation } from 'react-i18next';
 
 const RESEARCH_FIELDS = [
   'Cardiology',
@@ -214,6 +215,7 @@ const steps = [
 ];
 
 const CreateProposalPage = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   
@@ -4293,8 +4295,8 @@ const CreateProposalPage = () => {
     <>
       <Box sx={{ mt: '50px' }}>
         <PageHeader
-        title="Create New Proposal"
-        description="Submit your research proposal for review and funding consideration"
+        title={t("researcher.create_proposal")}
+        description={t("researcher.create_proposal_desc")}
         icon={<ProposalIcon sx={{ fontSize: 32 }} />}
         actionButton={
           <Stack direction="row" spacing={2} alignItems="center">

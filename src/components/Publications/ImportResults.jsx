@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback } from 'react';
 import {
   Paper,
@@ -29,6 +30,7 @@ import {
 } from '@mui/icons-material';
 
 const ImportResults = ({ results, onRemove, onConfirmImport }) => {
+  const { t } = useTranslation();
   const [selectedIds, setSelectedIds] = useState(new Set(results.map(r => r.id)));
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedPublication, setSelectedPublication] = useState(null);
@@ -329,8 +331,8 @@ const ImportResults = ({ results, onRemove, onConfirmImport }) => {
             onClick={() => setViewDialogOpen(false)}
             sx={{ color: 'text.secondary' }}
           >
-            Close
-          </Button>
+            t('common.close')
+</Button>
         </DialogActions>
       </Dialog>
     </>

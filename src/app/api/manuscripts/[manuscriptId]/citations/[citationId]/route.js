@@ -26,8 +26,7 @@ export async function DELETE(request, { params }) {
 
         if (!manuscriptCitation) {
             return NextResponse.json(
-                { error: 'Citation not found in manuscript' },
-                { status: 404 }
+                { success: true, message: 'Citation already removed', deleted: true }
             );
         }
 

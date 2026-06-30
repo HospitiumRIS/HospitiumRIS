@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo, Suspense, useMemo } from 'react';
 import { Box, CircularProgress, alpha } from '@mui/material';
 import {
@@ -17,7 +18,6 @@ import {
 } from 'chart.js';
 import { Bar, Pie, Line } from 'react-chartjs-2';
 
-// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -31,7 +31,6 @@ ChartJS.register(
   Filler
 );
 
-// Utility functions
 const formatCurrency = (amount, currency = 'USD') => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -41,7 +40,6 @@ const formatCurrency = (amount, currency = 'USD') => {
   }).format(amount);
 };
 
-// Chart color palettes
 const CHART_COLORS = {
   primary: ['#8b6cbc', '#a084d1', '#b794f4', '#c9a6f7', '#dab8fa'],
   success: ['#4caf50', '#66bb6a', '#81c784', '#a5d6a7', '#c8e6c9'],
@@ -50,15 +48,15 @@ const CHART_COLORS = {
   mixed: ['#8b6cbc', '#4caf50', '#ff9800', '#2196f3', '#f44336', '#9c27b0', '#607d8b']
 };
 
-// Loading skeleton for charts
 const ChartSkeleton = memo(({ height = 350 }) => (
   <Box sx={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
     <CircularProgress size={60} />
   </Box>
 ));
 
-// Campaign Performance Bar Chart
 export const CampaignChart = memo(({ analyticsData }) => {
+  const { t } = useTranslation();
+
   const chartData = useMemo(() => {
     if (!analyticsData) return null;
     
@@ -70,7 +68,7 @@ export const CampaignChart = memo(({ analyticsData }) => {
       labels: top10Campaigns.map(c => c.name),
       datasets: [
         {
-          label: 'Amount Raised',
+          label: t('analytics.amount_raised_label'),
           data: top10Campaigns.map(c => c.raised),
           backgroundColor: CHART_COLORS.primary,
           borderColor: CHART_COLORS.primary.map(color => color + '80'),
@@ -80,9 +78,9 @@ export const CampaignChart = memo(({ analyticsData }) => {
         }
       ]
     };
-  }, [analyticsData]);
+  }, [analyticsData, t]);
 
-  const options = {
+  const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -120,7 +118,7 @@ export const CampaignChart = memo(({ analyticsData }) => {
         }
       }
     }
-  };
+  }), []);
 
   if (!chartData) return <ChartSkeleton />;
 
@@ -131,7 +129,6 @@ export const CampaignChart = memo(({ analyticsData }) => {
   );
 });
 
-// Category Distribution Pie Chart
 export const CategoryChart = memo(({ analyticsData }) => {
   const chartData = useMemo(() => {
     if (!analyticsData) return null;
@@ -149,7 +146,7 @@ export const CategoryChart = memo(({ analyticsData }) => {
     };
   }, [analyticsData]);
 
-  const options = {
+  const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -181,7 +178,7 @@ export const CategoryChart = memo(({ analyticsData }) => {
         }
       }
     }
-  };
+  }), []);
 
   if (!chartData) return <ChartSkeleton />;
 
@@ -192,18 +189,19 @@ export const CategoryChart = memo(({ analyticsData }) => {
   );
 });
 
-// Monthly Trends Line Chart
 export const TrendsChart = memo(({ analyticsData, dashboardColors }) => {
+  const { t } = useTranslation();
+
   const chartData = useMemo(() => {
     if (!analyticsData) return null;
     
-    const monthlyData = analyticsData.monthlyTrends.slice(-12); // Last 12 months
+    const monthlyData = analyticsData.monthlyTrends.slice(-12);
 
     return {
       labels: monthlyData.map(data => data.monthName),
       datasets: [
         {
-          label: 'Donation Amount',
+          label: t('analytics.donation_amount_label'),
           data: monthlyData.map(data => data.amount),
           borderColor: dashboardColors.primary,
           backgroundColor: alpha(dashboardColors.primary, 0.1),
@@ -217,9 +215,9 @@ export const TrendsChart = memo(({ analyticsData, dashboardColors }) => {
         }
       ]
     };
-  }, [analyticsData, dashboardColors]);
+  }, [analyticsData, dashboardColors, t]);
 
-  const options = {
+  const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -261,7 +259,7 @@ export const TrendsChart = memo(({ analyticsData, dashboardColors }) => {
       mode: 'index',
       intersect: false,
     }
-  };
+  }), []);
 
   if (!chartData) return <ChartSkeleton />;
 

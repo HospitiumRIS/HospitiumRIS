@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box, Container, Typography, Paper, Chip, LinearProgress, CircularProgress,
   Alert, InputAdornment, TextField, alpha, Avatar, Stack, Divider,
@@ -72,6 +73,7 @@ const WHeader = ({ icon, title, subtitle, action }) => (
 );
 
 export default function FoundationDashboard() {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
 
@@ -108,8 +110,8 @@ export default function FoundationDashboard() {
     const now = new Date();
     setCurrentDate(now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' }));
     const h = now.getHours();
-    setGreeting(h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening');
-  }, []);
+    setGreeting(h < 12 ? t('foundation_dashboard.good_morning') : h < 18 ? t('foundation_dashboard.good_afternoon') : t('foundation_dashboard.good_evening'));
+  }, [t]);
 
   const getName = () => {
     if (user?.givenName && user?.familyName) return `${user.givenName} ${user.familyName}`;
@@ -119,10 +121,10 @@ export default function FoundationDashboard() {
   };
   const getRole = () => {
     switch (user?.accountType?.toLowerCase()) {
-      case 'foundation_admin': return 'Foundation Administrator';
-      case 'super_admin':      return 'Super Administrator';
-      case 'global_admin':     return 'Global Admin';
-      default:                 return 'Foundation Portal';
+      case 'foundation_admin': return t('foundation_dashboard.foundation_administrator');
+      case 'super_admin':      return t('foundation_dashboard.super_administrator');
+      case 'global_admin':     return t('foundation_dashboard.global_admin');
+      default:                 return t('foundation_dashboard.foundation_portal');
     }
   };
 
@@ -227,12 +229,12 @@ export default function FoundationDashboard() {
   if (loading) return (
     <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', minHeight:'60vh', flexDirection:'column', gap:2 }}>
       <CircularProgress size={48} sx={{ color:PURPLE }} />
-      <Typography color="text.secondary">Loading dashboard…</Typography>
+      <Typography color="text.secondary">{t('common.loading')}</Typography>
     </Box>
   );
   if (error) return (
     <Container maxWidth="xl" sx={{ py:4 }}>
-      <Alert severity="error" action={<Button size="small" onClick={loadData}>Retry</Button>}>{error}</Alert>
+      <Alert severity="error" action={<Button size="small" onClick={loadData}>{t('common.retry')}</Button>}>{error}</Alert>
     </Container>
   );
 
@@ -243,9 +245,9 @@ export default function FoundationDashboard() {
 
     trends: (
       <Paper elevation={0} sx={{ borderRadius:3, border:'1px solid', borderColor:'divider', p:3 }}>
-        <WHeader icon={<TrendsIcon />} title="Monthly Inflow Trend" subtitle="Donation revenue — last 6 months" />
+        <WHeader icon={<TrendsIcon />} title={t('foundation_dashboard.monthly_inflow_trend')} subtitle={t('foundation_dashboard.donation_revenue_last_6m')} />
         {monthlyTrends.length === 0
-          ? <Box sx={{ py:6, textAlign:'center' }}><Typography color="text.disabled">No trend data</Typography></Box>
+          ? <Box sx={{ py:6, textAlign:'center' }}><Typography color="text.disabled">{t('common.no_data')}</Typography></Box>
           : <ResponsiveContainer width="100%" height={240}>
               <AreaChart data={monthlyTrends} margin={{ top:5, right:16, left:0, bottom:5 }}>
                 <defs>
@@ -257,7 +259,7 @@ export default function FoundationDashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke={alpha(PURPLE,0.1)} />
                 <XAxis dataKey="month" tick={{ fontSize:11, fill:'#64748b' }} tickLine={false} axisLine={false} />
                 <YAxis tickFormatter={fmtS} tick={{ fontSize:11, fill:'#64748b' }} tickLine={false} axisLine={false} />
-                <RTooltip formatter={(v) => [fmt(v),'Revenue']} contentStyle={{ borderRadius:8, fontSize:13 }} />
+                <RTooltip formatter={(v) => [fmt(v),t('foundation_dashboard.revenue')]} contentStyle={{ borderRadius:8, fontSize:13 }} />
                 <Area type="monotone" dataKey="total" stroke={PURPLE} strokeWidth={2.5} fill="url(#ag)" dot={{ r:3, fill:PURPLE }} activeDot={{ r:5 }} />
               </AreaChart>
             </ResponsiveContainer>
@@ -267,24 +269,24 @@ export default function FoundationDashboard() {
 
     campaigns: (
       <Paper elevation={0} sx={{ borderRadius:3, border:'1px solid', borderColor:'divider', p:3, height:'100%' }}>
-        <WHeader icon={<BarIcon />} title="Performance Overview"
-          subtitle={selCategory ? `Filtered: ${selCategory}` : 'Campaigns ranked by fundraising activity'}
+        <WHeader icon={<BarIcon />} title={t('foundation_dashboard.performance_overview')}
+          subtitle={selCategory ? `${t('common.filter')}: ${selCategory}` : t('foundation_dashboard.campaigns_ranked')}
           action={
             <Stack direction="row" spacing={1} alignItems="center">
               {selCategory && <Chip label={selCategory} size="small" onDelete={() => setSelCategory(null)}
                 sx={{ bgcolor:alpha(PURPLE,0.1), color:PURPLE, fontSize:'0.7rem', height:22 }} />}
               <FormControl size="small" sx={{ minWidth:130 }}>
                 <Select value={perfSort} onChange={e => setPerfSort(e.target.value)} sx={{ fontSize:'0.78rem' }} MenuProps={{ disableScrollLock:true }}>
-                  <MenuItem value="raised">By Amount</MenuItem>
-                  <MenuItem value="progress">By Progress</MenuItem>
-                  <MenuItem value="donors">By Donors</MenuItem>
+                  <MenuItem value="raised">{t('foundation_dashboard.by_amount')}</MenuItem>
+                  <MenuItem value="progress">{t('foundation_dashboard.by_progress')}</MenuItem>
+                  <MenuItem value="donors">{t('foundation_dashboard.by_donors')}</MenuItem>
                 </Select>
               </FormControl>
             </Stack>
           }
         />
         <Stack direction="row" sx={{ mb:2, flexWrap:'wrap', gap:0.75 }}>
-          {[{ k:'all', l:`All (${statusCounts.all})` }, { k:'active', l:`Active (${statusCounts.active})` }, { k:'completed', l:`Completed (${statusCounts.completed})` }]
+          {[{ k:'all', l:t('foundation_dashboard.all_count', { count: statusCounts.all }) }, { k:'active', l:t('foundation_dashboard.active_count', { count: statusCounts.active }) }, { k:'completed', l:t('foundation_dashboard.completed_count', { count: statusCounts.completed }) }]
             .map(({ k, l }) => (
               <Chip key={k} label={l} size="small"
                 onClick={() => { setPerfFilter(k); setShowAll(false); }}
@@ -313,26 +315,26 @@ export default function FoundationDashboard() {
                       </Box>
                       <Box sx={{ textAlign:'right', flexShrink:0 }}>
                         <Typography variant="body2" sx={{ fontWeight:700, color:PURPLE }}>{fmt(item.raised)}</Typography>
-                        <Typography variant="caption" color="text.secondary">of {fmt(item.target)}</Typography>
+                        <Typography variant="caption" color="text.secondary">{t('foundation_dashboard.of')} {fmt(item.target)}</Typography>
                       </Box>
                     </Stack>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <LinearProgress variant="determinate" value={Math.min((item.raised/maxRaised)*100,100)}
                         sx={{ flex:1, height:6, borderRadius:3, bgcolor:alpha(PURPLE,0.1), '& .MuiLinearProgress-bar':{ bgcolor:BAR_COLORS[i%5], borderRadius:3 } }} />
                       <Typography variant="caption" sx={{ color:PURPLE, fontWeight:600, minWidth:56, textAlign:'right', fontSize:'0.72rem' }}>
-                        {(item.donors||0)} donors · {item.progress.toFixed(0)}%
+                        {(item.donors||0)} {t('foundation_dashboard.donors_text')} · {item.progress.toFixed(0)}%
                       </Typography>
                     </Stack>
                   </Box>
                 ))}
               </Stack>
-            : <Box sx={{ textAlign:'center', py:4 }}><Typography color="text.disabled">No campaigns match this filter</Typography></Box>
+            : <Box sx={{ textAlign:'center', py:4 }}><Typography color="text.disabled">{t('common.no_results')}</Typography></Box>
           }
         </Box>
         {filteredCampaigns.length > 5 && (
           <Box sx={{ textAlign:'center', mt:1.5 }}>
             <Button size="small" onClick={() => setShowAll(!showAll)} sx={{ color:PURPLE, textTransform:'none' }}>
-              {showAll ? 'Show less' : `Show ${filteredCampaigns.length - 5} more`}
+              {showAll ? t('common.show_less') : t('common.show_more')}
             </Button>
           </Box>
         )}
@@ -341,9 +343,9 @@ export default function FoundationDashboard() {
 
     categories: (
       <Paper elevation={0} sx={{ borderRadius:3, border:'1px solid', borderColor:'divider', p:3, height:'100%' }}>
-        <WHeader icon={<PieIcon />} title="Category Distribution" subtitle="Click a slice or legend to filter campaigns" />
+        <WHeader icon={<PieIcon />} title={t('foundation_dashboard.category_distribution')} subtitle={t('foundation_dashboard.click_slice_to_filter')} />
         {catChartData.length === 0
-          ? <Box sx={{ py:6, textAlign:'center' }}><Typography color="text.disabled">No category data</Typography></Box>
+          ? <Box sx={{ py:6, textAlign:'center' }}><Typography color="text.disabled">{t('common.no_data')}</Typography></Box>
           : <>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
@@ -371,9 +373,9 @@ export default function FoundationDashboard() {
               </Stack>
               {selCategory && (
                 <Box sx={{ mt:1.5, p:1.25, borderRadius:2, bgcolor:alpha(PURPLE,0.06), border:`1px solid ${alpha(PURPLE,0.15)}` }}>
-                  <Typography variant="caption" sx={{ color:PURPLE, fontSize:'0.72rem' }}>
-                    Filtering <strong>Performance</strong> by: <strong>{selCategory}</strong>
-                  </Typography>
+                  <Typography variant="caption" sx={{ color:PURPLE, fontSize:'0.72rem' }}
+                    dangerouslySetInnerHTML={{ __html: t('foundation_dashboard.filtering_performance', { category: selCategory }) }}
+                  />
                 </Box>
               )}
             </>
@@ -383,7 +385,7 @@ export default function FoundationDashboard() {
 
     donors: (
       <Paper elevation={0} sx={{ borderRadius:3, border:'1px solid', borderColor:'divider', p:3, height:'100%' }}>
-        <WHeader icon={<PeopleIcon />} title="Top Donors" subtitle="Highest lifetime contributors"
+        <WHeader icon={<PeopleIcon />} title={t('foundation_dashboard.top_donors')} subtitle={t('foundation_dashboard.highest_lifetime_contributors')}
           action={
             <TextField size="small" placeholder="Search…" value={donorSearch} onChange={e => setDonorSearch(e.target.value)}
               InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize:16, color:'text.secondary' }} /></InputAdornment> }}
@@ -391,7 +393,7 @@ export default function FoundationDashboard() {
           }
         />
         {filteredDonors.length === 0
-          ? <Box sx={{ py:4, textAlign:'center' }}><Typography color="text.disabled">No donors found</Typography></Box>
+          ? <Box sx={{ py:4, textAlign:'center' }}><Typography color="text.disabled">{t('common.no_results')}</Typography></Box>
           : <Box>
               {filteredDonors.slice(0, 8).map((d, i) => (
                 <Box key={d.id} onClick={() => router.push('/foundation/funders')}
@@ -403,7 +405,7 @@ export default function FoundationDashboard() {
                   </Avatar>
                   <Box sx={{ flex:1, minWidth:0 }}>
                     <Typography variant="body2" sx={{ fontWeight:600, fontSize:'0.8rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.name}</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize:'0.68rem' }}>{d.type} · {d.donations} gift{d.donations!==1?'s':''}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize:'0.68rem' }}>{d.type} · {d.donations} {d.donations!==1 ? t('foundation_dashboard.gifts') : t('foundation_dashboard.gift')}</Typography>
                   </Box>
                   <Typography variant="body2" sx={{ fontWeight:700, color:'#16a34a', fontSize:'0.85rem', flexShrink:0 }}>{fmt(d.totalDonated)}</Typography>
                 </Box>
@@ -413,7 +415,7 @@ export default function FoundationDashboard() {
         <Box sx={{ mt:1.5, textAlign:'right' }}>
           <Button size="small" endIcon={<ArrowIcon sx={{ fontSize:14 }} />} onClick={() => router.push('/foundation/funders')}
             sx={{ color:PURPLE, textTransform:'none', fontSize:'0.78rem' }}>
-            Funders CRM
+            {t('foundation.funders_crm')}
           </Button>
         </Box>
       </Paper>
@@ -421,14 +423,14 @@ export default function FoundationDashboard() {
 
     grants: (
       <Paper elevation={0} sx={{ borderRadius:3, border:'1px solid', borderColor:'divider', p:3, height:'100%' }}>
-        <WHeader icon={<GrantIcon />} title="Grant Opportunities" subtitle="Sorted by deadline — act before they close"
+        <WHeader icon={<GrantIcon />} title={t('foundation.grant_opportunities')} subtitle={t('foundation_dashboard.sorted_by_deadline')}
           action={
             <Button size="small" endIcon={<ArrowIcon sx={{ fontSize:14 }} />} onClick={() => router.push('/foundation/grants/opportunities')}
-              sx={{ color:PURPLE, textTransform:'none', fontSize:'0.75rem' }}>All</Button>
+              sx={{ color:PURPLE, textTransform:'none', fontSize:'0.75rem' }}>{t('common.all')}</Button>
           }
         />
         {grantOpps.length === 0
-          ? <Box sx={{ py:4, textAlign:'center' }}><Typography color="text.disabled">No open opportunities</Typography></Box>
+          ? <Box sx={{ py:4, textAlign:'center' }}><Typography color="text.disabled">{t('common.no_data')}</Typography></Box>
           : <Stack spacing={1.25}>
               {grantOpps.map((g) => {
                 const days = g.deadline ? Math.ceil((new Date(g.deadline) - new Date()) / 86400000) : null;
@@ -442,11 +444,11 @@ export default function FoundationDashboard() {
                     <Box sx={{ mt:0.3, width:8, height:8, borderRadius:'50%', bgcolor:urg, flexShrink:0 }} />
                     <Box sx={{ flex:1, minWidth:0 }}>
                       <Typography variant="body2" sx={{ fontWeight:600, fontSize:'0.8rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{g.title}</Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize:'0.7rem' }}>{g.grantor} · {g.amount > 0 ? fmt(g.amount) : 'Amt TBD'}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize:'0.7rem' }}>{g.grantor} · {g.amount > 0 ? fmt(g.amount) : t('foundation_dashboard.amt_tbd')}</Typography>
                     </Box>
                     <Box sx={{ textAlign:'right', flexShrink:0 }}>
                       <Typography variant="caption" sx={{ fontWeight:700, fontSize:'0.72rem', color:urg, display:'block' }}>
-                        {days == null ? '—' : days <= 0 ? 'Expired' : `${days}d left`}
+                        {days == null ? '—' : days <= 0 ? t('foundation_dashboard.expired') : t('foundation_dashboard.days_left', { days })}
                       </Typography>
                       <Typography variant="caption" color="text.disabled" sx={{ fontSize:'0.65rem' }}>{fmtDate(g.deadline)}</Typography>
                     </Box>
@@ -460,10 +462,10 @@ export default function FoundationDashboard() {
 
     activities: (
       <Paper elevation={0} sx={{ borderRadius:3, border:'1px solid', borderColor:'divider', p:3, height:'100%' }}>
-        <WHeader icon={<ActivitiesIcon />} title="Upcoming Activities"
-          subtitle="Campaign deadlines & grant closings — sorted by urgency" />
+        <WHeader icon={<ActivitiesIcon />} title={t('foundation_dashboard.upcoming_activities')}
+          subtitle={t('foundation_dashboard.deadlines_sorted_by_urgency')} />
         {upcomingActivities.length === 0
-          ? <Box sx={{ py:4, textAlign:'center' }}><Typography color="text.disabled">No upcoming deadlines</Typography></Box>
+          ? <Box sx={{ py:4, textAlign:'center' }}><Typography color="text.disabled">{t('common.no_data')}</Typography></Box>
           : <Stack spacing={1}>
               {upcomingActivities.map((item, i) => {
                 const urg = item.days <= 7 ? '#ef4444' : item.days <= 30 ? '#f59e0b' : '#22c55e';
@@ -483,14 +485,14 @@ export default function FoundationDashboard() {
                     <Box sx={{ flex:1, minWidth:0 }}>
                       <Typography variant="body2" sx={{ fontWeight:600, fontSize:'0.8rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.title}</Typography>
                       <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt:0.3 }}>
-                        <Chip label={isCampaign ? 'Campaign' : 'Grant'} size="small"
+                        <Chip label={isCampaign ? t('foundation_dashboard.campaign_label') : t('foundation_dashboard.grant_label')} size="small"
                           sx={{ fontSize:'0.6rem', height:16, bgcolor:alpha(PURPLE,0.1), color:PURPLE, fontWeight:600 }} />
                         <Typography variant="caption" color="text.secondary" sx={{ fontSize:'0.68rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.subtitle}</Typography>
                       </Stack>
                     </Box>
                     <Box sx={{ textAlign:'right', flexShrink:0 }}>
                       <Typography variant="caption" sx={{ fontWeight:700, fontSize:'0.75rem', color:urg, display:'block' }}>
-                        {item.days === 0 ? 'Today' : `${item.days}d`}
+                        {item.days === 0 ? t('foundation_dashboard.today') : t('foundation_dashboard.days_short', { days: item.days })}
                       </Typography>
                       <Typography variant="caption" color="text.disabled" sx={{ fontSize:'0.63rem' }}>{fmtDate(item.date)}</Typography>
                     </Box>
@@ -504,19 +506,19 @@ export default function FoundationDashboard() {
 
     'quick-nav': (
       <Paper elevation={0} sx={{ borderRadius:3, border:'1px solid', borderColor:'divider', p:3 }}>
-        <WHeader icon={<AnalyticsIcon />} title="Quick Navigation" subtitle="Jump to any section of the Foundation portal" />
+        <WHeader icon={<AnalyticsIcon />} title={t('foundation_dashboard.quick_navigation')} subtitle={t('foundation_dashboard.jump_to_section')} />
         <Box sx={{ display:'flex', gap:2, flexWrap:'wrap' }}>
           {[
-            { label:'Campaigns',       icon:<CampaignIcon />,     path:'/foundation/campaigns',                        color:'#8b6cbc', desc:'Manage initiatives' },
-            { label:'Donations',       icon:<MoneyIcon />,         path:'/foundation/donations',                        color:'#3b82f6', desc:'Track gifts & pledges' },
-            { label:'Funders CRM',     icon:<FundersIcon />,       path:'/foundation/funders',                          color:'#0891b2', desc:'Donor profiles & history' },
-            { label:'Grant Opps',      icon:<GrantIcon />,         path:'/foundation/grants/opportunities',             color:'#22c55e', desc:'Open opportunities' },
-            { label:'Won Grants',      icon:<WonIcon />,           path:'/foundation/grants/won',                       color:'#f59e0b', desc:'Award tracker' },
-            { label:'Internal Grants', icon:<InternalGrantIcon />, path:'/foundation/grants/internal-requests',         color:'#ec4899', desc:'Internal funding' },
-            { label:'Fund Pool',       icon:<FinancialIcon />,     path:'/foundation/financial/central-fund-pool',      color:'#6366f1', desc:'Central fund management' },
-            { label:'Reports',         icon:<AnalyticsIcon />,     path:'/foundation/reports',                          color:'#ef4444', desc:'Analytics & insights' },
-          ].map(({ label, icon, path, color, desc }) => (
-            <Box key={label} onClick={() => router.push(path)}
+            { labelKey:'quick_nav_campaigns',       icon:<CampaignIcon />,     path:'/foundation/campaigns',                        color:'#8b6cbc', descKey:'campaigns_desc' },
+            { labelKey:'quick_nav_donations',       icon:<MoneyIcon />,         path:'/foundation/donations',                        color:'#3b82f6', descKey:'donations_desc' },
+            { labelKey:'quick_nav_funders_crm',     icon:<FundersIcon />,       path:'/foundation/funders',                          color:'#0891b2', descKey:'funders_crm_desc' },
+            { labelKey:'quick_nav_grant_opps',      icon:<GrantIcon />,         path:'/foundation/grants/opportunities',             color:'#22c55e', descKey:'grant_opps_desc' },
+            { labelKey:'quick_nav_won_grants',      icon:<WonIcon />,           path:'/foundation/grants/won',                       color:'#f59e0b', descKey:'won_grants_desc' },
+            { labelKey:'quick_nav_internal_grants', icon:<InternalGrantIcon />, path:'/foundation/grants/internal-requests',         color:'#ec4899', descKey:'internal_grants_desc' },
+            { labelKey:'quick_nav_fund_pool',       icon:<FinancialIcon />,     path:'/foundation/financial/central-fund-pool',      color:'#6366f1', descKey:'fund_pool_desc' },
+            { labelKey:'quick_nav_reports',         icon:<AnalyticsIcon />,     path:'/foundation/reports',                          color:'#ef4444', descKey:'reports_desc' },
+          ].map(({ labelKey, icon, path, color, descKey }) => (
+            <Box key={labelKey} onClick={() => router.push(path)}
               sx={{ flex:'1 1 140px', minWidth:0, p:2, borderRadius:2.5, border:'1px solid', borderColor:alpha(color,0.2),
                 bgcolor:alpha(color,0.04), cursor:'pointer', transition:'all 0.2s',
                 '&:hover':{ bgcolor:alpha(color,0.1), borderColor:alpha(color,0.4), transform:'translateY(-2px)', boxShadow:`0 4px 16px ${alpha(color,0.15)}` } }}
@@ -524,8 +526,8 @@ export default function FoundationDashboard() {
               <Box sx={{ width:36, height:36, borderRadius:2, bgcolor:alpha(color,0.12), display:'flex', alignItems:'center', justifyContent:'center', mb:1.25 }}>
                 {React.cloneElement(icon, { sx:{ fontSize:20, color } })}
               </Box>
-              <Typography variant="body2" sx={{ fontWeight:700, mb:0.25 }}>{label}</Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize:'0.7rem' }}>{desc}</Typography>
+              <Typography variant="body2" sx={{ fontWeight:700, mb:0.25 }}>{t(`foundation_dashboard.${labelKey}`)}</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize:'0.7rem' }}>{t(`foundation_dashboard.${descKey}`)}</Typography>
             </Box>
           ))}
         </Box>
@@ -541,7 +543,7 @@ export default function FoundationDashboard() {
           title={`${greeting}, ${getName()}!`}
           description={
             <>
-              <span style={{ fontSize:'0.9rem', opacity:0.85 }}>Logged in as <strong>{getRole()}</strong></span>
+              <span style={{ fontSize:'0.9rem', opacity:0.85 }}>{t('foundation_dashboard.logged_in_as')} <strong>{getRole()}</strong></span>
               <br />
               <span style={{ opacity:0.72, fontSize:'0.82rem' }}>{currentDate}</span>
             </>
@@ -551,11 +553,11 @@ export default function FoundationDashboard() {
             <Stack direction="row" spacing={1.5}>
               <Button variant="contained" size="small" startIcon={<RefreshIcon />} onClick={loadData}
                 sx={{ bgcolor:'rgba(255,255,255,0.22)', backdropFilter:'blur(10px)', border:'1px solid rgba(255,255,255,0.4)', color:'white', fontWeight:600, '&:hover':{ bgcolor:'rgba(255,255,255,0.32)' } }}>
-                Refresh
+                {t('common.refresh')}
               </Button>
               <Button variant="contained" size="small" onClick={() => router.push('/foundation/reports')}
                 sx={{ bgcolor:'rgba(255,255,255,0.13)', backdropFilter:'blur(10px)', border:'1px solid rgba(255,255,255,0.3)', color:'white', fontWeight:600, '&:hover':{ bgcolor:'rgba(255,255,255,0.22)' } }}>
-                Full Reports
+                {t('foundation_dashboard.full_reports')}
               </Button>
             </Stack>
           }
@@ -568,20 +570,20 @@ export default function FoundationDashboard() {
         <Paper elevation={0} sx={{ borderRadius:2, mb:3, border:'1px solid', borderColor:'divider', overflow:'hidden' }}>
           <Box sx={{ px:3, py:1.5, background:`linear-gradient(135deg, ${alpha(PURPLE,0.06)} 0%, ${alpha(PURPLE,0.03)} 100%)`, display:'flex', alignItems:'center', gap:0, flexWrap:'wrap', rowGap:0.5 }}>
             {[
-              { label:'Total Raised',    value: fmt((ov.totalRaised||0)+(ov.totalGrants||0)), icon:<MoneyIcon sx={{ fontSize:15 }} />,       color:PURPLE,    path:'/foundation/donations' },
-              { label:'Donations',       value: (ov.totalDonations||0).toLocaleString(),        icon:<CampaignIcon sx={{ fontSize:15 }} />,   color:'#3b82f6', path:'/foundation/donations' },
-              { label:'Unique Donors',   value: (ov.uniqueDonors||0).toLocaleString(),          icon:<PeopleIcon sx={{ fontSize:15 }} />,     color:'#0891b2', path:'/foundation/funders' },
-              { label:'Avg Donation',    value: fmt(ov.averageDonation),                        icon:<TrendingUpIcon sx={{ fontSize:15 }} />, color:'#22c55e', path:'/foundation/reports' },
-              { label:'Active Campaigns',value: (ov.activeCampaigns||0),                        icon:<FundraisingIcon sx={{ fontSize:15 }} />,color:'#f59e0b', path:'/foundation/campaigns' },
-              { label:'Open Grants',     value: (ov.activeGrants||0),                           icon:<GrantIcon sx={{ fontSize:15 }} />,      color:'#ec4899', path:'/foundation/grants/opportunities' },
-              { label:'Retention',       value: `${(ov.retentionRate||0).toFixed(1)}%`,         icon:<StarIcon sx={{ fontSize:15 }} />,       color:'#6366f1', path:'/foundation/reports' },
+              { labelKey:'total_raised_kpi',    value: fmt((ov.totalRaised||0)+(ov.totalGrants||0)), icon:<MoneyIcon sx={{ fontSize:15 }} />,       color:PURPLE,    path:'/foundation/donations' },
+              { labelKey:'donations_kpi',       value: (ov.totalDonations||0).toLocaleString(),        icon:<CampaignIcon sx={{ fontSize:15 }} />,   color:'#3b82f6', path:'/foundation/donations' },
+              { labelKey:'unique_donors_kpi',   value: (ov.uniqueDonors||0).toLocaleString(),          icon:<PeopleIcon sx={{ fontSize:15 }} />,     color:'#0891b2', path:'/foundation/funders' },
+              { labelKey:'avg_donation_kpi',    value: fmt(ov.averageDonation),                        icon:<TrendingUpIcon sx={{ fontSize:15 }} />, color:'#22c55e', path:'/foundation/reports' },
+              { labelKey:'active_campaigns_kpi',value: (ov.activeCampaigns||0),                        icon:<FundraisingIcon sx={{ fontSize:15 }} />,color:'#f59e0b', path:'/foundation/campaigns' },
+              { labelKey:'open_grants_kpi',     value: (ov.activeGrants||0),                           icon:<GrantIcon sx={{ fontSize:15 }} />,      color:'#ec4899', path:'/foundation/grants/opportunities' },
+              { labelKey:'retention_kpi',       value: `${(ov.retentionRate||0).toFixed(1)}%`,         icon:<StarIcon sx={{ fontSize:15 }} />,       color:'#6366f1', path:'/foundation/reports' },
             ].map((item, i) => (
               <React.Fragment key={i}>
                 {i > 0 && <Divider orientation="vertical" flexItem sx={{ mx:2, my:0.5 }} />}
                 <Stack direction="row" spacing={0.75} alignItems="center" onClick={() => router.push(item.path)}
                   sx={{ cursor:'pointer', px:1, py:0.25, borderRadius:1, '&:hover':{ bgcolor:alpha(item.color,0.08) }, transition:'background 0.15s' }}>
                   <Box sx={{ color:item.color, display:'flex', opacity:0.9 }}>{item.icon}</Box>
-                  <Typography variant="caption" sx={{ color:'#64748b', fontSize:'0.75rem' }}>{item.label}:</Typography>
+                  <Typography variant="caption" sx={{ color:'#64748b', fontSize:'0.75rem' }}>{t(`foundation_dashboard.${item.labelKey}`)}:</Typography>
                   <Typography variant="caption" sx={{ fontWeight:700, color:'#1e293b', fontSize:'0.8rem' }}>{item.value}</Typography>
                 </Stack>
               </React.Fragment>
@@ -592,7 +594,7 @@ export default function FoundationDashboard() {
         {/* Drag hint */}
         <Box sx={{ display:'flex', alignItems:'center', gap:1, mb:2, opacity:0.45 }}>
           <DragIcon sx={{ fontSize:14 }} />
-          <Typography variant="caption" sx={{ fontSize:'0.72rem' }}>Drag widgets by the ⠿ handle to reorder your dashboard — layout is saved automatically</Typography>
+          <Typography variant="caption" sx={{ fontSize:'0.72rem' }}>{t('foundation_dashboard.drag_hint')}</Typography>
         </Box>
 
         {/* Draggable widget grid */}

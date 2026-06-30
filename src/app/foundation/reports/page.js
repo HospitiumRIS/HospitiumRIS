@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box, Container, Typography, Paper, Chip, Button, Stack, Divider,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -95,6 +96,7 @@ const TABS = [
 ];
 
 export default function ReportsPage() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);

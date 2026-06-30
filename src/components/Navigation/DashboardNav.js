@@ -15,10 +15,12 @@ import {
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 
 const DashboardNav = ({ dashboardConfig }) => {
   const theme = useTheme();
   const router = useRouter();
+  const { t } = useTranslation();
   const [menuAnchors, setMenuAnchors] = useState({});
 
   const handleMenuClick = (event, menuKey) => {
@@ -265,7 +267,7 @@ const DashboardNav = ({ dashboardConfig }) => {
                   mt: 0.5
                 }}
               >
-                Manage your research workflow and {menuItem.label.toLowerCase()}
+                {t('dashboard.manage_workflow', { label: menuItem.label.toLowerCase(), defaultValue: `Manage your research workflow and ${menuItem.label.toLowerCase()}` })}
               </Typography>
             </Box>
 

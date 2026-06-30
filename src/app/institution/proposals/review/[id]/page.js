@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -64,6 +65,7 @@ import PageHeader from '../../../../../components/common/PageHeader';
 import { useAuth } from '../../../../../components/AuthProvider';
 
 const ProposalDetailsPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const params = useParams();
   const router = useRouter();
@@ -416,7 +418,7 @@ const ProposalDetailsPage = () => {
                       )}
                       <Divider />
                       <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 1, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</Typography>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 1, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('common.status')}</Typography>
                         <Chip 
                           label={proposal.status ? proposal.status.replace('_', ' ') : 'Unknown'} 
                           color={getStatusColor(proposal.status)}
@@ -1170,7 +1172,7 @@ const ProposalDetailsPage = () => {
                     Review History
                   </Typography>
                   <Alert severity="info">
-                    No review history available for this proposal. This will be the first review.
+                    {t('common.no_data')}
                   </Alert>
                 </CardContent>
               </Card>
@@ -1228,7 +1230,7 @@ const ProposalDetailsPage = () => {
               onClick={loadProposal} 
               sx={{ ml: 2 }}
             >
-              Try Again
+              {t('common.retry')}
             </Button>
           </Alert>
         </Container>
@@ -1269,7 +1271,7 @@ const ProposalDetailsPage = () => {
                 backdropFilter: 'blur(10px)'
               }}
             >
-              Back to List
+              {t('common.back')}
             </Button>
             {proposal.status === 'UNDER_REVIEW' && (
               <Button
@@ -1285,7 +1287,7 @@ const ProposalDetailsPage = () => {
                   fontWeight: 600
                 }}
               >
-                Review Proposal
+                {t('common.review')}
               </Button>
             )}
           </Stack>
@@ -1491,7 +1493,7 @@ const ProposalDetailsPage = () => {
                         minRows={2}
                         maxRows={10}
                         size="small"
-                        label="Comments"
+                        label={t('common.comments')}
                         value={reviewForm.sectionReviews.researchObjectives.comments}
                         onChange={(e) => setReviewForm({
                           ...reviewForm,
@@ -1547,7 +1549,7 @@ const ProposalDetailsPage = () => {
                         minRows={2}
                         maxRows={10}
                         size="small"
-                        label="Comments"
+                        label={t('common.comments')}
                         value={reviewForm.sectionReviews.methodology.comments}
                         onChange={(e) => setReviewForm({
                           ...reviewForm,
@@ -1603,7 +1605,7 @@ const ProposalDetailsPage = () => {
                         minRows={2}
                         maxRows={10}
                         size="small"
-                        label="Comments"
+                        label={t('common.comments')}
                         value={reviewForm.sectionReviews.ethicsCompliance.comments}
                         onChange={(e) => setReviewForm({
                           ...reviewForm,
@@ -1659,7 +1661,7 @@ const ProposalDetailsPage = () => {
                         minRows={2}
                         maxRows={10}
                         size="small"
-                        label="Comments"
+                        label={t('common.comments')}
                         value={reviewForm.sectionReviews.budgetJustification.comments}
                         onChange={(e) => setReviewForm({
                           ...reviewForm,
@@ -1715,7 +1717,7 @@ const ProposalDetailsPage = () => {
                         minRows={2}
                         maxRows={10}
                         size="small"
-                        label="Comments"
+                        label={t('common.comments')}
                         value={reviewForm.sectionReviews.timeline.comments}
                         onChange={(e) => setReviewForm({
                           ...reviewForm,
@@ -1771,7 +1773,7 @@ const ProposalDetailsPage = () => {
                         minRows={2}
                         maxRows={10}
                         size="small"
-                        label="Comments"
+                        label={t('common.comments')}
                         value={reviewForm.sectionReviews.teamQualifications.comments}
                         onChange={(e) => setReviewForm({
                           ...reviewForm,
@@ -1805,13 +1807,13 @@ const ProposalDetailsPage = () => {
                     <MenuItem value="approved">
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <ApproveIcon sx={{ mr: 1, color: '#4caf50' }} />
-                        Approved
+                        {t('common.approved')}
                       </Box>
                     </MenuItem>
                     <MenuItem value="rejected">
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <RejectIcon sx={{ mr: 1, color: '#f44336' }} />
-                        Rejected
+                        {t('common.rejected')}
                       </Box>
                     </MenuItem>
                     <MenuItem value="requires_revision">
@@ -1824,7 +1826,7 @@ const ProposalDetailsPage = () => {
                 </FormControl>
 
                 <TextField
-                  label="Overall Comments *"
+                  label={`${t('common.comments')} *`}
                   multiline
                   minRows={4}
                   maxRows={15}
@@ -1903,7 +1905,7 @@ const ProposalDetailsPage = () => {
                 <Card sx={{ bgcolor: '#f5f5f5', border: '2px solid #8b6cbc' }}>
                   <CardContent>
                     <Typography variant="h6" sx={{ mb: 2, color: '#8b6cbc', fontWeight: 700 }}>
-                      Review Summary
+                      {t('common.summary')}
                     </Typography>
                     <Stack spacing={1}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -1947,7 +1949,7 @@ const ProposalDetailsPage = () => {
             onClick={() => setReviewDialog(false)}
             sx={{ mr: 'auto' }}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button 
             variant="outlined"
@@ -1971,7 +1973,7 @@ const ProposalDetailsPage = () => {
             }}
             sx={{ mr: 1 }}
           >
-            Reset Form
+            {t('common.reset')}
           </Button>
           <Button 
             variant="contained" 
@@ -1989,7 +1991,7 @@ const ProposalDetailsPage = () => {
               minWidth: 150
             }}
           >
-            {submittingReview ? 'Submitting...' : 'Submit Review'}
+            {submittingReview ? t('common.submitting') : t('common.submit')}
           </Button>
         </DialogActions>
       </Dialog>

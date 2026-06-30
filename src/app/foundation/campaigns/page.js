@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy, memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useThemeMode } from '../../../components/ThemeProvider';
 import {
   Box,
@@ -66,19 +67,6 @@ const LazyCampaignDialogs = lazy(() => import('./components/CampaignDialogs'));
 const LazyStatisticsCards = lazy(() => import('./components/StatisticsCards'));
 const LazyCampaignCalendar = lazy(() => import('./components/CampaignCalendar'));
 
-// Activity types and their corresponding icons
-const activityTypes = [
-  { value: 'Meeting', label: 'Meeting', icon: 'MeetingRoom', color: '#8b6cbc' },
-  { value: 'Event', label: 'Event', icon: 'Event', color: '#4caf50' },
-  { value: 'Mailing', label: 'Mailing', icon: 'Email', color: '#ff9800' },
-  { value: 'Call', label: 'Phone Call', icon: 'Phone', color: '#2196f3' },
-  { value: 'Presentation', label: 'Presentation', icon: 'Presentation', color: '#9c27b0' },
-  { value: 'Site Visit', label: 'Site Visit', icon: 'LocationOn', color: '#795548' },
-  { value: 'Follow-up', label: 'Follow-up', icon: 'FollowTheSigns', color: '#607d8b' },
-  { value: 'Planning', label: 'Planning', icon: 'Schedule', color: '#e91e63' },
-  { value: 'Analysis', label: 'Analysis', icon: 'Assessment', color: '#3f51b5' }
-];
-
 // Category icons mapping
 // Category icons are now letter-based, generated from category name
 
@@ -100,6 +88,7 @@ const useDebounce = (value, delay) => {
 };
 
 export default function CampaignManagement() {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const { isClient, isHydrated } = useThemeMode();
   
@@ -118,6 +107,19 @@ export default function CampaignManagement() {
       heavy: `0 8px 32px ${alpha(theme.palette.primary.main, 0.16)}`
     }
   }), [theme.palette]);
+
+  // Activity types and their corresponding icons
+  const activityTypes = useMemo(() => [
+    { value: 'Meeting', label: t('foundation_dashboard.activity_type_meeting'), icon: 'MeetingRoom', color: '#8b6cbc' },
+    { value: 'Event', label: t('foundation_dashboard.activity_type_event'), icon: 'Event', color: '#4caf50' },
+    { value: 'Mailing', label: t('foundation_dashboard.activity_type_mailing'), icon: 'Email', color: '#ff9800' },
+    { value: 'Call', label: t('foundation_dashboard.activity_type_call'), icon: 'Phone', color: '#2196f3' },
+    { value: 'Presentation', label: t('foundation_dashboard.activity_type_presentation'), icon: 'Presentation', color: '#9c27b0' },
+    { value: 'Site Visit', label: t('foundation_dashboard.activity_type_site_visit'), icon: 'LocationOn', color: '#795548' },
+    { value: 'Follow-up', label: t('foundation_dashboard.activity_type_follow_up'), icon: 'FollowTheSigns', color: '#607d8b' },
+    { value: 'Planning', label: t('foundation_dashboard.activity_type_planning'), icon: 'Schedule', color: '#e91e63' },
+    { value: 'Analysis', label: t('foundation_dashboard.activity_type_analysis'), icon: 'Assessment', color: '#3f51b5' }
+  ], [t, i18n.language]);
 
   // State management
   const [categories, setCategories] = useState([]);
@@ -1566,7 +1568,7 @@ export default function CampaignManagement() {
           borderRadius: '8px',
           textAlign: 'center' 
         }}>
-          <div style={{ marginBottom: '16px' }}>Loading campaigns...</div>
+          <div style={{ marginBottom: '16px' }}>{t('common.loading')}</div>
           <div style={{ 
             width: '40px', 
             height: '40px', 
@@ -1586,12 +1588,12 @@ export default function CampaignManagement() {
       {/* Page Header */}
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
-          title="Campaign Manager"
-          description="Create and manage fundraising campaigns with activities tracking"
+          title={t('foundation_dashboard.campaign_manager')}
+          description={t('foundation_dashboard.campaign_manager_desc')}
           icon={<CampaignIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
-            { label: 'Foundation', path: '/foundation' },
-            { label: 'Campaigns' }
+            { label: t('foundation_dashboard.breadcrumb_foundation'), path: '/foundation' },
+            { label: t('foundation_dashboard.breadcrumb_campaigns') }
           ]}
           gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
           actionButton={
@@ -1613,7 +1615,7 @@ export default function CampaignManagement() {
                     },
                   }}
                 >
-                  Calendar
+                  {t('foundation_dashboard.calendar')}
                 </Button>
               </Tooltip>
 
@@ -1634,7 +1636,7 @@ export default function CampaignManagement() {
                     },
                   }}
                 >
-                  Filters
+                  {t('foundation_dashboard.filters')}
                 </Button>
               </Tooltip>
 
@@ -1652,7 +1654,7 @@ export default function CampaignManagement() {
                   },
                 }}
               >
-                New Category
+                {t('foundation_dashboard.new_category')}
               </Button>
             </Stack>
           }
@@ -1688,7 +1690,7 @@ export default function CampaignManagement() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <CalendarIcon />
               <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                Campaign Calendar
+                {t('foundation_dashboard.campaign_calendar')}
               </Typography>
             </Box>
             <IconButton 
@@ -1790,14 +1792,14 @@ export default function CampaignManagement() {
                   textShadow: '0 2px 4px rgba(0,0,0,0.1)',
                   color: 'white'
                 }}>
-                  Campaign Categories & Initiatives
+                  {t('foundation_dashboard.categories_and_initiatives')}
                 </Typography>
                 <Typography variant="body2" sx={{ 
                   color: 'rgba(255,255,255,0.85)',
                   fontSize: '0.88rem',
                   fontWeight: 400
                 }}>
-                  {statistics.totalCategories} {statistics.totalCategories === 1 ? 'category' : 'categories'} &middot; {statistics.totalCampaigns} {statistics.totalCampaigns === 1 ? 'campaign' : 'campaigns'} &middot; {statistics.activeCampaigns} active
+                  {statistics.totalCategories} {statistics.totalCategories === 1 ? t('foundation_dashboard.category') : t('foundation_dashboard.categories')} &middot; {statistics.totalCampaigns} {statistics.totalCampaigns === 1 ? t('foundation_dashboard.campaign') : t('foundation_dashboard.campaigns_text')} &middot; {statistics.activeCampaigns} {t('foundation_dashboard.active')}
                 </Typography>
               </Box>
               <Button
@@ -1817,7 +1819,7 @@ export default function CampaignManagement() {
                   '&:hover': { background: 'rgba(255,255,255,0.25)', boxShadow: 'none' }
                 }}
               >
-                New Category
+                {t('foundation_dashboard.new_category')}
               </Button>
             </Box>
 
@@ -1869,12 +1871,12 @@ export default function CampaignManagement() {
             <Box sx={{ textAlign: 'center', py: 6 }}>
               <CategoryIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-                {categories.length === 0 ? 'No categories found' : 'No matching categories'}
+                {categories.length === 0 ? t('foundation_dashboard.no_categories') : t('foundation_dashboard.no_matching_categories')}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                {categories.length === 0 
-                  ? 'Create your first campaign category to get started.'
-                  : 'Try adjusting your search or filter criteria.'
+                {categories.length === 0
+                  ? t('foundation_dashboard.create_first_category_desc')
+                  : t('foundation_dashboard.adjust_search_desc')
                 }
               </Typography>
               {categories.length === 0 && (
@@ -1890,7 +1892,7 @@ export default function CampaignManagement() {
                     }
                   }}
                 >
-                  Create First Category
+                  {t('foundation_dashboard.create_first_category')}
                 </Button>
               )}
             </Box>
@@ -2127,10 +2129,10 @@ export default function CampaignManagement() {
                               mb: 1,
                               fontWeight: 600
                             }}>
-                              Ready to Launch Campaigns
+                              {t('foundation_dashboard.ready_to_launch')}
                             </Typography>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 300, mx: 'auto' }}>
-                              This category is ready for action. Create your first campaign to start organizing fundraising activities.
+                              {t('foundation_dashboard.ready_to_launch_desc')}
                             </Typography>
                             <Box
                               component="div"
@@ -2160,7 +2162,7 @@ export default function CampaignManagement() {
                             >
                               <AddIcon sx={{ fontSize: 22 }} />
                               <Typography variant="button" sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                                Create First Campaign
+                                {t('foundation_dashboard.create_first_campaign_btn')}
                               </Typography>
                             </Box>
                           </Box>
@@ -2236,8 +2238,8 @@ export default function CampaignManagement() {
               <WarningAmberIcon sx={{ color: '#ef4444', fontSize: 22 }} />
             </Box>
             <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1e293b' }}>Delete Category</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>This action cannot be undone</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1e293b' }}>{t('common.delete')} {t('common.category')}</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>{t('common.cannot_undo')}</Typography>
             </Box>
           </Box>
           <Box sx={{ px: 3, py: 2.5 }}>
@@ -2255,7 +2257,7 @@ export default function CampaignManagement() {
               size="small"
               sx={{ color: 'text.secondary', fontWeight: 500 }}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleDeleteCategory}
@@ -2263,7 +2265,7 @@ export default function CampaignManagement() {
               size="small"
               sx={{ backgroundColor: '#ef4444', '&:hover': { backgroundColor: '#dc2626' }, fontWeight: 600, px: 2.5 }}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </Box>
         </Dialog>

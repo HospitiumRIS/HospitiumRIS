@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo } from 'react';
 import {
   Grid,
@@ -22,7 +23,6 @@ import {
 import { ZoomIn as ZoomInIcon } from '@mui/icons-material';
 import { CampaignChart } from './ChartComponents';
 
-// Utility functions
 const formatCurrency = (amount, currency = 'USD') => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -33,6 +33,8 @@ const formatCurrency = (amount, currency = 'USD') => {
 };
 
 const CampaignPerformanceTab = memo(({ analyticsData, handleInitiativeDetail }) => {
+  const { t } = useTranslation();
+
   if (!analyticsData) return null;
 
   return (
@@ -46,7 +48,7 @@ const CampaignPerformanceTab = memo(({ analyticsData, handleInitiativeDetail }) 
           border: '1px solid rgba(139, 108, 188, 0.1)'
         }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 4, color: '#2c3e50', fontSize: '1.25rem' }}>
-            Top Performing Campaigns
+            {t('analytics.top_performing_campaigns')}
           </Typography>
           <Box sx={{ height: 380 }}>
             <CampaignChart analyticsData={analyticsData} />
@@ -63,7 +65,7 @@ const CampaignPerformanceTab = memo(({ analyticsData, handleInitiativeDetail }) 
           border: '1px solid rgba(139, 108, 188, 0.1)'
         }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 4, color: '#2c3e50', fontSize: '1.25rem' }}>
-            Campaign Rankings
+            {t('analytics.campaign_rankings')}
           </Typography>
           <Box sx={{ maxHeight: 380, overflowY: 'auto', pr: 1 }}>
             {analyticsData.campaignPerformance
@@ -92,7 +94,7 @@ const CampaignPerformanceTab = memo(({ analyticsData, handleInitiativeDetail }) 
                           fontSize: '0.75rem'
                         }}
                       />
-                      <Tooltip title="View detailed analysis">
+                      <Tooltip title={t('analytics.view_detailed_analysis')}>
                         <IconButton 
                           size="small" 
                           onClick={() => handleInitiativeDetail(campaign)}
@@ -106,10 +108,10 @@ const CampaignPerformanceTab = memo(({ analyticsData, handleInitiativeDetail }) 
                   <Box sx={{ mb: 2 }}>
                     <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
                       <Typography variant="body2" color="text.secondary">
-                        Raised: {formatCurrency(campaign.raised)}
+                        {t('analytics.raised_label', { amount: formatCurrency(campaign.raised) })}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {campaign.donorCount} donors
+                        {t('analytics.donors_label', { count: campaign.donorCount })}
                       </Typography>
                     </Stack>
                   </Box>
@@ -127,7 +129,7 @@ const CampaignPerformanceTab = memo(({ analyticsData, handleInitiativeDetail }) 
                     }} 
                   />
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                    {Math.min(campaign.completionPercentage, 100).toFixed(1)}% of target
+                    {t('analytics.percent_of_target', { percent: Math.min(campaign.completionPercentage, 100).toFixed(1) })}
                   </Typography>
                 </Box>
               ))}
@@ -135,7 +137,6 @@ const CampaignPerformanceTab = memo(({ analyticsData, handleInitiativeDetail }) 
         </Card>
       </Grid>
       
-      {/* Initiative Efficiency Matrix */}
       <Grid item xs={12}>
         <Card sx={{ 
           p: 4,
@@ -144,18 +145,18 @@ const CampaignPerformanceTab = memo(({ analyticsData, handleInitiativeDetail }) 
           border: '1px solid rgba(139, 108, 188, 0.1)'
         }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 4, color: '#2c3e50', fontSize: '1.25rem' }}>
-            Initiative Efficiency Matrix
+            {t('analytics.initiative_efficiency_matrix')}
           </Typography>
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow sx={{ backgroundColor: alpha('#8b6cbc', 0.05) }}>
-                  <TableCell sx={{ fontWeight: 600 }}>Initiative</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Category</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Amount Raised</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Donors</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Avg/Donor</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('analytics.initiative')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('common.category')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('analytics.amount_raised')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('analytics.donors')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('analytics.avg_per_donor')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('common.status')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

@@ -1,7 +1,8 @@
 // Comprehensive Ethics Application Form Steps
 // This file contains the complete renderStepContent function
 
-export const renderStepContent = (step, formData, handleChange, handleVulnerablePopChange, coInvestigator, setCoInvestigator, addCoInvestigator, removeCoInvestigator) => {
+export const renderStepContent = (step, formData, handleChange, handleVulnerablePopChange, coInvestigator, setCoInvestigator, addCoInvestigator, removeCoInvestigator, t) => {
+  const tr = (key, opts) => (t ? t(key, opts) : key);
   const { Box, Typography, TextField, MenuItem, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Checkbox, Divider, Chip, Button, Alert } = require('@mui/material');
   const { AddIcon } = require('@mui/icons-material');
 
@@ -11,54 +12,54 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Alert severity="info" sx={{ mb: 2 }}>
-            <strong>Project Summary (Lay Summary):</strong> Provide a brief overview in plain language for non-expert audiences.
+            {tr('ethics_form.project_summary_alert')}
           </Alert>
 
           <Typography variant="h6" sx={{ color: '#2D3748', fontWeight: 600, mb: 1 }}>
-            Project Overview
+            {tr('ethics_form.project_overview')}
           </Typography>
           
           <TextField
-            label="Study Title *"
+            label={tr('ethics_form.study_title')}
             fullWidth
             required
             value={formData.title}
             onChange={handleChange('title')}
-            placeholder="Enter the full title of your research study"
-            helperText="Use clear, descriptive language"
+            placeholder={tr('ethics_form.study_title_placeholder')}
+            helperText={tr('ethics_form.study_title_helper')}
           />
 
           <TextField
-            label="Lay Summary (Plain Language) *"
+            label={tr('ethics_form.lay_summary')}
             multiline
             rows={5}
             required
             value={formData.laySummary}
             onChange={handleChange('laySummary')}
-            placeholder="Explain your research in simple terms that anyone can understand. Avoid jargon and technical language."
-            helperText="Write for a general audience without specialized knowledge"
+            placeholder={tr('ethics_form.lay_summary_placeholder')}
+            helperText={tr('ethics_form.lay_summary_helper')}
           />
 
           <TextField
-            label="Research Aims *"
+            label={tr('ethics_form.research_aims')}
             multiline
             rows={4}
             required
             value={formData.researchAims}
             onChange={handleChange('researchAims')}
-            placeholder="What does this research intend to achieve? What questions will it answer?"
-            helperText="Clearly state the main objectives"
+            placeholder={tr('ethics_form.research_aims_placeholder')}
+            helperText={tr('ethics_form.research_aims_helper')}
           />
 
           <TextField
-            label="Research Significance *"
+            label={tr('ethics_form.research_significance')}
             multiline
             rows={4}
             required
             value={formData.researchSignificance}
             onChange={handleChange('researchSignificance')}
-            placeholder="Why is this research important? What are the potential benefits to participants, science, or society?"
-            helperText="Explain the value and impact of this research"
+            placeholder={tr('ethics_form.research_significance_placeholder')}
+            helperText={tr('ethics_form.research_significance_helper')}
           />
         </Box>
       );
@@ -68,35 +69,35 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Alert severity="info" sx={{ mb: 2 }}>
-            <strong>Investigator CVs Required:</strong> Evidence of research team qualifications and experience must be provided.
+            {tr('ethics_form.investigator_cvs_alert')}
           </Alert>
 
           <Typography variant="h6" sx={{ color: '#2D3748', fontWeight: 600, mb: 1 }}>
-            Principal Investigator
+            {tr('ethics_form.principal_investigator')}
           </Typography>
 
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <TextField
-              label="Full Name *"
+              label={tr('ethics_form.full_name')}
               required
               value={formData.principalInvestigator}
               onChange={handleChange('principalInvestigator')}
               sx={{ flex: '1 1 300px' }}
             />
             <TextField
-              label="ORCID iD *"
+              label={tr('ethics_form.orcid_id')}
               required
               value={formData.piOrcid}
               onChange={handleChange('piOrcid')}
-              placeholder="0000-0000-0000-0000"
+              placeholder={tr('ethics_form.orcid_placeholder')}
               sx={{ flex: '1 1 250px' }}
-              helperText="Enter your ORCID identifier"
+              helperText={tr('ethics_form.orcid_helper')}
             />
           </Box>
 
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <TextField
-              label="Email *"
+              label={tr('ethics_form.email')}
               type="email"
               required
               value={formData.piEmail}
@@ -104,7 +105,7 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
               sx={{ flex: '1 1 300px' }}
             />
             <TextField
-              label="Phone Number *"
+              label={tr('ethics_form.phone_number')}
               required
               value={formData.piPhone}
               onChange={handleChange('piPhone')}
@@ -114,14 +115,14 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
 
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <TextField
-              label="Institution *"
+              label={tr('ethics_form.institution')}
               required
               value={formData.piInstitution}
               onChange={handleChange('piInstitution')}
               sx={{ flex: '1 1 300px' }}
             />
             <TextField
-              label="Department *"
+              label={tr('ethics_form.department')}
               required
               value={formData.piDepartment}
               onChange={handleChange('piDepartment')}
@@ -130,40 +131,40 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
           </Box>
 
           <TextField
-            label="Qualifications & Experience *"
+            label={tr('ethics_form.qualifications')}
             multiline
             rows={3}
             required
             value={formData.piQualifications}
             onChange={handleChange('piQualifications')}
-            placeholder="Briefly describe your relevant qualifications and research experience"
-            helperText="Include degrees, certifications, and relevant experience"
+            placeholder={tr('ethics_form.qualifications_placeholder')}
+            helperText={tr('ethics_form.qualifications_helper')}
           />
 
           <Divider sx={{ my: 2 }} />
 
           <Typography variant="subtitle1" sx={{ color: '#2D3748', fontWeight: 600 }}>
-            Co-Investigators
+            {tr('ethics_form.co_investigators')}
           </Typography>
 
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <TextField
-              label="Name"
+              label={tr('common.name')}
               value={coInvestigator.name}
               onChange={(e) => setCoInvestigator(prev => ({ ...prev, name: e.target.value }))}
               sx={{ flex: '1 1 200px' }}
               size="small"
             />
             <TextField
-              label="ORCID iD"
+              label={tr('ethics_form.orcid_id_optional')}
               value={coInvestigator.orcid}
               onChange={(e) => setCoInvestigator(prev => ({ ...prev, orcid: e.target.value }))}
-              placeholder="0000-0000-0000-0000"
+              placeholder={tr('ethics_form.orcid_placeholder')}
               sx={{ flex: '1 1 180px' }}
               size="small"
             />
             <TextField
-              label="Email"
+              label={tr('common.email')}
               type="email"
               value={coInvestigator.email}
               onChange={(e) => setCoInvestigator(prev => ({ ...prev, email: e.target.value }))}
@@ -171,7 +172,7 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
               size="small"
             />
             <TextField
-              label="Role"
+              label={tr('ethics_form.role')}
               value={coInvestigator.role}
               onChange={(e) => setCoInvestigator(prev => ({ ...prev, role: e.target.value }))}
               sx={{ flex: '1 1 150px' }}
@@ -192,7 +193,7 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
               {formData.coInvestigators.map((ci, index) => (
                 <Chip
                   key={index}
-                  label={`${ci.name} - ${ci.role} (ORCID: ${ci.orcid || 'N/A'})`}
+                  label={tr('ethics_form.co_investigator_chip', { name: ci.name, role: ci.role, orcid: ci.orcid || tr('common.not_available') })}
                   onDelete={() => removeCoInvestigator(index)}
                   sx={{ bgcolor: 'rgba(139, 108, 188, 0.1)' }}
                 />
@@ -207,28 +208,40 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Alert severity="info" sx={{ mb: 2 }}>
-            <strong>Scientific Validity:</strong> Demonstrate that your study design can answer the research question.
+            {tr('ethics_form.scientific_validity_alert')}
           </Alert>
 
           <Typography variant="h6" sx={{ color: '#2D3748', fontWeight: 600, mb: 1 }}>
-            Research Design & Methodology
+            {tr('ethics_form.research_design')}
           </Typography>
 
           <TextField
             select
-            label="Research Type *"
+            label={tr('ethics_form.research_type')}
             required
             value={formData.researchType}
             onChange={handleChange('researchType')}
           >
-            {['Clinical Trial', 'Observational Study', 'Survey Research', 'Interview Study', 'Laboratory Research', 'Secondary Data Analysis', 'Community-Based Research', 'Other'].map((type) => (
-              <MenuItem key={type} value={type}>{type}</MenuItem>
-            ))}
+            {[
+              'research_type_clinical_trial',
+              'research_type_observational',
+              'research_type_survey',
+              'research_type_interview',
+              'research_type_laboratory',
+              'research_type_secondary',
+              'research_type_community',
+              'research_type_other_option',
+            ].map((typeKey) => {
+              const typeLabel = tr(`ethics_form.${typeKey}`);
+              return (
+                <MenuItem key={typeKey} value={typeLabel}>{typeLabel}</MenuItem>
+              );
+            })}
           </TextField>
 
-          {formData.researchType === 'Other' && (
+          {formData.researchType === tr('ethics_form.research_type_other_option') && (
             <TextField
-              label="Please specify research type *"
+              label={tr('ethics_form.research_type_other')}
               required
               value={formData.researchTypeOther}
               onChange={handleChange('researchTypeOther')}
@@ -236,52 +249,52 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
           )}
 
           <TextField
-            label="Scientific Validity *"
+            label={tr('ethics_form.scientific_validity')}
             multiline
             rows={4}
             required
             value={formData.scientificValidity}
             onChange={handleChange('scientificValidity')}
-            placeholder="Explain how your research design ensures the study can answer the research question"
-            helperText="Justify your methodology and approach"
+            placeholder={tr('ethics_form.scientific_validity_placeholder')}
+            helperText={tr('ethics_form.scientific_validity_helper')}
           />
 
           <TextField
-            label="Research Procedures *"
+            label={tr('ethics_form.research_procedures')}
             multiline
             rows={5}
             required
             value={formData.researchProcedures}
             onChange={handleChange('researchProcedures')}
-            placeholder="Provide a step-by-step account of what participants will be asked to do (e.g., interviews, surveys, clinical tests, observations)"
-            helperText="Be specific about all procedures involving participants"
+            placeholder={tr('ethics_form.research_procedures_placeholder')}
+            helperText={tr('ethics_form.research_procedures_helper')}
           />
 
           <TextField
-            label="Data Analysis Plan *"
+            label={tr('ethics_form.data_analysis_plan')}
             multiline
             rows={4}
             required
             value={formData.dataAnalysisPlan}
             onChange={handleChange('dataAnalysisPlan')}
-            placeholder="Describe how the collected information will be processed and interpreted"
-            helperText="Include statistical methods or qualitative analysis approaches"
+            placeholder={tr('ethics_form.data_analysis_plan_placeholder')}
+            helperText={tr('ethics_form.data_analysis_plan_helper')}
           />
 
           <TextField
-            label="Research Timeline *"
+            label={tr('ethics_form.research_timeline')}
             multiline
             rows={3}
             required
             value={formData.timeline}
             onChange={handleChange('timeline')}
-            placeholder="Provide a detailed timeline for your research activities"
-            helperText="Include key milestones and phases"
+            placeholder={tr('ethics_form.research_timeline_placeholder')}
+            helperText={tr('ethics_form.research_timeline_helper')}
           />
 
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <TextField
-              label="Study Duration (months) *"
+              label={tr('ethics_form.study_duration')}
               type="number"
               required
               value={formData.studyDuration}
@@ -289,7 +302,7 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
               sx={{ flex: '1 1 150px' }}
             />
             <TextField
-              label="Start Date *"
+              label={tr('ethics_form.start_date')}
               type="date"
               required
               value={formData.startDate}
@@ -298,7 +311,7 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
               sx={{ flex: '1 1 200px' }}
             />
             <TextField
-              label="End Date *"
+              label={tr('ethics_form.end_date')}
               type="date"
               required
               value={formData.endDate}
@@ -310,14 +323,14 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
 
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <TextField
-              label="Funding Source"
+              label={tr('ethics_form.funding_source')}
               value={formData.fundingSource}
               onChange={handleChange('fundingSource')}
               sx={{ flex: '1 1 300px' }}
-              helperText="Leave blank if unfunded"
+              helperText={tr('ethics_form.funding_source_helper')}
             />
             <TextField
-              label="Funding Amount"
+              label={tr('ethics_form.funding_amount')}
               value={formData.fundingAmount}
               onChange={handleChange('fundingAmount')}
               sx={{ flex: '1 1 200px' }}
@@ -331,127 +344,135 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Alert severity="warning" sx={{ mb: 2 }}>
-            <strong>Important:</strong> Clearly define who can participate and justify inclusion of vulnerable groups.
+            {tr('ethics_form.participants_alert')}
           </Alert>
 
           <Typography variant="h6" sx={{ color: '#2D3748', fontWeight: 600, mb: 1 }}>
-            Participant Recruitment & Selection
+            {tr('ethics_form.participant_recruitment')}
           </Typography>
 
           <TextField
-            label="Study Population *"
+            label={tr('ethics_form.study_population')}
             multiline
             rows={3}
             required
             value={formData.studyPopulation}
             onChange={handleChange('studyPopulation')}
-            placeholder="Describe the target population for your study"
-            helperText="Be specific about demographics and characteristics"
+            placeholder={tr('ethics_form.study_population_placeholder')}
+            helperText={tr('ethics_form.study_population_helper')}
           />
 
           <TextField
-            label="Sample Size *"
+            label={tr('ethics_form.sample_size')}
             type="number"
             required
             value={formData.sampleSize}
             onChange={handleChange('sampleSize')}
-            helperText="Justify your sample size if possible"
+            helperText={tr('ethics_form.sample_size_helper')}
           />
 
           <TextField
-            label="Inclusion Criteria *"
+            label={tr('ethics_form.inclusion_criteria')}
             multiline
             rows={4}
             required
             value={formData.inclusionCriteria}
             onChange={handleChange('inclusionCriteria')}
-            placeholder="Clearly defined parameters for who CAN participate in this study"
-            helperText="List all criteria that participants must meet"
+            placeholder={tr('ethics_form.inclusion_criteria_placeholder')}
+            helperText={tr('ethics_form.inclusion_criteria_helper')}
           />
 
           <TextField
-            label="Exclusion Criteria *"
+            label={tr('ethics_form.exclusion_criteria')}
             multiline
             rows={4}
             required
             value={formData.exclusionCriteria}
             onChange={handleChange('exclusionCriteria')}
-            placeholder="Clearly defined parameters for who CANNOT participate in this study"
-            helperText="List all criteria that would exclude participants"
+            placeholder={tr('ethics_form.exclusion_criteria_placeholder')}
+            helperText={tr('ethics_form.exclusion_criteria_helper')}
           />
 
           <TextField
-            label="Recruitment Strategy *"
+            label={tr('ethics_form.recruitment_strategy')}
             multiline
             rows={4}
             required
             value={formData.recruitmentStrategy}
             onChange={handleChange('recruitmentStrategy')}
-            placeholder="How will participants be identified and approached? (e.g., flyers, social media, database screening, direct contact)"
-            helperText="Describe all recruitment methods in detail"
+            placeholder={tr('ethics_form.recruitment_strategy_placeholder')}
+            helperText={tr('ethics_form.recruitment_strategy_helper')}
           />
 
           <TextField
-            label="Recruitment Materials Description *"
+            label={tr('ethics_form.recruitment_materials')}
             multiline
             rows={3}
             required
             value={formData.recruitmentMaterials}
             onChange={handleChange('recruitmentMaterials')}
-            placeholder="Describe all flyers, emails, social media posts, or scripts that will be used to find participants"
-            helperText="Copies of actual materials must be attached"
+            placeholder={tr('ethics_form.recruitment_materials_placeholder')}
+            helperText={tr('ethics_form.recruitment_materials_helper')}
           />
 
           <FormControl component="fieldset">
             <FormLabel component="legend" sx={{ color: '#2D3748', fontWeight: 600, mb: 1 }}>
-              Vulnerable Populations Involved *
+              {tr('ethics_form.vulnerable_populations')}
             </FormLabel>
-            {['Children (under 18)', 'Pregnant Women', 'Prisoners', 'Mentally Disabled Persons', 'Economically Disadvantaged', 'Educationally Disadvantaged', 'None'].map((population) => (
+            {[
+              { key: 'vuln_children', value: 'Children (under 18)' },
+              { key: 'vuln_pregnant', value: 'Pregnant Women' },
+              { key: 'vuln_prisoners', value: 'Prisoners' },
+              { key: 'vuln_mental', value: 'Mentally Disabled Persons' },
+              { key: 'vuln_economic', value: 'Economically Disadvantaged' },
+              { key: 'vuln_education', value: 'Educationally Disadvantaged' },
+              { key: 'none', value: 'None' },
+            ].map(({ key, value }) => (
               <FormControlLabel
-                key={population}
+                key={value}
                 control={
                   <Checkbox
-                    checked={formData.vulnerablePopulations.includes(population)}
-                    onChange={handleVulnerablePopChange(population)}
+                    checked={formData.vulnerablePopulations.includes(value)}
+                    onChange={handleVulnerablePopChange(value)}
                     sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }}
                   />
                 }
-                label={population}
+                label={key === 'none' ? tr('common.none') : tr(`ethics_form.${key}`)}
               />
             ))}
           </FormControl>
 
           {formData.vulnerablePopulations.length > 0 && !formData.vulnerablePopulations.includes('None') && (
             <TextField
-              label="Vulnerable Group Justification *"
+              label={tr('ethics_form.vulnerable_group_justification')}
               multiline
               rows={4}
               required
               value={formData.vulnerableGroupJustification}
               onChange={handleChange('vulnerableGroupJustification')}
-              placeholder="Provide specific justification for including vulnerable populations in your study"
-              helperText="Explain why this group must be included and how they will be protected"
+              placeholder={tr('ethics_form.vulnerable_group_justification_placeholder')}
+              helperText={tr('ethics_form.vulnerable_group_justification_helper')}
             />
           )}
 
           <TextField
-            label="Power Imbalance Considerations"
+            label={tr('ethics_form.power_imbalance')}
             multiline
             rows={4}
             value={formData.powerImbalanceConsiderations}
             onChange={handleChange('powerImbalanceConsiderations')}
-            placeholder="If you have a relationship with participants (e.g., teacher/student, employer/employee), explain how you will prevent coercion"
-            helperText="Address any dependent relationships that might affect voluntary participation"
+            placeholder={tr('ethics_form.power_imbalance_placeholder')}
+            helperText={tr('ethics_form.power_imbalance_helper')}
           />
 
           <TextField
-            label="Third-Party Permissions"
+            label={tr('ethics_form.third_party_permissions')}
             multiline
             rows={3}
             value={formData.thirdPartyPermissions}
             onChange={handleChange('thirdPartyPermissions')}
-            placeholder="List any permissions needed from schools, hospitals, or other organizations"
-            helperText="Letters of support must be attached"
+            placeholder={tr('ethics_form.third_party_permissions_placeholder')}
+            helperText={tr('ethics_form.third_party_permissions_helper')}
           />
         </Box>
       );
@@ -461,169 +482,169 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Alert severity="info" sx={{ mb: 2 }}>
-            <strong>Informed Consent:</strong> Demonstrate that participants can make a truly voluntary and informed decision.
+            {tr('ethics_form.informed_consent_alert')}
           </Alert>
 
           <Typography variant="h6" sx={{ color: '#2D3748', fontWeight: 600, mb: 1 }}>
-            Informed Consent Process
+            {tr('ethics_form.informed_consent_process')}
           </Typography>
 
           <TextField
-            label="Informed Consent Process *"
+            label={tr('ethics_form.informed_consent_process_field')}
             multiline
             rows={5}
             required
             value={formData.informedConsentProcess}
             onChange={handleChange('informedConsentProcess')}
-            placeholder="Describe HOW and WHEN consent will be sought. Ensure participants have adequate time to decide."
-            helperText="Include details about the consent procedure and timing"
+            placeholder={tr('ethics_form.informed_consent_process_placeholder')}
+            helperText={tr('ethics_form.informed_consent_process_helper')}
           />
 
           <TextField
-            label="Capacity Assessment *"
+            label={tr('ethics_form.capacity_assessment')}
             multiline
             rows={3}
             required
             value={formData.consentCapacityAssessment}
             onChange={handleChange('consentCapacityAssessment')}
-            placeholder="How will you assess if the participant understands the information provided?"
-            helperText="Describe methods to ensure comprehension"
+            placeholder={tr('ethics_form.capacity_assessment_placeholder')}
+            helperText={tr('ethics_form.capacity_assessment_helper')}
           />
 
           <TextField
-            label="Voluntary Participation Statement *"
+            label={tr('ethics_form.voluntary_participation')}
             multiline
             rows={3}
             required
             value={formData.voluntaryParticipation}
             onChange={handleChange('voluntaryParticipation')}
-            placeholder="Confirm that participation is completely voluntary and participants can withdraw at any time without penalty"
-            helperText="Explain how this will be communicated"
+            placeholder={tr('ethics_form.voluntary_participation_placeholder')}
+            helperText={tr('ethics_form.voluntary_participation_helper')}
           />
 
           <TextField
-            label="Withdrawal Process *"
+            label={tr('ethics_form.withdrawal_process')}
             multiline
             rows={3}
             required
             value={formData.withdrawalProcess}
             onChange={handleChange('withdrawalProcess')}
-            placeholder="Describe the process for participants to withdraw from the study"
-            helperText="Include what happens to their data if they withdraw"
+            placeholder={tr('ethics_form.withdrawal_process_placeholder')}
+            helperText={tr('ethics_form.withdrawal_process_helper')}
           />
 
           <Divider sx={{ my: 2 }} />
 
           <Typography variant="subtitle1" sx={{ color: '#2D3748', fontWeight: 600 }}>
-            Participant Costs & Compensation
+            {tr('ethics_form.participant_costs_compensation')}
           </Typography>
 
           <TextField
-            label="Participant Costs *"
+            label={tr('ethics_form.participant_costs')}
             multiline
             rows={2}
             required
             value={formData.participantCosts}
             onChange={handleChange('participantCosts')}
-            placeholder="Will participants incur any costs (e.g., travel, parking, time off work)? State 'None' if no costs."
-            helperText="Be transparent about any costs to participants"
+            placeholder={tr('ethics_form.participant_costs_placeholder')}
+            helperText={tr('ethics_form.participant_costs_helper')}
           />
 
           <TextField
-            label="Reimbursement"
+            label={tr('ethics_form.reimbursement')}
             multiline
             rows={2}
             value={formData.participantReimbursement}
             onChange={handleChange('participantReimbursement')}
-            placeholder="Will participants be reimbursed for costs? Describe the reimbursement process."
+            placeholder={tr('ethics_form.reimbursement_placeholder')}
           />
 
           <TextField
-            label="Incentives"
+            label={tr('ethics_form.incentives')}
             multiline
             rows={2}
             value={formData.participantIncentives}
             onChange={handleChange('participantIncentives')}
-            placeholder="Will participants receive any incentives (e.g., gift cards, payment)? Describe amount and justification."
-            helperText="Ensure incentives are not coercive"
+            placeholder={tr('ethics_form.incentives_placeholder')}
+            helperText={tr('ethics_form.incentives_helper')}
           />
 
           <Divider sx={{ my: 2 }} />
 
           <Typography variant="subtitle1" sx={{ color: '#2D3748', fontWeight: 600 }}>
-            Data Management & Confidentiality
+            {tr('ethics_form.data_management')}
           </Typography>
 
           <TextField
-            label="Data Collection Methods *"
+            label={tr('ethics_form.data_collection_methods')}
             multiline
             rows={3}
             required
             value={formData.dataCollectionMethods}
             onChange={handleChange('dataCollectionMethods')}
-            placeholder="Describe all methods of data collection (questionnaires, interviews, observations, etc.)"
-            helperText="Final versions of tools must be attached"
+            placeholder={tr('ethics_form.data_collection_methods_placeholder')}
+            helperText={tr('ethics_form.data_collection_methods_helper')}
           />
 
           <TextField
-            label="Anonymization Method *"
+            label={tr('ethics_form.anonymization_method')}
             multiline
             rows={3}
             required
             value={formData.anonymizationMethod}
             onChange={handleChange('anonymizationMethod')}
-            placeholder="How will data be de-identified? (e.g., pseudonyms, ID codes, removal of identifiers)"
-            helperText="Describe the specific anonymization process"
+            placeholder={tr('ethics_form.anonymization_method_placeholder')}
+            helperText={tr('ethics_form.anonymization_method_helper')}
           />
 
           <TextField
-            label="Data Storage Location *"
+            label={tr('ethics_form.data_storage_location')}
             required
             value={formData.dataStorageLocation}
             onChange={handleChange('dataStorageLocation')}
-            placeholder="Where will data be kept? (e.g., encrypted drives, locked cabinets, secure servers)"
-            helperText="Be specific about physical and digital storage"
+            placeholder={tr('ethics_form.data_storage_location_placeholder')}
+            helperText={tr('ethics_form.data_storage_location_helper')}
           />
 
           <TextField
-            label="Data Storage Security *"
+            label={tr('ethics_form.data_storage_security')}
             multiline
             rows={3}
             required
             value={formData.dataStorageSecurity}
             onChange={handleChange('dataStorageSecurity')}
-            placeholder="Describe security measures (encryption, password protection, access controls)"
-            helperText="Explain how data will be protected from unauthorized access"
+            placeholder={tr('ethics_form.data_storage_security_placeholder')}
+            helperText={tr('ethics_form.data_storage_security_helper')}
           />
 
           <TextField
-            label="Data Retention Period *"
+            label={tr('ethics_form.data_retention_period')}
             required
             value={formData.dataRetentionPeriod}
             onChange={handleChange('dataRetentionPeriod')}
-            placeholder="e.g., 5 years after publication"
-            helperText="Follow institutional or funder requirements"
+            placeholder={tr('ethics_form.data_retention_period_placeholder')}
+            helperText={tr('ethics_form.data_retention_period_helper')}
           />
 
           <TextField
-            label="Data Disposal Protocol *"
+            label={tr('ethics_form.data_disposal_protocol')}
             multiline
             rows={3}
             required
             value={formData.dataDisposalProtocol}
             onChange={handleChange('dataDisposalProtocol')}
-            placeholder="Describe protocols for the eventual destruction of sensitive records"
-            helperText="Include methods for secure deletion/destruction"
+            placeholder={tr('ethics_form.data_disposal_protocol_placeholder')}
+            helperText={tr('ethics_form.data_disposal_protocol_helper')}
           />
 
           <TextField
-            label="Confidentiality Measures *"
+            label={tr('ethics_form.confidentiality_measures')}
             multiline
             rows={4}
             required
             value={formData.confidentialityMeasures}
             onChange={handleChange('confidentialityMeasures')}
-            placeholder="Describe all measures to protect participant confidentiality and privacy"
+            placeholder={tr('ethics_form.confidentiality_measures_placeholder')}
           />
         </Box>
       );
@@ -633,165 +654,165 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Alert severity="warning" sx={{ mb: 2 }}>
-            <strong>Risk-Benefit Analysis:</strong> Demonstrate that benefits outweigh risks and risks are minimized.
+            {tr('ethics_form.risk_benefit_alert')}
           </Alert>
 
           <Typography variant="h6" sx={{ color: '#2D3748', fontWeight: 600, mb: 1 }}>
-            Risk Identification & Mitigation
+            {tr('ethics_form.risk_identification')}
           </Typography>
 
           <TextField
-            label="Physical Risks *"
+            label={tr('ethics_form.physical_risks')}
             multiline
             rows={3}
             required
             value={formData.physicalRisks}
             onChange={handleChange('physicalRisks')}
-            placeholder="Identify any potential physical risks to participants. State 'None' if no physical risks."
-            helperText="Include discomfort, injury, or health impacts"
+            placeholder={tr('ethics_form.physical_risks_placeholder')}
+            helperText={tr('ethics_form.physical_risks_helper')}
           />
 
           <TextField
-            label="Psychological Risks *"
+            label={tr('ethics_form.psychological_risks')}
             multiline
             rows={3}
             required
             value={formData.psychologicalRisks}
             onChange={handleChange('psychologicalRisks')}
-            placeholder="Identify any potential psychological risks (stress, anxiety, emotional distress). State 'None' if no psychological risks."
-            helperText="Consider sensitive topics or traumatic experiences"
+            placeholder={tr('ethics_form.psychological_risks_placeholder')}
+            helperText={tr('ethics_form.psychological_risks_helper')}
           />
 
           <TextField
-            label="Social Risks *"
+            label={tr('ethics_form.social_risks')}
             multiline
             rows={3}
             required
             value={formData.socialRisks}
             onChange={handleChange('socialRisks')}
-            placeholder="Identify any potential social risks (stigma, discrimination, relationship impacts). State 'None' if no social risks."
+            placeholder={tr('ethics_form.social_risks_placeholder')}
           />
 
           <TextField
-            label="Legal Risks *"
+            label={tr('ethics_form.legal_risks')}
             multiline
             rows={2}
             required
             value={formData.legalRisks}
             onChange={handleChange('legalRisks')}
-            placeholder="Identify any potential legal risks. State 'None' if no legal risks."
+            placeholder={tr('ethics_form.legal_risks_placeholder')}
           />
 
           <TextField
-            label="Economic Risks *"
+            label={tr('ethics_form.economic_risks')}
             multiline
             rows={2}
             required
             value={formData.economicRisks}
             onChange={handleChange('economicRisks')}
-            placeholder="Identify any potential economic risks (job loss, financial burden). State 'None' if no economic risks."
+            placeholder={tr('ethics_form.economic_risks_placeholder')}
           />
 
           <TextField
-            label="Risk Mitigation Strategies *"
+            label={tr('ethics_form.risk_mitigation')}
             multiline
             rows={5}
             required
             value={formData.riskMitigationStrategies}
             onChange={handleChange('riskMitigationStrategies')}
-            placeholder="Describe specific steps to minimize ALL identified risks (e.g., providing counselor contact info for sensitive topics, monitoring procedures, stopping criteria)"
-            helperText="Address each type of risk identified above"
+            placeholder={tr('ethics_form.risk_mitigation_placeholder')}
+            helperText={tr('ethics_form.risk_mitigation_helper')}
           />
 
           <Divider sx={{ my: 2 }} />
 
           <Typography variant="subtitle1" sx={{ color: '#2D3748', fontWeight: 600 }}>
-            Benefits Analysis
+            {tr('ethics_form.benefits_analysis')}
           </Typography>
 
           <TextField
-            label="Direct Benefits to Participants *"
+            label={tr('ethics_form.direct_benefits')}
             multiline
             rows={3}
             required
             value={formData.directBenefits}
             onChange={handleChange('directBenefits')}
-            placeholder="What direct benefits will participants receive? State 'None' if no direct benefits."
-            helperText="Be realistic - not all research provides direct benefits"
+            placeholder={tr('ethics_form.direct_benefits_placeholder')}
+            helperText={tr('ethics_form.direct_benefits_helper')}
           />
 
           <TextField
-            label="Indirect Benefits (Science/Society) *"
+            label={tr('ethics_form.indirect_benefits')}
             multiline
             rows={3}
             required
             value={formData.indirectBenefits}
             onChange={handleChange('indirectBenefits')}
-            placeholder="What are the potential benefits to science or society?"
-            helperText="Explain the broader impact of the research"
+            placeholder={tr('ethics_form.indirect_benefits_placeholder')}
+            helperText={tr('ethics_form.indirect_benefits_helper')}
           />
 
           <TextField
-            label="Risk-Benefit Analysis *"
+            label={tr('ethics_form.risk_benefit_analysis')}
             multiline
             rows={5}
             required
             value={formData.riskBenefitAnalysis}
             onChange={handleChange('riskBenefitAnalysis')}
-            placeholder="Explain why the benefits outweigh the risks. Justify why this research should proceed despite the risks."
-            helperText="Provide a balanced assessment"
+            placeholder={tr('ethics_form.risk_benefit_analysis_placeholder')}
+            helperText={tr('ethics_form.risk_benefit_analysis_helper')}
           />
 
           <Divider sx={{ my: 2 }} />
 
           <FormControl component="fieldset">
             <FormLabel component="legend" sx={{ color: '#2D3748', fontWeight: 600 }}>
-              Conflict of Interest Disclosure *
+              {tr('ethics_form.conflict_of_interest')}
             </FormLabel>
             <RadioGroup
               value={formData.conflictOfInterest.toString()}
               onChange={(e) => handleChange('conflictOfInterest')({ target: { type: 'checkbox', checked: e.target.value === 'true' } })}
             >
-              <FormControlLabel value="false" control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />} label="No conflict of interest" />
-              <FormControlLabel value="true" control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />} label="Conflict of interest exists" />
+              <FormControlLabel value="false" control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />} label={tr('ethics_form.no_conflict')} />
+              <FormControlLabel value="true" control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />} label={tr('ethics_form.conflict_exists')} />
             </RadioGroup>
           </FormControl>
 
           {formData.conflictOfInterest && (
             <TextField
-              label="Conflict of Interest Details *"
+              label={tr('ethics_form.conflict_details')}
               multiline
               rows={4}
               required
               value={formData.conflictDetails}
               onChange={handleChange('conflictDetails')}
-              placeholder="Disclose any financial or personal interests that could influence the research"
-              helperText="Full transparency is required"
+              placeholder={tr('ethics_form.conflict_details_placeholder')}
+              helperText={tr('ethics_form.conflict_details_helper')}
             />
           )}
 
           <FormControl component="fieldset">
             <FormLabel component="legend" sx={{ color: '#2D3748', fontWeight: 600 }}>
-              Previous Ethics Approval
+              {tr('ethics_form.previous_ethics_approval')}
             </FormLabel>
             <RadioGroup
               value={formData.previousEthicsApproval.toString()}
               onChange={(e) => handleChange('previousEthicsApproval')({ target: { type: 'checkbox', checked: e.target.value === 'true' } })}
             >
-              <FormControlLabel value="false" control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />} label="No previous approval" />
-              <FormControlLabel value="true" control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />} label="Previously approved by another committee" />
+              <FormControlLabel value="false" control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />} label={tr('ethics_form.no_previous_approval')} />
+              <FormControlLabel value="true" control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />} label={tr('ethics_form.previous_approval_yes')} />
             </RadioGroup>
           </FormControl>
 
           {formData.previousEthicsApproval && (
             <TextField
-              label="Previous Approval Details *"
+              label={tr('ethics_form.previous_approval_details')}
               multiline
               rows={3}
               required
               value={formData.previousApprovalDetails}
               onChange={handleChange('previousApprovalDetails')}
-              placeholder="Provide reference number, institution, and date of previous approval"
+              placeholder={tr('ethics_form.previous_approval_details_placeholder')}
             />
           )}
         </Box>
@@ -802,16 +823,16 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Alert severity="warning" sx={{ mb: 2 }}>
-            <strong>Mandatory Documentation:</strong> All checked items must be attached to your application.
+            {tr('ethics_form.documentation_alert')}
           </Alert>
 
           <Typography variant="h6" sx={{ color: '#2D3748', fontWeight: 600, mb: 2 }}>
-            Required Documentation Checklist
+            {tr('ethics_form.documentation_checklist')}
           </Typography>
 
           <FormControl component="fieldset">
             <FormLabel component="legend" sx={{ color: '#2D3748', fontWeight: 600, mb: 2 }}>
-              Check all documents that will be attached:
+              {tr('ethics_form.check_documents')}
             </FormLabel>
 
             <FormControlLabel
@@ -958,17 +979,17 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
           <Divider sx={{ my: 2 }} />
 
           <TextField
-            label="Additional Comments"
+            label={tr('ethics_form.additional_comments')}
             multiline
             rows={4}
             value={formData.additionalComments}
             onChange={handleChange('additionalComments')}
-            placeholder="Any additional information or clarifications you would like to provide"
+            placeholder={tr('ethics_form.additional_comments_placeholder')}
           />
 
           <Alert severity="success">
             <Typography variant="body2">
-              <strong>Consistency Check:</strong> Ensure the number of participants, study title, and procedures match across ALL submitted documents.
+              {tr('ethics_form.consistency_check')}
             </Typography>
           </Alert>
         </Box>
@@ -979,65 +1000,65 @@ export const renderStepContent = (step, formData, handleChange, handleVulnerable
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Typography variant="h6" sx={{ color: '#2D3748', fontWeight: 600, mb: 2 }}>
-            Review Your Application
+            {tr('ethics_form.review_application')}
           </Typography>
 
           <Alert severity="info" sx={{ mb: 2 }}>
-            Please review all information carefully before submitting. You can save as draft and return later if needed.
+            {tr('ethics_form.review_alert')}
           </Alert>
 
           <Paper sx={{ p: 3, bgcolor: 'rgba(139, 108, 188, 0.02)', border: '1px solid rgba(139, 108, 188, 0.2)' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8b6cbc', mb: 2 }}>
-              Project Overview
+              {tr('ethics_form.project_overview')}
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Typography><strong>Title:</strong> {formData.title}</Typography>
-              <Typography><strong>Research Type:</strong> {formData.researchType}</Typography>
-              <Typography><strong>Duration:</strong> {formData.studyDuration} months</Typography>
-              <Typography><strong>Sample Size:</strong> {formData.sampleSize}</Typography>
+              <Typography><strong>{tr('ethics_form.review_title')}</strong> {formData.title}</Typography>
+              <Typography><strong>{tr('ethics_form.review_research_type')}</strong> {formData.researchType}</Typography>
+              <Typography><strong>{tr('ethics_form.review_duration')}</strong> {formData.studyDuration}{tr('ethics_form.months_suffix')}</Typography>
+              <Typography><strong>{tr('ethics_form.review_sample_size')}</strong> {formData.sampleSize}</Typography>
             </Box>
           </Paper>
 
           <Paper sx={{ p: 3, bgcolor: 'rgba(139, 108, 188, 0.02)', border: '1px solid rgba(139, 108, 188, 0.2)' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8b6cbc', mb: 2 }}>
-              Research Team
+              {tr('ethics_form.research_team')}
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Typography><strong>Principal Investigator:</strong> {formData.principalInvestigator}</Typography>
-              <Typography><strong>ORCID:</strong> {formData.piOrcid}</Typography>
-              <Typography><strong>Institution:</strong> {formData.piInstitution}</Typography>
-              <Typography><strong>Co-Investigators:</strong> {formData.coInvestigators.length}</Typography>
+              <Typography><strong>{tr('ethics_form.review_pi')}</strong> {formData.principalInvestigator}</Typography>
+              <Typography><strong>{tr('ethics_form.review_orcid')}</strong> {formData.piOrcid}</Typography>
+              <Typography><strong>{tr('ethics_form.review_institution')}</strong> {formData.piInstitution}</Typography>
+              <Typography><strong>{tr('ethics_form.review_co_investigators')}</strong> {formData.coInvestigators.length}</Typography>
             </Box>
           </Paper>
 
           <Paper sx={{ p: 3, bgcolor: 'rgba(139, 108, 188, 0.02)', border: '1px solid rgba(139, 108, 188, 0.2)' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8b6cbc', mb: 2 }}>
-              Participants & Ethics
+              {tr('ethics_form.participants_ethics')}
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Typography><strong>Vulnerable Populations:</strong> {formData.vulnerablePopulations.join(', ') || 'None'}</Typography>
-              <Typography><strong>Conflict of Interest:</strong> {formData.conflictOfInterest ? 'Yes - Disclosed' : 'No'}</Typography>
-              <Typography><strong>Previous Approval:</strong> {formData.previousEthicsApproval ? 'Yes' : 'No'}</Typography>
+              <Typography><strong>{tr('ethics_form.review_vulnerable')}</strong> {formData.vulnerablePopulations.join(', ') || tr('common.none')}</Typography>
+              <Typography><strong>{tr('ethics_form.review_conflict')}</strong> {formData.conflictOfInterest ? tr('ethics_form.yes_disclosed') : tr('common.no')}</Typography>
+              <Typography><strong>{tr('ethics_form.review_previous_approval')}</strong> {formData.previousEthicsApproval ? tr('common.yes') : tr('common.no')}</Typography>
             </Box>
           </Paper>
 
           <Paper sx={{ p: 3, bgcolor: 'rgba(139, 108, 188, 0.02)', border: '1px solid rgba(139, 108, 188, 0.2)' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8b6cbc', mb: 2 }}>
-              Documentation Checklist
+              {tr('ethics_form.documentation_checklist_review')}
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <Typography>✓ Participant Information Sheet: {formData.participantInfoSheet ? 'Attached' : 'Not attached'}</Typography>
-              <Typography>✓ Consent Form: {formData.consentFormAttached ? 'Attached' : 'Not attached'}</Typography>
-              <Typography>✓ Research Protocol: {formData.researchProtocol ? 'Attached' : 'Not attached'}</Typography>
-              <Typography>✓ Recruitment Materials: {formData.recruitmentMaterialsAttached ? 'Attached' : 'Not attached'}</Typography>
-              <Typography>✓ Data Collection Tools: {formData.dataCollectionTools ? 'Attached' : 'Not attached'}</Typography>
-              <Typography>✓ Investigator CVs: {formData.investigatorCVs ? 'Attached' : 'Not attached'}</Typography>
+              <Typography>✓ {tr('ethics_form.review_pis')}: {formData.participantInfoSheet ? tr('ethics_form.attached') : tr('ethics_form.not_attached')}</Typography>
+              <Typography>✓ {tr('ethics_form.review_consent')}: {formData.consentFormAttached ? tr('ethics_form.attached') : tr('ethics_form.not_attached')}</Typography>
+              <Typography>✓ {tr('ethics_form.review_protocol')}: {formData.researchProtocol ? tr('ethics_form.attached') : tr('ethics_form.not_attached')}</Typography>
+              <Typography>✓ {tr('ethics_form.review_recruitment')}: {formData.recruitmentMaterialsAttached ? tr('ethics_form.attached') : tr('ethics_form.not_attached')}</Typography>
+              <Typography>✓ {tr('ethics_form.review_data_tools')}: {formData.dataCollectionTools ? tr('ethics_form.attached') : tr('ethics_form.not_attached')}</Typography>
+              <Typography>✓ {tr('ethics_form.review_cvs')}: {formData.investigatorCVs ? tr('ethics_form.attached') : tr('ethics_form.not_attached')}</Typography>
             </Box>
           </Paper>
 
           <Alert severity="warning">
             <Typography variant="body2">
-              <strong>Before submitting:</strong> Ensure all participant-facing documents use clear, everyday language without jargon. Verify consistency across all documents.
+              {tr('ethics_form.before_submitting')}
             </Typography>
           </Alert>
         </Box>

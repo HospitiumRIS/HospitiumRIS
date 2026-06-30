@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import {
   Box,
@@ -29,6 +32,7 @@ const AccountDetailsStep = ({
   monthOptions = [],
   yearOptions = []
 }) => {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
 
   const fieldStyle = {
@@ -178,8 +182,8 @@ const AccountDetailsStep = ({
       <Box sx={{ width: '100%', mt: 1 }}>
         <SectionHeader 
           icon={<PersonIcon />}
-          title="Account Details"
-          subtitle="Please provide your personal information and research details."
+          title={t('auth.account_details_title')}
+          subtitle={t('auth.account_details_subtitle')}
         />
         
         <Grid container spacing={3} sx={{ mt: 2, flexDirection: 'column' }}>
@@ -199,7 +203,7 @@ const AccountDetailsStep = ({
                 fontWeight: 600,
                 color: theme.palette.text.primary,
               }}>
-                Personal Information
+                {t('auth.personal_information')}
               </Typography>
             </Box>
           </Grid>
@@ -210,7 +214,7 @@ const AccountDetailsStep = ({
         <Box sx={{ width: '50%' }}>
             <TextField
               fullWidth
-              label="Given Name"
+              label={t('auth.given_name')}
               name="givenName"
               value={formData.givenName || ''}
               onChange={onInputChange}
@@ -232,7 +236,7 @@ const AccountDetailsStep = ({
           <Box sx={{ width: '50%' }}>
             <TextField
               fullWidth
-              label="Family Name"
+              label={t('auth.family_name')}
               name="familyName"
               value={formData.familyName || ''}
               onChange={onInputChange}
@@ -259,7 +263,7 @@ const AccountDetailsStep = ({
           <Grid size={12}>
             <TextField
               fullWidth
-              label="Email Address"
+              label={t('auth.email_address')}
               name="email"
               type="email"
               value={formData.email || ''}
@@ -285,7 +289,7 @@ const AccountDetailsStep = ({
             <Box sx={{ position: 'relative' }}>
               <TextField
                 fullWidth
-                label="ORCID ID"
+                label={t('auth.orcid_id')}
                 name="orcidId"
                 value={formData.orcidId || ''}
                 onChange={onInputChange}
@@ -306,7 +310,7 @@ const AccountDetailsStep = ({
               />
               {formData.orcidId && (
                 <Chip
-                  label="Verified"
+                  label={t('auth.verified')}
                   size="small"
                   color="success"
                   sx={{
@@ -346,7 +350,7 @@ const AccountDetailsStep = ({
                 fontWeight: 600,
                 color: theme.palette.text.primary,
               }}>
-                Primary Affiliation
+                {t('auth.primary_affiliation')}
               </Typography>
             </Box>
           </Grid>
@@ -355,7 +359,7 @@ const AccountDetailsStep = ({
           <Box sx={{ width: '100%' }}>
             <TextField
               fullWidth
-              label="Primary Institution"
+              label={t('auth.primary_institution')}
               name="primaryInstitution"
               value={formData.primaryInstitution || ''}
               onChange={onInputChange}
@@ -390,13 +394,13 @@ const AccountDetailsStep = ({
                 gap: 1,
               }}>
                 <CalendarIcon sx={{ fontSize: 16 }} />
-                Start Month
+                {t('auth.start_month')}
               </InputLabel>
               <Select
                 name="startMonth"
                 value={formData.startMonth || ''}
                 onChange={onInputChange}
-                label="Start Month"
+                label={t('auth.start_month')}
                 startAdornment={
                   <CalendarIcon sx={{ 
                     color: alpha(theme.palette.text.secondary, 0.6),
@@ -453,13 +457,13 @@ const AccountDetailsStep = ({
                 gap: 1,
               }}>
                 <CalendarIcon sx={{ fontSize: 16 }} />
-                Start Year
+                {t('auth.start_year')}
               </InputLabel>
               <Select
                 name="startYear"
                 value={formData.startYear || ''}
                 onChange={onInputChange}
-                label="Start Year"
+                label={t('auth.start_year')}
                 startAdornment={
                   <CalendarIcon sx={{ 
                     color: alpha(theme.palette.text.secondary, 0.6),

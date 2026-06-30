@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -89,6 +90,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default function GrantWritingPortal() {
+  const { t } = useTranslation();
   const router = useRouter();
   
   // State management

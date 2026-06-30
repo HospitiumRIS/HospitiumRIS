@@ -67,6 +67,7 @@ import { format } from 'date-fns';
 
 import PageHeader from '../../../../../components/common/PageHeader';
 import { useAuth } from '../../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 // Function to transform proposal data to project format
 const transformProposalToProject = (proposal) => {
@@ -136,6 +137,7 @@ const transformProposalToProject = (proposal) => {
 };
 
 const ProjectStatusPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [currentTab, setCurrentTab] = useState(0);
@@ -969,8 +971,8 @@ const ProjectStatusPage = () => {
   return (
     <Box sx={{ mt: '80px' }}>
       <PageHeader
-        title="Project Status Tracking"
-        description="Monitor project progress, deadlines, and team performance"
+        title={t("researcher.status_tracking")}
+        description={t("researcher.status_tracking_desc")}
         icon={<TrackIcon />}
         breadcrumbs={[
           { label: 'Dashboard', path: '/researcher', icon: <BusinessIcon /> },

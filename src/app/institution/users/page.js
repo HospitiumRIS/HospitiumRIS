@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -61,6 +62,7 @@ import {
 import PageHeader from '@/components/common/PageHeader';
 
 const UserManagement = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);

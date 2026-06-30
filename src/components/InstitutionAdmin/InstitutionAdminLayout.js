@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Drawer,
@@ -38,6 +39,7 @@ import { useAuth } from '../AuthProvider';
 const drawerWidth = 260;
 
 const InstitutionAdminLayout = ({ children }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -47,49 +49,49 @@ const InstitutionAdminLayout = ({ children }) => {
 
   const menuItems = [
     {
-      text: 'Dashboard',
+      text: t('institution_admin.dashboard'),
       icon: <DashboardIcon />,
       path: '/institution-admin',
       color: 'primary'
     },
     {
-      text: 'User Management',
+      text: t('institution_admin.user_management'),
       icon: <UsersIcon />,
       path: '/institution-admin/users',
       color: 'info'
     },
     {
-      text: 'Account Types',
+      text: t('institution_admin.account_types'),
       icon: <SecurityIcon />,
       path: '/institution-admin/account-types',
       color: 'secondary'
     },
     {
-      text: 'Verified Domains',
+      text: t('institution_admin.verified_domains'),
       icon: <VerifiedIcon />,
       path: '/institution-admin/verified-domains',
       color: 'success'
     },
     {
-      text: 'Database',
+      text: t('institution_admin.database'),
       icon: <DatabaseIcon />,
       path: '/institution-admin/database',
       color: 'warning'
     },
     {
-      text: 'Activity Logs',
+      text: t('institution_admin.logs'),
       icon: <LogsIcon />,
       path: '/institution-admin/logs',
       color: 'primary'
     },
     {
-      text: 'Security',
+      text: t('global_admin.security'),
       icon: <SecurityIcon />,
       path: '/institution-admin/security',
       color: 'error'
     },
     {
-      text: 'Settings',
+      text: t('global_admin.settings'),
       icon: <SettingsIcon />,
       path: '/institution-admin/settings',
       color: 'warning'
@@ -143,10 +145,10 @@ const InstitutionAdminLayout = ({ children }) => {
         </Avatar>
         <Box sx={{ flex: 1, position: 'relative', zIndex: 1 }}>
           <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
-            Institution Admin
+            {t('institution_admin.panel_title')}
           </Typography>
           <Typography variant="caption" sx={{ opacity: 0.95, fontWeight: 500 }}>
-            Control Panel
+            {t('institution_admin.control_panel')}
           </Typography>
         </Box>
       </Box>

@@ -41,6 +41,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import PageHeader from '@/components/common/PageHeader';
 import { Home as HomeIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 const TARGET_GROUPS = [
   'NURSES',
@@ -59,6 +60,7 @@ const TRAINING_STATUSES = [
 ];
 
 export default function InstitutionTrainingPage() {
+  const { t } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -375,8 +377,8 @@ export default function InstitutionTrainingPage() {
   return (
     <>
       <PageHeader
-        title="Training Management"
-        description="Create and manage institutional trainings"
+        title={t('institution.manage_trainings')}
+        description={t('institution.manage_trainings_desc')}
         icon={<TrainingIcon sx={{ fontSize: 40 }} />}
         breadcrumbs={[
           { label: 'Home', path: '/institution', icon: <HomeIcon /> },
@@ -463,8 +465,8 @@ export default function InstitutionTrainingPage() {
               <TableCell sx={{ fontWeight: 600 }}>Target Group</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Dates</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Capacity</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600 }} align="right">Actions</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>{t('common.status')}</TableCell>
+              <TableCell sx={{ fontWeight: 600 }} align="right">{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -472,7 +474,7 @@ export default function InstitutionTrainingPage() {
               <TableRow>
                 <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                   <Typography color="text.secondary">
-                    No trainings found. Create your first training to get started.
+                    {t('common.no_data')}
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -510,7 +512,7 @@ export default function InstitutionTrainingPage() {
                   </TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
-                      <Tooltip title="View Details">
+                      <Tooltip title={t('common.details')}>
                         <IconButton
                           size="small"
                           onClick={() => router.push(`/institution/training/${training.id}`)}

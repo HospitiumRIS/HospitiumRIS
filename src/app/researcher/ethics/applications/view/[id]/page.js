@@ -47,6 +47,7 @@ import {
 import { format } from 'date-fns';
 import PageHeader from '../../../../../../components/common/PageHeader';
 import { useAuth } from '../../../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const statusColors = {
   DRAFT: '#9e9e9e',
@@ -80,6 +81,7 @@ const riskLevelColors = {
 };
 
 export default function ViewEthicsApplicationPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const { user } = useAuth();
@@ -129,8 +131,8 @@ export default function ViewEthicsApplicationPage() {
     return (
       <Box>
         <PageHeader
-          title="Ethics Application"
-          description="View ethics application details"
+          title={t("researcher.ethics_application")}
+          description={t("researcher.ethics_view_desc")}
           icon={<EthicsIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
             { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/researcher' },
@@ -161,8 +163,8 @@ export default function ViewEthicsApplicationPage() {
     return (
       <Box>
         <PageHeader
-          title="Ethics Application"
-          description="View ethics application details"
+          title={t("researcher.ethics_application")}
+          description={t("researcher.ethics_view_desc")}
           icon={<EthicsIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
             { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/researcher' },
@@ -190,7 +192,7 @@ export default function ViewEthicsApplicationPage() {
     <Box>
       <PageHeader
         title={application.title}
-        description="Ethics Application Details"
+        description={t("researcher.ethics_application_desc")}
         icon={<EthicsIcon sx={{ fontSize: 32 }} />}
         breadcrumbs={[
           { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/researcher' },

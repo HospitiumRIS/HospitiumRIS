@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback, useMemo, Suspense, useEffect } from 'react';
 import {
     Box,
@@ -42,7 +43,7 @@ const PreviewDialog = dynamic(() => import('./PreviewDialog'), {
 const DialogSkeleton = () => (
     <Box sx={{ p: 4, textAlign: 'center' }}>
         <CircularProgress sx={{ color: '#8b6cbc' }} />
-        <Typography sx={{ mt: 2 }}>Loading...</Typography>
+        <Typography sx={{ mt: 2 }}>{t('common.loading')}</Typography>
     </Box>
 );
 
@@ -242,6 +243,7 @@ const CompletionStep = React.memo(({ selectedMethod, submissionResult, onSubmitA
 CompletionStep.displayName = 'CompletionStep';
 
 const SubmitPublication = ({ onSubmit }) => {
+  const { t } = useTranslation();
     const router = useRouter();
     
     // Core state management
@@ -666,7 +668,7 @@ const SubmitPublication = ({ onSubmit }) => {
                     )}
 
                     <Button onClick={handleBackToServerSelection} size="small" sx={{ color: 'text.secondary', mt: 3, fontSize: '0.8rem' }}>
-                        ← Back to Server Selection
+                        {t('common.back')}
                     </Button>
                 </Paper>
             </Container>
@@ -710,13 +712,13 @@ const SubmitPublication = ({ onSubmit }) => {
     return (
         <Box sx={{ width: '100%', mt: 8, mb: 4 }}>
             <PageHeader
-                title="Submit Publication"
+                title={t('common.submit')}
                 description="Submit your research to preprint servers for early dissemination"
                 icon={<PublishIcon />}
                 breadcrumbs={[
                     { label: 'Dashboard', href: '/researcher' },
                     { label: 'Publications', href: '/researcher/publications' },
-                    { label: 'Submit Publication' }
+                    { label: t('common.submit') }
                 ]}
             />
 

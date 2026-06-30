@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Dialog,
@@ -51,6 +52,7 @@ const CitationLibraryModal = ({
   onCiteInsert, 
   citationStyle = 'APA' 
 }) => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAnchor, setFilterAnchor] = useState(null);
   const [sortAnchor, setSortAnchor] = useState(null);
@@ -519,8 +521,8 @@ const CitationLibraryModal = ({
                   }
                 }}
               >
-                Filter
-              </Button>
+                t('common.filter')
+</Button>
               
               <Button
                 variant="outlined"
@@ -830,7 +832,7 @@ const CitationLibraryModal = ({
                       }
                     }}
                   >
-                    {loadingMore ? 'Loading...' : `Load More (${totalCount - citations.length} remaining)`}
+                    {loadingMore ? t('common.loading') : `Load More (${totalCount - citations.length} remaining)`}
                   </Button>
                 </Box>
               )}
@@ -850,7 +852,7 @@ const CitationLibraryModal = ({
             bgcolor: '#fafafa'
           }}>
             <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500, fontSize: '0.75rem' }}>
-              {loading ? 'Loading...' : viewMode === 'folders' && selectedFolder
+              {loading ? t('common.loading') : viewMode === 'folders' && selectedFolder
                 ? `${filteredAndSortedCitations.length} citation(s) in ${folders.find(f => f.id === selectedFolder)?.name || 'folder'}`
                 : `Showing ${citations.length} of ${totalCount} total sources`
               }
@@ -870,8 +872,8 @@ const CitationLibraryModal = ({
                 }
               }}
             >
-              Close
-            </Button>
+              t('common.close')
+</Button>
           </Box>
         </Box>
 

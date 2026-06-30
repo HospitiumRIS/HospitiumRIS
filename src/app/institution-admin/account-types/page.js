@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Paper,
@@ -51,6 +52,7 @@ import { useRouter } from 'next/navigation';
 import InstitutionAdminLayout from '../../../components/InstitutionAdmin/InstitutionAdminLayout';
 
 const AccountTypesPage = () => {
+  const { t } = useTranslation();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
 import {
   Drawer,
@@ -19,6 +20,7 @@ import {
 } from '@mui/icons-material';
 
 const FilterPanel = ({ open, onClose, nodes, filters, onFiltersChange }) => {
+  const { t } = useTranslation();
   const [localFilters, setLocalFilters] = useState(filters || {
     collaborationTypes: [],
     institutions: [],
@@ -96,7 +98,7 @@ const FilterPanel = ({ open, onClose, nodes, filters, onFiltersChange }) => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <FilterIcon color="primary" />
             <Typography variant="h6" fontWeight={600}>
-              Filters
+              {t('research_network.filters')}
             </Typography>
           </Box>
           <IconButton onClick={onClose} size="small">
@@ -109,7 +111,7 @@ const FilterPanel = ({ open, onClose, nodes, filters, onFiltersChange }) => {
           {/* Collaboration Type Filter */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-              Collaboration Type
+              {t('research_network.collaboration_type')}
             </Typography>
             <FormGroup>
               <FormControlLabel
@@ -120,7 +122,7 @@ const FilterPanel = ({ open, onClose, nodes, filters, onFiltersChange }) => {
                     size="small"
                   />
                 }
-                label="Lead Investigator"
+                label={t('research_network.lead_investigator')}
               />
               <FormControlLabel
                 control={
@@ -130,7 +132,7 @@ const FilterPanel = ({ open, onClose, nodes, filters, onFiltersChange }) => {
                     size="small"
                   />
                 }
-                label="Direct Collaborators"
+                label={t('research_network.direct_collaborators')}
               />
               <FormControlLabel
                 control={
@@ -140,7 +142,7 @@ const FilterPanel = ({ open, onClose, nodes, filters, onFiltersChange }) => {
                     size="small"
                   />
                 }
-                label="Pending Invitations"
+                label={t('research_network.pending_invitations')}
               />
             </FormGroup>
           </Box>
@@ -150,7 +152,7 @@ const FilterPanel = ({ open, onClose, nodes, filters, onFiltersChange }) => {
           {/* Institution Filter */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-              Institution
+              {t('research_network.institution')}
             </Typography>
             <Stack spacing={1} sx={{ maxHeight: 200, overflow: 'auto' }}>
               {institutions.slice(0, 10).map((institution) => (
@@ -178,7 +180,7 @@ const FilterPanel = ({ open, onClose, nodes, filters, onFiltersChange }) => {
           {/* Specialization Filter */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-              Specialization
+              {t('research_network.specialization')}
             </Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ gap: 1 }}>
               {specializations.slice(0, 15).map((spec) => (
@@ -199,7 +201,7 @@ const FilterPanel = ({ open, onClose, nodes, filters, onFiltersChange }) => {
           {/* Publication Count Range */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-              Publication Count: {localFilters.publicationRange?.[0] || 0} - {localFilters.publicationRange?.[1] || maxPublications}
+              {t('research_network.publication_count', { min: localFilters.publicationRange?.[0] || 0, max: localFilters.publicationRange?.[1] || maxPublications })}
             </Typography>
             <Slider
               value={localFilters.publicationRange || [0, maxPublications]}
@@ -216,10 +218,10 @@ const FilterPanel = ({ open, onClose, nodes, filters, onFiltersChange }) => {
         <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
           <Stack spacing={1}>
             <Button variant="contained" fullWidth onClick={handleApply}>
-              Apply Filters
+              {t('research_network.apply_filters')}
             </Button>
             <Button variant="outlined" fullWidth onClick={handleReset}>
-              Reset All
+              {t('research_network.reset_all')}
             </Button>
           </Stack>
         </Box>

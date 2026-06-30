@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import {
     Dialog,
@@ -30,6 +31,7 @@ const PreviewDialog = ({
     selectedMethod,
     onSubmit
 }) => {
+  const { t } = useTranslation();
     const formatAuthors = (authorsString) => {
         if (!authorsString) return [];
         return authorsString.split(',').map(author => author.trim()).filter(author => author);
@@ -410,7 +412,7 @@ const PreviewDialog = ({
                     variant="outlined"
                     sx={{ color: 'text.secondary' }}
                 >
-                    Back to Form
+                    {t('common.back')}
                 </Button>
                 <Button
                     variant="contained"
@@ -431,7 +433,7 @@ const PreviewDialog = ({
                         onClose();
                     }}
                 >
-                    Submit to {selectedMethod?.name}
+                    {t('common.submit')} {selectedMethod?.name}
                 </Button>
             </DialogActions>
         </Dialog>

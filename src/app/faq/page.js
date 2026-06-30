@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Container,
   Typography,
@@ -19,358 +19,179 @@ import {
   HelpOutline as HelpIcon,
   FiberManualRecord as BulletIcon,
 } from '@mui/icons-material';
-
-const faqData = [
-  {
-    category: 'Overview',
-    questions: [
-      {
-        question: 'What is HospitiumRIS?',
-        answer: 'HospitiumRIS is a healthcare-focused Research Information System (RIS) designed to help hospitals, university teaching hospitals, medical research institutes, and health research organizations manage, track, monitor, and showcase the entire research lifecycle through a centralized digital infrastructure.',
-      },
-      {
-        question: 'What problem does HospitiumRIS solve?',
-        answer: 'Many hospitals and research institutions struggle with:',
-        bullets: [
-          'Fragmented research data',
-          'Manual reporting systems',
-          'Poor research visibility',
-          'Difficulty tracking publications and grants',
-          'Compliance and ethics management challenges',
-          'Lack of centralized researcher profiles',
-          'Weak institutional research analytics',
-        ],
-        footer: 'HospitiumRIS addresses these challenges by integrating research administration, compliance, publishing, analytics, and researcher profiling into one unified system.',
-      },
-    ],
-  },
-  {
-    category: 'Who Can Use HospitiumRIS?',
-    questions: [
-      {
-        question: 'Who can use HospitiumRIS?',
-        answer: 'HospitiumRIS is designed for:',
-        bullets: [
-          'University teaching hospitals',
-          'Referral hospitals',
-          'Medical schools',
-          'Clinical trial centers',
-          'Public health institutions',
-          'Research institutes',
-          'Ethics review boards',
-          'Health ministries',
-          'Research support offices',
-          'Academic researchers and clinicians',
-        ],
-      },
-      {
-        question: 'Is HospitiumRIS only for large hospitals?',
-        answer: 'No. HospitiumRIS can support:',
-        bullets: [
-          'Small research units',
-          'Medium-sized hospitals',
-          'National referral hospitals',
-          'Regional research institutes',
-          'Multi-campus university systems',
-          'University teaching hospitals',
-        ],
-      },
-    ],
-  },
-  {
-    category: 'Features & Capabilities',
-    questions: [
-      {
-        question: 'What are the main features of HospitiumRIS?',
-        answer: 'Key features include:',
-        bullets: [
-          'Researcher Profiles',
-          'Research Project Management',
-          'Publication, Publishing lifecycle & Outputs Management',
-          'Clinical Research Tracking',
-          'Grant and Funding Monitoring',
-          'Ethics & Compliance Management',
-          'AI-powered publication summaries',
-          'Citation and impact analytics',
-          'Institutional dashboards',
-          'Open Access support',
-          'PID integrations (ORCID, Crossref, DataCite)',
-          'Audit trails and governance tools',
-        ],
-      },
-      {
-        question: 'How does HospitiumRIS support researcher profiles?',
-        answer: 'HospitiumRIS allows researchers to:',
-        bullets: [
-          'Build comprehensive academic profiles',
-          'Track publications and citations',
-          'Collaboratively write scientific papers, project and grant proposals',
-          'Showcase grants and collaborations',
-          'Generate CVs automatically',
-          'Link institutional affiliations',
-          'Integrate ORCID identifiers',
-        ],
-        footer: 'This improves institutional and individual research visibility globally.',
-      },
-      {
-        question: 'Does HospitiumRIS support ORCID integration?',
-        answer: 'Yes. HospitiumRIS integrates with:',
-        bullets: [
-          'ORCID for researcher identities',
-          'Crossref for publications',
-          'DataCite for datasets and research objects',
-        ],
-        footer: 'This allows seamless interoperability with global scholarly infrastructure.',
-      },
-      {
-        question: 'Can HospitiumRIS manage research projects?',
-        answer: 'Yes. The platform supports:',
-        bullets: [
-          'Proposal tracking',
-          'Timeline management',
-          'Milestone monitoring',
-          'Team coordination',
-          'Resource allocation',
-          'Research workflow tracking',
-          'Progress reporting',
-        ],
-      },
-      {
-        question: 'Does HospitiumRIS support ethics and compliance management?',
-        answer: 'Yes. HospitiumRIS includes governance and compliance tools for:',
-        bullets: [
-          'Ethics approvals',
-          'Institutional review workflows',
-          'Data protection compliance',
-          'Audit trails',
-          'Research governance tracking',
-          'Regulatory reporting',
-        ],
-      },
-      {
-        question: 'Can HospitiumRIS support clinical trials management?',
-        answer: 'Yes. HospitiumRIS is suitable for:',
-        bullets: [
-          'Clinical trial administration',
-          'Participant tracking',
-          'Protocol management',
-          'Compliance documentation',
-          'Trial reporting',
-          'Collaborative clinical research oversight',
-        ],
-        footer: 'It is especially useful for university teaching hospitals and health research institutions conducting translational and clinical research.',
-      },
-      {
-        question: 'Does HospitiumRIS support Artificial Intelligence (AI)?',
-        answer: 'Yes. HospitiumRIS incorporates AI-powered capabilities such as:',
-        bullets: [
-          'Automated publication summaries',
-          'Keyword extraction',
-          'Research trend identification',
-          'Intelligent metadata support',
-        ],
-      },
-      {
-        question: 'Can HospitiumRIS manage publications and institutional repositories?',
-        answer: 'Yes. HospitiumRIS supports:',
-        bullets: [
-          'Publication management',
-          'Institutional research output tracking',
-          'Citation management',
-          'Open Access support',
-          'Metadata organization',
-          'Research dissemination workflows',
-        ],
-      },
-    ],
-  },
-  {
-    category: 'Analytics & Institutional Impact',
-    questions: [
-      {
-        question: 'How does HospitiumRIS improve institutional visibility?',
-        answer: 'HospitiumRIS improves visibility by:',
-        bullets: [
-          'Centralizing institutional research outputs',
-          'Showcasing publications and datasets',
-          'Tracking citation metrics',
-          'Supporting Open Access dissemination',
-          'Enhancing discoverability of institutional expertise',
-          'Providing analytics dashboards for strategic reporting',
-        ],
-      },
-      {
-        question: 'What analytics capabilities does HospitiumRIS provide?',
-        answer: 'HospitiumRIS offers:',
-        bullets: [
-          'Citation analytics',
-          'Publication tracking',
-          'Departmental performance dashboards',
-          'Research impact monitoring',
-          'Custom institutional reports',
-          'Research trend analysis',
-          'Collaboration analytics',
-        ],
-      },
-      {
-        question: 'Can HospitiumRIS help hospitals improve rankings and visibility?',
-        answer: 'Yes. By centralizing and showcasing research outputs, citation metrics, collaborations, and institutional expertise, HospitiumRIS strengthens:',
-        bullets: [
-          'Institutional reputation',
-          'Research visibility',
-          'Funding competitiveness',
-          'International collaboration readiness',
-          'Benchmarking and ranking performance',
-        ],
-      },
-    ],
-  },
-  {
-    category: 'Context & Integration',
-    questions: [
-      {
-        question: 'Is HospitiumRIS suitable for African and Global South institutions?',
-        answer: 'Yes. HospitiumRIS was developed with a strong understanding of:',
-        bullets: [
-          'African and Global South research ecosystems',
-          'Institutional capacity challenges',
-          'Research visibility gaps',
-          'Open Science priorities',
-          'Data sovereignty considerations',
-          'Limited interoperability environments',
-        ],
-        footer: 'It is designed to support both local institutional needs and global scholarly interoperability.',
-      },
-      {
-        question: 'How does HospitiumRIS support Open Science?',
-        answer: 'HospitiumRIS supports Open Science by:',
-        bullets: [
-          'Improving access to institutional research outputs',
-          'Supporting Open Access publishing',
-          'Enhancing metadata interoperability',
-          'Integrating persistent identifiers',
-          'Strengthening discoverability and reuse of research outputs',
-        ],
-      },
-      {
-        question: 'Can HospitiumRIS integrate with existing institutional systems?',
-        answer: 'Yes. HospitiumRIS is designed to integrate with:',
-        bullets: [
-          'Institutional repositories and databases',
-          'Publication databases',
-          'Research management systems',
-          'ORCID',
-          'Crossref',
-          'DataCite',
-          'Institutional authentication systems',
-        ],
-      },
-      {
-        question: 'Is HospitiumRIS cloud-based?',
-        answer: 'HospitiumRIS supports centralized digital infrastructure deployment and can be configured depending on institutional requirements, including cloud-hosted or institutionally managed environments.',
-      },
-      {
-        question: 'Does HospitiumRIS support multi-institutional collaboration?',
-        answer: 'Yes. The system supports collaboration among:',
-        bullets: [
-          'Hospitals',
-          'Universities',
-          'Funders',
-          'Regulators',
-          'Ethics committees',
-          'International research partners',
-        ],
-      },
-    ],
-  },
-  {
-    category: 'Governance, Security & Integrity',
-    questions: [
-      {
-        question: 'What makes HospitiumRIS different from general hospital management systems?',
-        answer: 'Unlike general hospital systems focused on patient administration and clinical operations, HospitiumRIS specifically focuses on:',
-        bullets: [
-          'Research lifecycle management',
-          'Scholarly outputs',
-          'Clinical research governance',
-          'Institutional research intelligence',
-          'Research visibility and analytics',
-          'Academic collaboration infrastructure',
-        ],
-      },
-      {
-        question: 'Does HospitiumRIS support reporting for funders and regulators?',
-        answer: 'Yes. HospitiumRIS can generate:',
-        bullets: [
-          'Institutional reports',
-          'Research performance summaries',
-          'Compliance documentation',
-          'Grant progress reports',
-          'Publication outputs',
-          'Research analytics dashboards',
-        ],
-        footer: 'This supports accountability and evidence-based decision-making.',
-      },
-      {
-        question: 'How secure is HospitiumRIS?',
-        answer: 'HospitiumRIS incorporates:',
-        bullets: [
-          'Centralized governance structures',
-          'Secure access controls',
-          'Audit trails',
-          'Compliance monitoring',
-          'Data protection workflows',
-        ],
-      },
-      {
-        question: 'How does HospitiumRIS support research integrity?',
-        answer: 'The platform supports research integrity through:',
-        bullets: [
-          'Audit trails',
-          'Compliance workflows',
-          'Ethics tracking',
-          'Transparent reporting',
-          'Research governance monitoring',
-          'Documentation management',
-        ],
-      },
-    ],
-  },
-  {
-    category: 'About HospitiumRIS',
-    questions: [
-      {
-        question: 'What is the long-term vision of HospitiumRIS?',
-        answer: 'The long-term vision is to transform hospitals and health institutions into:',
-        bullets: [
-          'Data-driven research ecosystems',
-          'Globally visible research hubs',
-          'Collaborative innovation environments',
-          'Open Science-enabled institutions',
-          'Digitally connected health research infrastructures',
-        ],
-      },
-      {
-        question: 'Who developed HospitiumRIS?',
-        answer: 'HospitiumRIS was developed by Training Centre in Communication (TCC Africa) as part of its broader Open Infrastructure and research visibility initiatives supporting African and Global South research ecosystems.',
-      },
-      {
-        question: 'Where can institutions learn more or request a demonstration?',
-        answer: 'Institutions can learn more and request a demonstration through the official HospitiumRIS platform or by contacting TCC Africa directly:',
-        bullets: [
-          'Website: www.tcc-africa.org',
-          'Email: info@tcc-africa.org',
-          'Phone: +254 (0)20 8086820 / +254 (0)20 2697401',
-          'Address: Chiromo Campus, University of Nairobi, Gecaga Institute Bldg., P.O Box 21553-00100, Nairobi, Kenya',
-        ],
-      },
-    ],
-  },
-];
+import { useTranslation } from 'react-i18next';
 
 const FAQPage = () => {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
+
+  const faqData = useMemo(() => [
+    {
+      category: t('faq.cat_overview'),
+      questions: [
+        { question: t('faq.q1'), answer: t('faq.a1') },
+        {
+          question: t('faq.q2'),
+          answer: t('faq.a2'),
+          bullets: t('faq.a2_bullets', { returnObjects: true }),
+          footer: t('faq.a2_footer'),
+        },
+      ],
+    },
+    {
+      category: t('faq.cat_who_can_use'),
+      questions: [
+        {
+          question: t('faq.q3'),
+          answer: t('faq.a3'),
+          bullets: t('faq.a3_bullets', { returnObjects: true }),
+        },
+        {
+          question: t('faq.q4'),
+          answer: t('faq.a4'),
+          bullets: t('faq.a4_bullets', { returnObjects: true }),
+        },
+      ],
+    },
+    {
+      category: t('faq.cat_features'),
+      questions: [
+        {
+          question: t('faq.q5'),
+          answer: t('faq.a5'),
+          bullets: t('faq.a5_bullets', { returnObjects: true }),
+        },
+        {
+          question: t('faq.q6'),
+          answer: t('faq.a6'),
+          bullets: t('faq.a6_bullets', { returnObjects: true }),
+          footer: t('faq.a6_footer'),
+        },
+        {
+          question: t('faq.q7'),
+          answer: t('faq.a7'),
+          bullets: t('faq.a7_bullets', { returnObjects: true }),
+          footer: t('faq.a7_footer'),
+        },
+        {
+          question: t('faq.q8'),
+          answer: t('faq.a8'),
+          bullets: t('faq.a8_bullets', { returnObjects: true }),
+        },
+        {
+          question: t('faq.q9'),
+          answer: t('faq.a9'),
+          bullets: t('faq.a9_bullets', { returnObjects: true }),
+        },
+        {
+          question: t('faq.q10'),
+          answer: t('faq.a10'),
+          bullets: t('faq.a10_bullets', { returnObjects: true }),
+          footer: t('faq.a10_footer'),
+        },
+        {
+          question: t('faq.q11'),
+          answer: t('faq.a11'),
+          bullets: t('faq.a11_bullets', { returnObjects: true }),
+        },
+        {
+          question: t('faq.q12'),
+          answer: t('faq.a12'),
+          bullets: t('faq.a12_bullets', { returnObjects: true }),
+        },
+      ],
+    },
+    {
+      category: t('faq.cat_analytics'),
+      questions: [
+        {
+          question: t('faq.q13'),
+          answer: t('faq.a13'),
+          bullets: t('faq.a13_bullets', { returnObjects: true }),
+        },
+        {
+          question: t('faq.q14'),
+          answer: t('faq.a14'),
+          bullets: t('faq.a14_bullets', { returnObjects: true }),
+        },
+        {
+          question: t('faq.q15'),
+          answer: t('faq.a15'),
+          bullets: t('faq.a15_bullets', { returnObjects: true }),
+        },
+      ],
+    },
+    {
+      category: t('faq.cat_context'),
+      questions: [
+        {
+          question: t('faq.q16'),
+          answer: t('faq.a16'),
+          bullets: t('faq.a16_bullets', { returnObjects: true }),
+          footer: t('faq.a16_footer'),
+        },
+        {
+          question: t('faq.q17'),
+          answer: t('faq.a17'),
+          bullets: t('faq.a17_bullets', { returnObjects: true }),
+        },
+        {
+          question: t('faq.q18'),
+          answer: t('faq.a18'),
+          bullets: t('faq.a18_bullets', { returnObjects: true }),
+        },
+        { question: t('faq.q19'), answer: t('faq.a19') },
+        {
+          question: t('faq.q20'),
+          answer: t('faq.a20'),
+          bullets: t('faq.a20_bullets', { returnObjects: true }),
+        },
+      ],
+    },
+    {
+      category: t('faq.cat_governance'),
+      questions: [
+        {
+          question: t('faq.q21'),
+          answer: t('faq.a21'),
+          bullets: t('faq.a21_bullets', { returnObjects: true }),
+        },
+        {
+          question: t('faq.q22'),
+          answer: t('faq.a22'),
+          bullets: t('faq.a22_bullets', { returnObjects: true }),
+          footer: t('faq.a22_footer'),
+        },
+        {
+          question: t('faq.q23'),
+          answer: t('faq.a23'),
+          bullets: t('faq.a23_bullets', { returnObjects: true }),
+        },
+        {
+          question: t('faq.q24'),
+          answer: t('faq.a24'),
+          bullets: t('faq.a24_bullets', { returnObjects: true }),
+        },
+      ],
+    },
+    {
+      category: t('faq.cat_about'),
+      questions: [
+        {
+          question: t('faq.q25'),
+          answer: t('faq.a25'),
+          bullets: t('faq.a25_bullets', { returnObjects: true }),
+        },
+        { question: t('faq.q26'), answer: t('faq.a26') },
+        {
+          question: t('faq.q27'),
+          answer: t('faq.a27'),
+          bullets: t('faq.a27_bullets', { returnObjects: true }),
+        },
+      ],
+    },
+  ], [t, i18n.language]);
 
   const handleChange = (panel) => (event, isExpanded) => {
     setExpanded(isExpanded ? panel : false);
@@ -453,7 +274,7 @@ const FAQPage = () => {
               textShadow: '0 2px 10px rgba(0,0,0,0.1)',
             }}
           >
-            Frequently Asked Questions
+            {t('faq.title')}
           </Typography>
           <Typography
             variant="h6"
@@ -466,7 +287,7 @@ const FAQPage = () => {
               fontSize: { xs: '1rem', md: '1.2rem' },
             }}
           >
-            Everything you need to know about HospitiumRIS — the healthcare-focused Research Information System.
+            {t('faq.subtitle')}
           </Typography>
         </Container>
       </Box>
@@ -578,13 +399,13 @@ const FAQPage = () => {
           }}
         >
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 1.5, color: 'white', position: 'relative', zIndex: 1 }}>
-            Still have questions?
+            {t('faq.cta_title')}
           </Typography>
           <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.85)', mb: 3, position: 'relative', zIndex: 1 }}>
-            Can&apos;t find the answer you&apos;re looking for? Reach out to our support team.
+            {t('faq.cta_subtitle')}
           </Typography>
           <Link
-            href="mailto:info@tcc-africa.org"
+            href={`mailto:${t('faq.cta_email')}`}
             sx={{
               display: 'inline-block',
               color: 'white',
@@ -604,7 +425,7 @@ const FAQPage = () => {
               },
             }}
           >
-            info@tcc-africa.org
+            {t('faq.cta_email')}
           </Link>
         </Box>
       </Container>

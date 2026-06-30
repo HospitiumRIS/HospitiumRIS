@@ -20,6 +20,7 @@ import { useTheme } from '@mui/material/styles';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useThemeMode } from '../../components/ThemeProvider';
+import { useTranslation } from 'react-i18next';
 
 // Loading component for Suspense fallback
 const ActivatePageLoading = () => {
@@ -78,6 +79,7 @@ const ActivatePageContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isDarkMode } = useThemeMode();
+  const { t } = useTranslation();
   
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
@@ -157,10 +159,10 @@ const ActivatePageContent = () => {
                 sx={{ color: theme.palette.primary.main, mb: 2 }} 
               />
               <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-                Activating Account
+                {t('auth.activation_title')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Please wait while we verify your account...
+                {t('auth.activation_subtitle')}
               </Typography>
             </Box>
           )}
@@ -171,15 +173,15 @@ const ActivatePageContent = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
                 <CheckCircleIcon sx={{ color: theme.palette.success.main, fontSize: 28 }} />
                 <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.success.main }}>
-                  Account Activated
+                  {t('auth.activation_title')}
                 </Typography>
               </Box>
               <Typography variant="body1" sx={{ mb: 3, color: theme.palette.text.secondary }}>
-                Your account is now active and ready to use
+                {t('auth.activation_success')}
               </Typography>
               <Alert severity="success" sx={{ mb: 3 }}>
                 <Typography variant="body2">
-                  Welcome to Hospitium RIS! You can now access all features.
+                  {t('auth.activation_success')}
                 </Typography>
               </Alert>
               <Button
@@ -188,7 +190,7 @@ const ActivatePageContent = () => {
                 startIcon={<LoginIcon />}
                 sx={{ px: 3, py: 1 }}
               >
-                Continue to Login
+                {t('auth.sign_in')}
               </Button>
             </Box>
           )}
@@ -199,11 +201,11 @@ const ActivatePageContent = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
                 <ErrorIcon sx={{ color: theme.palette.error.main, fontSize: 28 }} />
                 <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.error.main }}>
-                  Activation Failed
+                  {t('errors.server_error')}
                 </Typography>
               </Box>
               <Typography variant="body1" sx={{ mb: 3, color: theme.palette.text.secondary }}>
-                We couldn't activate your account
+                {t('auth.invalid_token')}
               </Typography>
               <Alert severity="error" sx={{ mb: 3 }}>
                 <Typography variant="body2">
@@ -217,7 +219,7 @@ const ActivatePageContent = () => {
                   startIcon={<RefreshIcon />}
                   size="small"
                 >
-                  Get New Link
+                  {t('auth.resend_activation')}
                 </Button>
                 <Button
                   variant="outlined"
@@ -225,7 +227,7 @@ const ActivatePageContent = () => {
                   startIcon={<LoginIcon />}
                   size="small"
                 >
-                  Try Login
+                  {t('auth.sign_in')}
                 </Button>
               </Box>
             </Box>

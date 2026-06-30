@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Box, Typography, Stepper, Step, StepLabel, Chip, Tooltip, CircularProgress } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -47,7 +48,9 @@ const getStatusColor = (status) => {
   }
 };
 
-const getStatusLabel = (status) => {
+export default function ProposalReviewStatus({ tracking, compact = false }) {
+  const { t } = useTranslation();
+  const getStatusLabel = (status) => {
   switch (status) {
     case 'APPROVED':
       return 'Approved';
@@ -67,8 +70,6 @@ const getStatusLabel = (status) => {
       return status;
   }
 };
-
-export default function ProposalReviewStatus({ tracking, compact = false }) {
   if (!tracking || !tracking.pipeline) {
     return null;
   }

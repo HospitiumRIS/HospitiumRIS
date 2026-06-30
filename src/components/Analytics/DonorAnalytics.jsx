@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo } from 'react';
 import {
   Box,
@@ -16,11 +17,11 @@ import {
 } from '@mui/icons-material';
 
 const DonorAnalytics = memo(({ analyticsData, loading }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   return (
     <Box>
-      {/* Page Title */}
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 4 }}>
         <PeopleIcon sx={{ fontSize: 32, color: '#8b6cbc' }} />
         <Box>
@@ -29,17 +30,16 @@ const DonorAnalytics = memo(({ analyticsData, loading }) => {
             color: theme.palette.text.primary,
             mb: 0.5
           }}>
-            Donor Analytics
+            {t('analytics.donor_analytics')}
           </Typography>
           <Typography variant="body1" sx={{ 
             color: theme.palette.text.secondary
           }}>
-            Comprehensive donor behavior analysis and segmentation insights
+            {t('analytics.donor_analytics_desc_long')}
           </Typography>
         </Box>
       </Stack>
 
-      {/* Coming Soon Card */}
       <Card sx={{ 
         borderRadius: 3,
         border: '2px dashed rgba(139, 108, 188, 0.3)',
@@ -57,7 +57,7 @@ const DonorAnalytics = memo(({ analyticsData, loading }) => {
             color: theme.palette.text.primary,
             mb: 2
           }}>
-            Donor Analytics Coming Soon
+            {t('analytics.donor_analytics_coming_soon')}
           </Typography>
           
           <Typography variant="body1" sx={{ 
@@ -66,16 +66,15 @@ const DonorAnalytics = memo(({ analyticsData, loading }) => {
             maxWidth: 500,
             mx: 'auto'
           }}>
-            Advanced donor intelligence including behavioral analysis, lifetime value,
-            segmentation, engagement scoring, and personalized insights.
+            {t('analytics.donor_analytics_coming_desc')}
           </Typography>
 
           <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap">
-            <Chip label="Behavioral Analysis" variant="outlined" color="primary" />
-            <Chip label="Lifetime Value" variant="outlined" color="primary" />
-            <Chip label="Segmentation" variant="outlined" color="primary" />
-            <Chip label="Engagement Scoring" variant="outlined" color="primary" />
-            <Chip label="Personalization" variant="outlined" color="primary" />
+            <Chip label={t('analytics.behavioral_analysis')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.lifetime_value')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.segmentation')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.engagement_scoring')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.personalization')} variant="outlined" color="primary" />
           </Stack>
         </CardContent>
       </Card>

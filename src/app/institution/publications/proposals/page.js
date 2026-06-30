@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
   Box, Container, Typography, Paper, Chip, Avatar,
   TextField, InputAdornment, MenuItem, Select, FormControl, InputLabel,
@@ -156,6 +157,7 @@ function StatCard({ label, value, sub, icon }) {
 }
 
 export default function InstitutionProposalsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -305,7 +307,7 @@ export default function InstitutionProposalsPage() {
                 <TableRow>
                   <TableCell colSpan={8} sx={{ textAlign: 'center', py: 6 }}>
                     <DescriptionIcon sx={{ fontSize: 48, color: '#d1d5db', mb: 1, display: 'block', mx: 'auto' }} />
-                    <Typography variant="body2" color="text.secondary">No proposals found</Typography>
+                    <Typography variant="body2" color="text.secondary">{t('common.no_results')}</Typography>
                   </TableCell>
                 </TableRow>
               )}

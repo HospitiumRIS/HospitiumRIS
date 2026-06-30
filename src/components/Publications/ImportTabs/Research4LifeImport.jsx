@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback } from 'react';
 import {
   Box,
@@ -32,6 +33,7 @@ import PublicationPreviewDialog from '../PublicationPreviewDialog';
 import { searchResearch4Life, getResearch4LifePartners } from '../../../services/research4lifeService';
 
 const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPartner, setSelectedPartner] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,7 +51,7 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
     if (!searchQuery.trim()) {
       setSnackbar({
         open: true,
-        message: 'Please enter search terms',
+        message: t('import_tabs.enter_search_terms'),
         severity: 'warning'
       });
       return;
@@ -72,23 +74,22 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
       } else {
         setSnackbar({
           open: true,
-          message: 'No publications found for this search term. Try different keywords or check if your institution has access to Research4Life resources.',
+          message: t('import_tabs.no_publications_search'),
           severity: 'info'
         });
       }
     } catch (err) {
       console.error('Research4Life search failed:', err);
       
-      let errorMessage = 'Search failed';
-      // More specific error messages
+      let errorMessage = t('import_tabs.search_failed');
       if (err.message.includes('No publications found')) {
-        errorMessage = 'No publications found for this search term. Try different keywords.';
+        errorMessage = t('import_tabs.no_publications_keywords');
       } else if (err.message.includes('Research4Life search failed')) {
-        errorMessage = 'Research4Life service is temporarily unavailable. Please try again later.';
+        errorMessage = t('import_tabs.r4l_unavailable');
       } else if (err.message.includes('Failed to fetch')) {
-        errorMessage = 'Network error. Please check your internet connection.';
+        errorMessage = t('errors.network_error');
       } else {
-        errorMessage = `Search failed: ${err.message}`;
+        errorMessage = t('import_tabs.import_failed', { message: err.message });
       }
       
       setSnackbar({
@@ -99,7 +100,7 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, selectedPartner]);
+  }, [searchQuery, selectedPartner, t]);
 
   const handlePreviewResult = useCallback((result) => {
     setPreviewPublication(result);
@@ -123,7 +124,7 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
         const errorData = await response.json();
         setSnackbar({
           open: true,
-          message: `${errorData.message || 'This publication already exists in your library'}`,
+          message: errorData.message || t('import_tabs.duplicate_publication'),
           severity: 'info'
         });
         
@@ -136,7 +137,7 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to import publication');
+        throw new Error(errorData.error || t('import_tabs.failed_import_publication'));
       }
 
       const data = await response.json();
@@ -178,19 +179,19 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
         if (libraryAddFailCount > 0 && libraryAddSuccessCount === 0) {
           setSnackbar({
             open: true,
-            message: `Publication imported but failed to add to ${libraryAddFailCount} folder(s)`,
+            message: t('import_tabs.imported_folder_fail', { count: libraryAddFailCount }),
             severity: 'warning'
           });
         } else if (libraryAddFailCount > 0) {
           setSnackbar({
             open: true,
-            message: `Successfully imported "${publication.title}" and added to ${libraryAddSuccessCount} folder(s), ${libraryAddFailCount} failed`,
+            message: t('import_tabs.imported_partial_folders', { title: publication.title, success: libraryAddSuccessCount, fail: libraryAddFailCount }),
             severity: 'warning'
           });
         } else {
           setSnackbar({
             open: true,
-            message: `Successfully imported "${publication.title}" and added to ${libraryAddSuccessCount} folder(s)`,
+            message: t('import_tabs.imported_all_folders', { title: publication.title, count: libraryAddSuccessCount }),
             severity: 'success'
           });
         }
@@ -198,7 +199,7 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
         // Show success message without library
         setSnackbar({
           open: true,
-          message: `Successfully imported "${publication.title}"`,
+          message: t('import_tabs.imported_success', { title: publication.title }),
           severity: 'success'
         });
       }
@@ -214,13 +215,13 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
       console.error('Import failed:', error);
       setSnackbar({
         open: true,
-        message: `Import failed: ${error.message}`,
+        message: t('import_tabs.import_failed', { message: error.message }),
         severity: 'error'
       });
     } finally {
       setImporting(false);
     }
-  }, [onImportSuccess]);
+  }, [onImportSuccess, t]);
 
   const handleCloseResults = useCallback(() => {
     setResultsDialogOpen(false);
@@ -272,13 +273,11 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
   return (
     <Box sx={{ maxWidth: 800 }}>
       <Typography variant="h6" gutterBottom sx={{ color: color }}>
-        Search Research4Life Resources
+        {t('import_tabs.research4life_search_title')}
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Research4Life provides free or low-cost access to scientific journals and books 
-        to institutions in low- and middle-income countries. Search across multiple 
-        partner databases to find accessible research publications.
+        {t('import_tabs.research4life_search_desc')}
       </Typography>
 
       {/* Research4Life Info Card */}
@@ -287,12 +286,11 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <img src="/R4L.png" alt="Research4Life" style={{ width: 32, height: 32, marginRight: 12 }} />
             <Typography variant="h6" sx={{ color: color }}>
-              Research4Life Partnership
+              {t('import_tabs.research4life_partnership')}
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary">
-            Access to over 200,000 peer-reviewed journals, books, and databases from 
-            leading publishers. Available to institutions in eligible countries.
+            {t('import_tabs.research4life_partnership_desc')}
           </Typography>
         </CardContent>
       </Card>
@@ -302,8 +300,8 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
         <Grid item xs={12} md={8}>
           <TextField
             fullWidth
-            label="Search Query"
-            placeholder="Enter keywords, author names, or terms"
+            label={t('import_tabs.search_query')}
+            placeholder={t('import_tabs.search_placeholder')}
             value={searchQuery}
             onChange={handleQueryChange}
             onKeyPress={handleKeyPress}
@@ -311,20 +309,20 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
             InputProps={{
               startAdornment: <SearchIcon sx={{ mr: 1, color: color }} />
             }}
-            helperText="Use specific terms for better results"
+            helperText={t('import_tabs.search_helper')}
           />
         </Grid>
         <Grid item xs={12} md={4}>
           <FormControl fullWidth>
-            <InputLabel>Partner Database</InputLabel>
+            <InputLabel>{t('import_tabs.partner_database')}</InputLabel>
             <Select
               value={selectedPartner}
               onChange={handlePartnerChange}
-              label="Partner Database"
+              label={t('import_tabs.partner_database')}
               disabled={loading}
             >
               <MenuItem value="">
-                <em>All Partners</em>
+                <em>{t('import_tabs.all_partners')}</em>
               </MenuItem>
               {Object.entries(partners).map(([key, partner]) => (
                 <MenuItem key={key} value={key}>
@@ -360,13 +358,13 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
           }
         }}
       >
-        {loading ? 'Searching Research4Life...' : 'Search Research4Life'}
+        {loading ? t('import_tabs.searching_r4l') : t('import_tabs.search_r4l')}
       </Button>
 
       {/* Partner Information */}
       <Box sx={{ mt: 4 }}>
         <Typography variant="h6" gutterBottom>
-          Available Partner Databases
+          {t('import_tabs.available_partners')}
         </Typography>
         <Grid container spacing={2}>
           {Object.entries(partners).map(([key, partner]) => (
@@ -406,7 +404,7 @@ const Research4LifeImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
         results={searchResults}
         onPreview={handlePreviewResult}
         loading={loading}
-        title="Research4Life Search Results"
+        title={t('import_tabs.search_results_title')}
       />
 
       {/* Publication Preview Dialog */}

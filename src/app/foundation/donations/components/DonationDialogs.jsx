@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogTitle,
@@ -62,6 +63,7 @@ const DonationDialogs = ({
   handleSaveDonation,
   generateReportData
 }) => {
+  const { t } = useTranslation();
   return (
     <>
       {/* Donation Form Dialog */}

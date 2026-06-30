@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -22,27 +23,28 @@ import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar';
 
 const DashboardPage = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
 
   const dashboardCards = [
     {
-      title: 'Profile',
-      description: 'Manage your account settings',
+      title: t('user_menu.profile'),
+      description: t('dashboard.manage_profile'),
       icon: <PersonIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />,
-      action: 'View Profile',
+      action: t('dashboard.view_profile'),
     },
     {
-      title: 'Analytics',
-      description: 'View your research metrics',
+      title: t('global_admin.analytics'),
+      description: t('dashboard.view_metrics'),
       icon: <AnalyticsIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />,
-      action: 'View Analytics',
+      action: t('dashboard.view_analytics'),
     },
     {
-      title: 'Settings',
-      description: 'Configure your preferences',
+      title: t('global_admin.settings'),
+      description: t('dashboard.configure_prefs'),
       icon: <SettingsIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />,
-      action: 'Open Settings',
+      action: t('dashboard.open_settings'),
     },
   ];
 
@@ -77,7 +79,7 @@ const DashboardPage = () => {
                 mb: 2,
               }}
             >
-              Welcome to Your Dashboard
+              {t('common.dashboard')}
             </Typography>
             <Typography
               variant="h6"

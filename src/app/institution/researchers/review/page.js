@@ -53,8 +53,10 @@ import {
   Info as InfoIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 const PerformanceReview = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [researchers, setResearchers] = useState([]);
@@ -186,8 +188,8 @@ const PerformanceReview = () => {
     return (
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
-          title="Performance Review"
-          description="Review researcher performance"
+          title={t('institution.performance_review')}
+          description={t('institution.performance_review_desc')}
           icon={<AssessmentIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
             { label: 'Institution', path: '/institution' },
@@ -209,8 +211,8 @@ const PerformanceReview = () => {
     return (
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
-          title="Performance Review"
-          description="Review researcher performance"
+          title={t('institution.performance_review')}
+          description={t('institution.performance_review_desc')}
           icon={<AssessmentIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
             { label: 'Institution', path: '/institution' },
@@ -447,7 +449,7 @@ const PerformanceReview = () => {
                   }
                 }}
               >
-                Export
+                {t('common.export')}
               </Button>
             </Grid>
           </Grid>
@@ -458,7 +460,7 @@ const PerformanceReview = () => {
           <Paper sx={{ p: 8, textAlign: 'center' }}>
             <AssessmentIcon sx={{ fontSize: 64, color: '#e5e7eb', mb: 2 }} />
             <Typography variant="h6" sx={{ color: '#6b7280', mb: 1 }}>
-              {searchTerm ? 'No researchers found' : 'No researchers to review'}
+              {searchTerm ? t('common.no_results') : 'No researchers to review'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {searchTerm 

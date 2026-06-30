@@ -57,6 +57,7 @@ import {
 import { format } from 'date-fns';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const documentTypes = {
   PROTOCOL: { color: '#8b6cbc', label: 'Protocol' },
@@ -69,6 +70,7 @@ const documentTypes = {
 };
 
 export default function DocumentRepositoryPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [documents, setDocuments] = useState([]);
@@ -224,8 +226,8 @@ export default function DocumentRepositoryPage() {
     <>
       <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
         <PageHeader
-          title="Master Trial File (eTMF)"
-          description="Store version-controlled protocols and regulatory documents"
+          title={t("researcher.documents")}
+          description={t("researcher.documents_desc")}
           icon={<DocIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={breadcrumbs}
           actionButton={

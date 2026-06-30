@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback } from 'react';
 import {
   Box,
@@ -14,6 +15,7 @@ import {
 } from '@mui/icons-material';
 
 const OrcidImport = ({ onImportSuccess, color = '#A6CE39' }) => {
+  const { t } = useTranslation();
   const [orcidId, setOrcidId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -81,7 +83,7 @@ const OrcidImport = ({ onImportSuccess, color = '#A6CE39' }) => {
   return (
     <Box sx={{ maxWidth: 600 }}>
       <Typography variant="h6" gutterBottom>
-        Import from ORCID Profile
+        {t('common.import')} from ORCID Profile
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -125,7 +127,7 @@ const OrcidImport = ({ onImportSuccess, color = '#A6CE39' }) => {
           }
         }}
       >
-        {loading ? 'Importing...' : 'Import from ORCID'}
+        {loading ? t('common.loading') : t('common.import')}
       </Button>
     </Box>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Typography,
@@ -12,10 +13,11 @@ import {
 } from '@mui/material';
 
 const RecentActivities = ({ recentActivities }) => {
+  const { t } = useTranslation();
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 3, p: 3, height: 400 }}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, fontSize: '1.25rem' }}>
-        Recent Activities & Updates
+        {t('foundation_dashboard.recent_activities_updates')}
       </Typography>
       <Stack spacing={2} sx={{ maxHeight: 320, overflow: 'auto', pr: 1 }}>
         {recentActivities.map((activity) => (

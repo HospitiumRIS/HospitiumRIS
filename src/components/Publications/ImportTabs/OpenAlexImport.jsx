@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback } from 'react';
 import {
   Box,
@@ -18,6 +19,7 @@ import PublicationPreviewDialog from '../PublicationPreviewDialog';
 import { importFromOpenAlex } from '../../../services/openAlexService';
 
 const OpenAlexImport = ({ onImportSuccess, color = '#2563eb' }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [keywords, setKeywords] = useState('');
   const [author, setAuthor] = useState('');
@@ -246,7 +248,7 @@ const OpenAlexImport = ({ onImportSuccess, color = '#2563eb' }) => {
   return (
     <Box sx={{ maxWidth: 800 }}>
       <Typography variant="h6" gutterBottom>
-        Search OpenAlex Database
+        {t('common.search')} OpenAlex
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -339,7 +341,7 @@ const OpenAlexImport = ({ onImportSuccess, color = '#2563eb' }) => {
           }
         }}
       >
-        {loading ? 'Searching...' : 'Search OpenAlex'}
+        {loading ? t('common.loading') : t('common.search')}
       </Button>
 
       {/* Search Results Dialog */}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
@@ -37,6 +38,7 @@ import { authenticateAndFetchCollections } from '../../services/zoteroService';
 import { getZoteroSettings, saveZoteroSettings as saveSettings, clearZoteroSettings } from '../../utils/zoteroSettings';
 
 const ResearcherSettings = () => {
+  const { t } = useTranslation();
   const [zoteroSettings, setZoteroSettings] = useState({
     userID: '',
     apiKey: '',
@@ -336,7 +338,7 @@ const ResearcherSettings = () => {
                     onClick={handleTestConnection}
                     disabled={loading || !zoteroSettings.userID.trim() || !zoteroSettings.apiKey.trim()}
                   >
-                    {loading ? 'Testing...' : 'Test Connection'}
+                    {loading ? t('common.loading') : 'Test Connection'}
                   </Button>
                   <Button
                     variant="contained"
@@ -348,7 +350,7 @@ const ResearcherSettings = () => {
                       '&:hover': { bgcolor: '#c42a36' }
                     }}
                   >
-                    Save Settings
+                    {t('common.save')}
                   </Button>
                   {zoteroSettings.isConfigured && (
                     <Button
@@ -357,7 +359,7 @@ const ResearcherSettings = () => {
                       onClick={handleClearSettings}
                       disabled={loading}
                     >
-                      Clear Settings
+                      {t('common.clear')}
                     </Button>
                   )}
                 </Box>

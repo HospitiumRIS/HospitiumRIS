@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -21,6 +22,7 @@ import Image from 'next/image';
 import { useThemeMode } from '../../../components/ThemeProvider';
 
 const RegisterSuccessContent = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -76,12 +78,12 @@ const RegisterSuccessContent = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
             <CheckCircleIcon sx={{ color: theme.palette.success.main, fontSize: 28 }} />
             <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.success.main }}>
-              Registration Complete
+              {t('register_success.title')}
             </Typography>
           </Box>
 
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Your account has been created and is now active!
+            {t('register_success.subtitle')}
           </Typography>
 
           {/* Account Info */}
@@ -132,7 +134,7 @@ const RegisterSuccessContent = () => {
               fullWidth
               sx={{ maxWidth: 300 }}
             >
-              Login to Your Account
+              {t('register_success.login')}
             </Button>
           </Box>
 

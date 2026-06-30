@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import {
     Dialog,
@@ -44,6 +45,7 @@ const LibrarySelectionModal = ({
     publicationCount = 1,
     localFolderAssociations = {}
 }) => {
+  const { t } = useTranslation();
     const [folders, setFolders] = useState([]);
     const [selectedFolder, setSelectedFolder] = useState(null);
     const [selectedFolderData, setSelectedFolderData] = useState(null);
@@ -728,8 +730,8 @@ const LibrarySelectionModal = ({
                             onClick={handleClose}
                             sx={{ color: '#8b6cbc' }}
                         >
-                            Cancel
-                        </Button>
+                            t('common.cancel')
+</Button>
                         <Button
                             variant="contained"
                             onClick={handleSelectFolder}
@@ -755,8 +757,8 @@ const LibrarySelectionModal = ({
                             '&:hover': { bgcolor: '#7b5ca7' }
                         }}
                     >
-                        Close
-                    </Button>
+                        t('common.close')
+</Button>
                 )}
             </DialogActions>
 
@@ -829,8 +831,8 @@ const LibrarySelectionModal = ({
                 </DialogContent>
                 <DialogActions sx={{ px: 3, py: 2 }}>
                     <Button onClick={() => setMoveDialogOpen(false)}>
-                        Cancel
-                    </Button>
+                        t('common.cancel')
+</Button>
                     <Button
                         variant="contained"
                         onClick={handleMovePublication}

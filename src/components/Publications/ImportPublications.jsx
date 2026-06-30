@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback, useMemo, Suspense } from 'react';
 import {
   Box,
@@ -125,6 +126,7 @@ ImportMethodCard.displayName = 'ImportMethodCard';
 
 // Main component
 const ImportPublications = ({ onImport }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   const [activeMethod, setActiveMethod] = useState('pubmed');
@@ -288,7 +290,7 @@ const ImportPublications = ({ onImport }) => {
       <Container maxWidth="lg">
         {/* Import Methods Grid */}
         <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-          Choose Import Method
+          {t('common.import')}
         </Typography>
         
         <Grid container spacing={3} sx={{ mb: 4 }}>

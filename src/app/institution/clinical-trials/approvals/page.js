@@ -36,6 +36,7 @@ import {
   Assessment as AssessmentIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 const mockApplications = [
   { id: 'ETH-2024-001', trial: 'Malaria Vaccine Phase II', pi: 'Dr. Amina Okonkwo', status: 'APPROVED', submittedDate: '2024-01-15', approvalDate: '2024-02-20', expiryDate: '2025-02-20', daysToExpiry: 120 },
@@ -49,25 +50,26 @@ const mockApplications = [
 
 const PURPLE = '#8b6cbc';
 
-const getStatusConfig = (status) => {
-  switch (status) {
-    case 'APPROVED':
-      return { color: '#10b981', icon: <ApprovedIcon sx={{ fontSize: 16 }} />, label: 'Approved' };
-    case 'PENDING':
-      return { color: '#f59e0b', icon: <PendingIcon sx={{ fontSize: 16 }} />, label: 'Pending Review' };
-    case 'EXPIRING':
-      return { color: '#ef4444', icon: <ExpiringIcon sx={{ fontSize: 16 }} />, label: 'Expiring Soon' };
-    case 'REJECTED':
-      return { color: '#9ca3af', icon: <RejectedIcon sx={{ fontSize: 16 }} />, label: 'Rejected' };
-    default:
-      return { color: '#6b7280', icon: null, label: status };
-  }
-};
-
 export default function EthicsRoutingAndApprovalsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+
+  const getStatusConfig = (status) => {
+    switch (status) {
+      case 'APPROVED':
+        return { color: '#10b981', icon: <ApprovedIcon sx={{ fontSize: 16 }} />, label: t('common.approved') };
+      case 'PENDING':
+        return { color: '#f59e0b', icon: <PendingIcon sx={{ fontSize: 16 }} />, label: 'Pending Review' };
+      case 'EXPIRING':
+        return { color: '#ef4444', icon: <ExpiringIcon sx={{ fontSize: 16 }} />, label: 'Expiring Soon' };
+      case 'REJECTED':
+        return { color: '#9ca3af', icon: <RejectedIcon sx={{ fontSize: 16 }} />, label: t('common.rejected') };
+      default:
+        return { color: '#6b7280', icon: null, label: status };
+    }
+  };
 
   const filteredApplications = mockApplications.filter((app) => {
     const matchesSearch =
@@ -305,11 +307,11 @@ export default function EthicsRoutingAndApprovalsPage() {
                   <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Application ID</TableCell>
                   <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Trial Name</TableCell>
                   <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Principal Investigator</TableCell>
-                  <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>{t('common.status')}</TableCell>
                   <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Submitted</TableCell>
                   <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Expiry Date</TableCell>
                   <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Days to Expiry</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Actions</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -389,7 +391,7 @@ export default function EthicsRoutingAndApprovalsPage() {
                         )}
                       </TableCell>
                       <TableCell align="center">
-                        <Tooltip title="View Details">
+                        <Tooltip title={t('common.details')}>
                           <IconButton size="small" sx={{ color: PURPLE }}>
                             <ViewIcon fontSize="small" />
                           </IconButton>

@@ -1,30 +1,33 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { Box, Paper, Typography, Stack, Chip } from '@mui/material';
 import { THEME_COLORS } from './styles/theme';
 
 const NetworkLegend = () => {
+  const { t } = useTranslation();
+
   const legendItems = [
     {
-      label: 'You (Lead Investigator)',
+      label: t('research_network.you_lead'),
       color: THEME_COLORS.lead,
-      description: 'Your position in the network'
+      description: t('research_network.you_lead_desc')
     },
     {
-      label: 'Direct Collaborator',
+      label: t('research_network.direct_collab'),
       color: THEME_COLORS.directCollab,
-      description: 'Researchers you collaborate with directly'
+      description: t('research_network.direct_collab_desc')
     },
     {
-      label: 'Pending Invitation',
+      label: t('research_network.pending_invitations'),
       color: THEME_COLORS.pending,
-      description: 'Manuscript collaborators with pending invitations'
+      description: t('research_network.pending_invite_desc')
     }
   ];
 
   const collaborationTypes = [
-    { label: 'Publications', icon: '📄', description: 'Co-authored publications' },
-    { label: 'Manuscripts', icon: '📝', description: 'Collaborative manuscripts' },
-    { label: 'Proposals', icon: '🔬', description: 'Research proposals' }
+    { label: t('research_network.publications'), icon: '📄', description: t('research_network.co_authored_publications') },
+    { label: t('research_network.manuscripts'), icon: '📝', description: t('research_network.collaborative_manuscripts') },
+    { label: t('research_network.proposals'), icon: '🔬', description: t('research_network.research_proposals') }
   ];
 
   return (
@@ -44,13 +47,12 @@ const NetworkLegend = () => {
       }}
     >
       <Typography variant="subtitle2" fontWeight={700} gutterBottom sx={{ mb: 2 }}>
-        Network Legend
+        {t('research_network.network_legend')}
       </Typography>
 
-      {/* Node Types */}
       <Box sx={{ mb: 2 }}>
         <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-          Node Types
+          {t('research_network.node_types')}
         </Typography>
         <Stack spacing={1}>
           {legendItems.map((item) => (
@@ -79,10 +81,9 @@ const NetworkLegend = () => {
         </Stack>
       </Box>
 
-      {/* Collaboration Sources */}
       <Box>
         <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-          Collaboration Sources
+          {t('research_network.collaboration_sources')}
         </Typography>
         <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ gap: 0.5 }}>
           {collaborationTypes.map((type) => (
@@ -108,10 +109,9 @@ const NetworkLegend = () => {
         </Stack>
       </Box>
 
-      {/* Interaction Hints */}
       <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', display: 'block', lineHeight: 1.4 }}>
-          💡 <strong>Tip:</strong> Click on any node to view detailed researcher information and shared work.
+          💡 <strong>{t('research_network.legend_tip')}</strong>
         </Typography>
       </Box>
     </Paper>

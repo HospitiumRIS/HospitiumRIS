@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback } from 'react';
 import {
   Box,
@@ -29,6 +30,7 @@ import MultiPublicationPreviewDialog from '../MultiPublicationPreviewDialog';
 import { searchAndFormatPubMed } from '../../../services/pubmedService';
 
 const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
+  const { t } = useTranslation();
   const [searchFields, setSearchFields] = useState({
     keywords: '',
     author: '',
@@ -617,7 +619,7 @@ const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
           }
         }}
       >
-        {loading ? 'Searching...' : 'Search PubMed'}
+        {loading ? t('common.loading') : t('common.search')}
       </Button>
 
       {/* Search Results Dialog */}

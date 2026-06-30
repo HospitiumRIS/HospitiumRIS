@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -38,6 +39,7 @@ import { useRouter } from 'next/navigation';
 import GlobalAdminLayout from '../../../components/GlobalAdmin/GlobalAdminLayout';
 
 const SecurityPage = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -152,10 +154,10 @@ const SecurityPage = () => {
                   letterSpacing: '-0.02em'
                 }}
               >
-                Security & Access Control
+                {t('global_admin.security')}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                Monitor system security, user access, and potential threats
+                {t('global_admin.security_subtitle')}
               </Typography>
             </Box>
             <Tooltip title="Refresh data">

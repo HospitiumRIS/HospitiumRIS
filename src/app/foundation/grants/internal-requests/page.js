@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -149,6 +150,7 @@ const stageIdx = (s) => STAGE_ORDER.indexOf(s);
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 const InternalGrantRequestsPage = () => {
+  const { t } = useTranslation();
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);

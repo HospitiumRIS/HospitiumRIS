@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Typography,
@@ -11,6 +12,7 @@ import {
 } from '@mui/material';
 
 const ActiveCampaigns = ({ formatCurrency }) => {
+  const { t } = useTranslation();
   const campaigns = [
     {
       name: 'Medical Research Initiative',
@@ -45,7 +47,7 @@ const ActiveCampaigns = ({ formatCurrency }) => {
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 3, p: 3, height: 500 }}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, fontSize: '1.25rem' }}>
-        Active Campaigns Progress
+        {t('foundation_dashboard.active_campaigns_progress')}
       </Typography>
       <Stack spacing={4}>
         {campaigns.map((campaign, index) => (

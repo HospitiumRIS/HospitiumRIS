@@ -38,6 +38,7 @@ import {
   Assessment as ResultsIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 const PURPLE = '#8b6cbc';
 
@@ -54,26 +55,6 @@ const mockFlags = [
   { id: 'FL-010', trial: 'HIV Prevention Trial', pi: 'Dr. Sarah Ndlovu', category: 'RESULTS', issue: 'Final study report 14 days overdue', severity: 'CRITICAL', dueDate: '2024-06-16', daysOverdue: 14 },
 ];
 
-const getCategoryConfig = (category) => {
-  switch (category) {
-    case 'ETHICS':   return { label: 'Ethics Expiry', icon: <EthicsIcon sx={{ fontSize: 16 }} />, color: '#8b6cbc' };
-    case 'GCP':      return { label: 'GCP Certificate', icon: <GcpIcon sx={{ fontSize: 16 }} />, color: '#3b82f6' };
-    case 'REGISTRY': return { label: 'Registry Update', icon: <RegistryIcon sx={{ fontSize: 16 }} />, color: '#f59e0b' };
-    case 'SAE':      return { label: 'SAE Reporting', icon: <SaeIcon sx={{ fontSize: 16 }} />, color: '#ef4444' };
-    case 'RESULTS':  return { label: 'Results Deadline', icon: <ResultsIcon sx={{ fontSize: 16 }} />, color: '#10b981' };
-    default:         return { label: category, icon: null, color: '#6b7280' };
-  }
-};
-
-const getSeverityConfig = (severity) => {
-  switch (severity) {
-    case 'CRITICAL': return { color: '#ef4444', icon: <CriticalIcon sx={{ fontSize: 16 }} />, label: 'Critical' };
-    case 'WARNING':  return { color: '#f59e0b', icon: <WarningIcon sx={{ fontSize: 16 }} />, label: 'Warning' };
-    case 'INFO':     return { color: '#3b82f6', icon: <InfoIcon sx={{ fontSize: 16 }} />, label: 'Info' };
-    default:         return { color: '#10b981', icon: <OkIcon sx={{ fontSize: 16 }} />, label: 'OK' };
-  }
-};
-
 const statCardSx = {
   p: 2,
   borderRadius: 2,
@@ -89,8 +70,29 @@ const statCardSx = {
 };
 
 export default function ComplianceFlagsDashboardPage() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [tab, setTab] = useState(0);
+
+  const getCategoryConfig = (category) => {
+    switch (category) {
+      case 'ETHICS':   return { label: 'Ethics Expiry', icon: <EthicsIcon sx={{ fontSize: 16 }} />, color: '#8b6cbc' };
+      case 'GCP':      return { label: 'GCP Certificate', icon: <GcpIcon sx={{ fontSize: 16 }} />, color: '#3b82f6' };
+      case 'REGISTRY': return { label: 'Registry Update', icon: <RegistryIcon sx={{ fontSize: 16 }} />, color: '#f59e0b' };
+      case 'SAE':      return { label: 'SAE Reporting', icon: <SaeIcon sx={{ fontSize: 16 }} />, color: '#ef4444' };
+      case 'RESULTS':  return { label: 'Results Deadline', icon: <ResultsIcon sx={{ fontSize: 16 }} />, color: '#10b981' };
+      default:         return { label: category, icon: null, color: '#6b7280' };
+    }
+  };
+
+  const getSeverityConfig = (severity) => {
+    switch (severity) {
+      case 'CRITICAL': return { color: '#ef4444', icon: <CriticalIcon sx={{ fontSize: 16 }} />, label: 'Critical' };
+      case 'WARNING':  return { color: '#f59e0b', icon: <WarningIcon sx={{ fontSize: 16 }} />, label: 'Warning' };
+      case 'INFO':     return { color: '#3b82f6', icon: <InfoIcon sx={{ fontSize: 16 }} />, label: 'Info' };
+      default:         return { color: '#10b981', icon: <OkIcon sx={{ fontSize: 16 }} />, label: 'OK' };
+    }
+  };
 
   const tabCategories = ['ALL', 'ETHICS', 'GCP', 'REGISTRY', 'SAE', 'RESULTS'];
   const activeCategory = tabCategories[tab];

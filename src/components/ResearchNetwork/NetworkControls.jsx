@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { 
   Box, 
@@ -28,6 +29,7 @@ const NetworkControls = ({
   nodes,
   onNodeSelect
 }) => {
+  const { t } = useTranslation();
   return (
     <Paper 
       elevation={2} 
@@ -42,36 +44,36 @@ const NetworkControls = ({
         {/* Statistics Chips */}
         <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ flex: 1 }}>
           <Chip 
-            label={`${stats.totalNodes} Researchers`} 
+            label={`${stats.totalNodes} ${t('research_network.researchers')}`} 
             color="primary" 
             size="small"
             sx={{ fontWeight: 600 }}
           />
           <Chip 
-            label={`${stats.directCollaborators} Direct`} 
+            label={`${stats.directCollaborators} ${t('research_network.direct')}`} 
             color="secondary" 
             size="small"
           />
           {stats.pendingInvitations > 0 && (
             <Chip 
-              label={`${stats.pendingInvitations} Pending`} 
+              label={`${stats.pendingInvitations} ${t('research_network.pending')}`} 
               color="warning" 
               size="small"
             />
           )}
           <Chip 
-            label={`${stats.totalPublications} Publications`} 
+            label={`${stats.totalPublications} ${t('research_network.publications')}`} 
             variant="outlined" 
             size="small"
           />
           <Chip 
-            label={`${stats.totalManuscripts} Manuscripts`} 
+            label={`${stats.totalManuscripts} ${t('research_network.manuscripts')}`} 
             variant="outlined" 
             size="small"
           />
           {stats.totalProposals > 0 && (
             <Chip 
-              label={`${stats.totalProposals} Proposals`} 
+              label={`${stats.totalProposals} ${t('research_network.proposals')}`} 
               variant="outlined" 
               size="small"
             />
@@ -101,7 +103,7 @@ const NetworkControls = ({
           renderInput={(params) => (
             <TextField
               {...params}
-              placeholder="Search researchers..."
+              placeholder={t('research_network.search_researchers')}
               InputProps={{
                 ...params.InputProps,
                 startAdornment: (
@@ -118,31 +120,31 @@ const NetworkControls = ({
 
         {/* Control Buttons */}
         <Stack direction="row" spacing={0.5}>
-          <Tooltip title="Filter">
+          <Tooltip title={t('research_network.filter')}>
             <IconButton size="small" onClick={onFilterClick}>
               <FilterIcon />
             </IconButton>
           </Tooltip>
           
-          <Tooltip title="Zoom In">
+          <Tooltip title={t('research_network.zoom_in')}>
             <IconButton size="small" onClick={onZoomIn}>
               <ZoomInIcon />
             </IconButton>
           </Tooltip>
           
-          <Tooltip title="Zoom Out">
+          <Tooltip title={t('research_network.zoom_out')}>
             <IconButton size="small" onClick={onZoomOut}>
               <ZoomOutIcon />
             </IconButton>
           </Tooltip>
           
-          <Tooltip title="Center View">
+          <Tooltip title={t('research_network.center_view')}>
             <IconButton size="small" onClick={onCenter}>
               <CenterIcon />
             </IconButton>
           </Tooltip>
           
-          <Tooltip title="Export as PNG">
+          <Tooltip title={t('research_network.export_png')}>
             <IconButton size="small" onClick={onExport}>
               <DownloadIcon />
             </IconButton>

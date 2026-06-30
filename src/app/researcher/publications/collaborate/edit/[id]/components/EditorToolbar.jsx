@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
 import {
   Paper,
@@ -139,6 +140,7 @@ export default function EditorToolbar({
   setPaginationEnabled,
   PaginationControls
 }) {
+  const { t } = useTranslation();
   return (
     <Paper sx={{ 
       borderRadius: 0,

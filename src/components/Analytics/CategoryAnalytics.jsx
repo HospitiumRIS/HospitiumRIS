@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo, useState, useMemo } from 'react';
 import {
   Box,
@@ -50,6 +51,7 @@ import {
 } from '@mui/icons-material';
 
 const CategoryAnalytics = memo(({ analyticsData, loading }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [sortBy, setSortBy] = useState('raised');
   const [viewMode, setViewMode] = useState('performance');
@@ -173,20 +175,20 @@ const CategoryAnalytics = memo(({ analyticsData, loading }) => {
               color: theme.palette.text.primary,
               mb: 0.5
             }}>
-              Category Analytics
+              {t('analytics.category_analytics')}
             </Typography>
             <Typography variant="body1" sx={{ 
               color: theme.palette.text.secondary
             }}>
-              Performance analysis across different fundraising categories
+              {t('analytics.category_analytics_desc')}
             </Typography>
           </Box>
         </Stack>
 
         <Alert severity="info" sx={{ borderRadius: 3 }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>No Category Data Available</Typography>
+          <Typography variant="h6" sx={{ mb: 1 }}>{t('analytics.no_category_data_title')}</Typography>
           <Typography>
-            Create campaigns with different categories to see detailed category performance analytics.
+            {t('analytics.no_category_data_desc')}
           </Typography>
         </Alert>
       </Box>
@@ -204,12 +206,12 @@ const CategoryAnalytics = memo(({ analyticsData, loading }) => {
             color: theme.palette.text.primary,
             mb: 0.5
           }}>
-            Category Analytics
+            {t('analytics.category_analytics')}
           </Typography>
           <Typography variant="body1" sx={{ 
             color: theme.palette.text.secondary
           }}>
-            Performance analysis across different fundraising categories
+            {t('analytics.category_analytics_desc')}
           </Typography>
         </Box>
       </Stack>
@@ -226,28 +228,28 @@ const CategoryAnalytics = memo(({ analyticsData, loading }) => {
       }}>
         {[
           {
-            title: 'Total Categories',
+            title: t('analytics.total_categories'),
             value: statistics.totalCategories,
             icon: CategoryIcon,
             color: '#8b6cbc'
           },
           {
-            title: 'Top Performer',
-            value: statistics.topPerformer?.name || 'N/A',
+            title: t('analytics.top_performer'),
+            value: statistics.topPerformer?.name || t('common.not_available'),
             subtitle: statistics.topPerformer ? formatCurrency(statistics.topPerformer.raised) : '',
             icon: StarIcon,
             color: '#ff9800'
           },
           {
-            title: 'Total Raised',
+            title: t('analytics.total_raised'),
             value: formatCurrency(statistics.totalRaised),
             icon: MoneyIcon,
             color: '#4caf50'
           },
           {
-            title: 'Avg Efficiency',
+            title: t('analytics.avg_efficiency'),
             value: formatCurrency(statistics.avgEfficiency),
-            subtitle: 'Per donor',
+            subtitle: t('analytics.per_donor'),
             icon: AssessmentIcon,
             color: '#2196f3'
           }
@@ -306,29 +308,29 @@ const CategoryAnalytics = memo(({ analyticsData, loading }) => {
         alignItems: 'center'
       }}>
         <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Sort By</InputLabel>
+          <InputLabel>{t('analytics.sort_by')}</InputLabel>
           <Select
             value={sortBy}
-            label="Sort By"
+            label={t('analytics.sort_by')}
             onChange={(e) => setSortBy(e.target.value)}
           >
-            <MenuItem value="raised">Total Raised</MenuItem>
-            <MenuItem value="donors">Donor Count</MenuItem>
-            <MenuItem value="campaigns">Campaign Count</MenuItem>
-            <MenuItem value="efficiency">Efficiency</MenuItem>
+            <MenuItem value="raised">{t('analytics.sort_total_raised')}</MenuItem>
+            <MenuItem value="donors">{t('analytics.sort_donor_count')}</MenuItem>
+            <MenuItem value="campaigns">{t('analytics.sort_campaign_count')}</MenuItem>
+            <MenuItem value="efficiency">{t('analytics.sort_efficiency')}</MenuItem>
           </Select>
         </FormControl>
 
         <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>View Mode</InputLabel>
+          <InputLabel>{t('analytics.view_mode')}</InputLabel>
           <Select
             value={viewMode}
-            label="View Mode"
+            label={t('analytics.view_mode')}
             onChange={(e) => setViewMode(e.target.value)}
           >
-            <MenuItem value="performance">Performance</MenuItem>
-            <MenuItem value="comparison">Comparison</MenuItem>
-            <MenuItem value="insights">Insights</MenuItem>
+            <MenuItem value="performance">{t('analytics.view_performance')}</MenuItem>
+            <MenuItem value="comparison">{t('analytics.view_comparison')}</MenuItem>
+            <MenuItem value="insights">{t('analytics.view_insights')}</MenuItem>
           </Select>
         </FormControl>
       </Box>
@@ -346,7 +348,7 @@ const CategoryAnalytics = memo(({ analyticsData, loading }) => {
               <Stack direction="row" alignItems="center" spacing={1}>
                 <BarChartIcon sx={{ color: '#8b6cbc' }} />
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Category Performance
+                  {t('analytics.category_analysis')}
           </Typography>
               </Stack>
             </Box>
@@ -355,12 +357,12 @@ const CategoryAnalytics = memo(({ analyticsData, loading }) => {
               <Table>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: 'rgba(139, 108, 188, 0.05)' }}>
-                    <TableCell sx={{ fontWeight: 600 }}>Category</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600 }}>Raised</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 600 }}>Campaigns</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 600 }}>Donors</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 600 }}>Efficiency</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 600 }}>Success Rate</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{t('common.category')}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>{t('analytics.raised')}</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 600 }}>{t('analytics.campaigns_col')}</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 600 }}>{t('analytics.donors')}</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 600 }}>{t('analytics.efficiency')}</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 600 }}>{t('analytics.success_rate')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -385,7 +387,7 @@ const CategoryAnalytics = memo(({ analyticsData, loading }) => {
                               {category.name}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {category.donationCount || 0} donations
+                              {t('analytics.donations_count', { count: category.donationCount || 0 })}
                             </Typography>
                           </Box>
                         </Box>
@@ -456,7 +458,7 @@ const CategoryAnalytics = memo(({ analyticsData, loading }) => {
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 3 }}>
               <InsightsIcon sx={{ color: '#8b6cbc' }} />
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Category Insights
+                {t('analytics.category_insights')}
               </Typography>
           </Stack>
 
@@ -483,10 +485,10 @@ const CategoryAnalytics = memo(({ analyticsData, loading }) => {
                       secondary={
                         <Box>
                           <Typography variant="body2" color="text.secondary">
-                            {formatCurrency(category.raised)} raised
+                            {t('analytics.raised_amount_text', { amount: formatCurrency(category.raised) })}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {category.donorCount} donors • {category.campaignCount} campaigns
+                            {t('analytics.donors_campaigns', { donors: category.donorCount, campaigns: category.campaignCount })}
                           </Typography>
                         </Box>
                       }
@@ -496,7 +498,7 @@ const CategoryAnalytics = memo(({ analyticsData, loading }) => {
                         {formatPercentage(category.campaignSuccess)}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Success Rate
+                        {t('analytics.success_rate')}
                       </Typography>
                     </Box>
                   </ListItem>
@@ -508,7 +510,7 @@ const CategoryAnalytics = memo(({ analyticsData, loading }) => {
             {categories.length > 5 && (
               <Box sx={{ mt: 2, textAlign: 'center' }}>
                 <Typography variant="caption" color="text.secondary">
-                  Showing top 5 categories
+                  {t('analytics.showing_top_categories')}
                 </Typography>
               </Box>
             )}

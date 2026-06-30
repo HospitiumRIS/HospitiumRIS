@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -62,6 +63,7 @@ import {
 import PageHeader from '@/components/common/PageHeader';
 
 const InstitutionAnalytics = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -181,7 +183,7 @@ const InstitutionAnalytics = () => {
               onClick={handleRefresh} 
               sx={{ ml: 2 }}
             >
-              Try Again
+              {t('common.retry')}
             </Button>
           </Alert>
         </Container>
@@ -203,7 +205,7 @@ const InstitutionAnalytics = () => {
           gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
           actionButton={
             <Stack direction="row" spacing={2}>
-              <Tooltip title="Refresh Data">
+              <Tooltip title={t('common.refresh')}>
                 <IconButton 
                   onClick={handleRefresh}
                   sx={{ 
@@ -214,7 +216,7 @@ const InstitutionAnalytics = () => {
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Export Report">
+              <Tooltip title={t('common.export')}>
                 <IconButton 
                   onClick={handleExport}
                   sx={{
@@ -522,7 +524,7 @@ const InstitutionAnalytics = () => {
                   <Stack spacing={2}>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#4caf50' }} />
-                      <Typography variant="body2">Approved: {analyticsData.overview.approvedProposals}</Typography>
+                      <Typography variant="body2">{t('common.approved')}: {analyticsData.overview.approvedProposals}</Typography>
                     </Stack>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#ff9800' }} />
@@ -534,7 +536,7 @@ const InstitutionAnalytics = () => {
                     </Stack>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#f44336' }} />
-                      <Typography variant="body2">Rejected: {analyticsData.overview.rejectedProposals}</Typography>
+                      <Typography variant="body2">{t('common.rejected')}: {analyticsData.overview.rejectedProposals}</Typography>
                     </Stack>
                   </Stack>
                 </Box>
@@ -800,7 +802,7 @@ const InstitutionAnalytics = () => {
                         Publications
                       </TableCell>
                       <TableCell sx={{ fontWeight: 600, backgroundColor: '#fafafa', borderBottom: '2px solid', borderColor: 'divider', py: 1.5 }}>
-                        Total
+                        {t('common.total')}
                       </TableCell>
                     </TableRow>
                   </TableHead>

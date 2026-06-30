@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -60,6 +61,7 @@ import {
 import PageHeader from '@/components/common/PageHeader';
 
 const GrantAwardsWonPage = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   
   // State management

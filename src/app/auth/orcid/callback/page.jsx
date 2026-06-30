@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
@@ -236,7 +237,7 @@ function OrcidCallbackContent() {
                 color="text.primary"
                 sx={{ textAlign: 'center' }}
               >
-                Processing ORCID Login
+                {t('common.loading')}
               </Typography>
               <Typography 
                 variant="body1" 
@@ -276,7 +277,7 @@ function OrcidCallbackContent() {
             <>
               <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
                 <Typography variant="h6" gutterBottom>
-                  Authentication Failed
+                  {t('common.error')}
                 </Typography>
                 <Typography variant="body2">
                   {error}
@@ -287,7 +288,7 @@ function OrcidCallbackContent() {
                 color="text.secondary"
                 sx={{ textAlign: 'center' }}
               >
-                Redirecting to login page...
+                {t('common.loading')}
               </Typography>
             </>
           )}
@@ -372,6 +373,7 @@ function LoadingFallback() {
 }
 
 export default function OrcidCallback() {
+  const { t } = useTranslation();
   return (
     <Suspense fallback={<LoadingFallback />}>
       <OrcidCallbackContent />

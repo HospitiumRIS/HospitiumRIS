@@ -1,6 +1,7 @@
 'use client';
 
 import React, { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Card,
@@ -19,7 +20,9 @@ const statusStyles = {
 
 const getStatusStyle = (status) => statusStyles[status] || { bg: '#f5f5f5', color: '#616161', border: '#e0e0e0' };
 
-const ActivityList = memo(({ activities, phase, color, onEditActivity }) => (
+const ActivityList = memo(({ activities, phase, color, onEditActivity }) => {
+  const { t } = useTranslation();
+  return (
   <Card sx={{
     borderRadius: 2,
     overflow: 'hidden',
@@ -127,7 +130,8 @@ const ActivityList = memo(({ activities, phase, color, onEditActivity }) => (
       })
     )}
   </Card>
-));
+  );
+});
 
 ActivityList.displayName = 'ActivityList';
 

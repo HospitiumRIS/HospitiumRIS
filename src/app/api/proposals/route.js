@@ -3,17 +3,25 @@ import { PrismaClient } from '@prisma/client';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { logApiActivity, logDatabaseActivity, getRequestMetadata } from '../../../utils/activityLogger.js';
+import { getUserId } from '../../../lib/auth-server.js';
 
 const prisma = new PrismaClient();
 
 export async function GET(request) {
-    const requestMetadata = getRequestMetadata(request);
-    
     try {
-        await logApiActivity('GET', '/api/proposals', 200, requestMetadata);
+        // Get current user
+        const userId = await getUserId(request);
+        let currentUser = null;
         
-        // TODO: Add proper authentication when auth is set up
-        // For now, fetch all proposals
+        if (userId) {
+            currentUser = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { id: true, email: true, orcidId: true, accountType: true, givenName: true, familyName: true, primaryInstitution: true }
+            });
+        }
+        
+        const requestMetadata = getRequestMetadata(request, currentUser);
+        await logApiActivity('GET', '/api/proposals', 200, requestMetadata);
         
         const { searchParams } = new URL(request.url);
         const search = searchParams.get('search') || '';
@@ -22,9 +30,17 @@ export async function GET(request) {
         const offset = parseInt(searchParams.get('offset')) || 0;
 
         console.log('Query params:', { search, status, limit, offset });
+        console.log('Current user:', { orcidId: currentUser?.orcidId, accountType: currentUser?.accountType, institution: currentUser?.primaryInstitution });
 
         // Build where clause
         const where = {};
+        
+        // Filter based on user account type
+        if (currentUser?.accountType === 'RESEARCHER' && currentUser?.orcidId) {
+            // Researchers only see their own proposals
+            where.principalInvestigatorOrcid = currentUser.orcidId;
+        }
+        // Institution admins and global admins see all proposals (no filter)
         
         if (search) {
             where.OR = [

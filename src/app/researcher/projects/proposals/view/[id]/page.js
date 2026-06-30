@@ -73,9 +73,10 @@ import {
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
 import { useAuth } from '@/components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const SectionHeader = ({ icon, title, number }) => (
-  <Box sx={{ 
+  <Box sx={{
     display: 'flex', 
     alignItems: 'center', 
     gap: 2, 

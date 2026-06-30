@@ -53,9 +53,11 @@ import {
   Share as ShareIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../components/AuthProvider';
 
 const ResearcherProfilePage = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const [profile, setProfile] = useState(null);

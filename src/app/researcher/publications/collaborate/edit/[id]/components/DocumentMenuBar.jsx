@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Button,
@@ -100,6 +101,7 @@ export default function DocumentMenuBar({
   setCitationMenuAnchor,
   onTableProperties
 }) {
+  const { t } = useTranslation();
   // Menu dropdown states (only for menus implemented in this component)
   const [fileMenuAnchor, setFileMenuAnchor] = useState(null);
   const [editMenuAnchor, setEditMenuAnchor] = useState(null);
@@ -439,7 +441,7 @@ export default function DocumentMenuBar({
           <ListItemIcon sx={{ minWidth: 36 }}>
             <SaveIcon fontSize="small" sx={{ color: '#666' }} />
           </ListItemIcon>
-          <Box sx={{ flexGrow: 1 }}>Save</Box>
+          <Box sx={{ flexGrow: 1 }}>{t('common.save')}</Box>
           <Typography variant="caption" color="textSecondary" sx={{ ml: 2, fontSize: '0.75rem' }}>
             Ctrl+S
           </Typography>
@@ -457,7 +459,7 @@ export default function DocumentMenuBar({
               }}>⋯</Box>
             </Box>
           </ListItemIcon>
-          <Box sx={{ flexGrow: 1 }}>Save As...</Box>
+          <Box sx={{ flexGrow: 1 }}>{t('common.save')}</Box>
           <Typography variant="caption" color="textSecondary" sx={{ ml: 2, fontSize: '0.75rem' }}>
             Ctrl+Shift+S
           </Typography>
@@ -823,7 +825,7 @@ export default function DocumentMenuBar({
           <ListItemIcon sx={{ minWidth: 36 }}>
             <TableIcon fontSize="small" sx={{ color: '#666' }} />
           </ListItemIcon>
-          <Box sx={{ flexGrow: 1 }}>Insert Table...</Box>
+          <Box sx={{ flexGrow: 1 }}>{t('common.insert_table')}</Box>
           <Typography variant="caption" color="textSecondary" sx={{ ml: 2, fontSize: '0.75rem' }}>
             Ctrl+Shift+T
           </Typography>
@@ -1827,21 +1829,21 @@ export default function DocumentMenuBar({
           <ListItemIcon sx={{ minWidth: 36 }}>
             <TrackChangesIcon fontSize="small" sx={{ color: '#666' }} />
           </ListItemIcon>
-          Track Changes
+          {t('common.track_changes')}
         </MuiMenuItem>
 
         <MuiMenuItem onClick={() => { onReviewAction && onReviewAction('accept-changes'); setReviewMenuAnchor(null); }}>
           <ListItemIcon sx={{ minWidth: 36 }}>
             <AcceptIcon fontSize="small" sx={{ color: '#4caf50' }} />
           </ListItemIcon>
-          Accept Changes
+          {t('common.approve')}
         </MuiMenuItem>
 
         <MuiMenuItem onClick={() => { onReviewAction && onReviewAction('reject-changes'); setReviewMenuAnchor(null); }}>
           <ListItemIcon sx={{ minWidth: 36 }}>
             <RejectIcon fontSize="small" sx={{ color: '#f44336' }} />
           </ListItemIcon>
-          Reject Changes
+          {t('common.reject')}
         </MuiMenuItem>
 
         <Divider sx={{ my: 0.5 }} />

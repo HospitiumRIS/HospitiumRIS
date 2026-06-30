@@ -56,6 +56,7 @@ import {
 import { format, differenceInDays } from 'date-fns';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const severityColors = {
   MILD: '#4caf50',
@@ -72,6 +73,7 @@ const statusColors = {
 };
 
 export default function SafetyCompliancePage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [safetyEvents, setSafetyEvents] = useState([]);
@@ -246,8 +248,8 @@ export default function SafetyCompliancePage() {
     <>
       <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
         <PageHeader
-          title="Safety & Compliance Desk"
-          description="Monitor SAE reporting deadlines and protocol deviation flags"
+          title={t("researcher.safety")}
+          description={t("researcher.safety_desc")}
           icon={<HospitalIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={breadcrumbs}
           actionButton={

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useState } from 'react';
 import { Box, Typography, Paper, IconButton, Chip, LinearProgress } from '@mui/material';
 import {
@@ -19,6 +20,7 @@ export default function FileUploadZone({
   multiple = false,
   required = false
 }) {
+  const { t } = useTranslation();
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -122,10 +124,10 @@ export default function FileUploadZone({
         <label htmlFor={`file-upload-${label}`} style={{ cursor: 'pointer', display: 'block' }}>
           <UploadIcon sx={{ fontSize: 48, color: dragActive ? '#8b6cbc' : '#a0aec0', mb: 1 }} />
           <Typography variant="body1" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.5 }}>
-            {dragActive ? 'Drop files here' : 'Drag & drop files here'}
+            {dragActive ? t('common.drop_files') : t('common.drag_drop')}
           </Typography>
           <Typography variant="body2" sx={{ color: '#718096' }}>
-            or click to browse
+            {t('common.or_browse')}
           </Typography>
           <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#a0aec0' }}>
             Accepted: {acceptedTypes} • Max size: {maxSize / 1048576}MB

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -47,6 +48,7 @@ import { useRouter } from 'next/navigation';
 import GlobalAdminLayout from '../../../components/GlobalAdmin/GlobalAdminLayout';
 
 const LogsPage = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -195,10 +197,10 @@ const LogsPage = () => {
                   letterSpacing: '-0.02em'
                 }}
               >
-                System Activity Logs
+                {t('global_admin.system_logs')}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                Monitor and audit all system activities and user actions
+                {t('logs_page.subtitle')}
               </Typography>
             </Box>
             <Tooltip title="Refresh logs">
@@ -249,7 +251,7 @@ const LogsPage = () => {
             <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Total Logs
+                {t('logs_page.total_logs')}
               </Typography>
               <LogsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
@@ -277,7 +279,7 @@ const LogsPage = () => {
             <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Recent Errors
+                {t('logs_page.recent_errors')}
               </Typography>
               <ErrorIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
@@ -305,7 +307,7 @@ const LogsPage = () => {
             <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                API Calls
+                {t('logs_page.api_calls')}
               </Typography>
               <ApiIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
@@ -333,7 +335,7 @@ const LogsPage = () => {
             <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Active Users
+                {t('global_admin.active_users')}
               </Typography>
               <PersonIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
@@ -341,7 +343,7 @@ const LogsPage = () => {
               {stats.uniqueUsers}
             </Typography>
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Unique accounts
+              {t('logs_page.unique_accounts')}
             </Typography>
           </Paper>
         </Box>

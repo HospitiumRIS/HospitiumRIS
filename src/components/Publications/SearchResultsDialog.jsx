@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import {
     Dialog,
@@ -52,6 +53,7 @@ const SearchResultsDialog = ({
     onLoadMore,
     loadingMore = false
 }) => {
+  const { t } = useTranslation();
     const [filteredResults, setFilteredResults] = useState(results);
     const [filterText, setFilterText] = useState('');
     const [filterMenuAnchor, setFilterMenuAnchor] = useState(null);
@@ -436,8 +438,8 @@ const SearchResultsDialog = ({
                                                     }
                                                 }}
                                             >
-                                                Preview
-                                            </Button>
+                                                t('common.preview')
+</Button>
                                         </TableCell>
                                     </TableRow>
                                     );

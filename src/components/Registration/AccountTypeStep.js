@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import {
   Box,
@@ -19,46 +22,49 @@ import {
 import { useTheme } from '@mui/material/styles';
 
 const AccountTypeStep = ({ accountType, onAccountTypeChange, errors, onNext }) => {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
+
+  const accountTypeOptions = React.useMemo(() => [
+    {
+      value: 'RESEARCHER',
+      label: t('common.researcher'),
+      description: t('auth.account_type_researcher_desc'),
+      icon: <PersonIcon sx={{ fontSize: 24 }} />,
+    },
+    {
+      value: 'RESEARCH_ADMIN',
+      label: t('auth.account_type_research_admin'),
+      description: t('auth.account_type_research_admin_desc'),
+      icon: <BusinessIcon sx={{ fontSize: 24 }} />,
+    },
+    {
+      value: 'FOUNDATION_ADMIN',
+      label: t('common.foundation_admin'),
+      description: t('auth.account_type_foundation_admin_desc'),
+      icon: <FoundationIcon sx={{ fontSize: 24 }} />,
+    },
+    {
+      value: 'OPERATIONS',
+      label: t('auth.account_type_operations'),
+      description: t('auth.account_type_operations_desc'),
+      icon: <OperationsIcon sx={{ fontSize: 24 }} />,
+    },
+  ], [t, i18n.language]);
 
   const handleAccountTypeSelect = (value) => {
     onAccountTypeChange(null, value);
   };
 
-  const accountTypeOptions = [
-    {
-      value: 'RESEARCHER',
-      label: 'Researcher',
-      description: 'Individual researcher or academic',
-      icon: <PersonIcon sx={{ fontSize: 24 }} />,
-    },
-    {
-      value: 'RESEARCH_ADMIN',
-      label: 'Research Administrator',
-      description: 'Manage institutional research activities',
-      icon: <BusinessIcon sx={{ fontSize: 24 }} />,
-    },
-    {
-      value: 'FOUNDATION_ADMIN',
-      label: 'Foundation Administrator',
-      description: 'Manage foundation research programs',
-      icon: <FoundationIcon sx={{ fontSize: 24 }} />,
-    },
-    {
-      value: 'OPERATIONS',
-      label: 'Operations',
-      description: 'Manage operational and administrative tasks',
-      icon: <OperationsIcon sx={{ fontSize: 24 }} />,
-    },
-  ];
+  
 
   return (
     <Box>
       <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600, textAlign: 'center', fontSize: '1.1rem' }}>
-        Choose Your Account Type
+        {t('auth.account_type_title')}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center', fontSize: '0.8rem' }}>
-        Select the type of account that best describes your role
+        {t('auth.account_type_subtitle')}
       </Typography>
       
       <RadioGroup value={accountType} onChange={(e) => handleAccountTypeSelect(e.target.value)}>
@@ -114,4 +120,4 @@ const AccountTypeStep = ({ accountType, onAccountTypeChange, errors, onNext }) =
   );
 };
 
-export default AccountTypeStep; 
+export default AccountTypeStep;

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -45,6 +46,7 @@ import { useRouter } from 'next/navigation';
 import GlobalAdminLayout from '../../../components/GlobalAdmin/GlobalAdminLayout';
 
 const InstitutionsPage = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -311,10 +313,10 @@ const InstitutionsPage = () => {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
             <Box>
               <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, letterSpacing: '-0.02em', color: theme.palette.text.primary }}>
-                Institution Management
+                {t('global_admin.manage_institutions')}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                Manage institution administrators and their access
+                {t('global_admin.institution_admins')}
               </Typography>
             </Box>
             
@@ -325,7 +327,7 @@ const InstitutionsPage = () => {
                 onClick={fetchInstitutions}
                 color="primary"
               >
-                Refresh
+                {t('common.refresh')}
               </Button>
               <Button
                 variant="contained"
@@ -333,7 +335,7 @@ const InstitutionsPage = () => {
                 onClick={handleCreateInstitution}
                 color="primary"
               >
-                Create Institution Admin
+                {t('global_admin.add_institution')}
               </Button>
             </Box>
           </Box>
@@ -369,14 +371,14 @@ const InstitutionsPage = () => {
             <Table>
               <TableHead sx={{ bgcolor: 'primary.main' }}>
                 <TableRow>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Institution</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Type</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Country</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Admin</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Email</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Created</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }} align="right">Actions</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('global_admin.institution_name')}</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.type')}</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('global_admin.country')}</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('admin.users')}</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('auth.email')}</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.status')}</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.date')}</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600 }} align="right">{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

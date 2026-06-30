@@ -60,8 +60,10 @@ import { format, differenceInDays, isAfter, isBefore } from 'date-fns';
 
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const ProjectProgressPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [currentTab, setCurrentTab] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -214,8 +216,8 @@ const ProjectProgressPage = () => {
   return (
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
       <PageHeader
-        title="Project Progress Analytics"
-        description="Monitor project milestones, track progress, and analyze performance across all research initiatives"
+        title={t("researcher.progress_analytics")}
+        description={t("researcher.progress_analytics_desc")}
         icon={<ProgressIcon />}
         breadcrumbs={[
           { label: 'Dashboard', path: '/researcher', icon: <BusinessIcon /> },

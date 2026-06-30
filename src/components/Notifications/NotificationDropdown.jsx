@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
@@ -59,6 +60,7 @@ const NOTIFICATION_TYPES = {
 };
 
 export default function NotificationDropdown({ anchorEl, open, onClose }) {
+  const { t } = useTranslation();
   const router = useRouter();
   const {
     notifications,
@@ -327,7 +329,7 @@ export default function NotificationDropdown({ anchorEl, open, onClose }) {
                 flex: 1
               }}
             >
-              {isResponding ? 'Processing...' : 'Accept'}
+              {isResponding ? t('common.loading') : t('common.approve')}
             </Button>
             <Button
               variant="outlined"
@@ -347,8 +349,8 @@ export default function NotificationDropdown({ anchorEl, open, onClose }) {
                 flex: 1
               }}
             >
-              Decline
-            </Button>
+              {t('common.reject')}
+</Button>
           </Box>
         )}
 
@@ -458,7 +460,7 @@ export default function NotificationDropdown({ anchorEl, open, onClose }) {
                   fontSize: '0.8rem'
                 }}
               >
-                Mark all as read
+                {t('common.mark_all_read')}
               </Button>
             )}
           </Box>

@@ -32,6 +32,7 @@ import {
   OpenInNew as ExternalIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 const PURPLE = '#8b6cbc';
 
@@ -45,25 +46,6 @@ const mockRegistrations = [
   { id: 'TRN-007', trial: 'Maternal Health Study', pi: 'Dr. Fatima Diop', trn: 'NCT06234567', registry: 'ClinicalTrials.gov', submittedDate: '2023-10-05', updateDeadline: '2024-07-05', lastUpdated: '2024-03-01', status: 'UPDATE_DUE', completeness: 74 },
 ];
 
-const getStatusConfig = (status) => {
-  switch (status) {
-    case 'UP_TO_DATE':     return { color: '#10b981', icon: <UpToDateIcon sx={{ fontSize: 16 }} />,  label: 'Up to Date' };
-    case 'UPDATE_DUE':     return { color: '#f59e0b', icon: <PendingIcon  sx={{ fontSize: 16 }} />,  label: 'Update Due' };
-    case 'OVERDUE':        return { color: '#ef4444', icon: <OverdueIcon  sx={{ fontSize: 16 }} />,  label: 'Overdue' };
-    case 'NOT_REGISTERED': return { color: '#9ca3af', icon: <OverdueIcon  sx={{ fontSize: 16 }} />,  label: 'Not Registered' };
-    default:               return { color: '#6b7280', icon: null, label: status };
-  }
-};
-
-const getRegistryColor = (registry) => {
-  switch (registry) {
-    case 'PACTR':             return '#8b6cbc';
-    case 'ClinicalTrials.gov': return '#3b82f6';
-    case 'ISRCTN':            return '#10b981';
-    default:                  return '#6b7280';
-  }
-};
-
 const statCardSx = {
   p: 2, borderRadius: 2, bgcolor: PURPLE,
   boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
@@ -72,9 +54,29 @@ const statCardSx = {
 };
 
 export default function RegistryOversightPage() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm]     = useState('');
   const [registryFilter, setRegistryFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+
+  const getStatusConfig = (status) => {
+    switch (status) {
+      case 'UP_TO_DATE':     return { color: '#10b981', icon: <UpToDateIcon sx={{ fontSize: 16 }} />,  label: 'Up to Date' };
+      case 'UPDATE_DUE':     return { color: '#f59e0b', icon: <PendingIcon  sx={{ fontSize: 16 }} />,  label: 'Update Due' };
+      case 'OVERDUE':        return { color: '#ef4444', icon: <OverdueIcon  sx={{ fontSize: 16 }} />,  label: 'Overdue' };
+      case 'NOT_REGISTERED': return { color: '#9ca3af', icon: <OverdueIcon  sx={{ fontSize: 16 }} />,  label: t('common.not_registered') };
+      default:               return { color: '#6b7280', icon: null, label: status };
+    }
+  };
+
+  const getRegistryColor = (registry) => {
+    switch (registry) {
+      case 'PACTR':             return '#8b6cbc';
+      case 'ClinicalTrials.gov': return '#3b82f6';
+      case 'ISRCTN':            return '#10b981';
+      default:                  return '#6b7280';
+    }
+  };
 
   const filtered = mockRegistrations.filter((r) => {
     const matchesSearch =

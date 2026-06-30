@@ -160,6 +160,7 @@ import EditCitationDialog from './components/EditCitationDialog';
 import CommandPalette from './components/CommandPalette';
 import PaginationControls from './components/PaginationControls';
 // TODO (Phase 5): import { useManuscriptSync } from './hooks/useManuscriptSync'; // Enable when backend /api/manuscripts/[id]/sync is implemented
+import { useTranslation } from 'react-i18next';
 import { 
   formatCitationAPA, 
   formatCitationMLA, 
@@ -236,6 +237,7 @@ const extensions = [
 
 // Professional Heading Structure Display Component with Tree View
 const HeadingStructureDisplay = ({ headings, onNavigate, activeHeadingId }) => {
+  const { t } = useTranslation();
   // Group headings by their hierarchy
   const getIndentLevel = (level) => level - 1;
   

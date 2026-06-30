@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -70,6 +71,7 @@ import PageHeader from '@/components/common/PageHeader';
 import { useAuth } from '@/components/AuthProvider';
 
 const InstitutionDashboard = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
@@ -835,7 +837,7 @@ const InstitutionDashboard = () => {
                       fontSize: '0.75rem'
                     }}
                   >
-                    All
+                    {t('common.all')}
                   </Button>
                   <Button
                     onClick={() => setProposalViewType('active')}
@@ -1042,9 +1044,9 @@ const InstitutionDashboard = () => {
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 600 }}>Proposal</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>{t('common.status')}</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>{t('common.date')}</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>{t('common.actions')}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -1078,12 +1080,12 @@ const InstitutionDashboard = () => {
                           </TableCell>
                           <TableCell>
                             <Stack direction="row" spacing={1}>
-                              <Tooltip title="View Details">
+                              <Tooltip title={t('common.details')}>
                                 <IconButton size="small" sx={{ color: '#8b6cbc' }}>
                                   <ViewIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title="Review">
+                              <Tooltip title={t('common.review')}>
                                 <IconButton size="small" sx={{ color: '#4caf50' }}>
                                   <ReviewIcon fontSize="small" />
                                 </IconButton>
@@ -1099,7 +1101,7 @@ const InstitutionDashboard = () => {
                 <Box sx={{ textAlign: 'center', py: 6 }}>
                   <ReviewIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 2 }} />
                   <Typography variant="body1" sx={{ color: '#9ca3af', mb: 1, fontWeight: 500 }}>
-                    No proposals awaiting review
+                    {t('common.no_data')}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     All proposals have been reviewed or there are no submitted proposals at this time.
@@ -1192,7 +1194,7 @@ const InstitutionDashboard = () => {
                         fontSize: '0.75rem'
                       }}
                     >
-                      All
+                      {t('common.all')}
                     </Button>
                     <Button
                       onClick={() => setManuscriptStatusFilter('draft')}
@@ -1209,7 +1211,7 @@ const InstitutionDashboard = () => {
                         fontSize: '0.75rem'
                       }}
                     >
-                      Draft
+                      {t('common.draft')}
                     </Button>
                     <Button
                       onClick={() => setManuscriptStatusFilter('under_review')}
@@ -1226,7 +1228,7 @@ const InstitutionDashboard = () => {
                         fontSize: '0.75rem'
                       }}
                     >
-                      Review
+                      {t('common.review')}
                     </Button>
                     <Button
                       onClick={() => setManuscriptStatusFilter('published')}
@@ -1243,7 +1245,7 @@ const InstitutionDashboard = () => {
                         fontSize: '0.75rem'
                       }}
                     >
-                      Published
+                      {t('common.published')}
                     </Button>
                   </ButtonGroup>
                 </Stack>
@@ -1329,7 +1331,7 @@ const InstitutionDashboard = () => {
                           <TableRow>
                             <TableCell colSpan={4} sx={{ py: 4, textAlign: 'center' }}>
                               <Typography variant="body2" color="text.secondary">
-                                No manuscripts found
+                                {t('common.no_results')}
                               </Typography>
                             </TableCell>
                           </TableRow>
@@ -1616,7 +1618,7 @@ const InstitutionDashboard = () => {
                               onClick={() => setResearcherSearchTerm('')}
                               sx={{ mt: 1, color: '#8b6cbc', textTransform: 'none' }}
                             >
-                              Clear search
+                              {t('common.clear')}
                             </Button>
                           )}
                         </TableCell>
@@ -1709,8 +1711,8 @@ const InstitutionDashboard = () => {
                       }
                     }}
                   >
-                    {showAllResearchers 
-                      ? 'Show Less' 
+                    {showAllResearchers
+                      ? t('common.show_less')
                       : `View All ${filteredResearchers.length} Researchers`
                     }
                   </Button>
@@ -1925,7 +1927,7 @@ const InstitutionDashboard = () => {
                     <SearchIcon sx={{ fontSize: 32, color: '#8b6cbc' }} />
                   </Box>
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748', mb: 1 }}>
-                    No activities found
+                    {t('common.no_results')}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {activitySearchTerm 
@@ -1939,7 +1941,7 @@ const InstitutionDashboard = () => {
                       onClick={() => setActivitySearchTerm('')}
                       sx={{ mt: 2, color: '#8b6cbc' }}
                     >
-                      Clear search
+                      {t('common.clear')}
                     </Button>
                   )}
                 </Box>
@@ -2100,8 +2102,8 @@ const InstitutionDashboard = () => {
                       }
                     }}
                   >
-                    {showAllActivities 
-                      ? 'Show Less' 
+                    {showAllActivities
+                      ? t('common.show_less')
                       : `View All ${filteredActivities.length} Activities`
                     }
                   </Button>

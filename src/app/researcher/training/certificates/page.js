@@ -26,8 +26,10 @@ import {
 import { useTheme } from '@mui/material/styles';
 import PageHeader from '@/components/common/PageHeader';
 import { Home as HomeIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 export default function CertificatesPage() {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [certificates, setCertificates] = useState([]);
@@ -95,8 +97,8 @@ export default function CertificatesPage() {
   return (
     <>
       <PageHeader
-        title="My Certificates"
-        description="View and download your training certificates"
+        title={t("researcher.my_certificates")}
+        description={t("researcher.my_certificates_desc")}
         icon={<CertificateIcon sx={{ fontSize: 40 }} />}
         breadcrumbs={[
           { label: 'Home', path: '/researcher', icon: <HomeIcon /> },

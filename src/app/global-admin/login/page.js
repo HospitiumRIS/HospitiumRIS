@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -23,6 +24,7 @@ import { useAuth } from '../../../components/AuthProvider';
 import Image from 'next/image';
 
 const GlobalAdminLoginPage = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
   const { login } = useAuth();
@@ -121,13 +123,13 @@ const GlobalAdminLoginPage = () => {
                 mb: 1
               }}
             >
-              Global Admin Portal
+              {t('global_admin.login_title')}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
             >
-              System Administration Access
+              {t('global_admin.system_administration')}
             </Typography>
           </Box>
 
@@ -142,7 +144,7 @@ const GlobalAdminLoginPage = () => {
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Email Address"
+              label={t('auth.email')}
               name="email"
               type="email"
               value={formData.email}
@@ -155,7 +157,7 @@ const GlobalAdminLoginPage = () => {
 
             <TextField
               fullWidth
-              label="Password"
+              label={t('auth.password')}
               name="password"
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
@@ -190,7 +192,7 @@ const GlobalAdminLoginPage = () => {
                 fontWeight: 600
               }}
             >
-              {loading ? 'Signing In...' : 'Sign In to Admin Portal'}
+              {loading ? t('common.loading') : t('global_admin.login_btn')}
             </Button>
           </form>
 

@@ -19,16 +19,18 @@ import {
   Phone as PhoneIcon,
   Language as WebIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 const Footer = () => {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   const quickLinks = [
-    { name: 'About Us', href: '/about' },
-    { name: 'Features', href: '#' },
-    { name: 'Documentation', href: '/docs/index.html' },
-    { name: 'Frequently Asked Questions', href: '/faq' },
-    { name: 'HospitiumRIS Brandbook', href: '/handbook/hospitiumris-brandbook.pdf', target: '_blank' },
+    { name: t('footer.about_us'), href: '/about' },
+    { name: t('footer.features'), href: '#' },
+    { name: t('footer.documentation'), href: '/docs/index.html' },
+    { name: t('footer.faq'), href: '/faq' },
+    { name: t('footer.brandbook'), href: '/handbook/hospitiumris-brandbook.pdf', target: '_blank' },
   ];
 
 
@@ -81,10 +83,7 @@ const Footer = () => {
                 lineHeight: 1.6,
               }}
             >
-            Empowering Research
- Excellence Through
- Integrated Digital
- Infrastructure
+            {t('footer.description')}
             </Typography>
 
             {/* Social Links */}
@@ -119,7 +118,7 @@ const Footer = () => {
                 color: 'white',
               }}
             >
-              Quick Links
+              {t('footer.quick_links')}
             </Typography>
             <Box>
               {quickLinks.map((link) => (
@@ -158,7 +157,7 @@ const Footer = () => {
                 color: 'white',
               }}
             >
-              Contact Us
+              {t('footer.contact')}
             </Typography>
             
             {/* Address */}
@@ -172,9 +171,12 @@ const Footer = () => {
                   fontSize: '0.85rem',
                 }}
               >
-                Chiromo Campus, University of Nairobi,<br />
-                Gecaga Institute Bldg.<br />
-                P.O Box 21553-00100, Nairobi-Kenya
+                {t('footer.address_text').split('\n').map((line, i, arr) => (
+                  <React.Fragment key={i}>
+                    {line}
+                    {i < arr.length - 1 && <br />}
+                  </React.Fragment>
+                ))}
               </Typography>
             </Box>
 
@@ -272,7 +274,7 @@ const Footer = () => {
               mb: { xs: 2, sm: 0 },
             }}
           >
-            © 2025 HospitiumRIS. All rights reserved.
+            {t('footer.copyright', { year: new Date().getFullYear() })}
           </Typography>
           
           <Box sx={{ display: 'flex', gap: 4 }}>
@@ -288,7 +290,7 @@ const Footer = () => {
                 },
               }}
             >
-              Sitemap
+              {t('footer.sitemap')}
             </Link>
             <Link
               href="#"
@@ -302,7 +304,7 @@ const Footer = () => {
                 },
               }}
             >
-              Accessibility
+              {t('footer.accessibility')}
             </Link>
             <Link
               href="#"
@@ -316,7 +318,7 @@ const Footer = () => {
                 },
               }}
             >
-              Cookie Settings
+              {t('footer.cookie_settings')}
             </Link>
           </Box>
         </Box>

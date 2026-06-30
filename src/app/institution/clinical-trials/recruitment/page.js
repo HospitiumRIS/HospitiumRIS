@@ -22,6 +22,7 @@ import {
   Tooltip as ReTooltip, Legend, ResponsiveContainer, Cell,
 } from 'recharts';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 const PURPLE = '#8b6cbc';
 
@@ -55,22 +56,6 @@ const chartData = mockTrials.map(t => ({
   pct: Math.round((t.enrolled / t.target) * 100),
 }));
 
-const getTrialStatus = (enrolled, target) => {
-  const pct = (enrolled / target) * 100;
-  if (pct >= 80)  return { color: '#10b981', icon: <OnTrackIcon sx={{ fontSize: 16 }} />, label: 'On Track' };
-  if (pct >= 50)  return { color: '#f59e0b', icon: <BelowIcon   sx={{ fontSize: 16 }} />, label: 'Below Target' };
-  return              { color: '#ef4444', icon: <CriticalIcon sx={{ fontSize: 16 }} />, label: 'Critical' };
-};
-
-const getSiteStatus = (status) => {
-  switch (status) {
-    case 'ON_TRACK': return { color: '#10b981', label: 'On Track' };
-    case 'BELOW':    return { color: '#f59e0b', label: 'Below' };
-    case 'CRITICAL': return { color: '#ef4444', label: 'Critical' };
-    default:         return { color: '#6b7280', label: status };
-  }
-};
-
 const statCardSx = {
   p: 2, borderRadius: 2, bgcolor: PURPLE,
   boxShadow: '0 2px 8px rgba(139,108,188,0.2)',
@@ -79,8 +64,25 @@ const statCardSx = {
 };
 
 export default function RecruitmentPerformancePage() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [tab, setTab] = useState(0);
+
+  const getTrialStatus = (enrolled, target) => {
+    const pct = (enrolled / target) * 100;
+    if (pct >= 80)  return { color: '#10b981', icon: <OnTrackIcon sx={{ fontSize: 16 }} />, label: 'On Track' };
+    if (pct >= 50)  return { color: '#f59e0b', icon: <BelowIcon   sx={{ fontSize: 16 }} />, label: 'Below Target' };
+    return              { color: '#ef4444', icon: <CriticalIcon sx={{ fontSize: 16 }} />, label: 'Critical' };
+  };
+
+  const getSiteStatus = (status) => {
+    switch (status) {
+      case 'ON_TRACK': return { color: '#10b981', label: 'On Track' };
+      case 'BELOW':    return { color: '#f59e0b', label: 'Below' };
+      case 'CRITICAL': return { color: '#ef4444', label: 'Critical' };
+      default:         return { color: '#6b7280', label: status };
+    }
+  };
 
   const totalEnrolled = mockTrials.reduce((s, t) => s + t.enrolled, 0);
   const totalTarget   = mockTrials.reduce((s, t) => s + t.target, 0);

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -69,6 +70,7 @@ import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
 
 const ProposalReviewPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -501,7 +503,7 @@ const ProposalReviewPage = () => {
               onClick={loadProposals} 
               sx={{ ml: 2 }}
             >
-              Try Again
+              {t('common.retry')}
             </Button>
           </Alert>
         </Container>
@@ -536,7 +538,7 @@ const ProposalReviewPage = () => {
               border: '1px solid rgba(255,255,255,0.1)'
             }}
           >
-            Refresh
+            {t('common.refresh')}
           </Button>
         }
       />
@@ -627,7 +629,7 @@ const ProposalReviewPage = () => {
             <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Approved
+                {t('common.approved')}
               </Typography>
               <ApproveIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
@@ -709,7 +711,7 @@ const ProposalReviewPage = () => {
                     }
                   }}
                 >
-                  <MenuItem value="all">All Statuses</MenuItem>
+                  <MenuItem value="all">{t('common.all')}</MenuItem>
                   <MenuItem value="SUBMITTED">Submitted</MenuItem>
                   <MenuItem value="UNDER_REVIEW">Under Review</MenuItem>
                   <MenuItem value="APPROVED">Approved</MenuItem>
@@ -766,7 +768,7 @@ const ProposalReviewPage = () => {
                 }
               }}
             >
-              Clear All
+              {t('common.clear')}
             </Button>
           </Box>
         </Paper>
@@ -835,9 +837,9 @@ const ProposalReviewPage = () => {
                     <TableCell width="15%">Principal Investigator</TableCell>
                     <TableCell width="12%">Department</TableCell>
                     <TableCell width="10%" align="right">Budget</TableCell>
-                    <TableCell width="10%">Status</TableCell>
+                    <TableCell width="10%">{t('common.status')}</TableCell>
                     <TableCell width="10%">Submitted / Review Time</TableCell>
-                    <TableCell width="13%" align="center">Actions</TableCell>
+                    <TableCell width="13%" align="center">{t('common.actions')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -977,7 +979,7 @@ const ProposalReviewPage = () => {
                       </TableCell>
                       <TableCell align="center">
                         <Stack direction="row" spacing={0.5} justifyContent="center">
-                          <Tooltip title="View Details" arrow>
+                          <Tooltip title={t('common.view')} arrow>
                             <IconButton 
                               size="small" 
                               onClick={() => handleViewDetails(proposal)}
@@ -1004,7 +1006,7 @@ const ProposalReviewPage = () => {
             {filteredProposals.length === 0 && (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <Typography variant="body1" color="text.secondary">
-                  No proposals found matching your criteria.
+                  {t('common.no_results')}
                 </Typography>
               </Box>
             )}
@@ -1036,8 +1038,8 @@ const ProposalReviewPage = () => {
                   label="Decision"
                   onChange={(e) => setReviewForm({...reviewForm, decision: e.target.value})}
                 >
-                  <MenuItem value="approved">Approve</MenuItem>
-                  <MenuItem value="rejected">Reject</MenuItem>
+                  <MenuItem value="approved">{t('common.approve')}</MenuItem>
+                  <MenuItem value="rejected">{t('common.reject')}</MenuItem>
                   <MenuItem value="revision_required">Revision Required</MenuItem>
                 </Select>
               </FormControl>
@@ -1101,7 +1103,7 @@ const ProposalReviewPage = () => {
               {reviewForm.decision && (
                 <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Review Summary
+                    {t('common.summary')}
                   </Typography>
                   <Typography variant="body2">
                     <strong>Decision:</strong> {reviewForm.decision.replace('_', ' ').toUpperCase()}
@@ -1118,7 +1120,7 @@ const ProposalReviewPage = () => {
           </DialogContent>
           <DialogActions sx={{ p: 3 }}>
             <Button onClick={() => setReviewDialog(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button 
               variant="contained" 
@@ -1129,7 +1131,7 @@ const ProposalReviewPage = () => {
                 '&:hover': { bgcolor: '#7b5cac' }
               }}
             >
-              {submittingReview ? 'Submitting...' : 'Submit Review'}
+              {submittingReview ? t('common.submitting') : t('common.submit')}
             </Button>
           </DialogActions>
         </Dialog>

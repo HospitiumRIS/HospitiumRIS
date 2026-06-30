@@ -59,13 +59,17 @@ import {
   Close as CloseIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
-  Send as SendIcon
+  Send as SendIcon,
+  EmojiEvents as AwardIcon,
+  AttachMoney as MoneyIcon
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '../../../../../components/common/PageHeader';
 import ProposalReviewStatus from '../../../../../components/Proposals/ProposalReviewStatus';
 
 const ProposalsListPage = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   
   // State management
@@ -81,6 +85,13 @@ const ProposalsListPage = () => {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [revisionResponse, setRevisionResponse] = useState('');
   const [submittingRevision, setSubmittingRevision] = useState(false);
+
+  // Approve & Award Grant dialog state
+  const [approveGrantDialogOpen, setApproveGrantDialogOpen] = useState(false);
+  const [awardAmount, setAwardAmount] = useState('');
+  const [approveNotes, setApproveNotes] = useState('');
+  const [submittingApproval, setSubmittingApproval] = useState(false);
+  const [approvalSuccess, setApprovalSuccess] = useState(false);
   
   // Pagination state
   const [page, setPage] = useState(0);
@@ -246,6 +257,58 @@ const ProposalsListPage = () => {
     }
   };
 
+  const handleOpenApproveGrantDialog = (proposal) => {
+    setAwardAmount(proposal.totalBudgetAmount ? String(proposal.totalBudgetAmount) : '450000');
+    setApproveNotes('');
+    setApprovalSuccess(false);
+    setApproveGrantDialogOpen(true);
+    setSelectedProposal(proposal);
+  };
+
+  const handleCloseApproveGrantDialog = () => {
+    setApproveGrantDialogOpen(false);
+    setSelectedProposal(null);
+    setAwardAmount('');
+    setApproveNotes('');
+    setApprovalSuccess(false);
+  };
+
+  const handleApproveAndAward = async () => {
+    if (!awardAmount || isNaN(parseFloat(awardAmount)) || parseFloat(awardAmount) <= 0) {
+      alert('Please enter a valid award amount.');
+      return;
+    }
+
+    try {
+      setSubmittingApproval(true);
+      const response = await fetch(`/api/proposals/${selectedProposal.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'APPROVED',
+          awardedAmount: parseFloat(awardAmount),
+          notes: approveNotes || `Proposal approved. Grant awarded: $${parseFloat(awardAmount).toLocaleString()}`
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setApprovalSuccess(true);
+        fetchProposals();
+        setTimeout(() => {
+          handleCloseApproveGrantDialog();
+        }, 1800);
+      } else {
+        alert(result.error || 'Failed to approve proposal.');
+      }
+    } catch (error) {
+      console.error('Error approving proposal:', error);
+      alert('Failed to approve proposal. Please try again.');
+    } finally {
+      setSubmittingApproval(false);
+    }
+  };
+
   const handleOpenStatusDialog = (proposal) => {
     setSelectedProposal(proposal);
     setStatusDialogOpen(true);
@@ -330,8 +393,8 @@ const ProposalsListPage = () => {
     <>
        <Box sx={{ width: '100%',mt:8, mb: 0 }}>
         <PageHeader
-          title="Research Proposals"
-          description="Manage and track your research project proposals"
+          title={t('researcher.proposals')}
+          description={t('researcher.proposals_desc')}
           icon={<ProposalIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
             { label: 'Dashboard', href: '/researcher' },
@@ -1001,12 +1064,140 @@ const ProposalsListPage = () => {
                 Edit Proposal
               </MenuItem>,
               <Divider key="divider2" />,
+              <MenuItem key="approve" onClick={() => handleOpenApproveGrantDialog(selectedProposal)} sx={{ color: '#10b981' }}>
+                <AwardIcon fontSize="small" sx={{ mr: 1 }} />
+                Approve & Award Grant
+              </MenuItem>,
+              <Divider key="divider3" />,
               <MenuItem key="delete" onClick={handleMenuClose} sx={{ color: '#f44336' }}>
                 <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
                 Delete Proposal
               </MenuItem>
             ]}
         </Menu>
+
+        {/* Approve & Award Grant Dialog */}
+        <Dialog
+          open={approveGrantDialogOpen}
+          onClose={handleCloseApproveGrantDialog}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+        >
+          <DialogTitle sx={{
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            py: 2.5
+          }}>
+            <AwardIcon sx={{ fontSize: 28 }} />
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Approve & Award Grant</Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.8rem' }}>Set proposal status to Approved and record the awarded grant amount</Typography>
+            </Box>
+            <Box sx={{ flexGrow: 1 }} />
+            <IconButton onClick={handleCloseApproveGrantDialog} sx={{ color: 'white' }} size="small">
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+
+          <DialogContent sx={{ p: 3 }}>
+            {approvalSuccess ? (
+              <Box sx={{ textAlign: 'center', py: 3 }}>
+                <CheckCircleIcon sx={{ fontSize: 64, color: '#10b981', mb: 2 }} />
+                <Typography variant="h6" sx={{ fontWeight: 700, color: '#065f46', mb: 1 }}>Proposal Approved!</Typography>
+                <Typography variant="body2" sx={{ color: '#6b7280' }}>
+                  Grant of <strong>${parseFloat(awardAmount || 0).toLocaleString()}</strong> has been awarded.
+                </Typography>
+              </Box>
+            ) : (
+              <Stack spacing={3} sx={{ mt: 1 }}>
+                {selectedProposal && (
+                  <Box sx={{ p: 2, bgcolor: '#f0fdf4', border: '1px solid #a7f3d0', borderRadius: 2 }}>
+                    <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', mb: 0.5 }}>Proposal</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#065f46' }}>{selectedProposal.title}</Typography>
+                    <Typography variant="caption" sx={{ color: '#6b7280' }}>PI: {selectedProposal.author}</Typography>
+                  </Box>
+                )}
+
+                <TextField
+                  label="Awarded Grant Amount (USD)"
+                  value={awardAmount}
+                  onChange={(e) => setAwardAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+                  type="number"
+                  fullWidth
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <MoneyIcon sx={{ color: '#10b981' }} />
+                      </InputAdornment>
+                    )
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      '&.Mui-focused fieldset': { borderColor: '#10b981' }
+                    },
+                    '& label.Mui-focused': { color: '#10b981' }
+                  }}
+                  helperText={awardAmount && !isNaN(parseFloat(awardAmount)) ? `$${parseFloat(awardAmount).toLocaleString()} USD` : 'Enter the awarded grant amount'}
+                />
+
+                <TextField
+                  label="Approval Notes (Optional)"
+                  value={approveNotes}
+                  onChange={(e) => setApproveNotes(e.target.value)}
+                  multiline
+                  rows={3}
+                  fullWidth
+                  placeholder="Add any notes about the grant approval..."
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      '&.Mui-focused fieldset': { borderColor: '#10b981' }
+                    },
+                    '& label.Mui-focused': { color: '#10b981' }
+                  }}
+                />
+
+                <Alert severity="info" sx={{ borderRadius: 2 }}>
+                  This will set the proposal status to <strong>Approved</strong> and record the awarded amount. A review record will be created automatically.
+                </Alert>
+              </Stack>
+            )}
+          </DialogContent>
+
+          {!approvalSuccess && (
+            <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+              <Button
+                onClick={handleCloseApproveGrantDialog}
+                variant="outlined"
+                sx={{ borderRadius: 2, borderColor: '#d1d5db', color: '#6b7280', '&:hover': { borderColor: '#9ca3af' } }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleApproveAndAward}
+                variant="contained"
+                startIcon={submittingApproval ? null : <AwardIcon />}
+                disabled={submittingApproval || !awardAmount || isNaN(parseFloat(awardAmount)) || parseFloat(awardAmount) <= 0}
+                sx={{
+                  borderRadius: 2,
+                  bgcolor: '#10b981',
+                  fontWeight: 600,
+                  px: 3,
+                  '&:hover': { bgcolor: '#059669' },
+                  '&.Mui-disabled': { bgcolor: '#d1fae5', color: '#a7f3d0' }
+                }}
+              >
+                {submittingApproval ? 'Approving...' : 'Approve & Award Grant'}
+              </Button>
+            </DialogActions>
+          )}
+        </Dialog>
 
         {/* Status Details Dialog */}
         <Dialog

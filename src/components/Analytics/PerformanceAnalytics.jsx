@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo } from 'react';
 import {
   Box,
@@ -16,11 +17,11 @@ import {
 } from '@mui/icons-material';
 
 const PerformanceAnalytics = memo(({ analyticsData, loading }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   return (
     <Box>
-      {/* Page Title */}
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 4 }}>
         <BarChartIcon sx={{ fontSize: 32, color: '#8b6cbc' }} />
         <Box>
@@ -29,17 +30,16 @@ const PerformanceAnalytics = memo(({ analyticsData, loading }) => {
             color: theme.palette.text.primary,
             mb: 0.5
           }}>
-            Performance Analytics
+            {t('analytics.performance_analytics')}
           </Typography>
           <Typography variant="body1" sx={{ 
             color: theme.palette.text.secondary
           }}>
-            KPI tracking and benchmark analysis for continuous improvement
+            {t('analytics.performance_analytics_desc')}
           </Typography>
         </Box>
       </Stack>
 
-      {/* Coming Soon Card */}
       <Card sx={{ 
         borderRadius: 3,
         border: '2px dashed rgba(139, 108, 188, 0.3)',
@@ -57,7 +57,7 @@ const PerformanceAnalytics = memo(({ analyticsData, loading }) => {
             color: theme.palette.text.primary,
             mb: 2
           }}>
-            Performance Analytics Coming Soon
+            {t('analytics.performance_coming_soon')}
           </Typography>
           
           <Typography variant="body1" sx={{ 
@@ -66,16 +66,15 @@ const PerformanceAnalytics = memo(({ analyticsData, loading }) => {
             maxWidth: 500,
             mx: 'auto'
           }}>
-            Comprehensive performance tracking including KPI monitoring, benchmark comparisons,
-            goal tracking, and performance optimization recommendations.
+            {t('analytics.performance_coming_desc')}
           </Typography>
 
           <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap">
-            <Chip label="KPI Monitoring" variant="outlined" color="primary" />
-            <Chip label="Benchmark Analysis" variant="outlined" color="primary" />
-            <Chip label="Goal Tracking" variant="outlined" color="primary" />
-            <Chip label="Performance Reports" variant="outlined" color="primary" />
-            <Chip label="Optimization Tips" variant="outlined" color="primary" />
+            <Chip label={t('analytics.kpi_monitoring')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.benchmark_analysis')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.goal_tracking')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.performance_reports')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.optimization_tips')} variant="outlined" color="primary" />
           </Stack>
         </CardContent>
       </Card>

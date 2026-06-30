@@ -1,6 +1,7 @@
 'use client';
 
-import React, { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import React, { memo, useState, useMemo } from 'react';
 import {
   Box,
   Drawer,
@@ -18,13 +19,10 @@ import {
   alpha,
   useTheme,
   Collapse,
-  Badge
 } from '@mui/material';
 import {
   Analytics as AnalyticsIcon,
   Dashboard as DashboardIcon,
-  TrendingUp as TrendingUpIcon,
-  PieChart as PieChartIcon,
   Timeline as TimelineIcon,
   People as PeopleIcon,
   Campaign as CampaignIcon,
@@ -43,120 +41,6 @@ import {
 } from '@mui/icons-material';
 
 const DRAWER_WIDTH = 280;
-
-const menuSections = [
-  {
-    title: 'Overview',
-    items: [
-      {
-        id: 'dashboard',
-        label: 'Dashboard',
-        icon: DashboardIcon,
-        active: true,
-        description: 'Main analytics overview'
-      },
-      {
-        id: 'insights',
-        label: 'Key Insights',
-        icon: InsightsIcon,
-        badge: 'New',
-        description: 'AI-powered insights'
-      }
-    ]
-  },
-  {
-    title: 'Performance Analysis',
-    items: [
-      {
-        id: 'campaigns',
-        label: 'Campaign Performance',
-        icon: CampaignIcon,
-        description: 'Campaign analytics & ROI'
-      },
-      {
-        id: 'categories',
-        label: 'Category Analysis',
-        icon: CategoryIcon,
-        description: 'Performance by category'
-      },
-      {
-        id: 'trends',
-        label: 'Donation Trends',
-        icon: TimelineIcon,
-        description: 'Time-based analysis'
-      }
-    ]
-  },
-  {
-    title: 'Donor Intelligence',
-    items: [
-      {
-        id: 'donors',
-        label: 'Donor Insights',
-        icon: PeopleIcon,
-        description: 'Donor behavior & segmentation'
-      },
-      {
-        id: 'retention',
-        label: 'Retention Analysis',
-        icon: AssessmentIcon,
-        badge: '24%',
-        badgeColor: 'success',
-        description: 'Donor retention metrics'
-      },
-      {
-        id: 'segmentation',
-        label: 'Donor Segmentation',
-        icon: GroupIcon,
-        description: 'Advanced donor grouping'
-      }
-    ]
-  },
-  {
-    title: 'Financial Metrics',
-    items: [
-      {
-        id: 'revenue',
-        label: 'Revenue Analytics',
-        icon: MonetizationOnIcon,
-        description: 'Revenue analysis & forecasting'
-      },
-      {
-        id: 'performance',
-        label: 'Performance Metrics',
-        icon: BarChartIcon,
-        description: 'KPI tracking & benchmarks'
-      }
-    ]
-  }
-];
-
-const quickActions = [
-  {
-    id: 'export',
-    label: 'Export Report',
-    icon: DownloadIcon,
-    color: '#4caf50'
-  },
-  {
-    id: 'refresh',
-    label: 'Refresh Data',
-    icon: RefreshIcon,
-    color: '#2196f3'
-  },
-  {
-    id: 'filters',
-    label: 'Advanced Filters',
-    icon: FilterIcon,
-    color: '#ff9800'
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: SettingsIcon,
-    color: '#9c27b0'
-  }
-];
 
 const MenuItem = memo(({ item, onSelect, isActive }) => {
   const theme = useTheme();
@@ -282,7 +166,7 @@ const MenuSection = memo(({ section, selectedItem, onSelect }) => {
   );
 });
 
-const QuickActions = memo(({ onAction }) => {
+const QuickActions = memo(({ onAction, quickActions, title }) => {
   const theme = useTheme();
 
   return (
@@ -299,7 +183,7 @@ const QuickActions = memo(({ onAction }) => {
           display: 'block'
         }}
       >
-        Quick Actions
+        {title}
       </Typography>
       
       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -335,7 +219,122 @@ const AnalyticsSidebar = memo(({
   onQuickAction,
   variant = 'permanent' 
 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
+
+  const menuSections = useMemo(() => [
+    {
+      title: t('analytics.overview'),
+      items: [
+        {
+          id: 'dashboard',
+          label: t('analytics.dashboard'),
+          icon: DashboardIcon,
+          active: true,
+          description: t('analytics.dashboard_desc')
+        },
+        {
+          id: 'insights',
+          label: t('analytics.key_insights'),
+          icon: InsightsIcon,
+          badge: t('analytics.new_badge'),
+          description: t('analytics.key_insights_desc')
+        }
+      ]
+    },
+    {
+      title: t('analytics.performance_analysis'),
+      items: [
+        {
+          id: 'campaigns',
+          label: t('analytics.campaign_performance'),
+          icon: CampaignIcon,
+          description: t('analytics.campaign_performance_desc')
+        },
+        {
+          id: 'categories',
+          label: t('analytics.category_analysis'),
+          icon: CategoryIcon,
+          description: t('analytics.category_analysis_desc')
+        },
+        {
+          id: 'trends',
+          label: t('analytics.donation_trends'),
+          icon: TimelineIcon,
+          description: t('analytics.time_based_analysis')
+        }
+      ]
+    },
+    {
+      title: t('analytics.donor_intelligence'),
+      items: [
+        {
+          id: 'donors',
+          label: t('analytics.donor_insights'),
+          icon: PeopleIcon,
+          description: t('analytics.donor_analytics_desc')
+        },
+        {
+          id: 'retention',
+          label: t('analytics.retention_analysis'),
+          icon: AssessmentIcon,
+          badge: '24%',
+          badgeColor: 'success',
+          description: t('analytics.retention_analysis_desc')
+        },
+        {
+          id: 'segmentation',
+          label: t('analytics.donor_segmentation'),
+          icon: GroupIcon,
+          description: t('analytics.advanced_donor_grouping')
+        }
+      ]
+    },
+    {
+      title: t('analytics.financial_metrics'),
+      items: [
+        {
+          id: 'revenue',
+          label: t('analytics.revenue_analytics'),
+          icon: MonetizationOnIcon,
+          description: t('analytics.revenue_analysis_forecasting')
+        },
+        {
+          id: 'performance',
+          label: t('analytics.performance_metrics'),
+          icon: BarChartIcon,
+          description: t('analytics.kpi_tracking_benchmarks')
+        }
+      ]
+    }
+  ], [t]);
+
+  const quickActions = useMemo(() => [
+    {
+      id: 'export',
+      label: t('analytics.export_report'),
+      icon: DownloadIcon,
+      color: '#4caf50'
+    },
+    {
+      id: 'refresh',
+      label: t('analytics.refresh_data'),
+      icon: RefreshIcon,
+      color: '#2196f3'
+    },
+    {
+      id: 'filters',
+      label: t('analytics.advanced_filters'),
+      icon: FilterIcon,
+      color: '#ff9800'
+    },
+    {
+      id: 'settings',
+      label: t('analytics.settings'),
+      icon: SettingsIcon,
+      color: '#9c27b0'
+    }
+  ], [t]);
 
   const drawerContent = (
     <Box sx={{ 
@@ -344,7 +343,6 @@ const AnalyticsSidebar = memo(({
       flexDirection: 'column',
       background: `linear-gradient(180deg, ${theme.palette.background.paper} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`
     }}>
-      {/* Header */}
       <Box sx={{ 
         p: 3, 
         borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
@@ -365,16 +363,15 @@ const AnalyticsSidebar = memo(({
           </Box>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
-              Analytics Center
+              {t('analytics.analytics_center')}
             </Typography>
             <Typography variant="caption" sx={{ opacity: 0.8, fontSize: '0.75rem' }}>
-              Donations & Performance
+              {t('analytics.donations_performance')}
             </Typography>
           </Box>
         </Stack>
       </Box>
 
-      {/* Menu Sections */}
       <Box sx={{ flex: 1, overflowY: 'auto', py: 2 }}>
         {menuSections.map((section) => (
           <MenuSection
@@ -388,8 +385,11 @@ const AnalyticsSidebar = memo(({
 
       <Divider />
       
-      {/* Quick Actions */}
-      <QuickActions onAction={onQuickAction} />
+      <QuickActions 
+        onAction={onQuickAction} 
+        quickActions={quickActions}
+        title={t('analytics.quick_actions')}
+      />
     </Box>
   );
 

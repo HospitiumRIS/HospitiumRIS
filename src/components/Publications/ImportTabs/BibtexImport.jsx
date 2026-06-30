@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback } from 'react';
 import {
   Box,
@@ -30,6 +31,7 @@ import {
 } from '@mui/icons-material';
 
 const BibtexImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
+  const { t } = useTranslation();
   const [bibtexContent, setBibtexContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -439,8 +441,8 @@ const BibtexImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
             }
           }}
         >
-          Clear
-        </Button>
+          t('common.clear')
+</Button>
       </Box>
 
       {loading && <LinearProgress sx={{ mt: 2, color }} />}

@@ -18,6 +18,7 @@ import RichTextEditor from '../../../../../components/common/RichTextEditor';
 import FileUploadZone from '../../../../../components/common/FileUploadZone';
 import OrcidSearchModal from './components/OrcidSearchModal';
 import { useAuth } from '../../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const steps = [
   { label: 'Project Overview', icon: <EthicsIcon /> },
@@ -41,6 +42,7 @@ const vulnerablePopulations = [
 ];
 
 export default function CreateEthicsApplicationPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [activeStep, setActiveStep] = useState(0);

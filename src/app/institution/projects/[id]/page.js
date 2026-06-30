@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -139,6 +140,7 @@ function StagePipelineFull({ proposalStatus, projectStatus }) {
 }
 
 const ProjectDetailPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
   const params = useParams();
@@ -183,7 +185,7 @@ const ProjectDetailPage = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'Not specified';
+    if (!dateString) return t('common.not_available');
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -192,7 +194,7 @@ const ProjectDetailPage = () => {
   };
 
   const formatCurrency = (amount) => {
-    if (!amount) return 'Not specified';
+    if (!amount) return t('common.not_available');
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
@@ -224,7 +226,7 @@ const ProjectDetailPage = () => {
   };
 
   const calculateDuration = () => {
-    if (!project.startDate || !project.endDate) return 'Not specified';
+    if (!project.startDate || !project.endDate) return t('common.not_available');
     const start = new Date(project.startDate);
     const end = new Date(project.endDate);
     const months = Math.round((end - start) / (1000 * 60 * 60 * 24 * 30));
@@ -396,7 +398,7 @@ const ProjectDetailPage = () => {
                 {project.principalInvestigator?.charAt(0) || 'P'}
               </Avatar>
               <Typography variant="body2" sx={{ fontWeight: 700, color: '#2d3748' }}>
-                {project.principalInvestigator || 'Not specified'}
+                {project.principalInvestigator || t('common.not_available')}
               </Typography>
             </Box>
             {project.coInvestigators?.length > 0 && (
@@ -458,7 +460,7 @@ const ProjectDetailPage = () => {
                 />
               </>
             ) : (
-              <Typography variant="body2" sx={{ color: '#9ca3af', fontStyle: 'italic' }}>No milestones defined</Typography>
+              <Typography variant="body2" sx={{ color: '#9ca3af', fontStyle: 'italic' }}>{t('common.no_data')}</Typography>
             )}
           </Paper>
         </Box>

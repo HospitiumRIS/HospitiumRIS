@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -59,6 +60,7 @@ const WORKFLOW_TYPES = [
 ];
 
 export default function AutoReviewPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [workflows, setWorkflows] = useState([]);
   const [loading, setLoading] = useState(true);

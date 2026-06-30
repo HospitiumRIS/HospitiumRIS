@@ -50,6 +50,7 @@ import {
 import { format } from 'date-fns';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const statusColors = {
   DRAFT: '#9e9e9e',
@@ -76,6 +77,7 @@ const statusIcons = {
 };
 
 export default function EthicsApplicationsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [applications, setApplications] = useState([]);
@@ -177,8 +179,8 @@ export default function EthicsApplicationsPage() {
     <Box>
       {/* Page Header */}
       <PageHeader
-        title="Ethics Applications"
-        description="Manage your research ethics applications and track approval status"
+        title={t('researcher.ethics_applications')}
+        description={t('researcher.ethics_applications_desc')}
         icon={<EthicsIcon sx={{ fontSize: 32 }} />}
         breadcrumbs={[
           { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/researcher' },
@@ -199,7 +201,7 @@ export default function EthicsApplicationsPage() {
               }
             }}
           >
-            New Application
+            {t('researcher.ethics_create')}
           </Button>
         }
       />
@@ -389,7 +391,7 @@ export default function EthicsApplicationsPage() {
           border: '1px solid rgba(0, 0, 0, 0.12)'
         }}>
           <CircularProgress sx={{ color: '#8b6cbc' }} />
-          <Typography sx={{ mt: 2, color: '#718096' }}>Loading applications...</Typography>
+          <Typography sx={{ mt: 2, color: '#718096' }}>{t('common.loading')}</Typography>
         </Box>
       ) : filteredApplications.length === 0 ? (
         <Paper sx={{ 
@@ -401,10 +403,10 @@ export default function EthicsApplicationsPage() {
         }}>
           <EthicsIcon sx={{ fontSize: 64, color: '#8b6cbc', opacity: 0.5, mb: 2 }} />
           <Typography variant="h6" sx={{ color: '#2D3748', mb: 1, fontWeight: 600 }}>
-            No Ethics Applications Found
+            {t('common.no_data')}
           </Typography>
           <Typography variant="body2" sx={{ color: '#718096', mb: 3 }}>
-            {searchQuery ? 'Try adjusting your search criteria' : 'Get started by creating your first ethics application'}
+            {searchQuery ? t('common.no_results') : t('researcher.ethics_create_desc')}
           </Typography>
           {!searchQuery && (
             <Button
@@ -416,7 +418,7 @@ export default function EthicsApplicationsPage() {
                 boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)',
               }}
             >
-              Create New Application
+              {t('researcher.ethics_create')}
             </Button>
           )}
         </Paper>
@@ -438,13 +440,13 @@ export default function EthicsApplicationsPage() {
                   letterSpacing: '0.5px'
                 }
               }}>
-                <TableCell>Title</TableCell>
-                <TableCell>Principal Investigator</TableCell>
-                <TableCell>Research Type</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>{t('common.name')}</TableCell>
+                <TableCell>{t('researcher.principal_investigator')}</TableCell>
+                <TableCell>{t('common.type')}</TableCell>
+                <TableCell>{t('common.status')}</TableCell>
                 <TableCell>Reference Number</TableCell>
-                <TableCell>Submitted Date</TableCell>
-                <TableCell align="center">Actions</TableCell>
+                <TableCell>{t('common.date')}</TableCell>
+                <TableCell align="center">{t('common.actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -536,7 +538,7 @@ export default function EthicsApplicationsPage() {
           }}
         >
           <ViewIcon sx={{ mr: 1.5, color: '#8b6cbc' }} fontSize="small" />
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>View Details</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>{t('common.view')}</Typography>
         </MenuItem>
         {selectedApplication?.status === 'DRAFT' && (
           <>
@@ -550,7 +552,7 @@ export default function EthicsApplicationsPage() {
               }}
             >
               <EditIcon sx={{ mr: 1.5, color: '#3b82f6' }} fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>Edit Application</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>{t('common.edit')}</Typography>
             </MenuItem>
             <MenuItem 
               onClick={handleSubmit}
@@ -562,7 +564,7 @@ export default function EthicsApplicationsPage() {
               }}
             >
               <SubmitIcon sx={{ mr: 1.5, color: '#10b981' }} fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>Submit for Review</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>{t('common.submit')}</Typography>
             </MenuItem>
             <MenuItem 
               onClick={handleDelete}
@@ -574,7 +576,7 @@ export default function EthicsApplicationsPage() {
               }}
             >
               <DeleteIcon sx={{ mr: 1.5, color: '#ef4444' }} fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 500, color: '#ef4444' }}>Delete</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500, color: '#ef4444' }}>{t('common.delete')}</Typography>
             </MenuItem>
           </>
         )}
@@ -590,7 +592,7 @@ export default function EthicsApplicationsPage() {
               }}
             >
               <EditIcon sx={{ mr: 1.5, color: '#ff5722' }} fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>Edit & Resubmit</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>{t('common.edit')}</Typography>
             </MenuItem>
           </>
         )}

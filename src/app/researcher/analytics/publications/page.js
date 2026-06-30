@@ -55,8 +55,10 @@ import { format, parseISO, isValid } from 'date-fns';
 
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const PublicationsReportPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [currentTab, setCurrentTab] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -145,8 +147,8 @@ const PublicationsReportPage = () => {
   return (
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
       <PageHeader
-        title="Publications Report"
-        description="Comprehensive analytics and performance metrics for your research publications"
+        title={t("researcher.publications_report")}
+        description={t("researcher.publications_report_desc")}
         icon={<PublicationIcon />}
         breadcrumbs={[
           { label: 'Dashboard', path: '/researcher', icon: <BusinessIcon /> },

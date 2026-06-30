@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
@@ -73,6 +74,7 @@ export default function OrcidCollaboratorInvite({
   onCollaboratorsChange,
   readOnly = false 
 }) {
+  const { t } = useTranslation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [orcidSearchData, setOrcidSearchData] = useState({
     givenNames: '',
@@ -568,8 +570,8 @@ export default function OrcidCollaboratorInvite({
                     startIcon={<CloseIcon />}
                     sx={{ py: 1.5 }}
                   >
-                    Clear
-                  </Button>
+                    t('common.clear')
+</Button>
                 )}
               </Box>
 
@@ -640,8 +642,8 @@ export default function OrcidCollaboratorInvite({
 
         <DialogActions sx={{ p: 3, gap: 1 }}>
           <Button onClick={() => setSearchOpen(false)}>
-            Cancel
-          </Button>
+            t('common.cancel')
+</Button>
           {selectedResearcher && (
             <>
               <Button 

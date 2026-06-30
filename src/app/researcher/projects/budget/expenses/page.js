@@ -3,8 +3,10 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, CircularProgress } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 const ExpensesRedirectPage = () => {
+  const { t } = useTranslation();
   const router = useRouter();
 
   useEffect(() => {

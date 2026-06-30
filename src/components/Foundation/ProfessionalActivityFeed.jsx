@@ -1,6 +1,7 @@
 'use client';
 
 import React, { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Card,
@@ -213,6 +214,7 @@ const ActivityItem = memo(({ activity, index }) => {
 });
 
 const ProfessionalActivityFeed = memo(({ activities = [], loading = false, maxItems = 8 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [showAll, setShowAll] = useState(false);
 

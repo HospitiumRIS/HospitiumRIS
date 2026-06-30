@@ -31,6 +31,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useThemeMode } from '../../components/ThemeProvider';
 import { useAuth } from '../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 // Client-side activity logging helper
 const logClientActivity = (action, data = {}) => {
@@ -74,6 +75,7 @@ const NoSSR = ({ children, fallback = null }) => {
   const router = useRouter();
   const { isDarkMode, isClient } = useThemeMode();
   const { login: authLogin } = useAuth();
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -124,15 +126,15 @@ const NoSSR = ({ children, fallback = null }) => {
     const newErrors = {};
     
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('errors.required');
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = t('errors.invalid_email');
     }
-    
+
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('errors.required');
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = t('errors.password_short');
     }
     
     const isValid = Object.keys(newErrors).length === 0;
@@ -249,7 +251,7 @@ const NoSSR = ({ children, fallback = null }) => {
         type: 'network_error'
       });
       
-      setGeneralError('Network error. Please check your connection and try again.');
+      setGeneralError(t('errors.network_error'));
     } finally {
       setIsLoading(false);
     }
@@ -450,13 +452,13 @@ const NoSSR = ({ children, fallback = null }) => {
                 mb: 1,
               }}
             >
-              Welcome Back
+              {t('auth.login_title')}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
             >
-              Sign in to your account to continue
+              {t('auth.login_subtitle')}
             </Typography>
           </Box>
 
@@ -471,7 +473,7 @@ const NoSSR = ({ children, fallback = null }) => {
             
             <TextField
               fullWidth
-              label="Email Address"
+              label={t('auth.email')}
               name="email"
               type="email"
               value={formData.email}
@@ -483,7 +485,7 @@ const NoSSR = ({ children, fallback = null }) => {
 
             <TextField
               fullWidth
-              label="Password"
+              label={t('auth.password')}
               name="password"
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
@@ -515,8 +517,8 @@ const NoSSR = ({ children, fallback = null }) => {
               }}
             >
               <Box>
-                <Tooltip 
-                  title="Keep me signed in for 30 days instead of just this session" 
+                <Tooltip
+                  title={t('auth.remember_tooltip')}
                   arrow
                   placement="top"
                 >
@@ -529,13 +531,13 @@ const NoSSR = ({ children, fallback = null }) => {
                         color="primary"
                       />
                     }
-                    label="Remember me"
+                    label={t('auth.remember_me')}
                   />
                 </Tooltip>
                 <FormHelperText sx={{ ml: 4, mt: 0 }}>
-                  {formData.rememberMe 
-                    ? "You'll stay signed in for 30 days" 
-                    : "Sign out when browser closes"
+                  {formData.rememberMe
+                    ? t('auth.stay_30_days')
+                    : t('auth.sign_out_on_close')
                   }
                 </FormHelperText>
               </Box>
@@ -569,13 +571,13 @@ const NoSSR = ({ children, fallback = null }) => {
                 fontWeight: 600,
               }}
             >
-              {isLoading ? 'Signing In...' : 'Sign In'}
+              {isLoading ? t('common.loading') : t('auth.login_btn')}
             </Button>
 
             {/* Divider */}
             <Divider sx={{ mb: 3 }}>
               <Typography variant="body2" color="text.secondary">
-                Or continue with
+                {t('auth.or_continue')}
               </Typography>
             </Divider>
 
@@ -588,7 +590,7 @@ const NoSSR = ({ children, fallback = null }) => {
                 onClick={() => handleSocialLogin('Google')}
                 sx={{ py: 1.5 }}
               >
-                Google
+                {t('auth.google')}
               </Button>
               <Button
                 fullWidth
@@ -596,21 +598,21 @@ const NoSSR = ({ children, fallback = null }) => {
                 startIcon={<OrcidIcon />}
                 onClick={() => handleSocialLogin('ORCID')}
                 disabled={isLoading}
-                sx={{ 
+                sx={{
                   py: 1.5,
                   '& .MuiButton-startIcon': {
                     color: '#A6CE39', // ORCID brand color
                   },
                 }}
               >
-                {isLoading ? 'Connecting to ORCID...' : 'ORCID'}
+                {isLoading ? t('common.loading') : t('auth.orcid')}
               </Button>
             </Stack>
 
             {/* Sign Up Link */}
             <Box sx={{ textAlign: 'center', mb: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                Don't have an account?{' '}
+                {t('auth.no_account')}{' '}
                 <Link
                   href="/register"
                   sx={{
@@ -622,7 +624,7 @@ const NoSSR = ({ children, fallback = null }) => {
                     },
                   }}
                 >
-                  Sign up here
+                  {t('auth.sign_up')}
                 </Link>
               </Typography>
             </Box>

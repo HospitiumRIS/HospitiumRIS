@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Fab,
@@ -20,6 +21,7 @@ const ReferencesHoverButton = ({
   isVisible = false,
   position = { x: 0, y: 0 }
 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [showButton, setShowButton] = useState(false);
   const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0 });
@@ -212,7 +214,7 @@ const ReferencesHoverButton = ({
     >
       <Zoom in={showButton} timeout={200}>
         <Tooltip 
-          title="Generate Bibliography" 
+          title={t('common.generate_bibliography')} 
           placement="top"
           arrow
         >

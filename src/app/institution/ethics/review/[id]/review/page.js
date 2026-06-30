@@ -36,18 +36,20 @@ import {
 import { format } from 'date-fns';
 import PageHeader from '../../../../../../components/common/PageHeader';
 import { useAuth } from '../../../../../../components/AuthProvider';
-
-const decisionOptions = [
-  { value: 'APPROVED', label: 'Approve', color: '#4caf50', icon: <ApprovedIcon /> },
-  { value: 'CONDITIONAL_APPROVAL', label: 'Conditional Approval', color: '#8bc34a', icon: <ApprovedIcon /> },
-  { value: 'REVISION_REQUESTED', label: 'Request Revision', color: '#ff5722', icon: <WarningIcon /> },
-  { value: 'REJECTED', label: 'Reject', color: '#f44336', icon: <RejectedIcon /> },
-];
+import { useTranslation } from 'react-i18next';
 
 export default function EthicsReviewFormPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const { user } = useAuth();
+
+  const decisionOptions = [
+    { value: 'APPROVED', label: t('common.approve'), color: '#4caf50', icon: <ApprovedIcon /> },
+    { value: 'CONDITIONAL_APPROVAL', label: 'Conditional Approval', color: '#8bc34a', icon: <ApprovedIcon /> },
+    { value: 'REVISION_REQUESTED', label: 'Request Revision', color: '#ff5722', icon: <WarningIcon /> },
+    { value: 'REJECTED', label: t('common.reject'), color: '#f44336', icon: <RejectedIcon /> },
+  ];
   const [application, setApplication] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -180,7 +182,7 @@ export default function EthicsReviewFormPage() {
             border: '1px solid rgba(0, 0, 0, 0.12)'
           }}>
             <CircularProgress sx={{ color: '#8b6cbc' }} />
-            <Typography sx={{ mt: 2, color: '#718096' }}>Loading application...</Typography>
+            <Typography sx={{ mt: 2, color: '#718096' }}>{t('common.loading')}</Typography>
           </Box>
         </Container>
       </Box>
@@ -243,7 +245,7 @@ export default function EthicsReviewFormPage() {
 
         {success && (
           <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
-            Review submitted successfully! Redirecting...
+            {t('common.success')} — Review submitted successfully! Redirecting...
           </Alert>
         )}
 
@@ -693,7 +695,7 @@ export default function EthicsReviewFormPage() {
                   }
                 }}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
@@ -712,7 +714,7 @@ export default function EthicsReviewFormPage() {
                   }
                 }}
               >
-                {submitting ? 'Submitting Review...' : 'Submit Review'}
+                {submitting ? t('common.submitting') : t('common.submit') + ' Review'}
               </Button>
             </Box>
           </Paper>

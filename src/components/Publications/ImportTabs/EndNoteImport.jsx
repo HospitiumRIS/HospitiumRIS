@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback } from 'react';
 import {
   Box, Typography, TextField, Button, LinearProgress, Alert, Snackbar,
@@ -16,6 +17,7 @@ import {
 } from '@mui/icons-material';
 
 const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState('');
   const [endnoteContent, setEndnoteContent] = useState('');
@@ -231,7 +233,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
         if (!hasValidMimeType) {
           setSnackbar({
             open: true,
-            message: 'Please upload a valid EndNote file (.ris, .enw, .xml, or .txt)',
+            message: t('import_tabs.invalid_endnote_file'),
             severity: 'error'
           });
           return;
@@ -239,7 +241,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
       } else if (!isValidType && !hasValidMimeType) {
         setSnackbar({
           open: true,
-          message: 'Please upload a valid EndNote file (.ris, .enw, .xml, or .txt)',
+          message: t('import_tabs.invalid_endnote_file'),
           severity: 'error'
         });
         return;
@@ -256,13 +258,13 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
       reader.onerror = () => {
         setSnackbar({
           open: true,
-          message: 'Failed to read file. Please try again.',
+          message: t('import_tabs.failed_read_file'),
           severity: 'error'
         });
       };
       reader.readAsText(file);
     }
-  }, [error]);
+  }, [error, t]);
 
   // Handle content change (manual paste)
   const handleContentChange = useCallback((event) => {
@@ -280,7 +282,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
     if (!endnoteContent.trim()) {
       setSnackbar({
         open: true,
-        message: 'Please enter EndNote content or upload a file',
+        message: t('import_tabs.enter_endnote_content'),
         severity: 'warning'
       });
       return;
@@ -303,7 +305,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
       if (entries.length === 0) {
         setSnackbar({
           open: true,
-          message: 'No valid publications found in the EndNote content',
+          message: t('import_tabs.no_valid_endnote'),
           severity: 'warning'
         });
         return;
@@ -315,7 +317,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
 
       setSnackbar({
         open: true,
-        message: `Found ${entries.length} publication(s)`,
+        message: t('import_tabs.found_count_snackbar', { count: entries.length }),
         severity: 'success'
       });
 
@@ -324,13 +326,13 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
       setError(err.message);
       setSnackbar({
         open: true,
-        message: `Parsing failed: ${err.message}`,
+        message: t('import_tabs.parsing_failed', { message: err.message }),
         severity: 'error'
       });
     } finally {
       setLoading(false);
     }
-  }, [endnoteContent, parseEndNoteRIS, parseEndNoteXML]);
+  }, [endnoteContent, parseEndNoteRIS, parseEndNoteXML, t]);
 
   // Handle import
   const handleImport = useCallback(async () => {
@@ -339,7 +341,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
     if (selectedPubs.length === 0) {
       setSnackbar({
         open: true,
-        message: 'No publications selected for import.',
+        message: t('import_tabs.no_publications_selected'),
         severity: 'warning'
       });
       return;
@@ -360,16 +362,16 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to import publications');
+        throw new Error(errorData.error || t('import_tabs.failed_import_publications'));
       }
 
       const data = await response.json();
 
       if (data.success) {
-        let message = `Successfully imported ${data.imported} of ${data.total} publications!`;
+        let message = t('import_tabs.import_success', { imported: data.imported, total: data.total });
 
         if (data.warnings && data.warnings.length > 0) {
-          message += ` (${data.warnings.length} warnings)`;
+          message += t('import_tabs.import_warnings_count', { count: data.warnings.length });
         }
 
         setSnackbar({
@@ -388,14 +390,14 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
     } catch (err) {
       setSnackbar({
         open: true,
-        message: `Import failed: ${err.message}`,
+        message: t('import_tabs.import_failed', { message: err.message }),
         severity: 'error'
       });
       console.error('EndNote import failed:', err);
     } finally {
       setLoading(false);
     }
-  }, [parsedEntries, selectedEntries]);
+  }, [parsedEntries, selectedEntries, t]);
 
   // Toggle entry selection
   const handleToggleEntry = useCallback((entryId) => {
@@ -439,11 +441,11 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
   return (
     <Box sx={{ maxWidth: 800 }}>
       <Typography variant="h6" gutterBottom sx={{ color: color }}>
-        Import from EndNote
+        {t('import_tabs.endnote_title')}
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Upload EndNote export files (.ris, .enw, .xml) or paste EndNote formatted content to import your publications.
+        {t('import_tabs.endnote_upload_desc')}
       </Typography>
 
       {/* File Upload Section */}
@@ -451,7 +453,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
         <CardContent>
           <Typography variant="h6" gutterBottom>
             <FileIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            File Upload
+            {t('import_tabs.file_upload')}
           </Typography>
           
           <Grid container spacing={2} alignItems="center">
@@ -471,7 +473,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
                   }
                 }}
               >
-                Choose EndNote File
+                {t('import_tabs.choose_endnote_file')}
                 <input
                   type="file"
                   hidden
@@ -498,7 +500,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Manual Input
+            {t('import_tabs.manual_input')}
           </Typography>
           
           <TextField
@@ -506,7 +508,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
             multiline
             rows={8}
             variant="outlined"
-            placeholder="Paste your EndNote exported content here (RIS format or XML)..."
+            placeholder={t('import_tabs.endnote_placeholder')}
             value={endnoteContent}
             onChange={handleContentChange}
             disabled={loading}
@@ -526,7 +528,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
                 }
               }}
             >
-              {loading ? 'Parsing...' : 'Preview Publications'}
+              {loading ? t('import_tabs.parsing') : t('import_tabs.preview_publications')}
             </Button>
             
             <Button
@@ -535,7 +537,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
               onClick={handleClear}
               disabled={loading}
             >
-              Clear
+              {t('common.clear')}
             </Button>
           </Box>
         </CardContent>
@@ -559,7 +561,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">
-                Found {parsedEntries.length} Publications
+                {t('import_tabs.found_publications', { count: parsedEntries.length })}
               </Typography>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <FormControlLabel
@@ -570,7 +572,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
                       onChange={handleToggleAll}
                     />
                   }
-                  label="Select All"
+                  label={t('import_tabs.select_all')}
                 />
                 <Button
                   variant="contained"
@@ -584,7 +586,7 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
                     }
                   }}
                 >
-                  Import {selectedEntries.size} Selected
+                  {t('import_tabs.import_count_selected', { count: selectedEntries.size })}
                 </Button>
               </Box>
             </Box>
@@ -603,20 +605,20 @@ const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
                     }
                     label={
                       <ListItemText
-                        primary={entry.title || 'Untitled'}
+                        primary={entry.title || t('common.untitled')}
                         secondary={
                           <Box component="span">
                             <Typography variant="body2" color="text.secondary" component="span" sx={{ display: 'block' }}>
-                              <strong>Authors:</strong> {Array.isArray(entry.authors) 
+                              <strong>{t('common.authors_label')}</strong> {Array.isArray(entry.authors) 
                                 ? entry.authors.join(', ') 
-                                : entry.authors || 'Unknown'}
+                                : entry.authors || t('common.unknown')}
                             </Typography>
                             <Typography variant="body2" color="text.secondary" component="span" sx={{ display: 'block' }}>
-                              <strong>Journal:</strong> {entry.journal || 'Unknown'} ({entry.year || 'Unknown'})
+                              <strong>{t('common.journal_label')}</strong> {entry.journal || t('common.unknown')} ({entry.year || t('common.unknown')})
                             </Typography>
                             {entry.doi && (
                               <Typography variant="body2" color="text.secondary" component="span" sx={{ display: 'block' }}>
-                                <strong>DOI:</strong> {entry.doi}
+                                <strong>{t('common.doi_label')}</strong> {entry.doi}
                               </Typography>
                             )}
                             <Chip 

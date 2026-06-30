@@ -63,6 +63,7 @@ import {
 } from 'recharts';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const closureReasons = {
   COMPLETED: { color: '#4caf50', label: 'Completed' },
@@ -72,6 +73,7 @@ const closureReasons = {
 };
 
 export default function ArchivePortfolioPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [archivedTrials, setArchivedTrials] = useState([]);
@@ -235,8 +237,8 @@ export default function ArchivePortfolioPage() {
     <>
       <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
         <PageHeader
-          title="Institutional Memory"
-          description="Access closed trials, lessons learned, and reusable templates"
+          title={t("researcher.archive")}
+          description={t("researcher.archive_desc")}
           icon={<FolderIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={breadcrumbs}
           actionButton={

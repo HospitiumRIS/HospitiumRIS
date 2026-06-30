@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -154,7 +155,7 @@ const CampaignDialogs = ({
   handleCampaignSubmit,
   handleActivitySubmit
 }) => {
-  
+  const { t, i18n } = useTranslation();
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const colorPickerRef = useRef(null);
 
@@ -180,13 +181,13 @@ const CampaignDialogs = ({
     '#ef5350', '#ab47bc', '#26a69a', '#ffa726'
   ];
 
-  const statusOptions = [
-    { value: 'Planning', label: 'Planning' },
-    { value: 'Active', label: 'Active' },
-    { value: 'Paused', label: 'Paused' },
-    { value: 'Completed', label: 'Completed' },
-    { value: 'Cancelled', label: 'Cancelled' }
-  ];
+  const statusOptions = React.useMemo(() => [
+    { value: 'Planning', label: t('foundation_dashboard.status_planning') },
+    { value: 'Active', label: t('foundation_dashboard.status_active') },
+    { value: 'Paused', label: t('foundation_dashboard.status_paused') },
+    { value: 'Completed', label: t('foundation_dashboard.status_completed') },
+    { value: 'Cancelled', label: t('foundation_dashboard.status_cancelled') }
+  ], [t, i18n.language]);
 
   return (
     <>
@@ -200,7 +201,7 @@ const CampaignDialogs = ({
       >
         <DialogHeader
           icon={CategoryIcon}
-          title={selectedCategory ? 'Edit Category' : 'New Category'}
+          title={selectedCategory ? t('foundation_dashboard.edit_category') : t('foundation_dashboard.new_category')}
           onClose={() => setCategoryDialog(false)}
         />
         
@@ -208,7 +209,7 @@ const CampaignDialogs = ({
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 0.5 }}>
             <TextField
               fullWidth
-              label="Category Name"
+              label={t('foundation_dashboard.category_name')}
               required
               value={categoryForm.name}
               onChange={(e) => setCategoryForm(prev => ({ ...prev, name: e.target.value }))}
@@ -218,7 +219,7 @@ const CampaignDialogs = ({
 
             <TextField
               fullWidth
-              label="Description"
+              label={t('foundation_dashboard.description')}
               value={categoryForm.description}
               onChange={(e) => setCategoryForm(prev => ({ ...prev, description: e.target.value }))}
               multiline
@@ -229,7 +230,7 @@ const CampaignDialogs = ({
 
             <Box>
               <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontWeight: 500, fontSize: '0.8rem' }}>
-                Category Color
+                {t('foundation_dashboard.category_color')}
               </Typography>
               <Box
                 ref={colorPickerRef}
@@ -280,7 +281,7 @@ const CampaignDialogs = ({
                     zIndex: 1300
                   }}>
                     <Typography variant="caption" sx={{ fontWeight: 600, color: '#64748b', mb: 1.5, display: 'block' }}>
-                      Select Color
+                      {t('foundation_dashboard.select_color')}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                       {predefinedColors.map(color => (
@@ -310,7 +311,7 @@ const CampaignDialogs = ({
                       fullWidth
                       value={categoryForm.color}
                       onChange={(e) => setCategoryForm(prev => ({ ...prev, color: e.target.value }))}
-                      label="Custom hex color"
+                      label={t('foundation_dashboard.custom_hex_color')}
                       sx={fieldSx}
                     />
                   </Box>
@@ -328,7 +329,7 @@ const CampaignDialogs = ({
             variant="text"
             sx={{ color: '#8b6cbc', fontWeight: 500, textTransform: 'none', px: 2 }}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant="contained"
@@ -347,7 +348,7 @@ const CampaignDialogs = ({
               '&:disabled': { backgroundColor: '#c5b4e3', color: 'white', boxShadow: 'none' }
             }}
           >
-            {selectedCategory ? 'Save Changes' : 'Create Category'}
+            {selectedCategory ? t('foundation_dashboard.save_changes') : t('foundation_dashboard.create_category')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -362,7 +363,7 @@ const CampaignDialogs = ({
       >
         <DialogHeader
           icon={CampaignIcon}
-          title={selectedCampaign ? 'Edit Initiative' : 'New Initiative'}
+          title={selectedCampaign ? t('foundation_dashboard.edit_initiative') : t('foundation_dashboard.new_initiative')}
           onClose={() => setCampaignDialog(false)}
         />
         
@@ -370,7 +371,7 @@ const CampaignDialogs = ({
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 0.5 }}>
             <TextField
               fullWidth
-              label="Initiative Name"
+              label={t('foundation_dashboard.initiative_name')}
               required
               value={campaignForm.name}
               onChange={(e) => setCampaignForm(prev => ({ ...prev, name: e.target.value }))}
@@ -380,11 +381,11 @@ const CampaignDialogs = ({
 
             <Box sx={{ display: 'flex', gap: 2 }}>
               <FormControl fullWidth sx={formControlSx}>
-                <InputLabel>Category</InputLabel>
+                <InputLabel>{t('foundation_dashboard.category')}</InputLabel>
                 <Select
                   value={campaignForm.categoryId}
                   onChange={(e) => setCampaignForm(prev => ({ ...prev, categoryId: e.target.value }))}
-                  label="Category"
+                  label={t('foundation_dashboard.category')}
                   sx={selectSx}
                 >
                   {categories.map(category => (
@@ -399,11 +400,11 @@ const CampaignDialogs = ({
               </FormControl>
 
               <FormControl fullWidth sx={formControlSx}>
-                <InputLabel>Status</InputLabel>
+                <InputLabel>{t('common.status')}</InputLabel>
                 <Select
                   value={campaignForm.status}
                   onChange={(e) => setCampaignForm(prev => ({ ...prev, status: e.target.value }))}
-                  label="Status"
+                  label={t('common.status')}
                   sx={selectSx}
                 >
                   {statusOptions.map(option => (
@@ -420,7 +421,7 @@ const CampaignDialogs = ({
 
             <TextField
               fullWidth
-              label="Description"
+              label={t('foundation_dashboard.description')}
               value={campaignForm.description}
               onChange={(e) => setCampaignForm(prev => ({ ...prev, description: e.target.value }))}
               multiline
@@ -432,7 +433,7 @@ const CampaignDialogs = ({
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 fullWidth
-                label="Start Date"
+                label={t('foundation_dashboard.start_date')}
                 type="date"
                 value={campaignForm.startDate}
                 onChange={(e) => setCampaignForm(prev => ({ ...prev, startDate: e.target.value }))}
@@ -442,7 +443,7 @@ const CampaignDialogs = ({
               />
               <TextField
                 fullWidth
-                label="End Date"
+                label={t('foundation_dashboard.end_date')}
                 type="date"
                 value={campaignForm.endDate}
                 onChange={(e) => setCampaignForm(prev => ({ ...prev, endDate: e.target.value }))}
@@ -454,7 +455,7 @@ const CampaignDialogs = ({
 
             <TextField
               fullWidth
-              label="Target Amount"
+              label={t('foundation_dashboard.target_amount')}
               value={campaignForm.targetAmount}
               onChange={(e) => setCampaignForm(prev => ({ ...prev, targetAmount: e.target.value }))}
               type="number"
@@ -473,7 +474,7 @@ const CampaignDialogs = ({
             variant="text"
             sx={{ color: '#8b6cbc', fontWeight: 500, textTransform: 'none', px: 2 }}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant="contained"
@@ -492,7 +493,7 @@ const CampaignDialogs = ({
               '&:disabled': { backgroundColor: '#c5b4e3', color: 'white', boxShadow: 'none' }
             }}
           >
-            {selectedCampaign ? 'Save Changes' : 'Create Initiative'}
+            {selectedCampaign ? t('foundation_dashboard.save_changes') : t('foundation_dashboard.create_initiative')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -507,7 +508,7 @@ const CampaignDialogs = ({
       >
         <DialogHeader
           icon={ActivityIcon}
-          title={selectedActivity ? 'Edit Activity' : 'New Activity'}
+          title={selectedActivity ? t('foundation_dashboard.edit_activity') : t('foundation_dashboard.new_activity')}
           onClose={() => setActivityDialog(false)}
         />
 
@@ -515,11 +516,11 @@ const CampaignDialogs = ({
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 0.5 }}>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <FormControl fullWidth sx={formControlSx}>
-                <InputLabel>Activity Type</InputLabel>
+                <InputLabel>{t('foundation_dashboard.activity_type')}</InputLabel>
                 <Select
                   value={activityForm.type}
                   onChange={(e) => setActivityForm(prev => ({ ...prev, type: e.target.value }))}
-                  label="Activity Type"
+                  label={t('foundation_dashboard.activity_type')}
                   sx={selectSx}
                 >
                   {activityTypes.map(type => {
@@ -537,22 +538,22 @@ const CampaignDialogs = ({
               </FormControl>
 
               <FormControl fullWidth sx={formControlSx}>
-                <InputLabel>Phase</InputLabel>
+                <InputLabel>{t('foundation_dashboard.phase')}</InputLabel>
                 <Select
                   value={activityForm.phase}
                   onChange={(e) => setActivityForm(prev => ({ ...prev, phase: e.target.value }))}
-                  label="Phase"
+                  label={t('foundation_dashboard.phase')}
                   sx={selectSx}
                 >
-                  <MenuItem value="Pre-Campaign">Pre-Campaign</MenuItem>
-                  <MenuItem value="Post-Campaign">Post-Campaign</MenuItem>
+                  <MenuItem value="Pre-Campaign">{t('foundation_dashboard.pre_campaign')}</MenuItem>
+                  <MenuItem value="Post-Campaign">{t('foundation_dashboard.post_campaign')}</MenuItem>
                 </Select>
               </FormControl>
             </Box>
 
             <TextField
               fullWidth
-              label="Activity Title"
+              label={t('foundation_dashboard.activity_title')}
               required
               value={activityForm.title}
               onChange={(e) => setActivityForm(prev => ({ ...prev, title: e.target.value }))}
@@ -562,7 +563,7 @@ const CampaignDialogs = ({
 
             <TextField
               fullWidth
-              label="Description"
+              label={t('foundation_dashboard.description')}
               value={activityForm.description}
               onChange={(e) => setActivityForm(prev => ({ ...prev, description: e.target.value }))}
               multiline
@@ -574,7 +575,7 @@ const CampaignDialogs = ({
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 fullWidth
-                label="Date"
+                label={t('foundation_dashboard.date')}
                 type="date"
                 required
                 value={activityForm.date}
@@ -585,7 +586,7 @@ const CampaignDialogs = ({
               />
               <TextField
                 fullWidth
-                label="Time"
+                label={t('foundation_dashboard.time')}
                 type="time"
                 value={activityForm.time}
                 onChange={(e) => setActivityForm(prev => ({ ...prev, time: e.target.value }))}
@@ -598,30 +599,31 @@ const CampaignDialogs = ({
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 fullWidth
-                label="Location"
+                label={t('foundation_dashboard.location')}
                 value={activityForm.location}
                 onChange={(e) => setActivityForm(prev => ({ ...prev, location: e.target.value }))}
                 variant="outlined"
                 sx={fieldSx}
               />
               <FormControl fullWidth sx={formControlSx}>
-                <InputLabel>Status</InputLabel>
+                <InputLabel>{t('common.status')}</InputLabel>
                 <Select
                   value={activityForm.status}
                   onChange={(e) => setActivityForm(prev => ({ ...prev, status: e.target.value }))}
-                  label="Status"
+                  label={t('common.status')}
                   sx={selectSx}
                 >
-                  {['Planned', 'In Progress', 'Completed', 'Cancelled'].map(s => (
-                    <MenuItem key={s} value={s}>{s}</MenuItem>
-                  ))}
+                  <MenuItem value="Planned">{t('foundation_dashboard.activity_status_planned')}</MenuItem>
+                  <MenuItem value="In Progress">{t('foundation_dashboard.activity_status_in_progress')}</MenuItem>
+                  <MenuItem value="Completed">{t('foundation_dashboard.status_completed')}</MenuItem>
+                  <MenuItem value="Cancelled">{t('foundation_dashboard.status_cancelled')}</MenuItem>
                 </Select>
               </FormControl>
             </Box>
 
             <TextField
               fullWidth
-              label="Attendees / Participants"
+              label={t('foundation_dashboard.attendees_participants')}
               value={activityForm.attendees}
               onChange={(e) => setActivityForm(prev => ({ ...prev, attendees: e.target.value }))}
               variant="outlined"
@@ -630,7 +632,7 @@ const CampaignDialogs = ({
 
             <TextField
               fullWidth
-              label="Notes"
+              label={t('foundation_dashboard.notes')}
               value={activityForm.notes}
               onChange={(e) => setActivityForm(prev => ({ ...prev, notes: e.target.value }))}
               multiline
@@ -649,7 +651,7 @@ const CampaignDialogs = ({
             variant="text"
             sx={{ color: '#8b6cbc', fontWeight: 500, textTransform: 'none', px: 2 }}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant="contained"
@@ -668,7 +670,7 @@ const CampaignDialogs = ({
               '&:disabled': { backgroundColor: '#c5b4e3', color: 'white', boxShadow: 'none' }
             }}
           >
-            {selectedActivity ? 'Save Changes' : 'Create Activity'}
+            {selectedActivity ? t('foundation_dashboard.save_changes') : t('foundation_dashboard.create_activity')}
           </Button>
         </DialogActions>
       </Dialog>

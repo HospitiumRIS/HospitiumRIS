@@ -38,7 +38,7 @@ export async function GET(request) {
                 startDate: true,
                 endDate: true,
                 status: true,
-                fundingAmount: true
+                totalBudgetAmount: true
             }
         });
 
@@ -57,7 +57,7 @@ export async function GET(request) {
                 icon: 'assignment',
                 color: '#42A5F5',
                 metadata: {
-                    fundingAmount: proposal.fundingAmount
+                    fundingAmount: proposal.totalBudgetAmount
                 }
             });
         });

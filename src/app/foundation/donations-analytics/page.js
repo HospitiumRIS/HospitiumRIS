@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   CssBaseline,
@@ -78,6 +79,7 @@ const useDebounce = (value, delay) => {
 };
 
 export default function ProfessionalDonationsAnalytics() {
+  const { t } = useTranslation();
   const theme = useTheme();
   
   // State management - optimized for fewer re-renders

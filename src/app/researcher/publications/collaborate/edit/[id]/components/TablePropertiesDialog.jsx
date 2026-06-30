@@ -1,4 +1,5 @@
 'use client';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog, DialogContent, DialogActions, Button, Box, Typography, 
@@ -66,6 +67,7 @@ const stylePresets = {
 };
 
 export default function TablePropertiesDialog({ open, onClose, onApply, initialSettings = {} }) {
+  const { t } = useTranslation();
   const [currentTab, setCurrentTab] = useState(0);
   const [modified, setModified] = useState(false);
   const [showLivePreview, setShowLivePreview] = useState(true);
@@ -263,7 +265,7 @@ export default function TablePropertiesDialog({ open, onClose, onApply, initialS
           <TableIcon />
           <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 500 }}>
             Table Properties
-          </Typography>
+</Typography>
           {modified && (
             <Chip 
               label="Modified" 
@@ -774,8 +776,8 @@ export default function TablePropertiesDialog({ open, onClose, onApply, initialS
         </Typography>
         <Box>
           <Button onClick={handleCancel} sx={{ color: '#666', mr: 1 }}>
-            Cancel
-          </Button>
+            t('common.cancel')
+</Button>
           <Button 
             onClick={handleApply}
             variant="contained" 
@@ -786,8 +788,8 @@ export default function TablePropertiesDialog({ open, onClose, onApply, initialS
               '&:disabled': { bgcolor: '#ccc' }
             }}
           >
-            Apply Changes
-          </Button>
+            {t('common.save')}
+</Button>
         </Box>
       </DialogActions>
     </Dialog>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Drawer,
@@ -37,6 +38,7 @@ import { useAuth } from '../AuthProvider';
 const drawerWidth = 260;
 
 const GlobalAdminLayout = ({ children }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -46,49 +48,49 @@ const GlobalAdminLayout = ({ children }) => {
 
   const menuItems = [
     {
-      text: 'System Dashboard',
+      text: t('global_admin.system_dashboard'),
       icon: <DashboardIcon />,
       path: '/global-admin',
       color: 'primary'
     },
     {
-      text: 'Institution Admins',
+      text: t('global_admin.institution_admins'),
       icon: <InstitutionsIcon />,
       path: '/global-admin/institutions',
       color: 'info'
     },
     {
-      text: 'System Health',
+      text: t('global_admin.system_health'),
       icon: <HealthIcon />,
       path: '/global-admin/health',
       color: 'success'
     },
     {
-      text: 'Database Management',
+      text: t('global_admin.database_management'),
       icon: <DatabaseIcon />,
       path: '/global-admin/database',
       color: 'warning'
     },
     {
-      text: 'System Logs',
+      text: t('global_admin.system_logs'),
       icon: <LogsIcon />,
       path: '/global-admin/logs',
       color: 'primary'
     },
     {
-      text: 'Analytics',
+      text: t('global_admin.analytics'),
       icon: <AnalyticsIcon />,
       path: '/global-admin/analytics',
       color: 'secondary'
     },
     {
-      text: 'Security',
+      text: t('global_admin.security'),
       icon: <SecurityIcon />,
       path: '/global-admin/security',
       color: 'error'
     },
     {
-      text: 'Settings',
+      text: t('global_admin.settings'),
       icon: <SettingsIcon />,
       path: '/global-admin/settings',
       color: 'warning'
@@ -142,10 +144,10 @@ const GlobalAdminLayout = ({ children }) => {
         </Avatar>
         <Box sx={{ flex: 1, position: 'relative', zIndex: 1 }}>
           <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
-            Global Admin
+            {t('global_admin.global_admin_panel')}
           </Typography>
           <Typography variant="caption" sx={{ opacity: 0.95, fontWeight: 500 }}>
-            System Control
+            {t('global_admin.system_administration')}
           </Typography>
         </Box>
       </Box>
@@ -175,7 +177,7 @@ const GlobalAdminLayout = ({ children }) => {
                 {user.givenName} {user.familyName}
               </Typography>
               <Chip
-                label="Global Admin"
+                label={t('global_admin.global_admin_panel')}
                 size="small"
                 sx={{ 
                   height: 22, 

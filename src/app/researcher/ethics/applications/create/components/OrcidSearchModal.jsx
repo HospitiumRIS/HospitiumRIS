@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogTitle,
@@ -27,13 +28,14 @@ import {
   CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 
-const OrcidSearchModal = ({ 
-  open, 
-  onClose, 
-  onSelect, 
+const OrcidSearchModal = ({
+  open,
+  onClose,
+  onSelect,
   title = "Search for Researcher",
   subtitle = "Search for researchers using ORCID database"
 }) => {
+  const { t } = useTranslation();
   const [givenNames, setGivenNames] = useState('');
   const [familyName, setFamilyName] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -214,7 +216,7 @@ const OrcidSearchModal = ({
               py: 1
             }}
           >
-            {loading ? 'Searching ORCID Database...' : 'Search ORCID'}
+            {loading ? t('common.loading') : 'Search ORCID'}
           </Button>
         </Box>
 
@@ -355,7 +357,7 @@ const OrcidSearchModal = ({
             }
           }}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
       </DialogActions>
     </Dialog>

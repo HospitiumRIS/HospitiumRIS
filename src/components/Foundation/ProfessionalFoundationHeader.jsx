@@ -1,6 +1,7 @@
 'use client';
 
 import React, { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AppBar,
   Toolbar,
@@ -55,6 +56,7 @@ const ProfessionalFoundationHeader = memo(({
   isLoading = false,
   stats = {}
 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchor, setNotificationAnchor] = useState(null);

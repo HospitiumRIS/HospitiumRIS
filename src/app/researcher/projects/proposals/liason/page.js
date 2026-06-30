@@ -117,6 +117,7 @@ import { format, addDays, isAfter, isBefore } from 'date-fns';
 import PageHeader from '../../../../../components/common/PageHeader';
 import { useAuth } from '../../../../../components/AuthProvider';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 
 const mockGrantApplications = [
   {
@@ -238,6 +239,7 @@ const funderTypeIcons = {
 };
 
 export default function ProposalLiaisonPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const theme = useTheme();
   const router = useRouter();
@@ -1062,8 +1064,8 @@ export default function ProposalLiaisonPage() {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: theme.palette.background.default, mt: 8 }}>
       <PageHeader
-        title="Grant Liaison & CRM"
-        description="Track and manage grant applications, funding opportunities, and stakeholder communications"
+        title={t("researcher.liason")}
+        description={t("researcher.liason_desc")}
         icon={<GrantIcon />}
         breadcrumbs={[
           { label: 'Dashboard', path: '/researcher', icon: <BusinessIcon /> },

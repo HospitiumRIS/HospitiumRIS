@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -56,6 +57,7 @@ import {
 import PageHeader from '@/components/common/PageHeader';
 
 const ComplianceAnalytics = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -191,7 +193,7 @@ const ComplianceAnalytics = () => {
               onClick={handleRefresh} 
               sx={{ ml: 2 }}
             >
-              Try Again
+              {t('common.retry')}
             </Button>
           </Alert>
         </Container>
@@ -214,7 +216,7 @@ const ComplianceAnalytics = () => {
           gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
           actionButton={
             <Stack direction="row" spacing={2}>
-              <Tooltip title="Refresh Data">
+              <Tooltip title={t('common.refresh')}>
                 <IconButton 
                   onClick={handleRefresh}
                   sx={{ 
@@ -225,7 +227,7 @@ const ComplianceAnalytics = () => {
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Export Report">
+              <Tooltip title={t('common.export')}>
                 <IconButton 
                   onClick={handleExport}
                   sx={{
@@ -325,7 +327,7 @@ const ComplianceAnalytics = () => {
               <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Pending Review
+                  {t('common.pending')}
                 </Typography>
                 <PendingIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
@@ -911,7 +913,7 @@ const ComplianceAnalytics = () => {
                 }}>
                   <ApprovedIcon sx={{ fontSize: 64, color: alpha('#8b6cbc', 0.2), mb: 2 }} />
                   <Typography variant="h6" sx={{ fontWeight: 600, color: '#6b7280', mb: 1 }}>
-                    No Recent Approvals
+                    {t('common.no_data')}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 400 }}>
                     {proposalSearchTerm ? 'No approvals match your search criteria. Try adjusting your search terms.' : 'There are no recent ethics approvals to display at this time.'}
@@ -929,7 +931,7 @@ const ComplianceAnalytics = () => {
                           Committee
                         </TableCell>
                         <TableCell sx={{ fontWeight: 600, backgroundColor: '#fafafa', borderBottom: '2px solid', borderColor: 'divider', py: 1.5 }}>
-                          Date
+                          {t('common.date')}
                         </TableCell>
                       </TableRow>
                     </TableHead>
@@ -1033,7 +1035,7 @@ const ComplianceAnalytics = () => {
                   }}>
                     <PendingIcon sx={{ fontSize: 64, color: alpha('#f59e0b', 0.2), mb: 2 }} />
                     <Typography variant="h6" sx={{ fontWeight: 600, color: '#6b7280', mb: 1 }}>
-                      No Pending Reviews
+                      {t('common.no_data')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', maxWidth: 400 }}>
                       {pendingSearchTerm ? 'No pending reviews match your search criteria. Try adjusting your search terms.' : 'There are no proposals currently awaiting ethics review.'}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -40,6 +41,7 @@ const CampaignCalendar = ({
   DASHBOARD_COLORS,
   hideHeader = false
 }) => {
+  const { t } = useTranslation();
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState(null);

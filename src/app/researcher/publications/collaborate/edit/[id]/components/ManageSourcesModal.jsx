@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -55,6 +56,7 @@ const ManageSourcesModal = ({
   manuscriptId,
   citationStyle = 'APA' 
 }) => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAnchor, setFilterAnchor] = useState(null);
   const [sortAnchor, setSortAnchor] = useState(null);
@@ -392,8 +394,8 @@ const ManageSourcesModal = ({
                   }
                 }}
               >
-                Filter
-              </Button>
+                t('common.filter')
+</Button>
               
               <Button
                 variant="outlined"
@@ -438,7 +440,7 @@ const ManageSourcesModal = ({
                 <Box sx={{ textAlign: 'center' }}>
                   <CircularProgress sx={{ color: '#8b6cbc', mb: 2 }} />
                   <Typography variant="body2" color="textSecondary">
-                    Loading manuscript citations...
+                    {t('common.loading')}
                   </Typography>
                 </Box>
               </Box>
@@ -678,8 +680,8 @@ const ManageSourcesModal = ({
                 }
               }}
             >
-              Close
-            </Button>
+              t('common.close')
+</Button>
           </Box>
         </Box>
 

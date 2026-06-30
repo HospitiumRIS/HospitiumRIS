@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -54,6 +55,7 @@ export default function VersionHistorySidebar({
   currentContent,
   currentTitle
 }) {
+  const { t } = useTranslation();
   const [versions, setVersions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [createVersionDialog, setCreateVersionDialog] = useState(false);
@@ -264,7 +266,9 @@ export default function VersionHistorySidebar({
   return (
     <>
       <Paper sx={{ 
-        width: 420, 
+        width: 420,
+        minWidth: 420,
+        flexShrink: 0,
         height: '100%', 
         display: 'flex', 
         flexDirection: 'column',
@@ -295,7 +299,7 @@ export default function VersionHistorySidebar({
             </Box>
             <Box>
               <Typography variant="h6" sx={{ fontSize: '1.125rem', fontWeight: 700, color: 'white' }}>
-                Version History
+                {t('common.version_history')}
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.75rem' }}>
                 Track manuscript changes
@@ -421,7 +425,7 @@ export default function VersionHistorySidebar({
                 <TimelineIcon sx={{ fontSize: 40, color: '#cbd5e0' }} />
               </Box>
               <Typography variant="h6" sx={{ fontWeight: 600, color: '#2d3748' }}>
-                No version history yet
+                {t('common.no_data')}
               </Typography>
               <Typography variant="body2" sx={{ color: '#64748b', maxWidth: 280 }}>
                 Create your first version to start tracking changes and milestones
@@ -439,7 +443,7 @@ export default function VersionHistorySidebar({
                   '&:hover': { bgcolor: '#7a5ba8' }
                 }}
               >
-                Create First Version
+                {t('common.create')}
               </Button>
             </Box>
           ) : (
@@ -676,8 +680,8 @@ export default function VersionHistorySidebar({
               }
             }}
           >
-            Cancel
-          </Button>
+            t('common.cancel')
+</Button>
           <Button 
             onClick={handleCreateVersion} 
             variant="contained"
@@ -695,7 +699,7 @@ export default function VersionHistorySidebar({
               }
             }}
           >
-            Create Version
+            {t('common.create')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -861,8 +865,8 @@ export default function VersionHistorySidebar({
             variant="outlined"
             sx={{ textTransform: 'none', borderColor: '#e2e8f0', color: '#64748b', fontWeight: 600, borderRadius: 2 }}
           >
-            Close
-          </Button>
+            t('common.close')
+</Button>
           {diffVersion && (
             <Button
               onClick={() => {
@@ -1007,8 +1011,8 @@ export default function VersionHistorySidebar({
               }
             }}
           >
-            Close
-          </Button>
+            t('common.close')
+</Button>
           {selectedVersion && selectedVersion.versionNumber !== 1 && (
             <Button 
               onClick={() => {
@@ -1030,7 +1034,7 @@ export default function VersionHistorySidebar({
                 }
               }}
             >
-              Restore to This Version
+              {t('common.update')}
             </Button>
           )}
         </DialogActions>

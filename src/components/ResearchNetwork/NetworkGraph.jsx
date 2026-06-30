@@ -1,4 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import React, { useRef, useEffect, useCallback, useMemo } from 'react';
+import { Box } from '@mui/material';
 import ForceGraph2D from 'react-force-graph-2d';
 import * as d3 from 'd3';
 import { THEME_COLORS, NODE_SIZES, FORCE_CONFIG } from './styles/theme';
@@ -15,6 +17,7 @@ const NetworkGraph = ({
   dimensions,
   onGraphReady
 }) => {
+  const { t } = useTranslation();
   const fgRef = useRef();
 
   useEffect(() => {
@@ -219,6 +222,12 @@ const NetworkGraph = ({
   }, [onNodeHover]);
 
   return (
+    <Box
+      component="div"
+      role="img"
+      aria-label={t('research_network.graph_aria')}
+      sx={{ width: dimensions.width, height: dimensions.height }}
+    >
     <ForceGraph2D
       ref={fgRef}
       graphData={graphData}
@@ -243,6 +252,7 @@ const NetworkGraph = ({
       backgroundColor={THEME_COLORS.background}
       d3VelocityDecay={0.3}
     />
+    </Box>
   );
 };
 

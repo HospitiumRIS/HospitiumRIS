@@ -47,6 +47,7 @@ import {
 import { format } from 'date-fns';
 import PageHeader from '../../../../../components/common/PageHeader';
 import { useAuth } from '../../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const statusColors = {
   DRAFT: '#9e9e9e',
@@ -80,6 +81,7 @@ const riskLevelColors = {
 };
 
 export default function InstitutionEthicsReviewViewPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const { user } = useAuth();
@@ -149,7 +151,7 @@ export default function InstitutionEthicsReviewViewPage() {
             border: '1px solid rgba(0, 0, 0, 0.12)'
           }}>
             <CircularProgress sx={{ color: '#8b6cbc' }} />
-            <Typography sx={{ mt: 2, color: '#718096' }}>Loading application...</Typography>
+            <Typography sx={{ mt: 2, color: '#718096' }}>{t('common.loading')}</Typography>
           </Box>
         </Container>
       </Box>
@@ -177,7 +179,7 @@ export default function InstitutionEthicsReviewViewPage() {
             onClick={() => router.push('/institution/ethics/review')}
             sx={{ mt: 2, color: '#8b6cbc' }}
           >
-            Back to Ethics Review
+            {t('common.back')} to Ethics Review
           </Button>
         </Container>
       </Box>
@@ -223,7 +225,7 @@ export default function InstitutionEthicsReviewViewPage() {
                   }
                 }}
               >
-                Review Application
+                {t('common.review')} Application
               </Button>
             )}
           </Box>
@@ -240,7 +242,7 @@ export default function InstitutionEthicsReviewViewPage() {
             '&:hover': { bgcolor: 'rgba(139, 108, 188, 0.04)' }
           }}
         >
-          Back to Ethics Review
+          {t('common.back')} to Ethics Review
         </Button>
 
         {/* Status and Reference Information */}

@@ -27,11 +27,13 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
   const theme = useTheme();
   const router = useRouter();
   const { user, isAuthenticated, logout, getDashboardRoute, getUserRole } = useAuth();
+  const { t } = useTranslation();
 
   const handleMenuItemClick = (event, path) => {
     if (event) {
@@ -93,9 +95,9 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
           {/* Header */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
-              Menu
+              {t('mobile_menu.title')}
             </Typography>
-            <IconButton onClick={handleCloseMenu} size="small">
+            <IconButton onClick={handleCloseMenu} size="small" aria-label={t('mobile_menu.close')}>
               <CloseIcon />
             </IconButton>
           </Box>
@@ -196,7 +198,7 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
               '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.1)' },
             }}
           >
-            Dashboard
+            {t('user_menu.dashboard')}
           </Button>
 
           <Button
@@ -213,10 +215,10 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
               '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.1)' },
             }}
           >
-            {getUserRole() === 'researcher' ? 'Researcher Profile' : 
-             getUserRole() === 'research_admin' ? 'Institution Profile' : 
-             getUserRole() === 'foundation_admin' ? 'Foundation Profile' : 
-             'Profile'}
+            {getUserRole() === 'researcher' ? t('user_menu.researcher_profile') :
+             getUserRole() === 'research_admin' ? t('user_menu.institution_profile') :
+             getUserRole() === 'foundation_admin' ? t('user_menu.foundation_profile') :
+             t('user_menu.profile')}
           </Button>
 
           <Button
@@ -233,7 +235,7 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
               '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.1)' },
             }}
           >
-            Settings
+            {t('nav.settings')}
           </Button>
 
           {/* Logout */}
@@ -251,7 +253,7 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
               },
             }}
           >
-            Logout
+            {t('user_menu.logout')}
           </Button>
         </Box>
       </Drawer>
@@ -277,9 +279,9 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
-            Menu
+            {t('mobile_menu.title')}
           </Typography>
-          <IconButton onClick={handleCloseMenu} size="small">
+          <IconButton onClick={handleCloseMenu} size="small" aria-label={t('mobile_menu.close')}>
             <CloseIcon />
           </IconButton>
         </Box>
@@ -290,11 +292,11 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
               {/* User Info */}
               <ListItem>
                 <ListItemText 
-                  primary={`Welcome, ${user?.givenName || user?.firstName || user?.email}`}
+                  primary={t('user_menu.welcome', { name: user?.givenName || user?.firstName || user?.email })}
                   secondary={[
-                    `Role: ${getUserRole() || 'User'}`,
-                    user?.primaryInstitution && `Institution: ${user.primaryInstitution}`,
-                    user?.orcidId && `ORCID: ${user.orcidId}`
+                    t('mobile_menu.role_label', { role: getUserRole() || t('common.name') }),
+                    user?.primaryInstitution && t('mobile_menu.institution_label', { name: user.primaryInstitution }),
+                    user?.orcidId && `ORCID: ${user.orcidId}`,
                   ].filter(Boolean).join(' • ')}
                 />
               </ListItem>
@@ -305,7 +307,7 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
                   <ListItemIcon>
                     <DashboardIcon color="primary" />
                   </ListItemIcon>
-                  <ListItemText primary="Dashboard" />
+                  <ListItemText primary={t('user_menu.dashboard')} />
                 </ListItemButton>
               </ListItem>
 
@@ -316,7 +318,7 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
                     <ListItemIcon>
                       <LogsIcon color="primary" />
                     </ListItemIcon>
-                    <ListItemText primary="Activity Logs" />
+                    <ListItemText primary={t('user_menu.activity_logs')} />
                   </ListItemButton>
                 </ListItem>
               )}
@@ -327,7 +329,7 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
                   <ListItemIcon>
                     <LoginIcon color="error" />
                   </ListItemIcon>
-                  <ListItemText primary="Logout" />
+                  <ListItemText primary={t('user_menu.logout')} />
                 </ListItemButton>
               </ListItem>
             </>
@@ -339,7 +341,7 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
                   <ListItemIcon>
                     <LoginIcon color="primary" />
                   </ListItemIcon>
-                  <ListItemText primary="Login" />
+                  <ListItemText primary={t('nav.login')} />
                 </ListItemButton>
               </ListItem>
 
@@ -349,7 +351,7 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
                   <ListItemIcon>
                     <PersonAddIcon color="primary" />
                   </ListItemIcon>
-                  <ListItemText primary="Register" />
+                  <ListItemText primary={t('nav.register')} />
                 </ListItemButton>
               </ListItem>
 
@@ -359,7 +361,7 @@ const MobileMenu = ({ isOpen, onClose, dashboardConfig = null }) => {
                   <ListItemIcon>
                     <FaqIcon color="primary" />
                   </ListItemIcon>
-                  <ListItemText primary="Frequently Asked Questions" />
+                  <ListItemText primary={t('nav.faq')} />
                 </ListItemButton>
               </ListItem>
             </>

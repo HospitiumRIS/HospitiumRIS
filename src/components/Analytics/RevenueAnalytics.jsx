@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo } from 'react';
 import {
   Box,
@@ -16,11 +17,11 @@ import {
 } from '@mui/icons-material';
 
 const RevenueAnalytics = memo(({ analyticsData, loading }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   return (
     <Box>
-      {/* Page Title */}
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 4 }}>
         <MonetizationOnIcon sx={{ fontSize: 32, color: '#8b6cbc' }} />
         <Box>
@@ -29,17 +30,16 @@ const RevenueAnalytics = memo(({ analyticsData, loading }) => {
             color: theme.palette.text.primary,
             mb: 0.5
           }}>
-            Revenue Analytics
+            {t('analytics.revenue_analytics')}
           </Typography>
           <Typography variant="body1" sx={{ 
             color: theme.palette.text.secondary
           }}>
-            Financial analysis and revenue forecasting for strategic planning
+            {t('analytics.revenue_analytics_desc_long')}
           </Typography>
         </Box>
       </Stack>
 
-      {/* Coming Soon Card */}
       <Card sx={{ 
         borderRadius: 3,
         border: '2px dashed rgba(139, 108, 188, 0.3)',
@@ -57,7 +57,7 @@ const RevenueAnalytics = memo(({ analyticsData, loading }) => {
             color: theme.palette.text.primary,
             mb: 2
           }}>
-            Revenue Analytics Coming Soon
+            {t('analytics.revenue_coming_soon')}
           </Typography>
           
           <Typography variant="body1" sx={{ 
@@ -66,16 +66,15 @@ const RevenueAnalytics = memo(({ analyticsData, loading }) => {
             maxWidth: 500,
             mx: 'auto'
           }}>
-            Advanced financial analytics including revenue forecasting, budget analysis,
-            cost-per-acquisition, and ROI optimization across all channels.
+            {t('analytics.revenue_coming_desc')}
           </Typography>
 
           <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap">
-            <Chip label="Revenue Forecasting" variant="outlined" color="primary" />
-            <Chip label="Budget Analysis" variant="outlined" color="primary" />
-            <Chip label="Cost Analysis" variant="outlined" color="primary" />
-            <Chip label="ROI Optimization" variant="outlined" color="primary" />
-            <Chip label="Financial Planning" variant="outlined" color="primary" />
+            <Chip label={t('analytics.revenue_forecasting')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.budget_analysis')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.cost_analysis')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.roi_optimization')} variant="outlined" color="primary" />
+            <Chip label={t('analytics.financial_planning')} variant="outlined" color="primary" />
           </Stack>
         </CardContent>
       </Card>

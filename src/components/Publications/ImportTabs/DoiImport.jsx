@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback } from 'react';
 import {
   Box,
@@ -18,6 +19,7 @@ import PublicationPreviewDialog from '../PublicationPreviewDialog';
 import { importFromCrossref } from '../../../services/crossrefService';
 
 const DoiImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [keywords, setKeywords] = useState('');
   const [author, setAuthor] = useState('');
@@ -358,7 +360,7 @@ const DoiImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
           }
         }}
       >
-        {loading ? 'Searching...' : 'Search Crossref'}
+        {loading ? t('common.loading') : t('common.search')}
       </Button>
 
       {/* Search Results Dialog */}

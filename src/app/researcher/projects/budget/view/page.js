@@ -5,29 +5,17 @@ import {
   Box,
   Container,
   Typography,
-  Card,
-  CardContent,
-  Button,
   Paper,
   Chip,
   LinearProgress,
-  Avatar,
   IconButton,
   Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   InputAdornment,
-  Stack,
-  Divider,
-  Tab,
-  Tabs,
   Table,
   TableBody,
   TableCell,
@@ -36,60 +24,40 @@ import {
   TableRow,
   TablePagination,
   CircularProgress,
-  Alert,
-  Grid
+  Button
 } from '@mui/material';
 import {
   AccountBalance as BudgetIcon,
   TrendingUp as TrendingUpIcon,
   Receipt as ExpenseIcon,
   Analytics as AnalyticsIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
   AttachMoney as MoneyIcon,
   Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
   Business as BusinessIcon,
   Assignment as ProjectIcon,
-  FilterList as FilterIcon,
   Search as SearchIcon,
-  Clear as ClearIcon
+  Clear as ClearIcon,
+  OpenInNew as ViewIcon,
+  ArrowForward as ArrowIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
 
 import PageHeader from '../../../../../components/common/PageHeader';
 import { useAuth } from '../../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const BudgetManagementPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
-  const [currentTab, setCurrentTab] = useState(0);
+  const router = useRouter();
   const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [expenses, setExpenses] = useState([]);
-  const [addExpenseDialog, setAddExpenseDialog] = useState(false);
-  const [budgetDialog, setBudgetDialog] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filterStatus, setFilterStatus] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [expenseForm, setExpenseForm] = useState({
-    description: '',
-    amount: '',
-    category: '',
-    date: new Date().toISOString().split('T')[0],
-    receipt: null
-  });
-  const [budgetForm, setBudgetForm] = useState({
-    totalBudget: '',
-    personnel: '',
-    equipment: '',
-    supplies: '',
-    travel: '',
-    other: ''
-  });
 
   // Fetch projects data
   useEffect(() => {
@@ -110,20 +78,20 @@ const BudgetManagementPage = () => {
         const data = await response.json();
         console.log('Fetched proposals:', data);
         
-        if (!Array.isArray(data)) {
-          console.warn('Expected array of proposals, got:', typeof data);
+        const proposalsArray = data.success && Array.isArray(data.proposals)
+          ? data.proposals
+          : Array.isArray(data) ? data : [];
+        
+        if (proposalsArray.length === 0) {
+          console.warn('No proposals found in response:', data);
           setProjects([]);
           return;
         }
         
-        const transformedProjects = data.map(transformProposalToBudgetProject);
+        const transformedProjects = proposalsArray.map(transformProposalToBudgetProject);
         console.log('Transformed projects:', transformedProjects);
         
         setProjects(transformedProjects);
-        if (transformedProjects.length > 0) {
-          setSelectedProject(transformedProjects[0]);
-          console.log('Selected first project:', transformedProjects[0].title);
-        }
       } catch (error) {
         console.error('Error fetching projects:', error);
         setError('Failed to load project data. Please try again.');
@@ -154,7 +122,7 @@ const BudgetManagementPage = () => {
       budget = proposal.budget;
     }
     
-    const totalBudget = parseFloat(budget.total || budget.totalBudget || 0);
+    const totalBudget = parseFloat(budget.total || budget.totalBudget || proposal.totalBudgetAmount || 0);
     
     // Calculate spent amount - use random percentage between 20-60% for realistic variation
     const spentPercentage = 0.2 + Math.random() * 0.4; // 20-60%
@@ -236,72 +204,43 @@ const BudgetManagementPage = () => {
   };
 
   // Calculate budget statistics
-  const calculateBudgetStats = () => {
+  const budgetStats = React.useMemo(() => {
     if (!projects.length) return { totalBudget: 0, totalSpent: 0, avgUtilization: 0, activeProjects: 0 };
-    
     const totalBudget = projects.reduce((sum, p) => sum + p.budget.total, 0);
     const totalSpent = projects.reduce((sum, p) => sum + p.budget.spent, 0);
     const avgUtilization = projects.reduce((sum, p) => sum + p.budget.utilization, 0) / projects.length;
-    const activeProjects = projects.filter(p => p.status === 'ACTIVE' || p.status === 'Active').length;
-    
+    const activeProjects = projects.filter(p => p.status === 'Active').length;
     return { totalBudget, totalSpent, avgUtilization, activeProjects };
-  };
+  }, [projects]);
 
-  const budgetStats = calculateBudgetStats();
-
-  // Handle expense form submission
-  const handleAddExpense = () => {
-    if (!selectedProject || !expenseForm.description || !expenseForm.amount) return;
-
-    const newExpense = {
-      id: `exp_${selectedProject.id}_${Date.now()}`,
-      description: expenseForm.description,
-      amount: parseFloat(expenseForm.amount),
-      category: expenseForm.category,
-      date: new Date(expenseForm.date),
-      status: 'Pending',
-      receipt: expenseForm.receipt
-    };
-
-    // Update selected project expenses
-    const updatedProject = {
-      ...selectedProject,
-      expenses: [newExpense, ...selectedProject.expenses],
-      budget: {
-        ...selectedProject.budget,
-        spent: selectedProject.budget.spent + newExpense.amount,
-        remaining: selectedProject.budget.remaining - newExpense.amount,
-        utilization: ((selectedProject.budget.spent + newExpense.amount) / selectedProject.budget.total) * 100
-      }
-    };
-
-    setSelectedProject(updatedProject);
-    setProjects(prev => prev.map(p => p.id === selectedProject.id ? updatedProject : p));
-    setExpenseForm({ description: '', amount: '', category: '', date: new Date().toISOString().split('T')[0], receipt: null });
-    setAddExpenseDialog(false);
-  };
-
-  // Get status color
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'active': case 'approved': return 'success';
-      case 'pending': case 'under_review': return 'warning';
+      case 'under review': case 'pending': return 'warning';
       case 'rejected': case 'cancelled': return 'error';
+      case 'completed': return 'info';
       default: return 'default';
     }
   };
 
-  // Get budget status based on utilization
   const getBudgetStatus = (utilization) => {
-    if (utilization < 50) return { color: 'success', label: 'On Track' };
-    if (utilization < 80) return { color: 'warning', label: 'Monitor' };
-    return { color: 'error', label: 'At Risk' };
+    if (utilization < 50) return { color: '#4caf50', label: 'On Track' };
+    if (utilization < 80) return { color: '#ff9800', label: 'Monitor' };
+    return { color: '#f44336', label: 'At Risk' };
   };
 
+  const filteredProjects = projects.filter(p => {
+    const matchesSearch = !searchQuery ||
+      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.pi.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = filterStatus === 'All' || p.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
   if (loading) {
-  return (
+    return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-        <CircularProgress />
+        <CircularProgress sx={{ color: '#8b6cbc' }} />
       </Box>
     );
   }
@@ -309,634 +248,199 @@ const BudgetManagementPage = () => {
   return (
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
       <PageHeader
-        title="Budget Management"
-        description="Track project budgets, expenses, and financial performance across all research initiatives"
+        title={t("researcher.budget")}
+        description={t("researcher.budget_desc")}
         icon={<BudgetIcon />}
         breadcrumbs={[
           { label: 'Dashboard', path: '/researcher', icon: <BusinessIcon /> },
           { label: 'Projects', path: '/researcher/projects', icon: <ProjectIcon /> },
           { label: 'Budget Management', path: '/researcher/projects/budget/view', icon: <BudgetIcon /> },
         ]}
-        actionButton={
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setAddExpenseDialog(true)}
-            sx={{ 
-              bgcolor: '#8b6cbc', 
-              color: 'white',
-              '&:hover': { bgcolor: '#7b5cac' },
-              '&:disabled': { bgcolor: 'grey.400', color: 'grey.600' },
-              fontWeight: 'bold',
-              px: 3,
-              py: 1.2,
-              fontSize: '0.9rem'
-            }}
-            disabled={!selectedProject}
-          >
-            Add Expense
-          </Button>
-        }
         sx={{ mt: '80px' }}
       />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Budget Overview Cards */}
-        <Grid container spacing={2.5} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: '#8b6cbc',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Total Budget
-                </Typography>
-                <MoneyIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                ${budgetStats.totalBudget.toLocaleString()}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Allocated funding
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: '#8b6cbc',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Total Spent
-                </Typography>
-                <ExpenseIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                ${budgetStats.totalSpent.toLocaleString()}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Expenses to date
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: '#8b6cbc',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Avg Utilization
-                </Typography>
-                <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                {budgetStats.avgUtilization.toFixed(1)}%
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Budget utilization rate
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper sx={{ 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: '#8b6cbc',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
-              height: '100px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Active Projects
-                </Typography>
-                <AnalyticsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-                {budgetStats.activeProjects}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Projects with budgets
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
 
-        {/* Search Projects */}
-        <Paper sx={{ 
-          p: 3, 
-          mb: 3,
-          borderRadius: 3,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
-        }}>
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 2, 
-            alignItems: 'center',
-            flexWrap: 'wrap'
-          }}>
-            <Box sx={{ flex: '1 1 300px', minWidth: '300px' }}>
-              <TextField
-                fullWidth
-                placeholder="Search projects by title, PI, or budget..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: '#8b6cbc' }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: searchQuery && (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setSearchQuery('')} size="small">
-                        <ClearIcon />
-                      </IconButton>
-                    </InputAdornment>
-                  )
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 3,
-                    backgroundColor: 'rgba(255,255,255,0.8)',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255,255,255,1)',
-                      '& fieldset': {
-                        borderColor: '#8b6cbc',
-                      }
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                  },
-                }}
-              />
-            </Box>
+        {/* Stats Cards */}
+        <Box sx={{ display: 'flex', gap: 2.5, mb: 4, flexWrap: { xs: 'wrap', sm: 'nowrap' }, '& > *': { flex: { xs: '1 1 100%', sm: '1 1 0' }, minWidth: 0 } }}>
+          {[
+            { label: 'Total Budget', value: `$${budgetStats.totalBudget.toLocaleString()}`, sub: 'Allocated funding', icon: <MoneyIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} /> },
+            { label: 'Total Spent', value: `$${budgetStats.totalSpent.toLocaleString()}`, sub: 'Expenses to date', icon: <ExpenseIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} /> },
+            { label: 'Avg Utilization', value: `${budgetStats.avgUtilization.toFixed(1)}%`, sub: 'Budget utilization rate', icon: <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} /> },
+            { label: 'Active Projects', value: budgetStats.activeProjects, sub: 'Currently running', icon: <AnalyticsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} /> },
+          ].map((card) => (
+            <Paper key={card.label} sx={{ p: 2, borderRadius: 2, bgcolor: '#8b6cbc', boxShadow: '0 2px 8px rgba(139,108,188,0.2)', position: 'relative', overflow: 'hidden', height: 100, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>{card.label}</Typography>
+                {card.icon}
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>{card.value}</Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>{card.sub}</Typography>
+            </Paper>
+          ))}
+        </Box>
+
+        {/* Search & Filter Bar */}
+        <Paper sx={{ p: 2.5, mb: 3, borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+            <TextField
+              placeholder="Search by title or PI..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
+              size="small"
+              sx={{ flex: '1 1 260px', '& .MuiOutlinedInput-root': { borderRadius: 2, '&.Mui-focused fieldset': { borderColor: '#8b6cbc' } } }}
+              InputProps={{
+                startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: '#8b6cbc', fontSize: 20 }} /></InputAdornment>,
+                endAdornment: searchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setSearchQuery('')} size="small"><ClearIcon fontSize="small" /></IconButton>
+                  </InputAdornment>
+                )
+              }}
+            />
+            <FormControl size="small" sx={{ minWidth: 160 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={filterStatus}
+                label="Status"
+                onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
+                sx={{ borderRadius: 2, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#8b6cbc' } }}
+              >
+                <MenuItem value="All">All Statuses</MenuItem>
+                <MenuItem value="Active">Active</MenuItem>
+                <MenuItem value="Under Review">Under Review</MenuItem>
+                <MenuItem value="Completed">Completed</MenuItem>
+                <MenuItem value="Rejected">Rejected</MenuItem>
+              </Select>
+            </FormControl>
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
+              {filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''}
+            </Typography>
           </Box>
         </Paper>
 
-        {selectedProject && (
-          <Paper elevation={2}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-              <Tabs 
-                value={currentTab} 
-                onChange={(e, newValue) => setCurrentTab(newValue)}
-                sx={{ 
-                  px: 3,
-                  '& .MuiTab-root': { 
-                    minHeight: 48,
-                    color: 'text.secondary',
-                    '&.Mui-selected': { color: '#8b6cbc' }
-                  },
-                  '& .MuiTabs-indicator': { backgroundColor: '#8b6cbc' }
-                }}
-              >
-                <Tab label="Budget Overview" />
-                <Tab label="Expense Tracking" />
-                <Tab label="Budget Analysis" />
-                <Tab label="Financial Reports" />
-              </Tabs>
-            </Box>
-
-            <Box sx={{ p: 3 }}>
-              {currentTab === 0 && (
-                <Box>
-                  {/* Budget Overview Tab */}
-                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>
-                    {selectedProject.title} - Budget Overview
-                  </Typography>
-
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: 3, 
-                    mb: 4,
-                    flexWrap: 'wrap',
-                    '& > *': { flex: 1, minWidth: { xs: '100%', md: 'calc(50% - 12px)' } }
-                  }}>
-                    {/* Budget Summary */}
-                    <Card elevation={1} sx={{ p: 2 }}>
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#8b6cbc' }}>
-                        Budget Summary
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2">Total Budget:</Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                            ${selectedProject.budget.total.toLocaleString()}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2">Amount Spent:</Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'error.main' }}>
-                            ${selectedProject.budget.spent.toLocaleString()}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2">Remaining:</Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'success.main' }}>
-                            ${selectedProject.budget.remaining.toLocaleString()}
-                          </Typography>
-                        </Box>
-                        <Divider />
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body2">Utilization:</Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                              {selectedProject.budget.utilization.toFixed(1)}%
-                            </Typography>
-                            <Chip 
-                              label={getBudgetStatus(selectedProject.budget.utilization).label}
-                              size="small"
-                              color={getBudgetStatus(selectedProject.budget.utilization).color}
-                            />
-                          </Box>
-                        </Box>
-                        <LinearProgress
-                          variant="determinate"
-                          value={Math.min(selectedProject.budget.utilization, 100)}
-                          sx={{ 
-                            height: 8, 
-                            borderRadius: 4,
-                            bgcolor: 'rgba(139, 108, 188, 0.1)',
-                            '& .MuiLinearProgress-bar': {
-                              bgcolor: selectedProject.budget.utilization > 80 ? 'error.main' : '#8b6cbc'
-                            }
-                          }}
-                        />
-                      </Box>
-                    </Card>
-
-                    {/* Budget Categories */}
-                    <Card elevation={1} sx={{ p: 2 }}>
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#8b6cbc' }}>
-                        Budget Allocation by Category
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        {Object.entries(selectedProject.budget.categories).map(([category, amount]) => (
-                          <Box key={category} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
-                              {category}:
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, ml: 2 }}>
-                              <LinearProgress
-                                variant="determinate"
-                                value={(amount / selectedProject.budget.total) * 100}
-                                sx={{ 
-                                  flex: 1,
-                                  height: 6, 
-                                  borderRadius: 3,
-                                  bgcolor: 'rgba(139, 108, 188, 0.1)',
-                                  '& .MuiLinearProgress-bar': { bgcolor: '#8b6cbc' }
-                                }}
-                              />
-                              <Typography variant="body2" sx={{ fontWeight: 'bold', minWidth: '80px', textAlign: 'right' }}>
-                                ${amount.toLocaleString()}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        ))}
-                      </Box>
-                    </Card>
-                  </Box>
-
-                  {/* Project Details */}
-                  <Card elevation={1} sx={{ p: 2 }}>
-                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#8b6cbc' }}>
-                      Project Information
-                    </Typography>
-                    <Grid container spacing={3}>
-                      <Grid item xs={12} md={6}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">Principal Investigator</Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                              {selectedProject.pi}
-                            </Typography>
-                          </Box>
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">Project Status</Typography>
-                            <Box sx={{ mt: 0.5 }}>
-                              <Chip 
-                                label={selectedProject.status} 
-                                color={getStatusColor(selectedProject.status)}
-                                size="small"
-                              />
-                            </Box>
-                          </Box>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">Start Date</Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                              {selectedProject.startDate 
-                                ? format(new Date(selectedProject.startDate), 'MMM dd, yyyy')
-                                : 'Not set'
-                              }
-                            </Typography>
-                          </Box>
-                          <Box>
-                            <Typography variant="caption" color="text.secondary">End Date</Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                              {selectedProject.endDate 
-                                ? format(new Date(selectedProject.endDate), 'MMM dd, yyyy')
-                                : 'Not set'
-                              }
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  </Card>
-                </Box>
-              )}
-
-              {currentTab === 1 && (
-                <Box>
-                  {/* Expense Tracking Tab */}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                      Expense Tracking - {selectedProject.title}
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      startIcon={<AddIcon />}
-                      onClick={() => setAddExpenseDialog(true)}
-                      sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7b5cac' } }}
-                    >
-                      Add Expense
-                    </Button>
-                  </Box>
-
-                  {/* Expense Filters */}
-                  <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <InputLabel>Status</InputLabel>
-                        <Select
-                          value={filterStatus}
-                          onChange={(e) => setFilterStatus(e.target.value)}
-                          label="Status"
-                        >
-                          <MenuItem value="All">All</MenuItem>
-                          <MenuItem value="Approved">Approved</MenuItem>
-                          <MenuItem value="Pending">Pending</MenuItem>
-                          <MenuItem value="Rejected">Rejected</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Box>
-                  </Paper>
-
-                  {/* Expenses Table */}
-                  <TableContainer component={Paper} elevation={1}>
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Description</TableCell>
-                          <TableCell align="right">Amount</TableCell>
-                          <TableCell>Category</TableCell>
-                          <TableCell>Date</TableCell>
-                          <TableCell>Status</TableCell>
-                          <TableCell>Receipt</TableCell>
-                          <TableCell align="center">Actions</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {selectedProject.expenses
-                          .filter(expense => filterStatus === 'All' || expense.status === filterStatus)
-                          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                          .map((expense) => (
-                            <TableRow key={expense.id} hover>
-                              <TableCell>
-                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                  {expense.description}
-                                </Typography>
-                              </TableCell>
-                              <TableCell align="right">
-                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                  ${expense.amount.toLocaleString()}
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <Chip label={expense.category} size="small" variant="outlined" />
-                              </TableCell>
-                              <TableCell>
-                                {format(new Date(expense.date), 'MMM dd, yyyy')}
-                              </TableCell>
-                              <TableCell>
-                                <Chip 
-                                  label={expense.status} 
-                                  size="small"
-                                  color={getStatusColor(expense.status)}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                {expense.receipt ? (
-                                  <Chip label="Available" size="small" color="success" />
-                                ) : (
-                                  <Chip label="Missing" size="small" color="warning" />
-                                )}
-                              </TableCell>
-                              <TableCell align="center">
-                                <Stack direction="row" spacing={1}>
-                                  <Tooltip title="Edit">
-                                    <IconButton size="small">
-                                      <EditIcon />
-                                    </IconButton>
-                                  </Tooltip>
-                                  <Tooltip title="Delete">
-                                    <IconButton size="small" color="error">
-                                      <DeleteIcon />
-                                    </IconButton>
-                                  </Tooltip>
-                                </Stack>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      </TableBody>
-                    </Table>
-                    <TablePagination
-                      rowsPerPageOptions={[5, 10, 25]}
-                      component="div"
-                      count={selectedProject.expenses.filter(expense => filterStatus === 'All' || expense.status === filterStatus).length}
-                      rowsPerPage={rowsPerPage}
-                      page={page}
-                      onPageChange={(e, newPage) => setPage(newPage)}
-                      onRowsPerPageChange={(e) => {
-                        setRowsPerPage(parseInt(e.target.value, 10));
-                        setPage(0);
-                      }}
-                    />
-                  </TableContainer>
-                </Box>
-              )}
-
-              {currentTab === 2 && (
-                <Box>
-                  {/* Budget Analysis Tab - Placeholder for now */}
-                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>
-                    Budget Analysis - {selectedProject.title}
-                  </Typography>
-                  <Alert severity="info">
-                    Budget analysis features including spending trends, variance analysis, and forecasting will be implemented here.
-                  </Alert>
-                </Box>
-              )}
-
-              {currentTab === 3 && (
-                <Box>
-                  {/* Financial Reports Tab - Placeholder for now */}
-                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>
-                    Financial Reports - {selectedProject.title}
-                  </Typography>
-                  <Alert severity="info">
-                    Financial reporting features including budget reports, expense summaries, and export functionality will be implemented here.
-                  </Alert>
-                </Box>
-              )}
-            </Box>
-          </Paper>
-        )}
-
-        {error && (
-          <Paper elevation={2} sx={{ p: 6, textAlign: 'center' }}>
-            <WarningIcon sx={{ fontSize: 60, color: 'error.main', mb: 2 }} />
-            <Typography variant="h6" color="error.main" sx={{ mb: 1 }}>
-              Error Loading Data
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              {error}
-            </Typography>
-            <Button
-              variant="contained"
-              onClick={() => {
-                setError(null);
-                setLoading(true);
-                // Trigger refetch by calling the effect
-                window.location.reload();
-              }}
-              sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7b5cac' } }}
-            >
+        {/* Projects Table */}
+        {error ? (
+          <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
+            <WarningIcon sx={{ fontSize: 56, color: 'error.main', mb: 2 }} />
+            <Typography variant="h6" color="error.main" sx={{ mb: 1 }}>Error Loading Projects</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>{error}</Typography>
+            <Button variant="contained" onClick={() => window.location.reload()} sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7b5cac' } }}>
               Try Again
             </Button>
           </Paper>
-        )}
-
-        {!selectedProject && !loading && !error && projects.length === 0 && (
-          <Paper elevation={2} sx={{ p: 6, textAlign: 'center' }}>
-            <BudgetIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary">
-              No projects available
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Create a project proposal to start managing budgets and expenses.
-            </Typography>
+        ) : (
+          <Paper sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: '#8b6cbc' }}>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>Project Title</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>Principal Investigator</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>Status</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }} align="right">Total Budget</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }} align="right">Spent</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem', minWidth: 160 }}>Utilization</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>End Date</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }} align="center">Action</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredProjects.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} sx={{ textAlign: 'center', py: 8 }}>
+                        <BudgetIcon sx={{ fontSize: 52, color: 'text.disabled', mb: 1.5 }} />
+                        <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          {projects.length === 0 ? 'No projects available' : 'No projects match your filters'}
+                        </Typography>
+                        <Typography variant="body2" color="text.disabled">
+                          {projects.length === 0 ? 'Create a project proposal to start managing budgets.' : 'Try adjusting your search or status filter.'}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredProjects
+                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .map((project) => {
+                        const budSt = getBudgetStatus(project.budget.utilization);
+                        return (
+                          <TableRow
+                            key={project.id}
+                            hover
+                            onClick={() => router.push(`/researcher/projects/budget/view/${project.id}`)}
+                            sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'rgba(139,108,188,0.05)' }, '&:last-child td': { borderBottom: 0 } }}
+                          >
+                            <TableCell sx={{ maxWidth: 320 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {project.title}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" color="text.secondary">{project.pi}</Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip label={project.status} color={getStatusColor(project.status)} size="small" sx={{ fontWeight: 600, fontSize: '0.72rem' }} />
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                ${project.budget.total.toLocaleString()}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                                ${project.budget.spent.toLocaleString()}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={Math.min(project.budget.utilization, 100)}
+                                  sx={{ flex: 1, height: 6, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.08)', '& .MuiLinearProgress-bar': { bgcolor: budSt.color, borderRadius: 3 } }}
+                                />
+                                <Typography variant="caption" sx={{ fontWeight: 600, minWidth: 36, color: budSt.color }}>
+                                  {project.budget.utilization.toFixed(0)}%
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" color="text.secondary">
+                                {project.endDate ? format(new Date(project.endDate), 'MMM dd, yyyy') : '—'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Tooltip title="View Budget Details">
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => { e.stopPropagation(); router.push(`/researcher/projects/budget/view/${project.id}`); }}
+                                  sx={{ color: '#8b6cbc', '&:hover': { bgcolor: 'rgba(139,108,188,0.1)' } }}
+                                >
+                                  <ArrowIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            {filteredProjects.length > 0 && (
+              <TablePagination
+                rowsPerPageOptions={[10, 25, 50]}
+                component="div"
+                count={filteredProjects.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={(_, newPage) => setPage(newPage)}
+                onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+              />
+            )}
           </Paper>
         )}
       </Container>
-
-      {/* Add Expense Dialog */}
-      <Dialog open={addExpenseDialog} onClose={() => setAddExpenseDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ bgcolor: '#8b6cbc', color: 'white' }}>
-          Add New Expense
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              fullWidth
-              label="Description"
-              value={expenseForm.description}
-              onChange={(e) => setExpenseForm(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Enter expense description..."
-            />
-            <TextField
-              fullWidth
-              label="Amount"
-              type="number"
-              value={expenseForm.amount}
-              onChange={(e) => setExpenseForm(prev => ({ ...prev, amount: e.target.value }))}
-              InputProps={{
-                startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>
-              }}
-            />
-            <FormControl fullWidth>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={expenseForm.category}
-                onChange={(e) => setExpenseForm(prev => ({ ...prev, category: e.target.value }))}
-                label="Category"
-              >
-                <MenuItem value="Personnel">Personnel</MenuItem>
-                <MenuItem value="Equipment">Equipment</MenuItem>
-                <MenuItem value="Supplies">Supplies</MenuItem>
-                <MenuItem value="Travel">Travel</MenuItem>
-                <MenuItem value="Other">Other</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              fullWidth
-              label="Date"
-              type="date"
-              value={expenseForm.date}
-              onChange={(e) => setExpenseForm(prev => ({ ...prev, date: e.target.value }))}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddExpenseDialog(false)}>Cancel</Button>
-          <Button 
-            onClick={handleAddExpense}
-            variant="contained"
-            disabled={!expenseForm.description || !expenseForm.amount || !expenseForm.category}
-            sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7b5cac' } }}
-          >
-            Add Expense
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

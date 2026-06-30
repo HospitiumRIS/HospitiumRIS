@@ -1,8 +1,8 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo } from 'react';
 import {
-  Grid,
   Box,
   Typography,
   Stack,
@@ -12,7 +12,6 @@ import {
   Analytics as AnalyticsIcon
 } from '@mui/icons-material';
 
-// Import professional components
 import ProfessionalStatisticsCards from './ProfessionalStatisticsCards';
 import { 
   ProfessionalCampaignChart, 
@@ -22,13 +21,13 @@ import {
 import ProfessionalDataTable from './ProfessionalDataTable';
 
 const DashboardOverview = memo(({ analyticsData, loading }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
 
-  // Define columns for top donors table
   const donorColumns = [
     {
       id: 'name',
-      label: 'Donor',
+      label: t('analytics.donor'),
       type: 'avatar',
       sortable: true,
       sticky: true,
@@ -36,7 +35,7 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
     },
     {
       id: 'totalAmount',
-      label: 'Total Donated',
+      label: t('analytics.total_donated'),
       type: 'currency',
       sortable: true,
       align: 'right',
@@ -46,14 +45,14 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
     },
     {
       id: 'donationCount',
-      label: 'Donations',
+      label: t('analytics.donations'),
       sortable: true,
       align: 'center',
       minWidth: 100
     },
     {
       id: 'averageAmount',
-      label: 'Avg Amount',
+      label: t('analytics.avg_amount'),
       type: 'currency',
       sortable: true,
       align: 'right',
@@ -61,25 +60,24 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
     },
     {
       id: 'firstDonation',
-      label: 'First Gift',
+      label: t('analytics.first_gift'),
       type: 'date',
       sortable: true,
       minWidth: 120
     },
     {
       id: 'lastDonation',
-      label: 'Recent Gift',
+      label: t('analytics.recent_gift'),
       type: 'date',
       sortable: true,
       minWidth: 120
     }
   ];
 
-  // Define columns for campaign performance table
   const campaignColumns = [
     {
       id: 'name',
-      label: 'Campaign',
+      label: t('analytics.campaign'),
       sortable: true,
       sticky: true,
       minWidth: 200,
@@ -87,7 +85,7 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
     },
     {
       id: 'categoryName',
-      label: 'Category',
+      label: t('common.category'),
       type: 'chip',
       sortable: true,
       minWidth: 120,
@@ -103,7 +101,7 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
     },
     {
       id: 'raised',
-      label: 'Amount Raised',
+      label: t('analytics.amount_raised'),
       type: 'trend',
       sortable: true,
       align: 'right',
@@ -112,14 +110,14 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
     },
     {
       id: 'donorCount',
-      label: 'Donors',
+      label: t('analytics.donors'),
       sortable: true,
       align: 'center',
       minWidth: 100
     },
     {
       id: 'completionPercentage',
-      label: 'Progress',
+      label: t('analytics.progress'),
       type: 'progress',
       sortable: true,
       align: 'center',
@@ -127,7 +125,7 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
     },
     {
       id: 'status',
-      label: 'Status',
+      label: t('common.status'),
       type: 'chip',
       sortable: true,
       minWidth: 100,
@@ -153,7 +151,6 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
 
   return (
     <Box>
-      {/* Page Title */}
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 4 }}>
         <AnalyticsIcon sx={{ fontSize: 32, color: '#8b6cbc' }} />
         <Box>
@@ -162,23 +159,21 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
             color: theme.palette.text.primary,
             mb: 0.5
           }}>
-            Analytics Dashboard
+            {t('analytics.analytics_dashboard')}
           </Typography>
           <Typography variant="body1" sx={{ 
             color: theme.palette.text.secondary
           }}>
-            Comprehensive overview of your fundraising performance and donor engagement
+            {t('analytics.dashboard_subtitle')}
           </Typography>
         </Box>
       </Stack>
 
-      {/* Key Performance Indicators */}
       <ProfessionalStatisticsCards 
         analyticsData={analyticsData} 
         loading={loading} 
       />
 
-      {/* Charts Section */}
       <Box sx={{ mb: 4 }}>
         <Box sx={{ 
           display: 'flex', 
@@ -186,7 +181,6 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
           mb: 4,
           flexWrap: 'wrap'
         }}>
-          {/* Campaign Performance Chart */}
           <Box sx={{ flex: { xs: '1 1 100%', lg: '2 2 calc(66.666% - 16px)' } }}>
             <ProfessionalCampaignChart 
               analyticsData={analyticsData} 
@@ -194,7 +188,6 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
             />
           </Box>
 
-          {/* Category Distribution */}
           <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(33.333% - 16px)' } }}>
             <ProfessionalCategoryChart 
               analyticsData={analyticsData} 
@@ -203,7 +196,6 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
           </Box>
         </Box>
 
-        {/* Monthly Trends */}
         <Box>
           <ProfessionalTrendsChart 
             analyticsData={analyticsData} 
@@ -212,7 +204,6 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
         </Box>
       </Box>
 
-      {/* Data Tables Section */}
       <Box sx={{ 
         display: 'flex', 
         gap: 4, 
@@ -221,33 +212,31 @@ const DashboardOverview = memo(({ analyticsData, loading }) => {
           flex: { xs: '1 1 100%', lg: '1 1 calc(50% - 16px)' } 
         }
       }}>
-        {/* Top Donors Table */}
         <Box>
           <ProfessionalDataTable
-            title="Top Donors"
-            subtitle="Highest contributing donors by total donation amount"
+            title={t('analytics.top_donors')}
+            subtitle={t('analytics.top_donors_subtitle')}
             data={analyticsData?.topDonors || []}
             columns={donorColumns}
             loading={loading}
             pageSize={8}
             onRowClick={handleRowClick}
             onAction={handleAction}
-            emptyMessage="No donor data available"
+            emptyMessage={t('analytics.no_donor_data')}
           />
         </Box>
 
-        {/* Campaign Performance Table */}
         <Box>
           <ProfessionalDataTable
-            title="Campaign Performance"
-            subtitle="Active and recent fundraising campaigns ranked by performance"
+            title={t('analytics.campaign_performance_table')}
+            subtitle={t('analytics.campaign_performance_subtitle')}
             data={analyticsData?.campaignPerformance || []}
             columns={campaignColumns}
             loading={loading}
             pageSize={8}
             onRowClick={handleRowClick}
             onAction={handleAction}
-            emptyMessage="No campaign data available"
+            emptyMessage={t('analytics.no_campaign_data')}
           />
         </Box>
       </Box>

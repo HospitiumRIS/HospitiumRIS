@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box, Container, Typography, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Avatar,
@@ -45,22 +46,10 @@ function avatarColor(name = '') {
   return palette[Math.abs(h) % palette.length];
 }
 
-const STATUS_CONFIG = {
-  active:   { label: 'Active',   color: '#16a34a', bg: '#dcfce7' },
-  new:      { label: 'New',      color: '#2563eb', bg: '#dbeafe' },
-  lapsed:   { label: 'Lapsed',   color: '#d97706', bg: '#fef3c7' },
-  inactive: { label: 'Inactive', color: '#9ca3af', bg: '#f3f4f6' },
-};
-
-const TIER_CONFIG = {
-  major:   { label: 'Major Donor', color: '#b45309', bg: '#fef3c7' },
-  mid:     { label: 'Mid-Level',   color: PURPLE,   bg: alpha(PURPLE, 0.1) },
-  general: { label: 'General',     color: '#6b7280', bg: '#f3f4f6' },
-};
-
-const DONOR_TYPES = ['Individual', 'Corporate', 'Foundation', 'Government', 'Non-Profit', 'Other'];
+const DONOR_TYPES_RAW = ['Individual', 'Corporate', 'Foundation', 'Government', 'Non-Profit', 'Other'];
 
 export default function FundersCRM() {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
 
   const [funders, setFunders]     = useState([]);
@@ -80,6 +69,28 @@ export default function FundersCRM() {
   const [page, setPage]                 = useState(0);
   const [rowsPerPage, setRowsPerPage]   = useState(25);
   const [expandedRow, setExpandedRow]   = useState(null);
+
+  const STATUS_CONFIG = useMemo(() => ({
+    active:   { label: t('funders_crm.status_active'),   color: '#16a34a', bg: '#dcfce7' },
+    new:      { label: t('funders_crm.status_new'),      color: '#2563eb', bg: '#dbeafe' },
+    lapsed:   { label: t('funders_crm.status_lapsed'),   color: '#d97706', bg: '#fef3c7' },
+    inactive: { label: t('funders_crm.status_inactive'), color: '#9ca3af', bg: '#f3f4f6' },
+  }), [t, i18n.language]);
+
+  const TIER_CONFIG = useMemo(() => ({
+    major:   { label: t('funders_crm.tier_major_donor'), color: '#b45309', bg: '#fef3c7' },
+    mid:     { label: t('funders_crm.tier_mid_level'),   color: PURPLE,   bg: alpha(PURPLE, 0.1) },
+    general: { label: t('funders_crm.tier_general'),     color: '#6b7280', bg: '#f3f4f6' },
+  }), [t, i18n.language]);
+
+  const DONOR_TYPES = useMemo(() => [
+    { value: 'Individual', label: t('funders_crm.type_individual') },
+    { value: 'Corporate', label: t('funders_crm.type_corporate') },
+    { value: 'Foundation', label: t('funders_crm.type_foundation') },
+    { value: 'Government', label: t('funders_crm.type_government') },
+    { value: 'Non-Profit', label: t('funders_crm.type_non_profit') },
+    { value: 'Other', label: t('funders_crm.type_other') },
+  ], [t, i18n.language]);
 
   useEffect(() => {
     Promise.all([
@@ -161,12 +172,12 @@ export default function FundersCRM() {
       {/* Page Header */}
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
-          title="Funders CRM"
-          description="Unified donor profiles, giving history & relationship intelligence across all campaigns"
+          title={t('funders_crm.page_title')}
+          description={t('funders_crm.page_description')}
           icon={<ContactPageIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
-            { label: 'Foundation', path: '/foundation' },
-            { label: 'Funders CRM' }
+            { label: t('foundation_dashboard.breadcrumb_foundation'), path: '/foundation' },
+            { label: t('funders_crm.page_title') }
           ]}
           gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
         />
@@ -186,14 +197,14 @@ export default function FundersCRM() {
               display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap', rowGap: 0.5
             }}>
               {[
-                { label: 'Total Funders', value: stats.totalFunders,                                                                          icon: <PeopleIcon sx={{ fontSize: 15 }} />,    color: PURPLE },
-                { label: 'Active',        value: stats.activeFunders,                                                                         icon: <StarIcon sx={{ fontSize: 15 }} />,      color: STATUS_CONFIG.active.color,   clickKey: 'active' },
-                { label: 'New',           value: stats.newFunders,                                                                            icon: <PeopleIcon sx={{ fontSize: 15 }} />,   color: STATUS_CONFIG.new.color,      clickKey: 'new' },
-                { label: 'Lapsed',        value: stats.lapsedFunders,                                                                         icon: <TimelineIcon sx={{ fontSize: 15 }} />, color: STATUS_CONFIG.lapsed.color,   clickKey: 'lapsed' },
-                { label: 'Total Raised',  value: fmt(stats.totalRaised),                                                                      icon: <MoneyIcon sx={{ fontSize: 15 }} />,    color: '#0369a1' },
-                { label: 'Avg Donation',  value: fmt(stats.avgGiftSize),                                                                      icon: <TrendingUpIcon sx={{ fontSize: 15 }} />, color: '#059669' },
-                { label: 'Repeat',        value: `${stats.repeatFunders} (${stats.totalFunders ? Math.round((stats.repeatFunders/stats.totalFunders)*100) : 0}%)`, icon: <RepeatIcon sx={{ fontSize: 15 }} />,   color: '#7c3aed' },
-                { label: 'Major Donors',  value: stats.majorDonors,                                                                           icon: <StarIcon sx={{ fontSize: 15 }} />,     color: '#b45309' },
+                { label: t('funders_crm.total_funders'), value: stats.totalFunders,                                                                          icon: <PeopleIcon sx={{ fontSize: 15 }} />,    color: PURPLE },
+                { label: t('funders_crm.active'),        value: stats.activeFunders,                                                                         icon: <StarIcon sx={{ fontSize: 15 }} />,      color: STATUS_CONFIG.active.color,   clickKey: 'active' },
+                { label: t('funders_crm.new'),           value: stats.newFunders,                                                                            icon: <PeopleIcon sx={{ fontSize: 15 }} />,   color: STATUS_CONFIG.new.color,      clickKey: 'new' },
+                { label: t('funders_crm.lapsed'),        value: stats.lapsedFunders,                                                                         icon: <TimelineIcon sx={{ fontSize: 15 }} />, color: STATUS_CONFIG.lapsed.color,   clickKey: 'lapsed' },
+                { label: t('funders_crm.total_raised'),  value: fmt(stats.totalRaised),                                                                      icon: <MoneyIcon sx={{ fontSize: 15 }} />,    color: '#0369a1' },
+                { label: t('funders_crm.avg_donation'),  value: fmt(stats.avgGiftSize),                                                                      icon: <TrendingUpIcon sx={{ fontSize: 15 }} />, color: '#059669' },
+                { label: t('funders_crm.repeat'),        value: `${stats.repeatFunders} (${stats.totalFunders ? Math.round((stats.repeatFunders/stats.totalFunders)*100) : 0}%)`, icon: <RepeatIcon sx={{ fontSize: 15 }} />,   color: '#7c3aed' },
+                { label: t('funders_crm.major_donors'),  value: stats.majorDonors,                                                                           icon: <StarIcon sx={{ fontSize: 15 }} />,     color: '#b45309' },
               ].map((item, i) => (
                 <React.Fragment key={i}>
                   {i > 0 && <Divider orientation="vertical" flexItem sx={{ mx: 2, my: 0.5 }} />}
@@ -223,7 +234,7 @@ export default function FundersCRM() {
 
               {/* Search */}
               <TextField
-                placeholder="Search name, email, or campaign…"
+                placeholder={t('funders_crm.search_placeholder')}
                 size="small"
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(0); }}
@@ -250,15 +261,15 @@ export default function FundersCRM() {
               {/* Type */}
               <FormControl size="small" sx={{ minWidth: 150 }}>
                 <Select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(0); }} displayEmpty>
-                  <MenuItem value="">All Types</MenuItem>
-                  {DONOR_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+                  <MenuItem value="">{t('funders_crm.all_types')}</MenuItem>
+                  {DONOR_TYPES.map(type => <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>)}
                 </Select>
               </FormControl>
 
               {/* Category */}
               <FormControl size="small" sx={{ minWidth: 160 }}>
                 <Select value={categoryFilter} onChange={e => { setCategoryFilter(e.target.value); setPage(0); }} displayEmpty>
-                  <MenuItem value="">All Categories</MenuItem>
+                  <MenuItem value="">{t('funders_crm.all_categories')}</MenuItem>
                   {categories.map(c => (
                     <MenuItem key={c.id} value={c.id}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -273,7 +284,7 @@ export default function FundersCRM() {
               {/* Tier */}
               <FormControl size="small" sx={{ minWidth: 140 }}>
                 <Select value={tierFilter} onChange={e => { setTierFilter(e.target.value); setPage(0); }} displayEmpty>
-                  <MenuItem value="">All Tiers</MenuItem>
+                  <MenuItem value="">{t('funders_crm.all_tiers')}</MenuItem>
                   {Object.entries(TIER_CONFIG).map(([k, v]) => (
                     <MenuItem key={k} value={k}>{v.label}</MenuItem>
                   ))}
@@ -283,11 +294,11 @@ export default function FundersCRM() {
               {/* Sort */}
               <FormControl size="small" sx={{ minWidth: 170 }}>
                 <Select value={sortBy} onChange={e => { setSortBy(e.target.value); setPage(0); }} displayEmpty>
-                  <MenuItem value="totalGiven">Sort: Total Raised</MenuItem>
-                  <MenuItem value="donationCount">Sort: Gift Count</MenuItem>
-                  <MenuItem value="lastGiftDate">Sort: Last Gift</MenuItem>
-                  <MenuItem value="averageGift">Sort: Avg Gift</MenuItem>
-                  <MenuItem value="name">Sort: Name A–Z</MenuItem>
+                  <MenuItem value="totalGiven">{t('funders_crm.sort_total_raised')}</MenuItem>
+                  <MenuItem value="donationCount">{t('funders_crm.sort_gift_count')}</MenuItem>
+                  <MenuItem value="lastGiftDate">{t('funders_crm.sort_last_gift')}</MenuItem>
+                  <MenuItem value="averageGift">{t('funders_crm.sort_avg_gift')}</MenuItem>
+                  <MenuItem value="name">{t('funders_crm.sort_name')}</MenuItem>
                 </Select>
               </FormControl>
 
@@ -298,14 +309,14 @@ export default function FundersCRM() {
                   onClick={clearFilters}
                   sx={{ color: '#ef4444', textTransform: 'none', fontWeight: 600, ml: 'auto' }}
                 >
-                  Clear
+                  {t('funders_crm.clear')}
                 </Button>
               )}
             </Box>
 
             <Typography variant="caption" sx={{ color: 'text.secondary', mt: 1.5, display: 'block' }}>
-              Showing <strong>{filtered.length}</strong> of <strong>{funders.length}</strong> funders
-              {hasFilters && ' · filtered view'}
+              {t('funders_crm.showing_funders')} <strong>{filtered.length}</strong> {t('funders_crm.of_funders')} <strong>{funders.length}</strong> {t('funders_crm.funders_text')}
+              {hasFilters && ` · ${t('funders_crm.filtered_view')}`}
             </Typography>
           </Box>
         </Paper>
@@ -324,29 +335,29 @@ export default function FundersCRM() {
                     onClick={() => handleSort('name')}
                     sx={{ color: 'white', fontWeight: 600, cursor: 'pointer', userSelect: 'none', minWidth: 220, pl: 3 }}
                   >
-                    Funder{sortArrow('name')}
+                    {t('funders_crm.funder')}{sortArrow('name')}
                   </TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600, minWidth: 180 }}>Contact</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600, minWidth: 180 }}>{t('funders_crm.contact')}</TableCell>
                   <TableCell
                     onClick={() => handleSort('totalGiven')}
                     sx={{ color: 'white', fontWeight: 600, cursor: 'pointer', userSelect: 'none', minWidth: 140 }}
                   >
-                    Lifetime Value{sortArrow('totalGiven')}
+                    {t('funders_crm.lifetime_value')}{sortArrow('totalGiven')}
                   </TableCell>
                   <TableCell
                     onClick={() => handleSort('donationCount')}
                     sx={{ color: 'white', fontWeight: 600, cursor: 'pointer', userSelect: 'none', minWidth: 80 }}
                   >
-                    Donations{sortArrow('donationCount')}
+                    {t('funders_crm.donations')}{sortArrow('donationCount')}
                   </TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600, minWidth: 180 }}>Areas Supported</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600, minWidth: 180 }}>{t('funders_crm.areas_supported')}</TableCell>
                   <TableCell
                     onClick={() => handleSort('lastGiftDate')}
                     sx={{ color: 'white', fontWeight: 600, cursor: 'pointer', userSelect: 'none', minWidth: 155 }}
                   >
-                    Last Donation{sortArrow('lastGiftDate')}
+                    {t('funders_crm.last_donation')}{sortArrow('lastGiftDate')}
                   </TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600, minWidth: 100 }}>Status</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 600, minWidth: 100 }}>{t('funders_crm.status')}</TableCell>
                   <TableCell sx={{ color: 'white', fontWeight: 600, width: 52 }} />
                 </TableRow>
               </TableHead>
@@ -357,10 +368,10 @@ export default function FundersCRM() {
                     <TableCell colSpan={8} sx={{ textAlign: 'center', py: 10 }}>
                       <PeopleIcon sx={{ fontSize: 52, color: 'text.disabled', mb: 1.5, display: 'block', mx: 'auto' }} />
                       <Typography variant="h6" color="text.secondary" sx={{ mb: 0.5 }}>
-                        {funders.length === 0 ? 'No donation records found' : 'No funders match the current filters'}
+                        {funders.length === 0 ? t('funders_crm.no_donation_records') : t('funders_crm.no_funders_match')}
                       </Typography>
                       <Typography variant="body2" color="text.disabled">
-                        {funders.length === 0 ? 'Add donations to start building your funder database.' : 'Try adjusting your filters.'}
+                        {funders.length === 0 ? t('funders_crm.add_donations_prompt') : t('funders_crm.adjust_filters_prompt')}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -369,7 +380,7 @@ export default function FundersCRM() {
                     const isExpanded = expandedRow === funder.id;
                     const sc = STATUS_CONFIG[funder.status] || STATUS_CONFIG.inactive;
                     const tc = TIER_CONFIG[funder.tier]   || TIER_CONFIG.general;
-                    const displayName = funder.isAnonymous ? 'Anonymous Donor' : funder.donorName;
+                    const displayName = funder.isAnonymous ? t('funders_crm.anonymous_donor') : funder.donorName;
 
                     return (
                       <React.Fragment key={funder.id}>
@@ -402,14 +413,14 @@ export default function FundersCRM() {
                                     {displayName}
                                   </Typography>
                                   {funder.isAnonymous && (
-                                    <Tooltip title="Anonymous donor">
+                                    <Tooltip title={t('funders_crm.anonymous_donor_tooltip')}>
                                       <AnonymousIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
                                     </Tooltip>
                                   )}
                                 </Box>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.3 }}>
                                   <Chip
-                                    label={funder.donorType || 'Individual'}
+                                    label={DONOR_TYPES.find(dt => dt.value === funder.donorType)?.label || t('funders_crm.type_individual')}
                                     size="small"
                                     sx={{ fontSize: '0.62rem', height: 17, bgcolor: alpha(PURPLE, 0.08), color: PURPLE, '& .MuiChip-label': { px: 0.75 } }}
                                   />
@@ -426,7 +437,7 @@ export default function FundersCRM() {
                           {/* Contact */}
                           <TableCell>
                             {funder.isAnonymous ? (
-                              <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>Hidden</Typography>
+                              <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>{t('funders_crm.hidden')}</Typography>
                             ) : (
                               <Stack spacing={0.4}>
                                 {funder.donorEmail && (
@@ -553,7 +564,7 @@ export default function FundersCRM() {
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <TimelineIcon sx={{ fontSize: 18, color: PURPLE }} />
                                     <Typography variant="subtitle2" sx={{ fontWeight: 700, color: PURPLE }}>
-                                      Donation History
+                                      {t('funders_crm.donation_history')}
                                     </Typography>
                                     <Chip
                                       label={`${funder.donations.length} donation${funder.donations.length !== 1 ? 's' : ''}`}
@@ -563,7 +574,7 @@ export default function FundersCRM() {
                                   </Box>
                                   {funder.firstGiftDate && (
                                     <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
-                                      Donor since {fmtDate(funder.firstGiftDate)}
+                                      {t('funders_crm.donor_since')} {fmtDate(funder.firstGiftDate)}
                                     </Typography>
                                   )}
                                 </Box>
@@ -573,7 +584,15 @@ export default function FundersCRM() {
                                   <Table size="small">
                                     <TableHead>
                                       <TableRow sx={{ bgcolor: alpha(PURPLE, 0.07) }}>
-                                        {['Date', 'Campaign', 'Category', 'Amount', 'Method', 'Tx ID', 'Status'].map(h => (
+                                        {[
+                                          t('funders_crm.date'), 
+                                          t('funders_crm.campaign'), 
+                                          t('funders_crm.category'), 
+                                          t('funders_crm.amount'), 
+                                          t('funders_crm.method'), 
+                                          t('funders_crm.tx_id'), 
+                                          t('funders_crm.status')
+                                        ].map(h => (
                                           <TableCell key={h} sx={{ fontWeight: 700, fontSize: '0.72rem', py: 1, color: '#374151' }}>
                                             {h}
                                           </TableCell>
@@ -650,7 +669,7 @@ export default function FundersCRM() {
                                 {funder.donations.some(d => d.message) && (
                                   <Box sx={{ mt: 2 }}>
                                     <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.75 }}>
-                                      Donor Messages
+                                      {t('funders_crm.donor_messages')}
                                     </Typography>
                                     <Stack spacing={0.75}>
                                       {funder.donations.filter(d => d.message).map(d => (

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   CardContent,
@@ -269,6 +270,7 @@ const MetricCard = memo(({ metric, index }) => {
 });
 
 const ProfessionalMetricsCards = memo(({ dashboardData, loading = false }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   const metrics = [

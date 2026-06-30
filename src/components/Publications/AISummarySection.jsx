@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import {
     Box,
@@ -18,6 +19,7 @@ import {
  * Sanitize and prepare HTML content for safe rendering
  */
 const sanitizeHTML = (html) => {
+  const { t } = useTranslation();
     if (!html) return '';
     
     // Replace escaped newlines with actual newlines

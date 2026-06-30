@@ -45,6 +45,7 @@ import {
 import { format } from 'date-fns';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const statusColors = {
   DRAFT: '#9e9e9e',
@@ -71,6 +72,7 @@ const statusIcons = {
 };
 
 export default function InstitutionEthicsReviewPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [applications, setApplications] = useState([]);
@@ -158,8 +160,8 @@ export default function InstitutionEthicsReviewPage() {
   return (
     <Box>
       <PageHeader
-        title="Ethics Review"
-        description="Review and manage ethics applications submitted by researchers"
+        title={t('institution.review_ethics')}
+        description={t('institution.review_ethics_desc')}
         icon={<EthicsIcon sx={{ fontSize: 32 }} />}
         breadcrumbs={[
           { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/institution' },
@@ -198,10 +200,10 @@ export default function InstitutionEthicsReviewPage() {
               Awaiting review
             </Typography>
           </Paper>
-          
-          <Paper sx={{ 
+
+          <Paper sx={{
             flex: '1 1 200px',
-            p: 2, 
+            p: 2,
             borderRadius: 2,
             bgcolor: '#8b6cbc',
             boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
@@ -216,7 +218,7 @@ export default function InstitutionEthicsReviewPage() {
             <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Approved
+                {t('common.approved')}
               </Typography>
               <ApprovedIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
@@ -408,7 +410,7 @@ export default function InstitutionEthicsReviewPage() {
             border: '1px solid rgba(0, 0, 0, 0.12)'
           }}>
             <CircularProgress sx={{ color: '#8b6cbc' }} />
-            <Typography sx={{ mt: 2, color: '#718096' }}>Loading applications...</Typography>
+            <Typography sx={{ mt: 2, color: '#718096' }}>{t('common.loading')}</Typography>
           </Box>
         ) : filteredApplications.length === 0 ? (
           <Paper sx={{ 
@@ -423,7 +425,7 @@ export default function InstitutionEthicsReviewPage() {
               No Applications Found
             </Typography>
             <Typography variant="body2" sx={{ color: '#718096' }}>
-              {searchQuery ? 'Try adjusting your search criteria' : 'No applications in this category'}
+              {searchQuery ? t('common.no_results') : 'No applications in this category'}
             </Typography>
           </Paper>
         ) : (
@@ -448,9 +450,9 @@ export default function InstitutionEthicsReviewPage() {
                   <TableCell>Title</TableCell>
                   <TableCell>Principal Investigator</TableCell>
                   <TableCell>Research Type</TableCell>
-                  <TableCell>Status</TableCell>
+                  <TableCell>{t('common.status')}</TableCell>
                   <TableCell>Submitted Date</TableCell>
-                  <TableCell align="center">Actions</TableCell>
+                  <TableCell align="center">{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -546,7 +548,7 @@ export default function InstitutionEthicsReviewPage() {
             <Typography variant="body2" sx={{ fontWeight: 500 }}>View Details</Typography>
           </MenuItem>
           {(selectedApplication?.status === 'SUBMITTED' || selectedApplication?.status === 'UNDER_REVIEW') && (
-            <MenuItem 
+            <MenuItem
               onClick={handleReview}
               sx={{
                 py: 1.5,
@@ -556,7 +558,7 @@ export default function InstitutionEthicsReviewPage() {
               }}
             >
               <ReviewIcon sx={{ mr: 1.5, color: '#4caf50' }} fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>Review Application</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>{t('common.review')} Application</Typography>
             </MenuItem>
           )}
         </Menu>

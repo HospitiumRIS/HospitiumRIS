@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo, useState } from 'react';
 import {
   Box,
@@ -71,6 +72,7 @@ const ChartContainer = memo(({
   onViewChange,
   viewOptions = []
 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -148,7 +150,7 @@ const ChartContainer = memo(({
 
             {/* Chart Actions */}
             <Stack direction="row" spacing={0.5}>
-              <Tooltip title="Fullscreen">
+              <Tooltip title={t('analytics.fullscreen')}>
                 <IconButton 
                   size="small" 
                   onClick={onFullscreen}
@@ -206,19 +208,19 @@ const ChartContainer = memo(({
           <ListItemIcon>
             <RefreshIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Refresh Data</ListItemText>
+          <ListItemText>{t('analytics.refresh_data')}</ListItemText>
         </MenuItem>
         <MenuItem onClick={() => { onExport?.(); handleMenuClose(); }}>
           <ListItemIcon>
             <DownloadIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Export Chart</ListItemText>
+          <ListItemText>{t('analytics.export_chart')}</ListItemText>
         </MenuItem>
         <MenuItem onClick={() => { handleMenuClose(); }}>
           <ListItemIcon>
             <ShareIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Share</ListItemText>
+          <ListItemText>{t('common.share')}</ListItemText>
         </MenuItem>
       </Menu>
     </Card>
@@ -227,6 +229,7 @@ const ChartContainer = memo(({
 
 // Enhanced Funding Trends Chart
 export const ProfessionalFundingChart = memo(({ data, loading }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [viewType, setViewType] = useState('line');
 
@@ -234,7 +237,7 @@ export const ProfessionalFundingChart = memo(({ data, loading }) => {
     labels: data?.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
       {
-        label: 'Donations',
+        label: t('analytics.donations_label'),
         data: data?.donations || [25000, 32000, 28000, 41000, 36000, 42500],
         borderColor: '#8b6cbc',
         backgroundColor: (ctx) => {
@@ -255,7 +258,7 @@ export const ProfessionalFundingChart = memo(({ data, loading }) => {
         borderSkipped: false
       },
       {
-        label: 'Grants',
+        label: t('analytics.grants_label'),
         data: data?.grants || [15000, 18000, 22000, 20000, 25000, 28000],
         borderColor: '#4caf50',
         backgroundColor: (ctx) => {
@@ -356,14 +359,14 @@ export const ProfessionalFundingChart = memo(({ data, loading }) => {
   };
 
   const viewOptions = [
-    { value: 'line', label: 'Line', icon: ShowChartIcon },
-    { value: 'bar', label: 'Bar', icon: BarChartIcon }
+    { value: 'line', label: t('analytics.line'), icon: ShowChartIcon },
+    { value: 'bar', label: t('analytics.bar'), icon: BarChartIcon }
   ];
 
   return (
     <ChartContainer
-      title="Funding Trends"
-      subtitle="Monthly donations and grants over the past 6 months"
+      title={t('analytics.funding_trends')}
+      subtitle={t('analytics.funding_trends_subtitle')}
       height={500}
       showViewToggle
       viewType={viewType}
@@ -381,6 +384,7 @@ export const ProfessionalFundingChart = memo(({ data, loading }) => {
 
 // Enhanced Campaign Distribution Chart
 export const ProfessionalCampaignChart = memo(({ data, loading }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   const chartData = {
@@ -431,7 +435,11 @@ export const ProfessionalCampaignChart = memo(({ data, loading }) => {
           label: function(context) {
             const total = context.dataset.data.reduce((a, b) => a + b, 0);
             const percentage = ((context.parsed / total) * 100).toFixed(1);
-            return `${context.label}: ${percentage}% (${context.parsed} campaigns)`;
+            return t('analytics.tooltip_category_campaigns', {
+              label: context.label,
+              percent: percentage,
+              count: context.parsed
+            });
           }
         }
       }
@@ -445,8 +453,8 @@ export const ProfessionalCampaignChart = memo(({ data, loading }) => {
 
   return (
     <ChartContainer
-      title="Campaign Distribution"
-      subtitle="Active campaigns by category"
+      title={t('analytics.campaign_distribution')}
+      subtitle={t('analytics.campaign_distribution_subtitle')}
       height={500}
     >
       <Box sx={{ position: 'relative', height: '100%' }}>
@@ -466,7 +474,7 @@ export const ProfessionalCampaignChart = memo(({ data, loading }) => {
             fontSize: '0.75rem',
             fontWeight: 600
           }}>
-            Total Campaigns
+            {t('analytics.total_campaigns_center')}
           </Typography>
           <Typography variant="h5" sx={{ 
             fontWeight: 800,

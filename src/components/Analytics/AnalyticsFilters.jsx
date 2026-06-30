@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo } from 'react';
 import {
   Card,
@@ -23,6 +24,8 @@ const AnalyticsFilters = memo(({
   setSelectedCampaign,
   analyticsData 
 }) => {
+  const { t } = useTranslation();
+
   return (
     <Card sx={{ 
       mb: 5, 
@@ -35,13 +38,13 @@ const AnalyticsFilters = memo(({
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 3 }}>
         <FilterIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
         <Typography variant="h6" sx={{ fontWeight: 600, color: '#8b6cbc' }}>
-          Analytics Filters
+          {t('analytics.analytics_filters')}
         </Typography>
       </Stack>
       <Grid container spacing={4} alignItems="center">
         <Grid item xs={12} md={3}>
           <DatePicker
-            label="Start Date"
+            label={t('analytics.start_date')}
             value={dateRange.startDate}
             onChange={(newValue) => setDateRange(prev => ({ ...prev, startDate: newValue }))}
             slotProps={{ 
@@ -59,7 +62,7 @@ const AnalyticsFilters = memo(({
         </Grid>
         <Grid item xs={12} md={3}>
           <DatePicker
-            label="End Date"
+            label={t('analytics.end_date')}
             value={dateRange.endDate}
             onChange={(newValue) => setDateRange(prev => ({ ...prev, endDate: newValue }))}
             slotProps={{ 
@@ -77,16 +80,16 @@ const AnalyticsFilters = memo(({
         </Grid>
         <Grid item xs={12} md={3}>
           <FormControl fullWidth size="medium">
-            <InputLabel>Category</InputLabel>
+            <InputLabel>{t('common.category')}</InputLabel>
             <Select
               value={selectedCategory}
-              label="Category"
+              label={t('common.category')}
               onChange={(e) => setSelectedCategory(e.target.value)}
               sx={{
                 borderRadius: 2
               }}
             >
-              <MenuItem value="">All Categories</MenuItem>
+              <MenuItem value="">{t('analytics.all_categories')}</MenuItem>
               {analyticsData?.rawData.categories.map((category) => (
                 <MenuItem key={category.id} value={category.id}>
                   {category.name}
@@ -97,16 +100,16 @@ const AnalyticsFilters = memo(({
         </Grid>
         <Grid item xs={12} md={3}>
           <FormControl fullWidth size="medium">
-            <InputLabel>Campaign</InputLabel>
+            <InputLabel>{t('analytics.campaign')}</InputLabel>
             <Select
               value={selectedCampaign}
-              label="Campaign"
+              label={t('analytics.campaign')}
               onChange={(e) => setSelectedCampaign(e.target.value)}
               sx={{
                 borderRadius: 2
               }}
             >
-              <MenuItem value="">All Campaigns</MenuItem>
+              <MenuItem value="">{t('analytics.all_campaigns')}</MenuItem>
               {analyticsData?.rawData.campaigns.map((campaign) => (
                 <MenuItem key={campaign.id} value={campaign.id}>
                   {campaign.name}

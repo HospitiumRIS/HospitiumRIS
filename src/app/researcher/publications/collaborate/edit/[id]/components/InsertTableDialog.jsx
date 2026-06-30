@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import {
   Dialog,
@@ -27,6 +28,7 @@ import {
 } from '@mui/icons-material';
 
 export default function InsertTableDialog({ open, onClose, onInsert }) {
+  const { t } = useTranslation();
   const [selectedRows, setSelectedRows] = useState(3);
   const [selectedCols, setSelectedCols] = useState(3);
   const [headerRow, setHeaderRow] = useState(true);
@@ -108,8 +110,8 @@ export default function InsertTableDialog({ open, onClose, onInsert }) {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <TableIcon />
           <Typography variant="h6" component="span">
-            Insert Table
-          </Typography>
+            {t('common.insert_table')}
+</Typography>
         </Box>
         <IconButton
           onClick={handleCancel}
@@ -195,8 +197,8 @@ export default function InsertTableDialog({ open, onClose, onInsert }) {
               }
             }}
           >
-            Insert Table
-          </Button>
+            {t('common.insert_table')}
+</Button>
         </Box>
 
         {/* Options */}
@@ -300,8 +302,8 @@ export default function InsertTableDialog({ open, onClose, onInsert }) {
           onClick={handleCancel}
           sx={{ color: '#666' }}
         >
-          Cancel
-        </Button>
+          t('common.cancel')
+</Button>
       </DialogActions>
     </Dialog>
   );

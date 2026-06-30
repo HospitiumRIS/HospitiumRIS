@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -134,6 +135,7 @@ function StagePipeline({ proposalStatus, projectStatus }) {
 }
 
 const ProjectsTracking = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -335,7 +337,7 @@ const ProjectsTracking = () => {
                 '&:hover': { bgcolor: '#7a5caa' }
               }}
             >
-              Retry
+              {t('common.retry')}
             </Button>
           </Paper>
         </Container>
@@ -537,7 +539,7 @@ const ProjectsTracking = () => {
               </TextField>
               {(searchTerm || statusFilter !== 'all' || departmentFilter !== 'all') && (
                 <Chip
-                  label="Clear Filters"
+                  label={t('common.clear')}
                   onDelete={() => {
                     setSearchTerm('');
                     setStatusFilter('all');
@@ -556,7 +558,7 @@ const ProjectsTracking = () => {
             <Box sx={{ p: 8, textAlign: 'center' }}>
               <ProjectIcon sx={{ fontSize: 64, color: '#e5e7eb', mb: 2 }} />
               <Typography variant="h6" sx={{ color: '#6b7280', mb: 1 }}>
-                {searchTerm ? 'No projects found' : 'No projects yet'}
+                {searchTerm ? t('common.no_results') : t('common.no_data')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {searchTerm 
@@ -589,7 +591,7 @@ const ProjectsTracking = () => {
                       Budget
                     </TableCell>
                     <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, fontSize: '0.875rem', textAlign: 'center' }}>
-                      Actions
+                      {t('common.actions')}
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -692,7 +694,7 @@ const ProjectsTracking = () => {
                             </Box>
                           ) : (
                             <Typography variant="caption" sx={{ color: '#9ca3af', fontStyle: 'italic' }}>
-                              No milestones
+                              {t('common.no_data')}
                             </Typography>
                           )}
                         </TableCell>
@@ -718,7 +720,7 @@ const ProjectsTracking = () => {
 
                         {/* Actions */}
                         <TableCell sx={{ py: 2, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                          <Tooltip title="View Details" arrow>
+                          <Tooltip title={t('common.details')} arrow>
                             <IconButton
                               size="small"
                               onClick={() => router.push(`/institution/projects/${project.id}`)}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -43,6 +44,7 @@ import { useRouter } from 'next/navigation';
 import GlobalAdminLayout from '../../../components/GlobalAdmin/GlobalAdminLayout';
 
 const DatabaseManagementPage = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -180,10 +182,10 @@ const DatabaseManagementPage = () => {
                   letterSpacing: '-0.02em'
                 }}
               >
-                Database Management
+                {t('global_admin.database_management')}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                Monitor and manage database operations
+                {t('admin.database')}
               </Typography>
             </Box>
             <Tooltip title="Refresh data">
@@ -232,7 +234,7 @@ const DatabaseManagementPage = () => {
             <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Total Records
+                {t('global_admin.total_records')}
               </Typography>
               <DatabaseIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
@@ -260,7 +262,7 @@ const DatabaseManagementPage = () => {
             <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Connections
+                {t('global_admin.active_connections')}
               </Typography>
               <AnalyticsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>

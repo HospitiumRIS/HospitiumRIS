@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
 import {
   Box,
@@ -13,14 +16,15 @@ import {
 } from '@mui/icons-material';
 
 const FoundationAdminStep = ({ formData, onInputChange, errors, accountType }) => {
+  const { t, i18n } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const isFoundationAdmin = accountType === 'FOUNDATION_ADMIN';
-  const title = isFoundationAdmin ? 'Foundation Administrator Registration' : 'Operations Registration';
+  const title = isFoundationAdmin ? t('auth.foundation_admin_title') : t('auth.operations_title');
   const subtitle = isFoundationAdmin 
-    ? 'Enter your institutional email and create a password'
-    : 'Enter your email and create a password';
+    ? t('auth.foundation_admin_subtitle')
+    : t('auth.operations_subtitle');
 
   return (
     <Box>
@@ -33,7 +37,7 @@ const FoundationAdminStep = ({ formData, onInputChange, errors, accountType }) =
 
       {isFoundationAdmin && (
         <Alert severity="info" sx={{ mb: 3 }}>
-          Only @hospitium.org email addresses are allowed for Foundation Administrator accounts.
+          {t('auth.foundation_admin_alert')}
         </Alert>
       )}
 
@@ -41,15 +45,15 @@ const FoundationAdminStep = ({ formData, onInputChange, errors, accountType }) =
         {/* Email Field */}
         <TextField
           fullWidth
-          label="Institutional Email"
+          label={t('auth.institutional_email')}
           name="email"
           type="email"
           value={formData.email || ''}
           onChange={onInputChange}
           error={!!errors.email}
-          helperText={errors.email || 'Must be a @hospitium.org email address'}
+          helperText={errors.email || t('auth.institutional_email_helper')}
           size="small"
-          placeholder="your.name@hospitium.org"
+          placeholder={t('auth.institutional_email_placeholder')}
         />
 
         {/* Password Fields */}
@@ -57,7 +61,7 @@ const FoundationAdminStep = ({ formData, onInputChange, errors, accountType }) =
           <Box sx={{ width: '100%' }}>
             <TextField
               fullWidth
-              label="Password"
+              label={t('common.reg_password')}
               name="password"
               type={showPassword ? 'text' : 'password'}
               value={formData.password || ''}
@@ -83,7 +87,7 @@ const FoundationAdminStep = ({ formData, onInputChange, errors, accountType }) =
           <Box sx={{ width: '100%' }}>
             <TextField
               fullWidth
-              label="Confirm Password"
+              label={t('common.reg_confirm_password')}
               name="confirmPassword"
               type={showConfirmPassword ? 'text' : 'password'}
               value={formData.confirmPassword || ''}

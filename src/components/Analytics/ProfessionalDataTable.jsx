@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo, useState, useMemo } from 'react';
 import {
   Box,
@@ -45,6 +46,7 @@ import {
 
 // Utility functions
 const formatCurrency = (amount) => {
+  const { t } = useTranslation();
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -121,8 +123,8 @@ const EnhancedTableHead = memo(({
           </TableCell>
         ))}
         <TableCell align="center" sx={{ width: 80 }}>
-          Actions
-        </TableCell>
+          t('common.actions')
+</TableCell>
       </TableRow>
     </TableHead>
   );

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
 import {
   Drawer,
@@ -25,6 +26,7 @@ import {
 } from '@mui/icons-material';
 
 const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscripts }) => {
+  const { t } = useTranslation();
   const [showPublications, setShowPublications] = useState(false);
   const [showManuscripts, setShowManuscripts] = useState(false);
 
@@ -100,7 +102,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
                 {researcher.name}
               </Typography>
               <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
-                {researcher.isLead ? 'Lead Investigator / Current User' : 'Collaborator'}
+                {researcher.isLead ? t('research_network.lead_current_user') : t('research_network.collaborator')}
               </Typography>
             </Box>
           </Box>
@@ -108,7 +110,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <PersonIcon sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }} />
             <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
-              {researcher.role || 'Researcher'}
+              {researcher.role || t('research_network.researcher')}
             </Typography>
           </Box>
 
@@ -122,7 +124,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
           <Stack direction="row" spacing={0.75} flexWrap="wrap" sx={{ gap: 0.75 }}>
             {researcher.isPending && (
               <Chip 
-                label="Pending" 
+                label={t('research_network.pending')} 
                 size="small" 
                 sx={{ 
                   height: 22, 
@@ -154,7 +156,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
         {/* Statistics - Compact */}
         <Box sx={{ p: 2.5, bgcolor: 'white' }}>
           <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ mb: 1.5, display: 'block', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Collaboration Stats
+            {t('research_network.collaboration_stats')}
           </Typography>
           <Stack direction="row" spacing={1.5}>
             <Box sx={{ 
@@ -168,7 +170,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
                 {researcher.publicationsCount || 0}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                Publications
+                {t('research_network.publications')}
               </Typography>
             </Box>
             <Box sx={{ 
@@ -182,7 +184,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
                 {researcher.manuscriptsCount || 0}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                Manuscripts
+                {t('research_network.manuscripts')}
               </Typography>
             </Box>
             {researcher.proposalsCount > 0 && (
@@ -197,7 +199,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
                   {researcher.proposalsCount}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                  Proposals
+                  {t('research_network.proposals')}
                 </Typography>
               </Box>
             )}
@@ -209,7 +211,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
           {researcher.specialization && (
             <Box sx={{ mb: 2.5 }}>
               <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Specialization
+                {t('research_network.specialization')}
               </Typography>
               <Stack direction="row" spacing={0.75} flexWrap="wrap" sx={{ gap: 0.75 }}>
                 {researcher.specialization.split(',').map((spec, idx) => (
@@ -231,7 +233,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
                 {researcher.globalCitations > 0 && (
                   <Box>
                     <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block', mb: 0.25 }}>
-                      Citations
+                      {t('research_network.citations')}
                     </Typography>
                     <Typography variant="body2" fontWeight={600}>
                       {researcher.globalCitations}
@@ -241,7 +243,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
                 {researcher.hIndex > 0 && (
                   <Box>
                     <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block', mb: 0.25 }}>
-                      H-Index
+                      {t('research_network.h_index')}
                     </Typography>
                     <Typography variant="body2" fontWeight={600}>
                       {researcher.hIndex}
@@ -277,7 +279,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <ArticleIcon sx={{ fontSize: 18, color: '#6366f1' }} />
                   <Typography variant="body2" fontWeight={600}>
-                    Shared Manuscripts
+                    {t('research_network.shared_publications')}
                   </Typography>
                   <Chip 
                     label={sharedPublications.length} 
@@ -302,13 +304,13 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
                         {pub.title}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                        {pub.journal || 'Unknown'} • {pub.year || 'N/A'}
+                        {pub.journal || t('common.unknown')} • {pub.year || t('common.not_available')}
                       </Typography>
                     </Box>
                   ))}
                   {sharedPublications.length > 5 && (
                     <Typography variant="caption" color="primary" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
-                      +{sharedPublications.length - 5} more
+                      {t('research_network.more_count', { count: sharedPublications.length - 5 })}
                     </Typography>
                   )}
                 </Box>
@@ -341,7 +343,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <DescriptionIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />
                   <Typography variant="body2" fontWeight={600}>
-                    Shared Manuscripts
+                    {t('research_network.shared_manuscripts')}
                   </Typography>
                   <Chip 
                     label={sharedManuscripts.length} 
@@ -367,12 +369,12 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
                       </Typography>
                       <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
                         <Chip 
-                          label={ms.type || 'Manuscript'} 
+                          label={ms.type || t('research_network.manuscript')} 
                           size="small" 
                           sx={{ height: 18, fontSize: '0.65rem' }}
                         />
                         <Chip 
-                          label={ms.status || 'Draft'} 
+                          label={ms.status || t('common.draft')} 
                           size="small" 
                           sx={{ height: 18, fontSize: '0.65rem' }}
                         />
@@ -381,7 +383,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
                   ))}
                   {sharedManuscripts.length > 5 && (
                     <Typography variant="caption" color="primary" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
-                      +{sharedManuscripts.length - 5} more
+                      {t('research_network.more_count', { count: sharedManuscripts.length - 5 })}
                     </Typography>
                   )}
                 </Box>
@@ -407,7 +409,7 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
               }
             }}
           >
-            View Profile
+            {t('research_network.view_profile')}
           </Button>
         </Box>
       </Box>

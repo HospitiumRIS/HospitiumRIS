@@ -54,6 +54,7 @@ import {
   Language as LanguageIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
 
@@ -71,6 +72,7 @@ const syncStatusColors = {
 };
 
 export default function RegistryManagementPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [registrations, setRegistrations] = useState([]);
@@ -209,8 +211,8 @@ export default function RegistryManagementPage() {
     <>
       <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
         <PageHeader
-          title="Regulatory Reporting"
-          description="Prepare submission-ready exports for ClinicalTrials.gov and PACTR"
+          title={t('researcher.registry')}
+          description={t('researcher.registry_desc')}
           icon={<LanguageIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={breadcrumbs}
           actionButton={

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy, memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -211,6 +212,7 @@ const useDebounce = (value, delay) => {
 };
 
 export default function DonationManagement() {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
 
@@ -627,12 +629,12 @@ export default function DonationManagement() {
       {/* Full-width PageHeader */}
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }} >
         <PageHeader
-          title="Donation Management"
-          description="Track and record gifts by campaign — see what's received, pending, and outstanding"
+          title={t('donations.page_title')}
+          description={t('donations.page_description')}
           icon={<PeopleIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
-            { label: 'Foundation', path: '/foundation' },
-            { label: 'Donation Management' }
+            { label: t('foundation_dashboard.breadcrumb_foundation'), path: '/foundation' },
+            { label: t('donations.page_title') }
           ]}
           gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
           actionButton={
@@ -650,7 +652,7 @@ export default function DonationManagement() {
                   '&:hover': { background: 'rgba(255,255,255,0.35)' },
                 }}
               >
-                Record Donation
+                {t('donations.record_donation')}
               </Button>
               <Button
                 variant="contained"
@@ -664,7 +666,7 @@ export default function DonationManagement() {
                   '&:hover': { background: 'rgba(255,255,255,0.25)' },
                 }}
               >
-                Import Data
+                {t('donations.import_data')}
               </Button>
             </Stack>
           }
@@ -681,12 +683,12 @@ export default function DonationManagement() {
             sx={{ mb: 3, borderRadius: 2, border: '1px solid rgba(237,108,2,0.3)' }}
             action={
               <Button color="inherit" size="small" onClick={() => setDonorTypeFilter('')}>
-                Review
+                {t('donations.review')}
               </Button>
             }
           >
-            <strong>{stats.pendingDonations}</strong> donation{stats.pendingDonations !== 1 ? 's' : ''} totalling{' '}
-            <strong>{formatCurrency(stats.pendingAmount)}</strong> are pending confirmation — mark as completed once payment is received.
+            <strong>{stats.pendingDonations}</strong> {stats.pendingDonations !== 1 ? t('donations.donations_totalling') : t('donations.donation_totalling')}{' '}
+            <strong>{formatCurrency(stats.pendingAmount)}</strong> {t('donations.pending_confirmation')}
           </Alert>
         )}
 
@@ -697,13 +699,13 @@ export default function DonationManagement() {
           {!loading && (
             <Box sx={{ px: 3, py: 1.5, background: `linear-gradient(135deg, ${alpha('#8b6cbc', 0.06)} 0%, ${alpha('#8b6cbc', 0.03)} 100%)`, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap', rowGap: 0.5 }}>
               {[
-                { label: 'Total Gifts',  value: stats.totalDonations,                      icon: <MoneyIcon sx={{ fontSize: 15 }} />,       color: '#8b6cbc' },
-                { label: 'Received',     value: formatCurrency(stats.completedAmount || 0), icon: <CheckCircleIcon sx={{ fontSize: 15 }} />, color: '#16a34a' },
-                { label: 'Pending',      value: formatCurrency(stats.pendingAmount || 0),   icon: <ScheduleIcon sx={{ fontSize: 15 }} />,    color: '#d97706' },
-                { label: 'Total Raised', value: formatCurrency(stats.totalAmount || 0),     icon: <TrendingUpIcon sx={{ fontSize: 15 }} />,  color: '#0369a1' },
-                { label: 'Avg Gift',     value: formatCurrency(stats.averageDonation || 0), icon: <MoneyIcon sx={{ fontSize: 15 }} />,       color: '#059669' },
-                { label: 'Funders',      value: stats.uniqueDonors || 0,                    icon: <PeopleIcon sx={{ fontSize: 15 }} />,      color: '#7c3aed' },
-                { label: 'This Month',   value: formatCurrency(stats.thisMonthAmount || 0), icon: <CalendarIcon sx={{ fontSize: 15 }} />,    color: '#0891b2' },
+                { label: t('donations.total_gifts'),  value: stats.totalDonations,                      icon: <MoneyIcon sx={{ fontSize: 15 }} />,       color: '#8b6cbc' },
+                { label: t('donations.received'),     value: formatCurrency(stats.completedAmount || 0), icon: <CheckCircleIcon sx={{ fontSize: 15 }} />, color: '#16a34a' },
+                { label: t('donations.pending'),      value: formatCurrency(stats.pendingAmount || 0),   icon: <ScheduleIcon sx={{ fontSize: 15 }} />,    color: '#d97706' },
+                { label: t('donations.total_raised'), value: formatCurrency(stats.totalAmount || 0),     icon: <TrendingUpIcon sx={{ fontSize: 15 }} />,  color: '#0369a1' },
+                { label: t('donations.avg_gift'),     value: formatCurrency(stats.averageDonation || 0), icon: <MoneyIcon sx={{ fontSize: 15 }} />,       color: '#059669' },
+                { label: t('donations.funders'),      value: stats.uniqueDonors || 0,                    icon: <PeopleIcon sx={{ fontSize: 15 }} />,      color: '#7c3aed' },
+                { label: t('donations.this_month'),   value: formatCurrency(stats.thisMonthAmount || 0), icon: <CalendarIcon sx={{ fontSize: 15 }} />,    color: '#0891b2' },
               ].map((item, i) => (
                 <React.Fragment key={i}>
                   {i > 0 && <Divider orientation="vertical" flexItem sx={{ mx: 2, my: 0.5 }} />}
@@ -721,7 +723,7 @@ export default function DonationManagement() {
           <Box sx={{ p: 2.5, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
               {/* Search Input */}
               <TextField
-                placeholder="Search initiatives and donations..."
+                placeholder={t('donations.search_placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 size="small"
@@ -763,7 +765,7 @@ export default function DonationManagement() {
                     }
                   }}
                 >
-                  <MenuItem value="">Category</MenuItem>
+                  <MenuItem value="">{t('donations.category')}</MenuItem>
                   {categories.filter(category => category && category.id).map((category) => (
                     <MenuItem key={category.id} value={category.id}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -773,9 +775,9 @@ export default function DonationManagement() {
                           height: 20,
                           fontSize: '0.7rem'
                         }}>
-                          {(category.name || 'Category').charAt(0).toUpperCase()}
+                          {(category.name || t('donations.category')).charAt(0).toUpperCase()}
                         </Avatar>
-                        {category.name || 'Unnamed Category'}
+                        {category.name || t('donations.unnamed_category')}
                       </Box>
                     </MenuItem>
                   ))}
@@ -801,11 +803,11 @@ export default function DonationManagement() {
                     }
                   }}
                 >
-                  <MenuItem value="">Status</MenuItem>
-                  <MenuItem value="Active">Active</MenuItem>
-                  <MenuItem value="Completed">Completed</MenuItem>
-                  <MenuItem value="Planning">Planning</MenuItem>
-                  <MenuItem value="Paused">Paused</MenuItem>
+                  <MenuItem value="">{t('donations.status')}</MenuItem>
+                  <MenuItem value="Active">{t('donations.status_active')}</MenuItem>
+                  <MenuItem value="Completed">{t('donations.status_completed')}</MenuItem>
+                  <MenuItem value="Planning">{t('donations.status_planning')}</MenuItem>
+                  <MenuItem value="Paused">{t('donations.status_paused')}</MenuItem>
                 </Select>
               </FormControl>
 
@@ -828,12 +830,12 @@ export default function DonationManagement() {
                     }
                   }}
                 >
-                  <MenuItem value="">Donor Type</MenuItem>
-                  <MenuItem value="INDIVIDUAL">Individual</MenuItem>
-                  <MenuItem value="CORPORATE">Corporate</MenuItem>
-                  <MenuItem value="FOUNDATION">Foundation</MenuItem>
-                  <MenuItem value="GOVERNMENT">Government</MenuItem>
-                  <MenuItem value="ANONYMOUS">Anonymous</MenuItem>
+                  <MenuItem value="">{t('donations.donor_type')}</MenuItem>
+                  <MenuItem value="INDIVIDUAL">{t('donations.donor_type_individual')}</MenuItem>
+                  <MenuItem value="CORPORATE">{t('donations.donor_type_corporate')}</MenuItem>
+                  <MenuItem value="FOUNDATION">{t('donations.donor_type_foundation')}</MenuItem>
+                  <MenuItem value="GOVERNMENT">{t('donations.donor_type_government')}</MenuItem>
+                  <MenuItem value="ANONYMOUS">{t('donations.donor_type_anonymous')}</MenuItem>
                 </Select>
               </FormControl>
 
@@ -851,12 +853,12 @@ export default function DonationManagement() {
                   }}
                   MenuProps={{ disableScrollLock: true, PaperProps: { sx: { maxHeight: 220 } } }}
                 >
-                  <MenuItem value="">All Time</MenuItem>
-                  <MenuItem value="today">Today</MenuItem>
-                  <MenuItem value="week">This Week</MenuItem>
-                  <MenuItem value="month">This Month</MenuItem>
-                  <MenuItem value="quarter">This Quarter</MenuItem>
-                  <MenuItem value="year">This Year</MenuItem>
+                  <MenuItem value="">{t('donations.all_time')}</MenuItem>
+                  <MenuItem value="today">{t('donations.today')}</MenuItem>
+                  <MenuItem value="week">{t('donations.this_week')}</MenuItem>
+                  <MenuItem value="month">{t('donations.this_month')}</MenuItem>
+                  <MenuItem value="quarter">{t('donations.this_quarter')}</MenuItem>
+                  <MenuItem value="year">{t('donations.this_year')}</MenuItem>
                 </Select>
               </FormControl>
 
@@ -882,7 +884,7 @@ export default function DonationManagement() {
                   }
                 }}
               >
-                Reset
+                {t('donations.reset')}
               </Button>
           </Box>
         </Paper>
@@ -896,12 +898,12 @@ export default function DonationManagement() {
               <Card sx={{ textAlign: 'center', py: 8, borderRadius: 3 }}>
                 <CampaignIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
                 <Typography variant="h5" color="text.secondary" gutterBottom>
-                  No campaigns found
+                  {t('donations.no_campaigns_found')}
                 </Typography>
                 <Typography variant="body2" color="text.disabled">
                   {searchTerm || statusFilter
-                    ? 'Try adjusting your search filters'
-                    : 'Start by creating your first campaign'
+                    ? t('donations.try_adjusting_filters')
+                    : t('donations.create_first_campaign')
                   }
                 </Typography>
               </Card>
@@ -1064,7 +1066,7 @@ export default function DonationManagement() {
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.5px'
                               }}>
-                                Total Raised
+                                {t('donations.total_raised')}
                               </Typography>
                             </Box>
 
@@ -1085,7 +1087,7 @@ export default function DonationManagement() {
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.5px'
                               }}>
-                                Donations
+                                {t('donations.donations')}
                               </Typography>
                             </Box>
 
@@ -1106,7 +1108,7 @@ export default function DonationManagement() {
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.5px'
                               }}>
-                                Donors
+                                {t('donations.donors')}
                               </Typography>
                             </Box>
 
@@ -1421,7 +1423,7 @@ export default function DonationManagement() {
                                       <TableCell align="center">
                                         <Stack direction="row" spacing={0.5} justifyContent="center">
                                           {donation.status !== 'COMPLETED' && (
-                                            <Tooltip title="Mark as completed" arrow>
+                                            <Tooltip title={t('donations.mark_as_completed')} arrow>
                                               <IconButton
                                                 size="small"
                                                 onClick={(e) => handleMarkComplete(donation, e)}
@@ -1431,7 +1433,7 @@ export default function DonationManagement() {
                                               </IconButton>
                                             </Tooltip>
                                           )}
-                                          <Tooltip title="View donation details" arrow>
+                                          <Tooltip title={t('donations.view_donation_details')} arrow>
                                             <IconButton
                                               size="small"
                                               onClick={() => handleViewDonation(donation)}
@@ -1440,7 +1442,7 @@ export default function DonationManagement() {
                                               <ViewIcon fontSize="small" />
                                             </IconButton>
                                           </Tooltip>
-                                          <Tooltip title="Edit donation" arrow>
+                                          <Tooltip title={t('donations.edit_donation')} arrow>
                                             <IconButton
                                               size="small"
                                               onClick={() => handleEditDonation(donation)}

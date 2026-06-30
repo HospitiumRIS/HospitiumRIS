@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
@@ -38,6 +39,7 @@ import { authenticateAndFetchCollections, fetchZoteroItems, transformZoteroItems
 import { getZoteroSettings, isZoteroConfigured, getZoteroCredentials } from '../../../utils/zoteroSettings';
 
 const ZoteroImport = ({ onImportSuccess, color = '#db2c3a' }) => {
+  const { t } = useTranslation();
   const [apiKey, setApiKey] = useState('');
   const [userID, setUserID] = useState('');
   const [loading, setLoading] = useState(false);
@@ -249,7 +251,7 @@ const ZoteroImport = ({ onImportSuccess, color = '#db2c3a' }) => {
   return (
     <Box sx={{ maxWidth: 800 }}>
       <Typography variant="h6" gutterBottom sx={{ color: color }}>
-        Import from Zotero Library
+        {t('common.import')} from Zotero
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>

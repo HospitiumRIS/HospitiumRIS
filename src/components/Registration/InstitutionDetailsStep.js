@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import {
   Box,
@@ -17,15 +20,16 @@ import {
 import { useTheme, alpha } from '@mui/material/styles';
 
 const InstitutionDetailsStep = ({ formData, onInputChange, errors }) => {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
 
   // Institution types
-  const institutionTypes = [
-    'University',
-    'Hospital',
-    'Research Institute',
-    'Other'
-  ];
+  const institutionTypes = React.useMemo(() => [
+    { value: 'University', label: t('auth.institution_type_university') },
+    { value: 'Hospital', label: t('auth.institution_type_hospital') },
+    { value: 'Research Institute', label: t('auth.institution_type_research_institute') },
+    { value: 'Other', label: t('auth.institution_type_other') }
+  ], [t, i18n.language]);
 
   // Full list of countries
   const countries = [
@@ -312,15 +316,15 @@ const InstitutionDetailsStep = ({ formData, onInputChange, errors }) => {
     <Box sx={{ width: '100%', mt: 1 }}>
       <SectionHeader 
         icon={<BusinessIcon />}
-        title="Institution Details"
-        subtitle="Please provide information about your institution."
+        title={t('auth.institution_details_title')}
+        subtitle={t('auth.institution_details_subtitle')}
       />
       
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {/* Institution Name - Full Width */}
           <TextField
             fullWidth
-            label="Institution Name"
+            label={t('auth.institution_name')}
             name="institutionName"
             value={formData.institutionName || ''}
             onChange={onInputChange}
@@ -354,13 +358,13 @@ const InstitutionDetailsStep = ({ formData, onInputChange, errors }) => {
                 gap: 1,
               }}>
                 <CategoryIcon sx={{ fontSize: 16 }} />
-                Institution Type
+                {t('auth.institution_type')}
               </InputLabel>
             <Select
               name="institutionType"
               value={formData.institutionType || ''}
               onChange={onInputChange}
-              label="Institution Type"
+              label={t('auth.institution_type')}
                 startAdornment={
                   <CategoryIcon sx={{ 
                     color: alpha(theme.palette.text.secondary, 0.6),
@@ -387,8 +391,8 @@ const InstitutionDetailsStep = ({ formData, onInputChange, errors }) => {
                 }}
               >
                 {institutionTypes.map((type) => (
-                  <MenuItem key={type} value={type}>
-                    {type}
+                  <MenuItem key={type.value} value={type.value}>
+                    {type.label}
                   </MenuItem>
                 ))}
             </Select>
@@ -417,13 +421,13 @@ const InstitutionDetailsStep = ({ formData, onInputChange, errors }) => {
                 gap: 1,
               }}>
                 <PublicIcon sx={{ fontSize: 16 }} />
-                Country
+                {t('auth.country')}
               </InputLabel>
               <Select
             name="institutionCountry"
             value={formData.institutionCountry || ''}
             onChange={onInputChange}
-                label="Country"
+                label={t('auth.country')}
                 startAdornment={
                   <PublicIcon sx={{ 
                     color: alpha(theme.palette.text.secondary, 0.6),

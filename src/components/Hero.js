@@ -14,9 +14,11 @@ import {
   ArrowForward as ArrowForwardIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 const Hero = () => {
   const theme = useTheme();
+  const { t } = useTranslation();
 
 
 
@@ -63,7 +65,7 @@ const Hero = () => {
               color: 'white',
             }}
           >
-            Transforming Hospital Research Management
+            {t('hero.title')}
           </Typography>
 
           <Typography
@@ -79,10 +81,7 @@ const Hero = () => {
               lineHeight: 1.6,
             }}
           >
-            Empowering Research
-            Excellence Through
-            Integrated Digital
-            Infrastructure
+            {t('hero.subtitle')}
           </Typography>
 
           <Stack
@@ -115,7 +114,7 @@ const Hero = () => {
                 transition: 'all 0.3s ease-in-out',
               }}
             >
-              Get Started
+              {t('hero.cta_start')}
             </Button>
 
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Typography,
@@ -18,40 +19,42 @@ import {
 } from '@mui/icons-material';
 
 const QuickActions = () => {
+  const { t } = useTranslation();
+
   const actions = [
     {
-      label: 'New Campaign',
+      label: t('foundation_dashboard.new_campaign'),
       icon: <CampaignIcon />,
       variant: 'contained',
       color: '#8b6cbc',
       hoverColor: '#7a5ba8',
     },
     {
-      label: 'Grant Opportunities',
+      label: t('foundation_dashboard.grant_opportunities'),
       icon: <GrantIcon />,
       variant: 'outlined',
       color: '#8b6cbc',
     },
     {
-      label: 'Analytics Report',
+      label: t('foundation_dashboard.analytics_report'),
       icon: <AssessmentIcon />,
       variant: 'outlined',
       color: '#2e7d32',
     },
     {
-      label: 'Manage Funds',
+      label: t('foundation_dashboard.manage_funds'),
       icon: <MoneyIcon />,
       variant: 'outlined',
       color: '#ff9800',
     },
     {
-      label: 'Donor Management',
+      label: t('foundation_dashboard.donor_management'),
       icon: <GroupIcon />,
       variant: 'outlined',
       color: '#1976d2',
     },
     {
-      label: 'Performance Insights',
+      label: t('foundation_dashboard.performance_insights'),
       icon: <AnalyticsIcon />,
       variant: 'outlined',
       color: '#8b6cbc',
@@ -61,7 +64,7 @@ const QuickActions = () => {
   return (
     <Card sx={{ borderRadius: 3, boxShadow: 3, p: 4 }}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, fontSize: '1.25rem' }}>
-        Quick Actions & Navigation
+        {t('foundation_dashboard.quick_actions_navigation')}
       </Typography>
       <Grid container spacing={2}>
         {actions.map((action, index) => (

@@ -45,8 +45,10 @@ import {
   Assignment as AssignmentIcon,
   MenuBook as MenuBookIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 const InstitutionResearcherProfile = () => {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const researcherId = params.id;
@@ -188,7 +190,7 @@ const InstitutionResearcherProfile = () => {
                 py: 1.5,
               }}
             >
-              Back to Dashboard
+              {t('common.back')} to Dashboard
             </Button>
           </Paper>
         </Container>
@@ -223,7 +225,7 @@ const InstitutionResearcherProfile = () => {
                 '&:hover': { backgroundColor: alpha('#8b6cbc', 0.08) }
               }}
             >
-              Back to Dashboard
+              {t('common.back')} to Dashboard
             </Button>
             <Typography variant="body2" color="text.secondary">
               Researcher Profile

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import * as d3 from 'd3';
@@ -7,7 +8,13 @@ import * as d3 from 'd3';
 // Dynamic import for ForceGraph2D to avoid SSR issues
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
   ssr: false,
-  loading: () => <div>Loading network visualization...</div>
+  loading: () => {
+    const GraphLoading = () => {
+      const { t } = useTranslation();
+      return <div>{t('research_network.loading_viz')}</div>;
+    };
+    return <GraphLoading />;
+  }
 });
 import { 
   Box, 
@@ -101,6 +108,7 @@ const getNodeGradient = (node) => {
 };
 
 const KenyaNetworkVisualization = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [networkData, setNetworkData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -170,10 +178,10 @@ const KenyaNetworkVisualization = () => {
 
         if (!response.ok) {
           if (response.status === 401) {
-            setError("Authentication required. Please log in to view your research network.");
+            setError(t('research_network.auth_required'));
             return;
           } else if (response.status === 404) {
-            setError("User profile not found. Please complete your profile setup.");
+            setError(t('research_network.profile_not_found'));
             return;
           } else {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -212,9 +220,9 @@ const KenyaNetworkVisualization = () => {
       } catch (err) {
         console.error("Error loading network data:", err);
         if (err.message.includes('fetch')) {
-          setError("Network error. Please check your internet connection and try again.");
+          setError(t('research_network.network_error'));
         } else {
-          setError("Failed to load research network data. Please try refreshing the page.");
+          setError(t('research_network.load_failed'));
         }
       } finally {
         setIsLoading(false);
@@ -225,10 +233,10 @@ const KenyaNetworkVisualization = () => {
     if (user) {
     loadData();
     } else {
-      setError("Please log in to view your research collaboration network.");
+      setError(t('research_network.login_required'));
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, t]);
 
   // Process network data to create graph structure
   const processNetworkData = (data, manuscripts = []) => {
@@ -970,10 +978,10 @@ const KenyaNetworkVisualization = () => {
           }} 
         />
         <Typography variant="h6" sx={{ color: KENYA_COLORS.text.secondary, fontWeight: 500 }}>
-          Loading Research Network...
+          {t('research_network.loading_network')}
         </Typography>
         <Typography variant="body2" sx={{ color: KENYA_COLORS.text.disabled }}>
-          Fetching your research collaboration network from database...
+          {t('research_network.fetching_network')}
         </Typography>
       </Box>
     );
@@ -995,10 +1003,10 @@ const KenyaNetworkVisualization = () => {
       }}>
         <CardContent sx={{ textAlign: 'center', maxWidth: 500 }}>
           <Typography variant="h6" sx={{ color: KENYA_COLORS.text.primary, mb: 2, fontWeight: 600 }}>
-            Start Building Your Research Network
+            {t('research_network.start_building')}
           </Typography>
           <Typography variant="body1" sx={{ color: '#2d3748', mb: 3, lineHeight: 1.6 }}>
-            Your research collaboration network will appear here once you add publications and collaborate with other researchers.
+            {t('research_network.start_building_desc')}
           </Typography>
           
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -1015,7 +1023,7 @@ const KenyaNetworkVisualization = () => {
                 fontSize: '14px'
               }}
             >
-              Add Your First Publication
+              {t('research_network.add_first_publication')}
             </button>
             
             <button 
@@ -1031,12 +1039,12 @@ const KenyaNetworkVisualization = () => {
                 fontSize: '14px'
               }}
             >
-              Find Collaborators
+              {t('research_network.find_collaborators')}
             </button>
           </Box>
           
           <Typography variant="body2" sx={{ color: '#718096', mt: 3, fontStyle: 'italic' }}>
-            Connect with researchers, add publications, and watch your collaboration network grow!
+            {t('research_network.connect_grow')}
           </Typography>
         </CardContent>
       </Card>
@@ -1058,13 +1066,13 @@ const KenyaNetworkVisualization = () => {
       }}>
         <CardContent sx={{ textAlign: 'center', maxWidth: 500 }}>
           <Typography variant="h6" sx={{ color: '#c53030', mb: 2, fontWeight: 600 }}>
-            Research Network Unavailable
+            {t('research_network.unavailable')}
           </Typography>
           <Typography variant="body1" sx={{ color: '#2d3748', mb: 3, lineHeight: 1.6 }}>
             {error}
           </Typography>
           
-          {error.includes("Please log in") ? (
+          {error === t('research_network.login_required') ? (
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
               <button 
                 onClick={() => window.location.href = '/login'}
@@ -1079,7 +1087,7 @@ const KenyaNetworkVisualization = () => {
                   fontSize: '14px'
                 }}
               >
-                Go to Login
+                {t('research_network.go_login')}
               </button>
             </Box>
           ) : (
@@ -1098,7 +1106,7 @@ const KenyaNetworkVisualization = () => {
                 }}
               >
                 <Refresh sx={{ mr: 1, fontSize: 16 }} />
-                Retry Loading
+                {t('research_network.retry_loading')}
               </button>
               
               <button 
@@ -1114,13 +1122,13 @@ const KenyaNetworkVisualization = () => {
                   fontSize: '14px'
                 }}
               >
-                Add Publications
+                {t('research_network.add_publications')}
               </button>
             </Box>
           )}
           
           <Typography variant="body2" sx={{ color: '#718096', mt: 3, fontStyle: 'italic' }}>
-            Your research network will be generated automatically as you add publications and collaborate with other researchers.
+            {t('research_network.auto_generate_hint')}
           </Typography>
         </CardContent>
       </Card>
@@ -1167,14 +1175,14 @@ const KenyaNetworkVisualization = () => {
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent'
               }}>
-                {user ? `${user.givenName}'s Research Network` : 'Research Collaboration Network'}
+                {user ? t('research_network.user_network', { name: user.givenName }) : t('research_network.collaboration_network')}
               </Typography>
         
               {/* Network Statistics */}
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <Chip
                   icon={<Groups fontSize="small" />}
-                  label={`${graphStats.totalNodes} Researchers`}
+                  label={`${graphStats.totalNodes} ${t('research_network.researchers')}`}
                   size="small"
                   sx={{
                     backgroundColor: 'rgba(139, 108, 188, 0.1)',
@@ -1184,7 +1192,7 @@ const KenyaNetworkVisualization = () => {
                 />
                 <Chip
                   icon={<Article fontSize="small" />}
-                  label={`${graphStats.totalOutputs} Outputs (${graphStats.totalPublications}P + ${graphStats.totalManuscripts}M)`}
+                  label={t('research_network.outputs_summary', { total: graphStats.totalOutputs, publications: graphStats.totalPublications, manuscripts: graphStats.totalManuscripts })}
                   size="small"
                   sx={{
                     backgroundColor: 'rgba(76, 175, 80, 0.1)',
@@ -1193,7 +1201,7 @@ const KenyaNetworkVisualization = () => {
                   }}
                 />
                 <Chip
-                  label={`${graphStats.directCollaborators} Direct • ${graphStats.secondaryCollaborators} Secondary`}
+                  label={t('research_network.collab_summary', { direct: graphStats.directCollaborators, secondary: graphStats.secondaryCollaborators })}
                   size="small"
                   sx={{
                     backgroundColor: 'rgba(255, 215, 0, 0.1)',
@@ -1215,7 +1223,7 @@ const KenyaNetworkVisualization = () => {
             >
               <TextField
                 size="small"
-                placeholder="Search researchers, institutions, specializations..."
+                placeholder={t('research_network.search_extended')}
                 fullWidth
                 value={searchQuery}
                 onChange={handleSearchChange}
@@ -1326,7 +1334,7 @@ const KenyaNetworkVisualization = () => {
                                     <Chip 
                                       icon={<PersonPin fontSize="small" />}
                                       size="small" 
-                                      label="Lead" 
+                                      label={t('research_network.lead')} 
                                       sx={{ 
                                         height: 22, 
                                         bgcolor: 'rgba(255, 215, 0, 0.15)', 
@@ -1372,10 +1380,10 @@ const KenyaNetworkVisualization = () => {
                     <Box sx={{ p: 3, textAlign: 'center' }}>
                       <Search sx={{ fontSize: 48, color: KENYA_COLORS.text.disabled, mb: 1 }} />
                       <Typography variant="body2" color="text.secondary">
-                        No researchers found matching "<strong>{searchQuery}</strong>"
+                        {t('research_network.no_search_match', { query: searchQuery })}
                       </Typography>
                       <Typography variant="caption" sx={{ color: KENYA_COLORS.text.disabled, mt: 1, display: 'block' }}>
-                        Try searching for names, institutions, or specializations
+                        {t('research_network.search_hint')}
                       </Typography>
                     </Box>
                   )}
@@ -1385,7 +1393,7 @@ const KenyaNetworkVisualization = () => {
         
             {/* Enhanced Controls */}
             <Box sx={{ display: 'flex', gap: 1, order: { xs: 2, md: 3 } }}>
-              <Tooltip title="Zoom In" arrow>
+              <Tooltip title={t('research_network.zoom_in')} arrow>
                 <IconButton 
                   onClick={handleZoomIn} 
                   size="small"
@@ -1404,7 +1412,7 @@ const KenyaNetworkVisualization = () => {
                 </IconButton>
               </Tooltip>
               
-              <Tooltip title="Zoom Out" arrow>
+              <Tooltip title={t('research_network.zoom_out')} arrow>
                 <IconButton 
                   onClick={handleZoomOut} 
                   size="small"
@@ -1423,7 +1431,7 @@ const KenyaNetworkVisualization = () => {
                 </IconButton>
               </Tooltip>
               
-              <Tooltip title="Center & Fit Network" arrow>
+              <Tooltip title={t('research_network.center_fit')} arrow>
                 <IconButton 
                   onClick={handleCenter} 
                   size="small"
@@ -1442,7 +1450,7 @@ const KenyaNetworkVisualization = () => {
                 </IconButton>
               </Tooltip>
               
-              <Tooltip title="Reset Network" arrow>
+              <Tooltip title={t('research_network.reset_network')} arrow>
                 <IconButton 
                   onClick={() => window.location.reload()} 
                   size="small"
@@ -1551,7 +1559,7 @@ const KenyaNetworkVisualization = () => {
                         <Chip 
                           icon={<PersonPin sx={{ fontSize: 14, color: '#ffffff !important' }} />}
                           size="small" 
-                          label="Lead Investigator" 
+                          label={t('research_network.lead_investigator_full')} 
                           sx={{ 
                             bgcolor: 'rgba(255, 255, 255, 0.25)', 
                             color: '#ffffff',
@@ -1565,9 +1573,9 @@ const KenyaNetworkVisualization = () => {
                       ) : (
                         <Chip 
                           size="small" 
-                          label={selectedNode.collaborationLevel === 'direct' ? 'Direct Collaborator' : 
-                                 selectedNode.collaborationLevel === 'secondary' ? 'Secondary Collaborator' : 
-                                 'Network Member'}
+                          label={selectedNode.collaborationLevel === 'direct' ? t('research_network.direct_collaborator') : 
+                                 selectedNode.collaborationLevel === 'secondary' ? t('research_network.secondary_collaborator') : 
+                                 t('research_network.network_member')}
                           sx={{ 
                             bgcolor: 'rgba(255, 255, 255, 0.25)',
                             color: '#ffffff',
@@ -1581,7 +1589,7 @@ const KenyaNetworkVisualization = () => {
                       {selectedNode.isPending && (
                         <Chip 
                           size="small" 
-                          label="Pending"
+                          label={t('research_network.pending')}
                           sx={{ 
                             bgcolor: 'rgba(255, 255, 255, 0.2)',
                             color: '#ffffff',
@@ -1631,7 +1639,7 @@ const KenyaNetworkVisualization = () => {
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px'
                   }}>
-                    Global Citations
+                    {t('research_network.global_citations')}
                   </Typography>
                 </Box>
                 
@@ -1660,7 +1668,7 @@ const KenyaNetworkVisualization = () => {
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px'
                   }}>
-                    My Citations in HospitiumRIS
+                    {t('research_network.my_citations')}
                   </Typography>
                 </Box>
               </Box>
@@ -1699,7 +1707,7 @@ const KenyaNetworkVisualization = () => {
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px'
                   }}>
-                    Publications
+                    {t('research_network.publications')}
                   </Typography>
                 </Box>
                 
@@ -1728,7 +1736,7 @@ const KenyaNetworkVisualization = () => {
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px'
                   }}>
-                    Manuscripts
+                    {t('research_network.manuscripts')}
                   </Typography>
                 </Box>
                 
@@ -1757,7 +1765,7 @@ const KenyaNetworkVisualization = () => {
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px'
                   }}>
-                    Collaborators
+                    {t('research_network.collaborators')}
                   </Typography>
                 </Box>
               </Box>
@@ -1777,7 +1785,7 @@ const KenyaNetworkVisualization = () => {
                     letterSpacing: '0.5px'
                   }}>
                     <Info sx={{ fontSize: 16, color: '#6b7280' }} />
-                    Researcher Information
+                    {t('research_network.researcher_info')}
                   </Typography>
                   
                   {/* Info Items */}
@@ -1813,14 +1821,14 @@ const KenyaNetworkVisualization = () => {
                           letterSpacing: '0.3px',
                           mb: 0.25
                         }}>
-                          Role
+                          {t('research_network.role')}
                         </Typography>
                         <Typography sx={{ 
                           color: '#111827',
                           fontWeight: 600,
                           fontSize: '0.9rem'
                         }}>
-                          {selectedNode.isLead ? 'Lead Investigator/Current User' : (selectedNode.role || 'Researcher')}
+                          {selectedNode.isLead ? t('research_network.lead_role') : (selectedNode.role || t('research_network.researcher'))}
                         </Typography>
                       </Box>
                     </Box>
@@ -1856,7 +1864,7 @@ const KenyaNetworkVisualization = () => {
                           letterSpacing: '0.3px',
                           mb: 0.25
                         }}>
-                          Institution
+                          {t('research_network.institution')}
                         </Typography>
                         <Typography sx={{ 
                           color: '#111827',
@@ -1864,7 +1872,7 @@ const KenyaNetworkVisualization = () => {
                           fontSize: '0.9rem',
                           lineHeight: 1.4
                         }}>
-                          {selectedNode.institution || 'Independent Researcher'}
+                          {selectedNode.institution || t('research_network.independent_researcher')}
                         </Typography>
                       </Box>
                     </Box>
@@ -1900,14 +1908,14 @@ const KenyaNetworkVisualization = () => {
                           letterSpacing: '0.3px',
                           mb: 0.25
                         }}>
-                          Specialization
+                          {t('research_network.specialization')}
                         </Typography>
                         <Typography sx={{ 
                           color: '#111827',
                           fontWeight: 600,
                           fontSize: '0.9rem'
                         }}>
-                          {selectedNode.specialization || 'General Research'}
+                          {selectedNode.specialization || t('research_network.general_research')}
                         </Typography>
                       </Box>
                     </Box>
@@ -1948,7 +1956,7 @@ const KenyaNetworkVisualization = () => {
                             letterSpacing: '0.3px',
                             mb: 0.25
                           }}>
-                            ORCID iD
+                            {t('research_network.orcid_id')}
                           </Typography>
                           <Typography 
                             component="a"
@@ -1991,7 +1999,7 @@ const KenyaNetworkVisualization = () => {
                     letterSpacing: '0.5px'
                   }}>
                     <Article sx={{ fontSize: 16, color: '#6b7280' }} />
-                    Publications ({sharedPublications.length})
+                    {t('research_network.publications')} ({sharedPublications.length})
                   </Typography>
                   
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -2064,7 +2072,7 @@ const KenyaNetworkVisualization = () => {
                               letterSpacing: '0.3px'
                             }}>
                               <Groups sx={{ fontSize: 12 }} />
-                              Co-Authors:
+                              {t('research_network.co_authors')}
                             </Typography>
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                               {pub.coAuthors.slice(0, 3).map((coAuthor, idx) => (
@@ -2160,12 +2168,12 @@ const KenyaNetworkVisualization = () => {
                           {showAllPublications ? (
                             <>
                               <ExpandLess sx={{ fontSize: 18 }} />
-                              Show less
+                              {t('research_network.show_less')}
                             </>
                           ) : (
                             <>
                               <ExpandMore sx={{ fontSize: 18 }} />
-                              View all {sharedPublications.length} publications
+                              {t('research_network.view_all_publications', { count: sharedPublications.length })}
                             </>
                           )}
                         </Typography>
@@ -2192,7 +2200,7 @@ const KenyaNetworkVisualization = () => {
                     letterSpacing: '0.5px'
                   }}>
                     <Groups sx={{ fontSize: 16, color: '#6b7280' }} />
-                    Network Summary
+                    {t('research_network.network_summary')}
                   </Typography>
                   
                   <Box sx={{ 
@@ -2209,7 +2217,7 @@ const KenyaNetworkVisualization = () => {
                         {collaborationLevel.direct.size}
                       </Typography>
                       <Typography sx={{ color: '#6b7280', fontSize: '0.7rem', fontWeight: 500, textTransform: 'uppercase' }}>
-                        Direct
+                        {t('research_network.direct')}
                       </Typography>
                     </Box>
                     
@@ -2218,7 +2226,7 @@ const KenyaNetworkVisualization = () => {
                         {collaborationLevel.secondary.size}
                       </Typography>
                       <Typography sx={{ color: '#6b7280', fontSize: '0.7rem', fontWeight: 500, textTransform: 'uppercase' }}>
-                        Secondary
+                        {t('research_network.secondary')}
                       </Typography>
                     </Box>
                     
@@ -2227,7 +2235,7 @@ const KenyaNetworkVisualization = () => {
                         {highlightLinks.size}
                       </Typography>
                       <Typography sx={{ color: '#6b7280', fontSize: '0.7rem', fontWeight: 500, textTransform: 'uppercase' }}>
-                        Links
+                        {t('research_network.links')}
                       </Typography>
                     </Box>
                   </Box>
@@ -2263,7 +2271,7 @@ const KenyaNetworkVisualization = () => {
               gap: 1
             }}>
               <Groups fontSize="small" />
-              Network Legend
+              {t('research_network.network_legend')}
             </Typography>
         
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -2299,10 +2307,10 @@ const KenyaNetworkVisualization = () => {
                 </Box>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: KENYA_COLORS.text.primary }}>
-                    Lead Investigator
+                    {t('research_network.lead_investigator_full')}
                   </Typography>
                   <Typography variant="caption" sx={{ color: KENYA_COLORS.text.secondary }}>
-                    Primary researcher at network center
+                    {t('research_network.lead_center_desc')}
                   </Typography>
                 </Box>
               </Box>
@@ -2331,10 +2339,10 @@ const KenyaNetworkVisualization = () => {
                 </Box>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: KENYA_COLORS.text.primary }}>
-                    Direct Collaborators
+                    {t('research_network.direct_collaborators')}
                   </Typography>
                   <Typography variant="caption" sx={{ color: KENYA_COLORS.text.secondary }}>
-                    Co-authors with lead investigator
+                    {t('research_network.direct_collab_network_desc')}
                   </Typography>
                 </Box>
               </Box>
@@ -2363,10 +2371,10 @@ const KenyaNetworkVisualization = () => {
                 </Box>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: KENYA_COLORS.text.primary }}>
-                    Secondary Collaborators
+                    {t('research_network.secondary_collaborators')}
                   </Typography>
                   <Typography variant="caption" sx={{ color: KENYA_COLORS.text.secondary }}>
-                    Collaborate with direct collaborators
+                    {t('research_network.secondary_collab_desc')}
                   </Typography>
                 </Box>
               </Box>
@@ -2385,10 +2393,10 @@ const KenyaNetworkVisualization = () => {
                 </Box>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: KENYA_COLORS.text.primary }}>
-                    Other Researchers
+                    {t('research_network.other_researchers')}
                   </Typography>
                   <Typography variant="caption" sx={{ color: KENYA_COLORS.text.secondary }}>
-                    No direct collaboration identified
+                    {t('research_network.other_researchers_desc')}
                   </Typography>
                 </Box>
               </Box>
@@ -2407,10 +2415,10 @@ const KenyaNetworkVisualization = () => {
                 </Box>
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: KENYA_COLORS.text.primary }}>
-                    Pending Invitations
+                    {t('research_network.pending_invitations')}
                   </Typography>
                   <Typography variant="caption" sx={{ color: KENYA_COLORS.text.secondary }}>
-                    Collaborators with pending invitations
+                    {t('research_network.pending_collab_desc')}
                   </Typography>
                 </Box>
               </Box>
@@ -2425,21 +2433,21 @@ const KenyaNetworkVisualization = () => {
               mb: 1,
               display: 'block'
             }}>
-              Interaction Guide:
+              {t('research_network.interaction_guide')}
             </Typography>
             
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
               <Typography variant="caption" sx={{ color: KENYA_COLORS.text.disabled, fontSize: '0.7rem' }}>
-                • Click nodes to view detailed information
+                {t('research_network.click_nodes')}
               </Typography>
               <Typography variant="caption" sx={{ color: KENYA_COLORS.text.disabled, fontSize: '0.7rem' }}>
-                • Drag nodes to reposition them
+                {t('research_network.drag_nodes')}
               </Typography>
               <Typography variant="caption" sx={{ color: KENYA_COLORS.text.disabled, fontSize: '0.7rem' }}>
-                • Search for specific researchers
+                {t('research_network.search_researchers_guide')}
               </Typography>
               <Typography variant="caption" sx={{ color: KENYA_COLORS.text.disabled, fontSize: '0.7rem' }}>
-                • Use controls to zoom and navigate
+                {t('research_network.use_controls')}
               </Typography>
             </Box>
           </CardContent>

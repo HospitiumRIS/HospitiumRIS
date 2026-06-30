@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Dialog,
@@ -55,13 +56,14 @@ import {
 } from '@mui/icons-material';
 
 const CommandPalette = ({ open, onClose, editor, onCommand }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   // Define all available commands
   const allCommands = useMemo(() => [
     // File
-    { id: 'save', label: 'Save Document', category: 'File', icon: <SaveIcon />, shortcut: 'Ctrl+S', action: () => onCommand('save') },
+    { id: 'save', label: t('common.save'), category: 'File', icon: <SaveIcon />, shortcut: 'Ctrl+S', action: () => onCommand('save') },
     { id: 'export-pdf', label: 'Export as PDF', category: 'File', icon: <PdfIcon />, action: () => onCommand('exportPdf') },
     { id: 'export-word', label: 'Export as Word', category: 'File', icon: <WordIcon />, action: () => onCommand('exportWord') },
     { id: 'print', label: 'Print Document', category: 'File', icon: <PrintIcon />, shortcut: 'Ctrl+P', action: () => onCommand('print') },
@@ -69,8 +71,8 @@ const CommandPalette = ({ open, onClose, editor, onCommand }) => {
     // Edit
     { id: 'undo', label: 'Undo', category: 'Edit', icon: <UndoIcon />, shortcut: 'Ctrl+Z', action: () => editor?.chain().focus().undo().run() },
     { id: 'redo', label: 'Redo', category: 'Edit', icon: <RedoIcon />, shortcut: 'Ctrl+Y', action: () => editor?.chain().focus().redo().run() },
-    { id: 'cut', label: 'Cut', category: 'Edit', icon: <CutIcon />, shortcut: 'Ctrl+X', action: () => document.execCommand('cut') },
-    { id: 'copy', label: 'Copy', category: 'Edit', icon: <CopyIcon />, shortcut: 'Ctrl+C', action: () => document.execCommand('copy') },
+    { id: 'cut', label: t('common.cut'), category: 'Edit', icon: <CutIcon />, shortcut: 'Ctrl+X', action: () => document.execCommand('cut') },
+    { id: 'copy', label: t('common.copy'), category: 'Edit', icon: <CopyIcon />, shortcut: 'Ctrl+C', action: () => document.execCommand('copy') },
     { id: 'paste', label: 'Paste', category: 'Edit', icon: <PasteIcon />, shortcut: 'Ctrl+V', action: () => document.execCommand('paste') },
     { id: 'select-all', label: 'Select All', category: 'Edit', icon: <SelectAllIcon />, shortcut: 'Ctrl+A', action: () => editor?.commands.selectAll() },
     { id: 'find', label: 'Find & Replace', category: 'Edit', icon: <FindIcon />, shortcut: 'Ctrl+F', action: () => onCommand('find') },
@@ -100,24 +102,24 @@ const CommandPalette = ({ open, onClose, editor, onCommand }) => {
     // Insert
     { id: 'insert-link', label: 'Insert Link', category: 'Insert', icon: <LinkIcon />, shortcut: 'Ctrl+K', action: () => onCommand('insertLink') },
     { id: 'insert-image', label: 'Insert Image', category: 'Insert', icon: <ImageIcon />, action: () => onCommand('insertImage') },
-    { id: 'insert-table', label: 'Insert Table', category: 'Insert', icon: <TableIcon />, action: () => onCommand('insertTable') },
+    { id: 'insert-table', label: t('common.insert_table'), category: 'Insert', icon: <TableIcon />, action: () => onCommand('insertTable') },
     { id: 'insert-hr', label: 'Insert Horizontal Rule', category: 'Insert', icon: <HrIcon />, action: () => editor?.chain().focus().setHorizontalRule().run() },
     { id: 'insert-page-break', label: 'Insert Page Break', category: 'Insert', icon: <PageBreakIcon />, shortcut: 'Ctrl+Enter', action: () => editor?.chain().focus().insertPageBreak().run() },
     
     // Citation & References
     { id: 'insert-citation', label: 'Insert Citation', category: 'Citation', icon: <CitationIcon />, shortcut: '@', action: () => onCommand('insertCitation') },
     { id: 'manage-sources', label: 'Manage Sources', category: 'Citation', icon: <CitationIcon />, action: () => onCommand('manageSources') },
-    { id: 'bibliography', label: 'Generate Bibliography', category: 'Citation', icon: <CitationIcon />, action: () => onCommand('bibliography') },
+    { id: 'bibliography', label: t('common.bibliography'), category: 'Citation', icon: <CitationIcon />, action: () => onCommand('bibliography') },
     
     // Review
-    { id: 'add-comment', label: 'Add Comment', category: 'Review', icon: <CommentIcon />, shortcut: 'Ctrl+Alt+M', action: () => onCommand('addComment') },
+    { id: 'add-comment', label: t('common.add') + ' ' + t('common.comments'), category: 'Review', icon: <CommentIcon />, shortcut: 'Ctrl+Alt+M', action: () => onCommand('addComment') },
     { id: 'show-comments', label: 'Show/Hide Comments', category: 'Review', icon: <CommentIcon />, action: () => onCommand('toggleComments') },
-    { id: 'track-changes', label: 'Toggle Track Changes', category: 'Review', icon: <TrackChangesIcon />, action: () => onCommand('toggleTrackChanges') },
+    { id: 'track-changes', label: t('common.track_changes'), category: 'Review', icon: <TrackChangesIcon />, action: () => onCommand('toggleTrackChanges') },
     { id: 'show-tracked-changes', label: 'Show Tracked Changes', category: 'Review', icon: <TrackChangesIcon />, action: () => onCommand('showTrackedChanges') },
     
     // Version History
-    { id: 'create-version', label: 'Create Version', category: 'Version', icon: <VersionIcon />, action: () => onCommand('createVersion') },
-    { id: 'show-versions', label: 'Show Version History', category: 'Version', icon: <VersionIcon />, action: () => onCommand('showVersions') },
+    { id: 'create-version', label: t('common.create'), category: 'Version', icon: <VersionIcon />, action: () => onCommand('createVersion') },
+    { id: 'show-versions', label: t('common.version_history'), category: 'Version', icon: <VersionIcon />, action: () => onCommand('showVersions') },
     
     // View
     { id: 'fullscreen', label: 'Toggle Fullscreen', category: 'View', icon: <FullscreenIcon />, shortcut: 'F11', action: () => onCommand('toggleFullscreen') },

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo, useState } from 'react';
 import {
   Grid,
@@ -29,6 +30,7 @@ import {
 
 // Utility functions
 const formatCurrency = (amount, currency = 'USD') => {
+  const { t } = useTranslation();
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,

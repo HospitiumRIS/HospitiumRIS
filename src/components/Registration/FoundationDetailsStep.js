@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import {
   Box,
@@ -17,17 +20,18 @@ import {
 import { useTheme, alpha } from '@mui/material/styles';
 
 const FoundationDetailsStep = ({ formData, onInputChange, errors }) => {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
 
   // Foundation types
-  const foundationTypes = [
-    'Private Foundation',
-    'Public Foundation', 
-    'Corporate Foundation',
-    'Family Foundation',
-    'Community Foundation',
-    'Other'
-  ];
+  const foundationTypes = React.useMemo(() => [
+    { value: 'Private Foundation', label: t('auth.foundation_type_private') },
+    { value: 'Public Foundation', label: t('auth.foundation_type_public') },
+    { value: 'Corporate Foundation', label: t('auth.foundation_type_corporate') },
+    { value: 'Family Foundation', label: t('auth.foundation_type_family') },
+    { value: 'Community Foundation', label: t('auth.foundation_type_community') },
+    { value: 'Other', label: t('auth.institution_type_other') }
+  ], [t, i18n.language]);
 
   // Full list of countries (same as InstitutionDetailsStep)
   const countries = [
@@ -314,15 +318,15 @@ const FoundationDetailsStep = ({ formData, onInputChange, errors }) => {
     <Box sx={{ width: '100%', mt: 1 }}>
       <SectionHeader 
         icon={<FoundationIcon />}
-        title="Foundation Details"
-        subtitle="Please provide information about your foundation."
+        title={t('auth.foundation_details_title')}
+        subtitle={t('auth.foundation_details_subtitle')}
       />
       
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {/* Institution Name - Full Width (Primary) */}
         <TextField
           fullWidth
-          label="Institution Name"
+          label={t('auth.institution_name')}
           name="institutionName"
           value={formData.institutionName || ''}
           onChange={onInputChange}
@@ -344,7 +348,7 @@ const FoundationDetailsStep = ({ formData, onInputChange, errors }) => {
         {/* Foundation Name - Full Width */}
           <TextField
             fullWidth
-            label="Foundation Name"
+            label={t('auth.foundation_name')}
             name="foundationName"
             value={formData.foundationName || ''}
             onChange={onInputChange}
@@ -378,13 +382,13 @@ const FoundationDetailsStep = ({ formData, onInputChange, errors }) => {
                 gap: 1,
               }}>
                 <CategoryIcon sx={{ fontSize: 16 }} />
-                Foundation Type
+                {t('auth.foundation_type')}
               </InputLabel>
             <Select
               name="foundationType"
               value={formData.foundationType || ''}
               onChange={onInputChange}
-              label="Foundation Type"
+              label={t('auth.foundation_type')}
                 startAdornment={
                   <CategoryIcon sx={{ 
                     color: alpha(theme.palette.text.secondary, 0.6),
@@ -411,8 +415,8 @@ const FoundationDetailsStep = ({ formData, onInputChange, errors }) => {
                 }}
               >
                 {foundationTypes.map((type) => (
-                  <MenuItem key={type} value={type}>
-                    {type}
+                  <MenuItem key={type.value} value={type.value}>
+                    {type.label}
                   </MenuItem>
                 ))}
             </Select>
@@ -441,13 +445,13 @@ const FoundationDetailsStep = ({ formData, onInputChange, errors }) => {
                 gap: 1,
               }}>
                 <PublicIcon sx={{ fontSize: 16 }} />
-                Country
+                {t('auth.country')}
               </InputLabel>
               <Select
             name="foundationCountry"
             value={formData.foundationCountry || ''}
             onChange={onInputChange}
-                label="Country"
+                label={t('auth.country')}
                 startAdornment={
                   <PublicIcon sx={{ 
                     color: alpha(theme.palette.text.secondary, 0.6),

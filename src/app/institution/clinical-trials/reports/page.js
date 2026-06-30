@@ -41,6 +41,7 @@ import {
   Area,
 } from 'recharts';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 const enrollmentData = [
   { month: 'Oct', target: 80, actual: 62 },
@@ -105,6 +106,7 @@ const decoBubble = (
 );
 
 export default function ClinicalTrialsReportsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [tab, setTab] = useState(0);
 
@@ -112,7 +114,7 @@ export default function ClinicalTrialsReportsPage() {
     <>
       <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
         <PageHeader
-          title="Reports & Analytics"
+          title={t('institution.analytics')}
           description="KPI dashboard, trial pipeline, enrollment vs target, and compliance metrics"
           icon={<ReportsIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[

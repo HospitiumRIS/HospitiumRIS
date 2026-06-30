@@ -52,8 +52,10 @@ import {
 import { format } from 'date-fns';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 export default function ResultsOutputsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [trials, setTrials] = useState([]);
@@ -226,8 +228,8 @@ export default function ResultsOutputsPage() {
     <>
       <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
         <PageHeader
-          title="Results & Dissemination"
-          description="Link trials to publications (DOI), datasets, and funding sources"
+          title={t("researcher.results")}
+          description={t("researcher.results_desc")}
           icon={<ScienceIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={breadcrumbs}
           actionButton={

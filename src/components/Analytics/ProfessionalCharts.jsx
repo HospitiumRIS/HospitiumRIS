@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo, Suspense, useMemo, useState } from 'react';
 import {
   Box,
@@ -115,6 +116,7 @@ const ChartContainer = memo(({
   onViewChange,
   viewOptions = []
 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -192,7 +194,7 @@ const ChartContainer = memo(({
 
             {/* Chart Actions */}
             <Stack direction="row" spacing={0.5}>
-              <Tooltip title="Fullscreen">
+              <Tooltip title={t('analytics.fullscreen')}>
                 <IconButton 
                   size="small" 
                   onClick={onFullscreen}
@@ -254,19 +256,19 @@ const ChartContainer = memo(({
           <ListItemIcon>
             <RefreshIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Refresh Data</ListItemText>
+          <ListItemText>{t('analytics.refresh_data')}</ListItemText>
         </MenuItem>
         <MenuItem onClick={() => { onExport?.(); handleMenuClose(); }}>
           <ListItemIcon>
             <DownloadIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Export Chart</ListItemText>
+          <ListItemText>{t('analytics.export_chart')}</ListItemText>
         </MenuItem>
         <MenuItem onClick={() => { handleMenuClose(); }}>
           <ListItemIcon>
             <ShareIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Share</ListItemText>
+          <ListItemText>{t('common.share')}</ListItemText>
         </MenuItem>
       </Menu>
     </Card>
@@ -275,6 +277,7 @@ const ChartContainer = memo(({
 
 // Campaign Performance Bar Chart
 export const ProfessionalCampaignChart = memo(({ analyticsData, loading }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [viewType, setViewType] = useState('bar');
 
@@ -289,7 +292,7 @@ export const ProfessionalCampaignChart = memo(({ analyticsData, loading }) => {
       labels: campaigns.map(c => c.name.length > 15 ? c.name.substring(0, 15) + '...' : c.name),
       datasets: [
         {
-          label: 'Amount Raised',
+          label: t('analytics.amount_raised_label'),
           data: campaigns.map(c => c.raised),
           backgroundColor: (ctx) => {
             const canvas = ctx.chart.ctx;
@@ -308,9 +311,9 @@ export const ProfessionalCampaignChart = memo(({ analyticsData, loading }) => {
         }
       ]
     };
-  }, [analyticsData]);
+  }, [analyticsData, t]);
 
-  const options = {
+  const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -328,7 +331,7 @@ export const ProfessionalCampaignChart = memo(({ analyticsData, loading }) => {
         bodyFont: { size: 13 },
         callbacks: {
           label: function(context) {
-            return `Raised: ${formatCurrency(context.parsed.y)}`;
+            return t('analytics.raised_tooltip', { amount: formatCurrency(context.parsed.y) });
           }
         }
       }
@@ -366,19 +369,19 @@ export const ProfessionalCampaignChart = memo(({ analyticsData, loading }) => {
       intersect: false,
       mode: 'index'
     }
-  };
+  }), [theme, t]);
 
-  const viewOptions = [
-    { value: 'bar', label: 'Bar', icon: BarChartIcon },
-    { value: 'line', label: 'Line', icon: ShowChartIcon }
-  ];
+  const viewOptions = useMemo(() => [
+    { value: 'bar', label: t('analytics.bar'), icon: BarChartIcon },
+    { value: 'line', label: t('analytics.line'), icon: ShowChartIcon }
+  ], [t]);
 
   if (!chartData) return <ChartSkeleton />;
 
   return (
     <ChartContainer
-      title="Campaign Performance"
-      subtitle="Top performing fundraising campaigns by amount raised"
+      title={t('analytics.campaign_performance_chart')}
+      subtitle={t('analytics.campaign_performance_chart_subtitle')}
       loading={loading}
       height={500}
       showViewToggle
@@ -399,6 +402,7 @@ export const ProfessionalCampaignChart = memo(({ analyticsData, loading }) => {
 
 // Category Distribution Doughnut Chart
 export const ProfessionalCategoryChart = memo(({ analyticsData, loading }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   const chartData = useMemo(() => {
@@ -468,8 +472,8 @@ export const ProfessionalCategoryChart = memo(({ analyticsData, loading }) => {
 
   return (
     <ChartContainer
-      title="Category Distribution"
-      subtitle="Fundraising performance breakdown by category"
+      title={t('analytics.category_distribution')}
+      subtitle={t('analytics.category_distribution_subtitle')}
       loading={loading}
       height={500}
     >
@@ -491,7 +495,7 @@ export const ProfessionalCategoryChart = memo(({ analyticsData, loading }) => {
             color: theme.palette.text.secondary,
             fontSize: '0.75rem'
           }}>
-            Total Raised
+            {t('analytics.total_raised_center')}
           </Typography>
           <Typography variant="h6" sx={{ 
             fontWeight: 700,
@@ -508,6 +512,7 @@ export const ProfessionalCategoryChart = memo(({ analyticsData, loading }) => {
 
 // Monthly Trends Line Chart
 export const ProfessionalTrendsChart = memo(({ analyticsData, loading }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   const chartData = useMemo(() => {
@@ -519,7 +524,7 @@ export const ProfessionalTrendsChart = memo(({ analyticsData, loading }) => {
       labels: monthlyData.map(data => data.monthName),
       datasets: [
         {
-          label: 'Donation Amount',
+          label: t('analytics.donation_amount_label'),
           data: monthlyData.map(data => data.amount),
           borderColor: '#8b6cbc',
           backgroundColor: (ctx) => {
@@ -542,9 +547,9 @@ export const ProfessionalTrendsChart = memo(({ analyticsData, loading }) => {
         }
       ]
     };
-  }, [analyticsData]);
+  }, [analyticsData, t]);
 
-  const options = {
+  const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -562,7 +567,7 @@ export const ProfessionalTrendsChart = memo(({ analyticsData, loading }) => {
         bodyFont: { size: 13 },
         callbacks: {
           label: function(context) {
-            return `Amount: ${formatCurrency(context.parsed.y)}`;
+            return t('analytics.amount_tooltip', { amount: formatCurrency(context.parsed.y) });
           }
         }
       }
@@ -600,14 +605,14 @@ export const ProfessionalTrendsChart = memo(({ analyticsData, loading }) => {
       mode: 'index',
       intersect: false,
     }
-  };
+  }), [theme, t]);
 
   if (!chartData) return <ChartSkeleton />;
 
   return (
     <ChartContainer
-      title="Monthly Donation Trends"
-      subtitle="Donation patterns and growth over the last 12 months"
+      title={t('analytics.monthly_donation_trends')}
+      subtitle={t('analytics.monthly_donation_trends_subtitle')}
       loading={loading}
       height={500}
     >

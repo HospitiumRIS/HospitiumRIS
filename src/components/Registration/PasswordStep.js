@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
 import {
   Box,
@@ -15,6 +18,7 @@ import {
 } from '@mui/icons-material';
 
 const PasswordStep = ({ formData, onInputChange, errors }) => {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -26,14 +30,14 @@ const PasswordStep = ({ formData, onInputChange, errors }) => {
   return (
     <Box>
       <Typography variant="h6" sx={{ mb: 2, fontWeight: 600}}>
-        Create Password
+        {t('common.reg_create_password')}
       </Typography>
       
       <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
         <Box sx={{ width: '100%' }}>
           <TextField
             fullWidth
-            label="Password"
+            label={t('common.reg_password')}
             name="password"
             type={showPassword ? 'text' : 'password'}
             value={formData.password || ''}
@@ -59,7 +63,7 @@ const PasswordStep = ({ formData, onInputChange, errors }) => {
         <Box sx={{ width: '100%' }}>
           <TextField
             fullWidth
-            label="Confirm Password"
+            label={t('common.reg_confirm_password')}
             name="confirmPassword"
             type={showConfirmPassword ? 'text' : 'password'}
             value={formData.confirmPassword || ''}

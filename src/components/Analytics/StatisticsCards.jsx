@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo } from 'react';
 import {
   Grid,
@@ -20,7 +21,6 @@ import {
   Campaign as CampaignIcon,
 } from '@mui/icons-material';
 
-// Utility functions
 const formatCurrency = (amount, currency = 'USD') => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -30,7 +30,6 @@ const formatCurrency = (amount, currency = 'USD') => {
   }).format(amount);
 };
 
-// Skeleton component for loading state
 const StatisticsSkeleton = memo(() => (
   <Grid container spacing={3}>
     {[1, 2, 3, 4, 5].map((index) => (
@@ -46,47 +45,49 @@ const StatisticsSkeleton = memo(() => (
 ));
 
 const StatisticsCards = memo(({ analyticsData, loading }) => {
+  const { t } = useTranslation();
+
   if (loading) {
     return <StatisticsSkeleton />;
   }
 
   const statistics = [
     {
-      title: 'Total Raised',
+      title: t('analytics.total_raised'),
       value: formatCurrency(analyticsData?.overview.totalAmount || 0),
-      subtitle: 'lifetime donations',
+      subtitle: t('analytics.lifetime_donations'),
       icon: MoneyIcon,
       color: '#4caf50',
       trend: '+12.5%'
     },
     {
-      title: 'Total Donations',
+      title: t('analytics.donations'),
       value: analyticsData?.overview.totalDonations || 0,
-      subtitle: 'donation records',
+      subtitle: t('analytics.donation_records'),
       icon: AnalyticsIcon,
       color: '#2196f3',
       trend: '+8.3%'
     },
     {
-      title: 'Unique Donors',
+      title: t('analytics.unique_donors'),
       value: analyticsData?.overview.uniqueDonors || 0,
-      subtitle: 'individual donors',
+      subtitle: t('analytics.individual_donors'),
       icon: PeopleIcon,
       color: '#9c27b0',
       trend: '+15.7%'
     },
     {
-      title: 'Average Donation',
+      title: t('analytics.average_donation'),
       value: formatCurrency(analyticsData?.overview.avgDonation || 0),
-      subtitle: 'per donation',
+      subtitle: t('analytics.per_donation'),
       icon: TrendingUpIcon,
       color: '#ff9800',
       trend: '+5.2%'
     },
     {
-      title: 'Active Campaigns',
+      title: t('analytics.active_campaigns'),
       value: analyticsData?.overview.campaigns || 0,
-      subtitle: 'fundraising campaigns',
+      subtitle: t('analytics.fundraising_campaigns'),
       icon: CampaignIcon,
       color: '#8b6cbc',
       trend: '+2'

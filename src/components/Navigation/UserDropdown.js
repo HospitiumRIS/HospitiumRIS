@@ -26,11 +26,13 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const UserDropdown = () => {
   const theme = useTheme();
   const router = useRouter();
   const { user, logout, getDashboardRoute, getUserRole } = useAuth();
+  const { t } = useTranslation();
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const isExtraSmall = useMediaQuery('(max-width:400px)');
@@ -324,10 +326,10 @@ const UserDropdown = () => {
             <ListItemIcon sx={{ minWidth: 32 }}>
               <DashboardIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
             </ListItemIcon>
-            <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>Dashboard</Typography>
+            <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>{t('user_menu.dashboard')}</Typography>
           </MenuItem>
 
-          <MenuItem 
+          <MenuItem
             onClick={(event) => {
               const profileRoute = user?.accountType === 'RESEARCHER'
                 ? '/researcher/profile'
@@ -347,10 +349,10 @@ const UserDropdown = () => {
             <ListItemIcon sx={{ minWidth: 32 }}>
               <AccountCircleIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
             </ListItemIcon>
-            <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>Profile</Typography>
+            <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>{t('user_menu.profile')}</Typography>
           </MenuItem>
 
-          <MenuItem 
+          <MenuItem
             onClick={(event) => handleUserMenuItemClick(event, 'settings', '/settings')}
             sx={{
               borderRadius: 1,
@@ -361,12 +363,12 @@ const UserDropdown = () => {
             <ListItemIcon sx={{ minWidth: 32 }}>
               <SettingsIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
             </ListItemIcon>
-            <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>Settings</Typography>
+            <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>{t('nav.settings')}</Typography>
           </MenuItem>
 
           {/* Admin-only Logs menu item */}
           {(user?.accountType === 'RESEARCH_ADMIN' || user?.accountType === 'FOUNDATION_ADMIN' || user?.accountType === 'INSTITUTION_ADMIN' || user?.accountType === 'GLOBAL_ADMIN') && (
-            <MenuItem 
+            <MenuItem
               onClick={(event) => handleUserMenuItemClick(event, 'logs', '/logs')}
               sx={{
                 borderRadius: 1,
@@ -377,7 +379,7 @@ const UserDropdown = () => {
               <ListItemIcon sx={{ minWidth: 32 }}>
                 <LogsIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
               </ListItemIcon>
-              <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>Activity Logs</Typography>
+              <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>{t('user_menu.activity_logs')}</Typography>
             </MenuItem>
           )}
         </Box>
@@ -487,7 +489,7 @@ const UserDropdown = () => {
               <LoginIcon sx={{ fontSize: 18, color: '#ff9800' }} />
             </ListItemIcon>
             <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem', color: '#ff9800' }}>
-              Sign Out
+              {t('user_menu.logout')}
             </Typography>
           </MenuItem>
         </Box>

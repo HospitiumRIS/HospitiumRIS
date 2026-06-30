@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -24,6 +25,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 const ResendActivationPage = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -133,7 +135,7 @@ const ResendActivationPage = () => {
                 mb: 1,
               }}
             >
-              Resend Activation Email
+              {t('resend_activation.title')}
             </Typography>
             
             <Typography
@@ -205,7 +207,7 @@ const ResendActivationPage = () => {
                   )
                 }
               >
-                {isLoading ? 'Sending...' : 'Send Activation Email'}
+                {isLoading ? t('common.loading') : t('resend_activation.submit')}
               </Button>
             </Box>
           )}
@@ -221,7 +223,7 @@ const ResendActivationPage = () => {
                 }}
               />
               <Typography variant="h6" sx={{ mb: 2, color: theme.palette.text.primary }}>
-                Email Sent Successfully!
+                {t('resend_activation.success')}
               </Typography>
               <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 3 }}>
                 Please check your email inbox and spam folder for the activation link.

@@ -21,6 +21,7 @@ import {
   AdminPanelSettings as RoleIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 const PURPLE = '#8b6cbc';
 
@@ -39,36 +40,6 @@ const mockMembers = [
   { id: 'MBR-012', name: 'Mr. Kofi Mensah',     role: 'Lab Technician',         trial: 'Cancer Screening Initiative', email: 'k.mensah@institution.ac', gcpExpiry: '2024-06-30', gcpStatus: 'EXPIRING', delegationLog: 'MISSING',  trialCount: 1 },
 ];
 
-const getRoleColor = (role) => {
-  switch (role) {
-    case 'Principal Investigator': return PURPLE;
-    case 'Sub-Investigator':       return '#3b82f6';
-    case 'Site Coordinator':       return '#10b981';
-    case 'Data Manager':           return '#f59e0b';
-    case 'Pharmacist':             return '#ef4444';
-    case 'Lab Technician':         return '#6b7280';
-    default:                       return '#6b7280';
-  }
-};
-
-const getGcpConfig = (status) => {
-  switch (status) {
-    case 'VALID':    return { color: '#10b981', icon: <ValidIcon    sx={{ fontSize: 14 }} />, label: 'Valid' };
-    case 'EXPIRING': return { color: '#f59e0b', icon: <ExpiringIcon sx={{ fontSize: 14 }} />, label: 'Expiring Soon' };
-    case 'EXPIRED':  return { color: '#ef4444', icon: <ExpiredIcon  sx={{ fontSize: 14 }} />, label: 'Expired' };
-    default:         return { color: '#6b7280', icon: null, label: status };
-  }
-};
-
-const getDelegationConfig = (status) => {
-  switch (status) {
-    case 'COMPLETE': return { color: '#10b981', label: 'Complete' };
-    case 'MISSING':  return { color: '#ef4444', label: 'Missing' };
-    case 'PENDING':  return { color: '#f59e0b', label: 'Pending' };
-    default:         return { color: '#6b7280', label: status };
-  }
-};
-
 const statCardSx = {
   p: 2, borderRadius: 2, bgcolor: PURPLE,
   boxShadow: '0 2px 8px rgba(139,108,188,0.2)',
@@ -77,10 +48,41 @@ const statCardSx = {
 };
 
 export default function TeamAndGcpCertificationPage() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm]   = useState('');
   const [roleFilter, setRoleFilter]   = useState('ALL');
   const [gcpFilter, setGcpFilter]     = useState('ALL');
   const [tab, setTab]                 = useState(0);
+
+  const getRoleColor = (role) => {
+    switch (role) {
+      case 'Principal Investigator': return PURPLE;
+      case 'Sub-Investigator':       return '#3b82f6';
+      case 'Site Coordinator':       return '#10b981';
+      case 'Data Manager':           return '#f59e0b';
+      case 'Pharmacist':             return '#ef4444';
+      case 'Lab Technician':         return '#6b7280';
+      default:                       return '#6b7280';
+    }
+  };
+
+  const getGcpConfig = (status) => {
+    switch (status) {
+      case 'VALID':    return { color: '#10b981', icon: <ValidIcon    sx={{ fontSize: 14 }} />, label: 'Valid' };
+      case 'EXPIRING': return { color: '#f59e0b', icon: <ExpiringIcon sx={{ fontSize: 14 }} />, label: 'Expiring Soon' };
+      case 'EXPIRED':  return { color: '#ef4444', icon: <ExpiredIcon  sx={{ fontSize: 14 }} />, label: 'Expired' };
+      default:         return { color: '#6b7280', icon: null, label: status };
+    }
+  };
+
+  const getDelegationConfig = (status) => {
+    switch (status) {
+      case 'COMPLETE': return { color: '#10b981', label: 'Complete' };
+      case 'MISSING':  return { color: '#ef4444', label: 'Missing' };
+      case 'PENDING':  return { color: '#f59e0b', label: t('common.pending') };
+      default:         return { color: '#6b7280', label: status };
+    }
+  };
 
   const totalMembers  = mockMembers.length;
   const gcpValid      = mockMembers.filter(m => m.gcpStatus === 'VALID').length;

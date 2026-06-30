@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -16,6 +17,7 @@ import {
 } from '@mui/icons-material';
 
 const StatisticsCards = ({ statistics, loading = false }) => {
+  const { t } = useTranslation();
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -64,32 +66,32 @@ const StatisticsCards = ({ statistics, loading = false }) => {
 
   const cards = [
     {
-      title: 'Categories',
+      title: t('foundation_dashboard.categories'),
       value: statistics.totalCategories || 0,
-      subtitle: `${statistics.activeCampaigns || 0} active campaigns`,
+      subtitle: `${statistics.activeCampaigns || 0} ${t('foundation_dashboard.active_campaigns')}`,
       icon: CampaignIcon,
       progress: null
     },
     {
-      title: 'Total Raised',
+      title: t('foundation_dashboard.total_raised'),
       value: formatCurrency(statistics.totalRaised || 0),
-      subtitle: `of ${formatCurrency(statistics.totalTarget || 0)} target`,
+      subtitle: t('foundation_dashboard.of_target', { target: formatCurrency(statistics.totalTarget || 0) }),
       icon: MoneyIcon,
       progress: calculateProgress(statistics.totalRaised, statistics.totalTarget)
     },
     {
-      title: 'Campaigns',
+      title: t('foundation_dashboard.campaigns'),
       value: statistics.totalCampaigns || 0,
-      subtitle: `${statistics.activeCampaigns || 0} currently active`,
+      subtitle: `${statistics.activeCampaigns || 0} ${t('foundation_dashboard.currently_active')}`,
       icon: TaskIcon,
       progress: statistics.totalCampaigns > 0
         ? (statistics.activeCampaigns / statistics.totalCampaigns) * 100
         : 0
     },
     {
-      title: 'Activities',
+      title: t('foundation_dashboard.activities'),
       value: statistics.totalActivities || 0,
-      subtitle: `${statistics.completedActivities || 0} completed`,
+      subtitle: `${statistics.completedActivities || 0} ${t('foundation_dashboard.completed')}`,
       icon: TimelineIcon,
       progress: statistics.totalActivities > 0
         ? (statistics.completedActivities / statistics.totalActivities) * 100

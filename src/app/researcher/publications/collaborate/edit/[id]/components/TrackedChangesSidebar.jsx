@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -52,6 +53,7 @@ export default function TrackedChangesSidebar({
   onChangeAccepted,
   onChangeRejected
 }) {
+  const { t } = useTranslation();
   const [changes, setChanges] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('ALL'); // ALL, PENDING, ACCEPTED, REJECTED
@@ -242,7 +244,9 @@ export default function TrackedChangesSidebar({
   return (
     <>
       <Paper sx={{ 
-        width: 420, 
+        width: 420,
+        minWidth: 420,
+        flexShrink: 0,
         height: '100%', 
         display: 'flex', 
         flexDirection: 'column',
@@ -278,10 +282,10 @@ export default function TrackedChangesSidebar({
               </Box>
               <Box>
                 <Typography variant="h6" sx={{ fontSize: '1.125rem', fontWeight: 700, color: 'white' }}>
-                  Track Changes
+                  t('common.track_changes')
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.75rem' }}>
-                  Review manuscript edits
+                  t('common.review_manuscript')
                 </Typography>
               </Box>
             </Box>
@@ -419,7 +423,7 @@ export default function TrackedChangesSidebar({
                       '&:hover': { borderColor: '#059669', bgcolor: '#10b98110' }
                     }}
                   >
-                    Accept All
+                    {t('common.approve')}
                   </Button>
                   <Button
                     onClick={handleRejectAll}
@@ -434,7 +438,7 @@ export default function TrackedChangesSidebar({
                       '&:hover': { borderColor: '#dc2626', bgcolor: '#ef444410' }
                     }}
                   >
-                    Reject All
+                    {t('common.reject')}
                   </Button>
                 </ButtonGroup>
 

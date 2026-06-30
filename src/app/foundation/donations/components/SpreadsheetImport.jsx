@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog, DialogContent, DialogActions,
   Box, Typography, Button, Stepper, Step, StepLabel,
@@ -95,7 +96,7 @@ const IMPORT_CONFIGS = {
   },
 };
 
-const STEPS = ['Upload File', 'Map Columns', 'Validate & Import'];
+const STEPS_KEYS = ['step_upload', 'step_map', 'step_validate'];
 
 // ─── Column auto-mapping aliases ──────────────────────────────────────────────
 
@@ -188,6 +189,11 @@ function downloadTemplate(config) {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function SpreadsheetImport({ open, onClose, onImportComplete, campaignContext }) {
+  const { t } = useTranslation();
+  const steps = useMemo(
+    () => STEPS_KEYS.map((key) => t(`foundation_import.${key}`)),
+    [t]
+  );
   const [importType, setImportType] = useState('donations');
   // When a campaign context is provided, lock to donations and reset on open
   React.useEffect(() => {
@@ -241,7 +247,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
       setParseError('');
 
       if (!file.name.toLowerCase().endsWith('.csv')) {
-        setParseError('Only .csv files are supported. Export your spreadsheet as CSV first.');
+        setParseError(t('foundation_import.csv_only_error'));
         return;
       }
 
@@ -251,7 +257,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
         skipEmptyLines: true,
         complete: (results) => {
           if (!results.meta.fields || results.meta.fields.length === 0) {
-            setParseError('Could not read column headers. Ensure the first row contains column names.');
+            setParseError(t('foundation_import.headers_error'));
             return;
           }
           const parsedHeaders = results.meta.fields;
@@ -261,11 +267,11 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
           setStep(1);
         },
         error: (err) => {
-          setParseError(`Failed to parse file: ${err.message}`);
+          setParseError(t('foundation_import.parse_failed', { message: err.message }));
         },
       });
     },
-    [config.fields]
+    [config.fields, t]
   );
 
   const handleFileChange = useCallback(
@@ -357,20 +363,19 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
           sx={{ mb: 2, borderRadius: 2, border: '1px solid rgba(76,175,80,0.4)', backgroundColor: 'rgba(76,175,80,0.06)' }}
         >
           <Typography variant="body2" sx={{ fontWeight: 700 }}>
-            Linked to campaign: {campaignContext.name}
+            {t('foundation_import.linked_campaign', { name: campaignContext.name })}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            All imported donations will automatically be associated with this campaign, regardless of the Campaign Name column in your file.
+            {t('foundation_import.linked_campaign_hint')}
           </Typography>
         </Alert>
       )}
       <Alert severity="info" icon={<InfoIcon />} sx={{ mb: 3, borderRadius: 2 }}>
         <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-          {config.description}
+          {importType === 'donations' ? t('foundation_import.donations_desc') : t('foundation_import.campaigns_desc')}
         </Typography>
         <Typography variant="caption">
-          Upload a <strong>.csv</strong> file. Export from Excel or Google Sheets using &quot;Save as CSV&quot;.
-          Download the template below to see the expected format.
+          {t('foundation_import.csv_upload_hint')}
         </Typography>
       </Alert>
 
@@ -382,7 +387,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
           onClick={() => downloadTemplate(config)}
           sx={{ borderColor: '#8b6cbc', color: '#8b6cbc', borderRadius: 2, fontWeight: 600 }}
         >
-          Download Template
+          {t('foundation_import.download_template')}
         </Button>
       </Box>
 
@@ -410,13 +415,13 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
       >
         <UploadIcon sx={{ fontSize: 52, color: '#8b6cbc', opacity: 0.65, mb: 1.5 }} />
         <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50', mb: 0.75 }}>
-          Drag &amp; drop your CSV file here
+          {t('foundation_import.drag_drop_title')}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          or click to browse your files
+          {t('foundation_import.drag_drop_subtitle')}
         </Typography>
         <Chip
-          label=".csv files only"
+          label={t('foundation_import.csv_only')}
           size="small"
           sx={{ backgroundColor: 'rgba(139,108,188,0.1)', color: '#8b6cbc', fontWeight: 600 }}
         />
@@ -431,7 +436,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
 
       <Box sx={{ mt: 3, p: 2, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.025)', border: '1px solid rgba(0,0,0,0.07)' }}>
         <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'text.secondary', display: 'block', mb: 1 }}>
-          Required Fields
+          {t('foundation_import.required_fields')}
         </Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
           {config.fields.filter((f) => f.required).map((f) => (
@@ -439,7 +444,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
           ))}
         </Stack>
         <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'text.secondary', display: 'block', mt: 1.5, mb: 1 }}>
-          Optional Fields
+          {t('foundation_import.optional_fields')}
         </Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
           {config.fields.filter((f) => !f.required).map((f) => (
@@ -454,28 +459,31 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
     <Box>
       <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>
         <Typography variant="body2">
-          <strong>{fileName}</strong> parsed — <strong>{rawRows.length} rows</strong>,{' '}
-          <strong>{headers.length} columns</strong> detected.{' '}
-          <strong>{Object.keys(mapping).length} / {config.fields.length}</strong> fields auto-mapped.
+          {t('foundation_import.parsed_file', {
+            fileName,
+            rows: rawRows.length,
+            columns: headers.length,
+            mapped: Object.keys(mapping).length,
+            total: config.fields.length,
+          })}
         </Typography>
       </Alert>
 
       {requiredUnmapped.length > 0 && (
         <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
-          Map all required fields before proceeding:{' '}
-          <strong>{requiredUnmapped.map((f) => f.label).join(', ')}</strong>
+          {t('foundation_import.map_required', { fields: requiredUnmapped.map((f) => f.label).join(', ') })}
         </Alert>
       )}
 
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Review and adjust the column mapping. The first row of your file is shown as a preview.
+        {t('foundation_import.mapping_hint')}
       </Typography>
 
       <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
         <Table size="small">
           <TableHead>
             <TableRow sx={{ backgroundColor: 'rgba(139,108,188,0.06)' }}>
-              {['Import Field', 'Your Spreadsheet Column', 'Required', 'Sample Value'].map((h) => (
+              {[t('foundation_import.import_field'), t('foundation_import.spreadsheet_column'), t('common.required'), t('foundation_import.sample_value')].map((h) => (
                 <TableCell
                   key={h}
                   sx={{ fontWeight: 700, color: '#8b6cbc', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}
@@ -519,7 +527,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
                           },
                         }}
                       >
-                        <MenuItem value=""><em style={{ color: '#aaa' }}>— Not mapped —</em></MenuItem>
+                        <MenuItem value=""><em style={{ color: '#aaa' }}>{t('foundation_import.not_mapped')}</em></MenuItem>
                         {headers.map((h) => (
                           <MenuItem key={h} value={h} sx={{ fontSize: '0.82rem' }}>{h}</MenuItem>
                         ))}
@@ -528,9 +536,9 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
                   </TableCell>
                   <TableCell>
                     {field.required ? (
-                      <Chip label="Required" size="small" color="error" sx={{ fontSize: '0.65rem', height: 20 }} />
+                      <Chip label={t('common.required')} size="small" color="error" sx={{ fontSize: '0.65rem', height: 20 }} />
                     ) : (
-                      <Chip label="Optional" size="small" variant="outlined" sx={{ fontSize: '0.65rem', height: 20, borderColor: 'rgba(0,0,0,0.15)', color: 'text.secondary' }} />
+                      <Chip label={t('common.optional')} size="small" variant="outlined" sx={{ fontSize: '0.65rem', height: 20, borderColor: 'rgba(0,0,0,0.15)', color: 'text.secondary' }} />
                     )}
                   </TableCell>
                   <TableCell>
@@ -576,11 +584,11 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
             <ErrorOutlineIcon sx={{ fontSize: 64, color: '#f44336', mb: 2 }} />
           )}
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
-            {allFailed ? 'Import Failed' : 'Import Complete'}
+            {allFailed ? t('foundation_import.import_failed') : t('foundation_import.import_complete')}
           </Typography>
           {summary && (
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              {importType === 'donations' ? 'Donations' : 'Campaigns'} processed
+              {importType === 'donations' ? t('foundation_import.donations_processed') : t('foundation_import.campaigns_processed')}
             </Typography>
           )}
           {summary && (
@@ -590,7 +598,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
                   {summary.succeeded}
                 </Typography>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: '#4caf50', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Succeeded
+                  {t('foundation_import.succeeded')}
                 </Typography>
               </Box>
               {summary.failed > 0 && (
@@ -599,7 +607,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
                     {summary.failed}
                   </Typography>
                   <Typography variant="caption" sx={{ fontWeight: 700, color: '#f44336', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Failed
+                    {t('foundation_import.failed')}
                   </Typography>
                 </Box>
               )}
@@ -608,7 +616,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
                   {summary.total}
                 </Typography>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: '#8b6cbc', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Total
+                  {t('foundation_import.total')}
                 </Typography>
               </Box>
             </Stack>
@@ -616,14 +624,14 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
           {failed.length > 0 && (
             <Box sx={{ textAlign: 'left', mt: 1 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: '#f44336' }}>
-                Failed Rows:
+                {t('foundation_import.failed_rows_title')}
               </Typography>
               <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, maxHeight: 200, overflow: 'auto' }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', width: 60 }}>Row</TableCell>
-                      <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>Error</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', width: 60 }}>{t('foundation_import.row')}</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>{t('common.error')}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -657,7 +665,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
           >
             <Typography variant="h4" sx={{ fontWeight: 800, color: '#4caf50', lineHeight: 1 }}>{validCount}</Typography>
             <Typography variant="caption" sx={{ fontWeight: 700, color: '#4caf50', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Ready
+              {t('foundation_import.ready')}
             </Typography>
           </Paper>
           {errorCount > 0 && (
@@ -667,7 +675,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
             >
               <Typography variant="h4" sx={{ fontWeight: 800, color: '#f44336', lineHeight: 1 }}>{errorCount}</Typography>
               <Typography variant="caption" sx={{ fontWeight: 700, color: '#f44336', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Errors
+                {t('foundation_import.errors_title')}
               </Typography>
             </Paper>
           )}
@@ -678,7 +686,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
             >
               <Typography variant="h4" sx={{ fontWeight: 800, color: '#ff9800', lineHeight: 1 }}>{warnCount}</Typography>
               <Typography variant="caption" sx={{ fontWeight: 700, color: '#ff9800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Warnings
+                {t('foundation_import.warnings')}
               </Typography>
             </Paper>
           )}
@@ -695,8 +703,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
 
         {errorCount > 0 && (
           <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
-            <strong>{errorCount} row{errorCount !== 1 ? 's' : ''} with errors</strong> will be skipped.
-            Only <strong>{validCount}</strong> valid records will be imported.
+            {t('foundation_import.rows_skip_warning', { errorCount, validCount })}
           </Alert>
         )}
 
@@ -706,7 +713,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
               sx={{ borderRadius: 2, height: 8, '& .MuiLinearProgress-bar': { backgroundColor: '#8b6cbc' } }}
             />
             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              Importing records — please wait…
+              {t('foundation_import.importing_wait')}
             </Typography>
           </Box>
         )}
@@ -719,7 +726,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
                 sx={{ '& .MuiTableCell-stickyHeader': { backgroundColor: 'rgba(139,108,188,0.08)' } }}
               >
                 <TableCell sx={{ fontWeight: 700, color: '#8b6cbc', fontSize: '0.72rem', textTransform: 'uppercase', width: 44 }}>#</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#8b6cbc', fontSize: '0.72rem', textTransform: 'uppercase', width: 96 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#8b6cbc', fontSize: '0.72rem', textTransform: 'uppercase', width: 96 }}>{t('foundation_import.status')}</TableCell>
                 {config.fields.filter((f) => mapping[f.key]).map((f) => (
                   <TableCell key={f.key} sx={{ fontWeight: 700, color: '#8b6cbc', fontSize: '0.72rem', textTransform: 'uppercase' }}>
                     {f.label}
@@ -748,27 +755,27 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
                       title={
                         [...row.errors, ...row.warnings].length > 0
                           ? [...row.errors, ...row.warnings].join(' · ')
-                          : 'Valid row'
+                          : t('foundation_import.valid_row')
                       }
                       arrow
                     >
                       <Box>
                         {!row.isValid ? (
                           <Chip
-                            label={`${row.errors.length} error${row.errors.length !== 1 ? 's' : ''}`}
+                            label={t(row.errors.length === 1 ? 'foundation_import.errors_count' : 'foundation_import.errors_count_other', { count: row.errors.length })}
                             size="small"
                             color="error"
                             sx={{ fontSize: '0.6rem', height: 18 }}
                           />
                         ) : row.warnings.length > 0 ? (
                           <Chip
-                            label={`${row.warnings.length} warn`}
+                            label={`${row.warnings.length} ${t('foundation_import.warn_count')}`}
                             size="small"
                             color="warning"
                             sx={{ fontSize: '0.6rem', height: 18 }}
                           />
                         ) : (
-                          <Chip label="✓ OK" size="small" color="success" sx={{ fontSize: '0.6rem', height: 18 }} />
+                          <Chip label={t('foundation_import.ok')} size="small" color="success" sx={{ fontSize: '0.6rem', height: 18 }} />
                         )}
                       </Box>
                     </Tooltip>
@@ -839,10 +846,10 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
             </Box>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 700, color: 'white', lineHeight: 1.1 }}>
-                Spreadsheet Import
+                {t('foundation_import.title')}
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.75)' }}>
-                Import data from CSV files
+                {t('foundation_import.subtitle')}
               </Typography>
             </Box>
           </Box>
@@ -879,14 +886,14 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
           >
             <Tab
               value="donations"
-              label="Donations"
+              label={t('foundation_import.donations')}
               icon={<DonationIcon sx={{ fontSize: 16 }} />}
               iconPosition="start"
             />
             {!campaignContext && (
               <Tab
                 value="campaigns"
-                label="Campaigns"
+                label={t('foundation_import.campaigns')}
                 icon={<CampaignIcon sx={{ fontSize: 16 }} />}
                 iconPosition="start"
               />
@@ -912,7 +919,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
             '& .MuiStepIcon-root.Mui-completed': { color: '#4caf50' },
           }}
         >
-          {STEPS.map((label) => (
+          {steps.map((label) => (
             <Step key={label}>
               <StepLabel>{label}</StepLabel>
             </Step>
@@ -945,7 +952,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
               variant="outlined"
               sx={{ borderColor: '#8b6cbc', color: '#8b6cbc', fontWeight: 600, borderRadius: 2 }}
             >
-              Import More
+              {t('foundation_import.import_more')}
             </Button>
             <Box sx={{ flex: 1 }} />
             <Button
@@ -956,13 +963,13 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
                 fontWeight: 600, borderRadius: 2,
               }}
             >
-              Done
+              {t('foundation_import.done')}
             </Button>
           </>
         ) : (
           <>
             <Button onClick={handleClose} sx={{ color: 'text.secondary', fontWeight: 500 }}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Box sx={{ flex: 1 }} />
             {step > 0 && (
@@ -972,7 +979,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
                 variant="outlined"
                 sx={{ borderColor: 'rgba(0,0,0,0.2)', color: 'text.primary', fontWeight: 600, borderRadius: 2 }}
               >
-                Back
+                {t('common.back')}
               </Button>
             )}
             {step === 1 && (
@@ -987,7 +994,7 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
                   '&:disabled': { background: '#e0e0e0', color: '#aaa' },
                 }}
               >
-                Validate Data
+                {t('foundation_import.validate_data')}
               </Button>
             )}
             {step === 2 && !importResult && (
@@ -1009,8 +1016,8 @@ export default function SpreadsheetImport({ open, onClose, onImportComplete, cam
                 }}
               >
                 {importing
-                  ? 'Importing…'
-                  : `Import ${validCount} Record${validCount !== 1 ? 's' : ''}`}
+                  ? t('foundation_import.importing')
+                  : t(validCount === 1 ? 'foundation_import.import_records_one' : 'foundation_import.import_records_other', { count: validCount })}
               </Button>
             )}
           </>

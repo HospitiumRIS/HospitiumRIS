@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
     Dialog,
@@ -40,6 +41,7 @@ const SubmissionMethodDialog = ({
     onPreview,
     onSubmit
 }) => {
+  const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [showCloseConfirm, setShowCloseConfirm] = useState(false);
@@ -832,8 +834,8 @@ const SubmissionMethodDialog = ({
                     disabled={loading}
                     sx={{ color: 'text.secondary' }}
                 >
-                    Cancel
-                </Button>
+                    t('common.cancel')
+</Button>
                 <Button
                     onClick={onPreview}
                     variant="contained"

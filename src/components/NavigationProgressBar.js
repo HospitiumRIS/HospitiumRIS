@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { LinearProgress, Box } from '@mui/material';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from '@mui/material/styles';
+import { TOPBAR_HEIGHT } from './TopBar';
 
 const NavigationProgressBar = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -78,10 +79,14 @@ const NavigationProgressBar = () => {
     <Box
       sx={{
         position: 'fixed',
-        top: { xs: 56, sm: 64 }, // Height of AppBar
+        // TopBar (36px) + MUI Toolbar (56px mobile / 64px desktop)
+        top: {
+          xs: TOPBAR_HEIGHT + 56,
+          sm: TOPBAR_HEIGHT + 64,
+        },
         left: 0,
         right: 0,
-        zIndex: theme.zIndex.appBar + 1,
+        zIndex: theme.zIndex.appBar,
         height: '2px',
       }}
     >

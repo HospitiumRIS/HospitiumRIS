@@ -1,6 +1,7 @@
 'use client';
 
 import React, { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Card,
@@ -48,6 +49,7 @@ const CampaignCard = memo(({
   onEdit,
   onAddActivity
 }) => {
+  const { t } = useTranslation();
   const preActivities = useMemo(() => activities.filter(a => a.phase === 'Pre-Campaign'), [activities]);
   const postActivities = useMemo(() => activities.filter(a => a.phase === 'Post-Campaign'), [activities]);
   const statusStyle = getStatusStyle(campaign.status);

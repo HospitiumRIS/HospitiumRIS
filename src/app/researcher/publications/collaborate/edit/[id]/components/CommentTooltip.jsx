@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -34,6 +35,7 @@ const stringToColor = (string) => {
 };
 
 export default function CommentTooltip() {
+  const { t } = useTranslation();
   const [tooltip, setTooltip] = useState(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
@@ -128,7 +130,7 @@ export default function CommentTooltip() {
       case 'SUGGESTION':
         return {
           icon: <SuggestionIcon sx={{ fontSize: 14 }} />,
-          label: 'Suggestion',
+          label: t('collaborate_editor.suggestion'),
           color: '#f57c00',
           bgColor: '#fff8e1',
           borderColor: '#ffe0b2'
@@ -136,7 +138,7 @@ export default function CommentTooltip() {
       case 'QUESTION':
         return {
           icon: <QuestionMarkIcon sx={{ fontSize: 14 }} />,
-          label: 'Question',
+          label: t('collaborate_editor.question'),
           color: '#1565c0',
           bgColor: '#e3f2fd',
           borderColor: '#bbdefb'
@@ -144,7 +146,7 @@ export default function CommentTooltip() {
       default:
         return {
           icon: <CommentIcon sx={{ fontSize: 14 }} />,
-          label: 'Comment',
+          label: t('collaborate_editor.comment'),
           color: '#2e7d32',
           bgColor: '#e8f5e9',
           borderColor: '#c8e6c9'
@@ -223,7 +225,7 @@ export default function CommentTooltip() {
                   fontSize: '0.88rem',
                   lineHeight: 1.2
                 }}>
-                  {tooltip.authorName || 'Unknown User'}
+                  {tooltip.authorName || t('collaborate_editor.unknown_user')}
                 </Typography>
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <Chip
@@ -264,7 +266,7 @@ export default function CommentTooltip() {
                     fontStyle: 'italic'
                   }}
                 >
-                  {previewContent || 'No content'}
+                  {previewContent || t('collaborate_editor.no_content')}
                 </Typography>
               </Stack>
             </Box>
@@ -293,7 +295,7 @@ export default function CommentTooltip() {
                 }
               }}
             >
-              View Full Thread
+              {t('collaborate_editor.view_full_thread')}
             </Button>
 
             {/* Keyboard hint */}
@@ -305,7 +307,7 @@ export default function CommentTooltip() {
                 fontStyle: 'italic'
               }}
             >
-              Or click the highlighted text
+              {t('collaborate_editor.click_highlighted')}
             </Typography>
           </Stack>
         </Box>

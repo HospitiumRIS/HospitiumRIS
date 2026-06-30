@@ -75,8 +75,10 @@ import {
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
 import { Skeleton, CircularProgress } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 export default function ManagePublications() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [publications, setPublications] = useState([]);
   const [filteredPublications, setFilteredPublications] = useState([]);
@@ -1390,15 +1392,15 @@ export default function ManagePublications() {
                 onChange={handleSelectAllPublications}
               />
             </TableCell>
-            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Title</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Authors</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Date</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Imported</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Status</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Type</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Library</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>Source</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2, textAlign: 'center' }}>Actions</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('common.name')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('researcher.authors')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('common.date')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('researcher.imported')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('common.status')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('common.type')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('researcher.library')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('common.source')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2, textAlign: 'center' }}>{t('common.actions')}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -1649,13 +1651,13 @@ export default function ManagePublications() {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f8f9fa', mt:8}} >
       <PageHeader
-        title="Manage Publications"
-        description="Manage and track your research publications"
+        title={t('researcher.manage_publications')}
+        description={t('researcher.manage_publications_desc')}
         icon={<EditIcon />}
         breadcrumbs={[
-          { label: 'Dashboard', path: '/researcher' },
-          { label: 'Publications', path: '/researcher/publications' },
-          { label: 'Manage Publications' }
+          { label: t('common.dashboard'), path: '/researcher' },
+          { label: t('researcher.publications'), path: '/researcher/publications' },
+          { label: t('researcher.manage_publications') }
         ]}
         actionButton={
           <Box sx={{ display: 'flex', gap: 2 }}>
@@ -1672,22 +1674,22 @@ export default function ManagePublications() {
               }}
               onClick={handleOpenLibraryBrowser}
             >
-              My Library
+              {t('researcher.my_library')}
             </Button>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              sx={{ 
+              sx={{
                 bgcolor: 'white',
                 color: '#8b6cbc',
-                '&:hover': { 
+                '&:hover': {
                   bgcolor: '#f5f5f5',
                   color: '#7559a3'
                 }
               }}
               onClick={() => window.location.href = '/researcher/publications/import'}
             >
-              Import Publication
+              {t('researcher.import_publication')}
             </Button>
           </Box>
         }
@@ -1713,7 +1715,7 @@ export default function ManagePublications() {
               <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Total Publications
+                  {t('researcher.total_publications')}
                 </Typography>
                 <ArticleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
@@ -1742,7 +1744,7 @@ export default function ManagePublications() {
               <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  With DOI
+                  {t('researcher.with_doi')}
               </Typography>
                 <LinkIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
@@ -1771,7 +1773,7 @@ export default function ManagePublications() {
               <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Recent (6M)
+                  {t('researcher.recent_6m')}
               </Typography>
                 <DateIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
@@ -1800,7 +1802,7 @@ export default function ManagePublications() {
               <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Libraries
+                  {t('researcher.libraries')}
               </Typography>
                 <FolderIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
@@ -1865,11 +1867,11 @@ export default function ManagePublications() {
             </Box>
             <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
               <FormControl fullWidth>
-                <InputLabel>Publication Type</InputLabel>
+                <InputLabel>{t('researcher.pub_type')}</InputLabel>
                 <Select
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
-                  label="Publication Type"
+                  label={t('researcher.pub_type')}
                   MenuProps={{
                     disableScrollLock: true
                   }}
@@ -1884,22 +1886,22 @@ export default function ManagePublications() {
                     },
                   }}
                 >
-                  <MenuItem value="all">All Types</MenuItem>
-                  <MenuItem value="article">Journal Article</MenuItem>
-                  <MenuItem value="conference">Conference Paper</MenuItem>
-                  <MenuItem value="book">Book/Chapter</MenuItem>
-                  <MenuItem value="report">Report</MenuItem>
-                  <MenuItem value="thesis">Thesis</MenuItem>
+                  <MenuItem value="all">{t('common.all')}</MenuItem>
+                  <MenuItem value="article">{t('researcher.journal_article')}</MenuItem>
+                  <MenuItem value="conference">{t('researcher.conference_paper')}</MenuItem>
+                  <MenuItem value="book">{t('researcher.book_chapter')}</MenuItem>
+                  <MenuItem value="report">{t('common.report')}</MenuItem>
+                  <MenuItem value="thesis">{t('researcher.thesis')}</MenuItem>
                 </Select>
               </FormControl>
             </Box>
             <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
               <FormControl fullWidth>
-                <InputLabel>Sort By</InputLabel>
+                <InputLabel>{t('common.sort_by')}</InputLabel>
                 <Select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  label="Sort By"
+                  label={t('common.sort_by')}
                   MenuProps={{
                     disableScrollLock: true
                   }}
@@ -1914,10 +1916,10 @@ export default function ManagePublications() {
                     },
                   }}
                 >
-                  <MenuItem value="date-desc">Newest First</MenuItem>
-                  <MenuItem value="date-asc">Oldest First</MenuItem>
-                  <MenuItem value="title">Title A-Z</MenuItem>
-                  <MenuItem value="citations">Most Citations</MenuItem>
+                  <MenuItem value="date-desc">{t('common.newest_first')}</MenuItem>
+                  <MenuItem value="date-asc">{t('common.oldest_first')}</MenuItem>
+                  <MenuItem value="title">{t('common.title_az')}</MenuItem>
+                  <MenuItem value="citations">{t('researcher.most_citations')}</MenuItem>
                 </Select>
               </FormControl>
             </Box>
@@ -1938,7 +1940,7 @@ export default function ManagePublications() {
                   }
                 }}
               >
-                Clear All
+                {t('common.clear_all')}
               </Button>
             </Box>
           </Box>

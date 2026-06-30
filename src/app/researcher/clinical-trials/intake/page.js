@@ -62,6 +62,7 @@ import {
 import { format } from 'date-fns';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const statusColors = {
   DRAFT: '#9e9e9e',
@@ -72,6 +73,7 @@ const statusColors = {
 };
 
 export default function TrialIntakePage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [trials, setTrials] = useState([]);
@@ -238,8 +240,8 @@ export default function TrialIntakePage() {
     <>
       <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
         <PageHeader
-          title="Trial Intake & Setup"
-          description="Register new study concepts and align with WHO metadata standards"
+          title={t("researcher.trial_intake")}
+          description={t("researcher.trial_intake_desc")}
           icon={<RegistrationIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={breadcrumbs}
           actionButton={
@@ -800,7 +802,10 @@ export default function TrialIntakePage() {
           open={Boolean(menuAnchor)}
           onClose={handleMenuClose}
         >
-          <MenuItem onClick={handleMenuClose}>
+          <MenuItem onClick={() => {
+            if (selectedTrial) router.push(`/researcher/clinical-trials/intake/view/${selectedTrial.id}`);
+            handleMenuClose();
+          }}>
             <ViewIcon sx={{ mr: 1 }} /> View Details
           </MenuItem>
           <MenuItem onClick={handleMenuClose}>

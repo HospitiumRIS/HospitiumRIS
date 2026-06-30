@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Box, CircularProgress, Alert, Typography } from '@mui/material';
 import dynamic from 'next/dynamic';
@@ -15,20 +18,28 @@ import {
 
 const NetworkGraph = dynamic(() => import('./NetworkGraph'), {
   ssr: false,
-  loading: () => (
-    <Box sx={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: 600,
-      backgroundColor: '#f8fafc'
-    }}>
-      <CircularProgress />
-    </Box>
-  )
+  loading: () => {
+    const LoadingGraph = () => {
+      const { t } = useTranslation();
+      return (
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: 600,
+          backgroundColor: '#f8fafc'
+        }}>
+          <CircularProgress />
+          <Typography variant="body2" sx={{ ml: 2 }}>{t('research_network.loading')}</Typography>
+        </Box>
+      );
+    };
+    return <LoadingGraph />;
+  }
 });
 
 const ResearchNetworkWidget = () => {
+  const { t } = useTranslation();
   const { networkData, isLoading, error, refetch } = useNetworkData();
   const containerRef = useRef();
   const graphRef = useRef();
@@ -197,7 +208,7 @@ const ResearchNetworkWidget = () => {
         <Box sx={{ textAlign: 'center' }}>
           <CircularProgress size={48} />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Loading research network...
+            {t('research_network.loading_network')}
           </Typography>
         </Box>
       </Box>
@@ -218,7 +229,7 @@ const ResearchNetworkWidget = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="info">
-          No collaboration network data available. Start collaborating on publications, manuscripts, or proposals to build your network!
+          {t('research_network.no_data')}
         </Alert>
       </Box>
     );
@@ -239,7 +250,7 @@ const ResearchNetworkWidget = () => {
         />
         <Box sx={{ p: 3 }}>
           <Alert severity="warning">
-            No researchers match the current filters. Try adjusting your filter criteria.
+            {t('research_network.no_match_filters')}
           </Alert>
         </Box>
         <FilterPanel

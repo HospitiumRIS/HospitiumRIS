@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { memo, useState } from 'react';
 import {
   AppBar,
@@ -40,6 +41,7 @@ const ProfessionalAnalyticsHeader = memo(({
   lastUpdated,
   isLoading = false
 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [searchValue, setSearchValue] = useState('');
 

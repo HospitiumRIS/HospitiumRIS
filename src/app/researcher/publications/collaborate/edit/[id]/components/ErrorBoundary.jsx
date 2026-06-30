@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { withTranslation } from 'react-i18next';
 import { Box, Paper, Typography, Button, Alert, AlertTitle } from '@mui/material';
 import { ErrorOutline as ErrorIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 
@@ -70,16 +71,16 @@ class ErrorBoundary extends React.Component {
             sx={{ mb: 2 }}
           >
             <AlertTitle sx={{ fontWeight: 600 }}>
-              {this.props.title || 'Something went wrong'}
+              {this.props.title || this.props.t('collaborate_editor.error_title')}
             </AlertTitle>
-            {this.props.message || 'This component encountered an error and has been temporarily disabled.'}
+            {this.props.message || this.props.t('collaborate_editor.error_message')}
           </Alert>
 
           {/* Show error details in development */}
           {process.env.NODE_ENV === 'development' && this.state.error && (
             <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1, fontSize: '0.875rem' }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#d32f2f' }}>
-                Error Details (Development Only):
+                {this.props.t('collaborate_editor.error_details_dev')}
               </Typography>
               <Typography variant="body2" sx={{ fontFamily: 'monospace', mb: 1, color: '#666' }}>
                 {this.state.error.toString()}
@@ -114,7 +115,7 @@ class ErrorBoundary extends React.Component {
                 }
               }}
             >
-              Try Again
+              {this.props.t('collaborate_editor.try_again')}
             </Button>
             
             {this.props.showReload && (
@@ -130,7 +131,7 @@ class ErrorBoundary extends React.Component {
                   }
                 }}
               >
-                Reload Page
+                {this.props.t('collaborate_editor.reload_page')}
               </Button>
             )}
           </Box>
@@ -142,4 +143,4 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-export default ErrorBoundary;
+export default withTranslation()(ErrorBoundary);

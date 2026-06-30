@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useState, useRef, useEffect } from 'react';
 import {
   Box,
@@ -90,6 +91,7 @@ export default function DocumentHeader({
   savingTitle = false, // Whether title is being saved
   loading = false 
 }) {
+  const { t } = useTranslation();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const titleInputRef = useRef(null);
@@ -263,8 +265,8 @@ export default function DocumentHeader({
           }}
           onClick={onBack}
         >
-          Back
-        </Typography>
+          t('common.back')
+</Typography>
 
         {/* Document Title - Editable */}
         <Box sx={{ flexGrow: 1, ml: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -361,7 +363,7 @@ export default function DocumentHeader({
                     maxWidth: '500px'
                   }}
                 >
-                  {manuscript?.title || 'Untitled Document'}
+                  {manuscript?.title || t('common.no_data')}
                 </Typography>
                 {canEdit && (
                   <EditIcon 
@@ -427,7 +429,7 @@ export default function DocumentHeader({
                                 {member.name} {member.isCurrentUser && '(You)'}
                               </Typography>
                               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7rem' }}>
-                                {member.role} • {member.isOnline ? 'Online' : 'Offline'}
+                                {member.role} • {member.isOnline ? t('common.active') : t('common.inactive')}
                               </Typography>
                             </Box>
                           </Box>
@@ -623,8 +625,8 @@ export default function DocumentHeader({
               }
             }}
           >
-            Invite
-          </Button>
+            {t('common.invite_collaborator')}
+</Button>
         )}
       </Stack>
     </Paper>

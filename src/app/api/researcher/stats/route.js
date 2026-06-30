@@ -228,33 +228,43 @@ export async function GET(request) {
             ...collaboratingManuscriptList.filter(m => !createdManuscripts.some(cm => cm.id === m.id))
         ];
 
-        // 3. Fetch proposals from current year only
-        // NOTE: Proposals don't have user association yet in schema
-        const allProposals = await prisma.proposal.findMany({
-            where: {
-                createdAt: {
-                    gte: startOfYear
-                }
-            },
-            select: {
-                id: true,
-                title: true,
-                status: true,
-                principalInvestigator: true,
-                startDate: true,
-                endDate: true,
-                createdAt: true,
-                updatedAt: true
-            }
+        // 3. Fetch proposals - filter by user's ORCID if available
+        let allProposals = [];
+        
+        // Get current user with ORCID
+        const currentUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { orcidId: true }
         });
+        
+        if (currentUser?.orcidId) {
+            allProposals = await prisma.proposal.findMany({
+                where: {
+                    principalInvestigatorOrcid: currentUser.orcidId,
+                    createdAt: {
+                        gte: startOfYear
+                    }
+                },
+                select: {
+                    id: true,
+                    title: true,
+                    status: true,
+                    principalInvestigator: true,
+                    startDate: true,
+                    endDate: true,
+                    createdAt: true,
+                    updatedAt: true
+                }
+            });
+        }
 
         // Calculate ongoing projects (active manuscripts + active proposals)
         const ongoingManuscripts = allManuscripts.filter(m => 
-            ['DRAFT', 'IN_PROGRESS'].includes(m.status)
+            ['DRAFT', 'IN_REVIEW', 'UNDER_REVISION'].includes(m.status)
         );
 
         const ongoingProposals = allProposals.filter(p => 
-            ['DRAFT', 'UNDER_REVIEW', 'APPROVED', 'IN_PROGRESS'].includes(p.status)
+            ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REVISION_REQUESTED'].includes(p.status)
         );
 
         const totalOngoingProjects = ongoingManuscripts.length + ongoingProposals.length;
@@ -349,13 +359,19 @@ export async function GET(request) {
             }
         }
 
-        // Get detailed proposal data with co-investigators (current year only)
+        // Get detailed proposal data with co-investigators (current year only, filtered by user ORCID)
+        const detailedProposalsWhere = {
+            createdAt: {
+                gte: startOfYear
+            }
+        };
+        
+        if (currentUser?.orcidId) {
+            detailedProposalsWhere.principalInvestigatorOrcid = currentUser.orcidId;
+        }
+        
         const detailedProposals = await prisma.proposal.findMany({
-            where: {
-                createdAt: {
-                    gte: startOfYear
-                }
-            },
+            where: detailedProposalsWhere,
             select: {
                 coInvestigators: true,
                 principalInvestigator: true
@@ -448,7 +464,6 @@ export async function GET(request) {
                 publications: monthPublications,
                 manuscripts: monthManuscripts,
                 proposals: monthProposals,
-            monthlyTimeline,
                 projects: monthProjects
             });
         }
@@ -491,6 +506,7 @@ export async function GET(request) {
             },
             recentPublications,
             publicationsByMonth,
+            monthlyTimeline,
             recentProjects: {
                 manuscripts: allManuscripts.slice(0, 3),
                 proposals: allProposals.slice(0, 3)

@@ -48,8 +48,10 @@ import {
   Group as GroupIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 const ManageResearchers = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -214,8 +216,8 @@ const ManageResearchers = () => {
     return (
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
-          title="Manage Researchers"
-          description="Add, edit, and manage researchers"
+          title={t('institution.manage_researchers')}
+          description={t('institution.manage_researchers_desc')}
           icon={<GroupIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
             { label: 'Institution', path: '/institution' },
@@ -237,8 +239,8 @@ const ManageResearchers = () => {
     return (
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
-          title="Manage Researchers"
-          description="Add, edit, and manage researchers"
+          title={t('institution.manage_researchers')}
+          description={t('institution.manage_researchers_desc')}
           icon={<GroupIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
             { label: 'Institution', path: '/institution' },
@@ -439,7 +441,7 @@ const ManageResearchers = () => {
                   }
                 }}
               >
-                Export
+                {t('common.export')}
               </Button>
             </Box>
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -505,7 +507,7 @@ const ManageResearchers = () => {
             <Box sx={{ p: 8, textAlign: 'center' }}>
               <GroupIcon sx={{ fontSize: 64, color: '#e5e7eb', mb: 2 }} />
               <Typography variant="h6" sx={{ color: '#6b7280', mb: 1 }}>
-                {searchTerm ? 'No researchers found' : 'No researchers yet'}
+                {searchTerm ? t('common.no_results') : 'No researchers yet'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {searchTerm 

@@ -48,6 +48,7 @@ import {
 import { format } from 'date-fns';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const statusColors = {
   DRAFT: '#9e9e9e',
@@ -61,6 +62,7 @@ const statusColors = {
 };
 
 export default function ApprovalsEthicsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [approvals, setApprovals] = useState([]);
@@ -151,8 +153,8 @@ export default function ApprovalsEthicsPage() {
     <Box>
       {/* Page Header */}
       <PageHeader
-        title="Approvals & Ethics"
-        description="Route protocols through IRB/IEC and track institutional clearances"
+        title={t("researcher.approvals_ethics")}
+        description={t("researcher.approvals_ethics_desc")}
         icon={<ComplianceIcon sx={{ fontSize: 32 }} />}
         breadcrumbs={[
           { label: 'Home', path: '/researcher' },

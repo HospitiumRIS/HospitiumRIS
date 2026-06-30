@@ -19,6 +19,7 @@ import RichTextEditor from '../../../../../../components/common/RichTextEditor';
 import FileUploadZone from '../../../../../../components/common/FileUploadZone';
 import OrcidSearchModal from '../../create/components/OrcidSearchModal';
 import { useAuth } from '../../../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const steps = [
   { label: 'Project Overview', icon: <EthicsIcon /> },
@@ -173,6 +174,7 @@ const mapFormToApiData = (formData, user) => ({
 });
 
 export default function EditEthicsApplicationPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { id } = useParams();
   const { user } = useAuth();
@@ -919,7 +921,7 @@ export default function EditEthicsApplicationPage() {
   if (notFound) {
     return (
       <Box sx={{ bgcolor: '#f7fafc', minHeight: '100vh', pb: 6 }}>
-        <PageHeader title="Edit Ethics Application" description="Application not found"
+        <PageHeader title={t("researcher.ethics_edit")} description="Application not found"
           icon={<EthicsIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
             { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/researcher' },
@@ -943,7 +945,7 @@ export default function EditEthicsApplicationPage() {
     return (
       <Box sx={{ bgcolor: '#f7fafc', minHeight: '100vh', pb: 6 }}>
         <PageHeader
-          title="Edit Ethics Application"
+          title={t("researcher.ethics_edit")}
           description={`${application?.title || 'Application'} · ${application?.applicationNumber || ''}`}
           icon={<EthicsIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
@@ -981,7 +983,7 @@ export default function EditEthicsApplicationPage() {
   return (
     <Box sx={{ bgcolor: '#f7fafc', minHeight: '100vh', pb: 6 }}>
       <PageHeader
-        title="Edit Ethics Application"
+        title={t("researcher.ethics_edit")}
         description={`${application?.applicationNumber || id} · ${statusLabels[application?.status] || application?.status}`}
         icon={<EditIcon sx={{ fontSize: 32 }} />}
         breadcrumbs={[

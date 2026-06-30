@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -29,6 +30,7 @@ import {
 import ProposalReviewStatus from '@/components/Proposals/ProposalReviewStatus';
 
 export default function ProposalReviewPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const proposalId = params.id;
@@ -167,7 +169,7 @@ export default function ProposalReviewPage() {
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 600, color: '#2D3748', mb: 1 }}>
-          Review Proposal
+          {t('common.review')}
         </Typography>
         <Typography variant="h6" sx={{ color: '#666', mb: 2 }}>
           {proposal.title}
@@ -251,7 +253,7 @@ export default function ProposalReviewPage() {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <ApprovedIcon sx={{ color: '#4caf50' }} />
                         <Box>
-                          <Typography variant="body1" sx={{ fontWeight: 600 }}>Approved</Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 600 }}>{t('common.approved')}</Typography>
                           <Typography variant="caption" sx={{ color: '#666' }}>
                             You are clear to begin
                           </Typography>
@@ -343,7 +345,7 @@ export default function ProposalReviewPage() {
                   '&:hover': { backgroundColor: '#7a5aa8' },
                 }}
               >
-                {submitting ? 'Submitting...' : 'Submit Review'}
+                {submitting ? t('common.submitting') : t('common.submit')}
               </Button>
             </Paper>
           )}

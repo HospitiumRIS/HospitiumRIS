@@ -2,8 +2,10 @@
 
 import ImportPublications from '../../../../components/Publications/ImportPublications';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 
 export default function ImportPublicationsPage() {
+    const { t } = useTranslation();
     const router = useRouter();
 
     const handleImport = async (importData) => {
@@ -11,7 +13,6 @@ export default function ImportPublicationsPage() {
             console.log('PAGE: Import data received:', importData);
             console.log('PAGE: Publications to import:', importData.publications?.length || 0);
             
-            // Structure the data correctly for the API
             const requestBody = {
                 publications: importData.publications || [],
                 method: importData.method || 'unknown',
@@ -32,32 +33,28 @@ export default function ImportPublicationsPage() {
             const data = await response.json();
             
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to import publications');
+                throw new Error(data.error || t('import_tabs.failed_import_publications'));
             }
 
             console.log('Publications imported successfully:', data);
             
-            // Show success message to user
             if (data.success) {
-                let message = `Successfully imported ${data.imported} of ${data.total} publications!`;
+                let message = t('import_tabs.import_success_page', { imported: data.imported, total: data.total });
                 
                 if (data.warnings && data.warnings.length > 0) {
-                    message += `\n\nWarnings:\n${data.warnings.join('\n')}`;
+                    message += `\n\n${t('import_tabs.import_warnings_page', { warnings: data.warnings.join('\n') })}`;
                 }
                 
                 alert(message);
-                
-                // Optionally redirect to publications page
-                // router.push('/researcher/publications');
             } else {
-                throw new Error(data.message || 'Import failed');
+                throw new Error(data.message || t('import_tabs.import_failed', { message: '' }));
             }
             
             return data;
             
         } catch (error) {
             console.error('Error importing publications:', error);
-            alert(`Import failed: ${error.message}`);
+            alert(t('import_tabs.import_page_failed', { message: error.message }));
             throw error;
         }
     };

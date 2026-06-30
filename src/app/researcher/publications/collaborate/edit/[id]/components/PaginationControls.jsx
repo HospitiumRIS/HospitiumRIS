@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, forwardRef, useImperativeHandle } from 'react';
 import {
   Box,
@@ -33,6 +34,7 @@ import {
 import { PAGE_SIZES, DEFAULT_MARGINS, PAGE_NUMBER_POSITIONS } from '../utils/paginationHelper';
 
 const PaginationControls = forwardRef(({ editor, enabled, onToggle }, ref) => {
+  const { t } = useTranslation();
   const [anchorEl, setAnchorEl] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState({
@@ -314,9 +316,9 @@ const PaginationControls = forwardRef(({ editor, enabled, onToggle }, ref) => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleSettingsClose}>Cancel</Button>
+          <Button onClick={handleSettingsClose}>{t('common.cancel')}</Button>
           <Button onClick={handleSettingsSave} variant="contained" sx={{ bgcolor: '#8b6cbc' }}>
-            Save
+            {t('common.save')}
           </Button>
         </DialogActions>
       </Dialog>

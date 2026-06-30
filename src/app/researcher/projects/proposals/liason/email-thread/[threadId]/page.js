@@ -29,8 +29,10 @@ import { useRouter, useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import PageHeader from '../../../../../../../components/common/PageHeader';
 import { useAuth } from '../../../../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 export default function EmailThreadPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
   const params = useParams();

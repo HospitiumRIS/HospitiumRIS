@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Container,
@@ -19,41 +19,42 @@ import {
   Alert,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
-
-const DEMO_AREAS = [
-  'Research Project Management',
-  'Publications & Output Management',
-  'Clinical Trials Management',
-  'Ethics & Compliance Management',
-  'Grants & Funding Management',
-  'Research Analytics & Reporting',
-  'Institutional Governance & Oversight',
-  'Knowledge Preservation & Repositories',
-];
-
-const SUPPORT_AREAS = [
-  'Account & Access Management',
-  'Research Project Setup',
-  'Publications & Output Tracking',
-  'Clinical Trials Module',
-  'Ethics & Compliance Workflows',
-  'Grants & Funding Module',
-  'Analytics & Reporting Dashboards',
-  'Metadata & Repository Management',
-  'System Integration & Interoperability',
-  'Other / General Enquiry',
-];
+import { useTranslation } from 'react-i18next';
 
 const ContactModal = ({ open, onClose, mode }) => {
-  const isDemo = mode === 'demo';
-  const areas = isDemo ? DEMO_AREAS : SUPPORT_AREAS;
-  const modalTitle = isDemo ? 'Schedule a Demo' : 'Contact Support';
-  const modalSubtitle = isDemo
-    ? 'Share your details and areas of interest. A member of our team will get back to you within the next business day.'
-    : 'Tell us what you need help with. Our support team will respond within one business day.';
-  const emailSubject = isDemo ? 'Demo Request — HospitiumRIS' : 'Support Request — HospitiumRIS';
-  const interestLabel = isDemo ? 'Area of Interest' : 'Area Requiring Support';
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
+  const isDemo = mode === 'demo';
+  
+  const DEMO_AREAS = useMemo(() => [
+    t('contact.demo_area_1'),
+    t('contact.demo_area_2'),
+    t('contact.demo_area_3'),
+    t('contact.demo_area_4'),
+    t('contact.demo_area_5'),
+    t('contact.demo_area_6'),
+    t('contact.demo_area_7'),
+    t('contact.demo_area_8'),
+  ], [t, i18n.language]);
+
+  const SUPPORT_AREAS = useMemo(() => [
+    t('contact.support_area_1'),
+    t('contact.support_area_2'),
+    t('contact.support_area_3'),
+    t('contact.support_area_4'),
+    t('contact.support_area_5'),
+    t('contact.support_area_6'),
+    t('contact.support_area_7'),
+    t('contact.support_area_8'),
+    t('contact.support_area_9'),
+    t('contact.support_area_10'),
+  ], [t, i18n.language]);
+
+  const areas = isDemo ? DEMO_AREAS : SUPPORT_AREAS;
+  const modalTitle = isDemo ? t('contact.demo_title') : t('contact.title');
+  const modalSubtitle = isDemo ? t('contact.demo_subtitle') : t('contact.support_subtitle');
+  const emailSubject = isDemo ? t('contact.demo_email_subject') : t('contact.support_email_subject');
+  const interestLabel = isDemo ? t('contact.area_of_interest') : t('contact.area_requiring_support');
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -81,7 +82,7 @@ const ContactModal = ({ open, onClose, mode }) => {
     e.preventDefault();
     const subject = encodeURIComponent(emailSubject);
     const body = encodeURIComponent(
-      `First Name: ${form.firstName}\nLast Name: ${form.lastName}\nEmail: ${form.email}\nOrganisation: ${form.organisation}\n\n${isDemo ? 'Areas of Interest' : 'Areas Requiring Support'}:\n${form.interests.map((i) => `- ${i}`).join('\n')}`
+      `${t('contact.form_field_first_name')}: ${form.firstName}\n${t('contact.form_field_last_name')}: ${form.lastName}\n${t('contact.form_field_email')}: ${form.email}\n${t('contact.form_field_organisation')}: ${form.organisation}\n\n${isDemo ? t('contact.areas_of_interest') : t('contact.areas_requiring_support')}:\n${form.interests.map((i) => `- ${i}`).join('\n')}`
     );
     window.location.href = `mailto:info@hospitiumris.org?subject=${subject}&body=${body}`;
     setSubmitted(true);
@@ -129,14 +130,14 @@ const ContactModal = ({ open, onClose, mode }) => {
       <DialogContent>
         {submitted ? (
           <Alert severity="success" sx={{ my: 2 }}>
-            Thank you! Your demo request has been sent. We will be in touch shortly.
+            {t('contact.success')}
           </Alert>
         ) : (
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
             {/* Name row */}
             <Box sx={{ display: 'flex', gap: 2, mb: 2.5 }}>
               <TextField
-                label="First Name"
+                label={t('contact.first_name')}
                 name="firstName"
                 value={form.firstName}
                 onChange={handleChange}
@@ -145,7 +146,7 @@ const ContactModal = ({ open, onClose, mode }) => {
                 size="small"
               />
               <TextField
-                label="Last Name"
+                label={t('contact.last_name')}
                 name="lastName"
                 value={form.lastName}
                 onChange={handleChange}
@@ -156,7 +157,7 @@ const ContactModal = ({ open, onClose, mode }) => {
             </Box>
 
             <TextField
-              label="Email Address"
+              label={t('contact.email')}
               name="email"
               type="email"
               value={form.email}
@@ -168,7 +169,7 @@ const ContactModal = ({ open, onClose, mode }) => {
             />
 
             <TextField
-              label="Organisation"
+              label={t('contact.organisation')}
               name="organisation"
               value={form.organisation}
               onChange={handleChange}
@@ -188,7 +189,7 @@ const ContactModal = ({ open, onClose, mode }) => {
             >
               {interestLabel} <Typography component="span" sx={{ color: theme.palette.error.main }}>*</Typography>
               <Typography component="span" sx={{ fontWeight: 400, color: theme.palette.text.secondary, ml: 0.5 }}>
-                (select all that apply)
+                {t('contact.select_all_apply')}
               </Typography>
             </Typography>
 
@@ -226,14 +227,14 @@ const ContactModal = ({ open, onClose, mode }) => {
               }
               label={
                 <Typography sx={{ fontSize: '0.85rem', color: theme.palette.text.secondary }}>
-                  I agree to be contacted by the HospitiumRIS team regarding this request.
+                  {t('contact.consent_contact')}
                 </Typography>
               }
               sx={{ mb: 2, alignItems: 'flex-start' }}
             />
 
             <Typography sx={{ fontSize: '0.8rem', color: theme.palette.text.disabled, mb: 3, lineHeight: 1.6 }}>
-              Your information will only be used to respond to your demo request and will not be shared with third parties.
+              {t('contact.privacy_notice_demo')}
             </Typography>
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -253,7 +254,7 @@ const ContactModal = ({ open, onClose, mode }) => {
                   '&:hover': { backgroundColor: theme.palette.primary.dark },
                 }}
               >
-                Submit
+                {t('common.submit')}
               </Button>
             </Box>
           </Box>
@@ -264,6 +265,7 @@ const ContactModal = ({ open, onClose, mode }) => {
 };
 
 const SupportModal = ({ open, onClose }) => {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const [form, setForm] = useState({
     email: '',
@@ -282,9 +284,9 @@ const SupportModal = ({ open, onClose }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const subject = encodeURIComponent('Support Request — HospitiumRIS');
+    const subject = encodeURIComponent(t('contact.support_email_subject'));
     const body = encodeURIComponent(
-      `Email: ${form.email}\nFirst Name: ${form.firstName}\nLast Name: ${form.lastName}\nCompany: ${form.company}\n\nSupport Required:\n${form.message}`
+      `${t('contact.form_field_email')}: ${form.email}\n${t('contact.form_field_first_name')}: ${form.firstName}\n${t('contact.form_field_last_name')}: ${form.lastName}\n${t('contact.form_field_company')}: ${form.company}\n\n${t('contact.area_requiring_support')}:\n${form.message}`
     );
     window.location.href = `mailto:info@hospitiumris.org?subject=${subject}&body=${body}`;
     setSubmitted(true);
@@ -309,7 +311,7 @@ const SupportModal = ({ open, onClose }) => {
     >
       <DialogTitle sx={{ pr: 6, pb: 1 }}>
         <Typography sx={{ fontWeight: 700, fontSize: '1.25rem', color: theme.palette.text.primary }}>
-          Contact Support
+          {t('contact.support_title')}
         </Typography>
         <IconButton
           onClick={handleClose}
@@ -323,12 +325,12 @@ const SupportModal = ({ open, onClose }) => {
       <DialogContent>
         {submitted ? (
           <Alert severity="success" sx={{ my: 2 }}>
-            Thank you! Your support request has been sent. We will get back to you within one business day.
+            {t('contact.success')}
           </Alert>
         ) : (
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
             <TextField
-              label="Email"
+              label={t('contact.email')}
               name="email"
               type="email"
               value={form.email}
@@ -341,7 +343,7 @@ const SupportModal = ({ open, onClose }) => {
 
             <Box sx={{ display: 'flex', gap: 2, mb: 2.5 }}>
               <TextField
-                label="First Name"
+                label={t('contact.first_name')}
                 name="firstName"
                 value={form.firstName}
                 onChange={handleChange}
@@ -350,7 +352,7 @@ const SupportModal = ({ open, onClose }) => {
                 size="small"
               />
               <TextField
-                label="Last Name"
+                label={t('contact.last_name')}
                 name="lastName"
                 value={form.lastName}
                 onChange={handleChange}
@@ -361,7 +363,7 @@ const SupportModal = ({ open, onClose }) => {
             </Box>
 
             <TextField
-              label="Company Name"
+              label={t('contact.company')}
               name="company"
               value={form.company}
               onChange={handleChange}
@@ -372,7 +374,7 @@ const SupportModal = ({ open, onClose }) => {
             />
 
             <TextField
-              label="Please elaborate on the support required."
+              label={t('contact.message_placeholder')}
               name="message"
               value={form.message}
               onChange={handleChange}
@@ -385,10 +387,7 @@ const SupportModal = ({ open, onClose }) => {
             />
 
             <Typography sx={{ fontSize: '0.8rem', color: theme.palette.text.secondary, lineHeight: 1.7, mb: 2 }}>
-              HospitiumRIS is committed to protecting and respecting your privacy, and we will only use your personal
-              information to administer your account and to provide the products and services you requested from us.
-              From time to time, we would like to contact you about our products and services, as well as other content
-              that may be of interest to you. If you consent to us contacting you for this purpose, please tick below.
+              {t('contact.privacy_intro')}
             </Typography>
 
             <FormControlLabel
@@ -401,7 +400,7 @@ const SupportModal = ({ open, onClose }) => {
               }
               label={
                 <Typography sx={{ fontSize: '0.85rem', color: theme.palette.text.secondary }}>
-                  I agree to receive communications from HospitiumRIS regarding my support request.
+                  {t('contact.consent_support_request')}
                 </Typography>
               }
               sx={{ mb: 1, alignItems: 'flex-start' }}
@@ -417,19 +416,17 @@ const SupportModal = ({ open, onClose }) => {
               }
               label={
                 <Typography sx={{ fontSize: '0.85rem', color: theme.palette.text.secondary }}>
-                  I agree to receive other communications from HospitiumRIS about products and services.
+                  {t('contact.consent_marketing')}
                 </Typography>
               }
               sx={{ mb: 2, alignItems: 'flex-start' }}
             />
 
             <Typography sx={{ fontSize: '0.78rem', color: theme.palette.text.disabled, lineHeight: 1.6, mb: 0.75 }}>
-              You can unsubscribe from these communications at any time. For more information on our privacy practices,
-              please review our Privacy Policy.
+              {t('contact.privacy_unsubscribe')}
             </Typography>
             <Typography sx={{ fontSize: '0.78rem', color: theme.palette.text.disabled, lineHeight: 1.6, mb: 3 }}>
-              By clicking submit below, you consent to allow HospitiumRIS to store and process the personal information
-              submitted above to provide you the content requested.
+              {t('contact.privacy_consent_submit')}
             </Typography>
 
             <Box>
@@ -449,7 +446,7 @@ const SupportModal = ({ open, onClose }) => {
                   '&:hover': { backgroundColor: theme.palette.primary.dark },
                 }}
               >
-                Submit
+                {t('common.submit')}
               </Button>
             </Box>
           </Box>
@@ -460,26 +457,25 @@ const SupportModal = ({ open, onClose }) => {
 };
 
 const ContactPage = () => {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const [modalMode, setModalMode] = useState(null);
   const [supportOpen, setSupportOpen] = useState(false);
 
-  const cards = [
+  const cards = useMemo(() => [
     {
-      title: 'Partnerships',
-      description:
-        "Schedule a live walkthrough with our team and see firsthand how HospitiumRIS can support your institution's research workflow and fit within your existing infrastructure.",
-      action: 'Book a Demo',
+      title: t('contact.card_partnerships_title'),
+      description: t('contact.card_partnerships_desc'),
+      action: t('contact.card_partnerships_action'),
       onClick: () => setModalMode('demo'),
     },
     {
-      title: 'Support',
-      description:
-        'Have a question or running into an issue? Our support team is ready to assist and help you get the most out of every feature HospitiumRIS has to offer.',
-      action: 'Contact Support',
+      title: t('contact.card_support_title'),
+      description: t('contact.card_support_desc'),
+      action: t('contact.card_support_action'),
       onClick: () => setSupportOpen(true),
     },
-  ];
+  ], [t, i18n.language]);
 
   return (
     <Box
@@ -503,7 +499,7 @@ const ContactPage = () => {
               mb: 2,
             }}
           >
-            Contact Us
+            {t('contact.title')}
           </Typography>
           <Typography
             variant="h2"
@@ -515,7 +511,7 @@ const ContactPage = () => {
               mb: 3,
             }}
           >
-            Get in Touch
+            {t('contact.subtitle')}
           </Typography>
           <Typography
             sx={{
@@ -526,8 +522,7 @@ const ContactPage = () => {
               mx: 'auto',
             }}
           >
-            Whether you want to schedule a live walkthrough, explore what HospitiumRIS
-            can do for your institution, or just get in touch — we are here and ready to help.
+            {t('contact.page_subtitle')}
           </Typography>
         </Box>
 

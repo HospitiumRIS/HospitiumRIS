@@ -21,6 +21,7 @@ import {
   Timer as CountdownIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 const PURPLE = '#8b6cbc';
 
@@ -35,24 +36,6 @@ const mockResults = [
   { id: 'RES-008', trial: 'Malaria Vaccine Phase II',    pi: 'Dr. Amina Okonkwo',  completionDate: '2023-06-01', submissionDeadline: '2023-12-01', daysToDeadline: null, status: 'SUBMITTED', registrySubmitted: true,  pubLinked: true,  grantLinked: true,  publicationDoi: '10.1038/s41591-2023.009',    grantRef: 'NIH-R01-2020-032' },
 ];
 
-const getStatusConfig = (status) => {
-  switch (status) {
-    case 'SUBMITTED': return { color: '#10b981', icon: <SubmittedIcon sx={{ fontSize: 14 }} />, label: 'Submitted' };
-    case 'DUE_SOON':  return { color: '#f59e0b', icon: <DueIcon       sx={{ fontSize: 14 }} />, label: 'Due Soon' };
-    case 'PENDING':   return { color: '#3b82f6', icon: <PendingIcon   sx={{ fontSize: 14 }} />, label: 'Pending' };
-    case 'OVERDUE':   return { color: '#ef4444', icon: <OverdueIcon   sx={{ fontSize: 14 }} />, label: 'Overdue' };
-    default:          return { color: '#6b7280', icon: null, label: status };
-  }
-};
-
-const getCountdownColor = (days) => {
-  if (days === null) return '#10b981';
-  if (days < 0)  return '#ef4444';
-  if (days <= 30) return '#f59e0b';
-  if (days <= 60) return '#3b82f6';
-  return '#10b981';
-};
-
 const statCardSx = {
   p: 2, borderRadius: 2, bgcolor: PURPLE,
   boxShadow: '0 2px 8px rgba(139,108,188,0.2)',
@@ -61,9 +44,28 @@ const statCardSx = {
 };
 
 export default function ResultsReportingTrackerPage() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [tab, setTab] = useState(0);
+
+  const getStatusConfig = (status) => {
+    switch (status) {
+      case 'SUBMITTED': return { color: '#10b981', icon: <SubmittedIcon sx={{ fontSize: 14 }} />, label: 'Submitted' };
+      case 'DUE_SOON':  return { color: '#f59e0b', icon: <DueIcon       sx={{ fontSize: 14 }} />, label: 'Due Soon' };
+      case 'PENDING':   return { color: '#3b82f6', icon: <PendingIcon   sx={{ fontSize: 14 }} />, label: t('common.pending') };
+      case 'OVERDUE':   return { color: '#ef4444', icon: <OverdueIcon   sx={{ fontSize: 14 }} />, label: 'Overdue' };
+      default:          return { color: '#6b7280', icon: null, label: status };
+    }
+  };
+
+  const getCountdownColor = (days) => {
+    if (days === null) return '#10b981';
+    if (days < 0)  return '#ef4444';
+    if (days <= 30) return '#f59e0b';
+    if (days <= 60) return '#3b82f6';
+    return '#10b981';
+  };
 
   const submitted   = mockResults.filter(r => r.status === 'SUBMITTED').length;
   const overdue     = mockResults.filter(r => r.status === 'OVERDUE').length;

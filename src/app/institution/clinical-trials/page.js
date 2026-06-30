@@ -46,8 +46,10 @@ import {
   BarChart as ChartIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
 
 export default function InstitutionClinicalTrialsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [trials, setTrials] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -171,7 +173,7 @@ export default function InstitutionClinicalTrialsPage() {
     <>
       <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
         <PageHeader
-          title="Clinical Trials Portfolio"
+          title={t('institution.clinical_trials')}
           description="Institutional oversight of all clinical trial activities"
           icon={<TrialIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
@@ -201,7 +203,7 @@ export default function InstitutionClinicalTrialsPage() {
                 }
               }}
             >
-              Reports & Analytics
+              {t('institution.analytics')}
             </Button>
           }
         />
@@ -333,7 +335,7 @@ export default function InstitutionClinicalTrialsPage() {
         <Paper sx={{ mb: 3, p: 3, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
             <TextField
-              placeholder="Search trials, PI, or ID..."
+              placeholder={t('common.search') + ' trials, PI, or ID...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
@@ -425,12 +427,12 @@ export default function InstitutionClinicalTrialsPage() {
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Trial ID</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Title</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Principal Investigator</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>{t('common.status')}</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Phase</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Ethics</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>TRN</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Enrollment</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>Actions</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280' }}>{t('common.actions')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -512,7 +514,7 @@ export default function InstitutionClinicalTrialsPage() {
                         </Box>
                       </TableCell>
                       <TableCell align="center">
-                        <Tooltip title="View Details">
+                        <Tooltip title={t('common.details')}>
                           <IconButton
                             size="small"
                             onClick={() => router.push(`/institution/clinical-trials/${trial.id}`)}

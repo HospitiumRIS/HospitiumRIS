@@ -25,6 +25,7 @@ import {
   TextFields as TextIcon
 } from '@mui/icons-material';
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function AddCommentForm({ 
   selectedText = null, 
@@ -32,6 +33,7 @@ export default function AddCommentForm({
   onCancel,
   placeholder = "Share your thoughts..."
 }) {
+  const { t } = useTranslation();
   const [content, setContent] = useState('');
   const [commentType, setCommentType] = useState('COMMENT');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -297,7 +299,7 @@ export default function AddCommentForm({
             mt: 0.75,
             textAlign: 'right'
           }}>
-            Press Ctrl+Enter to submit
+            Ctrl+Enter
           </Typography>
         </Box>
 
@@ -320,7 +322,7 @@ export default function AddCommentForm({
               }
             }}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           variant="contained"
@@ -344,7 +346,7 @@ export default function AddCommentForm({
               }
             }}
           >
-            {isSubmitting ? 'Posting...' : `Post ${selectedType.label}`}
+            {isSubmitting ? t('common.submitting') : `Post ${selectedType.label}`}
         </Button>
       </Stack>
       </Box>

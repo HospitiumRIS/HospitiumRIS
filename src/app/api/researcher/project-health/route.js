@@ -6,119 +6,49 @@ const prisma = new PrismaClient();
 
 export async function GET(request) {
     try {
+        console.log('[Project Health] API called');
         const userId = await getUserId(request);
+        console.log('[Project Health] getUserId returned:', userId);
         
-        if (!userId) {
-            return NextResponse.json(
-                { error: 'Authentication required' },
-                { status: 401 }
-            );
+        // Get current user with ORCID
+        let currentUser = null;
+        if (userId) {
+            currentUser = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { id: true, orcidId: true, email: true }
+            });
+            console.log('[Project Health] Current user:', currentUser);
+        } else {
+            console.log('[Project Health] No userId found - user may not be logged in');
         }
-
+        
         const projects = [];
 
-        // 1. Get manuscripts (both created and collaborated)
-        const manuscripts = await prisma.manuscript.findMany({
-            where: {
-                OR: [
-                    { createdBy: userId },
-                    {
-                        collaborators: {
-                            some: {
-                                userId: userId
-                            }
-                        }
-                    }
-                ],
-                status: {
-                    in: ['DRAFT', 'IN_PROGRESS', 'UNDER_REVIEW']
-                }
-            },
-            include: {
-                collaborators: {
-                    select: {
-                        id: true,
-                        userId: true,
-                        role: true,
-                        user: {
-                            select: {
-                                givenName: true,
-                                familyName: true,
-                                email: true
-                            }
-                        }
-                    }
-                },
-                _count: {
-                    select: {
-                        collaborators: true
-                    }
-                }
-            },
-            orderBy: {
-                updatedAt: 'desc'
-            },
-            take: 5
-        });
+        // Note: Only showing proposals (projects) in Project Health widget
+        // Manuscripts are excluded as per user request
 
-        manuscripts.forEach(manuscript => {
-            const daysSinceUpdate = Math.floor((new Date() - new Date(manuscript.updatedAt)) / (1000 * 60 * 60 * 24));
-            const daysSinceCreation = Math.floor((new Date() - new Date(manuscript.createdAt)) / (1000 * 60 * 60 * 24));
-            
-            // Calculate progress based on status and activity
-            let progress = 0;
-            let status = 'at-risk';
-            
-            switch(manuscript.status) {
-                case 'DRAFT':
-                    progress = daysSinceCreation > 30 ? 20 : 35;
-                    status = daysSinceUpdate > 14 ? 'at-risk' : daysSinceUpdate > 7 ? 'needs-attention' : 'on-track';
-                    break;
-                case 'IN_PROGRESS':
-                    progress = 60;
-                    status = daysSinceUpdate > 7 ? 'needs-attention' : 'on-track';
-                    break;
-                case 'UNDER_REVIEW':
-                    progress = 85;
-                    status = 'on-track';
-                    break;
-                default:
-                    progress = 25;
+        // 2. Get active proposals - filter by user's ORCID if available
+        const proposalWhere = {
+            status: {
+                in: ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REVISION_REQUESTED']
             }
-
-            projects.push({
-                id: manuscript.id,
-                name: manuscript.title,
-                type: 'manuscript',
-                status: status,
-                progress: progress,
-                lastUpdated: manuscript.updatedAt,
-                daysSinceUpdate: daysSinceUpdate,
-                team: manuscript.collaborators.map(c => ({
-                    id: c.userId,
-                    name: `${c.user.givenName || ''} ${c.user.familyName || ''}`.trim() || c.user.email,
-                    role: c.role,
-                    initials: getInitials(c.user.givenName, c.user.familyName, c.user.email)
-                })),
-                teamSize: manuscript._count.collaborators + 1, // +1 for creator
-                link: `/researcher/publications/collaborate?manuscriptId=${manuscript.id}`,
-                statusLabel: manuscript.status,
-                icon: 'edit',
-                color: '#FF6B6B'
-            });
-        });
-
-        // 2. Get active proposals
+        };
+        
+        if (currentUser?.orcidId) {
+            proposalWhere.principalInvestigatorOrcid = currentUser.orcidId;
+            console.log('[Project Health] Filtering proposals by ORCID:', currentUser.orcidId);
+        } else {
+            console.log('[Project Health] No ORCID filter applied');
+        }
+        
+        console.log('[Project Health] Proposal where clause:', JSON.stringify(proposalWhere, null, 2));
+        
         const proposals = await prisma.proposal.findMany({
-            where: {
-                status: {
-                    in: ['DRAFT', 'UNDER_REVIEW', 'APPROVED', 'IN_PROGRESS']
-                }
-            },
+            where: proposalWhere,
             orderBy: {
                 updatedAt: 'desc'
             },
-            take: 3,
+            take: 5,
             select: {
                 id: true,
                 title: true,
@@ -128,9 +58,13 @@ export async function GET(request) {
                 updatedAt: true,
                 createdAt: true,
                 principalInvestigator: true,
-                coInvestigators: true
+                coInvestigators: true,
+                totalBudgetAmount: true,
+                milestones: true
             }
         });
+        
+        console.log('[Project Health] Found proposals:', proposals.length);
 
         proposals.forEach(proposal => {
             const daysSinceUpdate = Math.floor((new Date() - new Date(proposal.updatedAt)) / (1000 * 60 * 60 * 24));
@@ -142,34 +76,71 @@ export async function GET(request) {
             // Calculate progress based on status and timeline
             switch(proposal.status) {
                 case 'DRAFT':
-                    progress = 25;
-                    status = daysSinceUpdate > 14 ? 'at-risk' : 'on-track';
+                    progress = 15;
+                    status = daysSinceUpdate > 14 ? 'at-risk' : daysSinceUpdate > 7 ? 'needs-attention' : 'on-track';
+                    break;
+                case 'SUBMITTED':
+                    progress = 35;
+                    status = daysSinceUpdate > 30 ? 'needs-attention' : 'on-track';
                     break;
                 case 'UNDER_REVIEW':
-                    progress = 50;
-                    status = 'on-track';
+                    progress = 55;
+                    status = daysSinceUpdate > 45 ? 'needs-attention' : 'on-track';
+                    break;
+                case 'REVISION_REQUESTED':
+                    progress = 45;
+                    status = daysSinceUpdate > 14 ? 'at-risk' : daysSinceUpdate > 7 ? 'needs-attention' : 'on-track';
                     break;
                 case 'APPROVED':
-                    progress = 75;
-                    status = 'on-track';
-                    break;
-                case 'IN_PROGRESS':
-                    // Calculate based on timeline if dates available
+                    // If approved, calculate based on project timeline
                     if (proposal.startDate && proposal.endDate) {
                         const totalDays = (new Date(proposal.endDate) - new Date(proposal.startDate)) / (1000 * 60 * 60 * 24);
-                        const elapsedDays = (now - new Date(proposal.startDate)) / (1000 * 60 * 60 * 24);
-                        progress = Math.min(95, Math.max(75, Math.floor((elapsedDays / totalDays) * 100)));
+                        const elapsedDays = Math.max(0, (now - new Date(proposal.startDate)) / (1000 * 60 * 60 * 24));
                         
-                        // Check if behind schedule
-                        const expectedProgress = (elapsedDays / totalDays) * 100;
-                        status = progress < expectedProgress - 10 ? 'at-risk' : progress < expectedProgress ? 'needs-attention' : 'on-track';
+                        // Calculate milestone completion if available
+                        let milestoneProgress = 0;
+                        if (Array.isArray(proposal.milestones) && proposal.milestones.length > 0) {
+                            const completedMilestones = proposal.milestones.filter(m => m.status === 'completed').length;
+                            milestoneProgress = (completedMilestones / proposal.milestones.length) * 100;
+                        }
+                        
+                        // Combine timeline and milestone progress
+                        const timelineProgress = Math.min(100, (elapsedDays / totalDays) * 100);
+                        progress = milestoneProgress > 0 
+                            ? Math.floor((timelineProgress * 0.4) + (milestoneProgress * 0.6))
+                            : Math.floor(timelineProgress);
+                        
+                        // Determine status based on progress vs timeline
+                        const expectedProgress = timelineProgress;
+                        if (progress < expectedProgress - 15) {
+                            status = 'at-risk';
+                        } else if (progress < expectedProgress - 5) {
+                            status = 'needs-attention';
+                        } else {
+                            status = 'on-track';
+                        }
+                        
+                        // Check for overdue milestones
+                        if (Array.isArray(proposal.milestones)) {
+                            const overdueMilestones = proposal.milestones.filter(m => {
+                                if (m.status !== 'completed' && m.targetDate) {
+                                    return new Date(m.targetDate) < now;
+                                }
+                                return false;
+                            });
+                            if (overdueMilestones.length > 0) {
+                                status = 'at-risk';
+                            }
+                        }
                     } else {
-                        progress = 80;
-                        status = daysSinceUpdate > 30 ? 'needs-attention' : 'on-track';
+                        // No timeline, use award status
+                        progress = proposal.totalBudgetAmount ? 85 : 70;
+                        status = proposal.totalBudgetAmount ? 'on-track' : 'needs-attention';
                     }
                     break;
                 default:
-                    progress = 30;
+                    progress = 20;
+                    status = 'needs-attention';
             }
 
             // Get team from coInvestigators
@@ -197,6 +168,19 @@ export async function GET(request) {
                 });
             }
 
+            // Add additional metadata for proposals
+            const metadata = [];
+            if (proposal.status === 'APPROVED' && proposal.totalBudgetAmount) {
+                metadata.push(`Awarded: $${Number(proposal.totalBudgetAmount).toLocaleString()}`);
+            }
+            if (proposal.status === 'APPROVED' && !proposal.totalBudgetAmount) {
+                metadata.push('Pending award');
+            }
+            if (Array.isArray(proposal.milestones) && proposal.milestones.length > 0) {
+                const completed = proposal.milestones.filter(m => m.status === 'completed').length;
+                metadata.push(`${completed}/${proposal.milestones.length} milestones`);
+            }
+
             projects.push({
                 id: proposal.id,
                 name: proposal.title,
@@ -207,10 +191,11 @@ export async function GET(request) {
                 daysSinceUpdate: daysSinceUpdate,
                 team: team,
                 teamSize: team.length,
-                link: `/researcher/proposals/${proposal.id}`,
+                link: `/researcher/projects/proposals/list`,
                 statusLabel: proposal.status,
                 icon: 'assignment',
-                color: '#42A5F5'
+                color: '#8b6cbc',
+                metadata: metadata.join(' • ')
             });
         });
 

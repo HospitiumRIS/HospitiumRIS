@@ -324,6 +324,74 @@ export async function PUT(request, { params }) {
     }
 }
 
+export async function PATCH(request, { params }) {
+    const requestMetadata = getRequestMetadata(request);
+
+    try {
+        const { id } = await params;
+
+        if (!id) {
+            return NextResponse.json({ error: 'Proposal ID is required' }, { status: 400 });
+        }
+
+        const body = await request.json();
+        const { status, awardedAmount, notes } = body;
+
+        const existing = await prisma.proposal.findUnique({ where: { id } });
+        if (!existing) {
+            return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
+        }
+
+        const updateData = { updatedAt: new Date() };
+        if (status) updateData.status = status;
+        if (awardedAmount !== undefined && awardedAmount !== null) {
+            updateData.totalBudgetAmount = parseFloat(awardedAmount);
+        }
+
+        const updated = await prisma.proposal.update({ where: { id }, data: updateData });
+
+        if (status === 'APPROVED') {
+            await prisma.proposalReview.create({
+                data: {
+                    proposalId: id,
+                    reviewerId: requestMetadata.userId || 'system',
+                    reviewerName: 'Research Administrator',
+                    decision: 'APPROVED',
+                    overallComments: notes || 'Proposal approved and grant awarded.',
+                    sectionReviews: {},
+                    complianceScore: { total: 0, compliant: 0, nonCompliant: 0 },
+                    reviewDate: new Date(),
+                    status: 'COMPLETED'
+                }
+            });
+        }
+
+        await logApiActivity('PATCH', `/api/proposals/${id}`, 200, {
+            ...requestMetadata,
+            action: 'PROPOSAL_STATUS_UPDATED',
+            proposalId: id,
+            newStatus: status,
+            awardedAmount
+        });
+
+        return NextResponse.json({
+            success: true,
+            proposal: { id: updated.id, status: updated.status, totalBudgetAmount: updated.totalBudgetAmount },
+            message: 'Proposal updated successfully'
+        });
+
+    } catch (error) {
+        console.error('Error patching proposal:', error);
+        await logApiActivity('PATCH', `/api/proposals/${(await params)?.id}`, 500, {
+            ...requestMetadata,
+            error: error.message
+        });
+        return NextResponse.json({ error: 'Failed to update proposal' }, { status: 500 });
+    } finally {
+        await prisma.$disconnect();
+    }
+}
+
 export async function DELETE(request, { params }) {
     try {
         const { id } = await params;

@@ -56,6 +56,7 @@ import {
 import { format } from 'date-fns';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 const roleColors = {
   PRINCIPAL_INVESTIGATOR: '#8b6cbc',
@@ -67,6 +68,7 @@ const roleColors = {
 };
 
 export default function TeamDelegationPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [teamMembers, setTeamMembers] = useState([]);
@@ -221,8 +223,8 @@ export default function TeamDelegationPage() {
     <>
       <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
         <PageHeader
-          title="Study Team & Site Setup"
-          description="Manage delegation of authority and verify GCP credentials"
+          title={t("researcher.team")}
+          description={t("researcher.team_desc")}
           icon={<PersonIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={breadcrumbs}
           actionButton={
@@ -844,7 +846,10 @@ export default function TeamDelegationPage() {
           open={Boolean(menuAnchor)}
           onClose={handleMenuClose}
         >
-          <MenuItem onClick={handleMenuClose}>
+          <MenuItem onClick={() => {
+            if (selectedMember) router.push(`/researcher/clinical-trials/team/view/${selectedMember.id}`);
+            handleMenuClose();
+          }}>
             <ViewIcon sx={{ mr: 1 }} /> View Profile
           </MenuItem>
           <MenuItem onClick={handleMenuClose}>

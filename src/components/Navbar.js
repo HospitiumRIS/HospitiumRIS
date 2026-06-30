@@ -17,75 +17,20 @@ import {
   MenuItem,
 } from '@mui/material';
 import {
-  Settings as SettingsIcon,
   Menu as MenuIcon,
-  Login as LoginIcon,
-  PersonAdd as PersonAddIcon,
-  Article as ArticleIcon,
-  Work as WorkIcon,
-  Group as GroupIcon,
-  School as SchoolIcon,
-  Assignment as AssignmentIcon,
-  Analytics as AnalyticsIcon,
-  MonetizationOn as FundingIcon,
-  Assignment as GrantIcon,
   Notifications as NotificationsIcon,
-  ManageAccounts as UserManagerIcon,
-  ManageSearch as OpportunityIcon,
-  Assessment as ReportsIcon,
-  Handshake as CollaborationsIcon,
-  Description as DescriptionIcon,
-  Email as EmailIcon,
-  Savings as FundraisingIcon,
-  AccountBalanceWallet as FinancialPoolIcon,
-  AttachMoney as DisbursementIcon,
-  // New icons for enhanced dropdowns
-  Foundation as FoundationIcon,
-  Groups as GroupsIcon,
-  CloudUpload as SubmitIcon,
-  Search as SearchIcon,
-  CloudDownload as ImportIcon,
-  Edit as ManageIcon,
-  FolderOpen as ActiveIcon,
-  Add as CreateIcon,
-  Archive as ArchiveIcon,
-  FindInPage as FindIcon,
-  Hub as NetworkIcon,
-  TrendingUp as ImpactIcon,
-  BarChart as ChartIcon,
-  Timeline as ProgressIcon,
-  // Additional icons for Projects menu
-  Description as ProposalIcon,
-  Update as FollowUpIcon,
-  Timeline as StatusIcon,
-  AccountBalance as BudgetIcon,
-  Assignment as AwardIcon,
-  People as DonorManagementIcon,
-  ContactPage as FundersCRMIcon,
-  RateReview as ReviewIcon,
-  Assessment as AssessmentIcon,
-  NoteAdd as InternalGrantIcon,
-  Shield as EthicsIcon,
-  Gavel as EthicsReviewIcon,
-  Science as TrialIcon,
-  AppRegistration as RegistrationIcon,
-  VerifiedUser as ComplianceIcon,
-  SupervisedUserCircle as TeamIcon,
-  FolderShared as DocumentIcon,
-  PeopleAlt as RecruitmentIcon,
-  HealthAndSafety as SafetyIcon,
-  CloudSync as RegistryIcon,
-  Insights as ResultsIcon,
-  Dashboard as IntelligenceIcon,
   KeyboardArrowDown as ArrowDownIcon,
 } from '@mui/icons-material';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { useThemeMode } from './ThemeProvider';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthProvider';
-import { UserDropdown, MobileMenu, SettingsDrawer, DashboardNav } from './Navigation';
+import { UserDropdown, MobileMenu, DashboardNav } from './Navigation';
+import { TOPBAR_HEIGHT } from './TopBar';
 import NotificationDropdown from './Notifications/NotificationDropdown';
 import { useNotifications } from '../hooks/useNotifications';
+import { useDashboardConfig } from '../hooks/useDashboardConfig';
 
 // NoSSR wrapper component to prevent hydration mismatch
 const NoSSR = ({ children, fallback = null }) => {
@@ -107,6 +52,7 @@ const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { isDarkMode } = useThemeMode();
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   // Always call hooks unconditionally - handle errors within the hook itself
   const notificationState = useNotifications();
@@ -122,7 +68,6 @@ const Navbar = () => {
   });
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationAnchor, setNotificationAnchor] = useState(null);
   const [isClient, setIsClient] = useState(false);
   const [resourcesAnchor, setResourcesAnchor] = useState(null);
@@ -142,661 +87,7 @@ const Navbar = () => {
   // Determine if we're on a dashboard page and user is authenticated (only on client)
   const isDashboardPage = isClient && isAuthenticated && (currentPath.includes('/institution') || currentPath.includes('/researcher') || currentPath.includes('/foundation'));
   
-  // Get dashboard type and configuration for horizontal navbar
-  const getDashboardConfig = () => {
-    // Check /institution first to avoid matching /institution/researchers as /researcher
-    if (currentPath.includes('/institution')) {
-      return {
-        type: 'institution',
-        title: 'Institution Portal',
-        menuItems: [
-          {
-            label: 'Publications',
-            categories: [
-              {
-                title: 'WRITING TRACKER',
-                items: [
-                  {
-                    label: 'Manuscripts',
-                    description: 'Track manuscripts from draft to published',
-                    icon: <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/publications/manuscripts'
-                  },
-                  {
-                    label: 'Proposals',
-                    description: 'Track proposals from drafting to approval',
-                    icon: <SubmitIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/publications/proposals'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Projects',
-            categories: [
-              {
-                title: 'PROPOSAL REVIEW',
-                items: [
-                  {
-                    label: 'Review Proposals',
-                    description: 'Review and approve project proposals',
-                    icon: <ReviewIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/proposals/review'
-                  }
-                ]
-              },
-              {
-                title: 'ETHICS REVIEW',
-                items: [
-                  {
-                    label: 'Review Ethics Applications',
-                    description: 'Review and approve ethics applications',
-                    icon: <EthicsReviewIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/ethics/review'
-                  },
-                  
-                ]
-              },
-              {
-                title: 'PROJECT TRACKING',
-                items: [
-                  {
-                    label: 'Track Projects',
-                    description: 'Monitor all ongoing projects and their progress',
-                    icon: <AssessmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/projects'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Clinical Trials',
-            categories: [
-              {
-                title: 'PORTFOLIO OVERSIGHT',
-                items: [
-                  {
-                    label: 'Trial Portfolio',
-                    description: 'All institutional trials — pipeline view',
-                    icon: <TrialIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/clinical-trials'
-                  }
-                ]
-              },
-              {
-                title: 'GOVERNANCE & COMPLIANCE',
-                items: [
-                  {
-                    label: 'Ethics Approvals',
-                    description: 'Track IRB/ethics applications and routing',
-                    icon: <EthicsReviewIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/clinical-trials/approvals'
-                  },
-                  {
-                    label: 'Compliance Dashboard',
-                    description: 'Live flags: ethics expiry, GCP certs, SAE deadlines',
-                    icon: <ComplianceIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/clinical-trials/compliance'
-                  },
-                  {
-                    label: 'Registry Oversight',
-                    description: 'TRN tracking, submission deadlines, PACTR/CT.gov status',
-                    icon: <RegistryIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/clinical-trials/registry'
-                  }
-                ]
-              },
-              {
-                title: 'OPERATIONS OVERSIGHT',
-                items: [
-                  {
-                    label: 'Recruitment Performance',
-                    description: 'Cross-trial enrollment vs target, site benchmarks',
-                    icon: <RecruitmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/clinical-trials/recruitment'
-                  },
-                  {
-                    label: 'Safety & Deviations',
-                    description: 'SAE flag tracker, protocol deviations, corrective actions',
-                    icon: <SafetyIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/clinical-trials/safety'
-                  },
-                  {
-                    label: 'Document Repository',
-                    description: 'TMF review, version-controlled protocols, audit trail',
-                    icon: <DocumentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/clinical-trials/documents'
-                  }
-                ]
-              },
-              {
-                title: 'REPORTING & OUTPUTS',
-                items: [
-                  {
-                    label: 'Results & Reporting',
-                    description: 'Results submission deadlines, output-to-publication linkage',
-                    icon: <ResultsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/clinical-trials/results'
-                  },
-                  {
-                    label: 'Team & GCP Certification',
-                    description: 'Institution-wide GCP certification status, delegation logs',
-                    icon: <TeamIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/clinical-trials/team'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Training',
-            categories: [
-              {
-                title: 'TRAINING MANAGEMENT',
-                items: [
-                  {
-                    label: 'Manage Trainings',
-                    description: 'Create and manage institutional trainings',
-                    icon: <SchoolIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/training'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Administration',
-            categories: [
-              {
-                title: 'RESEARCHER MANAGEMENT',
-                items: [
-                  {
-                    label: 'Manage Researchers',
-                    description: 'Add, edit, and manage researchers',
-                    icon: <GroupIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/researchers'
-                  },
-                  {
-                    label: 'Performance Review',
-                    description: 'Review researcher performance',
-                    icon: <AssessmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/researchers/review'
-                  }
-                ]
-              },
-              {
-                title: 'REVIEW AUTOMATION',
-                items: [
-                  {
-                    label: 'Auto-Review Configuration',
-                    description: 'Configure automated review workflows and parameters',
-                    icon: <SettingsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/administration/auto-review'
-                  },
-                  {
-                    label: 'Review Pipeline Settings',
-                    description: 'Configure proposal review stages and workflow',
-                    icon: <StatusIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/administration/proposal-review-pipeline'
-                  }
-                ]
-              },
-              {
-                title: 'USER MANAGEMENT',
-                items: [
-                  {
-                    label: 'User Accounts',
-                    description: 'Manage user accounts and access',
-                    icon: <UserManagerIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/users'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Reports & Analytics',
-            categories: [
-              {
-                title: 'INSTITUTIONAL ANALYTICS',
-                items: [
-                  {
-                    label: 'Institution Metrics',
-                    description: 'Overall institutional performance',
-                    icon: <ReportsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/analytics'
-                  },
-                  {
-                    label: 'Funding Reports',
-                    description: 'Track funding and grant performance',
-                    icon: <FundingIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/analytics/funding'
-                  },
-                  {
-                    label: 'Compliance Reports',
-                    description: 'Monitor regulatory compliance',
-                    icon: <AssignmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/institution/analytics/compliance'
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      };
-    }
-    if (currentPath.includes('/researcher')) {
-      return {
-        type: 'researcher',
-        title: 'Researcher Portal',
-        menuItems: [
-          {
-            label: 'Publications',
-           
-            categories: [
-              {
-                title: 'WRITING PHASE',
-                items: [
-                  {
-                    label: 'Collaborative Writing',
-                    description: 'Write and collaborate with others',
-                    icon: <GroupsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/publications/collaborate'
-                  },
-                  {
-                    label: 'Submit to Preprint',
-                    description: 'Submit to bioRxiv, medRxiv or AfricArXiv',
-                    icon: <SubmitIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/publications/submit'
-                  },
-                  {
-                    label: 'Preprint Submissions',
-                    description: 'Track your preprint submissions',
-                    icon: <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/publications/preprints'
-                  }
-                ]
-              },
-              {
-                title: 'RESEARCH DISCOVERY',
-                items: [
-                  {
-                    label: 'Import Publications',
-                    description: 'Import from external sources',
-                    icon: <ImportIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/publications/import'
-                  },
-                  {
-                    label: 'Manage Publications',
-                    description: 'View and edit your publications',
-                    icon: <ManageIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/publications/manage'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Projects',
-            
-            categories: [
-              {
-                title: 'PROPOSALS',
-                items: [
-                  {
-                    label: 'Project Proposals',
-                    description: 'Manage research proposals',
-                    icon: <ProposalIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/projects/proposals/list'
-                  },
-                  {
-                    label: 'Grant Lifecycle',
-                    description: 'Grant application follow-ups',
-                    icon: <FollowUpIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/projects/proposals/liason'
-                  }
-                ]
-              },
-              {
-                title: 'TRACKING',
-                items: [
-                  {
-                    label: 'Project Status',
-                    description: 'Track milestones & progress',
-                    icon: <StatusIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/projects/tracking/status'
-                  }
-                ]
-              },
-              {
-                title: 'BUDGET',
-                items: [
-                  {
-                    label: 'Budget Management',
-                    description: 'Monitor budgets and track expenses',
-                    icon: <BudgetIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/projects/budget/view'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Ethics',
-            
-            categories: [
-              {
-                title: 'ETHICS APPLICATIONS',
-                items: [
-                  {
-                    label: 'My Applications',
-                    description: 'Manage ethics applications',
-                    icon: <EthicsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/ethics/applications'
-                  },
-                  {
-                    label: 'Create Application',
-                    description: 'Submit new ethics application',
-                    icon: <CreateIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/ethics/applications/create'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Clinical Trials',
-            
-            categories: [
-              {
-                title: 'TRIAL GOVERNANCE',
-                items: [
-                  {
-                    label: 'Trial Intake & Registration',
-                    description: 'Register study concepts and initiate trial setup',
-                    icon: <RegistrationIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/clinical-trials/intake'
-                  },
-                  {
-                    label: 'Ethics & Regulatory Clearance',
-                    description: 'Track IRB/Ethics approvals and regulatory submissions',
-                    icon: <EthicsReviewIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/clinical-trials/approvals'
-                  },
-                  {
-                    label: 'Study Team & Site Setup',
-                    description: 'Manage delegation of authority and verify GCP credentials',
-                    icon: <TeamIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/clinical-trials/team'
-                  },
-                  {
-                    label: 'Master Trial File (eTMF)',
-                    description: 'Store version-controlled protocols and regulatory documents',
-                    icon: <DocumentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/clinical-trials/documents'
-                  }
-                ]
-              },
-              {
-                title: 'OPERATIONS & MONITORING',
-                items: [
-                  {
-                    label: 'Trial Progress & Recruitment',
-                    description: 'Track enrollment metrics and site performance benchmarks',
-                    icon: <RecruitmentIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/clinical-trials/recruitment'
-                  },
-                  {
-                    label: 'Safety & Compliance Desk',
-                    description: 'Monitor SAE reporting and document protocol deviations',
-                    icon: <SafetyIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/clinical-trials/safety'
-                  },
-                  {
-                    label: 'Regulatory Reporting',
-                    description: 'Export metadata to public registries like PACTR and ClinicalTrials.gov',
-                    icon: <RegistryIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/clinical-trials/registry'
-                  }
-                ]
-              },
-              {
-                title: 'IMPACT & INSTITUTIONAL MEMORY',
-                items: [
-                  {
-                    label: 'Dissemination & Outputs',
-                    description: 'Link trials to publications, datasets, and funding sources',
-                    icon: <ResultsIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/clinical-trials/results'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Training',
-            categories: [
-              {
-                title: 'AVAILABLE TRAININGS',
-                items: [
-                  {
-                    label: 'Browse Trainings',
-                    description: 'Discover and register for trainings',
-                    icon: <SearchIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/training#available'
-                  }
-                ]
-              },
-              {
-                title: 'MY TRAINING',
-                items: [
-                  {
-                    label: 'My Trainings',
-                    description: 'View registered trainings and progress',
-                    icon: <SchoolIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/training'
-                  },
-                  {
-                    label: 'My Certificates',
-                    description: 'Download earned certificates',
-                    icon: <AwardIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/training/certificates'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: 'Reports & Analytics',
-            
-            categories: [
-              {
-                title: 'RESEARCH METRICS',
-                items: [
-                  {
-                    label: 'Research Impact',
-                    description: 'Track your research influence',
-                    icon: <ImpactIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/analytics/impact'
-                  },
-                  {
-                    label: 'Publication Reports',
-                    description: 'Analyze publication performance',
-                    icon: <ChartIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/analytics/publications'
-                  },
-                  {
-                    label: 'Project Progress',
-                    description: 'Monitor project milestones',
-                    icon: <ProgressIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />,
-                    path: '/researcher/analytics/progress'
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      };
-    }
-    if (currentPath.includes('/foundation')) {
-      return {
-        type: 'foundation',
-        title: 'Foundation Portal',
-        menuItems: [
-          {
-            label: 'Fundraising',
-
-            categories:[
-              {
-                title:"CAMPAIGN MANAGEMENT",
-                
-            items: [
-              { label: 'Campaign Management',
-                description:'Initiatives & activity tracking',
-                icon: <FundraisingIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }} />,
-                 path: '/foundation/campaigns' },
-              
-            ]
-              },
-              {
-                title:"DONORS AND DONATIONS MANAGEMENT",
-                
-            items: [
-              { label: 'Funders CRM',
-                description:'Unified donor profiles, giving history & relationship intelligence',
-                icon:<FundersCRMIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }} />,
-                 path: '/foundation/funders' },
-              { label: 'Donations',
-                description:'Profiles, donations & relationships',
-                icon:<DonorManagementIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }} />,
-                 path: '/foundation/donations' },
-              
-            ]
-              }
-            ]
-
-          },
-          {
-            label: 'Grants',
-
-            categories:[
-              {
-              title:"Pre-award Activities",
-              items: [
-                { label: 'Grant Opportunities', 
-                  description:' Grantor database & opportunity pipeline',
-                  icon:  <OpportunityIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }}/>,
-                  path: '/foundation/grants/opportunities' },
-
-                  { label: 'Grant Writing', 
-                    description:' Grant Proposal development',
-                    icon:  <DescriptionIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }}/>,
-                    path: '/foundation/grants/writing-portal' },
-
-                    { label: 'Liason Activies', 
-                      description:' Maintain ongoing communication with granting organizations',
-                      icon:  <EmailIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }}/>,
-                      path: '/foundation/grants/tracking' },
-               
-              ]
-            },
-
-            {
-              title:"Post-award Activities",
-              items: [
-                { label: 'Grant Award Tracker',
-                  description:' Maintain ongoing communication with granting organizations',
-                  icon:  <AwardIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }} />,
-                  path: '/foundation/grants/won' },
-               
-              ]
-            },
-
-            {
-              title:"Internal Grants",
-              items: [
-                { label: 'Internal Grant Requests',
-                  description:' Intake, review workflow & approval tracker for internal funding',
-                  icon:  <InternalGrantIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }} />,
-                  path: '/foundation/grants/internal-requests' },
-              ]
-            },
-          
-          ]
-           
-          },
-          {
-            label: 'Finance & Budgeting',
-            categories:[
-              {
-                title:"FUND MANAGEMENT",
-                items: [
-                  { label: 'Fund Pools',
-                    description:' Consolidated fund management',
-                    icon: <FoundationIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }} />,
-                    path: '/foundation/financial/central-fund-pool' },
-
-                    { label: 'Fund Allocations',
-                      description:' To integrate with existing finance system',
-                      icon:  <FinancialPoolIcon sx={{ color: '#bdbdbd', fontSize: '1.1rem' }} />,
-                      path: '#',
-                      disabled: true },
-                  
-                ]
-              },
-              {
-                title:"TRANSACTION PROCESSING",
-                items: [
-                  { label: 'Disbursement Processing',
-                    description:' To integrate with existing finance system',
-                    icon:  <DisbursementIcon sx={{ color: '#bdbdbd', fontSize: '1.1rem' }} />,
-                    path: '#',
-                    disabled: true },
-
-                  
-                ]
-              }
-            ]
-          },
-        
-          {
-            label: 'Reports & Analytics',
-            items: [
-              {
-                label: 'Reports & Analytics',
-                description: 'Trends, campaign performance & funder-ready insights',
-                icon: <AssessmentIcon sx={{ color: '#8b6cbc', fontSize: '1.1rem' }} />,
-                path: '/foundation/reports',
-              },
-            ]
-          },
-          // {
-          //   label: 'User Manager',
-          //   icon: <UserManagerIcon />,
-          //   items: [
-          //     { label: 'Foundation Users', path: '/foundation/users' },
-          //     { label: 'Reviewer Network', path: '/foundation/users/reviewers' },
-          //     { label: 'Access Management', path: '/foundation/users/access' },
-          //     { label: 'User Permissions', path: '/foundation/users/permissions' }
-          //   ]
-          // }
-        ]
-      };
-    }
-    return null;
-  };
-
-  const dashboardConfig = getDashboardConfig();
-
-  const handleSettingsToggle = (event) => {
-    if (event) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    setSettingsOpen(!settingsOpen);
-  };
+  const dashboardConfig = useDashboardConfig();
 
   const handleMobileMenuToggle = (event) => {
     if (event) {
@@ -841,9 +132,10 @@ const Navbar = () => {
     return (
       <>
         {/* Horizontal Dashboard Navbar */}
-        <AppBar 
-          position="fixed" 
-          sx={{ 
+        <AppBar
+          position="fixed"
+          sx={{
+            top: TOPBAR_HEIGHT,
             backgroundColor: theme.palette.background.paper,
             boxShadow: theme.palette.mode === 'dark' ? '0 2px 10px rgba(0,0,0,0.5)' : '0 2px 10px rgba(0,0,0,0.1)',
             zIndex: theme.zIndex.appBar,
@@ -884,7 +176,7 @@ const Navbar = () => {
             {/* Right Side - Notifications, User, Settings */}
             <Stack direction="row" spacing={1} alignItems="center">
               {/* Notifications */}
-              <Tooltip title="Notifications">
+              <Tooltip title={t('nav.notifications')}>
                 <IconButton
                   onClick={handleNotificationClick}
                   sx={{
@@ -902,21 +194,6 @@ const Navbar = () => {
 
               {/* User Dropdown */}
               <UserDropdown />
-
-              {/* Settings */}
-              <Tooltip title="Settings">
-                <IconButton
-                  onClick={(event) => handleSettingsToggle(event)}
-                  sx={{
-                    color: theme.palette.text.primary,
-                    '&:hover': {
-                      backgroundColor: 'rgba(139, 108, 188, 0.1)',
-                    },
-                  }}
-                >
-                  <SettingsIcon />
-                </IconButton>
-              </Tooltip>
 
               {/* Mobile Menu Button */}
               {isMobile && (
@@ -943,11 +220,6 @@ const Navbar = () => {
           dashboardConfig={dashboardConfig}
         />
 
-        {/* Settings Drawer */}
-        <SettingsDrawer 
-          isOpen={settingsOpen} 
-          onClose={setSettingsOpen} 
-        />
         {/* Notification Dropdown */}
         <NotificationDropdown
           anchorEl={notificationAnchor}
@@ -960,9 +232,10 @@ const Navbar = () => {
 
   return (
     <>
-      <AppBar 
-        position="fixed" 
-        sx={{ 
+      <AppBar
+        position="fixed"
+        sx={{
+          top: TOPBAR_HEIGHT,
           backgroundColor: theme.palette.background.paper,
           boxShadow: theme.palette.mode === 'dark' ? '0 2px 10px rgba(0,0,0,0.5)' : '0 2px 10px rgba(0,0,0,0.1)',
           zIndex: theme.zIndex.appBar,
@@ -1019,7 +292,7 @@ const Navbar = () => {
                   },
                 }}
               >
-                Home
+                {t('nav.home')}
               </Button>
               
               <Button
@@ -1035,7 +308,7 @@ const Navbar = () => {
                   },
                 }}
               >
-                About HospitiumRIS
+                {t('nav.about')}
               </Button>
 
               <Button
@@ -1052,7 +325,7 @@ const Navbar = () => {
                   },
                 }}
               >
-                Resources
+                {t('nav.resources')}
               </Button>
               <Menu
                 anchorEl={resourcesAnchor}
@@ -1072,46 +345,33 @@ const Navbar = () => {
                   onClick={() => { setResourcesAnchor(null); router.push('/news'); }}
                   sx={{ fontSize: '0.95rem', py: 1.2 }}
                 >
-                  News
+                  {t('nav.news')}
                 </MenuItem>
                 <MenuItem
                   onClick={() => { setResourcesAnchor(null); router.push('/faq'); }}
                   sx={{ fontSize: '0.95rem', py: 1.2 }}
                 >
-                  Frequently Asked Questions
+                  {t('nav.faq')}
                 </MenuItem>
                 <MenuItem
                   onClick={() => { setResourcesAnchor(null); window.open('/handbook/hospitiumris-brandbook.pdf', '_blank'); }}
                   sx={{ fontSize: '0.95rem', py: 1.2 }}
                 >
-                  HospitiumRIS Brandbook
+                  {t('nav.brandbook')}
                 </MenuItem>
                 <MenuItem
                   onClick={() => { setResourcesAnchor(null); router.push('/contact'); }}
                   sx={{ fontSize: '0.95rem', py: 1.2 }}
                 >
-                  Contact Us
+                  {t('nav.contact')}
                 </MenuItem>
               </Menu>
-
-              {/* Settings Button */}
-              <IconButton
-                onClick={(event) => handleSettingsToggle(event)}
-                sx={{
-                  color: theme.palette.primary.main,
-                  '&:hover': {
-                    backgroundColor: `${theme.palette.primary.main}08`,
-                  },
-                }}
-              >
-                <SettingsIcon />
-              </IconButton>
 
               {/* Show different buttons based on auth status */}
               {isAuthenticated ? (
                 <>
                   {/* Notifications */}
-                  <Tooltip title="Notifications">
+                  <Tooltip title={t('nav.notifications')}>
                     <IconButton
                       onClick={handleNotificationClick}
                       sx={{
@@ -1150,7 +410,7 @@ const Navbar = () => {
                   },
                 }}
               >
-                Login
+                {t('nav.login')}
               </Button>
               
               {/* Register Button */}
@@ -1174,7 +434,7 @@ const Navbar = () => {
                   transition: 'all 0.3s ease',
                 }}
               >
-                Register
+                {t('nav.register')}
               </Button>
                 </>
               )}
@@ -1184,20 +444,6 @@ const Navbar = () => {
           {/* Mobile Navigation */}
           {isMobile && (
             <Stack direction="row" spacing={1} alignItems="center">
-              {/* Settings Button */}
-              <IconButton
-                onClick={(event) => handleSettingsToggle(event)}
-                size="small"
-                sx={{
-                  color: theme.palette.primary.main,
-                  '&:hover': {
-                    backgroundColor: `${theme.palette.primary.main}08`,
-                  },
-                }}
-              >
-                <SettingsIcon fontSize="small" />
-              </IconButton>
-
               {/* Mobile Menu Button */}
               <IconButton
                 onClick={(event) => handleMobileMenuToggle(event)}
@@ -1216,19 +462,14 @@ const Navbar = () => {
         </Toolbar>
       </AppBar>
 
-      {/* Spacer to push content below fixed navbar */}
+      {/* Spacer to push content below topbar + fixed navbar */}
+      <Box sx={{ height: TOPBAR_HEIGHT }} />
       <Toolbar />
 
       {/* Mobile Menu Drawer */}
       <MobileMenu 
         isOpen={mobileMenuOpen} 
         onClose={setMobileMenuOpen}
-      />
-
-      {/* Settings Drawer */}
-      <SettingsDrawer 
-        isOpen={settingsOpen} 
-        onClose={setSettingsOpen} 
       />
 
       {/* Notification Dropdown */}

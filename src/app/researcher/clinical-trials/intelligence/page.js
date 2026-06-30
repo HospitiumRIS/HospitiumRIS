@@ -26,6 +26,7 @@ import {
 } from '@mui/icons-material';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
+import { useTranslation } from 'react-i18next';
 import {
   LineChart,
   Line,
@@ -47,6 +48,7 @@ import {
 const COLORS = ['#8b6cbc', '#2196f3', '#4caf50', '#ff9800', '#f44336', '#00bcd4'];
 
 export default function TrialIntelligencePage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const [timeRange, setTimeRange] = useState('12m');
@@ -131,8 +133,8 @@ export default function TrialIntelligencePage() {
     <>
       <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
         <PageHeader
-          title="Trial Intelligence"
-          description="Institutional KPIs, trial-to-publication rates, and funding ROI"
+          title={t("researcher.trial_intelligence")}
+          description={t("researcher.trial_intelligence_desc")}
           icon={<IntelligenceIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={breadcrumbs}
           actionButton={

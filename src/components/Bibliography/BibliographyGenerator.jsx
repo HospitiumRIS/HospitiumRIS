@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
@@ -54,6 +55,7 @@ const BibliographyGenerator = ({
   manuscriptId,
   title = "Bibliography Generator" 
 }) => {
+  const { t } = useTranslation();
   // State
   const [citations, setCitations] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -578,8 +580,8 @@ const BibliographyGenerator = ({
           boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
         }}>
           <Typography variant="h6" sx={{ fontWeight: 700, color: '#2d3748', mb: 2, fontSize: '1.125rem' }}>
-            Preview
-          </Typography>
+            t('common.preview')
+</Typography>
           
           {formattedBibliography ? (
             <Box 
@@ -717,8 +719,8 @@ const BibliographyGenerator = ({
                 }
               }}
             >
-              Cancel
-            </Button>
+              t('common.cancel')
+</Button>
             <Button 
               variant="contained"
               onClick={handleInsert}
