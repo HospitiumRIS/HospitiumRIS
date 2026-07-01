@@ -1018,6 +1018,7 @@
     "account_type": "Account Type",
     "foundation": "Foundation",
     "foundation_admin": "Foundation Administrator",
+    "researcher": "Researcher",
     "preview": "Preview",
     "message_optional": "Personal Message (Optional)",
     "resolve": "Resolve",
@@ -1540,19 +1541,63 @@
   },
   "news_page": {
     "title": "News & Updates",
-    "subtitle": "Latest news from HospitiumRIS",
+    "subtitle": "Stay informed about the latest developments, features, and announcements from HospitiumRIS",
     "read_more": "Read More",
     "published": "Published",
     "category": "Category",
     "author": "Author",
-    "no_news": "No news articles available"
+    "no_news": "No news articles available",
+    "back": "News",
+    "press_release": "Press Release",
+    "share_title": "Share this article",
+    "for_more_info": "For More Information",
+    "pr_team": "Public Relations Team",
+    "tcc_name": "Training Centre in Communication",
+    "faculty": "Faculty of Science Technology and Innovation",
+    "building": "Gecaga Institute Bldg., University of Nairobi",
+    "landline": "Landline:",
+    "email_label": "Email:",
+    "website_label": "Website:",
+    "share_twitter": "X / Twitter",
+    "share_linkedin": "LinkedIn",
+    "share_facebook": "Facebook",
+    "share_email": "Email",
+    "share_email_subject": "TCC Africa Introduces HospitiumRIS",
+    "share_email_body": "Read the full press release: https://hospitium.hospitiumris.org/news/tcc-africa-introduces-hospitiumris",
+    "share_tweet_text": "TCC Africa Introduces HospitiumRIS to Strengthen Research Management and Knowledge Preservation in Healthcare Institutions",
+    "articles": {
+      "tcc_africa_introduces_hospitiumris": {
+        "title": "TCC Africa Introduces HospitiumRIS to Strengthen Research Management and Knowledge Preservation in Healthcare Institutions",
+        "excerpt": "TCC Africa launches HospitiumRIS, a comprehensive platform designed to strengthen research management and preserve institutional knowledge in healthcare institutions across Africa.",
+        "category": "Press Release",
+        "author": "TCC Africa"
+      }
+    },
+    "article_tcc": {
+      "p1_prefix": "The ",
+      "tcc_link": "Training Centre in Communication (TCC Africa)",
+      "p1_mid": " has introduced ",
+      "hospitium_link": "HospitiumRIS",
+      "p1_suffix": ", an open research information and management system designed to support hospitals, healthcare institutions, and clinical research environments in organizing, tracking, and managing research activities within a centralized digital infrastructure.",
+      "p2": "HospitiumRIS is designed to help healthcare and research institutions improve the management of research projects, clinical studies, publications, datasets, compliance processes, and institutional knowledge. The platform strengthens institutional reporting, research visibility, metadata management, and long-term preservation of scholarly and clinical outputs, while supporting research governance, audit readiness, and interoperability across global research ecosystems.",
+      "p3": "As healthcare institutions increasingly generate large volumes of research and clinical data, many continue to face challenges related to fragmented research management systems, limited visibility of institutional outputs, inconsistent metadata practices, and difficulties in preserving institutional memory over time. HospitiumRIS addresses these gaps by providing a unified infrastructure that centralizes research administration and knowledge management processes.",
+      "p4": "The platform enables institutions to manage research projects, protocols, and approvals; conduct collaborative academic and project proposal writing; track publications, datasets, clinical studies, and grey literature; integrate researcher profiles and affiliations; and support interoperability with global Persistent Identifier (PID) systems such as DOIs and ORCIDs.",
+      "p5": "HospitiumRIS is particularly relevant for teaching and referral hospitals, university hospitals, medical research institutes, public health organizations, clinical trial environments, and health research centers seeking to strengthen research coordination, compliance, and scholarly visibility.",
+      "p6": "Conceptually, HospitiumRIS functions as a healthcare-focused Research Information System (RIS), integrating research administration, institutional repositories, metadata management, research analytics, knowledge preservation, and PID-enabled scholarly infrastructure into a single environment.",
+      "p7": "According to TCC Africa, HospitiumRIS reflects the organization's broader commitment to strengthening Africa's research and knowledge infrastructure through open, interoperable, and institutionally driven digital solutions that improve the visibility, governance, and long-term preservation of research outputs.",
+      "p8": "By supporting research lifecycle management and strengthening institutional research ecosystems, HospitiumRIS aims to help healthcare institutions improve operational efficiency, enhance collaboration, strengthen research integrity, and ensure that valuable scientific and clinical knowledge remains discoverable, accessible, and reusable for future generations."
+    }
   },
   "register_success": {
     "title": "Registration Successful!",
     "subtitle": "Your account has been created. Please check your email to activate your account.",
     "check_email": "Check Your Email",
     "resend": "Resend Activation Email",
-    "login": "Back to Login"
+    "login": "Back to Login",
+    "registered_with": "Account registered with:",
+    "whats_next": "What's Next?",
+    "whats_next_desc": "Your account is ready to use! Click the button below to login and start using Hospitium RIS.",
+    "login_hint": "You can now login with your email and password"
   },
   "resend_activation": {
     "title": "Resend Activation Email",

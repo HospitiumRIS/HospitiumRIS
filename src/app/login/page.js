@@ -413,15 +413,15 @@ const NoSSR = ({ children, fallback = null }) => {
   }, []);
 
   return (
-    <NoSSR fallback={<Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CircularProgress /></Box>}>
+    <NoSSR fallback={<Box sx={{ minHeight: 'calc(100vh - 7.5rem)', display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>}>
       <Box
         sx={{
-          minHeight: '100vh',
+          minHeight: 'calc(100vh - 7.5rem)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: theme.palette.background.default,
-          py: 4,
+          py: { xs: 3, sm: 4 },
         }}
       >
         <Container maxWidth="sm">

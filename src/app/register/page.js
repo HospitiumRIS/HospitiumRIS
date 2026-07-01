@@ -622,12 +622,12 @@ const RegisterPage = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        minHeight: 'calc(100vh - 7.5rem)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: theme.palette.background.default,
-        py: 2,
+        py: { xs: 3, sm: 4 },
       }}
     >
       <Container maxWidth="lg">

@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Container,
   Typography,
@@ -20,9 +21,81 @@ import {
   Email as EmailIcon,
 } from '@mui/icons-material';
 
+const ARTICLE_URL = 'https://hospitium.hospitiumris.org/news/tcc-africa-introduces-hospitiumris';
+
 const ArticlePage = () => {
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
+
+  const dateLocale = i18n.language?.startsWith('sw')
+    ? 'sw-KE'
+    : i18n.language?.startsWith('ar')
+      ? 'ar-SA'
+      : i18n.language?.startsWith('fr')
+        ? 'fr-FR'
+        : i18n.language?.startsWith('es')
+          ? 'es-ES'
+          : i18n.language?.startsWith('de')
+            ? 'de-DE'
+            : i18n.language?.startsWith('pt')
+              ? 'pt-PT'
+              : i18n.language?.startsWith('id')
+                ? 'id-ID'
+                : i18n.language?.startsWith('ms')
+                  ? 'ms-MY'
+                  : i18n.language?.startsWith('km')
+                    ? 'km-KH'
+                    : i18n.language?.startsWith('hi')
+                      ? 'hi-IN'
+                      : i18n.language?.startsWith('vi')
+                        ? 'vi-VN'
+                        : i18n.language?.startsWith('lo')
+                          ? 'lo-LA'
+                          : i18n.language?.startsWith('zh')
+                            ? 'zh-CN'
+                            : i18n.language?.startsWith('fil')
+                              ? 'fil-PH'
+                              : i18n.language?.startsWith('th')
+                                ? 'th-TH'
+                                : i18n.language?.startsWith('tet')
+                                  ? 'tet-TL'
+                                  : i18n.language?.startsWith('ko')
+                                    ? 'ko-KR'
+                                    : i18n.language?.startsWith('my')
+                                      ? 'my-MM'
+                                      : i18n.language || 'en';
+  const articleTitle = t('news_page.articles.tcc_africa_introduces_hospitiumris.title');
+
+  const shareItems = useMemo(
+    () => [
+      {
+        label: t('news_page.share_twitter'),
+        icon: <TwitterIcon fontSize="small" />,
+        href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(ARTICLE_URL)}&text=${encodeURIComponent(t('news_page.share_tweet_text'))}`,
+        external: true,
+      },
+      {
+        label: t('news_page.share_linkedin'),
+        icon: <LinkedInIcon fontSize="small" />,
+        href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(ARTICLE_URL)}`,
+        external: true,
+      },
+      {
+        label: t('news_page.share_facebook'),
+        icon: <FacebookIcon fontSize="small" />,
+        href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ARTICLE_URL)}`,
+        external: true,
+      },
+      {
+        label: t('news_page.share_email'),
+        icon: <EmailIcon fontSize="small" />,
+        href: `mailto:?subject=${encodeURIComponent(t('news_page.share_email_subject'))}&body=${encodeURIComponent(t('news_page.share_email_body'))}`,
+        external: false,
+      },
+    ],
+    [t, i18n.language]
+  );
 
   return (
     <Box
@@ -35,7 +108,6 @@ const ArticlePage = () => {
     >
       <Container maxWidth="md">
 
-        {/* Back link */}
         <Box sx={{ mb: 5 }}>
           <Typography
             component="span"
@@ -48,11 +120,10 @@ const ArticlePage = () => {
               '&:hover': { color: theme.palette.text.primary },
             }}
           >
-            ← News
+            ← {t('news_page.back')}
           </Typography>
         </Box>
 
-        {/* Category + Date */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
           <Typography
             sx={{
@@ -63,7 +134,7 @@ const ArticlePage = () => {
               color: theme.palette.primary.main,
             }}
           >
-            Press Release
+            {t('news_page.press_release')}
           </Typography>
           <Box sx={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: theme.palette.text.disabled }} />
           <Typography
@@ -72,11 +143,14 @@ const ArticlePage = () => {
               color: theme.palette.text.secondary,
             }}
           >
-            January 10, 2025
+            {new Date('2025-01-10').toLocaleDateString(dateLocale, {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
           </Typography>
         </Box>
 
-        {/* Title */}
         <Typography
           variant="h3"
           sx={{
@@ -87,12 +161,11 @@ const ArticlePage = () => {
             fontSize: { xs: '1.75rem', md: '2.25rem' },
           }}
         >
-          TCC Africa Introduces HospitiumRIS to Strengthen Research Management and Knowledge Preservation in Healthcare Institutions
+          {articleTitle}
         </Typography>
 
         <Divider sx={{ mb: 5 }} />
 
-        {/* Body */}
         <Box
           sx={{
             '& p': {
@@ -104,7 +177,7 @@ const ArticlePage = () => {
           }}
         >
           <Typography component="p">
-            The{' '}
+            {t('news_page.article_tcc.p1_prefix')}
             <Link
               href="https://www.tcc-africa.org/"
               target="_blank"
@@ -112,9 +185,9 @@ const ArticlePage = () => {
               underline="hover"
               sx={{ color: theme.palette.primary.main, fontWeight: 500 }}
             >
-              Training Centre in Communication (TCC Africa)
+              {t('news_page.article_tcc.tcc_link')}
             </Link>
-            {' '}has introduced{' '}
+            {t('news_page.article_tcc.p1_mid')}
             <Link
               href="https://hospitium.hospitiumris.org/about"
               target="_blank"
@@ -122,12 +195,9 @@ const ArticlePage = () => {
               underline="hover"
               sx={{ color: theme.palette.primary.main, fontWeight: 500 }}
             >
-              HospitiumRIS
+              {t('news_page.article_tcc.hospitium_link')}
             </Link>
-            , an open research information
-            and management system designed to support hospitals, healthcare institutions, and clinical research
-            environments in organizing, tracking, and managing research activities within a centralized digital
-            infrastructure.
+            {t('news_page.article_tcc.p1_suffix')}
           </Typography>
 
           <Box
@@ -147,40 +217,11 @@ const ArticlePage = () => {
             />
           </Box>
 
-          <Typography component="p">
-            HospitiumRIS is designed to help healthcare and research institutions improve the management of research
-            projects, clinical studies, publications, datasets, compliance processes, and institutional knowledge. The
-            platform strengthens institutional reporting, research visibility, metadata management, and long-term
-            preservation of scholarly and clinical outputs, while supporting research governance, audit readiness, and
-            interoperability across global research ecosystems.
-          </Typography>
-
-          <Typography component="p">
-            As healthcare institutions increasingly generate large volumes of research and clinical data, many continue
-            to face challenges related to fragmented research management systems, limited visibility of institutional
-            outputs, inconsistent metadata practices, and difficulties in preserving institutional memory over time.
-            HospitiumRIS addresses these gaps by providing a unified infrastructure that centralizes research
-            administration and knowledge management processes.
-          </Typography>
-
-          <Typography component="p">
-            The platform enables institutions to manage research projects, protocols, and approvals; conduct
-            collaborative academic and project proposal writing; track publications, datasets, clinical studies, and
-            grey literature; integrate researcher profiles and affiliations; and support interoperability with global
-            Persistent Identifier (PID) systems such as DOIs and ORCIDs.
-          </Typography>
-
-          <Typography component="p">
-            HospitiumRIS is particularly relevant for teaching and referral hospitals, university hospitals, medical
-            research institutes, public health organizations, clinical trial environments, and health research centers
-            seeking to strengthen research coordination, compliance, and scholarly visibility.
-          </Typography>
-
-          <Typography component="p">
-            Conceptually, HospitiumRIS functions as a healthcare-focused Research Information System (RIS),
-            integrating research administration, institutional repositories, metadata management, research analytics,
-            knowledge preservation, and PID-enabled scholarly infrastructure into a single environment.
-          </Typography>
+          <Typography component="p">{t('news_page.article_tcc.p2')}</Typography>
+          <Typography component="p">{t('news_page.article_tcc.p3')}</Typography>
+          <Typography component="p">{t('news_page.article_tcc.p4')}</Typography>
+          <Typography component="p">{t('news_page.article_tcc.p5')}</Typography>
+          <Typography component="p">{t('news_page.article_tcc.p6')}</Typography>
 
           <Box
             sx={{
@@ -198,23 +239,12 @@ const ArticlePage = () => {
             />
           </Box>
 
-          <Typography component="p">
-            According to TCC Africa, HospitiumRIS reflects the organization's broader commitment to strengthening
-            Africa's research and knowledge infrastructure through open, interoperable, and institutionally driven
-            digital solutions that improve the visibility, governance, and long-term preservation of research outputs.
-          </Typography>
-
-          <Typography component="p">
-            By supporting research lifecycle management and strengthening institutional research ecosystems,
-            HospitiumRIS aims to help healthcare institutions improve operational efficiency, enhance collaboration,
-            strengthen research integrity, and ensure that valuable scientific and clinical knowledge remains
-            discoverable, accessible, and reusable for future generations.
-          </Typography>
+          <Typography component="p">{t('news_page.article_tcc.p7')}</Typography>
+          <Typography component="p">{t('news_page.article_tcc.p8')}</Typography>
         </Box>
 
         <Divider sx={{ mt: 5, mb: 4 }} />
 
-        {/* Share */}
         <Box sx={{ mb: 5 }}>
           <Typography
             sx={{
@@ -226,35 +256,10 @@ const ArticlePage = () => {
               mb: 2.5,
             }}
           >
-            Share this article
+            {t('news_page.share_title')}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            {[
-              {
-                label: 'X / Twitter',
-                icon: <TwitterIcon fontSize="small" />,
-                href: `https://twitter.com/intent/tweet?url=${encodeURIComponent('https://hospitium.hospitiumris.org/news/tcc-africa-introduces-hospitiumris')}&text=${encodeURIComponent('TCC Africa Introduces HospitiumRIS to Strengthen Research Management and Knowledge Preservation in Healthcare Institutions')}`,
-                external: true,
-              },
-              {
-                label: 'LinkedIn',
-                icon: <LinkedInIcon fontSize="small" />,
-                href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://hospitium.hospitiumris.org/news/tcc-africa-introduces-hospitiumris')}`,
-                external: true,
-              },
-              {
-                label: 'Facebook',
-                icon: <FacebookIcon fontSize="small" />,
-                href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://hospitium.hospitiumris.org/news/tcc-africa-introduces-hospitiumris')}`,
-                external: true,
-              },
-              {
-                label: 'Email',
-                icon: <EmailIcon fontSize="small" />,
-                href: `mailto:?subject=${encodeURIComponent('TCC Africa Introduces HospitiumRIS')}&body=${encodeURIComponent('Read the full press release: https://hospitium.hospitiumris.org/news/tcc-africa-introduces-hospitiumris')}`,
-                external: false,
-              },
-            ].map((item) => (
+            {shareItems.map((item) => (
               <Tooltip key={item.label} title={item.label} arrow>
                 <IconButton
                   component="a"
@@ -283,7 +288,6 @@ const ArticlePage = () => {
 
         <Divider sx={{ mb: 5 }} />
 
-        {/* Contact block */}
         <Box>
           <Typography
             sx={{
@@ -295,7 +299,7 @@ const ArticlePage = () => {
               mb: 3,
             }}
           >
-            For More Information
+            {t('news_page.for_more_info')}
           </Typography>
 
           <Typography
@@ -306,7 +310,7 @@ const ArticlePage = () => {
               mb: 0.5,
             }}
           >
-            Public Relations Team
+            {t('news_page.pr_team')}
           </Typography>
 
           <Typography
@@ -317,7 +321,7 @@ const ArticlePage = () => {
               mb: 2,
             }}
           >
-            Training Centre in Communication
+            {t('news_page.tcc_name')}
           </Typography>
 
           <Box
@@ -328,13 +332,13 @@ const ArticlePage = () => {
             }}
           >
             <Typography sx={{ fontSize: '0.9rem', color: theme.palette.text.secondary }}>
-              Faculty of Science Technology and Innovation
+              {t('news_page.faculty')}
             </Typography>
             <Typography sx={{ fontSize: '0.9rem', color: theme.palette.text.secondary }}>
-              Gecaga Institute Bldg., University of Nairobi
+              {t('news_page.building')}
             </Typography>
             <Typography sx={{ fontSize: '0.9rem', color: theme.palette.text.secondary }}>
-              Landline:{' '}
+              {t('news_page.landline')}{' '}
               <Link href="tel:+254208086820" underline="hover" sx={{ color: 'inherit' }}>
                 +254 020 808 6820
               </Link>
@@ -344,7 +348,7 @@ const ArticlePage = () => {
               </Link>
             </Typography>
             <Typography sx={{ fontSize: '0.9rem', color: theme.palette.text.secondary }}>
-              Email:{' '}
+              {t('news_page.email_label')}{' '}
               <Link href="mailto:pr@tcc-africa.org" underline="hover" sx={{ color: theme.palette.primary.main }}>
                 pr@tcc-africa.org
               </Link>
@@ -354,7 +358,7 @@ const ArticlePage = () => {
               </Link>
             </Typography>
             <Typography sx={{ fontSize: '0.9rem', color: theme.palette.text.secondary }}>
-              Website:{' '}
+              {t('news_page.website_label')}{' '}
               <Link href="https://www.tcc-africa.org" target="_blank" rel="noopener noreferrer" underline="hover" sx={{ color: theme.palette.primary.main }}>
                 www.tcc-africa.org
               </Link>

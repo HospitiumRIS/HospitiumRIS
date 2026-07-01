@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -18,23 +18,66 @@ import {
   Person as PersonIcon,
 } from '@mui/icons-material';
 
-const newsArticles = [
-  {
-    id: 1,
-    title: 'TCC Africa Introduces HospitiumRIS to Strengthen Research Management and Knowledge Preservation in Healthcare Institutions',
-    excerpt: 'TCC Africa launches HospitiumRIS, a comprehensive platform designed to strengthen research management and preserve institutional knowledge in healthcare institutions across Africa.',
-    date: '2025-01-10',
-    author: 'TCC Africa',
-    category: 'Press Release',
-    image: '/hospitium-logo.png',
-    slug: '/news/tcc-africa-introduces-hospitiumris',
-  },
-];
+const ARTICLE_SLUG = 'tcc_africa_introduces_hospitiumris';
 
 const NewsPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
+
+  const newsArticles = useMemo(
+    () => [
+      {
+        id: 1,
+        title: t(`news_page.articles.${ARTICLE_SLUG}.title`),
+        excerpt: t(`news_page.articles.${ARTICLE_SLUG}.excerpt`),
+        date: '2025-01-10',
+        author: t(`news_page.articles.${ARTICLE_SLUG}.author`),
+        category: t(`news_page.articles.${ARTICLE_SLUG}.category`),
+        image: '/hospitium-logo.png',
+        slug: '/news/tcc-africa-introduces-hospitiumris',
+      },
+    ],
+    [t, i18n.language]
+  );
+
+  const dateLocale = i18n.language?.startsWith('sw')
+    ? 'sw-KE'
+    : i18n.language?.startsWith('ar')
+      ? 'ar-SA'
+      : i18n.language?.startsWith('fr')
+        ? 'fr-FR'
+        : i18n.language?.startsWith('es')
+          ? 'es-ES'
+          : i18n.language?.startsWith('de')
+            ? 'de-DE'
+            : i18n.language?.startsWith('pt')
+              ? 'pt-PT'
+              : i18n.language?.startsWith('id')
+                ? 'id-ID'
+                : i18n.language?.startsWith('ms')
+                  ? 'ms-MY'
+                  : i18n.language?.startsWith('km')
+                    ? 'km-KH'
+                    : i18n.language?.startsWith('hi')
+                      ? 'hi-IN'
+                      : i18n.language?.startsWith('vi')
+                        ? 'vi-VN'
+                        : i18n.language?.startsWith('lo')
+                          ? 'lo-LA'
+                          : i18n.language?.startsWith('zh')
+                            ? 'zh-CN'
+                            : i18n.language?.startsWith('fil')
+                              ? 'fil-PH'
+                              : i18n.language?.startsWith('th')
+                                ? 'th-TH'
+                                : i18n.language?.startsWith('tet')
+                                  ? 'tet-TL'
+                                  : i18n.language?.startsWith('ko')
+                                    ? 'ko-KR'
+                                    : i18n.language?.startsWith('my')
+                                      ? 'my-MM'
+                                      : i18n.language || 'en';
 
   return (
     <Box
@@ -66,7 +109,7 @@ const NewsPage = () => {
               mx: 'auto',
             }}
           >
-            Stay informed about the latest developments, features, and announcements from HospitiumRIS
+            {t('news_page.subtitle')}
           </Typography>
         </Box>
 
@@ -175,7 +218,7 @@ const NewsPage = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <CalendarIcon sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
                       <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                        {new Date(article.date).toLocaleDateString('en-US', {
+                        {new Date(article.date).toLocaleDateString(dateLocale, {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',

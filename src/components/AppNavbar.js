@@ -10,8 +10,8 @@ const AppNavbar = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname();
   
-  // Don't show navbar on certain pages
-  const hiddenRoutes = ['/login', '/register', '/activate', '/resend-activation'];
+  // Don't show navbar on activation-only pages
+  const hiddenRoutes = ['/activate', '/resend-activation'];
   const shouldHideNavbar = hiddenRoutes.some(route => pathname.startsWith(route));
   
   // Don't render anything while auth is loading

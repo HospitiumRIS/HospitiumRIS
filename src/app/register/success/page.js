@@ -44,7 +44,7 @@ const RegisterSuccessContent = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        minHeight: 'calc(100vh - 7.5rem)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -97,7 +97,7 @@ const RegisterSuccessContent = () => {
           >
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Typography variant="body2" fontWeight={600}>
-                Account registered with:
+                {t('register_success.registered_with')}
               </Typography>
               <Chip 
                 label={userEmail} 
@@ -117,10 +117,10 @@ const RegisterSuccessContent = () => {
             textAlign: 'left'
           }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-              What's Next?
+              {t('register_success.whats_next')}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-              Your account is ready to use! Click the button below to login and start using Hospitium RIS.
+              {t('register_success.whats_next_desc')}
             </Typography>
           </Box>
 
@@ -140,7 +140,7 @@ const RegisterSuccessContent = () => {
 
           {/* Footer Note */}
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-            You can now login with your email and password
+            {t('register_success.login_hint')}
           </Typography>
         </Paper>
       </Container>
@@ -149,13 +149,14 @@ const RegisterSuccessContent = () => {
 };
 
 const LoadingFallback = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { isDarkMode } = useThemeMode();
 
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        minHeight: 'calc(100vh - 7.5rem)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -188,7 +189,7 @@ const LoadingFallback = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
             <CircularProgress size={24} />
             <Typography variant="body1" color="text.secondary">
-              Loading...
+              {t('common.loading')}
             </Typography>
           </Box>
         </Paper>

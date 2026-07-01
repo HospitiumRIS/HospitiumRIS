@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import i18n from '@/lib/i18n';
 
-const SUPPORTED_LOCALES = ['en', 'sw'];
+const SUPPORTED_LOCALES = ['en', 'sw', 'ar', 'fr', 'es', 'de', 'pt', 'id', 'ms', 'km', 'hi', 'vi', 'ko', 'lo', 'zh', 'my', 'fil', 'th', 'tet'];
 
 async function loadLocaleFiles() {
   await Promise.all(
@@ -27,6 +27,19 @@ async function loadLocaleFiles() {
  */
 export default function I18nProvider({ children }) {
   const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const applyDocumentLanguage = (lng) => {
+      if (typeof document === 'undefined') return;
+      const code = lng?.split('-')[0] || 'en';
+      document.documentElement.lang = code;
+      document.documentElement.dir = code === 'ar' ? 'rtl' : 'ltr';
+    };
+
+    applyDocumentLanguage(i18n.language);
+    i18n.on('languageChanged', applyDocumentLanguage);
+    return () => i18n.off('languageChanged', applyDocumentLanguage);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
