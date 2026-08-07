@@ -203,8 +203,8 @@ export default function TeamDelegationPage() {
   };
 
   const breadcrumbs = [
-    { label: 'Dashboard', href: '/researcher' },
-    { label: 'Clinical Trials', href: '/researcher/clinical-trials' },
+    { label: 'Dashboard', path: '/researcher' },
+    { label: 'Clinical Trials', path: '/researcher/clinical-trials' },
     { label: 'Study Team & Site Setup' },
   ];
 

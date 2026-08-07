@@ -159,6 +159,8 @@ import CitationHoverMenu from './components/CitationHoverMenu';
 import EditCitationDialog from './components/EditCitationDialog';
 import CommandPalette from './components/CommandPalette';
 import PaginationControls from './components/PaginationControls';
+import CiteReadyConnectDialog from './components/CiteReadyConnectDialog';
+import { getCiteReadyStatus } from '@/services/citereadyService';
 // TODO (Phase 5): import { useManuscriptSync } from './hooks/useManuscriptSync'; // Enable when backend /api/manuscripts/[id]/sync is implemented
 import { useTranslation } from 'react-i18next';
 import { 
@@ -481,7 +483,20 @@ export default function ManuscriptEditor() {
   const [citeAsYouWrite, setCiteAsYouWrite] = useState(true);
   const [citationStyle, setCitationStyle] = useState('APA');
   const [zoteroConnected, setZoteroConnected] = useState(false);
-  
+  const [citeReadyConnected, setCiteReadyConnected] = useState(false);
+  const [citeReadyConnectOpen, setCiteReadyConnectOpen] = useState(false);
+
+  // Check CiteReady connection status once on mount (used to decide whether
+  // the Citation Menu's CiteReady entry opens the connect dialog or links
+  // straight to the CiteReady import tab).
+  useEffect(() => {
+    let cancelled = false;
+    getCiteReadyStatus().then((status) => {
+      if (!cancelled) setCiteReadyConnected(Boolean(status.isConfigured));
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   // Citation functionality
   const [citationPopupAnchor, setCitationPopupAnchor] = useState(null);
   const [citationSearch, setCitationSearch] = useState('');
@@ -3475,14 +3490,53 @@ export default function ManuscriptEditor() {
           <ListItemIcon sx={{ minWidth: 36 }}>
             <CloudSyncIcon fontSize="small" sx={{ color: zoteroConnected ? '#666' : '#ccc' }} />
           </ListItemIcon>
-          <Box sx={{ 
+          <Box sx={{
             flexGrow: 1,
             color: zoteroConnected ? 'inherit' : '#ccc'
           }}>
             Sync Library
           </Box>
         </MuiMenuItem>
+
+        {/* CiteReady */}
+        <MuiMenuItem
+          onClick={() => {
+            setCitationMenuAnchor(null);
+            if (citeReadyConnected) {
+              window.open('/researcher/publications/import?tab=citeready', '_blank', 'noopener,noreferrer');
+            } else {
+              setCiteReadyConnectOpen(true);
+            }
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <img
+              src="/citeready.png"
+              alt="CiteReady"
+              style={{ width: 18, height: 18, opacity: citeReadyConnected ? 1 : 0.5 }}
+            />
+          </ListItemIcon>
+          <Box sx={{ flexGrow: 1 }}>
+            {citeReadyConnected ? 'CiteReady Library' : 'Connect CiteReady'}
+          </Box>
+          {citeReadyConnected && (
+            <Box sx={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              bgcolor: '#4caf50',
+              ml: 1
+            }} />
+          )}
+        </MuiMenuItem>
       </Menu>
+
+      {/* CiteReady Connect Dialog */}
+      <CiteReadyConnectDialog
+        open={citeReadyConnectOpen}
+        onClose={() => setCiteReadyConnectOpen(false)}
+        onConnected={() => setCiteReadyConnected(true)}
+      />
 
       {/* Heading Dropdown Menu */}
       <Menu

@@ -1,38 +1,47 @@
 # HospitiumRIS Docker Containerization Plan
 
-A comprehensive containerization strategy for the HospitiumRIS Research Information System using Docker, supporting both development and production environments with PostgreSQL, Redis, and Nginx.
+A comprehensive containerization strategy for the HospitiumRIS Research Information System using Docker, supporting both development and production environments with PostgreSQL, Nginx, and (once real multi-instance state exists) Redis.
+
+*Revised and fact-checked on 2026-07-28 against the current codebase — corrections and codebase-specific gotchas are marked inline. This is not a rewrite of the original plan, only the parts that were wrong or under-specified.*
 
 ## System Analysis
 
+> **Audit note (verified against the current codebase, 2026-07-28):** the sections below have been corrected based on a direct read of `package.json`, `prisma/schema.prisma`, `src/lib`, `src/services`, `scripts/check-global-admin.js`, and the API route tree. Corrections from the original draft are called out inline.
+
 ### Application Architecture
 - **Framework**: Next.js 16.0.10 with React 19.1.2
-- **Database**: PostgreSQL with Prisma ORM 6.14.0
-- **Runtime**: Node.js (requires v18+)
-- **Build System**: Next.js with Turbopack (dev), standard build (prod)
-- **Dependencies**: 50+ npm packages including MUI, TipTap, Chart.js, D3.js
-- **File Uploads**: Local filesystem storage in `uploads/` directory
+- **Database**: PostgreSQL with Prisma ORM 6.14.0, single monolithic schema with **64 models** (`prisma/schema.prisma`, 2,461 lines)
+- **Runtime**: Node.js — **correction**: no `engines` field is declared in `package.json`, but Next.js 16 / React 19 require **Node 20.9+**. `node:18-alpine` (as originally proposed) is too old and should not be used. Use `node:20-alpine` or `node:22-alpine`.
+- **Build System**: Next.js with Turbopack (dev via `next dev --turbopack`), standard webpack build for production (`next build` / `next start -p 3001`)
+- **API surface**: **157 route handlers** under `src/app/api`, all hand-written (no framework-level middleware — there is no root `middleware.js`; each route does its own auth check via `src/lib/auth-server.js`)
+- **Dependencies**: ~60 npm packages including MUI, TipTap, Chart.js/recharts, D3, react-force-graph-2d, jsPDF, swagger-ui-react
+- **File Uploads**: Local filesystem storage referenced directly from API routes (confirmed in `ethics/applications/[id]`, `proposals/[id]`, `training/[id]/materials`, `training/[id]/certificates/[regId]`) — file paths are persisted as JSON fields on Postgres rows (e.g. `Proposal.ethicsDocuments`), so the disk path and the DB row must always travel together
 - **Static Assets**: Public files including logos, sample files, icons
 
 ### Current Configuration
-- Development server: `npm run dev` (Turbopack enabled)
-- Production build: `npm run build` && `npm start`
-- Database migrations: Prisma-based with seed scripts
-- Environment variables: 15+ required variables (SMTP, ORCID, DB, AI)
-- Pre-start hooks: Global admin check script
-- Port: Default 3000 (Next.js)
+- Development server: `npm run dev` (Turbopack enabled). This has a `predev` hook.
+- Production build: `npm run build` && `npm start` (`next start -p 3001` — **note the app defaults to port 3001, not 3000**, with a separate `start:3000` script for the standard port)
+- Database migrations: Prisma-based (`prisma migrate dev`, `prisma db push`) with JS seed scripts (`prisma/seed.js`, `seed-account-types.js`, `seed-publications.js`)
+- Environment variables: **23 variables observed in `.env`**, not 15+: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXT_PUBLIC_APP_URL`, SMTP (`SMTP_HOST/PORT/USER/PASS/SECURE/REJECT_UNAUTHORIZED`, `FROM_EMAIL`), ORCID (`NEXT_PUBLIC_ORCID_CLIENT_ID/REDIRECT_URI/SANDBOX_URL/SCOPE/TOKEN_URL`, `ORCID_CLIENT_SECRET`), CiteReady OAuth (`CITEREADY_BASE_URL/CLIENT_ID/CLIENT_SECRET/ENVIRONMENT/REDIRECT_URI`), AI (`GOOGLE_GEMINI_API_KEY`, `OPENAI_API_KEY`), and `IMACHEK_API_KEY/API_URL`, `OSF_TOKEN`.
+- **Pre-start hook is a blocker, not a formality**: `predev`/`prestart` run `node scripts/check-global-admin.js`, which uses Node's `readline` to interactively prompt on stdin for a Global Admin account if none exists, with **no TTY/CI/non-interactive guard**. In a container started via `docker run`/`docker-compose up -d` (no attached TTY, no stdin), this will either hang the container waiting on stdin or throw depending on how the base image handles closed stdin. **This must be fixed before containerizing** — see Phase 4 below.
+- Port: App listens on 3001 by default (`npm start`), 3000 via `next dev` or `start:3000`.
 
 ### External Dependencies
-- PostgreSQL 14+ (primary database)
-- SMTP server (email notifications)
-- Google Gemini API (AI summaries - optional)
-- ORCID OAuth (researcher authentication - optional)
+- PostgreSQL (primary database; no explicit minimum version pinned in code — Prisma 6 supports PG 12+, recommend PG 16 for the container)
+- SMTP server (email notifications — `src/lib/email.js`, `nodemailer`)
+- Google Gemini API (`src/services/geminiService.js`) and OpenAI (`src/services/chatgptService.js`) — both used for AI summaries/citation work, both optional at runtime (routes degrade gracefully if the key is missing)
+- ORCID OAuth (researcher identity/auth — `src/lib/citereadyAuth.js` pattern, `api/auth/orcid/*`)
+- CiteReady OAuth (reference manager integration — `src/lib/citereadyClient.js`, `api/citeready/*`, `api/settings/citeready`)
+- Zotero, Crossref, OpenAlex, PubMed, OSF, Research4Life, ImaChek — outbound integrations under `src/services/*` and `src/lib/imachek.js`, all called live over HTTP, none require inbound network access
+- **Redis: NOT currently used anywhere in the codebase.** There is no `redis` package in `package.json` and no session store — sessions are a plain cookie (`hospitium_session`) holding the raw Postgres user ID, validated by a DB lookup on every request (`src/lib/auth-server.js`). See the corrected Redis rationale below — it's still worth adding, but for a concrete reason found in the code (in-memory presence tracking), not as a drop-in session cache that doesn't exist yet.
+- **In-memory state that breaks under multiple containers**: `api/manuscripts/[manuscriptId]/presence/route.js` tracks "who's currently viewing this manuscript" in a plain JS `Map` living in the Node process. This works fine in a single instance today but **will silently give wrong presence data the moment you run more than one app container** (Requests get load-balanced across instances that don't share the Map). This is the real justification for Redis, not general "caching."
 
 ## Containerization Strategy
 
 ### Container Architecture
 
 #### 1. **Application Container** (Next.js)
-- **Base Image**: `node:18-alpine` (development), multi-stage build (production)
+- **Base Image**: `node:20-alpine` or `node:22-alpine` — **corrected from `node:18-alpine`**: Next.js 16 / React 19 require Node 20.9+, and 18 is past its own EOL. Use the same major version in dev and production images.
 - **Purpose**: Run Next.js application server
 - **Responsibilities**:
   - Serve application on port 3000
@@ -48,13 +57,14 @@ A comprehensive containerization strategy for the HospitiumRIS Research Informat
   - Persist via named Docker volume
   - Auto-initialize with required extensions
 
-#### 3. **Cache Container** (Redis)
+#### 3. **Cache Container** (Redis) — *infra-only until code changes land, see note*
 - **Base Image**: `redis:7-alpine`
-- **Purpose**: Session storage and caching
-- **Responsibilities**:
-  - Cache API responses
-  - Store user sessions
-  - Improve application performance
+- **Purpose**: Shared state across app containers when scaled horizontally
+- **Responsibilities** (require corresponding app code changes, not just deploying the container):
+  - Replace the in-memory `Map` in `manuscripts/[manuscriptId]/presence/route.js` with a Redis-backed store (e.g. hash keyed by manuscriptId with TTL per user) — **required** as soon as `app` runs with `replicas > 1`
+  - Optional: move the session lookup (`hospitium_session` cookie → Prisma `User` lookup) into a Redis cache in front of Postgres to cut DB round-trips, since every authenticated request currently does a live `User.findUnique` with joins
+  - Optional: cache outbound API responses (Crossref/OpenAlex/PubMed/ORCID) which are currently fetched live on every request with no caching layer
+- **If you deploy the app as a single container/instance, Redis is not required** — skip it for the dev/single-instance compose file and add it only when scaling `app` horizontally.
 
 #### 4. **Reverse Proxy** (Nginx)
 - **Base Image**: `nginx:alpine`
@@ -116,13 +126,15 @@ HospitiumRIS/
 ### Phase 2: Docker Compose Configuration
 
 #### 2.1 Production Compose (docker-compose.yml)
+**Note**: keep `redis` behind a Compose [profile](https://docs.docker.com/compose/profiles/) (e.g. `profiles: ["scaled"]`) rather than a hard dependency, per the corrected rationale in Container Architecture #3 above — it's dead weight for a single-instance deployment until the presence-tracking code is actually migrated to use it.
+
 **Services:**
 - `app`: Next.js application
   - Build from production Dockerfile
   - Environment variables from .env
-  - Depends on postgres, redis
+  - Depends on postgres (redis only if running scaled/multi-instance — see note above)
   - Restart policy: unless-stopped
-  - Health checks enabled
+  - Health checks enabled (against the new `/api/health` endpoint from Phase 4.5, not `global-admin/health`)
   
 - `postgres`: PostgreSQL database
   - Version: 16-alpine
@@ -217,18 +229,26 @@ HospitiumRIS/
 - Ensure DATABASE_URL supports Docker networking
 - Add connection pooling configuration
 - Add retry logic for initial connection
+- Add Prisma **binary targets for Alpine/musl** to `prisma/schema.prisma`'s `generator client` block (`binaryTargets = ["native", "linux-musl-openssl-3.0.x"]`) — without this, `prisma generate` run on a non-Alpine dev machine produces a client that will fail to load the query engine at runtime inside an Alpine container. This is a common silent failure mode and should be caught in Phase 6 testing, not discovered in production.
 
 #### 4.3 File Upload Path Configuration
-- Ensure uploads directory is properly mounted
-- Add environment variable for upload path
+- Ensure uploads directory is properly mounted (routes touching disk today: `ethics/applications/[id]`, `proposals/[id]`, `proposals/[id]/files/[fileName]`, `training/[id]/materials`, `training/[id]/certificates/[regId]`)
+- Add environment variable for upload path (currently hardcoded relative paths in route handlers — confirm/normalize before containerizing, since the working directory inside a container differs from local dev)
 - Create uploads directory if not exists
+- **Multi-instance caveat**: if `app` is ever scaled beyond 1 replica, a local named volume is *not* shared across containers on different hosts. A single-host Docker Compose deployment is fine with a named volume; anything beyond that (Swarm/K8s/multi-host) needs shared storage (NFS, S3-compatible object storage) and route-level changes to read/write through that instead of `fs`.
 
-#### 4.4 Health Check Endpoint
-- Create `/api/health` endpoint
-  - Check database connectivity
-  - Check Redis connectivity
-  - Return service status
-  - Used by Docker health checks
+#### 4.4 Fix the Interactive Startup Script (blocks container start)
+- `scripts/check-global-admin.js` (run via `predev`/`prestart`) uses `readline` to prompt on stdin with no non-interactive fallback. Before containerizing:
+  - Add a guard (e.g. `if (!process.stdin.isTTY || process.env.SKIP_ADMIN_PROMPT)`) that skips the interactive prompt and either no-ops or logs a warning telling the operator to run `node scripts/create-global-admin.js` (already exists non-interactively) manually or via `docker-entrypoint.sh`
+  - In the container entrypoint, call the non-interactive `scripts/create-global-admin.js` (or an env-var-driven variant) instead of relying on `predev`/`prestart`, since npm lifecycle scripts run for both `dev` and `start` and will fire on every container boot
+
+#### 4.5 Health Check Endpoint
+- **Correction**: `api/global-admin/health` already exists but is **not suitable** as a Docker health check — it requires an authenticated `GLOBAL_ADMIN` session cookie and returns 401/403 without one, which is exactly what Docker's health check prober will get.
+- Create a new **unauthenticated** `/api/health` endpoint
+  - Check database connectivity (cheap `SELECT 1` via `prisma.$queryRaw`)
+  - Check Redis connectivity, if/when Redis is actually introduced (see Phase 1 note — skip this check until Redis is real)
+  - Return service status as plain JSON, no auth required
+  - Used by Docker `HEALTHCHECK` / Compose `healthcheck:` directives
 
 ### Phase 5: Documentation
 

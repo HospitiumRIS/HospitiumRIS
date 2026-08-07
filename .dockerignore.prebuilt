@@ -1,0 +1,21 @@
+node_modules
+.git
+.github
+.vscode
+.idea
+.env
+.env.*
+!.env.docker.example
+logs
+uploads
+docs
+.planning
+*.docx
+~$*
+coverage
+.turbo
+
+# Exclude most of .next except standalone output (built on host)
+.next/*
+!.next/standalone
+!.next/static

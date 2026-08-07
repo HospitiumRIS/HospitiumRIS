@@ -19,7 +19,16 @@
     "db:studio": "prisma studio",
     "test:email": "node scripts/test-email.js",
     "seed:network": "node scripts/seed-sample-network.js",
-    "check:admin": "node scripts/check-global-admin.js"
+    "check:admin": "node scripts/check-global-admin.js",
+    "docker:dev": "docker compose -f docker-compose.dev.yml up --build",
+    "docker:up": "docker compose up -d",
+    "docker:prod": "docker compose up -d",
+    "docker:rebuild": "docker compose up -d --build",
+    "docker:fast": "npm run build && docker build -f Dockerfile.prebuilt --ignorefile .dockerignore.prebuilt -t hospitiumris-app . && docker compose -f docker-compose.prebuilt.yml up -d",
+    "docker:build": "docker compose build",
+    "docker:down": "docker compose -f docker-compose.dev.yml -f docker-compose.yml down",
+    "docker:logs": "docker compose logs -f app",
+    "docker:clean": "docker compose -f docker-compose.dev.yml -f docker-compose.yml down -v --rmi local"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",

@@ -1,0 +1,47 @@
+# Fast production image — build on the HOST first, then package (seconds in Docker).
+#
+#   npm run build
+#   docker compose -f docker-compose.prebuilt.yml build
+#   docker compose -f docker-compose.prebuilt.yml up -d
+#
+# On Windows this is much faster than compiling Next.js inside the Docker VM.
+
+FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs
+
+COPY .next/standalone ./
+COPY .next/static ./.next/static
+COPY public ./public
+COPY prisma ./prisma
+COPY scripts/create-global-admin.js ./scripts/create-global-admin.js
+COPY prisma/seed-account-types.js ./prisma/seed-account-types.js
+COPY docker/scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+# Prisma CLI + client for migrations and startup scripts
+COPY node_modules/.prisma ./node_modules/.prisma
+COPY node_modules/@prisma ./node_modules/@prisma
+COPY node_modules/bcryptjs ./node_modules/bcryptjs
+
+RUN npm install -g prisma@6.14.0 \
+  && sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
+  && chmod +x /usr/local/bin/docker-entrypoint.sh \
+  && mkdir -p uploads/proposals uploads/ethics uploads/training/materials uploads/training/certificates logs .next/cache \
+  && chown -R nextjs:nodejs uploads logs public .next
+
+USER nextjs
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+ENTRYPOINT ["/bin/sh", "/usr/local/bin/docker-entrypoint.sh"]
+CMD ["node", "server.js"]

@@ -9,8 +9,6 @@ import {
   CardContent,
   Button,
   Paper,
-  Avatar,
-  LinearProgress,
   Chip,
   Table,
   TableBody,
@@ -18,222 +16,189 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
   Divider,
   CircularProgress,
   Tabs,
   Tab,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
-  Tooltip,
-  IconButton
+  List,
+  ListItem,
+  Skeleton
 } from '@mui/material';
 import {
-  Timeline as ProgressIcon,
-  Assignment as ProjectIcon,
-  CheckCircle as CompletedIcon,
-  Schedule as PendingIcon,
-  Warning as DelayedIcon,
-  TrendingUp as TrendingUpIcon,
-  Assessment as AnalyticsIcon,
+  Assessment as ProjectsIcon,
   Business as BusinessIcon,
-  Flag as MilestoneIcon,
-  Task as TaskIcon,
-  People as TeamIcon,
-  CalendarToday as CalendarIcon,
-  AttachMoney as BudgetIcon,
-  Download as DownloadIcon,
-  Visibility as ViewIcon,
-  Edit as EditIcon
+  Insights as AnalyticsIcon,
+  Download as DownloadIcon
 } from '@mui/icons-material';
-import { format, differenceInDays, isAfter, isBefore } from 'date-fns';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend
+} from 'recharts';
 
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
 import { useTranslation } from 'react-i18next';
 
-const ProjectProgressPage = () => {
+const PURPLE = '#8b6cbc';
+const PURPLE_DARK = '#7b5cac';
+const PALETTE = ['#8b6cbc', '#f59e0b', '#10b981', '#ef4444', '#6366f1', '#94a3b8'];
+
+const EstimatedChip = () => (
+  <Chip
+    label="Estimated"
+    size="small"
+    variant="outlined"
+    sx={{ height: 18, fontSize: '0.65rem', ml: 1, borderColor: 'warning.main', color: 'warning.dark' }}
+  />
+);
+
+const StatCard = ({ label, value }) => (
+  <Card elevation={2} sx={{ bgcolor: PURPLE }}>
+    <CardContent sx={{ py: 2 }}>
+      <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>{label}</Typography>
+      <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>{value}</Typography>
+    </CardContent>
+  </Card>
+);
+
+const Gauge = ({ value, label, size = 116 }) => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+    <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+      <CircularProgress
+        variant="determinate"
+        value={100}
+        size={size}
+        thickness={4}
+        sx={{ color: 'rgba(139, 108, 188, 0.12)', position: 'absolute' }}
+      />
+      <CircularProgress
+        variant="determinate"
+        value={value === null || value === undefined ? 0 : Math.min(100, Math.max(0, value))}
+        size={size}
+        thickness={4}
+        sx={{ color: PURPLE }}
+      />
+      <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+          {value === null || value === undefined ? '—' : `${Math.round(value)}%`}
+        </Typography>
+      </Box>
+    </Box>
+    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>{label}</Typography>
+  </Box>
+);
+
+const formatCurrency = (n) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
+
+const formatPercent = (n) => (n === null || n === undefined ? '—' : `${Math.round(n)}%`);
+
+const formatDate = (d) => (d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
+
+const ProjectsAnalyticsPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [currentTab, setCurrentTab] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [progressData, setProgressData] = useState(null);
-  const [filterStatus, setFilterStatus] = useState('All');
-  const [filterPriority, setFilterPriority] = useState('All');
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
 
-  // Mock data - replace with real API calls
+  const [insights, setInsights] = useState(null);
+  const [insightsLoading, setInsightsLoading] = useState(true);
+  const [insightsError, setInsightsError] = useState(null);
+
   useEffect(() => {
-    const fetchProgressData = async () => {
-      // Simulate API call
-      setTimeout(() => {
-        setProgressData({
-          overview: {
-            totalProjects: 12,
-            completedProjects: 4,
-            ongoingProjects: 6,
-            delayedProjects: 2,
-            totalMilestones: 48,
-            completedMilestones: 32,
-            overallProgress: 67,
-            budgetUtilization: 72
-          },
-          projects: [
-            {
-              id: 1,
-              title: 'AI-Driven Healthcare Analytics Platform',
-              status: 'Active',
-              priority: 'High',
-              progress: 75,
-              startDate: '2023-01-15',
-              endDate: '2024-06-30',
-              budget: 250000,
-              budgetUsed: 180000,
-              teamSize: 8,
-              lead: 'Dr. Sarah Johnson',
-              milestones: [
-                { id: 1, title: 'Research Phase Complete', status: 'Completed', dueDate: '2023-03-15', completedDate: '2023-03-10' },
-                { id: 2, title: 'Prototype Development', status: 'Completed', dueDate: '2023-06-30', completedDate: '2023-06-25' },
-                { id: 3, title: 'Clinical Testing Phase', status: 'In Progress', dueDate: '2023-12-15', progress: 60 },
-                { id: 4, title: 'Final Implementation', status: 'Pending', dueDate: '2024-05-30' }
-              ],
-              risks: ['Regulatory approval delays', 'Staff availability'],
-              nextMilestone: 'Clinical Testing Phase',
-              daysToDeadline: 45
-            },
-            {
-              id: 2,
-              title: 'Personalized Medicine Database',
-              status: 'Active',
-              priority: 'Medium',
-              progress: 85,
-              startDate: '2022-09-01',
-              endDate: '2023-12-31',
-              budget: 180000,
-              budgetUsed: 165000,
-              teamSize: 5,
-              lead: 'Dr. Michael Chen',
-              milestones: [
-                { id: 1, title: 'Data Collection', status: 'Completed', dueDate: '2022-12-01', completedDate: '2022-11-28' },
-                { id: 2, title: 'Database Design', status: 'Completed', dueDate: '2023-03-15', completedDate: '2023-03-12' },
-                { id: 3, title: 'System Integration', status: 'Completed', dueDate: '2023-08-30', completedDate: '2023-08-25' },
-                { id: 4, title: 'User Testing & Deployment', status: 'In Progress', dueDate: '2023-12-15', progress: 70 }
-              ],
-              risks: [],
-              nextMilestone: 'User Testing & Deployment',
-              daysToDeadline: 30
-            },
-            {
-              id: 3,
-              title: 'Remote Patient Monitoring System',
-              status: 'Delayed',
-              priority: 'High',
-              progress: 45,
-              startDate: '2023-03-01',
-              endDate: '2024-02-29',
-              budget: 320000,
-              budgetUsed: 198000,
-              teamSize: 10,
-              lead: 'Dr. Emily Rodriguez',
-              milestones: [
-                { id: 1, title: 'Requirements Analysis', status: 'Completed', dueDate: '2023-04-15', completedDate: '2023-04-20' },
-                { id: 2, title: 'Hardware Procurement', status: 'Delayed', dueDate: '2023-07-30', progress: 80 },
-                { id: 3, title: 'Software Development', status: 'In Progress', dueDate: '2023-11-30', progress: 30 },
-                { id: 4, title: 'Pilot Testing', status: 'Pending', dueDate: '2024-01-31' }
-              ],
-              risks: ['Supply chain delays', 'Technical integration challenges', 'Budget overrun'],
-              nextMilestone: 'Software Development',
-              daysToDeadline: -15
-            }
-          ],
-          timeline: [
-            { date: '2023-01', completed: 2, started: 1 },
-            { date: '2023-02', completed: 1, started: 2 },
-            { date: '2023-03', completed: 3, started: 1 },
-            { date: '2023-04', completed: 2, started: 0 },
-            { date: '2023-05', completed: 4, started: 1 },
-            { date: '2023-06', completed: 3, started: 2 }
-          ]
-        });
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/researcher/analytics/progress');
+        if (!response.ok) throw new Error('Failed to fetch projects analytics');
+        const json = await response.json();
+        setData(json);
+      } catch (err) {
+        console.error('Error fetching projects analytics:', err);
+        setError('Could not load your projects analytics. Please try refreshing the page.');
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     };
 
-    fetchProgressData();
+    const fetchInsights = async () => {
+      try {
+        const response = await fetch('/api/researcher/analytics/progress/insights');
+        if (!response.ok) throw new Error('Failed to fetch AI insights');
+        const json = await response.json();
+        setInsights(json);
+      } catch (err) {
+        console.error('Error fetching AI insights:', err);
+        setInsightsError('AI insights are temporarily unavailable.');
+      } finally {
+        setInsightsLoading(false);
+      }
+    };
+
+    fetchData();
+    fetchInsights();
   }, []);
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'active': case 'completed': return 'success';
-      case 'delayed': return 'error';
-      case 'on hold': return 'warning';
-      case 'planning': return 'info';
-      default: return 'default';
-    }
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority?.toLowerCase()) {
-      case 'high': return 'error';
-      case 'medium': return 'warning';
-      case 'low': return 'success';
-      default: return 'default';
-    }
-  };
-
-  const getMilestoneIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'completed': return <CompletedIcon color="success" />;
-      case 'in progress': return <PendingIcon color="primary" />;
-      case 'delayed': return <DelayedIcon color="error" />;
-      default: return <PendingIcon color="action" />;
-    }
-  };
-
-  const filteredProjects = progressData?.projects.filter(project => {
-    const matchesStatus = filterStatus === 'All' || project.status === filterStatus;
-    const matchesPriority = filterPriority === 'All' || project.priority === filterPriority;
-    return matchesStatus && matchesPriority;
-  }) || [];
+  const handleExport = () => window.print();
 
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-        <CircularProgress size={60} sx={{ color: '#8b6cbc' }} />
+        <CircularProgress size={60} sx={{ color: PURPLE }} />
       </Box>
     );
   }
 
+  if (error || !data) {
+    return (
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Alert severity="error">{error || 'No data available.'}</Alert>
+      </Container>
+    );
+  }
+
+  const { overview } = data;
+
+  const statusPieData = data.proposalStatusCounts.filter((s) => s.count > 0);
+  const milestonePieData = [
+    { status: 'Completed', count: data.milestoneBreakdown.completed },
+    { status: 'Pending', count: data.milestoneBreakdown.pending },
+    { status: 'Overdue', count: data.milestoneBreakdown.overdue }
+  ].filter((s) => s.count > 0);
+  const budgetComparisonData = [
+    { name: 'Proposed', amount: overview.totalProposedBudget },
+    { name: 'Requested', amount: overview.totalRequested },
+    { name: 'Awarded', amount: overview.totalAwarded }
+  ];
+
   return (
     <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
       <PageHeader
-        title={t("researcher.progress_analytics")}
-        description={t("researcher.progress_analytics_desc")}
-        icon={<ProgressIcon />}
+        title="Projects Analytics"
+        description={t('researcher.analytics_progress_desc', 'Proposal success, milestones, budget and grant performance')}
+        icon={<ProjectsIcon />}
         breadcrumbs={[
           { label: 'Dashboard', path: '/researcher', icon: <BusinessIcon /> },
           { label: 'Analytics', path: '/researcher/analytics', icon: <AnalyticsIcon /> },
-          { label: 'Project Progress', path: '/researcher/analytics/progress', icon: <ProgressIcon /> },
+          { label: 'Projects Analytics', path: '/researcher/analytics/progress', icon: <ProjectsIcon /> }
         ]}
         actionButton={
           <Button
             variant="contained"
             startIcon={<DownloadIcon />}
-            sx={{ 
-              bgcolor: '#8b6cbc', 
-              color: 'white',
-              '&:hover': { bgcolor: '#7b5cac' },
-              fontWeight: 'bold'
-            }}
+            onClick={handleExport}
+            sx={{ bgcolor: PURPLE, color: 'white', '&:hover': { bgcolor: PURPLE_DARK }, fontWeight: 'bold' }}
           >
             Export Report
           </Button>
@@ -242,526 +207,355 @@ const ProjectProgressPage = () => {
       />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Progress Overview Cards */}
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 2.5, 
-          mb: 4,
-          flexWrap: 'wrap',
-          '& > *': { 
-            flex: '1 1 0',
-            minWidth: { xs: '100%', sm: 'calc(50% - 10px)', md: 'calc(25% - 19px)' }
-          }
+        {!data.meta?.hasOrcid && overview.totalProposals === 0 && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Add your ORCID iD to your profile to see proposal success metrics here. Grant and budget data below doesn't require ORCID and is already up to date.
+          </Alert>
+        )}
+
+        {/* Overview Cards */}
+        <Box sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(6, 1fr)' },
+          gap: 2,
+          mb: 4
         }}>
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: '#8b6cbc',
-            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Total Projects
-              </Typography>
-              <ProjectIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {progressData.overview.totalProjects}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              All tracked projects
-            </Typography>
-          </Paper>
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: '#8b6cbc',
-            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Completed
-              </Typography>
-              <CompletedIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {progressData.overview.completedProjects}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Successfully finished
-            </Typography>
-          </Paper>
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: '#8b6cbc',
-            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Overall Progress
-              </Typography>
-              <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {progressData.overview.overallProgress}%
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Average completion rate
-            </Typography>
-          </Paper>
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: '#8b6cbc',
-            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Budget Utilization
-              </Typography>
-              <BudgetIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {progressData.overview.budgetUtilization}%
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Funds utilized
-            </Typography>
-          </Paper>
+          <StatCard label="Total Proposals" value={overview.totalProposals} />
+          <StatCard label="Approval Rate" value={formatPercent(overview.approvalRate)} />
+          <StatCard label="Active Proposals" value={overview.activeProposals} />
+          <StatCard label="Milestones On Time" value={formatPercent(overview.onTimeRate)} />
+          <StatCard label="Funding Awarded" value={formatCurrency(overview.totalAwarded)} />
+          <StatCard label="Grant Conversion" value={formatPercent(overview.conversionRate)} />
         </Box>
+
+        {/* AI Insights Panel */}
+        <Paper elevation={2} sx={{ mb: 4, p: 3, borderLeft: `4px solid ${PURPLE}` }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: PURPLE }}>AI Insights</Typography>
+          </Box>
+
+          {insightsLoading && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Skeleton variant="text" width="80%" height={28} />
+              <Skeleton variant="text" width="60%" height={20} />
+              <Skeleton variant="rectangular" width="100%" height={60} />
+            </Box>
+          )}
+
+          {!insightsLoading && insightsError && <Alert severity="info">{insightsError}</Alert>}
+
+          {!insightsLoading && insights && (
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>Summary</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  {insights.narrativeSummary}
+                </Typography>
+
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>Recommendations</Typography>
+                <List dense disablePadding>
+                  {(insights.recommendations || []).map((rec, i) => (
+                    <ListItem key={i} disableGutters sx={{ display: 'list-item', listStyleType: 'disc', ml: 2, py: 0.25 }}>
+                      <Typography variant="body2" color="text.secondary">{rec}</Typography>
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>Priority to Watch</Typography>
+                {insights.priorityCallout?.title ? (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{insights.priorityCallout.title}</Typography>
+                    <Typography variant="body2" color="text.secondary">{insights.priorityCallout.detail}</Typography>
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    {insights.priorityCallout?.detail || 'Nothing urgent to flag right now.'}
+                  </Typography>
+                )}
+
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>Benchmark Comparison</Typography>
+                <Typography variant="body2" color="text.secondary">{insights.benchmarkComparison}</Typography>
+              </Box>
+            </Box>
+          )}
+        </Paper>
 
         {/* Main Content Tabs */}
         <Paper elevation={2}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tabs 
-              value={currentTab} 
+            <Tabs
+              value={currentTab}
               onChange={(e, newValue) => setCurrentTab(newValue)}
-              sx={{ 
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
                 px: 3,
-                '& .MuiTab-root': { 
-                  minHeight: 48,
-                  color: 'text.secondary',
-                  '&.Mui-selected': { color: '#8b6cbc' }
-                },
-                '& .MuiTabs-indicator': { backgroundColor: '#8b6cbc' }
+                '& .MuiTab-root': { minHeight: 48, color: 'text.secondary', '&.Mui-selected': { color: PURPLE } },
+                '& .MuiTabs-indicator': { backgroundColor: PURPLE }
               }}
             >
-              <Tab label="Project Overview" />
-              <Tab label="Milestone Tracking" />
-              <Tab label="Performance Analytics" />
-              <Tab label="Risk Management" />
+              <Tab label="Proposal Success" />
+              <Tab label="Milestones & Timeliness" />
+              <Tab label="Budget & Funding" />
+              <Tab label="Grant Conversion" />
             </Tabs>
           </Box>
 
           <Box sx={{ p: 3 }}>
             {currentTab === 0 && (
               <Box>
-                {/* Project Overview Tab */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
-                    Active Projects Portfolio
-                  </Typography>
-                </Box>
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', color: PURPLE }}>
+                  Proposal Status Breakdown
+                </Typography>
 
-                {/* Filters */}
-                <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: 2, 
-                    alignItems: 'center', 
-                    flexWrap: 'wrap',
-                    '& > *': { flex: '0 0 auto' }
-                  }}>
-                    <FormControl size="small" sx={{ minWidth: 120 }}>
-                      <InputLabel>Status</InputLabel>
-                      <Select
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value)}
-                        label="Status"
-                      >
-                        <MenuItem value="All">All Status</MenuItem>
-                        <MenuItem value="Active">Active</MenuItem>
-                        <MenuItem value="Delayed">Delayed</MenuItem>
-                        <MenuItem value="Completed">Completed</MenuItem>
-                        <MenuItem value="On Hold">On Hold</MenuItem>
-                      </Select>
-                    </FormControl>
-                    <FormControl size="small" sx={{ minWidth: 120 }}>
-                      <InputLabel>Priority</InputLabel>
-                      <Select
-                        value={filterPriority}
-                        onChange={(e) => setFilterPriority(e.target.value)}
-                        label="Priority"
-                      >
-                        <MenuItem value="All">All Priority</MenuItem>
-                        <MenuItem value="High">High</MenuItem>
-                        <MenuItem value="Medium">Medium</MenuItem>
-                        <MenuItem value="Low">Low</MenuItem>
-                      </Select>
-                    </FormControl>
+                {statusPieData.length > 0 ? (
+                  <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                    <Box sx={{ flex: '1 1 40%', minWidth: { xs: '100%', md: '280px' } }}>
+                      <Card elevation={1} sx={{ p: 2 }}>
+                        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>By Status</Typography>
+                        <ResponsiveContainer width="100%" height={260}>
+                          <PieChart>
+                            <Pie data={statusPieData} dataKey="count" nameKey="status" innerRadius={55} outerRadius={90} paddingAngle={2}>
+                              {statusPieData.map((entry, i) => (
+                                <Cell key={entry.status} fill={PALETTE[i % PALETTE.length]} />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </Card>
+                    </Box>
+
+                    <Box sx={{ flex: '1 1 35%', minWidth: { xs: '100%', md: '280px' } }}>
+                      <Card elevation={1} sx={{ p: 2 }}>
+                        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>By Volume</Typography>
+                        <ResponsiveContainer width="100%" height={260}>
+                          <BarChart data={data.proposalStatusCounts} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="status" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={50} />
+                            <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                            <RechartsTooltip />
+                            <Bar dataKey="count" fill={PURPLE} radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </Card>
+                    </Box>
+
+                    <Box sx={{ flex: '1 1 20%', minWidth: { xs: '100%', md: '220px' } }}>
+                      <Card elevation={1} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 3 }}>
+                        <Gauge value={overview.approvalRate} label="Approval Rate" />
+                        <Divider />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            Avg. Decision Turnaround <EstimatedChip />
+                          </Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: PURPLE, textAlign: 'center' }}>
+                            {overview.avgTurnaroundDays !== null ? `${overview.avgTurnaroundDays} days` : '—'}
+                          </Typography>
+                        </Box>
+                      </Card>
+                    </Box>
                   </Box>
-                </Paper>
-
-                {/* Projects Table */}
-                <TableContainer component={Paper} elevation={1}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Project</TableCell>
-                        <TableCell align="center">Status</TableCell>
-                        <TableCell align="center">Priority</TableCell>
-                        <TableCell align="center">Progress</TableCell>
-                        <TableCell align="center">Budget</TableCell>
-                        <TableCell align="center">Team</TableCell>
-                        <TableCell align="center">Deadline</TableCell>
-                        <TableCell align="center">Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {filteredProjects.map((project) => (
-                        <TableRow key={project.id} hover>
-                          <TableCell>
-                            <Box>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                                {project.title}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                Lead: {project.lead}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip 
-                              label={project.status} 
-                              size="small"
-                              color={getStatusColor(project.status)}
-                            />
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip 
-                              label={project.priority} 
-                              size="small"
-                              color={getPriorityColor(project.priority)}
-                              variant="outlined"
-                            />
-                          </TableCell>
-                          <TableCell align="center">
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <LinearProgress
-                                variant="determinate"
-                                value={project.progress}
-                                sx={{
-                                  width: 60,
-                                  height: 6,
-                                  borderRadius: 3,
-                                  bgcolor: 'rgba(139, 108, 188, 0.1)',
-                                  '& .MuiLinearProgress-bar': { bgcolor: '#8b6cbc' }
-                                }}
-                              />
-                              <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
-                                {project.progress}%
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                ${(project.budgetUsed / 1000).toFixed(0)}K / ${(project.budget / 1000).toFixed(0)}K
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {Math.round((project.budgetUsed / project.budget) * 100)}% used
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                              {project.teamSize}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Box>
-                              <Typography variant="body2" sx={{ 
-                                fontWeight: 'bold',
-                                color: project.daysToDeadline < 0 ? 'error.main' : 
-                                       project.daysToDeadline < 30 ? 'warning.main' : 'text.primary'
-                              }}>
-                                {project.daysToDeadline < 0 ? 
-                                  `${Math.abs(project.daysToDeadline)} days overdue` :
-                                  `${project.daysToDeadline} days left`
-                                }
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {format(new Date(project.endDate), 'MMM dd, yyyy')}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Tooltip title="View Details">
-                              <IconButton size="small">
-                                <ViewIcon />
-                              </IconButton>
-                            </Tooltip>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                ) : (
+                  <Alert severity="info">No proposals found yet for your ORCID iD.</Alert>
+                )}
               </Box>
             )}
 
             {currentTab === 1 && (
               <Box>
-                {/* Milestone Tracking Tab */}
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', color: '#8b6cbc' }}>
-                  Project Milestones & Timeline
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', color: PURPLE }}>
+                  Milestones &amp; Timeliness
                 </Typography>
 
-                {filteredProjects.map((project) => (
-                  <Card key={project.id} elevation={1} sx={{ mb: 3, p: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                        {project.title}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Chip 
-                          label={project.status} 
-                          size="small"
-                          color={getStatusColor(project.status)}
-                        />
-                        <Chip 
-                          label={`${project.progress}% Complete`}
-                          size="small"
-                          variant="outlined"
-                          sx={{ color: '#8b6cbc', borderColor: '#8b6cbc' }}
-                        />
-                      </Box>
+                {milestonePieData.length > 0 ? (
+                  <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 3 }}>
+                    <Box sx={{ flex: '1 1 45%', minWidth: { xs: '100%', md: '280px' } }}>
+                      <Card elevation={1} sx={{ p: 2 }}>
+                        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>Milestone Status</Typography>
+                        <ResponsiveContainer width="100%" height={260}>
+                          <PieChart>
+                            <Pie data={milestonePieData} dataKey="count" nameKey="status" innerRadius={55} outerRadius={90} paddingAngle={2}>
+                              {milestonePieData.map((entry, i) => {
+                                const colorMap = { Completed: '#10b981', Pending: '#f59e0b', Overdue: '#ef4444' };
+                                return <Cell key={entry.status} fill={colorMap[entry.status] || PALETTE[i % PALETTE.length]} />;
+                              })}
+                            </Pie>
+                            <RechartsTooltip />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </Card>
                     </Box>
 
-                    <Stepper orientation="vertical">
-                      {project.milestones.map((milestone, index) => (
-                        <Step key={milestone.id} active={true}>
-                          <StepLabel
-                            StepIconComponent={() => getMilestoneIcon(milestone.status)}
-                          >
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                                {milestone.title}
-                              </Typography>
-                              <Chip 
-                                label={milestone.status} 
-                                size="small"
-                                color={
-                                  milestone.status === 'Completed' ? 'success' : 
-                                  milestone.status === 'In Progress' ? 'primary' : 
-                                  milestone.status === 'Delayed' ? 'error' : 'default'
-                                }
-                              />
-                            </Box>
-                          </StepLabel>
-                          <StepContent>
-                            <Box sx={{ ml: 4, pb: 2 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                Due: {format(new Date(milestone.dueDate), 'MMM dd, yyyy')}
-                                {milestone.completedDate && (
-                                  <span> • Completed: {format(new Date(milestone.completedDate), 'MMM dd, yyyy')}</span>
-                                )}
-                              </Typography>
-                              {milestone.progress && milestone.status === 'In Progress' && (
-                                <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <LinearProgress
-                                    variant="determinate"
-                                    value={milestone.progress}
-                                    sx={{
-                                      width: 100,
-                                      height: 6,
-                                      borderRadius: 3,
-                                      bgcolor: 'rgba(139, 108, 188, 0.1)',
-                                      '& .MuiLinearProgress-bar': { bgcolor: '#8b6cbc' }
-                                    }}
-                                  />
-                                  <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
-                                    {milestone.progress}%
-                                  </Typography>
-                                </Box>
-                              )}
-                            </Box>
-                          </StepContent>
-                        </Step>
-                      ))}
-                    </Stepper>
-                  </Card>
-                ))}
+                    <Box sx={{ flex: '1 1 20%', minWidth: { xs: '100%', md: '220px' } }}>
+                      <Card elevation={1} sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Gauge value={overview.onTimeRate} label="On-Time Completion" />
+                      </Card>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Alert severity="info" sx={{ mb: 3 }}>No milestones tracked yet across your grant applications.</Alert>
+                )}
+
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Upcoming &amp; Overdue Milestones</Typography>
+                {data.upcomingMilestones.length > 0 ? (
+                  <TableContainer component={Paper} elevation={1}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Milestone</TableCell>
+                          <TableCell>Grant</TableCell>
+                          <TableCell align="center">Due Date</TableCell>
+                          <TableCell align="center">Status</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {data.upcomingMilestones.map((m, i) => (
+                          <TableRow key={i} hover>
+                            <TableCell>{m.title}</TableCell>
+                            <TableCell>{m.grantTitle}</TableCell>
+                            <TableCell align="center">{formatDate(m.dueDate)}</TableCell>
+                            <TableCell align="center">
+                              <Chip label={m.status} size="small" color={m.status === 'Overdue' ? 'error' : 'default'} />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Alert severity="info">No upcoming milestones tracked.</Alert>
+                )}
               </Box>
             )}
 
             {currentTab === 2 && (
               <Box>
-                {/* Performance Analytics Tab */}
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', color: '#8b6cbc' }}>
-                  Project Performance Analytics
+                <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', color: PURPLE }}>
+                  Budget &amp; Funding
                 </Typography>
 
-                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                  {/* Project Completion Timeline */}
-                  <Box sx={{ flex: '1 1 65%', minWidth: { xs: '100%', md: '300px' } }}>
-                    <Card elevation={1} sx={{ p: 2, mb: 3 }}>
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-                        Project Activity Timeline
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'end', gap: 2, height: 200 }}>
-                        {progressData.timeline.map((item, index) => (
-                          <Box key={index} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <Box
-                              sx={{
-                                width: '100%',
-                                height: `${(item.completed / 5) * 120}px`,
-                                bgcolor: '#8b6cbc',
-                                borderRadius: 1,
-                                mb: 1,
-                                minHeight: 20
-                              }}
-                            />
-                            <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                              {item.completed}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {item.date}
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Box>
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 3 }}>
+                  <Box sx={{ flex: '1 1 60%', minWidth: { xs: '100%', md: '300px' } }}>
+                    <Card elevation={1} sx={{ p: 2 }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>Proposed vs Requested vs Awarded</Typography>
+                      <ResponsiveContainer width="100%" height={240}>
+                        <BarChart data={budgetComparisonData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                          <RechartsTooltip formatter={(value) => formatCurrency(value)} />
+                          <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
+                            {budgetComparisonData.map((entry, i) => (
+                              <Cell key={entry.name} fill={PALETTE[i % PALETTE.length]} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
                     </Card>
                   </Box>
 
-                  {/* Key Performance Indicators */}
-                  <Box sx={{ flex: '1 1 30%', minWidth: { xs: '100%', md: '250px' } }}>
-                    <Card elevation={1} sx={{ p: 2, height: 'fit-content' }}>
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-                        Performance KPIs
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">On-Time Completion Rate</Typography>
-                          <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
-                            87%
-                          </Typography>
-                        </Box>
-                        <Divider />
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">Avg Project Duration</Typography>
-                          <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
-                            14 months
-                          </Typography>
-                        </Box>
-                        <Divider />
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">Budget Efficiency</Typography>
-                          <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
-                            92%
-                          </Typography>
-                        </Box>
-                      </Box>
+                  <Box sx={{ flex: '1 1 25%', minWidth: { xs: '100%', md: '220px' } }}>
+                    <Card elevation={1} sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Gauge value={overview.budgetUtilization} label="Budget Utilization (Awarded / Requested)" />
                     </Card>
                   </Box>
                 </Box>
+
+                {data.fundingTrend.length > 0 && (
+                  <Card elevation={1} sx={{ p: 2, mb: 3 }}>
+                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>Funding Awarded by Year</Typography>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <BarChart data={data.fundingTrend}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                        <RechartsTooltip formatter={(value) => formatCurrency(value)} />
+                        <Bar dataKey="amount" fill={PURPLE} radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Card>
+                )}
+
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Grant Applications</Typography>
+                {data.grants.length > 0 ? (
+                  <TableContainer component={Paper} elevation={1}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Grant Title</TableCell>
+                          <TableCell>Grantor</TableCell>
+                          <TableCell align="center">Status</TableCell>
+                          <TableCell align="right">Requested</TableCell>
+                          <TableCell align="right">Awarded</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {data.grants.map((g) => (
+                          <TableRow key={g.id} hover>
+                            <TableCell>{g.title}</TableCell>
+                            <TableCell>{g.grantorName}</TableCell>
+                            <TableCell align="center">
+                              <Chip label={g.status.replace(/_/g, ' ')} size="small" color={g.status === 'AWARDED' ? 'success' : 'default'} />
+                            </TableCell>
+                            <TableCell align="right">{formatCurrency(g.requestedAmount)}</TableCell>
+                            <TableCell align="right">{g.awardedAmount ? formatCurrency(g.awardedAmount) : '—'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Alert severity="info">No grant applications on file yet.</Alert>
+                )}
               </Box>
             )}
 
             {currentTab === 3 && (
               <Box>
-                {/* Risk Management Tab */}
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold', color: '#8b6cbc' }}>
-                  Project Risk Assessment
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold', color: PURPLE }}>
+                  Grant Application Pipeline
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Current status of each grant application on file. This reflects a snapshot in time, not full historical movement between stages.
                 </Typography>
 
-                {filteredProjects.map((project) => (
-                  <Card key={project.id} elevation={1} sx={{ mb: 3, p: 3 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                        {project.title}
-                      </Typography>
-                      <Chip 
-                        label={project.status} 
-                        color={getStatusColor(project.status)}
-                        size="small"
-                      />
+                {data.pipeline.length > 0 ? (
+                  <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                    <Box sx={{ flex: '1 1 65%', minWidth: { xs: '100%', md: '300px' } }}>
+                      <Card elevation={1} sx={{ p: 2 }}>
+                        <ResponsiveContainer width="100%" height={280}>
+                          <BarChart data={data.pipeline} layout="vertical" margin={{ top: 10, right: 20, left: 20, bottom: 10 }}>
+                            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
+                            <YAxis type="category" dataKey="status" tick={{ fontSize: 12 }} width={140} />
+                            <RechartsTooltip />
+                            <Bar dataKey="count" fill={PURPLE} radius={[0, 4, 4, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </Card>
                     </Box>
 
-                    {project.risks.length > 0 ? (
-                      <Box>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, color: 'error.main' }}>
-                          Identified Risks:
-                        </Typography>
-                        <List dense>
-                          {project.risks.map((risk, index) => (
-                            <ListItem key={index}>
-                              <ListItemIcon>
-                                <DelayedIcon color="error" />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary={risk}
-                                secondary="Requires immediate attention"
-                              />
-                            </ListItem>
-                          ))}
-                        </List>
-                      </Box>
-                    ) : (
-                      <Alert severity="success">
-                        No active risks identified for this project.
-                      </Alert>
-                    )}
-
-                    <Box sx={{ mt: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Next Milestone: <strong>{project.nextMilestone}</strong>
-                      </Typography>
-                      <Typography variant="body2" color={
-                        project.daysToDeadline < 0 ? 'error.main' : 
-                        project.daysToDeadline < 30 ? 'warning.main' : 'success.main'
-                      }>
-                        {project.daysToDeadline < 0 ? 
-                          `${Math.abs(project.daysToDeadline)} days overdue` :
-                          `${project.daysToDeadline} days remaining`
-                        }
-                      </Typography>
+                    <Box sx={{ flex: '1 1 30%', minWidth: { xs: '100%', md: '250px' } }}>
+                      <Card elevation={1} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+                        <Gauge value={overview.conversionRate} label="Conversion Rate" />
+                        <Divider sx={{ width: '100%' }} />
+                        <Box sx={{ textAlign: 'center' }}>
+                          <Typography variant="body2" color="text.secondary">Awarded / Total Applications</Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: PURPLE }}>
+                            {overview.awardedCount} / {overview.totalGrantApplications}
+                          </Typography>
+                        </Box>
+                      </Card>
                     </Box>
-                  </Card>
-                ))}
+                  </Box>
+                ) : (
+                  <Alert severity="info">No grant applications on file yet.</Alert>
+                )}
               </Box>
             )}
           </Box>
@@ -771,4 +565,4 @@ const ProjectProgressPage = () => {
   );
 };
 
-export default ProjectProgressPage;
+export default ProjectsAnalyticsPage;

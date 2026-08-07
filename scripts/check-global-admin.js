@@ -248,7 +248,15 @@ async function main() {
     }
     
     console.log('⚠️  No Global Admin account found.');
-    
+
+    if (!process.stdin.isTTY || process.env.SKIP_ADMIN_PROMPT === 'true') {
+      console.log('ℹ️  Non-interactive mode: skipping Global Admin setup prompt.');
+      console.log('   Create an admin with:');
+      console.log('   node scripts/create-global-admin.js --email <email> --name "<name>" --password <password>');
+      console.log('   Or set GLOBAL_ADMIN_EMAIL, GLOBAL_ADMIN_NAME, and GLOBAL_ADMIN_PASSWORD for Docker entrypoint.\n');
+      return true;
+    }
+
     const created = await createGlobalAdminInteractive();
     
     if (!created) {

@@ -1,0 +1,65 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hospitiumris-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-hospitiumris}
+      POSTGRES_USER: ${POSTGRES_USER:-hospitiumris}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hospitiumris_dev}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - hospitiumris_dev_network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-hospitiumris} -d ${POSTGRES_DB:-hospitiumris}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: hospitiumris-app-dev
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-hospitiumris}:${POSTGRES_PASSWORD:-hospitiumris_dev}@postgres:5432/${POSTGRES_DB:-hospitiumris}?schema=public
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NODE_ENV: development
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      SKIP_ADMIN_PROMPT: 'true'
+      GLOBAL_ADMIN_EMAIL: ${GLOBAL_ADMIN_EMAIL:-}
+      GLOBAL_ADMIN_NAME: ${GLOBAL_ADMIN_NAME:-}
+      GLOBAL_ADMIN_PASSWORD: ${GLOBAL_ADMIN_PASSWORD:-}
+    ports:
+      - '${APP_PORT:-3000}:3000'
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./prisma:/app/prisma
+      - ./scripts:/app/scripts
+      - uploads_data_dev:/app/uploads
+      - logs_data_dev:/app/logs
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - hospitiumris_dev_network
+
+networks:
+  hospitiumris_dev_network:
+    driver: bridge
+
+volumes:
+  postgres_data_dev:
+  uploads_data_dev:
+  logs_data_dev:

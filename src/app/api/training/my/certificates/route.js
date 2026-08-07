@@ -47,9 +47,9 @@ export async function GET(request) {
       },
     });
 
-    // Filter by institution
+    // Filter by institution (verified FK link)
     const filteredCertificates = certificates.filter(
-      cert => cert.training.institutionId === user.primaryInstitution
+      cert => cert.training.institutionId === user.secondaryInstitutionId
     );
 
     return NextResponse.json({

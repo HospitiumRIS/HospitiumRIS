@@ -44,13 +44,11 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Check institution match
-    if (training.institutionId !== user.primaryInstitution) {
-      return NextResponse.json(
-        { error: 'Access denied - Training belongs to different institution' },
-        { status: 403 }
-      );
-    }
+    // TODO(institution-filtering): Institution match is temporarily disabled
+    // so any authenticated researcher can register for any published training
+    // regardless of institution. Re-enable by restoring the check here once
+    // institution assignment is reliable — keep this in sync with
+    // /api/training, /api/training/my, and /api/training/[id].
 
     // Check if training is published
     if (training.status !== 'PUBLISHED') {

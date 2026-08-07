@@ -5,10 +5,18 @@
 
 import { GoogleGenAI } from '@google/genai';
 
-// Initialize Gemini AI with API key from environment variable
-const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GEMINI_API_KEY
-});
+let aiClient = null;
+
+function getAI() {
+    const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+    if (!apiKey) {
+        throw new Error('Google Gemini API key is not configured');
+    }
+    if (!aiClient) {
+        aiClient = new GoogleGenAI({ apiKey });
+    }
+    return aiClient;
+}
 
 /**
  * Generate academic summary and keywords for a single publication
@@ -41,7 +49,7 @@ Abstract: ${publication.abstract || 'No abstract available'}`;
 
     let response;
     try {
-        response = await ai.models.generateContent({
+        response = await getAI().models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {

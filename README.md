@@ -99,8 +99,28 @@ HospitiumRIS serves as a centralized platform for:
 
 ### Prerequisites
 
-- Node.js 18 or later
+- Node.js 20 or later
 - PostgreSQL 14 or later
+
+### Docker (recommended for production)
+
+Run the full stack (PostgreSQL + Next.js + Nginx) with Docker:
+
+```bash
+cp .env.docker.example .env
+# Edit .env — set POSTGRES_PASSWORD, NEXTAUTH_SECRET, GLOBAL_ADMIN_*
+docker compose up -d --build
+```
+
+Open http://localhost after containers are healthy.
+
+For development with hot reload:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+See [docs/DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) for SSL, backups, scaling, and troubleshooting.
 
 ### Installation
 
@@ -177,6 +197,12 @@ After creation, you can access:
 | `npm run db:studio` | Open Prisma Studio database browser |
 | `npm run db:seed` | Seed database with sample data |
 | `npm run test:email` | Test SMTP email configuration |
+| `npm run docker:prod` | Start production Docker stack (nginx + app + postgres) |
+| `npm run docker:dev` | Start development Docker stack with hot reload |
+| `npm run docker:build` | Build Docker images |
+| `npm run docker:down` | Stop Docker containers |
+| `npm run docker:logs` | View application container logs |
+| `npm run docker:clean` | Remove containers, volumes, and local images |
 
 ## Project Structure
 

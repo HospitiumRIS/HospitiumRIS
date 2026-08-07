@@ -37,7 +37,12 @@ export async function POST(request, { params }) {
       );
     }
 
-    if (registration.training.institutionId !== user.primaryInstitution) {
+    const ownInstitution = await prisma.institution.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+
+    if (!ownInstitution || registration.training.institutionId !== ownInstitution.id) {
       return NextResponse.json(
         { error: 'Access denied' },
         { status: 403 }

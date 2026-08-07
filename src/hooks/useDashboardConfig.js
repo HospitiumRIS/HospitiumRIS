@@ -25,7 +25,6 @@ import {
   Edit as ManageIcon,
   Add as CreateIcon,
   TrendingUp as ImpactIcon,
-  BarChart as ChartIcon,
   Timeline as ProgressIcon,
   Description as ProposalIcon,
   Update as FollowUpIcon,
@@ -49,6 +48,8 @@ import {
   CloudSync as RegistryIcon,
   Insights as ResultsIcon,
   Settings as SettingsIcon,
+  ImageSearch as ImageIntegrityIcon,
+  FactCheck as IntegrityReportIcon,
 } from '@mui/icons-material';
 
 const ICON = '#8b6cbc';
@@ -117,6 +118,14 @@ function buildInstitutionConfig(t) {
           category(t, 'nav_categories.reporting_outputs', [
             item(t, 'institution_nav.results_reporting', 'institution_nav.results_reporting_desc', '/institution/clinical-trials/results', <ResultsIcon sx={ICON_SM} />),
             item(t, 'institution_nav.team_gcp', 'institution_nav.team_gcp_desc', '/institution/clinical-trials/team', <TeamIcon sx={ICON_SM} />),
+          ]),
+        ],
+      },
+      {
+        label: t('institution.image_integrity'),
+        categories: [
+          category(t, 'nav_categories.integrity_oversight', [
+            item(t, 'institution_nav.integrity_reports', 'institution_nav.integrity_reports_desc', '/institution/image-integrity', <IntegrityReportIcon sx={ICON_SM} />),
           ]),
         ],
       },
@@ -220,6 +229,14 @@ function buildResearcherConfig(t) {
         ],
       },
       {
+        label: t('researcher.image_integrity'),
+        categories: [
+          category(t, 'nav_categories.integrity_checks', [
+            item(t, 'researcher.integrity_submissions', 'researcher.integrity_submissions_desc', '/researcher/image-integrity', <ImageIntegrityIcon sx={ICON_SM} />),
+          ]),
+        ],
+      },
+      {
         label: t('researcher.training'),
         categories: [
           category(t, 'nav_categories.available_trainings', [
@@ -236,8 +253,8 @@ function buildResearcherConfig(t) {
         categories: [
           category(t, 'nav_categories.research_metrics', [
             item(t, 'researcher.analytics_impact', 'researcher.analytics_impact_desc', '/researcher/analytics/impact', <ImpactIcon sx={ICON_SM} />),
-            item(t, 'researcher.analytics_publications', 'researcher.analytics_publications_desc', '/researcher/analytics/publications', <ChartIcon sx={ICON_SM} />),
             item(t, 'researcher.analytics_progress', 'researcher.analytics_progress_desc', '/researcher/analytics/progress', <ProgressIcon sx={ICON_SM} />),
+            item(t, 'researcher.analytics_compliance', 'researcher.analytics_compliance_desc', '/researcher/analytics/compliance', <ComplianceIcon sx={ICON_SM} />),
           ]),
         ],
       },

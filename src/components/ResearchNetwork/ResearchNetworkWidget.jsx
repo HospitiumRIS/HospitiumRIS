@@ -310,6 +310,9 @@ const ResearchNetworkWidget = () => {
         researcher={selectedNode}
         publications={networkData?.publications || []}
         manuscripts={networkData?.manuscripts || []}
+        proposals={networkData?.proposals || []}
+        allResearchers={nodes}
+        onSelectResearcher={handleNodeSelect}
       />
 
       <FilterPanel

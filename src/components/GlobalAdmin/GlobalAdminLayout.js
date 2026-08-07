@@ -257,14 +257,14 @@ const GlobalAdminLayout = ({ children }) => {
         >
           HospitiumRIS v1.0
         </Typography>
-        <Typography 
-          variant="caption" 
-          color="text.secondary" 
-          align="center" 
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          align="center"
           display="block"
           sx={{ fontSize: '0.65rem', mt: 0.5, opacity: 0.7 }}
         >
-          © 2026 All rights reserved
+          {t('footer.copyright', { year: new Date().getFullYear() })}
         </Typography>
       </Box>
     </Box>
@@ -293,7 +293,7 @@ const GlobalAdminLayout = ({ children }) => {
               <MenuIcon />
             </IconButton>
             <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600 }}>
-              Global Admin Console
+              {t('global_admin.global_admin_console')}
             </Typography>
           </Toolbar>
         </AppBar>

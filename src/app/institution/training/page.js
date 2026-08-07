@@ -377,8 +377,8 @@ export default function InstitutionTrainingPage() {
   return (
     <>
       <PageHeader
-        title={t('institution.manage_trainings')}
-        description={t('institution.manage_trainings_desc')}
+        title={t('institution_nav.manage_trainings')}
+        description={t('institution_nav.manage_trainings_desc')}
         icon={<TrainingIcon sx={{ fontSize: 40 }} />}
         breadcrumbs={[
           { label: 'Home', path: '/institution', icon: <HomeIcon /> },

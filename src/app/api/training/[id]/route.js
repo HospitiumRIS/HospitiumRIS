@@ -69,33 +69,11 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Debug logging
-    console.log('Training access check:', {
-      trainingId: training.id,
-      trainingInstitutionId: training.institutionId,
-      userPrimaryInstitution: user.primaryInstitution,
-      userAccountType: user.accountType,
-      userId: user.id
-    });
-
-    // Check institution access (allow if user has primaryInstitution matching or if user is admin)
-    const hasInstitutionAccess = 
-      !training.institutionId || // Public training
-      training.institutionId === user.primaryInstitution ||
-      user.accountType === 'RESEARCH_ADMIN' ||
-      user.accountType === 'INSTITUTION_ADMIN';
-    
-    if (!hasInstitutionAccess) {
-      console.error('Access denied:', {
-        reason: 'Institution mismatch',
-        trainingInstitutionId: training.institutionId,
-        userPrimaryInstitution: user.primaryInstitution
-      });
-      return NextResponse.json(
-        { error: 'Access denied - Training belongs to different institution' },
-        { status: 403 }
-      );
-    }
+    // TODO(institution-filtering): Institution access scoping is temporarily
+    // disabled so any authenticated user can view any training regardless of
+    // institution. Re-enable by restoring the institution match check here
+    // once institution assignment is reliable — keep this in sync with
+    // /api/training, /api/training/my, and /api/training/[id]/register.
 
     // Filter materials based on access level and user registration
     const userRegistration = training.registrations.find(r => r.userId === user.id);
@@ -160,7 +138,12 @@ export async function PUT(request, { params }) {
       );
     }
 
-    if (existingTraining.institutionId !== user.primaryInstitution) {
+    const ownInstitution = await prisma.institution.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+
+    if (!ownInstitution || existingTraining.institutionId !== ownInstitution.id) {
       return NextResponse.json(
         { error: 'Access denied - Training belongs to different institution' },
         { status: 403 }
@@ -253,7 +236,12 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    if (existingTraining.institutionId !== user.primaryInstitution) {
+    const ownInstitution = await prisma.institution.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+
+    if (!ownInstitution || existingTraining.institutionId !== ownInstitution.id) {
       return NextResponse.json(
         { error: 'Access denied - Training belongs to different institution' },
         { status: 403 }

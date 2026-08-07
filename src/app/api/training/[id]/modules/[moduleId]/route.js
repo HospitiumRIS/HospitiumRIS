@@ -35,7 +35,12 @@ export async function PUT(request, { params }) {
       );
     }
 
-    if (module.training.institutionId !== user.primaryInstitution) {
+    const ownInstitution = await prisma.institution.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+
+    if (!ownInstitution || module.training.institutionId !== ownInstitution.id) {
       return NextResponse.json(
         { error: 'Access denied' },
         { status: 403 }
@@ -100,7 +105,12 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    if (module.training.institutionId !== user.primaryInstitution) {
+    const ownInstitution = await prisma.institution.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+
+    if (!ownInstitution || module.training.institutionId !== ownInstitution.id) {
       return NextResponse.json(
         { error: 'Access denied' },
         { status: 403 }

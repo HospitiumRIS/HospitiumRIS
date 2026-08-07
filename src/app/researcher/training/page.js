@@ -302,7 +302,7 @@ export default function TrainingPage() {
       <Divider sx={{ my: 4 }} />
 
       {/* Available Trainings Section */}
-      <Box>
+      <Box id="available" sx={{ scrollMarginTop: '96px' }}>
         <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
           <ScheduleIcon sx={{ color: '#8b6cbc' }} />
           Available Trainings
@@ -458,61 +458,117 @@ export default function TrainingPage() {
                 </Box>
 
                 {/* Modules */}
-                {selectedTraining.modules && selectedTraining.modules.length > 0 && (
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Training Modules
-                    </Typography>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Training Modules
+                  </Typography>
+                  {selectedTraining.modules && selectedTraining.modules.length > 0 ? (
                     <Stack spacing={1} sx={{ mt: 1 }}>
-                      {selectedTraining.modules.map((module, index) => (
-                        <Card key={module.id} variant="outlined" sx={{ p: 2 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                            Module {index + 1}: {module.title}
-                          </Typography>
-                          {module.description && (
-                            <Typography variant="caption" color="text.secondary">
-                              {module.description}
+                      {selectedTraining.modules.map((module, index) => {
+                        const moduleMaterials = (selectedTraining.materials || []).filter(
+                          (m) => m.moduleId === module.id
+                        );
+                        return (
+                          <Card key={module.id} variant="outlined" sx={{ p: 2 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                              Module {index + 1}: {module.title}
                             </Typography>
-                          )}
-                        </Card>
-                      ))}
+                            {module.description && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                component="div"
+                                sx={{ mb: moduleMaterials.length > 0 ? 1 : 0 }}
+                              >
+                                {module.description}
+                              </Typography>
+                            )}
+                            {moduleMaterials.length > 0 && (
+                              <Stack spacing={0.5} sx={{ mt: 1 }}>
+                                {moduleMaterials.map((material) => (
+                                  <Box
+                                    key={material.id}
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      p: 1,
+                                      border: `1px solid ${theme.palette.divider}`,
+                                      borderRadius: 1,
+                                    }}
+                                  >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <MaterialsIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                      <Typography variant="body2">{material.name}</Typography>
+                                    </Box>
+                                    <Button
+                                      size="small"
+                                      onClick={() => window.open(material.fileUrl, '_blank')}
+                                    >
+                                      Download
+                                    </Button>
+                                  </Box>
+                                ))}
+                              </Stack>
+                            )}
+                          </Card>
+                        );
+                      })}
                     </Stack>
-                  </Box>
-                )}
+                  ) : (
+                    <Alert severity="info" sx={{ mt: 1 }}>
+                      No modules have been added to this training yet.
+                    </Alert>
+                  )}
+                </Box>
 
-                {/* Public Materials */}
-                {selectedTraining.materials && selectedTraining.materials.length > 0 && (
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Available Materials
-                    </Typography>
-                    <Stack spacing={1} sx={{ mt: 1 }}>
-                      {selectedTraining.materials
-                        .filter(m => m.accessLevel === 'PUBLIC')
-                        .map((material) => (
-                          <Box
-                            key={material.id}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              p: 1,
-                              border: `1px solid ${theme.palette.divider}`,
-                              borderRadius: 1,
-                            }}
-                          >
-                            <Typography variant="body2">{material.name}</Typography>
-                            <Button
-                              size="small"
-                              onClick={() => window.open(material.fileUrl, '_blank')}
+                {/* General Materials (not tied to a specific module) */}
+                {(() => {
+                  const allMaterials = selectedTraining.materials || [];
+                  const generalMaterials = allMaterials.filter((m) => !m.moduleId);
+                  const totalMaterialsCount = selectedTraining._count?.materials ?? allMaterials.length;
+                  const hiddenCount = totalMaterialsCount - allMaterials.length;
+
+                  if (generalMaterials.length === 0 && hiddenCount <= 0) return null;
+
+                  return (
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        General Materials
+                      </Typography>
+                      {generalMaterials.length > 0 && (
+                        <Stack spacing={1} sx={{ mt: 1 }}>
+                          {generalMaterials.map((material) => (
+                            <Box
+                              key={material.id}
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                p: 1,
+                                border: `1px solid ${theme.palette.divider}`,
+                                borderRadius: 1,
+                              }}
                             >
-                              Download
-                            </Button>
-                          </Box>
-                        ))}
-                    </Stack>
-                  </Box>
-                )}
+                              <Typography variant="body2">{material.name}</Typography>
+                              <Button
+                                size="small"
+                                onClick={() => window.open(material.fileUrl, '_blank')}
+                              >
+                                Download
+                              </Button>
+                            </Box>
+                          ))}
+                        </Stack>
+                      )}
+                      {hiddenCount > 0 && (
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                          {hiddenCount} additional material{hiddenCount > 1 ? 's' : ''} will be available after you register.
+                        </Typography>
+                      )}
+                    </Box>
+                  );
+                })()}
               </Stack>
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>

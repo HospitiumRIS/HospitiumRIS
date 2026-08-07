@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { logApiActivity, logError, logInfo, logSuccess, getRequestMetadata } from '@/utils/activityLogger';
+import { linkInstitutionIfNeeded } from '@/lib/institution-domain';
 
 /**
  * @swagger
@@ -155,6 +156,11 @@ export async function POST(request) {
           updatedAt: new Date(),
         }
       });
+
+      // Self-heal: link to a verified institution if their email domain
+      // now matches one (e.g. the admin added the domain after this user
+      // registered).
+      await linkInstitutionIfNeeded(prisma, user);
 
       // Log successful ORCID login
       await logSuccess('ORCID login successful', {
@@ -417,6 +423,11 @@ export async function POST(request) {
         updatedAt: new Date(),
       }
     });
+
+    // Self-heal: link to a verified institution if their email domain now
+    // matches one (e.g. the admin added the domain after this user
+    // registered).
+    await linkInstitutionIfNeeded(prisma, user);
 
     // Log successful login with comprehensive activity logging
     await logSuccess('User login successful', {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { getAuthenticatedUser } from '@/lib/auth-server';
+import { seedDomainForInstitution } from '@/lib/institution-domain';
 
 const prisma = new PrismaClient();
 
@@ -113,9 +114,27 @@ export async function POST(request) {
         }
       });
 
-      return { 
-        institution, 
-        user: institution.user 
+      // Auto-seed a verified domain from this admin's own email, and link
+      // them to the institution they were just created to run - same
+      // pattern as RESEARCH_ADMIN self-registration.
+      await seedDomainForInstitution(tx, {
+        institutionId: institution.id,
+        email,
+        verifiedByUserId: institution.user.id,
+      });
+
+      const updatedUser = await tx.user.update({
+        where: { id: institution.user.id },
+        data: {
+          secondaryInstitutionId: institution.id,
+          institutionVerifiedAt: new Date(),
+          institutionVerificationMethod: 'EMAIL_DOMAIN',
+        },
+      });
+
+      return {
+        institution,
+        user: updatedUser,
       };
     });
 

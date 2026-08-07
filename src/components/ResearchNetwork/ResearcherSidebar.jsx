@@ -25,15 +25,16 @@ import {
   ExpandLess as ExpandLessIcon
 } from '@mui/icons-material';
 
-const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscripts }) => {
+const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscripts, proposals, allResearchers, onSelectResearcher }) => {
   const { t } = useTranslation();
   const [showPublications, setShowPublications] = useState(false);
   const [showManuscripts, setShowManuscripts] = useState(false);
+  const [showProposals, setShowProposals] = useState(false);
 
   if (!researcher) return null;
 
   const getInitials = (name) => {
-    return name
+    return (name || '?')
       .split(' ')
       .map(n => n[0])
       .join('')
@@ -41,13 +42,57 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
       .toUpperCase();
   };
 
-  const sharedPublications = publications?.filter(pub => 
+  const sharedPublications = publications?.filter(pub =>
     pub.co_authors?.includes(researcher.id)
   ) || [];
 
-  const sharedManuscripts = manuscripts?.filter(ms => 
+  const sharedManuscripts = manuscripts?.filter(ms =>
     ms.collaborators?.includes(researcher.id)
   ) || [];
+
+  const sharedProposals = proposals?.filter(p =>
+    p.coInvestigators?.includes(researcher.id)
+  ) || [];
+
+  // Renders a row of clickable collaborator chips for a given work item
+  const renderCollaboratorChips = (collaboratorIds = [], pendingIds = []) => {
+    const ids = collaboratorIds.filter(id => id !== researcher.id);
+    if (ids.length === 0) return null;
+
+    return (
+      <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ gap: 0.5, mt: 1 }}>
+        {ids.map(id => {
+          const person = allResearchers?.find(r => r.id === id);
+          const isPendingPerson = pendingIds.includes(id);
+          const bgColor = person?.isLead ? '#fbbf24' : isPendingPerson ? '#94a3b8' : '#8b6cbc';
+
+          return (
+            <Chip
+              key={id}
+              size="small"
+              clickable={!!person}
+              onClick={() => person && onSelectResearcher?.(person)}
+              avatar={
+                <Avatar sx={{ bgcolor: bgColor, color: 'white', fontSize: '0.6rem', width: 20, height: 20 }}>
+                  {getInitials(person?.name)}
+                </Avatar>
+              }
+              label={person?.name || t('common.unknown')}
+              sx={{
+                height: 24,
+                fontSize: '0.7rem',
+                bgcolor: 'white',
+                border: '1px solid',
+                borderColor: '#e2e8f0',
+                cursor: person ? 'pointer' : 'default',
+                '&:hover': person ? { bgcolor: '#f5f0fa', borderColor: '#8b6cbc' } : undefined
+              }}
+            />
+          );
+        })}
+      </Stack>
+    );
+  };
 
   return (
     <Drawer
@@ -62,10 +107,10 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
       }}
     >
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#f8fafc' }}>
-        {/* Header - Purple gradient background */}
-        <Box sx={{ 
-          p: 2.5, 
-          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+        {/* Header - Purple background */}
+        <Box sx={{
+          p: 2.5,
+          background: '#8b6cbc',
           color: 'white',
           position: 'relative'
         }}>
@@ -373,17 +418,83 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
                           size="small" 
                           sx={{ height: 18, fontSize: '0.65rem' }}
                         />
-                        <Chip 
-                          label={ms.status || t('common.draft')} 
-                          size="small" 
+                        <Chip
+                          label={ms.status || t('common.draft')}
+                          size="small"
                           sx={{ height: 18, fontSize: '0.65rem' }}
                         />
                       </Stack>
+                      {renderCollaboratorChips(ms.collaborators, ms.pendingInvitations)}
                     </Box>
                   ))}
                   {sharedManuscripts.length > 5 && (
                     <Typography variant="caption" color="primary" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
                       {t('research_network.more_count', { count: sharedManuscripts.length - 5 })}
+                    </Typography>
+                  )}
+                </Box>
+              </Collapse>
+            </Box>
+          )}
+
+          {/* Shared Proposals - Collapsible */}
+          {sharedProposals.length > 0 && (
+            <Box sx={{ mb: 2.5 }}>
+              <Button
+                fullWidth
+                onClick={() => setShowProposals(!showProposals)}
+                endIcon={showProposals ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                sx={{
+                  justifyContent: 'space-between',
+                  textTransform: 'none',
+                  color: 'text.primary',
+                  bgcolor: 'white',
+                  border: '1px solid',
+                  borderColor: '#e2e8f0',
+                  borderRadius: 2,
+                  p: 1.25,
+                  '&:hover': {
+                    bgcolor: '#f8fafc',
+                    borderColor: '#cbd5e1'
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AssignmentIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
+                  <Typography variant="body2" fontWeight={600}>
+                    {t('research_network.shared_proposals')}
+                  </Typography>
+                  <Chip
+                    label={sharedProposals.length}
+                    size="small"
+                    sx={{ height: 20, fontSize: '0.7rem', bgcolor: '#f59e0b', color: 'white' }}
+                  />
+                </Box>
+              </Button>
+              <Collapse in={showProposals}>
+                <Box sx={{ mt: 1.5, pl: 1 }}>
+                  {sharedProposals.slice(0, 5).map((p, idx) => (
+                    <Box
+                      key={idx}
+                      sx={{
+                        mb: 1.5,
+                        pb: 1.5,
+                        borderBottom: idx < Math.min(4, sharedProposals.length - 1) ? '1px solid' : 'none',
+                        borderColor: 'divider'
+                      }}
+                    >
+                      <Typography variant="body2" fontWeight={500} sx={{ mb: 0.5, fontSize: '0.875rem', lineHeight: 1.4 }}>
+                        {p.title}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                        {p.status || t('common.draft')}
+                      </Typography>
+                      {renderCollaboratorChips(p.coInvestigators)}
+                    </Box>
+                  ))}
+                  {sharedProposals.length > 5 && (
+                    <Typography variant="caption" color="primary" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
+                      {t('research_network.more_count', { count: sharedProposals.length - 5 })}
                     </Typography>
                   )}
                 </Box>
@@ -401,11 +512,11 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
             sx={{ 
               textTransform: 'none', 
               fontWeight: 600,
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: '#8b6cbc',
               py: 1.25,
               borderRadius: 2,
               '&:hover': {
-                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                background: '#7a5aa8',
               }
             }}
           >

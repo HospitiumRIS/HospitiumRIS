@@ -258,6 +258,67 @@ body {
     text-decoration: none;
 }
 
+.lang-switcher {
+    position: relative;
+}
+
+.lang-switcher-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #2c2c2c;
+    cursor: pointer;
+}
+
+.lang-switcher-btn:hover {
+    border-color: #8b6cbc;
+    color: #8b6cbc;
+}
+
+.lang-switcher-caret {
+    font-size: 0.7rem;
+}
+
+.lang-switcher-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 140px;
+    overflow: hidden;
+    z-index: 20;
+}
+
+.lang-switcher-menu.open {
+    display: block;
+}
+
+.lang-switcher-menu a {
+    display: block;
+    padding: 0.6rem 1rem;
+    color: #2c2c2c;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.lang-switcher-menu a:hover {
+    background: #f9fafb;
+}
+
+.lang-switcher-menu a.active {
+    color: #8b6cbc;
+    font-weight: 600;
+}
+
 @media (max-width: 768px) {
     .hero h1 {
         font-size: 2rem;

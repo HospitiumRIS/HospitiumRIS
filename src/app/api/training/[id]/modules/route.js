@@ -31,7 +31,17 @@ export async function GET(request, { params }) {
       );
     }
 
-    if (training.institutionId !== user.primaryInstitution) {
+    const isAdminUser = user.accountType === 'RESEARCH_ADMIN' || user.accountType === 'INSTITUTION_ADMIN';
+    let hasAccess = training.institutionId === user.secondaryInstitutionId;
+    if (!hasAccess && isAdminUser) {
+      const ownInstitution = await prisma.institution.findUnique({
+        where: { userId: user.id },
+        select: { id: true },
+      });
+      hasAccess = training.institutionId === ownInstitution?.id;
+    }
+
+    if (!hasAccess) {
       return NextResponse.json(
         { error: 'Access denied' },
         { status: 403 }
@@ -97,7 +107,12 @@ export async function POST(request, { params }) {
       );
     }
 
-    if (training.institutionId !== user.primaryInstitution) {
+    const ownInstitution = await prisma.institution.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+
+    if (!ownInstitution || training.institutionId !== ownInstitution.id) {
       return NextResponse.json(
         { error: 'Access denied' },
         { status: 403 }

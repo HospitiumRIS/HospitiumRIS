@@ -4,7 +4,7 @@ import { getAuthenticatedUser } from '../../../lib/auth-server';
 
 /**
  * GET /api/training
- * List all published trainings filtered by user's institution
+ * List all published trainings (institution filtering temporarily disabled)
  */
 export async function GET(request) {
   try {
@@ -21,7 +21,11 @@ export async function GET(request) {
     const status = searchParams.get('status');
     const includeAll = searchParams.get('includeAll') === 'true'; // For admin to see all statuses
 
-    // Build filter
+    // TODO(institution-filtering): Institution scoping is temporarily disabled
+    // so researchers see all trainings regardless of institution. Re-enable by
+    // restoring the institutionId filter here once institution assignment is
+    // reliable — keep this in sync with /api/training/[id], /api/training/my,
+    // and /api/training/[id]/register.
     const where = {};
 
     // If not admin or includeAll not set, only show published trainings
@@ -141,6 +145,18 @@ export async function POST(request) {
     // Ensure targetGroup is an array
     const targetGroupArray = Array.isArray(targetGroup) ? targetGroup : targetGroup.split(',').map(g => g.trim());
 
+    const ownInstitution = await prisma.institution.findUnique({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+
+    if (!ownInstitution) {
+      return NextResponse.json(
+        { error: 'No institution found for this admin account' },
+        { status: 400 }
+      );
+    }
+
     // Create training
     const training = await prisma.training.create({
       data: {
@@ -153,7 +169,7 @@ export async function POST(request) {
         endDate: new Date(endDate),
         maxParticipants: parseInt(maxParticipants),
         status,
-        institutionId: user.primaryInstitution,
+        institutionId: ownInstitution.id,
         createdBy: user.id,
       },
       include: {

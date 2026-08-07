@@ -1,0 +1,2 @@
+-- HospitiumRIS PostgreSQL initialization
+-- Runs once when the postgres volume is first created.

@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import React, { useState, useCallback, useMemo, Suspense } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, Suspense } from 'react';
 import {
   Box,
   Container,
@@ -26,6 +26,7 @@ import {
   Close as CloseIcon
 } from '@mui/icons-material';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import PageHeader from '../common/PageHeader';
 import { useAuth } from '../AuthProvider';
 
@@ -66,6 +67,11 @@ const EndNoteImport = dynamic(() => import('./ImportTabs/EndNoteImport'), {
 });
 
 const MendeleyImport = dynamic(() => import('./ImportTabs/MendeleyImport'), {
+  loading: () => <TabSkeleton />,
+  ssr: false
+});
+
+const CiteReadyImport = dynamic(() => import('./ImportTabs/CiteReadyImport'), {
   loading: () => <TabSkeleton />,
   ssr: false
 });
@@ -128,9 +134,20 @@ ImportMethodCard.displayName = 'ImportMethodCard';
 const ImportPublications = ({ onImport }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [modalOpen, setModalOpen] = useState(false);
   const [activeMethod, setActiveMethod] = useState('pubmed');
   const [importResults, setImportResults] = useState([]);
+
+  // Deep-link support: e.g. the editor's Citation Menu links here with
+  // ?tab=citeready to jump straight into a specific import source.
+  useEffect(() => {
+    const tab = searchParams?.get('tab');
+    if (tab) {
+      setActiveMethod(tab);
+      setModalOpen(true);
+    }
+  }, [searchParams]);
 
   // Debug logging without hydration issues
   React.useEffect(() => {
@@ -194,6 +211,13 @@ const ImportPublications = ({ onImport }) => {
       description: 'Import from Mendeley reference manager - social research platform',
       icon: <img src="/mendeley.svg" alt="Mendeley" style={{ width: 48, height: 48 }} />,
       color: '#000000'
+    },
+    {
+      id: 'citeready',
+      name: 'CiteReady',
+      description: 'Import from your CiteReady library - items and folders, read-only',
+      icon: <img src="/citeready.png" alt="CiteReady" style={{ width: 48, height: 48 }} />,
+      color: '#8b6cbc'
     }
   ], []);
 
@@ -269,6 +293,8 @@ const ImportPublications = ({ onImport }) => {
         return <EndNoteImport {...commonProps} />;
       case 'mendeley':
         return <MendeleyImport {...commonProps} />;
+      case 'citeready':
+        return <CiteReadyImport {...commonProps} />;
       default:
         return <TabSkeleton />;
     }

@@ -152,8 +152,8 @@ const GlobalAdminPage = () => {
                 {t('global_admin.system_health_label')}
               </Typography>
             </Box>
-            <Tooltip title="Refresh data">
-              <IconButton 
+            <Tooltip title={t('global_admin.refresh_data')}>
+              <IconButton
                 onClick={handleRefresh} 
                 sx={{ 
                   bgcolor: 'primary.main',
@@ -206,7 +206,7 @@ const GlobalAdminPage = () => {
               {stats.totalInstitutions || 0}
             </Typography>
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Registered institutions
+              {t('global_admin.registered_institutions')}
             </Typography>
           </Paper>
 
@@ -234,7 +234,7 @@ const GlobalAdminPage = () => {
               {stats.totalUsers || 0}
             </Typography>
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              System-wide users
+              {t('global_admin.system_wide_users')}
             </Typography>
           </Paper>
 
@@ -262,7 +262,7 @@ const GlobalAdminPage = () => {
               {stats.activeUsers || 0}
             </Typography>
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Currently active
+              {t('global_admin.currently_active')}
             </Typography>
           </Paper>
 
@@ -282,32 +282,32 @@ const GlobalAdminPage = () => {
             <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                System Status
+                {t('global_admin.system_status')}
               </Typography>
               <HealthIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
             <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {systemHealth.status === 'healthy' ? 'Healthy' : 'Warning'}
+              {systemHealth.status === 'healthy' ? t('global_admin.healthy') : t('common.warning')}
             </Typography>
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              All systems operational
+              {t('global_admin.all_systems_operational')}
             </Typography>
           </Paper>
           </Box>
 
           <Paper sx={{ mt: 3, p: 3 }}>
           <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-            System Health Metrics
+            {t('global_admin.system_health_metrics')}
           </Typography>
           <Grid container spacing={3}>
             <Grid item xs={12} md={4}>
               <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">CPU Usage</Typography>
+                  <Typography variant="body2" color="text.secondary">{t('global_admin.cpu_usage')}</Typography>
                   <Typography variant="body2" fontWeight={600}>{systemHealth.cpuUsage || 0}%</Typography>
                 </Box>
-                <LinearProgress 
-                  variant="determinate" 
+                <LinearProgress
+                  variant="determinate"
                   value={systemHealth.cpuUsage || 0}
                   sx={{ height: 8, borderRadius: 4 }}
                 />
@@ -316,11 +316,11 @@ const GlobalAdminPage = () => {
             <Grid item xs={12} md={4}>
               <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">Memory Usage</Typography>
+                  <Typography variant="body2" color="text.secondary">{t('global_admin.memory_usage')}</Typography>
                   <Typography variant="body2" fontWeight={600}>{systemHealth.memoryUsage || 0}%</Typography>
                 </Box>
-                <LinearProgress 
-                  variant="determinate" 
+                <LinearProgress
+                  variant="determinate"
                   value={systemHealth.memoryUsage || 0}
                   sx={{ height: 8, borderRadius: 4 }}
                   color="warning"
@@ -330,7 +330,7 @@ const GlobalAdminPage = () => {
             <Grid item xs={12} md={4}>
               <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">Disk Usage</Typography>
+                  <Typography variant="body2" color="text.secondary">{t('global_admin.disk_usage')}</Typography>
                   <Typography variant="body2" fontWeight={600}>{systemHealth.diskUsage || 0}%</Typography>
                 </Box>
                 <LinearProgress 
@@ -347,17 +347,17 @@ const GlobalAdminPage = () => {
         {/* Recent Activity */}
         <Paper sx={{ mt: 3, p: 3 }}>
           <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-            Recent System Activity
+            {t('global_admin.recent_system_activity')}
           </Typography>
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Timestamp</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Event Type</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Details</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('global_admin.timestamp')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('global_admin.event_type')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('global_admin.user')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('global_admin.details')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('global_admin.status')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -388,7 +388,7 @@ const GlobalAdminPage = () => {
                   <TableRow>
                     <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                       <Typography variant="body2" color="text.secondary">
-                        No recent activity to display
+                        {t('global_admin.no_recent_activity')}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -403,44 +403,44 @@ const GlobalAdminPage = () => {
             <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                Quick Actions
+                {t('global_admin.quick_actions')}
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Button 
-                  variant="outlined" 
-                  fullWidth 
-                  sx={{ 
-                    justifyContent: 'flex-start', 
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    justifyContent: 'flex-start',
                     py: 1.5
                   }}
                   onClick={() => router.push('/global-admin/institutions')}
                 >
                   <InstitutionsIcon sx={{ mr: 2 }} />
-                  Manage Institutions
+                  {t('global_admin.manage_institutions')}
                 </Button>
-                <Button 
-                  variant="outlined" 
-                  fullWidth 
-                  sx={{ 
-                    justifyContent: 'flex-start', 
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    justifyContent: 'flex-start',
                     py: 1.5
                   }}
                   onClick={() => router.push('/global-admin/health')}
                 >
                   <HealthIcon sx={{ mr: 2 }} />
-                  System Health Check
+                  {t('global_admin.system_health_check')}
                 </Button>
-                <Button 
-                  variant="outlined" 
-                  fullWidth 
-                  sx={{ 
-                    justifyContent: 'flex-start', 
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    justifyContent: 'flex-start',
                     py: 1.5
                   }}
                   onClick={() => router.push('/global-admin/database')}
                 >
                   <StorageIcon sx={{ mr: 2 }} />
-                  Database Management
+                  {t('global_admin.database_management')}
                 </Button>
               </Box>
             </Paper>
@@ -448,26 +448,26 @@ const GlobalAdminPage = () => {
             <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                System Information
+                {t('global_admin.system_information')}
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">Platform</Typography>
-                  <Chip label={systemHealth.platform || 'Unknown'} size="small" />
+                  <Typography variant="body2" color="text.secondary">{t('global_admin.platform')}</Typography>
+                  <Chip label={systemHealth.platform || t('common.not_available')} size="small" />
                 </Box>
                 <Divider />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">CPU Cores</Typography>
+                  <Typography variant="body2" color="text.secondary">{t('global_admin.cpu_cores')}</Typography>
                   <Typography variant="body2" fontWeight={600}>{systemHealth.cpuCount || 0}</Typography>
                 </Box>
                 <Divider />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">Total Memory</Typography>
+                  <Typography variant="body2" color="text.secondary">{t('global_admin.total_memory')}</Typography>
                   <Typography variant="body2" fontWeight={600}>{systemHealth.totalMemoryGB || 0} GB</Typography>
                 </Box>
                 <Divider />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">Uptime</Typography>
+                  <Typography variant="body2" color="text.secondary">{t('global_admin.uptime')}</Typography>
                   <Typography variant="body2" fontWeight={600}>{systemHealth.uptime || 0} hours</Typography>
                 </Box>
               </Box>

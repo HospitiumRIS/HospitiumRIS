@@ -16,7 +16,6 @@ import {
   Tooltip,
   LinearProgress,
   Divider,
-  Badge,
   List,
   ListItem,
   ListItemText,
@@ -38,11 +37,8 @@ import {
   TrendingUp as TrendingUpIcon,
   BarChart as BarChartIcon,
   Timeline as TimelineIcon,
-  Notifications as NotificationsIcon,
   CheckCircle as CheckCircleIcon,
   Schedule as ScheduleIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
   Info as InfoIcon,
   CalendarToday as CalendarTodayIcon,
   Person as PersonIcon,
@@ -56,8 +52,6 @@ import {
   Edit as EditIcon,
   Assignment as AssignmentIcon,
   Close as CloseIcon,
-  DoneAll as DoneAllIcon,
-  Delete as DeleteIcon,
   OpenInNew as OpenInNewIcon,
   Refresh as RefreshIcon,
   Science as TrialIcon,
@@ -87,11 +81,6 @@ const ResearcherDashboard = () => {
   const [analyticsTab, setAnalyticsTab] = useState(0);
   const [chartType, setChartType] = useState('area');
   const [timeRange, setTimeRange] = useState('6m');
-  const [activities, setActivities] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [activitiesLoading, setActivitiesLoading] = useState(true);
-  const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [tasksSummary, setTasksSummary] = useState({ high: 0, medium: 0, low: 0 });
@@ -101,7 +90,6 @@ const ResearcherDashboard = () => {
   const [projectHealth, setProjectHealth] = useState([]);
   const [projectHealthLoading, setProjectHealthLoading] = useState(true);
   const [projectHealthSummary, setProjectHealthSummary] = useState({ total: 0, onTrack: 0, needsAttention: 0, atRisk: 0, avgProgress: 0 });
-  const [respondingInvitationId, setRespondingInvitationId] = useState(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -111,11 +99,9 @@ const ResearcherDashboard = () => {
         setDataLoading(true);
         setError(null);
         
-        const [statsRes, proposalsRes, activitiesRes, notificationsRes, tasksRes, deadlinesRes, projectHealthRes] = await Promise.all([
+        const [statsRes, proposalsRes, tasksRes, deadlinesRes, projectHealthRes] = await Promise.all([
           fetch('/api/researcher/stats', { credentials: 'include' }),
           fetch('/api/proposals', { credentials: 'include' }),
-          fetch('/api/researcher/activities?limit=10', { credentials: 'include' }),
-          fetch('/api/notifications?limit=10', { credentials: 'include' }),
           fetch('/api/researcher/tasks', { credentials: 'include' }),
           fetch('/api/researcher/deadlines', { credentials: 'include' }),
           fetch('/api/researcher/project-health', { credentials: 'include' })
@@ -123,8 +109,6 @@ const ResearcherDashboard = () => {
 
         const statsData = statsRes.ok ? await statsRes.json() : null;
         const proposalsData = proposalsRes.ok ? await proposalsRes.json() : { proposals: [] };
-        const activitiesData = activitiesRes.ok ? await activitiesRes.json() : { activities: [] };
-        const notificationsData = notificationsRes.ok ? await notificationsRes.json() : { data: { notifications: [], unreadCount: 0 } };
         const tasksData = tasksRes.ok ? await tasksRes.json() : { tasks: [], summary: { high: 0, medium: 0, low: 0 } };
         const deadlinesData = deadlinesRes.ok ? await deadlinesRes.json() : { deadlines: [], summary: { total: 0, urgent: 0, upcoming: 0, future: 0 } };
         const projectHealthData = projectHealthRes.ok ? await projectHealthRes.json() : { projects: [], summary: { total: 0, onTrack: 0, needsAttention: 0, atRisk: 0, avgProgress: 0 } };
@@ -252,7 +236,6 @@ const ResearcherDashboard = () => {
         ];
 
         // Merge with existing data
-        const mergedActivities = [...clinicalTrialActivities, ...(activitiesData.activities || [])].slice(0, 10);
         const mergedTasks = [...clinicalTrialTasks, ...(tasksData.tasks || [])];
         const mergedDeadlines = [...clinicalTrialDeadlines, ...(deadlinesData.deadlines || [])];
 
@@ -271,17 +254,12 @@ const ResearcherDashboard = () => {
           future: mergedDeadlines.filter(d => d.daysUntil > 30).length,
         };
 
-        setActivities(mergedActivities);
-        setNotifications(notificationsData.data?.notifications || []);
-        setUnreadCount(notificationsData.data?.unreadCount || 0);
         setTasks(mergedTasks);
         setTasksSummary(updatedTaskSummary);
         setDeadlines(mergedDeadlines);
         setDeadlinesSummary(updatedDeadlineSummary);
         setProjectHealth(projectHealthData.projects || []);
         setProjectHealthSummary(projectHealthData.summary || { total: 0, onTrack: 0, needsAttention: 0, atRisk: 0, avgProgress: 0 });
-        setActivitiesLoading(false);
-        setNotificationsLoading(false);
         setTasksLoading(false);
         setDeadlinesLoading(false);
         setProjectHealthLoading(false);
@@ -358,145 +336,6 @@ const ResearcherDashboard = () => {
       case 'medium': return '#FFA726';
       case 'low': return '#66BB6A';
       default: return '#8b6cbc';
-    }
-  };
-
-  const getActivityIcon = (type) => {
-    switch(type) {
-      case 'publication': return <ArticleIcon sx={{ fontSize: 20 }} />;
-      case 'manuscript': return <EditIcon sx={{ fontSize: 20 }} />;
-      case 'collaboration': return <CollaborationIcon sx={{ fontSize: 20 }} />;
-      case 'proposal': return <AssignmentIcon sx={{ fontSize: 20 }} />;
-      case 'article': return <ArticleIcon sx={{ fontSize: 20 }} />;
-      case 'group': return <CollaborationIcon sx={{ fontSize: 20 }} />;
-      case 'check': return <CheckCircleIcon sx={{ fontSize: 20 }} />;
-      case 'rate': return <ScheduleIcon sx={{ fontSize: 20 }} />;
-      case 'trial': return <TrialIcon sx={{ fontSize: 20 }} />;
-      case 'enrollment': return <EnrollmentIcon sx={{ fontSize: 20 }} />;
-      case 'safety': return <SafetyIcon sx={{ fontSize: 20 }} />;
-      case 'ethics': return <EthicsIcon sx={{ fontSize: 20 }} />;
-      case 'protocol': return <ProtocolIcon sx={{ fontSize: 20 }} />;
-      case 'registry': return <RegistryIcon sx={{ fontSize: 20 }} />;
-      default: return <InfoIcon sx={{ fontSize: 20 }} />;
-    }
-  };
-
-  const getNotificationIcon = (type) => {
-    switch(type) {
-      case 'COLLABORATION_INVITE':
-      case 'COLLABORATION_ACCEPTED':
-        return <CollaborationIcon sx={{ color: '#42A5F5' }} />;
-      case 'MANUSCRIPT_UPDATED':
-      case 'MANUSCRIPT_SHARED':
-        return <EditIcon sx={{ color: '#8b6cbc' }} />;
-      case 'success': return <CheckCircleIcon sx={{ color: '#66BB6A' }} />;
-      case 'warning': return <WarningIcon sx={{ color: '#FFA726' }} />;
-      case 'error': return <ErrorIcon sx={{ color: '#EF5350' }} />;
-      default: return <InfoIcon sx={{ color: '#42A5F5' }} />;
-    }
-  };
-
-  const handleMarkAsRead = async (notificationId) => {
-    try {
-      await fetch('/api/notifications', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ notificationIds: [notificationId] })
-      });
-      setNotifications(prev => prev.map(n => 
-        n.id === notificationId ? { ...n, isRead: true } : n
-      ));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-    }
-  };
-
-  const handleMarkAllAsRead = async () => {
-    try {
-      await fetch('/api/notifications', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ markAllAsRead: true })
-      });
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
-    } catch (error) {
-      console.error('Error marking all as read:', error);
-    }
-  };
-
-  const handleDeleteNotification = async (notificationId) => {
-    try {
-      await fetch(`/api/notifications?id=${notificationId}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-      const deletedNotif = notifications.find(n => n.id === notificationId);
-      if (deletedNotif && !deletedNotif.isRead) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-    }
-  };
-
-  const handleRefreshActivities = async () => {
-    try {
-      setActivitiesLoading(true);
-      const res = await fetch('/api/researcher/activities?limit=10', { credentials: 'include' });
-      const data = await res.json();
-      setActivities(data.activities || []);
-    } catch (error) {
-      console.error('Error refreshing activities:', error);
-    } finally {
-      setActivitiesLoading(false);
-    }
-  };
-
-  const handleRespondToInvitation = async (notification, action) => {
-    const invitationId = notification.data?.invitationId;
-    if (!invitationId) {
-      console.error('No invitation ID found in notification data');
-      return;
-    }
-
-    setRespondingInvitationId(notification.id);
-
-    try {
-      const response = await fetch(`/api/manuscripts/invitations/${invitationId}/respond`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || `Failed to ${action} invitation`);
-      }
-
-      // Mark the notification as read and remove it from the list
-      await handleMarkAsRead(notification.id);
-
-      // Refresh notifications to get updated list
-      const notificationsRes = await fetch('/api/notifications?limit=10', { credentials: 'include' });
-      const notificationsData = await notificationsRes.json();
-      setNotifications(notificationsData.data?.notifications || []);
-      setUnreadCount(notificationsData.data?.unreadCount || 0);
-
-      // Show success message (you can add a snackbar here if needed)
-      console.log(`Invitation ${action}ed successfully`);
-
-    } catch (error) {
-      console.error(`Failed to ${action} invitation:`, error);
-    } finally {
-      setRespondingInvitationId(null);
     }
   };
 
@@ -1222,321 +1061,7 @@ const ResearcherDashboard = () => {
                 </Card>
               </Box>
 
-              {/* Enhanced Notifications */}
-              <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: '300px' }}>
-                <Card sx={{ 
-                  height: '100%',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                  borderRadius: 2,
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)'
-                  }
-                }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ 
-                          bgcolor: 'rgba(139, 108, 188, 0.1)', 
-                          borderRadius: 1.5, 
-                          p: 1, 
-                          display: 'flex',
-                          position: 'relative'
-                        }}>
-                          <Badge badgeContent={unreadCount} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.7rem' } }}>
-                            <NotificationsIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
-                          </Badge>
-                        </Box>
-                        <Box>
-                          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                            {t('researcher.notifications')}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {unreadCount} unread
-                          </Typography>
-                        </Box>
-                      </Box>
-                      {unreadCount > 0 && (
-                        <Tooltip title={t('researcher.mark_all_read')}>
-                          <IconButton size="small" onClick={handleMarkAllAsRead}>
-                            <DoneAllIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Box>
-                    
-                    {notificationsLoading ? (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                        <Typography variant="body2" color="text.secondary">Loading...</Typography>
-                      </Box>
-                    ) : notifications.length === 0 ? (
-                      <Box sx={{ textAlign: 'center', py: 4 }}>
-                        <NotificationsIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 1 }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {t('researcher.no_notifications')}
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <List sx={{ maxHeight: 400, overflow: 'auto' }}>
-                        {notifications.map((notification) => {
-                          const isInvitation = notification.type === 'COLLABORATION_INVITATION' && 
-                                              notification.data?.invitationId && 
-                                              notification.data?.action === 'pending' &&
-                                              !notification.isRead;
-                          const isResponding = respondingInvitationId === notification.id;
-                          
-                          return (
-                          <Box key={notification.id}>
-                          <ListItem 
-                            sx={{ 
-                              px: 0, 
-                              py: 1.5,
-                              bgcolor: !notification.isRead ? 'rgba(139, 108, 188, 0.05)' : 'transparent', 
-                              borderRadius: 1, 
-                              mb: isInvitation ? 0.5 : 1,
-                              border: !notification.isRead ? '1px solid rgba(139, 108, 188, 0.1)' : '1px solid transparent',
-                              transition: 'all 0.2s ease',
-                              '&:hover': {
-                                bgcolor: 'rgba(139, 108, 188, 0.08)',
-                                transform: 'translateX(4px)'
-                              }
-                            }}
-                            secondaryAction={
-                              !isInvitation && (
-                              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                {!notification.isRead && (
-                                  <Tooltip title="Mark as read">
-                                    <IconButton 
-                                      size="small" 
-                                      onClick={() => handleMarkAsRead(notification.id)}
-                                      sx={{ '&:hover': { bgcolor: 'rgba(102, 187, 106, 0.1)' } }}
-                                    >
-                                      <CheckCircleIcon sx={{ fontSize: 16, color: '#66BB6A' }} />
-                                    </IconButton>
-                                  </Tooltip>
-                                )}
-                                <Tooltip title="Delete">
-                                  <IconButton 
-                                    size="small" 
-                                    onClick={() => handleDeleteNotification(notification.id)}
-                                    sx={{ '&:hover': { bgcolor: 'rgba(239, 83, 80, 0.1)' } }}
-                                  >
-                                    <DeleteIcon sx={{ fontSize: 16, color: '#EF5350' }} />
-                                  </IconButton>
-                                </Tooltip>
-                              </Box>
-                              )
-                            }
-                          >
-                            <ListItemAvatar>
-                              <Avatar sx={{ 
-                                bgcolor: !notification.isRead ? 'rgba(139, 108, 188, 0.15)' : 'rgba(139, 108, 188, 0.05)',
-                                width: 40,
-                                height: 40
-                              }}>
-                                {getNotificationIcon(notification.type)}
-                              </Avatar>
-                            </ListItemAvatar>
-                            <ListItemText 
-                              primary={notification.title || notification.message}
-                              secondary={
-                                <Box component="span">
-                                  {notification.message && notification.title && (
-                                    <Typography variant="caption" component="span" display="block" sx={{ mb: 0.5 }}>
-                                      {notification.message}
-                                    </Typography>
-                                  )}
-                                  <Typography variant="caption" component="span" color="text.secondary">
-                                    {new Date(notification.createdAt).toLocaleString('en-US', { 
-                                      month: 'short', 
-                                      day: 'numeric', 
-                                      hour: '2-digit', 
-                                      minute: '2-digit' 
-                                    })}
-                                  </Typography>
-                                </Box>
-                              }
-                              primaryTypographyProps={{ 
-                                variant: 'body2', 
-                                fontWeight: !notification.isRead ? 600 : 400,
-                                sx: { pr: isInvitation ? 0 : 6 }
-                              }}
-                            />
-                          </ListItem>
-                          {isInvitation && (
-                            <Box sx={{ px: 0, pb: 1.5, mb: 1, display: 'flex', gap: 1 }}>
-                              <Button
-                                variant="contained"
-                                size="small"
-                                disabled={isResponding}
-                                onClick={() => handleRespondToInvitation(notification, 'accept')}
-                                sx={{
-                                  bgcolor: '#4caf50',
-                                  '&:hover': { bgcolor: '#43a047' },
-                                  textTransform: 'none',
-                                  fontWeight: 600,
-                                  flex: 1,
-                                  fontSize: '0.75rem',
-                                  py: 0.5
-                                }}
-                              >
-                                {isResponding ? 'Processing...' : 'Accept'}
-                              </Button>
-                              <Button
-                                variant="outlined"
-                                size="small"
-                                disabled={isResponding}
-                                onClick={() => handleRespondToInvitation(notification, 'decline')}
-                                sx={{
-                                  borderColor: '#f44336',
-                                  color: '#f44336',
-                                  '&:hover': { 
-                                    borderColor: '#d32f2f',
-                                    bgcolor: 'rgba(244, 67, 54, 0.04)'
-                                  },
-                                  textTransform: 'none',
-                                  fontWeight: 600,
-                                  flex: 1,
-                                  fontSize: '0.75rem',
-                                  py: 0.5
-                                }}
-                              >
-                                Decline
-                              </Button>
-                              <Tooltip title="Delete">
-                                <IconButton 
-                                  size="small" 
-                                  onClick={() => handleDeleteNotification(notification.id)}
-                                  sx={{ '&:hover': { bgcolor: 'rgba(239, 83, 80, 0.1)' } }}
-                                >
-                                  <DeleteIcon sx={{ fontSize: 16, color: '#EF5350' }} />
-                                </IconButton>
-                              </Tooltip>
-                            </Box>
-                          )}
-                          </Box>
-                        )})}
-                      </List>
-                    )}
-                  </CardContent>
-                </Card>
-              </Box>
-
               {/* Enhanced Recent Activities */}
-              <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: '300px' }}>
-                <Card sx={{ 
-                  height: '100%',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                  borderRadius: 2,
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)'
-                  }
-                }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ 
-                          bgcolor: 'rgba(139, 108, 188, 0.1)', 
-                          borderRadius: 1.5, 
-                          p: 1, 
-                          display: 'flex'
-                        }}>
-                          <TimelineIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
-                        </Box>
-                        <Box>
-                          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                            {t('researcher.recent_activities')}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {t('researcher.activities_subtitle')}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Tooltip title="Refresh">
-                        <IconButton size="small" onClick={handleRefreshActivities} disabled={activitiesLoading}>
-                          <RefreshIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                    
-                    {activitiesLoading ? (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                        <Typography variant="body2" color="text.secondary">Loading...</Typography>
-                      </Box>
-                    ) : activities.length === 0 ? (
-                      <Box sx={{ textAlign: 'center', py: 4 }}>
-                        <TimelineIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 1 }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {t('researcher.no_activities')}
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <List sx={{ maxHeight: 400, overflow: 'auto' }}>
-                        {activities.map((activity) => (
-                          <ListItem 
-                            key={activity.id} 
-                            sx={{ 
-                              px: 0, 
-                              py: 1.5,
-                              borderRadius: 1,
-                              transition: 'all 0.2s ease',
-                              cursor: activity.link ? 'pointer' : 'default',
-                              '&:hover': {
-                                bgcolor: 'rgba(139, 108, 188, 0.05)',
-                                transform: activity.link ? 'translateX(4px)' : 'none'
-                              }
-                            }}
-                            onClick={() => { if (activity.link) window.location.href = activity.link; }}
-                            secondaryAction={
-                              activity.link && (
-                                <Tooltip title="Open">
-                                  <IconButton size="small" sx={{ opacity: 0.6 }}>
-                                    <OpenInNewIcon sx={{ fontSize: 16 }} />
-                                  </IconButton>
-                                </Tooltip>
-                              )
-                            }
-                          >
-                            <ListItemAvatar>
-                              <Avatar sx={{ 
-                                bgcolor: activity.color ? `${activity.color}15` : 'rgba(139, 108, 188, 0.1)', 
-                                color: activity.color || '#8b6cbc',
-                                width: 40,
-                                height: 40
-                              }}>
-                                {getActivityIcon(activity.icon || activity.type)}
-                              </Avatar>
-                            </ListItemAvatar>
-                            <ListItemText
-                              primary={activity.title}
-                              secondary={
-                                <Box component="span">
-                                  {activity.description && (
-                                    <Typography variant="caption" component="span" display="block" sx={{ mb: 0.5 }}>
-                                      {activity.description}
-                                    </Typography>
-                                  )}
-                                  <Typography variant="caption" component="span" color="text.secondary">
-                                    {activity.timeAgo}
-                                  </Typography>
-                                </Box>
-                              }
-                              primaryTypographyProps={{ 
-                                variant: 'body2', 
-                                fontWeight: 500,
-                                sx: { pr: 4 }
-                              }}
-                              secondaryTypographyProps={{ component: 'div' }}
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    )}
-                  </CardContent>
-                </Card>
-              </Box>
-
               {/* Enhanced Pending Tasks */}
               <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: '300px' }}>
                 <Card sx={{ 

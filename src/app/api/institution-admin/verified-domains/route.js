@@ -13,7 +13,7 @@ export async function GET(request) {
       );
     }
 
-    if (user.accountType !== 'INSTITUTION_ADMIN') {
+    if (user.accountType !== 'INSTITUTION_ADMIN' && user.accountType !== 'RESEARCH_ADMIN') {
       return NextResponse.json(
         { error: 'Forbidden - Institution Admin access required' },
         { status: 403 }
@@ -65,7 +65,7 @@ export async function POST(request) {
       );
     }
 
-    if (user.accountType !== 'INSTITUTION_ADMIN') {
+    if (user.accountType !== 'INSTITUTION_ADMIN' && user.accountType !== 'RESEARCH_ADMIN') {
       return NextResponse.json(
         { error: 'Forbidden - Institution Admin access required' },
         { status: 403 }

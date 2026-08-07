@@ -58,9 +58,12 @@ export async function GET(request) {
       },
     });
 
-    // Filter by institution and transform data
+    // TODO(institution-filtering): Institution scoping is temporarily disabled
+    // so a user's registrations all show up regardless of institution.
+    // Re-enable by restoring the institution filter here once institution
+    // assignment is reliable — keep this in sync with /api/training,
+    // /api/training/[id], and /api/training/[id]/register.
     const transformedRegistrations = registrations
-      .filter(reg => reg.training.institutionId === user.primaryInstitution)
       .map(reg => {
         const completedModules = reg.moduleProgress.filter(p => p.status === 'COMPLETED').length;
         const totalModules = reg.training.modules.length;

@@ -13,7 +13,7 @@ export async function PUT(request, { params }) {
       );
     }
 
-    if (user.accountType !== 'INSTITUTION_ADMIN') {
+    if (user.accountType !== 'INSTITUTION_ADMIN' && user.accountType !== 'RESEARCH_ADMIN') {
       return NextResponse.json(
         { error: 'Forbidden - Institution Admin access required' },
         { status: 403 }
@@ -104,7 +104,7 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    if (user.accountType !== 'INSTITUTION_ADMIN') {
+    if (user.accountType !== 'INSTITUTION_ADMIN' && user.accountType !== 'RESEARCH_ADMIN') {
       return NextResponse.json(
         { error: 'Forbidden - Institution Admin access required' },
         { status: 403 }

@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -66,12 +67,18 @@ model User {
   startMonth         String?
   startYear          String?
 
+  // Verified institution membership (domain-matched, controls access)
+  secondaryInstitutionId         String?
+  institutionVerifiedAt          DateTime?
+  institutionVerificationMethod  String? // EMAIL_DOMAIN, MANUAL
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  institution     Institution?
+  institution           Institution?  @relation("InstitutionOwner")
+  secondaryInstitution  Institution?  @relation("InstitutionMembers", fields: [secondaryInstitutionId], references: [id])
   foundation      Foundation?
   researchProfile ResearchProfile?
   publications    PublicationAuthor[]
@@ -99,6 +106,9 @@ model User {
   trainingRegistrations TrainingRegistration[]
   trainingCertificates  TrainingCertificate[]
 
+  // Image Integrity (ImaChek) Relations
+  imageIntegrityCases ImageIntegrityCase[]
+
   // Notification Preferences
   notificationPreferences NotificationPreference?
 
@@ -108,6 +118,7 @@ model User {
 enum SettingsType {
   ZOTERO
   PUBMED
+  CITEREADY
   OTHER
 }
 
@@ -144,7 +155,8 @@ model Institution {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User             @relation("InstitutionOwner", fields: [userId], references: [id], onDelete: Cascade)
+  members         User[]           @relation("InstitutionMembers")
   verifiedDomains VerifiedDomain[]
 
   @@map("institutions")
@@ -2386,6 +2398,72 @@ model ReviewDecision {
   // Relations
   stageExecution StageExecution @relation(fields: [stageExecutionId], references: [id], onDelete: Cascade)
   reviewer       StageReviewer  @relation(fields: [reviewerId], references: [id])
-  
+
   @@map("review_decisions")
+}
+
+// ============================================================
+// IMAGE INTEGRITY (ImaChek) MODULE
+// ============================================================
+// Standalone image-integrity submissions. Researchers upload a file
+// (image/PDF/ZIP), which is forwarded to the ImaChek API for automated
+// duplication + manipulation screening. Results are cached locally so
+// Institution admins can see an aggregated, read-only submission report
+// across all researchers without needing their own ImaChek account.
+
+enum ImageIntegrityStatus {
+  UPLOADING
+  UPLOADED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model ImageIntegrityCase {
+  id String @id @default(cuid())
+
+  // ImaChek identifiers
+  externalCaseId String? @unique // ImaChek `case_id` once upload succeeds
+
+  // Submission metadata (mirrors ImaChek Upload File request)
+  title       String
+  contributor String?
+  doi         String?
+  fileName    String
+  fileFormat  String?
+  fileSizeBytes Int?
+  comparedGlobalRepository Boolean @default(false) // repository[] = "global" was used
+
+  // Status tracking
+  status           ImageIntegrityStatus @default(UPLOADING)
+  analysisStatus   String? // case_analysis_status from ImaChek: "processing" | "completed"
+  analysisProgress Int     @default(0) // case_analysis_progress 0-100
+  errorMessage     String? @db.Text
+
+  // Cached analysis results (from Get Single Case Info / Get Analysis Status)
+  manipulationCount Int?
+  similarityCount   Int?
+  similarityLevel   Json? // { high, medium, low }
+  classification    Json? // { microscopy: n, blot_gel: n, chart: n, ... }
+  pageAmount        Int?
+  croppedAmount     Int?
+
+  // Temporary shareable report (5 min TTL per ImaChek docs)
+  reportUrl       String?
+  reportId        String?
+  reportExpiresAt DateTime?
+
+  // Submitter
+  submittedById String
+  submittedBy   User   @relation(fields: [submittedById], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  analysisStartedAt   DateTime?
+  analysisCompletedAt DateTime?
+
+  @@index([submittedById])
+  @@index([status])
+  @@map("image_integrity_cases")
 }

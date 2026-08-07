@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { hashPassword, validateEmail, validatePassword } from '@/lib/auth';
+import { findInstitutionByEmailDomain, seedDomainForInstitution } from '@/lib/institution-domain';
 
 export async function POST(request) {
   let body = {};
@@ -199,6 +200,17 @@ export async function POST(request) {
         userFamilyName = (orcidData?.familyName || familyName).trim();
       }
 
+      // For researchers, check whether their email domain already matches a
+      // verified institution. If it does, that institution's name is the
+      // source of truth for primaryInstitution (not whatever they typed),
+      // and they're immediately linked via secondaryInstitutionId. If not,
+      // they're created unlinked - they'll self-heal at login once their
+      // institution admin adds their domain.
+      let matchedInstitution = null;
+      if (accountType === 'RESEARCHER') {
+        matchedInstitution = await findInstitutionByEmailDomain(tx, email);
+      }
+
       // Create user
       const user = await tx.user.create({
         data: {
@@ -215,15 +227,22 @@ export async function POST(request) {
           orcidId: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (orcidData?.orcidId || orcidId || null),
           orcidGivenNames: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (orcidData?.givenNames || orcidGivenNames || null),
           orcidFamilyName: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (orcidData?.familyName || orcidFamilyName || null),
-          primaryInstitution: accountType === 'FOUNDATION_ADMIN' ? 'Hospitium Foundation' : (accountType === 'OPERATIONS' ? 'Operations' : (primaryInstitution?.trim() || null)),
+          primaryInstitution: accountType === 'FOUNDATION_ADMIN'
+            ? 'Hospitium Foundation'
+            : (accountType === 'OPERATIONS'
+              ? 'Operations'
+              : (matchedInstitution?.name || primaryInstitution?.trim() || null)),
           startMonth: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (startMonth || null),
           startYear: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (startYear || null),
+          secondaryInstitutionId: matchedInstitution?.id || null,
+          institutionVerifiedAt: matchedInstitution ? new Date() : null,
+          institutionVerificationMethod: matchedInstitution ? 'EMAIL_DOMAIN' : null,
         }
       });
 
       // Create institution record for RESEARCH_ADMIN
       if (accountType === 'RESEARCH_ADMIN') {
-        await tx.institution.create({
+        const institution = await tx.institution.create({
           data: {
             userId: user.id,
             name: institutionName.trim(),
@@ -231,6 +250,24 @@ export async function POST(request) {
             country: institutionCountry,
             website: institutionWebsite || null,
           }
+        });
+
+        // Auto-seed a verified domain from the admin's own email so they
+        // (and later, researchers with the same domain) are linked without
+        // a separate manual verification step.
+        await seedDomainForInstitution(tx, {
+          institutionId: institution.id,
+          email,
+          verifiedByUserId: user.id,
+        });
+
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            secondaryInstitutionId: institution.id,
+            institutionVerifiedAt: new Date(),
+            institutionVerificationMethod: 'EMAIL_DOMAIN',
+          },
         });
       }
 
