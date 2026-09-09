@@ -29,7 +29,8 @@ export async function GET(request) {
     const where = {};
 
     // If not admin or includeAll not set, only show published trainings
-    if (!includeAll || user.accountType !== 'RESEARCH_ADMIN') {
+    const isTrainingAdmin = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'].includes(user.accountType);
+    if (!includeAll || !isTrainingAdmin) {
       where.status = 'PUBLISHED';
     } else if (status) {
       where.status = status;
@@ -114,7 +115,7 @@ export async function POST(request) {
   try {
     const user = await getAuthenticatedUser(request);
 
-    if (!user || user.accountType !== 'RESEARCH_ADMIN') {
+    if (!user || !['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'].includes(user.accountType)) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 403 }

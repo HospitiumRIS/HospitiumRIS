@@ -51,9 +51,19 @@ export async function GET(request) {
       }
     });
 
+    const withSource = applications.map((app) => {
+      const fromDocuments = (app.documents || []).some(
+        (doc) => doc?.type === 'Ethics Clearance Certificate' || doc?.source === 'EXTERNAL_CERTIFICATE'
+      );
+      return {
+        ...app,
+        source: fromDocuments ? 'EXTERNAL_CERTIFICATE' : (app.source || 'APPLICATION'),
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      applications
+      applications: withSource
     });
   } catch (error) {
     console.error('Error fetching ethics applications:', error);

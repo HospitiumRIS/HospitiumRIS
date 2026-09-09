@@ -256,7 +256,6 @@ const BudgetManagementPage = () => {
           { label: 'Projects', path: '/researcher/projects', icon: <ProjectIcon /> },
           { label: 'Budget Management', path: '/researcher/projects/budget/view', icon: <BudgetIcon /> },
         ]}
-        sx={{ mt: '80px' }}
       />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>

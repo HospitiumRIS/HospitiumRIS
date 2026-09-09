@@ -26,6 +26,8 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
 
 export const TOPBAR_HEIGHT = 36;
+export const APP_BAR_HEIGHT = 64;
+export const NAVBAR_OFFSET = TOPBAR_HEIGHT + APP_BAR_HEIGHT;
 
 const FONT_SIZES = [
   { label: 'S', value: 12 },

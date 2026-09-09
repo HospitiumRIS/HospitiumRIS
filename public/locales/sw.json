@@ -1077,8 +1077,8 @@
     "pub_manage_desc": "Tazama na hariri machapisho yako",
     "proj_proposals": "Mapendekezo ya Miradi",
     "proj_proposals_desc": "Simamia mapendekezo ya utafiti",
-    "proj_grant_lifecycle": "Mzunguko wa Maisha wa Ruzuku",
-    "proj_grant_lifecycle_desc": "Ufuatiliaji wa maombi ya ruzuku",
+    "proj_grant_lifecycle": "Kifuatiliaji cha Ruzuku",
+    "proj_grant_lifecycle_desc": "Fuatilia mapendekezo yaliyoidhinishwa hadi tuzo au kukataliwa",
     "proj_status": "Hali ya Mradi",
     "proj_status_desc": "Fuatilia hatua muhimu na maendeleo",
     "proj_budget": "Usimamizi wa Bajeti",
@@ -1206,8 +1206,8 @@
     "budget": "Usimamizi wa Bajeti",
     "budget_desc": "Fuatilia bajeti za mradi, matumizi, na utendaji wa kifedha",
     "budget_details": "Maelezo ya Bajeti",
-    "liason": "Uhusiano wa Msaada na CRM",
-    "liason_desc": "Fuatilia na usimamie maombi ya msaada, fursa za ufadhili, na mawasiliano ya wadau",
+    "liason": "Kifuatiliaji cha Ruzuku",
+    "liason_desc": "Fuatilia utendaji wa ruzuku kwa mapendekezo yaliyoidhinishwa ndani",
     "status_tracking": "Ufuatiliaji wa Hali ya Mradi",
     "status_tracking_desc": "Fuatilia maendeleo ya mradi, muda wa mwisho, na utendaji wa timu",
     "collaborate": "Uandishi wa Pamoja",
@@ -1215,7 +1215,14 @@
     "preprints": "Mawasilisho ya Preprint",
     "preprints_desc": "Fuatilia na usimamie mawasilisho yako ya preprint katika seva zote",
     "my_certificates": "Vyeti Vyangu",
-    "my_certificates_desc": "Tazama na upakue vyeti vyako vya mafunzo"
+    "my_certificates_desc": "Tazama na upakue vyeti vyako vya mafunzo",
+    "grant_tracker": "Kifuatiliaji cha Ruzuku",
+    "grant_tracker_desc": "Fuatilia utendaji wa ruzuku kwa mapendekezo yaliyokamilisha mapitio ya ndani na kuidhinishwa",
+    "image_integrity": "Uadilifu wa Picha",
+    "integrity_submissions": "Mawasilisho Yangu",
+    "integrity_submissions_desc": "Fuatilia mawasilisho na ripoti za ukaguzi wa uadilifu wa picha",
+    "ethics_upload_certificate": "Pakia Cheti Kilichopo",
+    "ethics_upload_certificate_desc": "Rekodi idhini ya maadili iliyopo"
   },
   "institution": {
     "portal_title": "Tovuti ya Taasisi",
@@ -1252,7 +1259,8 @@
     "users": "Watumiaji",
     "users_desc": "Simamia akaunti za watumiaji wa taasisi",
     "roles": "Majukumu na Ruhusa",
-    "roles_desc": "Sanidi udhibiti wa ufikiaji kulingana na jukumu"
+    "roles_desc": "Sanidi udhibiti wa ufikiaji kulingana na jukumu",
+    "image_integrity": "Uadilifu wa Picha"
   },
   "foundation": {
     "portal_title": "Tovuti ya Mfuko",
@@ -1357,7 +1365,14 @@
     "system_logs": "Kumbukumbu za Mfumo",
     "global_admin_panel": "Jopo la Msimamizi Mkuu",
     "system_administration": "Usimamizi wa Mfumo",
-    "global_admin_console": "Console ya Msimamizi Mkuu"
+    "global_admin_console": "Console ya Msimamizi Mkuu",
+    "login_title": "Kuingia kwa Msimamizi wa Kimataifa",
+    "login_btn": "Ingia",
+    "access_denied": "Ufikiaji umekataliwa. Kuingia huku ni kwa Wasimamizi wa Kimataifa pekee.",
+    "invalid_credentials": "Barua pepe au nenosiri si sahihi",
+    "login_error": "Hitilafu imetokea wakati wa kuingia. Tafadhali jaribu tena.",
+    "authorized_only": "Wafanyakazi Walioidhinishwa Pekee",
+    "access_logged": "Majaribio yote ya kufikia yanarekodiwa na kufuatiliwa"
   },
   "institution_admin": {
     "title": "Usimamizi wa Taasisi",
@@ -1711,7 +1726,9 @@
     "post_award": "SHUGHULI ZA BAADA YA RUZUKU",
     "internal_grants": "RUZUKU ZA NDANI",
     "fund_management": "USIMAMIZI WA MFUKO",
-    "transaction_processing": "UCHAKATAJI WA MIAMALA"
+    "transaction_processing": "UCHAKATAJI WA MIAMALA",
+    "integrity_checks": "UADILIFU WA PICHA",
+    "integrity_oversight": "USIMAMIZI WA UADILIFU WA PICHA"
   },
   "institution_nav": {
     "safety_deviations": "Usalama na Mabadiliko",
@@ -1739,7 +1756,11 @@
     "funding_reports": "Ripoti za Ufadhili",
     "funding_reports_desc": "Fuatilia utendaji wa ufadhili na ruzuku",
     "compliance_reports": "Ripoti za Uzingatiaji",
-    "compliance_reports_desc": "Fuatilia uzingatiaji wa kanuni"
+    "compliance_reports_desc": "Fuatilia uzingatiaji wa kanuni",
+    "integrity_reports": "Ripoti za Mawasilisho",
+    "integrity_reports_desc": "Usimamizi wa kusoma tu wa mawasilisho yote ya uadilifu wa picha ya ImaChek",
+    "integrity_usage_report": "Ripoti ya Matumizi",
+    "integrity_usage_desc": "Muhtasari wa kila mwezi na shughuli za ImaChek, ikiwa ni pamoja na majina ya wachangiaji"
   },
   "foundation_nav": {
     "campaign_management": "Usimamizi wa Kampeni",

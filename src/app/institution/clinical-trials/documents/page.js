@@ -119,7 +119,7 @@ export default function DocumentRepositoryPage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title="Document Repository"
           description="Institution-wide TMF review — version-controlled protocols, audit trail, pending reviews"

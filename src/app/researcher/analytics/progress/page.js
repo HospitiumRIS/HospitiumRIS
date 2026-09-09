@@ -203,7 +203,6 @@ const ProjectsAnalyticsPage = () => {
             Export Report
           </Button>
         }
-        sx={{ mt: '80px' }}
       />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>

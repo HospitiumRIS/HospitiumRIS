@@ -245,6 +245,17 @@ export default function InstitutionEthicsReviewViewPage() {
           {t('common.back')} to Ethics Review
         </Button>
 
+        {application.source === 'EXTERNAL_CERTIFICATE' ||
+          application.documents?.some(
+            (doc) => doc?.type === 'Ethics Clearance Certificate' || doc?.source === 'EXTERNAL_CERTIFICATE'
+          ) ? (
+          <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
+            This record was created from an uploaded ethics clearance certificate
+            {application.committeeName ? ` issued by ${application.committeeName}` : ''}.
+            The certificate is available in the Documents tab.
+          </Alert>
+        ) : null}
+
         {/* Status and Reference Information */}
         <Paper sx={{ 
           p: 3, 
@@ -898,7 +909,7 @@ export default function InstitutionEthicsReviewViewPage() {
                         <ListItemText
                           primary={
                             <Typography variant="body1" sx={{ fontWeight: 600, color: '#2D3748' }}>
-                              {doc.name || `Document ${index + 1}`}
+                              {doc.originalName || doc.name || `Document ${index + 1}`}
                             </Typography>
                           }
                           secondary={

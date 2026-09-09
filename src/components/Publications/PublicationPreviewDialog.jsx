@@ -723,8 +723,8 @@ const PublicationPreviewDialog = ({
                     onClick={onClose}
                     disabled={importing}
                 >
-                    t('common.cancel')
-</Button>
+                    {t('common.cancel')}
+                </Button>
                 <Button
                     variant="contained"
                     onClick={handleImport}

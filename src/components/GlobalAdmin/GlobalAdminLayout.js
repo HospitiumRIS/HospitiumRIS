@@ -198,7 +198,9 @@ const GlobalAdminLayout = ({ children }) => {
       {/* Navigation Menu */}
       <List sx={{ flex: 1, py: 2, px: 1.5 }}>
         {menuItems.map((item) => {
-          const isActive = pathname === item.path;
+          const isActive = item.path === '/global-admin'
+            ? pathname === item.path
+            : pathname === item.path || pathname?.startsWith(`${item.path}/`);
           return (
             <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton
@@ -207,19 +209,19 @@ const GlobalAdminLayout = ({ children }) => {
                   borderRadius: 2,
                   py: 1.5,
                   px: 2,
-                  color: item.path === pathname ? theme.palette.primary.main : theme.palette.text.secondary,
-                  bgcolor: item.path === pathname ? theme.palette.action.selected : 'transparent',
+                  color: isActive ? theme.palette.primary.main : theme.palette.text.secondary,
+                  bgcolor: isActive ? theme.palette.action.selected : 'transparent',
                   '&:hover': {
-                    bgcolor: item.path === pathname ? theme.palette.action.selected : theme.palette.action.hover,
+                    bgcolor: isActive ? theme.palette.action.selected : theme.palette.action.hover,
                     transform: 'translateX(4px)',
-                    boxShadow: item.path === pathname ? '0 6px 16px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.08)'
+                    boxShadow: isActive ? '0 6px 16px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.08)'
                   },
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
               >
                 <ListItemIcon
                   sx={{
-                    color: item.path === pathname ? theme.palette.primary.main : 'inherit',
+                    color: isActive ? theme.palette.primary.main : 'inherit',
                     minWidth: 44
                   }}
                 >

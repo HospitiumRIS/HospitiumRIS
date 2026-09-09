@@ -235,7 +235,7 @@ export default function ArchivePortfolioPage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title={t("researcher.archive")}
           description={t("researcher.archive_desc")}

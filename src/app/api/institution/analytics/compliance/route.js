@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma, { ensurePrismaConnected } from '@/lib/prisma';
 
 export async function GET(request) {
   try {
+    await ensurePrismaConnected();
+
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
@@ -319,7 +319,5 @@ export async function GET(request) {
       { error: 'Failed to fetch compliance analytics' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

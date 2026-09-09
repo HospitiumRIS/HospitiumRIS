@@ -28,7 +28,6 @@ const Footer = () => {
   const quickLinks = [
     { name: t('footer.about_us'), href: '/about' },
     { name: t('footer.features'), href: '#' },
-    { name: t('footer.documentation'), href: '/docs/index.html' },
     { name: t('footer.faq'), href: '/faq' },
     { name: t('footer.brandbook'), href: '/handbook/hospitiumris-brandbook.pdf', target: '_blank' },
   ];

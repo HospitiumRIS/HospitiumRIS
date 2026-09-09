@@ -166,7 +166,7 @@ export default function PreprintSubmissionsPage() {
     };
 
     return (
-        <Box sx={{ width: '100%', mt: 8, mb: 4 }}>
+        <Box sx={{ width: '100%', mb: 4 }}>
             <PageHeader
                 title={t("researcher.preprints")}
                 description={t("researcher.preprints_desc")}

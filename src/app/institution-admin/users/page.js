@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   Box,
-  Container,
   Paper,
   Typography,
   Card,
@@ -34,13 +32,6 @@ import {
   Alert,
   CircularProgress,
   Tooltip,
-  Badge,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Menu,
   Snackbar
 } from '@mui/material';
 import {
@@ -49,33 +40,45 @@ import {
   FilterList as FilterIcon,
   Refresh as RefreshIcon,
   Visibility as ViewIcon,
+  VisibilityOff,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  MoreVert as MoreIcon,
-  MoreVert as MoreVertIcon,
-  Person as PersonIcon,
-  Email as EmailIcon,
-  Business as BusinessIcon,
-  School as SchoolIcon,
+  PersonAdd as PersonAddIcon,
   CheckCircle as CheckIcon,
   Cancel as CancelIcon,
   HourglassEmpty as PendingIcon,
   Block as BlockIcon,
   Science as ResearcherIcon,
   AdminPanelSettings as AdminIcon,
-  AccountBalance as FoundationIcon,
-  SupervisorAccount as SuperAdminIcon,
-  Download as ExportIcon,
-  ArrowBack as BackIcon
+  LockReset as LockResetIcon,
 } from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../../components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import InstitutionAdminLayout from '../../../components/InstitutionAdmin/InstitutionAdminLayout';
 
+const MANAGEABLE_ACCOUNT_TYPES = [
+  { name: 'RESEARCHER', displayName: 'Researcher' },
+  { name: 'RESEARCH_ADMIN', displayName: 'Research Admin' },
+];
+
+function generatePassword(length = 14) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => chars[byte % chars.length]).join('');
+}
+
+const emptyCreateForm = {
+  givenName: '',
+  familyName: '',
+  email: '',
+  accountType: 'RESEARCHER',
+  orcidId: '',
+  password: '',
+  confirmPassword: '',
+};
+
 const UserManagementPage = () => {
-  const { t } = useTranslation();
-  const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   
@@ -87,11 +90,12 @@ const UserManagementPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [menuUserId, setMenuUserId] = useState(null);
-  const [accountTypes, setAccountTypes] = useState([]);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
-  // Filters and pagination
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [accountTypeFilter, setAccountTypeFilter] = useState('');
@@ -99,17 +103,19 @@ const UserManagementPage = () => {
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [totalUsers, setTotalUsers] = useState(0);
   
-  // Alert state
   const [alert, setAlert] = useState({ show: false, message: '', severity: 'info' });
   
-  // Edit form state
   const [editForm, setEditForm] = useState({
     givenName: '',
     familyName: '',
+    email: '',
     status: '',
     emailVerified: false,
-    accountType: ''
+    accountType: '',
+    orcidId: '',
   });
+  const [createForm, setCreateForm] = useState(emptyCreateForm);
+  const [passwordForm, setPasswordForm] = useState({ password: '', confirmPassword: '' });
 
   // Check Super Admin access
   useEffect(() => {
@@ -140,13 +146,13 @@ const UserManagementPage = () => {
         ...(accountTypeFilter && { accountType: accountTypeFilter })
       });
 
-      const response = await fetch(`/api/super-admin/users?${params}`);
+      const response = await fetch(`/api/institution-admin/users?${params}`);
       const data = await response.json();
 
       if (data.success) {
-        setUsers(data.users);
-        setTotalUsers(data.pagination.total);
-        setStats(data.stats);
+        setUsers(data.users || []);
+        setTotalUsers(data.pagination?.total || 0);
+        setStats(data.stats || {});
       } else {
         showAlert(data.message || 'Failed to fetch users', 'error');
       }
@@ -159,23 +165,19 @@ const UserManagementPage = () => {
   };
 
   useEffect(() => {
-    if (user?.accountType === 'SUPER_ADMIN') {
+    if (user?.accountType !== 'INSTITUTION_ADMIN') return;
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput.trim());
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput, user]);
+
+  useEffect(() => {
+    if (user?.accountType === 'INSTITUTION_ADMIN') {
       fetchUsers();
-      fetchAccountTypes();
     }
   }, [user, page, rowsPerPage, searchQuery, statusFilter, accountTypeFilter]);
-
-  const fetchAccountTypes = async () => {
-    try {
-      const response = await fetch('/api/super-admin/account-types');
-      const data = await response.json();
-      if (data.success) {
-        setAccountTypes(data.accountTypes.filter(type => type.isActive));
-      }
-    } catch (error) {
-      console.error('Error fetching account types:', error);
-    }
-  };
 
   // Alert helper
   const showAlert = (message, severity = 'info') => {
@@ -193,33 +195,48 @@ const UserManagementPage = () => {
   const handleEditUser = (userData) => {
     setSelectedUser(userData);
     setEditForm({
-      givenName: userData.givenName,
-      familyName: userData.familyName,
-      status: userData.status,
-      emailVerified: userData.emailVerified,
-      accountType: userData.accountType
+      givenName: userData.givenName || '',
+      familyName: userData.familyName || '',
+      email: userData.email || '',
+      status: userData.status || 'ACTIVE',
+      emailVerified: Boolean(userData.emailVerified),
+      accountType: userData.accountType,
+      orcidId: userData.orcidId || '',
     });
     setEditDialogOpen(true);
-    handleMenuClose();
   };
 
-  // Handle delete user
   const handleDeleteUser = (userData) => {
     setSelectedUser(userData);
     setDeleteDialogOpen(true);
-    handleMenuClose();
   };
 
-  // Submit edit
+  const handlePasswordUser = (userData) => {
+    setSelectedUser(userData);
+    setPasswordForm({ password: '', confirmPassword: '' });
+    setShowPassword(false);
+    setPasswordDialogOpen(true);
+  };
+
   const handleSubmitEdit = async () => {
+    if (!selectedUser) return;
+    if (!editForm.givenName.trim() || !editForm.familyName.trim()) {
+      showAlert('First and last name are required', 'error');
+      return;
+    }
+    setSaving(true);
     try {
-      const response = await fetch(`/api/super-admin/users/${selectedUser.id}`, {
+      const response = await fetch(`/api/institution-admin/users/${selectedUser.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          givenName: editForm.givenName.trim(),
+          familyName: editForm.familyName.trim(),
+          email: editForm.email.trim(),
           status: editForm.status,
           emailVerified: editForm.emailVerified,
-          accountType: editForm.accountType
+          accountType: editForm.accountType,
+          orcidId: editForm.accountType === 'RESEARCHER' ? editForm.orcidId : '',
         })
       });
 
@@ -235,13 +252,16 @@ const UserManagementPage = () => {
     } catch (error) {
       console.error('Error updating user:', error);
       showAlert('Failed to update user', 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Submit delete
   const handleSubmitDelete = async () => {
+    if (!selectedUser) return;
+    setSaving(true);
     try {
-      const response = await fetch(`/api/super-admin/users/${selectedUser.id}`, {
+      const response = await fetch(`/api/institution-admin/users/${selectedUser.id}`, {
         method: 'DELETE'
       });
 
@@ -257,18 +277,89 @@ const UserManagementPage = () => {
     } catch (error) {
       console.error('Error deleting user:', error);
       showAlert('Failed to delete user', 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Handle menu
-  const handleMenuOpen = (event, userId) => {
-    setAnchorEl(event.currentTarget);
-    setMenuUserId(userId);
+  const handleSubmitCreate = async () => {
+    if (!createForm.givenName.trim() || !createForm.familyName.trim()) {
+      showAlert('First and last name are required', 'error');
+      return;
+    }
+    if (!createForm.email.trim()) {
+      showAlert('Email is required', 'error');
+      return;
+    }
+    if (!createForm.password || createForm.password.length < 8) {
+      showAlert('Password must be at least 8 characters', 'error');
+      return;
+    }
+    if (createForm.password !== createForm.confirmPassword) {
+      showAlert('Passwords do not match', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      const response = await fetch('/api/institution-admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          givenName: createForm.givenName.trim(),
+          familyName: createForm.familyName.trim(),
+          email: createForm.email.trim(),
+          accountType: createForm.accountType,
+          password: createForm.password,
+          orcidId: createForm.accountType === 'RESEARCHER' ? createForm.orcidId : undefined,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        showAlert('User created', 'success');
+        setCreateDialogOpen(false);
+        setCreateForm(emptyCreateForm);
+        fetchUsers();
+      } else {
+        showAlert(data.message || 'Failed to create user', 'error');
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      showAlert('Failed to create user', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setMenuUserId(null);
+  const handleSubmitPassword = async () => {
+    if (!selectedUser) return;
+    if (!passwordForm.password || passwordForm.password.length < 8) {
+      showAlert('Password must be at least 8 characters', 'error');
+      return;
+    }
+    if (passwordForm.password !== passwordForm.confirmPassword) {
+      showAlert('Passwords do not match', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/institution-admin/users/${selectedUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: passwordForm.password }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        showAlert('Password updated', 'success');
+        setPasswordDialogOpen(false);
+      } else {
+        showAlert(data.message || 'Failed to update password', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating password:', error);
+      showAlert('Failed to update password', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Get status chip
@@ -293,25 +384,20 @@ const UserManagementPage = () => {
 
   // Get account type chip
   const getAccountTypeChip = (accountType) => {
-    // Find the account type from the fetched list
-    const accountTypeData = accountTypes.find(type => type.name === accountType);
-    
-    // Fallback icon mapping for system types
     const iconMap = {
       RESEARCHER: <ResearcherIcon />,
       RESEARCH_ADMIN: <AdminIcon />,
-      FOUNDATION_ADMIN: <FoundationIcon />,
-      SUPER_ADMIN: <SuperAdminIcon />
+      INSTITUTION_ADMIN: <AdminIcon />,
     };
 
     const colorMap = {
       RESEARCHER: 'primary',
       RESEARCH_ADMIN: 'info',
-      FOUNDATION_ADMIN: 'secondary',
-      SUPER_ADMIN: 'error'
+      INSTITUTION_ADMIN: 'secondary',
     };
 
-    const label = accountTypeData?.displayName || accountType.replace(/_/g, ' ');
+    const type = MANAGEABLE_ACCOUNT_TYPES.find((item) => item.name === accountType);
+    const label = type?.displayName || accountType.replace(/_/g, ' ');
     const icon = iconMap[accountType] || <ResearcherIcon />;
     const color = colorMap[accountType] || 'default';
 
@@ -329,39 +415,6 @@ const UserManagementPage = () => {
   // Get initials for avatar
   const getInitials = (givenName, familyName) => {
     return `${givenName?.[0] || ''}${familyName?.[0] || ''}`.toUpperCase();
-  };
-
-  // Export users
-  const handleExportUsers = async () => {
-    try {
-      const response = await fetch('/api/super-admin/database/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'users' })
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        // Create downloadable JSON file
-        const blob = new Blob([JSON.stringify(data.data.users, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `users_export_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        showAlert('Users exported successfully', 'success');
-      } else {
-        showAlert(data.message || 'Failed to export users', 'error');
-      }
-    } catch (error) {
-      console.error('Error exporting users:', error);
-      showAlert('Failed to export users', 'error');
-    }
   };
 
   if (!user || user.accountType !== 'INSTITUTION_ADMIN') {
@@ -403,8 +456,8 @@ const UserManagementPage = () => {
             <Stack direction="row" spacing={2}>
               <Button
                 variant="outlined"
-                startIcon={<ExportIcon />}
-                onClick={handleExportUsers}
+                startIcon={<RefreshIcon />}
+                onClick={fetchUsers}
                 sx={{
                   borderColor: '#8b6cbc',
                   color: '#8b6cbc',
@@ -414,12 +467,16 @@ const UserManagementPage = () => {
                   }
                 }}
               >
-                Export Users
+                Refresh
               </Button>
               <Button
                 variant="contained"
-                startIcon={<RefreshIcon />}
-                onClick={fetchUsers}
+                startIcon={<PersonAddIcon />}
+                onClick={() => {
+                  setCreateForm(emptyCreateForm);
+                  setShowPassword(false);
+                  setCreateDialogOpen(true);
+                }}
                 sx={{
                   bgcolor: '#8b6cbc',
                   '&:hover': {
@@ -428,7 +485,7 @@ const UserManagementPage = () => {
                   boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
                 }}
               >
-                Refresh
+                Create user
               </Button>
             </Stack>
           </Box>
@@ -652,8 +709,8 @@ const UserManagementPage = () => {
           <TextField
             fullWidth
             placeholder="Search by name, email, or ORCID..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -668,7 +725,10 @@ const UserManagementPage = () => {
             <Select
               value={statusFilter}
               label="Status Filter"
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(0);
+              }}
             >
               <MenuItem value="">All Statuses</MenuItem>
               <MenuItem value="ACTIVE">Active</MenuItem>
@@ -683,13 +743,15 @@ const UserManagementPage = () => {
             <Select
               value={accountTypeFilter}
               label="Account Type Filter"
-              onChange={(e) => setAccountTypeFilter(e.target.value)}
+              onChange={(e) => {
+                setAccountTypeFilter(e.target.value);
+                setPage(0);
+              }}
             >
               <MenuItem value="">All Types</MenuItem>
               <MenuItem value="RESEARCHER">Researcher</MenuItem>
               <MenuItem value="RESEARCH_ADMIN">Research Admin</MenuItem>
-              <MenuItem value="FOUNDATION_ADMIN">Foundation Admin</MenuItem>
-              <MenuItem value="SUPER_ADMIN">Super Admin</MenuItem>
+              <MenuItem value="INSTITUTION_ADMIN">Institution Admin</MenuItem>
             </Select>
           </FormControl>
           
@@ -698,9 +760,11 @@ const UserManagementPage = () => {
             variant="outlined"
             startIcon={<FilterIcon />}
             onClick={() => {
+              setSearchInput('');
               setSearchQuery('');
               setStatusFilter('');
               setAccountTypeFilter('');
+              setPage(0);
             }}
           >
             Clear Filters
@@ -739,7 +803,15 @@ const UserManagementPage = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {users.map((userData) => (
+                  {users.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          No users found
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : users.map((userData) => (
                     <TableRow 
                       key={userData.id} 
                       sx={{ 
@@ -802,24 +874,22 @@ const UserManagementPage = () => {
                               <EditIcon />
                             </IconButton>
                           </Tooltip>
-                          {userData.accountType !== 'SUPER_ADMIN' && (
+                          <Tooltip title="Set password">
+                            <IconButton
+                              size="small"
+                              onClick={() => handlePasswordUser(userData)}
+                            >
+                              <LockResetIcon />
+                            </IconButton>
+                          </Tooltip>
+                          {userData.accountType !== 'INSTITUTION_ADMIN' && userData.id !== user.id && (
                             <Tooltip title="Delete User">
                               <IconButton
                                 size="small"
                                 color="error"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMenuOpen(e, userData.id);
-                                }}
-                                sx={{
-                                  bgcolor: '#8b6cbc',
-                                  color: 'white',
-                                  '&:hover': {
-                                    bgcolor: '#7a5caa'
-                                  }
-                                }}
+                                onClick={() => handleDeleteUser(userData)}
                               >
-                                <MoreVertIcon />
+                                <DeleteIcon />
                               </IconButton>
                             </Tooltip>
                           )}
@@ -1122,107 +1192,80 @@ const UserManagementPage = () => {
             </Box>
           </Stack>
         </DialogTitle>
-        <DialogContent sx={{ p: 3, bgcolor: '#fafafa' }}>
-          <Stack spacing={3} sx={{ mt: 1 }}>
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, bgcolor: 'white' }}>
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={2.5} sx={{ mt: 1 }}>
+            <TextField
+              fullWidth
+              label="Given Name"
+              value={editForm.givenName}
+              onChange={(e) => setEditForm({ ...editForm, givenName: e.target.value })}
+            />
+            <TextField
+              fullWidth
+              label="Family Name"
+              value={editForm.familyName}
+              onChange={(e) => setEditForm({ ...editForm, familyName: e.target.value })}
+            />
+            <TextField
+              fullWidth
+              type="email"
+              label="Email"
+              value={editForm.email}
+              onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+            />
+            <FormControl fullWidth>
+              <InputLabel>Account Type</InputLabel>
+              <Select
+                value={editForm.accountType}
+                label="Account Type"
+                disabled={selectedUser?.accountType === 'INSTITUTION_ADMIN' || selectedUser?.id === user.id}
+                onChange={(e) => setEditForm({ ...editForm, accountType: e.target.value })}
+              >
+                {selectedUser?.accountType === 'INSTITUTION_ADMIN' && (
+                  <MenuItem value="INSTITUTION_ADMIN">Institution Admin</MenuItem>
+                )}
+                {MANAGEABLE_ACCOUNT_TYPES.map((type) => (
+                  <MenuItem key={type.name} value={type.name}>
+                    {type.displayName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {editForm.accountType === 'RESEARCHER' && (
               <TextField
                 fullWidth
-                label="Given Name"
-                value={editForm.givenName}
-                disabled
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc'
-                    }
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#8b6cbc'
-                  }
-                }}
+                label="ORCID iD"
+                placeholder="0000-0001-2345-6789"
+                value={editForm.orcidId}
+                onChange={(e) => setEditForm({ ...editForm, orcidId: e.target.value })}
+                helperText="Optional. Format: 0000-0001-2345-6789"
               />
-            </Paper>
-            
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, bgcolor: 'white' }}>
-              <TextField
-                fullWidth
-                label="Family Name"
-                value={editForm.familyName}
-                disabled
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc'
-                    }
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#8b6cbc'
-                  }
-                }}
-              />
-            </Paper>
-            
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, bgcolor: 'white' }}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ '&.Mui-focused': { color: '#8b6cbc' } }}>Account Type</InputLabel>
-                <Select
-                  value={editForm.accountType}
-                  label="Account Type"
-                  onChange={(e) => setEditForm({ ...editForm, accountType: e.target.value })}
-                  sx={{
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8b6cbc'
-                    }
-                  }}
-                >
-                  {accountTypes.map((type) => (
-                    <MenuItem key={type.id} value={type.name}>
-                      {type.displayName}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Paper>
-            
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, bgcolor: 'white' }}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ '&.Mui-focused': { color: '#8b6cbc' } }}>Status</InputLabel>
-                <Select
-                  value={editForm.status}
-                  label="Status"
-                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                  sx={{
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8b6cbc'
-                    }
-                  }}
-                >
-                  <MenuItem value="ACTIVE">Active</MenuItem>
-                  <MenuItem value="PENDING">Pending</MenuItem>
-                  <MenuItem value="INACTIVE">Inactive</MenuItem>
-                  <MenuItem value="SUSPENDED">Suspended</MenuItem>
-                </Select>
-              </FormControl>
-            </Paper>
-            
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, bgcolor: 'white' }}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ '&.Mui-focused': { color: '#8b6cbc' } }}>Email Verified</InputLabel>
-                <Select
-                  value={editForm.emailVerified}
-                  label="Email Verified"
-                  onChange={(e) => setEditForm({ ...editForm, emailVerified: e.target.value })}
-                  sx={{
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8b6cbc'
-                    }
-                  }}
-                >
-                  <MenuItem value={true}>Yes</MenuItem>
-                  <MenuItem value={false}>No</MenuItem>
-                </Select>
-              </FormControl>
-            </Paper>
+            )}
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={editForm.status}
+                label="Status"
+                disabled={selectedUser?.id === user.id}
+                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+              >
+                <MenuItem value="ACTIVE">Active</MenuItem>
+                <MenuItem value="PENDING">Pending</MenuItem>
+                <MenuItem value="INACTIVE">Inactive</MenuItem>
+                <MenuItem value="SUSPENDED">Suspended</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Email Verified</InputLabel>
+              <Select
+                value={editForm.emailVerified}
+                label="Email Verified"
+                onChange={(e) => setEditForm({ ...editForm, emailVerified: e.target.value === true || e.target.value === 'true' })}
+              >
+                <MenuItem value={true}>Yes</MenuItem>
+                <MenuItem value={false}>No</MenuItem>
+              </Select>
+            </FormControl>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, bgcolor: '#fafafa', borderTop: '1px solid', borderColor: 'divider' }}>
@@ -1238,6 +1281,7 @@ const UserManagementPage = () => {
           <Button 
             variant="contained" 
             onClick={handleSubmitEdit}
+            disabled={saving}
             startIcon={<CheckIcon />}
             sx={{
               bgcolor: '#8b6cbc',
@@ -1246,6 +1290,174 @@ const UserManagementPage = () => {
             }}
           >
             Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={createDialogOpen}
+        onClose={saving ? undefined : () => setCreateDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        disableScrollLock
+      >
+        <DialogTitle>Create user</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '12px !important' }}>
+          <TextField
+            fullWidth
+            required
+            label="First name"
+            value={createForm.givenName}
+            onChange={(e) => setCreateForm({ ...createForm, givenName: e.target.value })}
+          />
+          <TextField
+            fullWidth
+            required
+            label="Last name"
+            value={createForm.familyName}
+            onChange={(e) => setCreateForm({ ...createForm, familyName: e.target.value })}
+          />
+          <TextField
+            fullWidth
+            required
+            type="email"
+            label="Email"
+            autoComplete="off"
+            value={createForm.email}
+            onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+          />
+          <FormControl fullWidth>
+            <InputLabel>Account type</InputLabel>
+            <Select
+              value={createForm.accountType}
+              label="Account type"
+              onChange={(e) => setCreateForm({ ...createForm, accountType: e.target.value })}
+            >
+              {MANAGEABLE_ACCOUNT_TYPES.map((type) => (
+                <MenuItem key={type.name} value={type.name}>
+                  {type.displayName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {createForm.accountType === 'RESEARCHER' && (
+            <TextField
+              fullWidth
+              label="ORCID iD"
+              placeholder="0000-0001-2345-6789"
+              value={createForm.orcidId}
+              onChange={(e) => setCreateForm({ ...createForm, orcidId: e.target.value })}
+              helperText="Optional for researcher accounts"
+            />
+          )}
+          <TextField
+            fullWidth
+            required
+            type={showPassword ? 'text' : 'password'}
+            label="Password"
+            autoComplete="new-password"
+            value={createForm.password}
+            onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+            helperText="Minimum 8 characters"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton type="button" onClick={() => setShowPassword((prev) => !prev)} edge="end">
+                    {showPassword ? <VisibilityOff /> : <ViewIcon />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+          <TextField
+            fullWidth
+            required
+            type={showPassword ? 'text' : 'password'}
+            label="Confirm password"
+            autoComplete="new-password"
+            value={createForm.confirmPassword}
+            onChange={(e) => setCreateForm({ ...createForm, confirmPassword: e.target.value })}
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              type="button"
+              size="small"
+              onClick={() => {
+                const next = generatePassword();
+                setCreateForm((prev) => ({ ...prev, password: next, confirmPassword: next }));
+                setShowPassword(true);
+              }}
+            >
+              Generate password
+            </Button>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setCreateDialogOpen(false)} disabled={saving}>Cancel</Button>
+          <Button variant="contained" onClick={handleSubmitCreate} disabled={saving} sx={{ bgcolor: '#8b6cbc' }}>
+            {saving ? 'Creating...' : 'Create user'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={passwordDialogOpen}
+        onClose={saving ? undefined : () => setPasswordDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        disableScrollLock
+      >
+        <DialogTitle>Set password</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '12px !important' }}>
+          <Typography variant="body2" color="text.secondary">
+            Set a new password for {selectedUser?.givenName} {selectedUser?.familyName} ({selectedUser?.email}).
+          </Typography>
+          <TextField
+            fullWidth
+            required
+            type={showPassword ? 'text' : 'password'}
+            label="New password"
+            autoComplete="new-password"
+            value={passwordForm.password}
+            onChange={(e) => setPasswordForm({ ...passwordForm, password: e.target.value })}
+            helperText="Minimum 8 characters"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton type="button" onClick={() => setShowPassword((prev) => !prev)} edge="end">
+                    {showPassword ? <VisibilityOff /> : <ViewIcon />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+          <TextField
+            fullWidth
+            required
+            type={showPassword ? 'text' : 'password'}
+            label="Confirm password"
+            autoComplete="new-password"
+            value={passwordForm.confirmPassword}
+            onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              type="button"
+              size="small"
+              onClick={() => {
+                const next = generatePassword();
+                setPasswordForm({ password: next, confirmPassword: next });
+                setShowPassword(true);
+              }}
+            >
+              Generate password
+            </Button>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setPasswordDialogOpen(false)} disabled={saving}>Cancel</Button>
+          <Button variant="contained" onClick={handleSubmitPassword} disabled={saving} sx={{ bgcolor: '#8b6cbc' }}>
+            {saving ? 'Saving...' : 'Save password'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1267,7 +1479,7 @@ const UserManagementPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" color="error" onClick={handleSubmitDelete}>
+          <Button variant="contained" color="error" onClick={handleSubmitDelete} disabled={saving}>
             Delete User
           </Button>
         </DialogActions>

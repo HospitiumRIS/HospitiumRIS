@@ -209,7 +209,7 @@ export default function RegistryManagementPage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title={t('researcher.registry')}
           description={t('researcher.registry_desc')}

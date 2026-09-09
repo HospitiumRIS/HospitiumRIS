@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 env
 
+# Server-only Docker Compose overrides (container names, published ports)
+docker-compose.override.yml
+
 # vercel
 .vercel
 
@@ -41,6 +44,7 @@ env
 /uploads/proposals/
 /uploads/ethics/
 /uploads/training/materials/
+/uploads/image-integrity/
 /logs/*.log
 
 # typescript

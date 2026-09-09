@@ -46,11 +46,14 @@ import {
   Assessment as AssessmentIcon,
   Article as ArticleIcon,
   Home as HomeIcon,
+  CloudUpload as UploadIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
 import { useTranslation } from 'react-i18next';
+import UploadCertificateDialog from '../../../../components/Ethics/UploadCertificateDialog';
 
 const statusColors = {
   DRAFT: '#9e9e9e',
@@ -79,22 +82,38 @@ const statusIcons = {
 export default function EthicsApplicationsPage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [selectedApplication, setSelectedApplication] = useState(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [notice, setNotice] = useState('');
 
   useEffect(() => {
-    fetchApplications();
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('upload') === '1') {
+      setUploadOpen(true);
+    }
   }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (user?.id) {
+      fetchApplications();
+    } else {
+      setLoading(false);
+    }
+  }, [user?.id, authLoading]);
 
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/ethics/applications');
+      const query = user?.id ? `?userId=${encodeURIComponent(user.id)}` : '';
+      const response = await fetch(`/api/ethics/applications${query}`);
       const data = await response.json();
       
       if (data.success) {
@@ -105,6 +124,19 @@ export default function EthicsApplicationsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const isExternalCertificate = (application) =>
+    application?.source === 'EXTERNAL_CERTIFICATE' ||
+    (Array.isArray(application?.documents) &&
+      application.documents.some(
+        (doc) => doc?.type === 'Ethics Clearance Certificate' || doc?.source === 'EXTERNAL_CERTIFICATE'
+      ));
+
+  const certificateUrl = (application) => {
+    const docs = Array.isArray(application?.documents) ? application.documents : [];
+    const cert = docs.find((doc) => doc.type === 'Ethics Clearance Certificate') || docs[0];
+    return cert?.url || null;
   };
 
   const handleMenuOpen = (event, application) => {
@@ -128,7 +160,11 @@ export default function EthicsApplicationsPage() {
   };
 
   const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this ethics application?')) {
+    const external = isExternalCertificate(selectedApplication);
+    const message = external
+      ? 'Remove this uploaded ethics clearance certificate from your records?'
+      : 'Are you sure you want to delete this ethics application?';
+    if (confirm(message)) {
       try {
         const response = await fetch(`/api/ethics/applications/${selectedApplication.id}`, {
           method: 'DELETE',
@@ -142,6 +178,19 @@ export default function EthicsApplicationsPage() {
       }
     }
     handleMenuClose();
+  };
+
+  const handleDownloadCertificate = () => {
+    const url = certificateUrl(selectedApplication);
+    if (url) {
+      window.open(url, '_blank');
+    }
+    handleMenuClose();
+  };
+
+  const handleCertificateUploaded = () => {
+    setNotice(t('researcher.ethics_cert_upload_success', 'Ethics clearance certificate uploaded.'));
+    fetchApplications();
   };
 
   const handleSubmit = async () => {
@@ -187,26 +236,48 @@ export default function EthicsApplicationsPage() {
           { label: 'Ethics', path: '/researcher/ethics' }
         ]}
         actionButton={
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => router.push('/researcher/ethics/applications/create')}
-            sx={{ 
-              bgcolor: 'white',
-              color: '#8b6cbc',
-              boxShadow: '0 4px 12px rgba(255, 255, 255, 0.3)',
-              '&:hover': { 
-                bgcolor: 'rgba(255, 255, 255, 0.9)',
-                boxShadow: '0 6px 16px rgba(255, 255, 255, 0.4)',
-              }
-            }}
-          >
-            {t('researcher.ethics_create')}
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              startIcon={<UploadIcon />}
+              onClick={() => setUploadOpen(true)}
+              sx={{
+                borderColor: 'white',
+                color: 'white',
+                '&:hover': {
+                  borderColor: 'white',
+                  bgcolor: 'rgba(255, 255, 255, 0.12)',
+                },
+              }}
+            >
+              {t('researcher.ethics_upload_certificate', 'Upload Existing Certificate')}
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => router.push('/researcher/ethics/applications/create')}
+              sx={{ 
+                bgcolor: 'white',
+                color: '#8b6cbc',
+                boxShadow: '0 4px 12px rgba(255, 255, 255, 0.3)',
+                '&:hover': { 
+                  bgcolor: 'rgba(255, 255, 255, 0.9)',
+                  boxShadow: '0 6px 16px rgba(255, 255, 255, 0.4)',
+                }
+              }}
+            >
+              {t('researcher.ethics_create')}
+            </Button>
+          </Box>
         }
       />
 
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        {notice && (
+          <Alert severity="success" sx={{ mb: 3 }} onClose={() => setNotice('')}>
+            {notice}
+          </Alert>
+        )}
 
         {/* Statistics Cards */}
         <Box sx={{ display: 'flex', gap: 2.5, mb: 4, flexWrap: 'wrap' }}>
@@ -406,20 +477,39 @@ export default function EthicsApplicationsPage() {
             {t('common.no_data')}
           </Typography>
           <Typography variant="body2" sx={{ color: '#718096', mb: 3 }}>
-            {searchQuery ? t('common.no_results') : t('researcher.ethics_create_desc')}
+            {searchQuery
+              ? t('common.no_results')
+              : t(
+                  'researcher.ethics_empty_desc',
+                  'Create a new ethics application, or upload a clearance certificate you already have.'
+                )}
           </Typography>
           {!searchQuery && (
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => router.push('/researcher/ethics/applications/create')}
-              sx={{ 
-                background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
-                boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)',
-              }}
-            >
-              {t('researcher.ethics_create')}
-            </Button>
+            <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Button
+                variant="outlined"
+                startIcon={<UploadIcon />}
+                onClick={() => setUploadOpen(true)}
+                sx={{
+                  borderColor: '#8b6cbc',
+                  color: '#8b6cbc',
+                  '&:hover': { borderColor: '#7a5caa', bgcolor: 'rgba(139, 108, 188, 0.04)' },
+                }}
+              >
+                {t('researcher.ethics_upload_certificate', 'Upload Existing Certificate')}
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => router.push('/researcher/ethics/applications/create')}
+                sx={{ 
+                  background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
+                  boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)',
+                }}
+              >
+                {t('researcher.ethics_create')}
+              </Button>
+            </Box>
           )}
         </Paper>
       ) : (
@@ -464,7 +554,22 @@ export default function EthicsApplicationsPage() {
                   }}
                 >
                   <TableCell sx={{ fontWeight: 500, color: '#2D3748' }}>
-                    {application.title}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      {application.title}
+                      {isExternalCertificate(application) && (
+                        <Chip
+                          label={t('researcher.ethics_cert_badge', 'Certificate')}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            bgcolor: 'rgba(139, 108, 188, 0.12)',
+                            color: '#8b6cbc',
+                          }}
+                        />
+                      )}
+                    </Box>
                   </TableCell>
                   <TableCell sx={{ color: '#4A5568' }}>
                     {application.principalInvestigator}
@@ -540,6 +645,36 @@ export default function EthicsApplicationsPage() {
           <ViewIcon sx={{ mr: 1.5, color: '#8b6cbc' }} fontSize="small" />
           <Typography variant="body2" sx={{ fontWeight: 500 }}>{t('common.view')}</Typography>
         </MenuItem>
+        {isExternalCertificate(selectedApplication) && certificateUrl(selectedApplication) && (
+          <MenuItem
+            onClick={handleDownloadCertificate}
+            sx={{
+              py: 1.5,
+              '&:hover': {
+                bgcolor: 'rgba(139, 108, 188, 0.08)',
+              }
+            }}
+          >
+            <DownloadIcon sx={{ mr: 1.5, color: '#8b6cbc' }} fontSize="small" />
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              {t('researcher.ethics_download_certificate', 'Download Certificate')}
+            </Typography>
+          </MenuItem>
+        )}
+        {isExternalCertificate(selectedApplication) && (
+          <MenuItem
+            onClick={handleDelete}
+            sx={{
+              py: 1.5,
+              '&:hover': {
+                bgcolor: 'rgba(239, 68, 68, 0.08)',
+              }
+            }}
+          >
+            <DeleteIcon sx={{ mr: 1.5, color: '#ef4444' }} fontSize="small" />
+            <Typography variant="body2" sx={{ fontWeight: 500, color: '#ef4444' }}>{t('common.delete')}</Typography>
+          </MenuItem>
+        )}
         {selectedApplication?.status === 'DRAFT' && (
           <>
             <MenuItem 
@@ -597,6 +732,13 @@ export default function EthicsApplicationsPage() {
           </>
         )}
       </Menu>
+
+      <UploadCertificateDialog
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        onUploaded={handleCertificateUploaded}
+        user={user}
+      />
       </Container>
     </Box>
   );

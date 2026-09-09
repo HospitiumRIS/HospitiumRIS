@@ -1,53 +1,108 @@
 name: Deploy
 
-# Only runs after CI passes on the main branch
+# Deploys after CI succeeds on main, or when run manually from the Actions tab.
 on:
   workflow_run:
     workflows: [CI]
     branches: [main]
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Commit SHA to deploy (leave empty for the latest main commit that triggered this workflow)'
+        required: false
+        default: ''
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
-    # Skip if CI failed
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    environment: production
 
     steps:
+      - name: Resolve commit SHA
+        id: meta
+        env:
+          INPUT_SHA: ${{ github.event.inputs.sha }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          FALLBACK_SHA: ${{ github.sha }}
+        run: |
+          SHA="$INPUT_SHA"
+          if [ -z "$SHA" ]; then SHA="$RUN_SHA"; fi
+          if [ -z "$SHA" ]; then SHA="$FALLBACK_SHA"; fi
+          if ! echo "$SHA" | grep -Eq '^[0-9a-fA-F]{7,40}$'; then
+            echo "Invalid commit SHA: $SHA"
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Deploying $SHA"
+
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.2
+        env:
+          DEPLOY_SHA: ${{ steps.meta.outputs.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          command_timeout: 40m
+          script_stop: true
+          envs: DEPLOY_SHA,GITHUB_REPOSITORY,GITHUB_TOKEN,DEPLOY_PATH
           script: |
-            set -e
+            set -euo pipefail
 
-            cd ${{ secrets.DEPLOY_PATH }}
+            DEPLOY_PATH="${DEPLOY_PATH:-/opt/hospitium}"
+            if ! echo "${DEPLOY_SHA}" | grep -Eq '^[0-9a-fA-F]{7,40}$'; then
+              echo "Invalid DEPLOY_SHA"
+              exit 1
+            fi
+            cd "$DEPLOY_PATH"
 
-            echo "--- Pulling latest code ---"
-            git pull origin main
-
-            echo "--- Installing dependencies ---"
-            npm ci --omit=dev
-
-            echo "--- Generating Prisma client ---"
-            npx prisma generate
-
-            echo "--- Running database migrations ---"
-            npx prisma migrate deploy
-
-            echo "--- Building application ---"
-            npm run build
-
-            echo "--- Reloading PM2 process ---"
-            if pm2 list | grep -q "${{ secrets.PM2_APP_NAME }}"; then
-              pm2 reload ${{ secrets.PM2_APP_NAME }} --update-env
-            else
-              pm2 start npm --name "${{ secrets.PM2_APP_NAME }}" -- start
+            if [ ! -d .git ]; then
+              echo "ERROR: $DEPLOY_PATH is not a git clone. Clone HospitiumRIS here first."
+              exit 1
             fi
 
-            pm2 save
-            echo "--- Deployment complete ---"
+            echo "--- Preserving production compose / env ---"
+            preserve() {
+              if [ -f "$1" ]; then
+                cp -a "$1" "/tmp/hospitium-preserve-$(basename "$1")"
+              fi
+            }
+            restore() {
+              local tmp="/tmp/hospitium-preserve-$(basename "$1")"
+              if [ -f "$tmp" ]; then
+                mv "$tmp" "$1"
+              fi
+            }
+            preserve docker-compose.yml
+            preserve docker-compose.override.yml
+            preserve docker-compose.prod.yml
+
+            echo "--- Updating code to ${DEPLOY_SHA} ---"
+            git fetch --prune origin "+refs/heads/main:refs/remotes/origin/main" || true
+            if ! git cat-file -e "${DEPLOY_SHA}^{commit}" 2>/dev/null; then
+              git fetch origin "${DEPLOY_SHA}" || \
+                git -c http.extraHeader="Authorization: Bearer ${GITHUB_TOKEN}" \
+                  fetch "https://github.com/${GITHUB_REPOSITORY}.git" "${DEPLOY_SHA}"
+            fi
+            git reset --hard "${DEPLOY_SHA}"
+
+            restore docker-compose.yml
+            restore docker-compose.override.yml
+            restore docker-compose.prod.yml
+
+            echo "--- Running deploy ---"
+            bash scripts/deploy.sh

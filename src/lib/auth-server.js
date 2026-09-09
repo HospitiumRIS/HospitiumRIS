@@ -19,10 +19,11 @@ export async function getAuthenticatedUser(request) {
     // Find user by session ID (which is the user ID in our implementation)
     const user = await prisma.user.findUnique({
       where: { id: sessionCookie.value },
-      include: {
-        institution: true,
-        foundation: true,
-      }
+        include: {
+          institution: true,
+          secondaryInstitution: true,
+          foundation: true,
+        }
     });
 
     if (!user) {

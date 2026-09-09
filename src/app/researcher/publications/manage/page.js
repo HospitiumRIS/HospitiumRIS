@@ -1649,7 +1649,7 @@ export default function ManagePublications() {
   );
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f8f9fa', mt:8}} >
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f8f9fa'}} >
       <PageHeader
         title={t('researcher.manage_publications')}
         description={t('researcher.manage_publications_desc')}

@@ -969,7 +969,7 @@ const ProjectStatusPage = () => {
 
 
   return (
-    <Box sx={{ mt: '80px' }}>
+    <Box>
       <PageHeader
         title={t("researcher.status_tracking")}
         description={t("researcher.status_tracking_desc")}

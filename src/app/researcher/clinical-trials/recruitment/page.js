@@ -192,7 +192,7 @@ export default function RecruitmentProgressPage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title={t("researcher.recruitment")}
           description={t("researcher.recruitment_desc")}

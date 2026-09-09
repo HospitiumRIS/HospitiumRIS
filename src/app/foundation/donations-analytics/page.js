@@ -356,7 +356,6 @@ export default function ProfessionalDonationsAnalytics() {
             minHeight: '100vh',
             backgroundColor: alpha('#f8f9fa', 0.3),
             position: 'relative',
-            mt:8
           }}
         >
           {/* Professional Header */}

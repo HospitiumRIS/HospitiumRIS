@@ -134,6 +134,7 @@ import {
 } from '@mui/icons-material';
 
 import { useAuth } from '@/components/AuthProvider';
+import { NAVBAR_OFFSET } from '@/components/TopBar';
 import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import DocumentHeader from './components/DocumentHeader';
@@ -2639,7 +2640,7 @@ export default function ManuscriptEditor() {
   }
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#fafafa' }}>
+    <Box sx={{ height: `calc(100vh - ${NAVBAR_OFFSET}px)`, display: 'flex', flexDirection: 'column', bgcolor: '#fafafa' }}>
       {/* Document Header Component - Always Visible */}
       <DocumentHeader 
         manuscript={manuscript}

@@ -31,7 +31,8 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const { id } = params;
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
     const body = await request.json();
     const { 
       status, 
@@ -122,7 +123,8 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const { id } = params;
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
 
     const existingDomain = await prisma.verifiedDomain.findFirst({
       where: {

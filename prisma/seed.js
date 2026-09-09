@@ -85,6 +85,8 @@ async function main() {
           await tx.institution.create({
             data: {
               userId: user.id,
+              slug: institutionData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+              contactEmail: user.email,
               ...institutionData,
             }
           });

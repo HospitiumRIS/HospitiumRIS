@@ -438,8 +438,8 @@ const SearchResultsDialog = ({
                                                     }
                                                 }}
                                             >
-                                                t('common.preview')
-</Button>
+                                                {t('common.preview')}
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                     );

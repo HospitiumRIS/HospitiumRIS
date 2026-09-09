@@ -85,7 +85,7 @@ export default function ResultsReportingTrackerPage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title="Results & Reporting"
           description="Results submission deadlines, output-to-publication linkage, grant report connections"

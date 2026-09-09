@@ -38,7 +38,7 @@ if [ -n "$GLOBAL_ADMIN_EMAIL" ] && [ -n "$GLOBAL_ADMIN_NAME" ] && [ -n "$GLOBAL_
     || true
 fi
 
-mkdir -p uploads/proposals uploads/ethics uploads/training/materials uploads/training/certificates logs
+mkdir -p uploads/proposals uploads/ethics uploads/training/materials uploads/training/certificates uploads/institutions logs
 
 echo "==> Starting development server..."
 exec "$@"

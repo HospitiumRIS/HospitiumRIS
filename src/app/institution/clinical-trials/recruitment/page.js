@@ -102,7 +102,7 @@ export default function RecruitmentPerformancePage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title="Recruitment Performance"
           description="Cross-trial enrollment vs target, site benchmarks and below-threshold alerts"

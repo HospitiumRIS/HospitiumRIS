@@ -710,7 +710,7 @@ const SubmitPublication = ({ onSubmit }) => {
     ]);
 
     return (
-        <Box sx={{ width: '100%', mt: 8, mb: 4 }}>
+        <Box sx={{ width: '100%', mb: 4 }}>
             <PageHeader
                 title={t('common.submit')}
                 description="Submit your research to preprint servers for early dissemination"

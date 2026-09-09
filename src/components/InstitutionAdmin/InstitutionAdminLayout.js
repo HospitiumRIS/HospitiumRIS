@@ -17,6 +17,7 @@ import {
   ListItemText,
   Avatar,
   Chip,
+  Tooltip,
   useMediaQuery,
   useTheme
 } from '@mui/material';
@@ -26,36 +27,43 @@ import {
   People as UsersIcon,
   Settings as SettingsIcon,
   Security as SecurityIcon,
-  Assessment as AnalyticsIcon,
   Storage as DatabaseIcon,
   ListAlt as LogsIcon,
-  AdminPanelSettings as AdminIcon,
-  ChevronLeft as ChevronLeftIcon,
-  Verified as VerifiedIcon
+  Verified as VerifiedIcon,
+  Business as InstitutionIcon,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../AuthProvider';
+import { InstitutionAdminProvider, useInstitutionAdmin } from './InstitutionAdminContext';
 
 const drawerWidth = 260;
 
-const InstitutionAdminLayout = ({ children }) => {
+function InstitutionAdminDrawer({ children }) {
   const { t } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
+  const { institution, logoSrc } = useInstitutionAdmin();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const institutionName = institution?.name || user?.primaryInstitution || t('institution_admin.panel_title');
 
   const menuItems = [
     {
-      text: t('institution_admin.dashboard'),
+      text: t('institution_admin.dashboard', { defaultValue: 'Dashboard' }),
       icon: <DashboardIcon />,
       path: '/institution-admin',
       color: 'primary'
     },
     {
-      text: t('institution_admin.user_management'),
+      text: t('institution_admin.institution_profile', { defaultValue: 'Institution Profile' }),
+      icon: <InstitutionIcon />,
+      path: '/institution-admin/profile',
+      color: 'secondary'
+    },
+    {
+      text: t('institution_admin.user_management', { defaultValue: 'User Management' }),
       icon: <UsersIcon />,
       path: '/institution-admin/users',
       color: 'info'
@@ -114,41 +122,42 @@ const InstitutionAdminLayout = ({ children }) => {
       {/* Sidebar Header */}
       <Box
         sx={{
-          p: 3,
+          p: 2,
           display: 'flex',
           alignItems: 'center',
-          gap: 2,
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
+          gap: 1.5,
+          bgcolor: 'primary.main',
           color: 'white',
-          position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '120px',
-            height: '120px',
-            background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-            borderRadius: '50%',
-            transform: 'translate(40%, -40%)'
-          }
         }}
       >
-        <Avatar sx={{ 
-          bgcolor: 'rgba(255,255,255,0.2)', 
-          width: 48, 
-          height: 48,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-        }}>
-          <AdminIcon />
+        <Avatar
+          src={logoSrc}
+          variant="rounded"
+          alt={institutionName}
+          imgProps={{ style: { objectFit: 'contain' } }}
+          sx={{
+            bgcolor: 'white',
+            color: 'primary.main',
+            width: 44,
+            height: 44,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            p: logoSrc ? 0.5 : 0,
+          }}
+        >
+          <InstitutionIcon />
         </Avatar>
-        <Box sx={{ flex: 1, position: 'relative', zIndex: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
+        <Box sx={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
+          <Tooltip title={institutionName}>
+            <Typography
+              variant="subtitle1"
+              noWrap
+              sx={{ fontWeight: 700, lineHeight: 1.3, letterSpacing: '-0.01em' }}
+            >
+              {institutionName}
+            </Typography>
+          </Tooltip>
+          <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 500 }}>
             {t('institution_admin.panel_title')}
-          </Typography>
-          <Typography variant="caption" sx={{ opacity: 0.95, fontWeight: 500 }}>
-            {t('institution_admin.control_panel')}
           </Typography>
         </Box>
       </Box>
@@ -199,7 +208,9 @@ const InstitutionAdminLayout = ({ children }) => {
       {/* Navigation Menu */}
       <List sx={{ flex: 1, py: 2, px: 1.5 }}>
         {menuItems.map((item) => {
-          const isActive = pathname === item.path;
+          const isActive = item.path === '/institution-admin'
+            ? pathname === item.path
+            : pathname === item.path || pathname?.startsWith(`${item.path}/`);
           return (
             <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton
@@ -294,8 +305,16 @@ const InstitutionAdminLayout = ({ children }) => {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600 }}>
-              Institution Admin Console
+            <Avatar
+              src={logoSrc}
+              variant="rounded"
+              alt={institutionName}
+              sx={{ width: 32, height: 32, mr: 1.5, bgcolor: 'primary.main' }}
+            >
+              <InstitutionIcon fontSize="small" />
+            </Avatar>
+            <Typography variant="subtitle1" noWrap component="div" sx={{ fontWeight: 600 }}>
+              {institutionName}
             </Typography>
           </Toolbar>
         </AppBar>
@@ -356,5 +375,13 @@ const InstitutionAdminLayout = ({ children }) => {
     </Box>
   );
 };
+
+const InstitutionAdminLayout = ({ children }) => (
+  <InstitutionAdminProvider>
+    <InstitutionAdminDrawer>
+      {children}
+    </InstitutionAdminDrawer>
+  </InstitutionAdminProvider>
+);
 
 export default InstitutionAdminLayout;

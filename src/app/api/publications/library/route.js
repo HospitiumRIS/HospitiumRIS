@@ -147,8 +147,11 @@ export async function POST(request) {
         }
 
         // Check if publication exists
-        const publication = await prisma.publication.findUnique({
-          where: { id: publicationId }
+        const publication = await prisma.publication.findFirst({
+          where: {
+            id: publicationId,
+            authorRelations: { some: { userId: user.id } },
+          },
         });
         
         if (!publication) {

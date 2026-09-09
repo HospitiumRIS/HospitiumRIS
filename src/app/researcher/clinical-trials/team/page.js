@@ -221,7 +221,7 @@ export default function TeamDelegationPage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title={t("researcher.team")}
           description={t("researcher.team_desc")}

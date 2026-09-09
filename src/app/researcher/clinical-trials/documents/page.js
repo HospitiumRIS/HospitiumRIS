@@ -224,7 +224,7 @@ export default function DocumentRepositoryPage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title={t("researcher.documents")}
           description={t("researcher.documents_desc")}

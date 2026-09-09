@@ -37,10 +37,7 @@ import {
   TrendingUp as TrendingUpIcon,
   BarChart as BarChartIcon,
   Timeline as TimelineIcon,
-  CheckCircle as CheckCircleIcon,
-  Schedule as ScheduleIcon,
   Info as InfoIcon,
-  CalendarToday as CalendarTodayIcon,
   Person as PersonIcon,
   Folder as FolderIcon,
   AccessTime as AccessTimeIcon,
@@ -81,12 +78,6 @@ const ResearcherDashboard = () => {
   const [analyticsTab, setAnalyticsTab] = useState(0);
   const [chartType, setChartType] = useState('area');
   const [timeRange, setTimeRange] = useState('6m');
-  const [tasks, setTasks] = useState([]);
-  const [tasksLoading, setTasksLoading] = useState(true);
-  const [tasksSummary, setTasksSummary] = useState({ high: 0, medium: 0, low: 0 });
-  const [deadlines, setDeadlines] = useState([]);
-  const [deadlinesLoading, setDeadlinesLoading] = useState(true);
-  const [deadlinesSummary, setDeadlinesSummary] = useState({ total: 0, urgent: 0, upcoming: 0, future: 0 });
   const [projectHealth, setProjectHealth] = useState([]);
   const [projectHealthLoading, setProjectHealthLoading] = useState(true);
   const [projectHealthSummary, setProjectHealthSummary] = useState({ total: 0, onTrack: 0, needsAttention: 0, atRisk: 0, avgProgress: 0 });
@@ -99,169 +90,18 @@ const ResearcherDashboard = () => {
         setDataLoading(true);
         setError(null);
         
-        const [statsRes, proposalsRes, tasksRes, deadlinesRes, projectHealthRes] = await Promise.all([
+        const [statsRes, proposalsRes, projectHealthRes] = await Promise.all([
           fetch('/api/researcher/stats', { credentials: 'include' }),
           fetch('/api/proposals', { credentials: 'include' }),
-          fetch('/api/researcher/tasks', { credentials: 'include' }),
-          fetch('/api/researcher/deadlines', { credentials: 'include' }),
           fetch('/api/researcher/project-health', { credentials: 'include' })
         ]);
 
         const statsData = statsRes.ok ? await statsRes.json() : null;
         const proposalsData = proposalsRes.ok ? await proposalsRes.json() : { proposals: [] };
-        const tasksData = tasksRes.ok ? await tasksRes.json() : { tasks: [], summary: { high: 0, medium: 0, low: 0 } };
-        const deadlinesData = deadlinesRes.ok ? await deadlinesRes.json() : { deadlines: [], summary: { total: 0, urgent: 0, upcoming: 0, future: 0 } };
         const projectHealthData = projectHealthRes.ok ? await projectHealthRes.json() : { projects: [], summary: { total: 0, onTrack: 0, needsAttention: 0, atRisk: 0, avgProgress: 0 } };
 
-        // Add clinical trial mock data
-        const clinicalTrialActivities = [
-          {
-            id: 'ct-act-1',
-            title: 'Enrolled 8 new participants',
-            description: 'Trial CT-2024-001: HIV Prevention Study',
-            type: 'enrollment',
-            icon: 'enrollment',
-            color: '#8b6cbc',
-            timeAgo: '2 hours ago',
-            link: '/researcher/clinical-trials/recruitment'
-          },
-          {
-            id: 'ct-act-2',
-            title: 'Trial moved to Phase II',
-            description: 'Trial CT-2024-003: Malaria Vaccine Study',
-            type: 'trial',
-            icon: 'trial',
-            color: '#66BB6A',
-            timeAgo: '5 hours ago',
-            link: '/researcher/clinical-trials/intake'
-          },
-          {
-            id: 'ct-act-3',
-            title: 'Safety report submitted',
-            description: 'Trial CT-2024-002: TB Treatment Protocol',
-            type: 'safety',
-            icon: 'safety',
-            color: '#42A5F5',
-            timeAgo: '1 day ago',
-            link: '/researcher/clinical-trials/safety'
-          },
-          {
-            id: 'ct-act-4',
-            title: 'Ethics approval received',
-            description: 'Trial CT-2024-004: Diabetes Management Study',
-            type: 'ethics',
-            icon: 'ethics',
-            color: '#FFA726',
-            timeAgo: '2 days ago',
-            link: '/researcher/clinical-trials/intake'
-          }
-        ];
-
-        const clinicalTrialTasks = [
-          {
-            id: 'ct-task-1',
-            title: 'Submit SAE report',
-            description: 'Serious Adverse Event reported in Trial CT-2024-001',
-            priority: 'high',
-            daysUntilDue: 1,
-            link: '/researcher/clinical-trials/safety'
-          },
-          {
-            id: 'ct-task-2',
-            title: 'Complete GCP training renewal',
-            description: 'Good Clinical Practice certification expires soon',
-            priority: 'medium',
-            daysUntilDue: 5,
-            link: '/researcher/clinical-trials/team'
-          },
-          {
-            id: 'ct-task-3',
-            title: 'Review protocol deviation',
-            description: 'Trial CT-2024-002: Minor protocol deviation flagged',
-            priority: 'high',
-            daysUntilDue: 2,
-            link: '/researcher/clinical-trials/safety'
-          },
-          {
-            id: 'ct-task-4',
-            title: 'Update eTMF documents',
-            description: 'Upload latest informed consent forms',
-            priority: 'low',
-            daysUntilDue: 10,
-            link: '/researcher/clinical-trials/documents'
-          }
-        ];
-
-        const clinicalTrialDeadlines = [
-          {
-            id: 'ct-dl-1',
-            title: 'Trial CT-2024-001 enrollment deadline',
-            description: 'Target: 120 participants (currently 87)',
-            date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-            daysUntil: 5,
-            type: 'Enrollment',
-            color: '#8b6cbc',
-            link: '/researcher/clinical-trials/recruitment'
-          },
-          {
-            id: 'ct-dl-2',
-            title: 'IRB renewal for Trial CT-2024-003',
-            description: 'Annual ethics committee review',
-            date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-            daysUntil: 14,
-            type: 'Ethics',
-            color: '#FFA726',
-            link: '/researcher/clinical-trials/intake'
-          },
-          {
-            id: 'ct-dl-3',
-            title: 'Data lock for Trial CT-2024-002',
-            description: 'Final data entry and query resolution',
-            date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-            daysUntil: 3,
-            type: 'Data',
-            color: '#42A5F5',
-            link: '/researcher/clinical-trials/results'
-          },
-          {
-            id: 'ct-dl-4',
-            title: 'Registry submission to ClinicalTrials.gov',
-            description: 'Trial CT-2024-004: Initial registration',
-            date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            daysUntil: 7,
-            type: 'Registry',
-            color: '#66BB6A',
-            link: '/researcher/clinical-trials/registry'
-          }
-        ];
-
-        // Merge with existing data
-        const mergedTasks = [...clinicalTrialTasks, ...(tasksData.tasks || [])];
-        const mergedDeadlines = [...clinicalTrialDeadlines, ...(deadlinesData.deadlines || [])];
-
-        // Update task summary
-        const updatedTaskSummary = {
-          high: (tasksData.summary?.high || 0) + clinicalTrialTasks.filter(t => t.priority === 'high').length,
-          medium: (tasksData.summary?.medium || 0) + clinicalTrialTasks.filter(t => t.priority === 'medium').length,
-          low: (tasksData.summary?.low || 0) + clinicalTrialTasks.filter(t => t.priority === 'low').length,
-        };
-
-        // Update deadline summary
-        const updatedDeadlineSummary = {
-          total: mergedDeadlines.length,
-          urgent: mergedDeadlines.filter(d => d.daysUntil <= 7).length,
-          upcoming: mergedDeadlines.filter(d => d.daysUntil > 7 && d.daysUntil <= 30).length,
-          future: mergedDeadlines.filter(d => d.daysUntil > 30).length,
-        };
-
-        setTasks(mergedTasks);
-        setTasksSummary(updatedTaskSummary);
-        setDeadlines(mergedDeadlines);
-        setDeadlinesSummary(updatedDeadlineSummary);
         setProjectHealth(projectHealthData.projects || []);
         setProjectHealthSummary(projectHealthData.summary || { total: 0, onTrack: 0, needsAttention: 0, atRisk: 0, avgProgress: 0 });
-        setTasksLoading(false);
-        setDeadlinesLoading(false);
         setProjectHealthLoading(false);
 
         const stats = {
@@ -330,57 +170,6 @@ const ResearcherDashboard = () => {
     return user.firstName || user.fullName?.split(' ')[0] || user.name?.split(' ')[0] || user.email?.split('@')[0] || 'User';
   };
 
-  const getPriorityColor = (priority) => {
-    switch(priority) {
-      case 'high': return '#EF5350';
-      case 'medium': return '#FFA726';
-      case 'low': return '#66BB6A';
-      default: return '#8b6cbc';
-    }
-  };
-
-  const handleCompleteTask = (taskId) => {
-    setTasks(prev => prev.filter(t => t.id !== taskId));
-    setTasksSummary(prev => {
-      const task = tasks.find(t => t.id === taskId);
-      if (task) {
-        return {
-          ...prev,
-          [task.priority]: Math.max(0, prev[task.priority] - 1)
-        };
-      }
-      return prev;
-    });
-  };
-
-  const handleRefreshTasks = async () => {
-    try {
-      setTasksLoading(true);
-      const res = await fetch('/api/researcher/tasks', { credentials: 'include' });
-      const data = await res.json();
-      setTasks(data.tasks || []);
-      setTasksSummary(data.summary || { high: 0, medium: 0, low: 0 });
-    } catch (error) {
-      console.error('Error refreshing tasks:', error);
-    } finally {
-      setTasksLoading(false);
-    }
-  };
-
-  const handleRefreshDeadlines = async () => {
-    try {
-      setDeadlinesLoading(true);
-      const res = await fetch('/api/researcher/deadlines', { credentials: 'include' });
-      const data = await res.json();
-      setDeadlines(data.deadlines || []);
-      setDeadlinesSummary(data.summary || { total: 0, urgent: 0, upcoming: 0, future: 0 });
-    } catch (error) {
-      console.error('Error refreshing deadlines:', error);
-    } finally {
-      setDeadlinesLoading(false);
-    }
-  };
-
   const handleRefreshProjectHealth = async () => {
     try {
       setProjectHealthLoading(true);
@@ -416,7 +205,7 @@ const ResearcherDashboard = () => {
   );
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f7fa', mt: 8 }}>
+    <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f7fa' }}>
       <PageHeader
         title={`${greeting}, ${getUserDisplayName()}`}
         description={<>{t('researcher.dashboard_subtitle')}<br /><span style={{ fontSize: '0.875rem', opacity: 0.8 }}>{currentDate}</span></>}
@@ -1061,320 +850,10 @@ const ResearcherDashboard = () => {
                 </Card>
               </Box>
 
-              {/* Enhanced Recent Activities */}
-              {/* Enhanced Pending Tasks */}
-              <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: '300px' }}>
-                <Card sx={{ 
-                  height: '100%',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                  borderRadius: 2,
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)'
-                  }
-                }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ 
-                          bgcolor: 'rgba(139, 108, 188, 0.1)', 
-                          borderRadius: 1.5, 
-                          p: 1, 
-                          display: 'flex'
-                        }}>
-                          <ScheduleIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
-                        </Box>
-                        <Box>
-                          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                            {t('researcher.pending_tasks')}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {tasks.length} task{tasks.length !== 1 ? 's' : ''} pending
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Tooltip title="Refresh">
-                        <IconButton size="small" onClick={handleRefreshTasks} disabled={tasksLoading}>
-                          <RefreshIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-
-                    {/* Priority Summary */}
-                    <Box sx={{ 
-                      display: 'flex', 
-                      gap: 1, 
-                      mb: 2, 
-                      p: 1.5, 
-                      bgcolor: 'rgba(139, 108, 188, 0.05)', 
-                      borderRadius: 1.5 
-                    }}>
-                      <Box sx={{ flex: 1, textAlign: 'center' }}>
-                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#EF5350', fontSize: '1.25rem' }}>
-                          {tasksSummary.high}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                          {t('common.high')}
-                        </Typography>
-                      </Box>
-                      <Divider orientation="vertical" flexItem />
-                      <Box sx={{ flex: 1, textAlign: 'center' }}>
-                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#FFA726', fontSize: '1.25rem' }}>
-                          {tasksSummary.medium}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                          {t('common.medium')}
-                        </Typography>
-                      </Box>
-                      <Divider orientation="vertical" flexItem />
-                      <Box sx={{ flex: 1, textAlign: 'center' }}>
-                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#66BB6A', fontSize: '1.25rem' }}>
-                          {tasksSummary.low}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                          {t('common.low')}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    
-                    {tasksLoading ? (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                        <Typography variant="body2" color="text.secondary">Loading...</Typography>
-                      </Box>
-                    ) : tasks.length === 0 ? (
-                      <Box sx={{ textAlign: 'center', py: 4 }}>
-                        <CheckCircleIcon sx={{ fontSize: 48, color: '#66BB6A', mb: 1 }} />
-                        <Typography variant="body2" color="text.secondary">
-                          All caught up! No pending tasks
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <Stack spacing={2} sx={{ maxHeight: 400, overflow: 'auto' }}>
-                        {tasks.map((task) => {
-                          const isOverdue = task.daysUntilDue < 0;
-                          const isUrgent = task.daysUntilDue >= 0 && task.daysUntilDue <= 2;
-                          
-                          return (
-                            <Paper 
-                              key={task.id} 
-                              sx={{ 
-                                p: 2, 
-                                border: `1px solid ${isOverdue ? '#EF5350' : isUrgent ? '#FFA726' : '#e0e0e0'}`,
-                                borderLeft: `4px solid ${getPriorityColor(task.priority)}`,
-                                borderRadius: 1.5,
-                                transition: 'all 0.2s ease',
-                                cursor: task.link ? 'pointer' : 'default',
-                                '&:hover': {
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                  transform: task.link ? 'translateY(-2px)' : 'none'
-                                }
-                              }}
-                              onClick={() => { if (task.link) window.location.href = task.link; }}
-                            >
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                                <Box sx={{ flex: 1, pr: 2 }}>
-                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                                    {task.title}
-                                  </Typography>
-                                  {task.description && (
-                                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-                                      {task.description}
-                                    </Typography>
-                                  )}
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                    <Chip 
-                                      label={task.priority} 
-                                      size="small" 
-                                      sx={{ 
-                                        bgcolor: `${getPriorityColor(task.priority)}15`, 
-                                        color: getPriorityColor(task.priority),
-                                        fontWeight: 600,
-                                        fontSize: '0.65rem',
-                                        height: 20
-                                      }} 
-                                    />
-                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                      <CalendarTodayIcon sx={{ fontSize: 11 }} />
-                                      {isOverdue ? (
-                                        <span style={{ color: '#EF5350', fontWeight: 600 }}>
-                                          Overdue by {Math.abs(task.daysUntilDue)} day{Math.abs(task.daysUntilDue) !== 1 ? 's' : ''}
-                                        </span>
-                                      ) : isUrgent ? (
-                                        <span style={{ color: '#FFA726', fontWeight: 600 }}>
-                                          Due in {task.daysUntilDue} day{task.daysUntilDue !== 1 ? 's' : ''}
-                                        </span>
-                                      ) : (
-                                        `Due in ${task.daysUntilDue} day${task.daysUntilDue !== 1 ? 's' : ''}`
-                                      )}
-                                    </Typography>
-                                  </Box>
-                                </Box>
-                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                  <Tooltip title="Mark as complete">
-                                    <IconButton 
-                                      size="small" 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCompleteTask(task.id);
-                                      }}
-                                      sx={{ 
-                                        '&:hover': { 
-                                          bgcolor: 'rgba(102, 187, 106, 0.1)',
-                                          transform: 'scale(1.1)'
-                                        } 
-                                      }}
-                                    >
-                                      <CheckCircleIcon sx={{ fontSize: 18, color: '#66BB6A' }} />
-                                    </IconButton>
-                                  </Tooltip>
-                                  {task.link && (
-                                    <Tooltip title="Open">
-                                      <IconButton size="small" sx={{ opacity: 0.6 }}>
-                                        <OpenInNewIcon sx={{ fontSize: 16 }} />
-                                      </IconButton>
-                                    </Tooltip>
-                                  )}
-                                </Box>
-                              </Box>
-                            </Paper>
-                          );
-                        })}
-                      </Stack>
-                    )}
-                  </CardContent>
-                </Card>
-              </Box>
-
-              {/* Enhanced Upcoming Deadlines */}
-              <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: '300px' }}>
-                <Card sx={{ 
-                  height: '100%',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                  borderRadius: 2,
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)'
-                  }
-                }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ 
-                          bgcolor: 'rgba(139, 108, 188, 0.1)', 
-                          borderRadius: 1.5, 
-                          p: 1, 
-                          display: 'flex'
-                        }}>
-                          <CalendarTodayIcon sx={{ color: '#8b6cbc', fontSize: 24 }} />
-                        </Box>
-                        <Box>
-                          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                            Upcoming Deadlines
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {deadlinesSummary.urgent} urgent, {deadlinesSummary.upcoming} upcoming
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Tooltip title="Refresh">
-                        <IconButton size="small" onClick={handleRefreshDeadlines} disabled={deadlinesLoading}>
-                          <RefreshIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                    
-                    {deadlinesLoading ? (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                        <Typography variant="body2" color="text.secondary">Loading...</Typography>
-                      </Box>
-                    ) : deadlines.length === 0 ? (
-                      <Box sx={{ textAlign: 'center', py: 4 }}>
-                        <CalendarTodayIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 1 }} />
-                        <Typography variant="body2" color="text.secondary">
-                          No upcoming deadlines
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <Stack spacing={2} sx={{ maxHeight: 400, overflow: 'auto' }}>
-                        {deadlines.map((deadline) => {
-                          const isUrgent = deadline.daysUntil <= 7;
-                          const isOverdue = deadline.daysUntil < 0;
-                          
-                          return (
-                            <Paper 
-                              key={deadline.id} 
-                              sx={{ 
-                                p: 2, 
-                                border: `1px solid ${isOverdue ? '#EF5350' : isUrgent ? '#FFA726' : '#e0e0e0'}`,
-                                borderLeft: `4px solid ${isOverdue ? '#EF5350' : isUrgent ? '#FFA726' : '#8b6cbc'}`,
-                                borderRadius: 1.5,
-                                transition: 'all 0.2s ease',
-                                cursor: deadline.link ? 'pointer' : 'default',
-                                '&:hover': {
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                  transform: deadline.link ? 'translateY(-2px)' : 'none'
-                                }
-                              }}
-                              onClick={() => { if (deadline.link) window.location.href = deadline.link; }}
-                            >
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                                <Typography variant="body2" sx={{ fontWeight: 600, flex: 1, pr: 1 }}>
-                                  {deadline.title}
-                                </Typography>
-                                {deadline.link && (
-                                  <Tooltip title="Open">
-                                    <IconButton size="small" sx={{ opacity: 0.6, mt: -0.5 }}>
-                                      <OpenInNewIcon sx={{ fontSize: 14 }} />
-                                    </IconButton>
-                                  </Tooltip>
-                                )}
-                              </Box>
-                              {deadline.description && (
-                                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-                                  {deadline.description}
-                                </Typography>
-                              )}
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                    <CalendarTodayIcon sx={{ fontSize: 11 }} />
-                                    {new Date(deadline.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                  </Typography>
-                                  <Typography variant="caption" sx={{ 
-                                    fontWeight: 600,
-                                    color: isOverdue ? '#EF5350' : isUrgent ? '#FFA726' : 'text.secondary'
-                                  }}>
-                                    {isOverdue ? (
-                                      `Overdue by ${Math.abs(deadline.daysUntil)} day${Math.abs(deadline.daysUntil) !== 1 ? 's' : ''}`
-                                    ) : (
-                                      `${deadline.daysUntil} day${deadline.daysUntil !== 1 ? 's' : ''} left`
-                                    )}
-                                  </Typography>
-                                </Box>
-                                <Chip 
-                                  label={deadline.type} 
-                                  size="small" 
-                                  sx={{ 
-                                    fontSize: '0.65rem',
-                                    height: 20,
-                                    bgcolor: `${deadline.color}15`,
-                                    color: deadline.color,
-                                    fontWeight: 600
-                                  }} 
-                                />
-                              </Box>
-                            </Paper>
-                          );
-                        })}
-                      </Stack>
-                    )}
-                  </CardContent>
-                </Card>
-              </Box>
-
               {/* Enhanced Project Health */}
-              <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px' }}>
+              <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: '300px' }}>
                 <Card sx={{ 
+                  height: '100%',
                   boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
                   borderRadius: 2,
                   transition: 'all 0.3s ease',

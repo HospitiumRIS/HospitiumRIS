@@ -173,6 +173,28 @@ const mapFormToApiData = (formData, user) => ({
   additionalComments: formData.additionalComments || null,
 });
 
+const FILE_FORM_FIELDS = [
+  'participantInfoSheet',
+  'consentForm',
+  'researchProtocol',
+  'recruitmentMaterials',
+  'dataCollectionTools',
+  'lettersOfSupport',
+  'investigatorCVs',
+];
+
+function freezeUploadedFiles(prev) {
+  const next = { ...prev };
+  for (const field of FILE_FORM_FIELDS) {
+    next[field] = (prev[field] || []).map((file) =>
+      file instanceof File
+        ? { name: file.name, size: file.size, type: file.type, uploadedAt: new Date().toISOString() }
+        : file
+    );
+  }
+  return next;
+}
+
 export default function EditEthicsApplicationPage() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -282,6 +304,12 @@ export default function EditEthicsApplicationPage() {
         
         if (response.ok) {
           setLastSaved(new Date());
+          setFormData((prev) => {
+            const hasNewFiles = FILE_FORM_FIELDS.some((field) =>
+              (prev[field] || []).some((file) => file instanceof File)
+            );
+            return hasNewFiles ? freezeUploadedFiles(prev) : prev;
+          });
           console.log('Auto-save successful');
         } else {
           console.error('Auto-save failed:', result);

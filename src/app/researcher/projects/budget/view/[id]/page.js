@@ -243,7 +243,6 @@ const BudgetDetailPage = () => {
             { label: 'Budget Management', path: '/researcher/projects/budget/view', icon: <BudgetIcon /> },
             { label: 'Details', icon: <ProjectIcon /> },
           ]}
-          sx={{ mt: '80px' }}
         />
         <Container maxWidth="xl" sx={{ py: 4 }}>
           <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
@@ -297,7 +296,6 @@ const BudgetDetailPage = () => {
             </Button>
           </Box>
         }
-        sx={{ mt: '80px' }}
       />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>

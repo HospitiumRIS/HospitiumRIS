@@ -84,8 +84,16 @@ const Navbar = () => {
   // Use pathname from usePathname hook which updates on route changes
   const currentPath = pathname || '';
 
-  // Determine if we're on a dashboard page and user is authenticated (only on client)
-  const isDashboardPage = isClient && isAuthenticated && (currentPath.includes('/institution') || currentPath.includes('/researcher') || currentPath.includes('/foundation'));
+  const isGlobalAdminRoute = currentPath.startsWith('/global-admin');
+
+  // Dashboard menus (Publications, Projects, ...) must not appear on global-admin
+  // routes. Use path prefixes so `/global-admin/institutions` is not treated as
+  // an institution dashboard.
+  const isDashboardPage = isClient && isAuthenticated && !isGlobalAdminRoute && (
+    currentPath === '/institution' || currentPath.startsWith('/institution/') ||
+    currentPath === '/researcher' || currentPath.startsWith('/researcher/') ||
+    currentPath === '/foundation' || currentPath.startsWith('/foundation/')
+  );
   
   const dashboardConfig = useDashboardConfig();
 
@@ -213,6 +221,10 @@ const Navbar = () => {
           </Toolbar>
         </AppBar>
 
+        {/* Spacer to push content below topbar + fixed navbar */}
+        <Box sx={{ height: TOPBAR_HEIGHT }} />
+        <Toolbar />
+
         {/* Mobile Menu Drawer */}
         <MobileMenu 
           isOpen={mobileMenuOpen} 
@@ -278,6 +290,8 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           {!isMobile && (
             <Stack direction="row" spacing={2} alignItems="center">
+              {!isGlobalAdminRoute && (
+                <>
               {/* Navigation Links */}
               <Button
                 onClick={() => router.push('/')}
@@ -366,6 +380,8 @@ const Navbar = () => {
                   {t('nav.contact')}
                 </MenuItem>
               </Menu>
+                </>
+              )}
 
               {/* Show different buttons based on auth status */}
               {isAuthenticated ? (

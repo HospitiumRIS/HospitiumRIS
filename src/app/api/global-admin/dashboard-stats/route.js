@@ -26,10 +26,8 @@ export async function GET(request) {
     });
     const totalManuscripts = await prisma.manuscript.count();
     
-    // Count institution admins (as proxy for institutions)
-    const totalInstitutions = await prisma.user.count({
-      where: { accountType: 'INSTITUTION_ADMIN' }
-    });
+    // Count institutions
+    const totalInstitutions = await prisma.institution.count();
 
     // Get system health metrics
     const totalMemory = os.totalmem();

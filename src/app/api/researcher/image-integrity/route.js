@@ -1,11 +1,23 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../lib/auth-server';
-import imachek, { isImaChekConfigured, ImaChekNotConfiguredError, ImaChekApiError } from '../../../../lib/imachek';
+import imachek, { isImaChekConfigured, ImaChekNotConfiguredError, ImaChekApiError, extractCaseId } from '../../../../lib/imachek';
+import { saveIntegrityFile, previewUrlForCase } from '../../../../lib/image-integrity-files';
+import { refreshIntegrityCasesFromImaChek } from '../../../../lib/image-integrity-sync';
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB, per ImaChek file requirements
 const SUPPORTED_FORMATS = ['png', 'tif', 'tiff', 'jpg', 'jpeg', 'zip', 'pdf'];
+const IMAGE_FORMATS = ['png', 'jpg', 'jpeg']; // browser-displayable thumbnails only
 const MAX_BATCH_FILES = 20;
+
+function withPreview(record) {
+  if (!record) return record;
+  return {
+    ...record,
+    previewUrl: previewUrlForCase(record.id),
+    isImagePreview: IMAGE_FORMATS.includes((record.fileFormat || '').toLowerCase()),
+  };
+}
 
 function getExtension(fileName = '') {
   const parts = fileName.split('.');
@@ -24,14 +36,27 @@ function stripExtension(fileName = '') {
  * per upload" rules trivially satisfied regardless of what else is in the
  * batch.
  */
-async function createAndUploadCase({ title, contributor, doi, file, compareGlobal, submittedById }) {
+async function createAndUploadCase({
+  title,
+  contributor,
+  doi,
+  authors,
+  description,
+  file,
+  compareGlobal,
+  submittedById,
+}) {
   const extension = getExtension(file.name);
+  const fileBytes = Buffer.from(await file.arrayBuffer());
+  const fileForUpload = new File([fileBytes], file.name, { type: file.type || 'application/octet-stream' });
 
   let record = await prisma.imageIntegrityCase.create({
     data: {
       title,
       contributor,
       doi,
+      authors: authors?.length ? authors : undefined,
+      description: description || null,
       fileName: file.name,
       fileFormat: extension,
       fileSizeBytes: file.size,
@@ -40,6 +65,12 @@ async function createAndUploadCase({ title, contributor, doi, file, compareGloba
       submittedById,
     },
   });
+
+  try {
+    await saveIntegrityFile(record.id, fileForUpload);
+  } catch (storeError) {
+    console.error('Failed to store image integrity file locally:', storeError);
+  }
 
   if (!isImaChekConfigured()) {
     record = await prisma.imageIntegrityCase.update({
@@ -50,19 +81,20 @@ async function createAndUploadCase({ title, contributor, doi, file, compareGloba
           'ImaChek is not configured yet. Ask an administrator to set IMACHEK_API_URL and IMACHEK_API_KEY.',
       },
     });
-    return { record, ok: false };
+    return { record: withPreview(record), ok: false };
   }
 
   try {
     const uploadResult = await imachek.uploadFile({
       title,
       contributor,
-      file,
+      file: fileForUpload,
       fileName: file.name,
       compareGlobal,
     });
 
-    const externalCaseId = uploadResult?.record?.case_id;
+    // ImaChek returns { status, message, data: { case_id, analysis_status } }
+    const externalCaseId = extractCaseId(uploadResult);
 
     record = await prisma.imageIntegrityCase.update({
       where: { id: record.id },
@@ -70,11 +102,13 @@ async function createAndUploadCase({ title, contributor, doi, file, compareGloba
         externalCaseId: externalCaseId || null,
         status: externalCaseId ? 'PROCESSING' : 'FAILED',
         analysisStatus: externalCaseId ? 'processing' : null,
-        errorMessage: externalCaseId ? null : 'ImaChek did not return a case_id.',
+        errorMessage: externalCaseId
+          ? null
+          : `ImaChek did not return a case_id. Response: ${JSON.stringify(uploadResult)?.slice(0, 300) || 'empty'}`,
         analysisStartedAt: externalCaseId ? new Date() : null,
       },
     });
-    return { record, ok: Boolean(externalCaseId) };
+    return { record: withPreview(record), ok: Boolean(externalCaseId) };
   } catch (uploadError) {
     console.error('ImaChek upload error:', uploadError);
     const message =
@@ -85,7 +119,7 @@ async function createAndUploadCase({ title, contributor, doi, file, compareGloba
       where: { id: record.id },
       data: { status: 'FAILED', errorMessage: message },
     });
-    return { record, ok: false };
+    return { record: withPreview(record), ok: false };
   }
 }
 
@@ -108,10 +142,12 @@ export async function GET(request) {
       orderBy: { createdAt: 'desc' },
     });
 
+    const refreshed = await refreshIntegrityCasesFromImaChek(cases);
+
     return NextResponse.json({
       success: true,
       configured: isImaChekConfigured(),
-      cases,
+      cases: refreshed.map(withPreview),
     });
   } catch (error) {
     console.error('Image Integrity list error:', error);
@@ -144,7 +180,25 @@ export async function POST(request) {
     const titlePrefix = (formData.get('title') || '').toString().trim();
     const contributor = formData.get('contributor') || `${user.givenName} ${user.familyName}`.trim();
     const doi = formData.get('doi') || null;
+    const description = (formData.get('description') || '').toString().trim() || null;
     const compareGlobal = formData.get('compareGlobal') === 'true';
+
+    let authors = [];
+    const authorsRaw = formData.get('authors');
+    if (authorsRaw) {
+      try {
+        const parsed = JSON.parse(authorsRaw.toString());
+        if (Array.isArray(parsed)) {
+          authors = parsed.map((a) => String(a || '').trim()).filter(Boolean);
+        }
+      } catch {
+        authors = authorsRaw
+          .toString()
+          .split(/\n|;/)
+          .map((a) => a.trim())
+          .filter(Boolean);
+      }
+    }
 
     // Accept either the batch field name ("files") or the legacy single
     // field name ("file") for backward compatibility.
@@ -192,6 +246,8 @@ export async function POST(request) {
         title,
         contributor,
         doi,
+        authors,
+        description,
         file,
         compareGlobal,
         submittedById: user.id,

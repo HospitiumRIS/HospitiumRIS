@@ -81,7 +81,5 @@ export async function GET(request, { params }) {
             { error: 'Failed to download file' },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }

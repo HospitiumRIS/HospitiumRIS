@@ -109,6 +109,9 @@ model User {
   // Image Integrity (ImaChek) Relations
   imageIntegrityCases ImageIntegrityCase[]
 
+  // Grant tracker follow-up assignments
+  grantFollowUpAssignments Proposal[] @relation("ProposalGrantFollowUp")
+
   // Notification Preferences
   notificationPreferences NotificationPreference?
 
@@ -141,21 +144,27 @@ model UserSettings {
 }
 
 model Institution {
-  id     String @id @default(cuid())
-  userId String @unique
+  id     String  @id @default(cuid())
+  userId String? @unique
 
   // Institution Details
-  name    String
-  type    String // University, Hospital, Research Institute, Other
-  country String
-  website String? // Optional for Research Admins, required for others
+  name         String
+  slug         String  @unique
+  type         String  @default("UNIVERSITY") // University, Hospital, Research Institute, Other
+  country      String  @default("")
+  website      String?
+  contactEmail String?
+  logo         String?
+
+  // Module keys this institution may access (publications, projects, etc.)
+  enabledModules Json @default("[\"publications\",\"projects\",\"clinical_trials\",\"image_integrity\",\"training\",\"administration\",\"analytics\"]")
 
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  user            User             @relation("InstitutionOwner", fields: [userId], references: [id], onDelete: Cascade)
+  user            User?            @relation("InstitutionOwner", fields: [userId], references: [id], onDelete: SetNull)
   members         User[]           @relation("InstitutionMembers")
   verifiedDomains VerifiedDomain[]
 
@@ -1041,6 +1050,14 @@ enum ProposalStatus {
   REVISION_REQUESTED
 }
 
+enum GrantTrackingStatus {
+  NOT_APPLIED
+  APPLIED
+  AWARDED
+  REJECTED
+  CANCELLED
+}
+
 model Proposal {
   id String @id @default(cuid())
 
@@ -1095,18 +1112,31 @@ model Proposal {
   // Status and Metadata
   status ProposalStatus @default(DRAFT)
 
+  // External grant performance (after internal review approval)
+  grantTrackingStatus  GrantTrackingStatus @default(NOT_APPLIED)
+  grantRequestedAmount Decimal?            @db.Decimal(15, 2)
+  grantAppliedOn       DateTime?
+  grantDecisionOn      DateTime?
+  grantFollowUpUserId  String?
+  grantTrackingNotes   String?             @db.Text
+  grantTrackingHistory Json[]              @default([])
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  publications      ProposalPublication[]
-  manuscripts       ProposalManuscript[]
-  reviews           ProposalReview[]
-  ethicsLinks       ProposalEthicsLink[]
-  grantApplications GrantApplication[]
-  notifications     Notification[]
-  reviewTracking    ProposalReviewTracking?
+  publications       ProposalPublication[]
+  manuscripts        ProposalManuscript[]
+  reviews            ProposalReview[]
+  ethicsLinks        ProposalEthicsLink[]
+  grantApplications  GrantApplication[]
+  notifications      Notification[]
+  reviewTracking     ProposalReviewTracking?
+  grantFollowUpUser  User?                   @relation("ProposalGrantFollowUp", fields: [grantFollowUpUserId], references: [id], onDelete: SetNull)
+
+  @@index([grantFollowUpUserId])
+  @@index([grantTrackingStatus])
 
   // TODO: Add userId when authentication is implemented
   // userId      String
@@ -1263,6 +1293,9 @@ model EthicsApplication {
   
   // Documents
   documents                Json[] // consent forms, information sheets, questionnaires, etc.
+
+  // APPLICATION = submitted through Hospitium; EXTERNAL_CERTIFICATE = uploaded existing clearance
+  source                   String                  @default("APPLICATION")
   
   // Timestamps
   createdAt DateTime @default(now())
@@ -2429,6 +2462,8 @@ model ImageIntegrityCase {
   title       String
   contributor String?
   doi         String?
+  authors     Json? // string[] of author display names
+  description String? @db.Text
   fileName    String
   fileFormat  String?
   fileSizeBytes Int?
@@ -2447,6 +2482,7 @@ model ImageIntegrityCase {
   classification    Json? // { microscopy: n, blot_gel: n, chart: n, ... }
   pageAmount        Int?
   croppedAmount     Int?
+  analysisTarget    Json? // { case: [external ids], repository: ["global"] } from cross-case compare
 
   // Temporary shareable report (5 min TTL per ImaChek docs)
   reportUrl       String?

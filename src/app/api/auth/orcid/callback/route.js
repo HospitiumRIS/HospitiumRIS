@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 import { logSuccess, logError, logInfo, logApiActivity, getRequestMetadata } from '@/utils/activityLogger';
+import { setSessionCookie } from '@/lib/session-cookie';
 
 export async function GET(request) {
   const requestMetadata = getRequestMetadata(request);
@@ -325,23 +326,9 @@ export async function GET(request) {
       const rememberMeCookie = cookieStore.get('orcid_remember_me');
       const rememberMe = rememberMeCookie?.value === 'true';
       
+      setSessionCookie(response, existingUser.id, { rememberMe });
       if (rememberMe) {
-        // 30 days for "remember me"
-        response.cookies.set('hospitium_session', existingUser.id, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 30 * 24 * 60 * 60 // 30 days in seconds
-        });
-        // Clean up remember me preference cookie
         response.cookies.delete('orcid_remember_me');
-      } else {
-        // Session cookie (expires when browser closes)
-        response.cookies.set('hospitium_session', existingUser.id, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-        });
       }
 
       return response;

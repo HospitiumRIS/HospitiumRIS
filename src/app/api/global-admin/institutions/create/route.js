@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { getAuthenticatedUser } from '@/lib/auth-server';
 import { seedDomainForInstitution } from '@/lib/institution-domain';
+import { uniqueInstitutionSlug } from '@/lib/institution-slug';
+import { defaultEnabledModules } from '@/lib/institution-modules';
 
 const prisma = new PrismaClient();
 
@@ -95,8 +97,11 @@ export async function POST(request) {
       const institution = await tx.institution.create({
         data: {
           name: institutionName,
+          slug: await uniqueInstitutionSlug(tx, institutionName),
           type: finalType,
           country: country,
+          contactEmail: email,
+          enabledModules: defaultEnabledModules(),
           user: {
             create: {
               givenName,

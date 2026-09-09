@@ -66,7 +66,7 @@ const GlobalAdminLoginPage = () => {
       if (data.success) {
         // Verify this is a global admin account
         if (data.user.accountType !== 'GLOBAL_ADMIN') {
-          setError('Access denied. This login is for Global Administrators only.');
+          setError(t('global_admin.access_denied'));
           setLoading(false);
           return;
         }
@@ -74,11 +74,11 @@ const GlobalAdminLoginPage = () => {
         // Login successful - redirect to global admin dashboard
         router.push('/global-admin');
       } else {
-        setError(data.message || 'Invalid email or password');
+        setError(t('global_admin.invalid_credentials'));
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError('An error occurred during login. Please try again.');
+      setError(t('global_admin.login_error'));
     } finally {
       setLoading(false);
     }
@@ -199,10 +199,10 @@ const GlobalAdminLoginPage = () => {
           {/* Footer */}
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="caption" color="text.secondary" display="block">
-              Authorized Personnel Only
+              {t('global_admin.authorized_only')}
             </Typography>
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-              All access attempts are logged and monitored
+              {t('global_admin.access_logged')}
             </Typography>
           </Box>
         </Paper>

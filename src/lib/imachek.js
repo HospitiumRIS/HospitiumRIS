@@ -5,7 +5,7 @@
  * (Automatic Image Detection System for Research Integrity).
  *
  * Docs summary (see ImaChek_API_Documentation.pdf):
- *  - POST   /v1/external/analysis                Upload file(s), starts analysis, returns { case_id }
+ *  - POST   /v1/external/analysis                Upload file(s), starts analysis, returns { data: { case_id } }
  *  - GET    /v1/external/analysis/{case_id}       Poll analysis status/results
  *  - POST   /v1/external/analysis/{case_id}       Cross-case comparison analysis
  *  - GET    /v1/external/case/lists               List all cases (pagination via rows/last_evaluated_key)
@@ -21,8 +21,11 @@
  * actionable message instead of a confusing network failure.
  */
 
-const IMACHEK_API_URL = process.env.IMACHEK_API_URL || '';
-const IMACHEK_API_KEY = process.env.IMACHEK_API_KEY || '';
+function getImaChekConfig() {
+  const url = (process.env.IMACHEK_API_URL || '').trim().replace(/^["']|["']$/g, '');
+  const key = (process.env.IMACHEK_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+  return { url, key };
+}
 
 export class ImaChekNotConfiguredError extends Error {
   constructor() {
@@ -44,7 +47,8 @@ export class ImaChekApiError extends Error {
 }
 
 export function isImaChekConfigured() {
-  return Boolean(IMACHEK_API_URL && IMACHEK_API_KEY);
+  const { url, key } = getImaChekConfig();
+  return Boolean(url && key);
 }
 
 function assertConfigured() {
@@ -54,7 +58,8 @@ function assertConfigured() {
 }
 
 function buildUrl(path, query) {
-  const url = new URL(`${IMACHEK_API_URL.replace(/\/$/, '')}${path}`);
+  const { url: baseUrl } = getImaChekConfig();
+  const url = new URL(`${baseUrl.replace(/\/$/, '')}${path}`);
   if (query) {
     Object.entries(query).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -63,6 +68,58 @@ function buildUrl(path, query) {
     });
   }
   return url.toString();
+}
+
+function apiKeyHeader() {
+  const { key } = getImaChekConfig();
+  return { 'X-API-Key': key };
+}
+
+/** Pull case_id from the various shapes ImaChek has returned. */
+export function extractCaseId(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+  return (
+    payload?.data?.case_id ||
+    payload?.record?.case_id ||
+    payload?.case_id ||
+    (Array.isArray(payload?.data) ? payload.data[0]?.case_id : null) ||
+    null
+  );
+}
+
+/**
+ * Normalize Get Analysis Status / Get Case Info payloads into the fields
+ * our local ImageIntegrityCase model expects.
+ */
+export function normalizeAnalysisPayload(payload) {
+  const latest = Array.isArray(payload?.data) ? payload.data[0] : payload?.data;
+  if (!latest || typeof latest !== 'object') return null;
+
+  const analysisStatus =
+    latest.case_analysis_status || latest.case_status || latest.analysis_status || null;
+  const statusLower = String(analysisStatus || '').toLowerCase();
+  const isCompleted = ['completed', 'complete', 'done', 'success', 'finished'].includes(statusLower);
+  const isFailed = ['failed', 'error', 'cancelled', 'canceled'].includes(statusLower);
+
+  const result = latest.case_analysis_result || latest.analysis_result || latest.result || null;
+
+  return {
+    analysisStatus,
+    isCompleted,
+    isFailed,
+    analysisProgress:
+      latest.case_analysis_progress ??
+      latest.analysis_progress ??
+      (isCompleted ? 100 : isFailed ? 0 : statusLower === 'pending' ? 5 : undefined),
+    manipulationCount: result?.manipulation_count ?? latest.manipulation_count ?? undefined,
+    similarityCount: result?.similarity_count ?? latest.similarity_count ?? undefined,
+    similarityLevel: result?.similarity_level ?? latest.similarity_level ?? undefined,
+    classification: latest.case_classification || latest.classification || undefined,
+    analysisCompletedAt: latest.case_analysis_completed_at || latest.completed_at || null,
+    pageAmount: latest.case_page_amount ?? latest.page_amount ?? undefined,
+    croppedAmount: latest.case_index_cropped_amount ?? latest.cropped_amount ?? undefined,
+    analysisTarget: latest.case_analysis_target || latest.analysis_target || undefined,
+  };
 }
 
 async function parseResponse(response) {
@@ -103,7 +160,7 @@ export async function uploadFile({ title, contributor, file, fileName, compareGl
 
   const response = await fetch(buildUrl('/v1/external/analysis'), {
     method: 'POST',
-    headers: { 'X-API-Key': IMACHEK_API_KEY },
+    headers: apiKeyHeader(),
     body: form,
   });
 
@@ -115,7 +172,7 @@ export async function getAnalysisStatus(caseId) {
   assertConfigured();
   const response = await fetch(buildUrl(`/v1/external/analysis/${caseId}`), {
     method: 'GET',
-    headers: { 'X-API-Key': IMACHEK_API_KEY },
+    headers: apiKeyHeader(),
   });
   return parseResponse(response);
 }
@@ -125,7 +182,7 @@ export async function compareCases(caseId, { repository = ['global'], case: case
   assertConfigured();
   const response = await fetch(buildUrl(`/v1/external/analysis/${caseId}`), {
     method: 'POST',
-    headers: { 'X-API-Key': IMACHEK_API_KEY, 'Content-Type': 'application/json' },
+    headers: { ...apiKeyHeader(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ repository, case: cases }),
   });
   return parseResponse(response);
@@ -141,7 +198,7 @@ export async function getCaseLists({ startDate, endDate, rows, lastEvaluatedKey 
       rows,
       last_evaluated_key: lastEvaluatedKey,
     }),
-    { method: 'GET', headers: { 'X-API-Key': IMACHEK_API_KEY } }
+    { method: 'GET', headers: apiKeyHeader() }
   );
   return parseResponse(response);
 }
@@ -151,7 +208,7 @@ export async function getCaseInfo(caseId) {
   assertConfigured();
   const response = await fetch(buildUrl(`/v1/external/case/${caseId}`), {
     method: 'GET',
-    headers: { 'X-API-Key': IMACHEK_API_KEY },
+    headers: apiKeyHeader(),
   });
   return parseResponse(response);
 }
@@ -161,7 +218,7 @@ export async function deleteCase(caseId) {
   assertConfigured();
   const response = await fetch(buildUrl(`/v1/external/case/${caseId}`), {
     method: 'DELETE',
-    headers: { 'X-API-Key': IMACHEK_API_KEY },
+    headers: apiKeyHeader(),
   });
   return parseResponse(response);
 }
@@ -171,7 +228,7 @@ export async function generateReport(caseId, { title, contributor } = {}) {
   assertConfigured();
   const response = await fetch(buildUrl(`/v1/external/report/${caseId}`), {
     method: 'POST',
-    headers: { 'X-API-Key': IMACHEK_API_KEY, 'Content-Type': 'application/json' },
+    headers: { ...apiKeyHeader(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ title, contributor }),
   });
   return parseResponse(response);
@@ -179,6 +236,8 @@ export async function generateReport(caseId, { title, contributor } = {}) {
 
 const imachek = {
   isImaChekConfigured,
+  extractCaseId,
+  normalizeAnalysisPayload,
   uploadFile,
   getAnalysisStatus,
   compareCases,

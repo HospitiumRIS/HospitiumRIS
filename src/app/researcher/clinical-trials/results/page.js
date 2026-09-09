@@ -226,7 +226,7 @@ export default function ResultsOutputsPage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title={t("researcher.results")}
           description={t("researcher.results_desc")}

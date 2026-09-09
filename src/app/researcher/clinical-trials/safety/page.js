@@ -246,7 +246,7 @@ export default function SafetyCompliancePage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title={t("researcher.safety")}
           description={t("researcher.safety_desc")}

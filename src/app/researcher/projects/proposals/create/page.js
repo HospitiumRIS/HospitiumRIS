@@ -4293,7 +4293,7 @@ const CreateProposalPage = () => {
 
   return (
     <>
-      <Box sx={{ mt: '50px' }}>
+      <Box>
         <PageHeader
         title={t("researcher.create_proposal")}
         description={t("researcher.create_proposal_desc")}

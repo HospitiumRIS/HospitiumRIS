@@ -1,221 +1,165 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-import { getAuthenticatedUser } from '@/lib/auth-server';
-import { logApiActivity, logDatabaseActivity, getRequestMetadata } from '@/utils/activityLogger';
+import prisma from '@/lib/prisma';
+import { requireGlobalAdmin } from '@/lib/require-global-admin';
+import { uniqueInstitutionSlug, slugify } from '@/lib/institution-slug';
+import { normalizeEnabledModules } from '@/lib/institution-modules';
+import { INSTITUTION_TYPE_VALUES } from '@/lib/institution-types';
 
-const prisma = new PrismaClient();
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const institutionInclude = {
+  user: {
+    select: {
+      id: true,
+      givenName: true,
+      familyName: true,
+      email: true,
+      status: true,
+    },
+  },
+  verifiedDomains: {
+    select: {
+      id: true,
+      domain: true,
+      status: true,
+      verificationMethod: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  },
+  _count: {
+    select: { members: true },
+  },
+};
+
+function serializeInstitution(institution) {
+  return {
+    id: institution.id,
+    name: institution.name,
+    slug: institution.slug,
+    type: institution.type,
+    country: institution.country,
+    website: institution.website,
+    contactEmail: institution.contactEmail,
+    enabledModules: Array.isArray(institution.enabledModules) ? institution.enabledModules : [],
+    createdAt: institution.createdAt,
+    updatedAt: institution.updatedAt,
+    admin: institution.user
+      ? {
+          id: institution.user.id,
+          givenName: institution.user.givenName,
+          familyName: institution.user.familyName,
+          email: institution.user.email,
+          status: institution.user.status,
+        }
+      : null,
+    domains: institution.verifiedDomains || [],
+    memberCount: institution._count?.members ?? 0,
+  };
+}
+
+export async function GET(request, { params }) {
+  try {
+    const { error } = await requireGlobalAdmin();
+    if (error) return error;
+
+    const { id } = await params;
+    const institution = await prisma.institution.findUnique({
+      where: { id },
+      include: institutionInclude,
+    });
+
+    if (!institution) {
+      return NextResponse.json({ error: 'Institution not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      institution: serializeInstitution(institution),
+    });
+  } catch (err) {
+    console.error('Error fetching institution:', err);
+    return NextResponse.json({ error: 'Failed to fetch institution' }, { status: 500 });
+  }
+}
 
 export async function PUT(request, { params }) {
-  const startTime = Date.now();
-  let requestMetadata;
-  
   try {
-    // Check authentication and authorization
-    const currentUser = await getAuthenticatedUser();
-    
-    // Get request metadata with user details for audit trail
-    requestMetadata = getRequestMetadata(request, currentUser);
-    
-    if (!currentUser) {
-      await logApiActivity('PUT', '/api/global-admin/institutions/[id]', 401, {
-        ...requestMetadata,
-        reason: 'No authenticated user'
-      });
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const { error } = await requireGlobalAdmin();
+    if (error) return error;
 
-    if (currentUser.accountType !== 'GLOBAL_ADMIN') {
-      await logApiActivity('PUT', '/api/global-admin/institutions/[id]', 403, {
-        ...requestMetadata,
-        reason: 'Insufficient permissions',
-        requiredRole: 'GLOBAL_ADMIN',
-        userRole: currentUser.accountType
-      });
-      return NextResponse.json(
-        { error: 'Forbidden - Global Admin access required' },
-        { status: 403 }
-      );
-    }
-
-    // Await params in Next.js 15+
-    const resolvedParams = await params;
-    const { id } = resolvedParams;
+    const { id } = await params;
     const body = await request.json();
-    const { givenName, familyName, email, institutionName, institutionType, country, password } = body;
-    
-    // Log the update attempt
-    await logApiActivity('PUT', `/api/global-admin/institutions/${id}`, 200, {
-      ...requestMetadata,
-      action: 'UPDATE_INSTITUTION_ADMIN',
-      targetUserId: id,
-      changes: {
-        institutionName,
-        institutionType,
-        email,
-        passwordChanged: !!password
+
+    const existing = await prisma.institution.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Institution not found' }, { status: 404 });
+    }
+
+    const data = {};
+
+    if (typeof body.name === 'string' && body.name.trim()) {
+      data.name = body.name.trim();
+      if (data.name.toLowerCase() !== existing.name.toLowerCase()) {
+        const nameTaken = await prisma.institution.findFirst({
+          where: {
+            name: { equals: data.name, mode: 'insensitive' },
+            NOT: { id },
+          },
+        });
+        if (nameTaken) {
+          return NextResponse.json(
+            { error: 'An institution with this name already exists' },
+            { status: 400 }
+          );
+        }
       }
-    });
-
-    // Validate required fields
-    if (!givenName || !familyName || !email || !institutionName || !country) {
-      return NextResponse.json(
-        { error: 'All fields except password are required' },
-        { status: 400 }
-      );
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      );
+    if (typeof body.contactEmail === 'string') {
+      const email = body.contactEmail.trim().toLowerCase();
+      if (email && !EMAIL_REGEX.test(email)) {
+        return NextResponse.json({ error: 'Invalid contact email' }, { status: 400 });
+      }
+      data.contactEmail = email || null;
     }
 
-    // Validate password if provided
-    if (password && password.length < 8) {
-      return NextResponse.json(
-        { error: 'Password must be at least 8 characters' },
-        { status: 400 }
-      );
+    if (typeof body.type === 'string' && body.type.trim()) {
+      if (!INSTITUTION_TYPE_VALUES.includes(body.type.trim())) {
+        return NextResponse.json({ error: 'Invalid institution type' }, { status: 400 });
+      }
+      data.type = body.type.trim();
     }
 
-    // Validate institution type
-    const validTypes = ['UNIVERSITY', 'RESEARCH_INSTITUTE', 'HOSPITAL', 'GOVERNMENT', 'PRIVATE', 'NON_PROFIT', 'OTHER'];
-    const finalType = institutionType && validTypes.includes(institutionType) ? institutionType : 'UNIVERSITY';
+    if (typeof body.country === 'string') {
+      data.country = body.country.trim();
+    }
 
-    // Check if user exists
-    const existingUser = await prisma.user.findUnique({
+    if (typeof body.website === 'string') {
+      data.website = body.website.trim() || null;
+    }
+
+    if (typeof body.slug === 'string' && body.slug.trim()) {
+      data.slug = await uniqueInstitutionSlug(prisma, slugify(body.slug), id);
+    }
+
+    if (body.enabledModules !== undefined) {
+      data.enabledModules = normalizeEnabledModules(body.enabledModules);
+    }
+
+    const institution = await prisma.institution.update({
       where: { id },
-      include: { institution: true }
-    });
-
-    if (!existingUser) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check if email is being changed and if it's already in use
-    if (email !== existingUser.email) {
-      const emailExists = await prisma.user.findUnique({
-        where: { email }
-      });
-
-      if (emailExists) {
-        return NextResponse.json(
-          { error: 'Email already in use' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Prepare update data
-    const updateData = {
-      givenName,
-      familyName,
-      email
-    };
-
-    // Add password hash if password is provided
-    if (password) {
-      updateData.passwordHash = await bcrypt.hash(password, 10);
-    }
-
-    // Update user and institution in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Update user
-      const updatedUser = await tx.user.update({
-        where: { id },
-        data: updateData
-      });
-
-      // Log user update
-      await logDatabaseActivity('UPDATE', 'User', { success: true, count: 1 }, {
-        ...requestMetadata,
-        action: 'UPDATE_INSTITUTION_ADMIN_USER',
-        targetUserId: id,
-        updatedFields: Object.keys(updateData),
-        duration: Date.now() - startTime
-      });
-
-      // Update institution
-      const updatedInstitution = await tx.institution.update({
-        where: { id: existingUser.institution.id },
-        data: {
-          name: institutionName,
-          type: finalType,
-          country: country
-        }
-      });
-
-      // Log institution update
-      await logDatabaseActivity('UPDATE', 'Institution', { success: true, count: 1 }, {
-        ...requestMetadata,
-        action: 'UPDATE_INSTITUTION',
-        institutionId: existingUser.institution.id,
-        institutionName,
-        institutionType: finalType,
-        duration: Date.now() - startTime
-      });
-
-      // Create notification for the global admin
-      await tx.notification.create({
-        data: {
-          userId: currentUser.id,
-          type: 'SYSTEM_NOTIFICATION',
-          title: 'Institution Updated',
-          message: `Successfully updated institution admin for ${institutionName}`,
-          isRead: false
-        }
-      });
-
-      // Log notification creation
-      await logDatabaseActivity('CREATE', 'Notification', { success: true, count: 1 }, {
-        ...requestMetadata,
-        action: 'CREATE_UPDATE_NOTIFICATION',
-        notificationType: 'SYSTEM_NOTIFICATION',
-        duration: Date.now() - startTime
-      });
-
-      return { user: updatedUser, institution: updatedInstitution };
+      data,
+      include: institutionInclude,
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Institution admin updated successfully',
-      data: {
-        id: result.user.id,
-        name: `${result.user.givenName} ${result.user.familyName}`,
-        email: result.user.email,
-        institution: result.institution.name,
-        status: result.user.status
-      }
+      message: 'Institution updated',
+      institution: serializeInstitution(institution),
     });
-
-  } catch (error) {
-    console.error('Error updating institution admin:', error);
-    
-    // Log the error with full context for audit trail
-    await logApiActivity('PUT', '/api/global-admin/institutions/[id]', 500, {
-      ...requestMetadata,
-      error: error.message,
-      errorStack: error.stack,
-      action: 'UPDATE_INSTITUTION_ADMIN_FAILED',
-      duration: Date.now() - startTime
-    });
-    
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    );
-  } finally {
-    await prisma.$disconnect();
+  } catch (err) {
+    console.error('Error updating institution:', err);
+    return NextResponse.json({ error: 'Failed to update institution' }, { status: 500 });
   }
 }

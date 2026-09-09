@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { logApiActivity, logError, logInfo, logSuccess, getRequestMetadata } from '@/utils/activityLogger';
 import { linkInstitutionIfNeeded } from '@/lib/institution-domain';
+import { setSessionCookie } from '@/lib/session-cookie';
+import { resolveUserEnabledModules } from '@/lib/institution-modules';
 
 /**
  * @swagger
@@ -43,6 +45,7 @@ export async function POST(request) {
         where: { orcidId: orcidId },
         include: {
           institution: true,
+          secondaryInstitution: true,
           foundation: true,
         }
       });
@@ -218,6 +221,8 @@ export async function POST(request) {
           status: user.status,
           emailVerified: user.emailVerified,
           createdAt: user.createdAt,
+          enabledModules: resolveUserEnabledModules(user),
+          institutionId: user.institution?.id || user.secondaryInstitutionId || null,
         },
         dashboardRoute,
         rememberMe: rememberMe || false,
@@ -225,21 +230,7 @@ export async function POST(request) {
       }, { status: 200 });
 
       // Set session cookie
-      if (rememberMe) {
-        response.cookies.set('hospitium_session', user.id, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 30 * 24 * 60 * 60 // 30 days in seconds
-        });
-      } else {
-        // Session cookie (expires when browser closes)
-        response.cookies.set('hospitium_session', user.id, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-        });
-      }
+      setSessionCookie(response, user.id, { rememberMe: rememberMe || false });
 
       return response;
     }
@@ -286,6 +277,7 @@ export async function POST(request) {
       where: { email: email.toLowerCase() },
       include: {
         institution: true,
+        secondaryInstitution: true,
         foundation: true,
       }
     });
@@ -484,28 +476,15 @@ export async function POST(request) {
         status: user.status,
         emailVerified: user.emailVerified,
         createdAt: user.createdAt,
+        enabledModules: resolveUserEnabledModules(user),
+        institutionId: user.institution?.id || user.secondaryInstitutionId || null,
       },
       dashboardRoute,
       rememberMe: rememberMe || false
     }, { status: 200 });
 
     // Set session cookie (simple approach - in production, use proper JWT/session management)
-    if (rememberMe) {
-      // 30 days for "remember me"
-      response.cookies.set('hospitium_session', user.id, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 30 * 24 * 60 * 60 // 30 days in seconds
-      });
-    } else {
-      // Session cookie (expires when browser closes)
-      response.cookies.set('hospitium_session', user.id, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-      });
-    }
+    setSessionCookie(response, user.id, { rememberMe: rememberMe || false });
 
     return response;
 

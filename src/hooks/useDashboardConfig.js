@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../components/AuthProvider';
 import {
   Article as ArticleIcon,
   Group as GroupIcon,
@@ -77,6 +78,7 @@ function buildInstitutionConfig(t) {
     title: t('institution.portal_title'),
     menuItems: [
       {
+        key: 'publications',
         label: t('institution.publications'),
         categories: [
           category(t, 'nav_categories.writing_tracker', [
@@ -86,6 +88,7 @@ function buildInstitutionConfig(t) {
         ],
       },
       {
+        key: 'projects',
         label: t('institution.projects'),
         categories: [
           category(t, 'nav_categories.proposal_review', [
@@ -100,6 +103,7 @@ function buildInstitutionConfig(t) {
         ],
       },
       {
+        key: 'clinical_trials',
         label: t('institution.clinical_trials'),
         categories: [
           category(t, 'nav_categories.portfolio_oversight', [
@@ -122,14 +126,17 @@ function buildInstitutionConfig(t) {
         ],
       },
       {
+        key: 'image_integrity',
         label: t('institution.image_integrity'),
         categories: [
           category(t, 'nav_categories.integrity_oversight', [
             item(t, 'institution_nav.integrity_reports', 'institution_nav.integrity_reports_desc', '/institution/image-integrity', <IntegrityReportIcon sx={ICON_SM} />),
+            item(t, 'institution_nav.integrity_usage_report', 'institution_nav.integrity_usage_desc', '/institution/image-integrity/usage', <ReportsIcon sx={ICON_SM} />),
           ]),
         ],
       },
       {
+        key: 'training',
         label: t('institution.training'),
         categories: [
           category(t, 'nav_categories.training_management', [
@@ -138,6 +145,7 @@ function buildInstitutionConfig(t) {
         ],
       },
       {
+        key: 'administration',
         label: t('institution.administration'),
         categories: [
           category(t, 'nav_categories.researcher_management', [
@@ -154,6 +162,7 @@ function buildInstitutionConfig(t) {
         ],
       },
       {
+        key: 'analytics',
         label: t('institution.analytics'),
         categories: [
           category(t, 'nav_categories.institutional_analytics', [
@@ -173,6 +182,7 @@ function buildResearcherConfig(t) {
     title: t('researcher.portal_title'),
     menuItems: [
       {
+        key: 'publications',
         label: t('researcher.publications'),
         categories: [
           category(t, 'nav_categories.writing_phase', [
@@ -187,11 +197,12 @@ function buildResearcherConfig(t) {
         ],
       },
       {
+        key: 'projects',
         label: t('researcher.projects'),
         categories: [
           category(t, 'nav_categories.proposals', [
             item(t, 'researcher.proj_proposals', 'researcher.proj_proposals_desc', '/researcher/projects/proposals/list', <ProposalIcon sx={ICON_SM} />),
-            item(t, 'researcher.proj_grant_lifecycle', 'researcher.proj_grant_lifecycle_desc', '/researcher/projects/proposals/liason', <FollowUpIcon sx={ICON_SM} />),
+            item(t, 'researcher.proj_grant_lifecycle', 'researcher.proj_grant_lifecycle_desc', '/researcher/projects/proposals/grant-tracker', <FollowUpIcon sx={ICON_SM} />),
           ]),
           category(t, 'nav_categories.tracking', [
             item(t, 'researcher.proj_status', 'researcher.proj_status_desc', '/researcher/projects/tracking/status', <StatusIcon sx={ICON_SM} />),
@@ -202,15 +213,18 @@ function buildResearcherConfig(t) {
         ],
       },
       {
+        key: 'projects',
         label: t('researcher.ethics'),
         categories: [
           category(t, 'nav_categories.ethics_applications', [
             item(t, 'researcher.ethics_applications', 'researcher.ethics_applications_desc', '/researcher/ethics/applications', <EthicsIcon sx={ICON_SM} />),
             item(t, 'researcher.ethics_create', 'researcher.ethics_create_desc', '/researcher/ethics/applications/create', <CreateIcon sx={ICON_SM} />),
+            item(t, 'researcher.ethics_upload_certificate', 'researcher.ethics_upload_certificate_desc', '/researcher/ethics/applications?upload=1', <SubmitIcon sx={ICON_SM} />),
           ]),
         ],
       },
       {
+        key: 'clinical_trials',
         label: t('researcher.clinical_trials'),
         categories: [
           category(t, 'nav_categories.trial_setup', [
@@ -229,6 +243,7 @@ function buildResearcherConfig(t) {
         ],
       },
       {
+        key: 'image_integrity',
         label: t('researcher.image_integrity'),
         categories: [
           category(t, 'nav_categories.integrity_checks', [
@@ -237,6 +252,7 @@ function buildResearcherConfig(t) {
         ],
       },
       {
+        key: 'training',
         label: t('researcher.training'),
         categories: [
           category(t, 'nav_categories.available_trainings', [
@@ -249,6 +265,7 @@ function buildResearcherConfig(t) {
         ],
       },
       {
+        key: 'analytics',
         label: t('researcher.analytics'),
         categories: [
           category(t, 'nav_categories.research_metrics', [
@@ -320,12 +337,32 @@ function buildFoundationConfig(t) {
 export function useDashboardConfig() {
   const pathname = usePathname();
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
 
   return useMemo(() => {
     const currentPath = pathname || '';
-    if (currentPath.includes('/institution')) return buildInstitutionConfig(t);
-    if (currentPath.includes('/researcher')) return buildResearcherConfig(t);
-    if (currentPath.includes('/foundation')) return buildFoundationConfig(t);
-    return null;
-  }, [pathname, t, i18n.language]);
+    if (currentPath.startsWith('/global-admin') || currentPath.startsWith('/institution-admin')) {
+      return null;
+    }
+
+    let config = null;
+    if (currentPath === '/institution' || currentPath.startsWith('/institution/')) {
+      config = buildInstitutionConfig(t);
+    } else if (currentPath === '/researcher' || currentPath.startsWith('/researcher/')) {
+      config = buildResearcherConfig(t);
+    } else if (currentPath === '/foundation' || currentPath.startsWith('/foundation/')) {
+      config = buildFoundationConfig(t);
+    }
+
+    if (config?.menuItems && Array.isArray(user?.enabledModules)) {
+      config = {
+        ...config,
+        menuItems: config.menuItems.filter(
+          (item) => !item.key || user.enabledModules.includes(item.key)
+        ),
+      };
+    }
+
+    return config;
+  }, [pathname, t, i18n.language, user?.enabledModules]);
 }

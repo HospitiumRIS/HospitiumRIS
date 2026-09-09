@@ -131,7 +131,7 @@ export default function TrialIntelligencePage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title={t("researcher.trial_intelligence")}
           description={t("researcher.trial_intelligence_desc")}

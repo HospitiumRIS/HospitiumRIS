@@ -59,6 +59,8 @@ const LibrarySelectionModal = ({
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [publicationToMove, setPublicationToMove] = useState(null);
     const [targetFolder, setTargetFolder] = useState(null);
+    const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false);
+    const [folderToDelete, setFolderToDelete] = useState(null);
 
     useEffect(() => {
         if (open) {
@@ -232,6 +234,58 @@ const LibrarySelectionModal = ({
         setPublicationToMove(publication);
         setTargetFolder(null);
         setMoveDialogOpen(true);
+    };
+
+    const getDescendantFolderIds = (folderId) => {
+        const descendants = [];
+        const findDescendants = (parentId) => {
+            folders.forEach(folder => {
+                if (folder.parent === parentId) {
+                    descendants.push(folder.id);
+                    findDescendants(folder.id);
+                }
+            });
+        };
+        findDescendants(folderId);
+        return descendants;
+    };
+
+    const handleOpenDeleteFolder = (folder, e) => {
+        e.stopPropagation();
+        setFolderToDelete(folder);
+        setDeleteFolderDialogOpen(true);
+    };
+
+    const handleConfirmDeleteFolder = async () => {
+        if (!folderToDelete) return;
+
+        try {
+            const response = await fetch(`/api/publications/library?folderId=${folderToDelete.id}`, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                const descendantIds = getDescendantFolderIds(folderToDelete.id);
+                const idsToDelete = [folderToDelete.id, ...descendantIds];
+
+                setFolders(prev => prev.filter(folder => !idsToDelete.includes(folder.id)));
+
+                if (idsToDelete.includes(selectedFolder)) {
+                    setSelectedFolder(null);
+                    setSelectedFolderData(null);
+                    setFolderPublications([]);
+                }
+
+                setDeleteFolderDialogOpen(false);
+                setFolderToDelete(null);
+            } else {
+                alert(data.error || 'Failed to delete folder');
+            }
+        } catch (error) {
+            console.error('Error deleting folder:', error);
+            alert('Failed to delete folder');
+        }
     };
 
     const handleMovePublication = async () => {
@@ -427,10 +481,7 @@ const LibrarySelectionModal = ({
                             <Tooltip title="Delete folder">
                                 <IconButton
                                     size="small"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        // TODO: Implement delete functionality
-                                    }}
+                                    onClick={(e) => handleOpenDeleteFolder(folder, e)}
                                     sx={{ 
                                         color: '#f44336',
                                         '&:hover': { bgcolor: 'rgba(244, 67, 54, 0.1)' },
@@ -730,8 +781,8 @@ const LibrarySelectionModal = ({
                             onClick={handleClose}
                             sx={{ color: '#8b6cbc' }}
                         >
-                            t('common.cancel')
-</Button>
+                            {t('common.cancel')}
+                        </Button>
                         <Button
                             variant="contained"
                             onClick={handleSelectFolder}
@@ -757,8 +808,8 @@ const LibrarySelectionModal = ({
                             '&:hover': { bgcolor: '#7b5ca7' }
                         }}
                     >
-                        t('common.close')
-</Button>
+                        {t('common.close')}
+                    </Button>
                 )}
             </DialogActions>
 
@@ -831,8 +882,8 @@ const LibrarySelectionModal = ({
                 </DialogContent>
                 <DialogActions sx={{ px: 3, py: 2 }}>
                     <Button onClick={() => setMoveDialogOpen(false)}>
-                        t('common.cancel')
-</Button>
+                        {t('common.cancel')}
+                    </Button>
                     <Button
                         variant="contained"
                         onClick={handleMovePublication}
@@ -847,6 +898,47 @@ const LibrarySelectionModal = ({
                         }}
                     >
                         Move
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Folder Confirmation Dialog */}
+            <Dialog
+                open={deleteFolderDialogOpen}
+                onClose={() => {
+                    setDeleteFolderDialogOpen(false);
+                    setFolderToDelete(null);
+                }}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle sx={{ fontWeight: 600 }}>
+                    Delete Folder
+                </DialogTitle>
+                <DialogContent>
+                    {folderToDelete && (
+                        <Typography variant="body2">
+                            Are you sure you want to delete the folder <strong>&quot;{folderToDelete.name}&quot;</strong>?
+                            {getDescendantFolderIds(folderToDelete.id).length > 0 && (
+                                <> This folder contains {getDescendantFolderIds(folderToDelete.id).length} subfolder(s).</>
+                            )}
+                            {' '}Publications in this folder will be removed from it.
+                        </Typography>
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2 }}>
+                    <Button onClick={() => {
+                        setDeleteFolderDialogOpen(false);
+                        setFolderToDelete(null);
+                    }}>
+                        {t('common.cancel')}
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleConfirmDeleteFolder}
+                    >
+                        Delete
                     </Button>
                 </DialogActions>
             </Dialog>

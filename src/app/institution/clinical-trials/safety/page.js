@@ -104,7 +104,7 @@ export default function SafetyAndDeviationsMonitorPage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title="Safety & Deviations Monitor"
           description="SAE flag tracker, protocol deviations, SLA countdowns and corrective actions"

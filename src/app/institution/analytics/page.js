@@ -50,17 +50,14 @@ import {
   Cancel as RejectedIcon,
   Search as SearchIcon,
   Visibility as ViewIcon,
-  Article as ArticleIcon,
-  Folder as FolderIcon,
-  InfoOutlined as InfoIcon,
   FormatQuote as CitationIcon,
   Group as CollaborationIcon,
   AttachMoney as FundingIcon,
-  Business as DepartmentIcon,
   EmojiEvents as AchievementIcon,
   Timeline as TimelineIcon
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import InstitutionReportsDashboard from '@/components/Analytics/InstitutionReportsDashboard';
 
 const InstitutionAnalytics = () => {
   const { t } = useTranslation();
@@ -68,7 +65,6 @@ const InstitutionAnalytics = () => {
   const [loading, setLoading] = useState(true);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [researcherSearchTerm, setResearcherSearchTerm] = useState('');
 
   useEffect(() => {
@@ -101,26 +97,6 @@ const InstitutionAnalytics = () => {
 
   const handleExport = () => {
     console.log('Export analytics data');
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'approved': return 'success';
-      case 'submitted': return 'warning';
-      case 'under_review': return 'info';
-      case 'rejected': return 'error';
-      case 'published': return 'success';
-      case 'draft': return 'default';
-      default: return 'default';
-    }
   };
 
   const filteredResearchers = useMemo(() => {
@@ -545,83 +521,8 @@ const InstitutionAnalytics = () => {
           </Card>
         </Box>
 
-        {/* Department Performance Section */}
-        <Box sx={{ mb: 4 }}>
-          <Typography 
-            variant="h5" 
-            sx={{ 
-              fontWeight: 700, 
-              mb: 3,
-              color: '#2d3748',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}
-          >
-            <DepartmentIcon sx={{ color: '#8b6cbc' }} />
-            Department Performance
-          </Typography>
-          
-          <Box sx={{ 
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
-            gap: 2
-          }}>
-            {analyticsData.departmentStats?.slice(0, 6).map((dept) => (
-              <Card key={dept.name} sx={{ 
-                borderRadius: 2,
-                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                border: '1px solid #f3f4f6',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  borderColor: '#e5e7eb',
-                  transform: 'translateY(-2px)'
-                }
-              }}>
-                <CardContent sx={{ p: 2.5 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1f2937', mb: 2 }}>
-                    {dept.name}
-                  </Typography>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                        Researchers
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#8b6cbc' }}>
-                        {dept.researcherCount || 0}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                        Publications
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#10b981' }}>
-                        {dept.publicationCount || 0}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                        Proposals
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#f59e0b' }}>
-                        {dept.proposalCount || 0}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                        Success Rate
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#3b82f6' }}>
-                        {dept.successRate || 0}%
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            ))}
-          </Box>
-        </Box>
+        {/* Dashboards & Reports */}
+        <InstitutionReportsDashboard />
 
         {/* Research Impact Metrics */}
         <Box sx={{ mb: 4 }}>
@@ -727,24 +628,12 @@ const InstitutionAnalytics = () => {
           </Box>
         </Box>
 
-        {/* Data Tables Section */}
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 4, 
-          flexWrap: 'wrap',
-          '& > *': {
-            flex: {
-              xs: '1 1 100%',
-              lg: '1 1 calc(50% - 16px)'
-            }
-          }
+        {/* Top Researchers */}
+        <Card sx={{ 
+          borderRadius: 3, 
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(139, 108, 188, 0.1)'
         }}>
-          {/* Top Researchers */}
-          <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            border: '1px solid rgba(139, 108, 188, 0.1)'
-          }}>
             <CardContent sx={{ p: 0 }}>
               <Box sx={{ 
                 p: 3, 
@@ -866,96 +755,6 @@ const InstitutionAnalytics = () => {
               </TableContainer>
             </CardContent>
           </Card>
-
-          {/* Recent Activity */}
-          <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            border: '1px solid rgba(139, 108, 188, 0.1)'
-          }}>
-            <CardContent sx={{ p: 4 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    Recent Activity
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Latest manuscripts and proposals
-                  </Typography>
-                </Box>
-              </Stack>
-
-              <Stack spacing={2} sx={{ maxHeight: 400, overflowY: 'auto' }}>
-                {analyticsData.recentActivity.slice(0, 10).map((activity) => (
-                  <Box
-                    key={`${activity.type}-${activity.id}`}
-                    sx={{
-                      p: 2,
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: alpha('#8b6cbc', 0.1),
-                      transition: 'all 0.2s ease',
-                      cursor: 'pointer',
-                      '&:hover': {
-                        borderColor: '#8b6cbc',
-                        backgroundColor: alpha('#8b6cbc', 0.02),
-                        transform: 'translateX(4px)'
-                      }
-                    }}
-                  >
-                    <Stack direction="row" alignItems="flex-start" spacing={2}>
-                      <Box sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: activity.type === 'manuscript' 
-                          ? alpha('#8b6cbc', 0.1) 
-                          : alpha('#e67e22', 0.1),
-                        color: activity.type === 'manuscript' ? '#8b6cbc' : '#e67e22'
-                      }}>
-                        {activity.type === 'manuscript' ? <ArticleIcon /> : <FolderIcon />}
-                      </Box>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                          {activity.title}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                          by {activity.author}
-                        </Typography>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <Chip
-                            label={activity.type === 'manuscript' ? 'Manuscript' : 'Proposal'}
-                            size="small"
-                            sx={{ 
-                              height: 20,
-                              fontSize: '0.65rem',
-                              bgcolor: activity.type === 'manuscript' 
-                                ? alpha('#8b6cbc', 0.1) 
-                                : alpha('#e67e22', 0.1),
-                              color: activity.type === 'manuscript' ? '#8b6cbc' : '#e67e22'
-                            }}
-                          />
-                          <Chip
-                            label={activity.status}
-                            size="small"
-                            color={getStatusColor(activity.status)}
-                            sx={{ height: 20, fontSize: '0.65rem' }}
-                          />
-                          <Typography variant="caption" color="text.secondary">
-                            {formatDate(activity.createdAt)}
-                          </Typography>
-                        </Stack>
-                      </Box>
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
-            </CardContent>
-          </Card>
-        </Box>
       </Container>
     </>
   );

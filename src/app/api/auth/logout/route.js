@@ -1,20 +1,17 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { clearSessionCookie } from '@/lib/session-cookie';
 
 export async function POST(request) {
   try {
     const { preserveRememberMe = false } = await request.json().catch(() => ({}));
     
-    // Clear the session cookie 
     const response = NextResponse.json(
       { success: true, message: 'Logged out successfully' },
       { status: 200 }
     );
     
-    // Remove the session cookie
-    response.cookies.delete('hospitium_session');
+    clearSessionCookie(response);
     
-    // Clean up any ORCID remember me cookies that might be lingering
     response.cookies.delete('orcid_remember_me');
     
     // Note: We don't clear the client-side remember me preference (localStorage)

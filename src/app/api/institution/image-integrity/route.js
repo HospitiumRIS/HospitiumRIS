@@ -2,8 +2,19 @@ import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../lib/auth-server';
 import { isImaChekConfigured } from '../../../../lib/imachek';
+import { refreshIntegrityCasesFromImaChek } from '../../../../lib/image-integrity-sync';
 
 const INSTITUTION_ROLES = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
+const IMAGE_FORMATS = ['png', 'jpg', 'jpeg'];
+
+function withPreview(record) {
+  if (!record) return record;
+  return {
+    ...record,
+    previewUrl: `/api/institution/image-integrity/${record.id}/file`,
+    isImagePreview: IMAGE_FORMATS.includes((record.fileFormat || '').toLowerCase()),
+  };
+}
 
 /**
  * GET /api/institution/image-integrity
@@ -30,8 +41,11 @@ export async function GET(request) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
         { contributor: { contains: search, mode: 'insensitive' } },
+        { fileName: { contains: search, mode: 'insensitive' } },
+        { doi: { contains: search, mode: 'insensitive' } },
         { submittedBy: { is: { givenName: { contains: search, mode: 'insensitive' } } } },
         { submittedBy: { is: { familyName: { contains: search, mode: 'insensitive' } } } },
+        { submittedBy: { is: { email: { contains: search, mode: 'insensitive' } } } },
       ];
     }
 
@@ -45,17 +59,24 @@ export async function GET(request) {
       },
     });
 
+    const refreshed = await refreshIntegrityCasesFromImaChek(cases);
+
     const summary = {
-      total: cases.length,
-      completed: cases.filter((c) => c.status === 'COMPLETED').length,
-      processing: cases.filter((c) => c.status === 'PROCESSING' || c.status === 'UPLOADING').length,
-      failed: cases.filter((c) => c.status === 'FAILED').length,
-      flagged: cases.filter(
-        (c) => (c.manipulationCount || 0) > 0 || (c.similarityLevel?.high || 0) > 0
+      total: refreshed.length,
+      completed: refreshed.filter((c) => c.status === 'COMPLETED').length,
+      processing: refreshed.filter((c) => c.status === 'PROCESSING' || c.status === 'UPLOADING').length,
+      failed: refreshed.filter((c) => c.status === 'FAILED').length,
+      flagged: refreshed.filter(
+        (c) => (c.manipulationCount || 0) > 0 || (c.similarityCount || 0) > 0
       ).length,
     };
 
-    return NextResponse.json({ success: true, configured: isImaChekConfigured(), cases, summary });
+    return NextResponse.json({
+      success: true,
+      configured: isImaChekConfigured(),
+      cases: refreshed.map(withPreview),
+      summary,
+    });
   } catch (error) {
     console.error('Institution Image Integrity list error:', error);
     return NextResponse.json({ error: 'Failed to load submission reports' }, { status: 500 });

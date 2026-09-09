@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 import { logInfo, logError, getRequestMetadata } from '@/utils/activityLogger';
+import { resolveUserEnabledModules } from '@/lib/institution-modules';
 
 export async function GET(request) {
   try {
@@ -21,6 +22,7 @@ export async function GET(request) {
       where: { id: sessionCookie.value },
       include: {
         institution: true,
+        secondaryInstitution: true,
         foundation: true,
       }
     });
@@ -79,6 +81,8 @@ export async function GET(request) {
         status: user.status,
         emailVerified: user.emailVerified,
         createdAt: user.createdAt,
+        enabledModules: resolveUserEnabledModules(user),
+        institutionId: user.institution?.id || user.secondaryInstitutionId || null,
       },
       dashboardRoute
     }, { status: 200 });

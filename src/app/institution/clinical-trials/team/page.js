@@ -105,7 +105,7 @@ export default function TeamAndGcpCertificationPage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title="Team & GCP Certification"
           description="Institution-wide team directory, GCP cert expiry alerts, delegation log completeness"

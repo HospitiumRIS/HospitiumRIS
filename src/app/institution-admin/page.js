@@ -33,12 +33,14 @@ import {
   Storage as StorageIcon,
   Speed as SpeedIcon,
   Refresh as RefreshIcon,
-  Visibility as VisibilityIcon
+  Visibility as VisibilityIcon,
+  Business as InstitutionIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import InstitutionAdminLayout from '../../components/InstitutionAdmin/InstitutionAdminLayout';
+import { useInstitutionAdmin } from '../../components/InstitutionAdmin/InstitutionAdminContext';
 
 const InstitutionAdminPage = () => {
   const { t } = useTranslation();
@@ -162,48 +164,7 @@ const InstitutionAdminPage = () => {
   return (
     <InstitutionAdminLayout>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: 'background.default', minHeight: '100vh' }}>
-        {/* Professional Header */}
-        <Box sx={{ 
-          mb: 4,
-          pb: 3,
-          borderBottom: '2px solid',
-          borderColor: 'divider'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box>
-              <Typography 
-                variant="h4" 
-                sx={{ 
-                  fontWeight: 700, 
-                  mb: 1,
-                  background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  letterSpacing: '-0.02em'
-                }}
-              >
-                {t('institution_admin.dashboard')}
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('common.dashboard')}
-              </Typography>
-            </Box>
-            <Tooltip title="Refresh data">
-              <IconButton 
-                onClick={handleRefresh} 
-                sx={{ 
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  '&:hover': { bgcolor: 'primary.dark' },
-                  boxShadow: 2
-                }}
-              >
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
+        <DashboardHeading onRefresh={handleRefresh} />
 
         {/* Professional Stats Cards */}
         <Box sx={{ 
@@ -782,5 +743,75 @@ const InstitutionAdminPage = () => {
     </InstitutionAdminLayout>
   );
 };
+
+function DashboardHeading({ onRefresh }) {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const { institution, logoSrc } = useInstitutionAdmin();
+  const name = institution?.name || user?.primaryInstitution || t('institution_admin.panel_title');
+
+  return (
+    <Box
+      sx={{
+        mb: 3,
+        pb: 2,
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
+          <Avatar
+            src={logoSrc}
+            variant="rounded"
+            alt={name}
+            imgProps={{ style: { objectFit: 'contain' } }}
+            sx={{
+              width: 48,
+              height: 48,
+              bgcolor: 'primary.main',
+              color: 'white',
+              p: logoSrc ? 0.5 : 0,
+              '& img': { bgcolor: 'white', borderRadius: 0.5 },
+            }}
+          >
+            <InstitutionIcon />
+          </Avatar>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="h6"
+              noWrap
+              sx={{
+                fontWeight: 600,
+                letterSpacing: '-0.01em',
+                color: 'text.primary',
+                lineHeight: 1.3,
+              }}
+            >
+              {name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t('institution_admin.dashboard')}
+            </Typography>
+          </Box>
+        </Box>
+        <Tooltip title="Refresh data">
+          <IconButton
+            onClick={onRefresh}
+            size="small"
+            sx={{
+              border: '1px solid',
+              borderColor: 'divider',
+              color: 'text.secondary',
+              '&:hover': { bgcolor: 'action.hover', color: 'primary.main' },
+            }}
+          >
+            <RefreshIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Box>
+    </Box>
+  );
+}
 
 export default InstitutionAdminPage;

@@ -95,7 +95,7 @@ export default function RegistryOversightPage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title="Registry Oversight"
           description="TRN tracking, submission deadlines, PACTR / ClinicalTrials.gov / ISRCTN status"

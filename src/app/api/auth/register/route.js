@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { hashPassword, validateEmail, validatePassword } from '@/lib/auth';
 import { findInstitutionByEmailDomain, seedDomainForInstitution } from '@/lib/institution-domain';
+import { uniqueInstitutionSlug } from '@/lib/institution-slug';
+import { defaultEnabledModules } from '@/lib/institution-modules';
 
 export async function POST(request) {
   let body = {};
@@ -246,9 +248,12 @@ export async function POST(request) {
           data: {
             userId: user.id,
             name: institutionName.trim(),
+            slug: await uniqueInstitutionSlug(tx, institutionName.trim()),
             type: institutionType,
             country: institutionCountry,
             website: institutionWebsite || null,
+            contactEmail: email,
+            enabledModules: defaultEnabledModules(),
           }
         });
 

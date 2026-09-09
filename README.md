@@ -120,7 +120,7 @@ For development with hot reload:
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-See [docs/DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) for SSL, backups, scaling, and troubleshooting.
+See [docs/DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) for SSL, backups, GitHub Actions CI/CD, scaling, and troubleshooting.
 
 ### Installation
 

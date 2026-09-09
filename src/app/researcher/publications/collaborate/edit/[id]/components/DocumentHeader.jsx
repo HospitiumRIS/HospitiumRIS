@@ -237,9 +237,7 @@ export default function DocumentHeader({
       borderBottom: '1px solid #e0e0e0',
       py: 3,
       px: 4,
-      mt: '50px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      zIndex: 1000
     }}>
       <Stack direction="row" alignItems="center" spacing={2}>
         {/* Back Button */}
@@ -265,8 +263,8 @@ export default function DocumentHeader({
           }}
           onClick={onBack}
         >
-          t('common.back')
-</Typography>
+          {t('common.back')}
+        </Typography>
 
         {/* Document Title - Editable */}
         <Box sx={{ flexGrow: 1, ml: 3, display: 'flex', alignItems: 'center', gap: 1 }}>

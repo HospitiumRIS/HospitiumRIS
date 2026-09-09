@@ -1,143 +1,256 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/auth-server';
+import { requireInstitutionAdmin, getOwnedInstitution } from '@/lib/institution-admin';
+import { hashPassword, validateEmail } from '@/lib/auth';
+import { normalizeOrcid } from '@/lib/orcid';
 
-// Helper function to check Institution Admin access
-async function checkInstitutionAdminAccess(request) {
-  try {
-    const user = await getAuthenticatedUser(request);
-    
-    if (!user) {
-      return { authorized: false, error: 'Unauthorized' };
-    }
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MANAGEABLE_ACCOUNT_TYPES = ['RESEARCHER', 'RESEARCH_ADMIN'];
+const LIST_ACCOUNT_TYPES = ['RESEARCHER', 'RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
 
-    if (user.accountType !== 'INSTITUTION_ADMIN') {
-      return { authorized: false, error: 'Insufficient privileges' };
-    }
-
-    return { authorized: true, user };
-  } catch (error) {
-    return { authorized: false, error: 'Authentication error' };
+function institutionUserWhere(institution) {
+  const clauses = [{ secondaryInstitutionId: institution.id }];
+  if (institution.userId) {
+    clauses.push({ id: institution.userId });
   }
+  return { OR: clauses };
+}
+
+function serializeUser(user) {
+  return {
+    id: user.id,
+    givenName: user.givenName,
+    familyName: user.familyName,
+    email: user.email,
+    accountType: user.accountType,
+    status: user.status,
+    emailVerified: user.emailVerified,
+    orcidId: user.orcidId || null,
+    primaryInstitution: user.primaryInstitution || null,
+    secondaryInstitutionId: user.secondaryInstitutionId || null,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
 }
 
 export async function GET(request) {
   try {
-    // Check Institution Admin access
-    const { authorized, error } = await checkInstitutionAdminAccess(request);
-    if (!authorized) {
-      return NextResponse.json(
-        { success: false, message: error },
-        { status: 403 }
-      );
+    const { user, error } = await requireInstitutionAdmin();
+    if (error) return error;
+
+    const institution = await getOwnedInstitution(user);
+    if (!institution) {
+      return NextResponse.json({ success: false, message: 'No institution found' }, { status: 404 });
     }
 
     const { searchParams } = new URL(request.url);
-    
-    // Parse query parameters
-    const search = searchParams.get('search') || '';
-    const status = searchParams.get('status');
-    const accountType = searchParams.get('accountType');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const sortBy = searchParams.get('sortBy') || 'createdAt';
-    const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const search = searchParams.get('search')?.trim() || '';
+    const status = searchParams.get('status') || '';
+    const accountType = searchParams.get('accountType') || '';
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+    const limit = Math.min(100, Math.max(10, parseInt(searchParams.get('limit') || '25', 10) || 25));
+    const sortBy = ['createdAt', 'givenName', 'familyName', 'email'].includes(searchParams.get('sortBy'))
+      ? searchParams.get('sortBy')
+      : 'createdAt';
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc';
 
-    // Build where clause
-    const where = {};
-    
+    const where = {
+      AND: [
+        institutionUserWhere(institution),
+        { accountType: { not: 'GLOBAL_ADMIN' } },
+      ],
+    };
+
     if (search) {
-      where.OR = [
-        { givenName: { contains: search, mode: 'insensitive' } },
-        { familyName: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { orcidId: { contains: search, mode: 'insensitive' } }
-      ];
+      where.AND.push({
+        OR: [
+          { givenName: { contains: search, mode: 'insensitive' } },
+          { familyName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { orcidId: { contains: search, mode: 'insensitive' } },
+        ],
+      });
     }
-    
+
     if (status) {
-      where.status = status;
-    }
-    
-    if (accountType) {
-      where.accountType = accountType;
+      where.AND.push({ status });
     }
 
-    // Get total count
-    const total = await prisma.user.count({ where });
+    if (accountType && LIST_ACCOUNT_TYPES.includes(accountType)) {
+      where.AND.push({ accountType });
+    }
 
-    // Fetch users with relations
-    const users = await prisma.user.findMany({
-      where,
-      include: {
-        institution: true,
-        foundation: true,
-        researchProfile: true,
-        _count: {
-          select: {
-            manuscripts: true,
-            publications: true,
-            sentInvitations: true,
-            receivedInvitations: true,
-            notifications: true
-          }
-        }
-      },
-      orderBy: {
-        [sortBy]: sortOrder
-      },
-      skip: (page - 1) * limit,
-      take: limit
-    });
+    const memberWhere = {
+      AND: [
+        institutionUserWhere(institution),
+        { accountType: { not: 'GLOBAL_ADMIN' } },
+      ],
+    };
 
-    // Remove sensitive data
-    const sanitizedUsers = users.map(user => {
-      const { passwordHash, emailVerifyToken, ...safeUser } = user;
-      return safeUser;
-    });
-
-    // Get statistics
-    const stats = await Promise.all([
-      prisma.user.count({ where: { status: 'ACTIVE' } }),
-      prisma.user.count({ where: { status: 'PENDING' } }),
-      prisma.user.count({ where: { status: 'INACTIVE' } }),
-      prisma.user.count({ where: { status: 'SUSPENDED' } }),
-      prisma.user.count({ where: { accountType: 'RESEARCHER' } }),
-      prisma.user.count({ where: { accountType: 'RESEARCH_ADMIN' } }),
-      prisma.user.count({ where: { accountType: 'FOUNDATION_ADMIN' } }),
-      prisma.user.count({ where: { accountType: 'INSTITUTION_ADMIN' } })
+    const [total, users, statusGroups, typeGroups] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          givenName: true,
+          familyName: true,
+          email: true,
+          accountType: true,
+          status: true,
+          emailVerified: true,
+          orcidId: true,
+          primaryInstitution: true,
+          secondaryInstitutionId: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { [sortBy]: sortOrder },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.user.groupBy({
+        by: ['status'],
+        where: memberWhere,
+        _count: true,
+      }),
+      prisma.user.groupBy({
+        by: ['accountType'],
+        where: memberWhere,
+        _count: true,
+      }),
     ]);
+
+    const countOf = (row) => (typeof row._count === 'number' ? row._count : row._count?._all || 0);
+
+    const byStatus = { active: 0, pending: 0, inactive: 0, suspended: 0 };
+    for (const row of statusGroups) {
+      const key = String(row.status).toLowerCase();
+      if (key in byStatus) byStatus[key] = countOf(row);
+    }
+
+    const byAccountType = { researcher: 0, researchAdmin: 0, institutionAdmin: 0 };
+    for (const row of typeGroups) {
+      if (row.accountType === 'RESEARCHER') byAccountType.researcher = countOf(row);
+      if (row.accountType === 'RESEARCH_ADMIN') byAccountType.researchAdmin = countOf(row);
+      if (row.accountType === 'INSTITUTION_ADMIN') byAccountType.institutionAdmin = countOf(row);
+    }
 
     return NextResponse.json({
       success: true,
-      users: sanitizedUsers,
+      users,
       pagination: {
         total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / limit),
       },
       stats: {
-        byStatus: {
-          active: stats[0],
-          pending: stats[1],
-          inactive: stats[2],
-          suspended: stats[3]
-        },
-        byAccountType: {
-          researcher: stats[4],
-          researchAdmin: stats[5],
-          foundationAdmin: stats[6],
-          superAdmin: stats[7]
-        }
-      }
+        byStatus,
+        byAccountType,
+      },
     });
-  } catch (error) {
-    console.error('Error fetching users:', error);
+  } catch (err) {
+    console.error('Error fetching users:', err);
     return NextResponse.json(
-      { success: false, message: 'Failed to fetch users', error: error.message },
+      { success: false, message: 'Failed to fetch users' },
       { status: 500 }
     );
   }
 }
 
+export async function POST(request) {
+  try {
+    const { user, error } = await requireInstitutionAdmin();
+    if (error) return error;
+
+    const institution = await getOwnedInstitution(user);
+    if (!institution) {
+      return NextResponse.json({ success: false, message: 'No institution found' }, { status: 404 });
+    }
+
+    const body = await request.json();
+    const givenName = body.givenName?.trim();
+    const familyName = body.familyName?.trim();
+    const email = body.email?.trim()?.toLowerCase();
+    const password = body.password;
+    const accountType = body.accountType || 'RESEARCHER';
+
+    if (!givenName || !familyName || !email || !password) {
+      return NextResponse.json(
+        { success: false, message: 'First name, last name, email, and password are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!EMAIL_REGEX.test(email) || !validateEmail(email)) {
+      return NextResponse.json({ success: false, message: 'Invalid email format' }, { status: 400 });
+    }
+
+    if (password.length < 8) {
+      return NextResponse.json(
+        { success: false, message: 'Password must be at least 8 characters' },
+        { status: 400 }
+      );
+    }
+
+    if (!MANAGEABLE_ACCOUNT_TYPES.includes(accountType)) {
+      return NextResponse.json(
+        { success: false, message: 'Account type must be Researcher or Research Admin' },
+        { status: 400 }
+      );
+    }
+
+    const orcid = normalizeOrcid(body.orcidId);
+    if (orcid && orcid.error) {
+      return NextResponse.json({ success: false, message: orcid.error }, { status: 400 });
+    }
+    if (accountType !== 'RESEARCHER' && orcid) {
+      return NextResponse.json(
+        { success: false, message: 'ORCID iD can only be set on researcher accounts' },
+        { status: 400 }
+      );
+    }
+
+    const existingEmail = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+    if (existingEmail) {
+      return NextResponse.json({ success: false, message: 'Email already exists' }, { status: 400 });
+    }
+
+    if (orcid) {
+      const existingOrcid = await prisma.user.findFirst({ where: { orcidId: orcid }, select: { id: true } });
+      if (existingOrcid) {
+        return NextResponse.json({ success: false, message: 'That ORCID iD is already in use' }, { status: 400 });
+      }
+    }
+
+    const created = await prisma.user.create({
+      data: {
+        givenName,
+        familyName,
+        email,
+        passwordHash: await hashPassword(password),
+        accountType,
+        status: 'ACTIVE',
+        emailVerified: true,
+        primaryInstitution: institution.name,
+        secondaryInstitutionId: institution.id,
+        institutionVerifiedAt: new Date(),
+        institutionVerificationMethod: 'MANUAL',
+        orcidId: accountType === 'RESEARCHER' ? orcid || null : null,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'User created',
+      user: serializeUser(created),
+    }, { status: 201 });
+  } catch (err) {
+    console.error('Error creating user:', err);
+    return NextResponse.json(
+      { success: false, message: 'Failed to create user' },
+      { status: 500 }
+    );
+  }
+}

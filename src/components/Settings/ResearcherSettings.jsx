@@ -218,7 +218,7 @@ const ResearcherSettings = () => {
   }, []);
 
   return (
-    <Box sx={{ width: '100%', mt: 8, mb: 4 }}>
+    <Box sx={{ width: '100%', mb: 4 }}>
       <PageHeader
         title="Researcher Settings"
         description="Configure your research tools and integrations"

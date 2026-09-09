@@ -112,7 +112,7 @@ export default function ClinicalTrialsReportsPage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title={t('institution.analytics')}
           description="KPI dashboard, trial pipeline, enrollment vs target, and compliance metrics"

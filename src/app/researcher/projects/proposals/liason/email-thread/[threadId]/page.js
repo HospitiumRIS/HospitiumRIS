@@ -278,7 +278,7 @@ Howard Hughes Medical Institute`,
 
   if (!threadData) {
     return (
-      <Box sx={{ minHeight: '100vh', mt: 8 }}>
+      <Box sx={{ minHeight: '100vh' }}>
         <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
           <Typography variant="h5" color="error">Thread not found</Typography>
           <Button 
@@ -294,7 +294,7 @@ Howard Hughes Medical Institute`,
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', mt: 8 }}>
+    <Box sx={{ minHeight: '100vh' }}>
       <PageHeader
         title={threadData.subject}
         description={`Email conversation with ${threadData.participants.length} participants`}
@@ -303,14 +303,14 @@ Howard Hughes Medical Institute`,
           { label: 'Dashboard', path: '/researcher' },
           { label: 'Projects', path: '/researcher/projects' },
           { label: 'Proposals', path: '/researcher/projects/proposals' },
-          { label: 'Grant Liaison', path: '/researcher/projects/proposals/liason' },
+          { label: 'Grant Tracker', path: '/researcher/projects/proposals/grant-tracker' },
         ]}
         actionButton={
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
               variant="outlined"
               startIcon={<ArrowBackIcon />}
-              onClick={() => router.push('/researcher/projects/proposals/liason')}
+              onClick={() => router.push('/researcher/projects/proposals/grant-tracker')}
               sx={{ bgcolor: 'white', '&:hover': { bgcolor: 'grey.100' } }}
             >
               Back to CRM

@@ -42,6 +42,7 @@ import { useTheme } from '@mui/material/styles';
 import PageHeader from '@/components/common/PageHeader';
 import { Home as HomeIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/components/AuthProvider';
 
 const TARGET_GROUPS = [
   'NURSES',
@@ -59,10 +60,13 @@ const TRAINING_STATUSES = [
   'CANCELLED',
 ];
 
+const TRAINING_ADMIN_TYPES = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
+
 export default function InstitutionTrainingPage() {
   const { t } = useTranslation();
   const theme = useTheme();
   const router = useRouter();
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
   const [trainings, setTrainings] = useState([]);
   const [drafts, setDrafts] = useState([]);
@@ -90,9 +94,21 @@ export default function InstitutionTrainingPage() {
   const [departmentInput, setDepartmentInput] = useState('');
 
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated) {
+      router.replace('/login');
+      return;
+    }
+
+    if (!TRAINING_ADMIN_TYPES.includes(user?.accountType)) {
+      router.replace('/institution');
+      return;
+    }
+
     fetchTrainings();
     loadDrafts();
-  }, []);
+  }, [authLoading, isAuthenticated, user, router]);
 
   // Auto-save draft when form data changes
   useEffect(() => {
@@ -179,6 +195,7 @@ export default function InstitutionTrainingPage() {
     try {
       await fetch('/api/notifications/training-created', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ trainingId: training.id }),
       });
@@ -190,8 +207,14 @@ export default function InstitutionTrainingPage() {
   const fetchTrainings = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/training?includeAll=true');
+      setError(null);
+      const response = await fetch('/api/training?includeAll=true', { credentials: 'include' });
       const data = await response.json();
+
+      if (response.status === 401) {
+        router.replace('/login');
+        return;
+      }
 
       if (data.success) {
         setTrainings(data.trainings || []);
@@ -259,6 +282,7 @@ export default function InstitutionTrainingPage() {
 
       const response = await fetch('/api/training', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(apiData),
       });
@@ -303,6 +327,7 @@ export default function InstitutionTrainingPage() {
 
       const response = await fetch(`/api/training/${selectedTraining.id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(apiData),
       });
@@ -329,6 +354,7 @@ export default function InstitutionTrainingPage() {
       setSubmitting(true);
       const response = await fetch(`/api/training/${selectedTraining.id}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       const data = await response.json();
@@ -366,17 +392,22 @@ export default function InstitutionTrainingPage() {
     });
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <CircularProgress />
+        <CircularProgress sx={{ color: '#8b6cbc' }} />
       </Box>
     );
   }
 
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <>
-      <PageHeader
+      <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+        <PageHeader
         title={t('institution_nav.manage_trainings')}
         description={t('institution_nav.manage_trainings_desc')}
         icon={<TrainingIcon sx={{ fontSize: 40 }} />}
@@ -399,6 +430,7 @@ export default function InstitutionTrainingPage() {
           </Button>
         }
       />
+      </Box>
       <Container maxWidth="xl" sx={{ py: 4 }}>
 
       {error && (

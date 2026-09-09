@@ -1,9 +1,108 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { deleteEthicsApplicationFiles, saveEthicsFile, ethicsFileUrl } from '../../../../../lib/ethics-files';
 
 const prisma = new PrismaClient();
+
+const FILE_FIELDS = [
+  { field: 'participantInfoSheet', type: 'Participant Information Sheet' },
+  { field: 'consentForm', type: 'Consent Form' },
+  { field: 'researchProtocol', type: 'Research Protocol' },
+  { field: 'recruitmentMaterials', type: 'Recruitment Materials' },
+  { field: 'dataCollectionTools', type: 'Data Collection Tools' },
+  { field: 'lettersOfSupport', type: 'Letters of Support' },
+  { field: 'investigatorCVs', type: 'Investigator CVs' },
+];
+
+const REQUIRED_UPDATE_FIELDS = [
+  'title',
+  'principalInvestigator',
+  'department',
+  'researchType',
+  'researchSummary',
+  'researchObjectives',
+  'methodology',
+  'participantPopulation',
+  'riskLevel',
+  'potentialRisks',
+  'riskMitigation',
+  'potentialBenefits',
+  'consentProcess',
+  'dataCollectionMethods',
+  'dataStorageMethods',
+  'dataSecurityMeasures',
+];
+
+function emptyToNull(value) {
+  if (value === undefined || value === '') return null;
+  return value;
+}
+
+function parseParticipantCount(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function documentKey(doc) {
+  return `${doc?.type || ''}::${doc?.originalName || doc?.name || ''}`.toLowerCase();
+}
+
+/**
+ * Map the comprehensive edit form onto columns that actually exist on EthicsApplication.
+ * Extra form fields (piInstitution, coInvestigators, startDate, etc.) are ignored.
+ */
+function buildEthicsUpdateData(data) {
+  const researchType =
+    data.researchType === 'Other' && data.researchTypeOther
+      ? data.researchTypeOther
+      : data.researchType;
+
+  const update = {
+    title: data.title,
+    principalInvestigator: data.principalInvestigator,
+    principalInvestigatorId: emptyToNull(data.principalInvestigatorId),
+    department: data.department || data.piDepartment,
+    researchType,
+    researchSummary: data.researchSummary,
+    researchObjectives: data.researchObjectives,
+    methodology: data.methodology,
+    studyDuration: data.studyDuration != null && data.studyDuration !== '' ? String(data.studyDuration) : null,
+    participantPopulation: data.participantPopulation,
+    participantCount: parseParticipantCount(data.participantCount),
+    ageRange: emptyToNull(data.ageRange),
+    inclusionCriteria: emptyToNull(data.inclusionCriteria),
+    exclusionCriteria: emptyToNull(data.exclusionCriteria),
+    recruitmentMethod: emptyToNull(data.recruitmentMethod),
+    vulnerablePopulations: Boolean(data.vulnerablePopulations),
+    vulnerablePopulationDesc: emptyToNull(data.vulnerablePopulationDesc),
+    riskLevel: data.riskLevel || 'MINIMAL',
+    potentialRisks: data.potentialRisks,
+    riskMitigation: data.riskMitigation,
+    potentialBenefits: data.potentialBenefits,
+    riskBenefitRatio: emptyToNull(data.riskBenefitRatio),
+    consentProcess: data.consentProcess,
+    consentFormAttached: Boolean(data.consentFormAttached),
+    informationSheetAttached: Boolean(data.informationSheetAttached),
+    consentWaiverRequested: Boolean(data.consentWaiverRequested),
+    consentWaiverJustification: emptyToNull(data.consentWaiverJustification),
+    dataCollectionMethods: data.dataCollectionMethods,
+    dataStorageMethods: data.dataStorageMethods,
+    dataSecurityMeasures: data.dataSecurityMeasures,
+    dataRetentionPeriod: emptyToNull(data.dataRetentionPeriod),
+    dataAnonymization: Boolean(data.dataAnonymization),
+    dataSharingPlans: emptyToNull(data.dataSharingPlans),
+    committeeName: emptyToNull(data.committeeName),
+  };
+
+  for (const key of REQUIRED_UPDATE_FIELDS) {
+    if (update[key] == null || update[key] === '') {
+      delete update[key];
+    }
+  }
+
+  return update;
+}
 
 // GET - Get specific ethics application
 export async function GET(request, { params }) {
@@ -81,111 +180,57 @@ export async function PUT(request, { params }) {
     const data = JSON.parse(applicationDataString);
     console.log('Parsed data:', { title: data.title, researchType: data.researchType });
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'uploads', 'ethics');
-    await mkdir(uploadsDir, { recursive: true });
-
-    // Handle file uploads
-    const uploadedDocuments = [];
-    
-    const fileFields = [
-      { field: 'participantInfoSheet', type: 'Participant Information Sheet' },
-      { field: 'consentForm', type: 'Consent Form' },
-      { field: 'researchProtocol', type: 'Research Protocol' },
-      { field: 'recruitmentMaterials', type: 'Recruitment Materials' },
-      { field: 'dataCollectionTools', type: 'Data Collection Tools' },
-      { field: 'lettersOfSupport', type: 'Letters of Support' },
-      { field: 'investigatorCVs', type: 'Investigator CVs' },
-    ];
-
-    for (const { field, type } of fileFields) {
-      const files = formData.getAll(field);
-      for (const file of files) {
-        if (file && file.size > 0) {
-          const fileName = `${field}_${Date.now()}_${file.name}`;
-          const filePath = join(uploadsDir, fileName);
-          const bytes = await file.arrayBuffer();
-          await writeFile(filePath, Buffer.from(bytes));
-          
-          uploadedDocuments.push({
-            type,
-            originalName: file.name,
-            fileName,
-            size: file.size,
-            mimeType: file.type,
-            url: `/uploads/ethics/${fileName}`,
-            uploadedAt: new Date().toISOString(),
-          });
-        }
-      }
-    }
-
-    // Get existing application to preserve existing documents
     const existingApp = await prisma.ethicsApplication.findUnique({
       where: { id },
       select: { documents: true }
     });
 
-    // Merge existing documents with new uploads
-    const allDocuments = [
-      ...(existingApp?.documents || []),
-      ...uploadedDocuments
-    ];
+    if (!existingApp) {
+      return NextResponse.json(
+        { success: false, error: 'Ethics application not found' },
+        { status: 404 }
+      );
+    }
+
+    const existingDocuments = Array.isArray(existingApp.documents) ? existingApp.documents : [];
+    const existingKeys = new Set(existingDocuments.map(documentKey));
+    const uploadedDocuments = [];
+
+    for (const { field, type } of FILE_FIELDS) {
+      const files = formData.getAll(field);
+      for (const file of files) {
+        if (!file || typeof file === 'string' || !file.size) continue;
+
+        const originalName = file.name || 'document';
+        if (existingKeys.has(documentKey({ type, originalName }))) {
+          continue;
+        }
+
+        const { storedName, size } = await saveEthicsFile(id, file);
+        const doc = {
+          type,
+          name: originalName,
+          originalName,
+          fileName: storedName,
+          size,
+          mimeType: file.type || 'application/octet-stream',
+          url: ethicsFileUrl(id, storedName),
+          uploadedAt: new Date().toISOString(),
+        };
+        uploadedDocuments.push(doc);
+        existingKeys.add(documentKey(doc));
+      }
+    }
+
+    const allDocuments = [...existingDocuments, ...uploadedDocuments];
+    const updateData = {
+      ...buildEthicsUpdateData(data),
+      documents: allDocuments,
+    };
 
     const application = await prisma.ethicsApplication.update({
       where: { id },
-      data: {
-        title: data.title,
-        principalInvestigator: data.principalInvestigator,
-        principalInvestigatorId: data.principalInvestigatorId,
-        piInstitution: data.piInstitution,
-        department: data.department,
-        coInvestigators: data.coInvestigators,
-        researchType: data.researchType,
-        researchTypeOther: data.researchTypeOther,
-        researchSummary: data.researchSummary,
-        researchObjectives: data.researchObjectives,
-        methodology: data.methodology,
-        studyDuration: data.studyDuration,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        participantPopulation: data.participantPopulation,
-        participantCount: data.participantCount,
-        ageRange: data.ageRange,
-        inclusionCriteria: data.inclusionCriteria,
-        exclusionCriteria: data.exclusionCriteria,
-        recruitmentMethod: data.recruitmentMethod,
-        vulnerablePopulations: data.vulnerablePopulations,
-        vulnerablePopulationDesc: data.vulnerablePopulationDesc,
-        powerImbalanceConsiderations: data.powerImbalanceConsiderations,
-        riskLevel: data.riskLevel || 'MINIMAL',
-        potentialRisks: data.potentialRisks,
-        riskMitigation: data.riskMitigation,
-        potentialBenefits: data.potentialBenefits,
-        riskBenefitRatio: data.riskBenefitRatio,
-        consentProcess: data.consentProcess,
-        consentCapacityAssessment: data.consentCapacityAssessment,
-        withdrawalProcess: data.withdrawalProcess,
-        participantCosts: data.participantCosts,
-        consentFormAttached: data.consentFormAttached,
-        informationSheetAttached: data.informationSheetAttached,
-        consentWaiverRequested: data.consentWaiverRequested || false,
-        consentWaiverJustification: data.consentWaiverJustification,
-        dataCollectionMethods: data.dataCollectionMethods,
-        dataStorageMethods: data.dataStorageMethods,
-        dataSecurityMeasures: data.dataSecurityMeasures,
-        dataRetentionPeriod: data.dataRetentionPeriod,
-        dataDisposalProtocol: data.dataDisposalProtocol,
-        dataAnonymization: data.dataAnonymization,
-        conflictOfInterest: data.conflictOfInterest,
-        conflictDetails: data.conflictDetails,
-        previousEthicsApproval: data.previousEthicsApproval,
-        previousApprovalDetails: data.previousApprovalDetails,
-        additionalComments: data.additionalComments,
-        dataSharingPlans: data.dataSharingPlans,
-        committeeName: data.committeeName,
-        documents: allDocuments
-      }
+      data: updateData,
     });
 
     console.log('Database update successful for application:', id);
@@ -219,9 +264,18 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    if (application.status !== 'DRAFT') {
+    const isExternalCertificate =
+      application.source === 'EXTERNAL_CERTIFICATE' ||
+      (Array.isArray(application.documents) &&
+        application.documents.some(
+          (doc) => doc?.type === 'Ethics Clearance Certificate' || doc?.source === 'EXTERNAL_CERTIFICATE'
+        ));
+
+    const canDelete = application.status === 'DRAFT' || isExternalCertificate;
+
+    if (!canDelete) {
       return NextResponse.json(
-        { success: false, error: 'Can only delete draft applications' },
+        { success: false, error: 'Can only delete draft applications or uploaded certificates' },
         { status: 400 }
       );
     }
@@ -229,6 +283,7 @@ export async function DELETE(request, { params }) {
     await prisma.ethicsApplication.delete({
       where: { id }
     });
+    await deleteEthicsApplicationFiles(id);
 
     return NextResponse.json({
       success: true,

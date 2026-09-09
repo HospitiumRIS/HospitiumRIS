@@ -112,7 +112,7 @@ export default function ComplianceFlagsDashboardPage() {
 
   return (
     <>
-      <Box sx={{ width: '100%', mt: 8, mb: 0 }}>
+      <Box sx={{ width: '100%' }}>
         <PageHeader
           title="Compliance Flags Dashboard"
           description="Live compliance monitoring — ethics expiry, GCP certs, registry updates, SAE deadlines"
