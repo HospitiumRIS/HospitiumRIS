@@ -120,7 +120,9 @@ For development with hot reload:
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-See [docs/DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) for SSL, backups, GitHub Actions CI/CD, scaling, and troubleshooting.
+See [docs/DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) for SSL, backups, scaling, and troubleshooting.
+
+Production CI/CD (GitHub Actions → VPS, frontend + Prisma migrations) is documented in [docs/CI_CD.md](docs/CI_CD.md).
 
 ### Installation
 
@@ -246,10 +248,18 @@ If you encounter an error like `Foreign key constraint violated on the constrain
 - Enable "Less secure app access" or use OAuth2
 - Test your configuration with: `npm run test:email`
 
+## CI / production deploy
+
+A push to `main` builds the app on GitHub, SSHs into the VPS at `/opt/hospitium`, rebuilds the frontend container, and runs Prisma migrations. Postgres stays up.
+
+Full step-by-step setup (SSH keys, GitHub environment secrets, workflow diagram, how to verify migrations, listing users): **[docs/CI_CD.md](docs/CI_CD.md)**.
+
 ## Documentation
 
 Additional documentation is available in the `docs/` directory:
 
+- [CI/CD (GitHub Actions → production VPS)](docs/CI_CD.md) — step-by-step SSH secrets, deploy workflow, database migrations, and server commands
+- [Docker deployment](docs/DOCKER_DEPLOYMENT.md) — Compose, volumes, SSL, backups
 - `DATABASE_SETUP.md` - Database configuration guide
 - `ORCID_SETUP_GUIDE.md` - ORCID integration setup
 - `ZOTERO_SETUP.md` - Zotero synchronization guide

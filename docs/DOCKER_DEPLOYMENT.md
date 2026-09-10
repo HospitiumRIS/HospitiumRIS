@@ -208,62 +208,7 @@ docker compose build --no-cache app
 
 ## CI/CD (GitHub Actions)
 
-Production on `mycraft` lives at `/opt/hospitium` with Docker Compose (`hospitium-frontend` + `hospitium-db`). A push to `main` runs [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml): GitHub builds the app, then SSHs into the VPS, updates the checkout, rebuilds the frontend image, and recreates that container. Postgres is left running (`docker compose down` is not used). The app entrypoint runs `prisma migrate deploy` before `next start`.
-
-You can also run **Actions → Deploy → Run workflow** for a manual deploy.
-
-The workflow does **not** copy the whole repo with SCP. That would overwrite the server `.env` and compose file. It also does not stop the database container.
-
-### One-time server setup
-
-1. `/opt/hospitium` must be a git clone of this repository (not a copy of files only).
-2. Generate a deploy key and authorize it for the SSH user that can run Docker (root works today; `adminuser` currently cannot talk to `docker.sock`):
-
-   ```bash
-   ssh-keygen -t ed25519 -C "github-actions-hospitium" -f github-actions-hospitium -N ""
-   # install github-actions-hospitium.pub into that user's ~/.ssh/authorized_keys
-   ```
-
-3. If you deploy as `adminuser` instead of root, grant Docker access:
-
-   ```bash
-   sudo usermod -aG docker adminuser
-   ```
-
-   Then log out and back in (or reboot) so the new group applies.
-
-4. Confirm a manual deploy still works:
-
-   ```bash
-   cd /opt/hospitium
-   bash scripts/deploy.sh
-   ```
-
-### GitHub repository secrets
-
-Repo **Settings → Secrets and variables → Actions**:
-
-| Secret | Example | Notes |
-|--------|---------|--------|
-| `SSH_HOST` | `mycraft` IP or hostname | VPS address |
-| `SSH_USER` | `root` | Must be able to run `docker` (or passwordless `sudo docker`) |
-| `SSH_PRIVATE_KEY` | contents of `github-actions-hospitium` | Full private key including `BEGIN` / `END` lines |
-| `SSH_PORT` | `22` | Optional; defaults to 22 |
-| `DEPLOY_PATH` | `/opt/hospitium` | Optional; defaults to `/opt/hospitium` |
-
-The workflow uses a GitHub Environment named `production`. Create it under **Settings → Environments** if you want required reviewers before deploys.
-
-GitHub-hosted runners must be able to SSH to the VPS. If port 22 is firewalled to your office IP only, either allow GitHub’s [published SSH IPs](https://api.github.com/meta) (`actions` ranges) or install a self-hosted runner on `mycraft`.
-
-The server compose file (`docker-compose.yml` and any `docker-compose.override.yml`) is preserved on each deploy so live container names (`hospitium-frontend`, `hospitium-db`) and ports (`3003`, `5435`) are not overwritten by the repo copy.
-
-### What a deploy does
-
-1. Fetch the commit that was pushed to `main` and `git reset --hard` to it
-2. `pg_dump` into `/opt/hospitium/backups/pre-deploy-*.sql.gz` (keeps the last 10)
-3. `docker compose build app` with `NEXT_PUBLIC_*` from the server `.env`
-4. Recreate only the `app` service (`--no-deps`); entrypoint waits for Postgres, runs `prisma migrate deploy`, then starts the app
-5. Wait until the container is healthy and `/api/health` returns OK
+Step-by-step production setup (SSH keys, environment secrets, deploy workflow, Prisma migrations, and server commands) is in **[CI_CD.md](CI_CD.md)**.
 
 ## Security Notes
 
