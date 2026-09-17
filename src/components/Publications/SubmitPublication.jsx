@@ -23,7 +23,7 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import PageHeader from '../common/PageHeader';
 import PublishIcon from '@mui/icons-material/Publish';
@@ -40,12 +40,15 @@ const PreviewDialog = dynamic(() => import('./PreviewDialog'), {
 });
 
 // Loading skeleton for dialogs
-const DialogSkeleton = () => (
-    <Box sx={{ p: 4, textAlign: 'center' }}>
-        <CircularProgress sx={{ color: '#8b6cbc' }} />
-        <Typography sx={{ mt: 2 }}>{t('common.loading')}</Typography>
-    </Box>
-);
+const DialogSkeleton = () => {
+    const { t } = useTranslation();
+    return (
+        <Box sx={{ p: 4, textAlign: 'center' }}>
+            <CircularProgress sx={{ color: '#8b6cbc' }} />
+            <Typography sx={{ mt: 2 }}>{t('common.loading')}</Typography>
+        </Box>
+    );
+};
 
 // Memoized submission method cards
 const SubmissionMethodCard = React.memo(({ method, onSelect, hasDraft, draftInfo }) => (
@@ -242,15 +245,43 @@ const CompletionStep = React.memo(({ selectedMethod, submissionResult, onSubmitA
 
 CompletionStep.displayName = 'CompletionStep';
 
+/**
+ * Log a preprint submission against the manuscript it came from, and move the
+ * manuscript into peer review.
+ */
+async function recordManuscriptSubmission({ manuscriptId, targetName, targetUrl, referenceId, status }) {
+    try {
+        await fetch(`/api/manuscripts/${manuscriptId}/submissions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'PREPRINT', targetName, targetUrl, referenceId, status })
+        });
+
+        await fetch(`/api/manuscripts/${manuscriptId}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'submit_for_review',
+                notes: `Submitted to ${targetName}`
+            })
+        });
+    } catch (error) {
+        console.error('Failed to record submission on manuscript:', error);
+    }
+}
+
 const SubmitPublication = ({ onSubmit }) => {
   const { t } = useTranslation();
     const router = useRouter();
-    
+    const searchParams = useSearchParams();
+    const manuscriptId = searchParams.get('manuscriptId');
+
     // Core state management
     const [selectedMethod, setSelectedMethod] = useState(null);
     const [activeStep, setActiveStep] = useState(0);
     const [serverDrafts, setServerDrafts] = useState({});
     const [submissionResult, setSubmissionResult] = useState(null);
+    const [linkedManuscript, setLinkedManuscript] = useState(null);
     
     // Dialog states
     const [methodDialogOpen, setMethodDialogOpen] = useState(false);
@@ -354,6 +385,40 @@ const SubmitPublication = ({ onSubmit }) => {
 
         checkDrafts();
     }, [submissionMethods]);
+
+    // Prefill the form when arriving from a collaborative manuscript
+    useEffect(() => {
+        if (!manuscriptId) return;
+
+        const loadManuscript = async () => {
+            try {
+                const response = await fetch(`/api/manuscripts/${manuscriptId}`);
+                const result = await response.json();
+
+                if (!result.success) return;
+
+                const manuscript = result.data;
+                setLinkedManuscript(manuscript);
+
+                const authorNames = (manuscript.collaborators || [])
+                    .map(c => `${c.user?.givenName || ''} ${c.user?.familyName || ''}`.trim())
+                    .filter(Boolean);
+                const creatorName = `${manuscript.creator?.givenName || ''} ${manuscript.creator?.familyName || ''}`.trim();
+
+                setSubmissionForm(prev => ({
+                    ...prev,
+                    title: manuscript.title || prev.title,
+                    abstract: manuscript.description || prev.abstract,
+                    subject: manuscript.field || prev.subject,
+                    authors: [creatorName, ...authorNames].filter(Boolean).join(', ') || prev.authors
+                }));
+            } catch (error) {
+                console.error('Failed to load manuscript for prefill:', error);
+            }
+        };
+
+        loadManuscript();
+    }, [manuscriptId]);
 
     // Event handlers
     const handleMethodSelect = useCallback((method) => {
@@ -535,6 +600,17 @@ const SubmitPublication = ({ onSubmit }) => {
                 localStorage.removeItem(`submission-draft-${selectedMethod.id}`);
             }
 
+            // Mirror the submission onto the originating manuscript's review record
+            if (manuscriptId) {
+                await recordManuscriptSubmission({
+                    manuscriptId,
+                    targetName: selectedMethod?.name || 'Preprint server',
+                    targetUrl: serverUrl,
+                    referenceId: osfPreprintId,
+                    status: submissionStatus === 'UNDER_REVIEW' ? 'UNDER_REVIEW' : 'SUBMITTED'
+                });
+            }
+
             // Store the submission result for the completion step
             setSubmissionResult({
                 success: serverResponse?.success !== false,
@@ -559,7 +635,7 @@ const SubmitPublication = ({ onSubmit }) => {
             });
             setActiveStep(3);
         }
-    }, [onSubmit, selectedMethod]);
+    }, [onSubmit, selectedMethod, manuscriptId]);
 
     const handleStartSubmission = useCallback(() => {
         setActiveStep(2);
@@ -721,6 +797,22 @@ const SubmitPublication = ({ onSubmit }) => {
                     { label: t('common.submit') }
                 ]}
             />
+
+            {linkedManuscript && (
+                <Container maxWidth="md" sx={{ mb: 3 }}>
+                    <Paper sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(139,108,188,0.06)', border: '1px solid rgba(139,108,188,0.25)' }}>
+                        <Typography variant="caption" sx={{ color: '#8b6cbc', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block' }}>
+                            {t('manuscript_workflow.submitting_manuscript')}
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {linkedManuscript.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            {t('manuscript_workflow.submitting_manuscript_desc')}
+                        </Typography>
+                    </Paper>
+                </Container>
+            )}
 
             {/* Progress Stepper */}
             <Container maxWidth="md" sx={{ mb: 4 }}>

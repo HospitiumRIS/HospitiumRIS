@@ -5,6 +5,7 @@ import { logApiActivity, logError, logInfo, logSuccess, getRequestMetadata } fro
 import { linkInstitutionIfNeeded } from '@/lib/institution-domain';
 import { setSessionCookie } from '@/lib/session-cookie';
 import { resolveUserEnabledModules } from '@/lib/institution-modules';
+import { claimPendingInvitations } from '@/lib/manuscript-invitations';
 
 /**
  * @swagger
@@ -164,6 +165,12 @@ export async function POST(request) {
       // now matches one (e.g. the admin added the domain after this user
       // registered).
       await linkInstitutionIfNeeded(prisma, user);
+
+      try {
+        await claimPendingInvitations(prisma, user);
+      } catch (claimError) {
+        console.error('Failed to claim pending manuscript invitations:', claimError);
+      }
 
       // Log successful ORCID login
       await logSuccess('ORCID login successful', {
@@ -420,6 +427,12 @@ export async function POST(request) {
     // matches one (e.g. the admin added the domain after this user
     // registered).
     await linkInstitutionIfNeeded(prisma, user);
+
+    try {
+      await claimPendingInvitations(prisma, user);
+    } catch (claimError) {
+      console.error('Failed to claim pending manuscript invitations:', claimError);
+    }
 
     // Log successful login with comprehensive activity logging
     await logSuccess('User login successful', {

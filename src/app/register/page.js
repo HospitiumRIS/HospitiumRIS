@@ -125,6 +125,7 @@ const RegisterPage = () => {
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [selectedOrcidProfile, setSelectedOrcidProfile] = useState(null);
+  const [inviteDetails, setInviteDetails] = useState(null);
 
   // Form data state
   const [formData, setFormData] = useState({
@@ -165,10 +166,11 @@ const RegisterPage = () => {
     foundationDescription: '',
   });
 
-  // Handle ORCID registration from callback
+  // Handle ORCID registration from callback and collaboration invite links
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const isOrcidLogin = urlParams.get('orcid') === 'true';
+    const inviteToken = urlParams.get('invite');
     
     if (isOrcidLogin) {
       console.log('🔗 ORCID registration detected - user will need to complete registration');
@@ -179,6 +181,34 @@ const RegisterPage = () => {
       
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    if (inviteToken) {
+      fetch(`/api/manuscripts/invitations/token/${encodeURIComponent(inviteToken)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.success || !data.data) {
+            setFormError(data.error || 'This invitation link is invalid.');
+            return;
+          }
+          if (data.data.expired) {
+            setFormError('This collaboration invitation has expired or already been used.');
+            return;
+          }
+          setInviteDetails(data.data);
+          setAccountType('RESEARCHER');
+          setFormData(prev => ({
+            ...prev,
+            accountType: 'RESEARCHER',
+            email: data.data.email || prev.email,
+            confirmEmail: data.data.email || prev.confirmEmail,
+            givenName: data.data.givenName || prev.givenName,
+            familyName: data.data.familyName || prev.familyName,
+          }));
+        })
+        .catch((error) => {
+          console.error('Failed to load invitation:', error);
+        });
     }
   }, []);
 
@@ -486,7 +516,10 @@ const RegisterPage = () => {
         
         // Redirect to success page with login prompt
         setFormError('');
-        router.push('/register/success?email=' + encodeURIComponent(formData.email));
+        router.push(
+          '/register/success?email=' + encodeURIComponent(formData.email) +
+          (inviteDetails ? '&next=' + encodeURIComponent('/researcher/publications/collaborate') : '')
+        );
       } else {
         // Handle validation errors from server
         console.log('Registration failed:', data);
@@ -577,6 +610,7 @@ const RegisterPage = () => {
             accountType={accountType}
             monthOptions={monthOptions}
             yearOptions={yearOptions}
+            emailLocked={!!inviteDetails?.email}
           />
         );
 
@@ -695,6 +729,13 @@ const RegisterPage = () => {
           {formError && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {formError}
+            </Alert>
+          )}
+
+          {inviteDetails && !inviteDetails.expired && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              {inviteDetails.inviterName} invited you to collaborate on &ldquo;{inviteDetails.manuscriptTitle}&rdquo;.
+              Create an account with {inviteDetails.email} to accept the invitation after you log in.
             </Alert>
           )}
 

@@ -331,8 +331,8 @@ const ImportResults = ({ results, onRemove, onConfirmImport }) => {
             onClick={() => setViewDialogOpen(false)}
             sx={{ color: 'text.secondary' }}
           >
-            t('common.close')
-</Button>
+            {t('common.close')}
+          </Button>
         </DialogActions>
       </Dialog>
     </>

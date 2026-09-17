@@ -43,6 +43,17 @@ import {
   Person as PersonIcon,
   Delete as DeleteIcon
 } from '@mui/icons-material';
+import { alpha } from '@mui/material/styles';
+import { getInstitutionalEmailError, isInstitutionalEmail, normalizeEmail } from '../../lib/institutional-email';
+
+const fieldSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: 2,
+    '&:hover fieldset': { borderColor: '#8b6cbc' },
+    '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
+  },
+  '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
+};
 
 const COLLABORATOR_ROLES = [
   { value: 'CONTRIBUTOR', label: 'Contributor', description: 'Can edit and contribute to the manuscript' },
@@ -72,7 +83,8 @@ export default function OrcidCollaboratorInvite({
   manuscriptId, 
   collaborators = [], 
   onCollaboratorsChange,
-  readOnly = false 
+  readOnly = false,
+  embedded = false
 }) {
   const { t } = useTranslation();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -87,7 +99,11 @@ export default function OrcidCollaboratorInvite({
   const [selectedResearcher, setSelectedResearcher] = useState(null);
   const [inviteRole, setInviteRole] = useState('CONTRIBUTOR');
   const [inviteMessage, setInviteMessage] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
+
+  const emailError = getInstitutionalEmailError(inviteEmail);
 
   // Handle ORCID search input changes
   const handleOrcidInputChange = useCallback((e) => {
@@ -180,15 +196,27 @@ export default function OrcidCollaboratorInvite({
   // Handle researcher selection from search results
   const handleResearcherSelect = useCallback((researcher) => {
     setSelectedResearcher(researcher);
+    setEmailTouched(false);
+    const candidate = researcher?.email ? normalizeEmail(researcher.email) : '';
+    setInviteEmail(isInstitutionalEmail(candidate) ? candidate : '');
   }, []);
 
 
   const handleInviteCollaborator = useCallback(async () => {
     if (!selectedResearcher) return;
 
+    const normalizedEmail = normalizeEmail(inviteEmail);
+    const validationError = getInstitutionalEmailError(normalizedEmail);
+    if (validationError) {
+      setEmailTouched(true);
+      setOrcidError(validationError);
+      return;
+    }
+
     console.log(`📧 FRONTEND: Starting invitation process:`, {
       manuscriptId: manuscriptId,
       researcher: selectedResearcher,
+      email: normalizedEmail,
       role: inviteRole,
       message: inviteMessage
     });
@@ -206,7 +234,7 @@ export default function OrcidCollaboratorInvite({
           body: JSON.stringify({
             manuscriptId,
             orcidId: selectedResearcher.orcidId,
-            email: selectedResearcher.email,
+            email: normalizedEmail,
             givenName: selectedResearcher.givenNames,
             familyName: selectedResearcher.familyName,
             affiliation: selectedResearcher.affiliation,
@@ -236,8 +264,9 @@ export default function OrcidCollaboratorInvite({
           givenName: selectedResearcher.givenNames,
           familyName: selectedResearcher.familyName,
           affiliation: selectedResearcher.affiliation,
-          email: selectedResearcher.email,
+          email: normalizedEmail,
           role: inviteRole,
+          message: inviteMessage,
           status: 'PENDING',
           invitationId: data.data.invitation.id
         };
@@ -252,8 +281,9 @@ export default function OrcidCollaboratorInvite({
           givenName: selectedResearcher.givenNames,
           familyName: selectedResearcher.familyName,
           affiliation: selectedResearcher.affiliation,
-          email: selectedResearcher.email,
+          email: normalizedEmail,
           role: inviteRole,
+          message: inviteMessage,
           status: 'PENDING'
         };
 
@@ -264,6 +294,8 @@ export default function OrcidCollaboratorInvite({
       setSelectedResearcher(null);
       setInviteRole('CONTRIBUTOR');
       setInviteMessage('');
+      setInviteEmail('');
+      setEmailTouched(false);
       clearSearch();
       setSearchOpen(false);
 
@@ -280,7 +312,7 @@ export default function OrcidCollaboratorInvite({
     } finally {
       setIsInviting(false);
     }
-  }, [selectedResearcher, manuscriptId, inviteRole, inviteMessage, collaborators, onCollaboratorsChange]);
+  }, [selectedResearcher, manuscriptId, inviteRole, inviteMessage, inviteEmail, collaborators, onCollaboratorsChange]);
 
   const handleRemoveCollaborator = useCallback((collaboratorId) => {
     const updatedCollaborators = collaborators.filter(c => c.id !== collaboratorId);
@@ -289,47 +321,86 @@ export default function OrcidCollaboratorInvite({
 
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-        Invite Collaborators
-      </Typography>
-      
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Search for researchers using their given name and family name to find their ORCID profile and invite them to collaborate
-      </Typography>
-
-      {!readOnly && (
-        <Button
-          variant="contained"
-          startIcon={<PersonAddIcon />}
-          onClick={() => setSearchOpen(true)}
-          sx={{
-            mb: 3,
-            bgcolor: '#8b6cbc',
-            '&:hover': {
-              bgcolor: '#7b5ca7'
-            }
-          }}
-        >
-          Add Collaborator
-        </Button>
+    <Box sx={{ p: embedded ? 0 : 3 }}>
+      {!embedded && (
+        <>
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+            Invite Collaborators
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Search for researchers by name, then enter their institution email. The invitation is sent to that address, and also appears in their HospitiumRIS account if they already have one. Personal emails such as Gmail are not allowed.
+          </Typography>
+        </>
       )}
 
-      {collaborators.length === 0 ? (
-        <Paper sx={{ p: 4, textAlign: 'center', backgroundColor: '#fafbfd', border: '1px solid #e0e0e0' }}>
-          <GroupsIcon sx={{ fontSize: 48, color: '#cbd5e0', mb: 2 }} />
-          <Typography variant="h6" sx={{ color: '#718096', mb: 1, fontSize: '1.1rem' }}>
-            No Collaborators Added Yet
+      <Stack spacing={embedded ? 3 : 2.5}>
+        {!readOnly && (
+          <Box>
+            <Button
+              variant={embedded ? 'outlined' : 'contained'}
+              startIcon={<PersonAddIcon />}
+              onClick={() => setSearchOpen(true)}
+              sx={{
+                ...(embedded
+                  ? {
+                      borderColor: '#8b6cbc',
+                      color: '#8b6cbc',
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      px: 2.5,
+                      py: 1,
+                      '&:hover': {
+                        borderColor: '#7b5ca7',
+                        bgcolor: 'rgba(139, 108, 188, 0.06)'
+                      }
+                    }
+                  : {
+                      bgcolor: '#8b6cbc',
+                      '&:hover': { bgcolor: '#7b5ca7' }
+                    })
+              }}
+            >
+              Add Collaborator
+            </Button>
+          </Box>
+        )}
+
+        {collaborators.length === 0 ? (
+        <Paper
+          elevation={0}
+          sx={{
+            py: embedded ? 4.5 : 4,
+            px: embedded ? 3.5 : 4,
+            textAlign: 'center',
+            backgroundColor: '#fafbfd',
+            border: '1px dashed rgba(139, 108, 188, 0.25)',
+            borderRadius: 2,
+            minHeight: embedded ? 168 : undefined
+          }}
+        >
+          <GroupsIcon sx={{ fontSize: embedded ? 44 : 48, color: '#cbd5e0', mb: 2 }} />
+          <Typography variant="subtitle1" sx={{ color: '#718096', mb: 1, fontWeight: 600, fontSize: embedded ? '0.95rem' : '1.1rem' }}>
+            No collaborators yet
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              fontSize: '0.813rem',
+              lineHeight: 1.6,
+              maxWidth: 360,
+              mx: 'auto'
+            }}
+          >
             {readOnly 
               ? 'No collaborators have been added to this manuscript'
-              : 'You can add collaborators now or later from the manuscript editor'
+              : 'Add co-authors now, or skip and invite them later from the editor'
             }
           </Typography>
         </Paper>
       ) : (
-        <List sx={{ bgcolor: '#fafbfd', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+        <List sx={{ bgcolor: '#fafbfd', borderRadius: 2, border: '1px solid rgba(0,0,0,0.08)' }}>
           {collaborators.map((collaborator, index) => (
             <React.Fragment key={collaborator.id}>
               {index > 0 && <Divider />}
@@ -377,6 +448,12 @@ export default function OrcidCollaboratorInvite({
                           ORCID: {collaborator.orcidId}
                         </Typography>
                       )}
+                      {collaborator.email && (
+                        <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
+                          <EmailIcon sx={{ fontSize: 14 }} />
+                          {collaborator.email}
+                        </Typography>
+                      )}
                       {collaborator.affiliation && (
                         <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <BusinessIcon sx={{ fontSize: 14 }} />
@@ -407,195 +484,306 @@ export default function OrcidCollaboratorInvite({
           ))}
         </List>
       )}
+      </Stack>
 
       {/* Search Dialog */}
       <Dialog
         open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        maxWidth="md"
+        onClose={() => {
+          setSearchOpen(false);
+          setSelectedResearcher(null);
+          setInviteEmail('');
+          setEmailTouched(false);
+        }}
+        maxWidth="sm"
         fullWidth
+        disableScrollLock
         PaperProps={{
           sx: {
             borderRadius: 3,
-            maxHeight: '80vh'
+            boxShadow: '0 20px 60px rgba(15, 23, 42, 0.15)',
+            border: '1px solid rgba(139, 108, 188, 0.08)',
+            overflow: 'hidden',
+            maxHeight: '85vh',
+            display: 'flex',
+            flexDirection: 'column'
           }
         }}
       >
-        <DialogTitle sx={{ pb: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: '#8b6cbc', width: 40, height: 40 }}>
-              <SearchIcon />
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Find ORCID Profile
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Search for researchers using their given name and family name
-              </Typography>
+        <DialogTitle
+          sx={{
+            m: 0,
+            px: 3,
+            py: 2.25,
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5ca7 100%)',
+            color: 'white'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, minWidth: 0 }}>
+              <Box sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                flexShrink: 0
+              }}>
+                {selectedResearcher ? (
+                  <PersonAddIcon sx={{ fontSize: 22 }} />
+                ) : (
+                  <SearchIcon sx={{ fontSize: 22 }} />
+                )}
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.0625rem', lineHeight: 1.3 }}>
+                  {selectedResearcher ? 'Send Invitation' : 'Find ORCID Profile'}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.85, fontSize: '0.8125rem', mt: 0.25 }}>
+                  {selectedResearcher
+                    ? 'Enter their institution email and role'
+                    : 'Search by given name and family name'}
+                </Typography>
+              </Box>
             </Box>
+            <IconButton
+              onClick={() => {
+                setSearchOpen(false);
+                setSelectedResearcher(null);
+                setInviteEmail('');
+                setEmailTouched(false);
+              }}
+              size="small"
+              sx={{ color: 'white', opacity: 0.9, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}
+              aria-label="Close"
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
           </Box>
         </DialogTitle>
 
-        <DialogContent>
+        <DialogContent
+          sx={{
+            px: 3,
+            pt: 3,
+            pb: 3,
+            flex: 1,
+            overflow: 'auto',
+            '&.MuiDialogContent-root': { pt: 3 }
+          }}
+        >
           {selectedResearcher ? (
-            // Selected researcher form
-            <Box>
-              <Alert severity="success" sx={{ mb: 3 }}>
-                Researcher selected! Choose their role and add a personal message.
-              </Alert>
-              
+            <Stack spacing={3}>
               <Paper
+                variant="outlined"
                 sx={{
-                  p: 2,
-                  mb: 2,
-                  border: '2px solid #8b6cbc',
-                  bgcolor: 'rgba(139, 108, 188, 0.05)'
+                  p: 2.5,
+                  borderRadius: 2,
+                  borderColor: alpha('#8b6cbc', 0.35),
+                  bgcolor: alpha('#8b6cbc', 0.04)
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                  <Avatar
-                    sx={{
-                      bgcolor: '#8b6cbc',
-                      color: 'white',
-                      width: 40,
-                      height: 40,
-                      fontSize: '1rem',
-                      fontWeight: 600
-                    }}
-                  >
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                  <Avatar sx={{ bgcolor: '#8b6cbc', width: 40, height: 40, fontSize: '0.95rem', fontWeight: 600 }}>
                     {selectedResearcher.displayName?.charAt(0)?.toUpperCase() || '?'}
                   </Avatar>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.9375rem', mb: 0.25 }}>
                       {selectedResearcher.displayName}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                      <strong>ORCID:</strong> {selectedResearcher.orcidId}
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
+                      <LinkIcon sx={{ fontSize: 14 }} />
+                      {selectedResearcher.orcidId}
                     </Typography>
                     {selectedResearcher.affiliations?.length > 0 && (
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>Affiliations:</strong> {selectedResearcher.affiliations.join(', ')}
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
+                        <BusinessIcon sx={{ fontSize: 14, mt: 0.15 }} />
+                        {selectedResearcher.affiliations.join(', ')}
                       </Typography>
                     )}
                   </Box>
                 </Box>
               </Paper>
 
-              <Grid container spacing={3} sx={{ mt: 2 }}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Collaboration Role</InputLabel>
-                    <Select
-                      value={inviteRole}
-                      onChange={(e) => setInviteRole(e.target.value)}
-                      label="Collaboration Role"
-                    >
-                      {COLLABORATOR_ROLES.map((role) => (
-                        <MenuItem key={role.value} value={role.value}>
-                          <Box>
-                            <Typography variant="body1">{role.label}</Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {role.description}
-                            </Typography>
-                          </Box>
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={3}
-                    label="Personal Message (Optional)"
-                    placeholder="Add a personal message to your invitation..."
-                    value={inviteMessage}
-                    onChange={(e) => setInviteMessage(e.target.value)}
-                  />
-                </Grid>
-              </Grid>
-            </Box>
-          ) : (
-            // Simple ORCID search interface (like registration page)
-            <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Search for researchers using their given name and family name to find their ORCID profile
-              </Typography>
-              
-              <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                <TextField
-                  label="Given Names"
-                  name="givenNames"
-                  value={orcidSearchData.givenNames}
-                  onChange={handleOrcidInputChange}
-                  fullWidth
-                  size="small"
-                  placeholder="e.g., John, Maria"
-                />
-                <TextField
-                  label="Family Name"
-                  name="familyName"
-                  value={orcidSearchData.familyName}
-                  onChange={handleOrcidInputChange}
-                  fullWidth
-                  size="small"
-                  placeholder="e.g., Smith, García"
-                />
-              </Box>
+              <TextField
+                fullWidth
+                required
+                type="email"
+                label={t('manuscript_invite.email_label', 'Institution Email')}
+                placeholder={t('manuscript_invite.email_placeholder', 'name@university.edu')}
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                onBlur={() => setEmailTouched(true)}
+                error={emailTouched && !!emailError}
+                helperText={
+                  emailTouched && emailError
+                    ? emailError
+                    : t(
+                        'manuscript_invite.email_helper',
+                        'Invitation is emailed here. If they have an account they will also be notified in-app. Personal providers such as Gmail, Yahoo, and Outlook are not allowed.'
+                      )
+                }
+                sx={fieldSx}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailIcon sx={{ color: alpha('#8b6cbc', 0.8), fontSize: 20 }} />
+                    </InputAdornment>
+                  )
+                }}
+              />
 
-              <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                <Button
-                  variant="contained"
-                  onClick={handleOrcidSearch}
-                  disabled={orcidLoading || !orcidSearchData.givenNames || !orcidSearchData.familyName}
-                  startIcon={orcidLoading ? <CircularProgress size={20} color="inherit" /> : <SearchIcon />}
-                  sx={{
-                    py: 1.5,
-                    fontSize: '0.95rem',
-                    fontWeight: 600,
-                    bgcolor: '#8b6cbc',
-                    '&:hover': {
-                      bgcolor: '#7b5ca7'
-                    }
-                  }}
+              <FormControl fullWidth sx={fieldSx}>
+                <InputLabel>Collaboration Role</InputLabel>
+                <Select
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                  label="Collaboration Role"
                 >
-                  Search ORCID
-                </Button>
-                {(orcidResults.length > 0 || hasSearchedOrcid) && (
-                  <Button
-                    variant="outlined"
-                    onClick={clearSearch}
-                    startIcon={<CloseIcon />}
-                    sx={{ py: 1.5 }}
-                  >
-                    t('common.clear')
-</Button>
-                )}
-              </Box>
+                  {COLLABORATOR_ROLES.map((role) => (
+                    <MenuItem key={role.value} value={role.value}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{role.label}</Typography>
+                        <Typography variant="caption" color="text.secondary">{role.description}</Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <TextField
+                fullWidth
+                multiline
+                minRows={2}
+                label={t('common.message_optional', 'Personal Message (Optional)')}
+                placeholder="Add a personal note to your invitation..."
+                value={inviteMessage}
+                onChange={(e) => setInviteMessage(e.target.value)}
+                sx={fieldSx}
+              />
+            </Stack>
+          ) : (
+            <Stack spacing={3}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontSize: '0.8125rem', lineHeight: 1.65, maxWidth: 520 }}
+              >
+                Enter the researcher&apos;s name as it appears on their ORCID profile, then select them from the results.
+              </Typography>
+
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2.5,
+                  borderRadius: 2,
+                  border: '1px solid rgba(139, 108, 188, 0.12)',
+                  bgcolor: '#fafbfd'
+                }}
+              >
+                <Stack spacing={2.5}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Given Names"
+                        name="givenNames"
+                        value={orcidSearchData.givenNames}
+                        onChange={handleOrcidInputChange}
+                        fullWidth
+                        placeholder="e.g. John, Maria"
+                        sx={fieldSx}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && orcidSearchData.givenNames && orcidSearchData.familyName) {
+                            e.preventDefault();
+                            handleOrcidSearch();
+                          }
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Family Name"
+                        name="familyName"
+                        value={orcidSearchData.familyName}
+                        onChange={handleOrcidInputChange}
+                        fullWidth
+                        placeholder="e.g. Smith, García"
+                        sx={fieldSx}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && orcidSearchData.givenNames && orcidSearchData.familyName) {
+                            e.preventDefault();
+                            handleOrcidSearch();
+                          }
+                        }}
+                      />
+                    </Grid>
+                  </Grid>
+
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
+                    <Button
+                      variant="contained"
+                      onClick={handleOrcidSearch}
+                      disabled={orcidLoading || !orcidSearchData.givenNames || !orcidSearchData.familyName}
+                      startIcon={orcidLoading ? <CircularProgress size={16} color="inherit" /> : <SearchIcon />}
+                      sx={{
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        px: 2.75,
+                        py: 1,
+                        bgcolor: '#8b6cbc',
+                        boxShadow: 'none',
+                        '&:hover': { bgcolor: '#7b5ca7', boxShadow: '0 4px 14px rgba(139, 108, 188, 0.35)' },
+                        '&:disabled': { bgcolor: '#e2e8f0', color: '#94a3b8' }
+                      }}
+                    >
+                      Search ORCID
+                    </Button>
+                    {(orcidResults.length > 0 || hasSearchedOrcid) && (
+                      <Button
+                        variant="outlined"
+                        onClick={clearSearch}
+                        sx={{
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          borderRadius: 2,
+                          px: 2.5,
+                          py: 1,
+                          borderColor: alpha('#8b6cbc', 0.4),
+                          color: '#8b6cbc',
+                          '&:hover': { borderColor: '#8b6cbc', bgcolor: alpha('#8b6cbc', 0.06) }
+                        }}
+                      >
+                        {t('common.clear', 'Clear')}
+                      </Button>
+                    )}
+                  </Box>
+                </Stack>
+              </Paper>
 
               {orcidError && (
-                <Alert severity="error" sx={{ mb: 2 }}>
+                <Alert severity="error" sx={{ borderRadius: 2 }}>
                   {orcidError}
                 </Alert>
               )}
 
               {orcidResults.length > 0 && (
-                <Paper 
-                  variant="outlined" 
-                  sx={{ 
-                    position: 'relative',
-                    pt: 1.5,
-                    maxHeight: '300px',
-                    overflow: 'auto',
-                    mb: 2
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    borderRadius: 2,
+                    borderColor: 'rgba(0,0,0,0.08)',
+                    maxHeight: 280,
+                    overflow: 'auto'
                   }}
                 >
-                  <Typography variant="subtitle2" sx={{ px: 2, pb: 1, color: '#8b6cbc', fontWeight: 600 }}>
-                    Found {orcidResults.length} researchers:
+                  <Typography variant="caption" sx={{ display: 'block', px: 2.5, pt: 2, pb: 1, color: '#8b6cbc', fontWeight: 600, letterSpacing: '0.02em' }}>
+                    {orcidResults.length} result{orcidResults.length !== 1 ? 's' : ''} found
                   </Typography>
-                  <List dense>
+                  <List dense disablePadding>
                     {orcidResults.map((result) => (
                       <ListItem
                         key={result.orcidId}
@@ -603,26 +791,37 @@ export default function OrcidCollaboratorInvite({
                         component="div"
                         onClick={() => handleResearcherSelect(result)}
                         sx={{
+                          py: 1.5,
+                          px: 2,
                           cursor: 'pointer',
-                          '&:hover': {
-                            backgroundColor: 'action.hover'
-                          }
+                          '&:hover': { bgcolor: alpha('#8b6cbc', 0.06) }
                         }}
                       >
+                        <ListItemAvatar sx={{ minWidth: 44 }}>
+                          <Avatar sx={{ width: 32, height: 32, bgcolor: '#8b6cbc', fontSize: '0.8rem' }}>
+                            {result.displayName?.charAt(0)?.toUpperCase() || '?'}
+                          </Avatar>
+                        </ListItemAvatar>
                         <ListItemText
-                          primary={result.displayName}
-                          secondary={
-                            <React.Fragment>
-                              <span style={{ display: 'block', color: 'rgba(0, 0, 0, 0.87)', fontSize: '0.875rem' }}>
-                                ORCID: {result.orcidId}
-                              </span>
-                              {result.affiliations.length > 0 && (
-                                <span style={{ display: 'block', color: 'rgba(0, 0, 0, 0.6)', fontSize: '0.875rem', marginTop: '2px' }}>
-                                  Affiliations: {result.affiliations.join(', ')}
-                                </span>
-                              )}
-                            </React.Fragment>
+                          primary={
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {result.displayName}
+                            </Typography>
                           }
+                          secondary={
+                            <Box component="span" sx={{ display: 'block' }}>
+                              <Typography variant="caption" color="text.secondary" component="span" sx={{ display: 'block' }}>
+                                ORCID: {result.orcidId}
+                              </Typography>
+                              {result.affiliations.length > 0 && (
+                                <Typography variant="caption" color="text.secondary" component="span" sx={{ display: 'block', mt: 0.25 }}>
+                                  {result.affiliations.join(', ')}
+                                </Typography>
+                              )}
+                            </Box>
+                          }
+                          primaryTypographyProps={{ component: 'div' }}
+                          secondaryTypographyProps={{ component: 'div' }}
                         />
                       </ListItem>
                     ))}
@@ -631,37 +830,97 @@ export default function OrcidCollaboratorInvite({
               )}
 
               {orcidResults.length === 0 && hasSearchedOrcid && !orcidLoading && orcidSearchData.givenNames && orcidSearchData.familyName && (
-                <Alert severity="info" sx={{ mb: 2 }}>
-                  No ORCID profiles found matching your search. Please try different names.
+                <Alert severity="info" sx={{ borderRadius: 2 }}>
+                  No ORCID profiles found. Try different spelling or name variants.
                 </Alert>
               )}
-
-            </Box>
+            </Stack>
           )}
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, gap: 1 }}>
-          <Button onClick={() => setSearchOpen(false)}>
-            t('common.cancel')
-</Button>
-          {selectedResearcher && (
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2.5,
+            gap: 1.5,
+            borderTop: '1px solid rgba(0,0,0,0.06)',
+            bgcolor: '#fafbfd',
+            justifyContent: 'flex-end'
+          }}
+        >
+          {!selectedResearcher ? (
+            <Button
+              onClick={() => {
+                setSearchOpen(false);
+                setSelectedResearcher(null);
+                setInviteEmail('');
+                setEmailTouched(false);
+              }}
+              variant="outlined"
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 2,
+                px: 2.5,
+                borderColor: alpha('#8b6cbc', 0.35),
+                color: '#64748b',
+                '&:hover': { borderColor: alpha('#8b6cbc', 0.5), bgcolor: 'rgba(139, 108, 188, 0.04)' }
+              }}
+            >
+              {t('common.cancel', 'Cancel')}
+            </Button>
+          ) : (
             <>
-              <Button 
-                onClick={() => setSelectedResearcher(null)}
-                color="inherit"
+              <Button
+                onClick={() => {
+                  setSearchOpen(false);
+                  setSelectedResearcher(null);
+                  setInviteEmail('');
+                  setEmailTouched(false);
+                }}
+                sx={{
+                  mr: 'auto',
+                  color: 'text.secondary',
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  px: 1.5
+                }}
               >
-                Back to Search
+                {t('common.cancel', 'Cancel')}
+              </Button>
+              <Button
+                onClick={() => {
+                  setSelectedResearcher(null);
+                  setInviteEmail('');
+                  setEmailTouched(false);
+                }}
+                variant="outlined"
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  px: 2.5,
+                  borderColor: alpha('#8b6cbc', 0.4),
+                  color: '#8b6cbc',
+                  '&:hover': { borderColor: '#8b6cbc', bgcolor: alpha('#8b6cbc', 0.06) }
+                }}
+              >
+                Back
               </Button>
               <Button
                 variant="contained"
-                startIcon={isInviting ? <CircularProgress size={16} /> : <SendIcon />}
+                startIcon={isInviting ? <CircularProgress size={16} color="inherit" /> : <SendIcon sx={{ fontSize: 18 }} />}
                 onClick={handleInviteCollaborator}
-                disabled={isInviting}
+                disabled={isInviting || !!emailError}
                 sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  px: 2.75,
                   bgcolor: '#8b6cbc',
-                  '&:hover': {
-                    bgcolor: '#7b5ca7'
-                  }
+                  boxShadow: 'none',
+                  '&:hover': { bgcolor: '#7b5ca7', boxShadow: '0 4px 14px rgba(139, 108, 188, 0.35)' },
+                  '&:disabled': { bgcolor: '#e2e8f0', color: '#94a3b8' }
                 }}
               >
                 {isInviting ? 'Sending...' : 'Send Invitation'}

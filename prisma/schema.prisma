@@ -93,6 +93,7 @@ model User {
   lastUpdatedManuscripts   Manuscript[]             @relation("LastUpdatedManuscripts")
   notifications            Notification[]           @relation("UserNotifications")
   comments                 ManuscriptComment[]      @relation("CommentAuthor")
+  manuscriptSubmissions    ManuscriptSubmission[]   @relation("SubmissionCreator")
 
   // Track Changes and Version Relations
   createdVersions ManuscriptVersion[] @relation("VersionCreator")
@@ -297,6 +298,7 @@ model Publication {
   // Relations
   authorRelations     PublicationAuthor[]        @relation("authorRelations")
   manuscriptCitations ManuscriptCitation[]
+  sourceManuscripts   Manuscript[]               @relation("PublishedManuscripts")
   proposals           ProposalPublication[]
   libraryFolders      LibraryFolderPublication[]
 
@@ -556,6 +558,21 @@ enum CollaboratorRole {
   REVIEWER
 }
 
+enum SubmissionType {
+  EXTERNAL // Submitted through the HospitiumRIS submission flow
+  MANUAL // Recorded by the author after submitting elsewhere
+  PREPRINT // Deposited on a preprint server
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  REVISIONS_REQUESTED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
 enum InvitationStatus {
   PENDING
   ACCEPTED
@@ -701,9 +718,16 @@ model Manuscript {
   lastSaved     DateTime? // Track when content was last saved
   lastUpdatedBy String? // User ID of last person to update
 
+  // Publication Lifecycle
+  publicationId String? // Set when the published manuscript is added to the publication library
+  publishedAt   DateTime?
+  archivedAt    DateTime?
+  workflowMeta  Json? // Revision notes, publication identifiers, archive location
+
   // Relations
   creator        User                     @relation(fields: [createdBy], references: [id], onDelete: Cascade, name: "CreatedManuscripts")
   lastUpdater    User?                    @relation(fields: [lastUpdatedBy], references: [id], onDelete: SetNull, name: "LastUpdatedManuscripts")
+  publication    Publication?             @relation(fields: [publicationId], references: [id], onDelete: SetNull, name: "PublishedManuscripts")
   collaborators  ManuscriptCollaborator[]
   invitations    ManuscriptInvitation[]
   notifications  Notification[]
@@ -711,9 +735,38 @@ model Manuscript {
   comments       ManuscriptComment[]
   versions       ManuscriptVersion[]
   trackedChanges TrackedChange[]
+  submissions    ManuscriptSubmission[]
   proposals      ProposalManuscript[]
 
   @@map("manuscripts")
+}
+
+model ManuscriptSubmission {
+  id String @id @default(cuid())
+
+  manuscriptId String
+
+  // Where the manuscript was sent
+  type        SubmissionType
+  targetName  String // Journal, repository, or preprint server name
+  targetUrl   String?
+  referenceId String? // Tracking ID assigned by the journal or repository
+
+  // Progress
+  status      SubmissionStatus @default(SUBMITTED)
+  submittedAt DateTime         @default(now())
+  decidedAt   DateTime?
+  notes       String?          @db.Text
+
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  manuscript Manuscript @relation(fields: [manuscriptId], references: [id], onDelete: Cascade)
+  creator    User       @relation(fields: [createdBy], references: [id], onDelete: Cascade, name: "SubmissionCreator")
+
+  @@index([manuscriptId])
+  @@map("manuscript_submissions")
 }
 
 model ManuscriptCollaborator {

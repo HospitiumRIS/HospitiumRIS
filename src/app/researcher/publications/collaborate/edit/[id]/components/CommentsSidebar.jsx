@@ -54,7 +54,8 @@ export default function CommentsSidebar({
   selectedText = null,
   onClearSelection = null,
   onCommentCreated = null,
-  onCommentDeleted = null
+  onCommentDeleted = null,
+  onClose = null
 }) {
   const { t } = useTranslation();
   
@@ -439,15 +440,21 @@ export default function CommentsSidebar({
 
   return (
     <Paper sx={{ 
-      width: 420,
-      minWidth: 420,
+      width: 320,
+      minWidth: 320,
       flexShrink: 0,
       borderRadius: 0, 
       borderLeft: '1px solid #e8e8e8',
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      bgcolor: '#fafbfc'
+      overflow: 'hidden',
+      bgcolor: '#fafbfc',
+      animation: 'editorPanelFade 280ms ease',
+      '@keyframes editorPanelFade': {
+        from: { opacity: 0, transform: 'translateX(16px)' },
+        to: { opacity: 1, transform: 'translateX(0)' }
+      }
     }}>
       {/* Professional Header */}
       <Box sx={{ 
@@ -529,6 +536,13 @@ export default function CommentsSidebar({
                   <RefreshIcon sx={{ fontSize: 18 }} />
                 </IconButton>
               </Tooltip>
+              {onClose && (
+                <Tooltip title="Hide panel">
+                  <IconButton size="small" onClick={onClose} sx={{ color: '#888' }}>
+                    <CloseIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Tooltip>
+              )}
             </Stack>
           </Stack>
 

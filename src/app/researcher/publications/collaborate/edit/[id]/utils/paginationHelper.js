@@ -26,6 +26,9 @@ export const DEFAULT_MARGINS = {
   left: 72,
 };
 
+// Gray space rendered between two page sheets
+export const PAGE_GAP = 24;
+
 export const PAGE_NUMBER_POSITIONS = {
   'bottom-center': { bottom: '20px', left: '50%', transform: 'translateX(-50%)' },
   'bottom-right': { bottom: '20px', right: '20px' },
@@ -113,26 +116,46 @@ export function getPageNumberStyle(position) {
 
 export function generatePrintCSS(pageSize, orientation, margins) {
   const dimensions = getPageDimensions(pageSize, orientation);
-  
+
   return `
     @media print {
       @page {
         size: ${pageSize} ${orientation};
         margin: ${margins.top}px ${margins.right}px ${margins.bottom}px ${margins.left}px;
       }
-      
+
       .page-break {
         page-break-after: always;
         break-after: page;
+        height: 0 !important;
       }
-      
-      .page-number {
-        display: none;
+
+      /* Screen-only page chrome must not reach the printer */
+      .page-gap,
+      .page-sheet-footer {
+        display: none !important;
       }
-      
+
+      .document-canvas {
+        background: white !important;
+        overflow: visible !important;
+        padding: 0 !important;
+      }
+
+      .page-stack,
+      .page-stack-content {
+        width: auto !important;
+        min-height: 0 !important;
+      }
+
+      .page-sheet {
+        box-shadow: none !important;
+      }
+
       .ProseMirror {
         width: ${dimensions.widthPx}px;
         max-width: 100%;
+        padding: 0 !important;
       }
     }
   `;

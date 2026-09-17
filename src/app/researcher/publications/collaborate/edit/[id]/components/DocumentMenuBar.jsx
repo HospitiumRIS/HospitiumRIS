@@ -99,7 +99,9 @@ export default function DocumentMenuBar({
   paginationEnabled,
   // Menu anchor setters for menus not yet implemented in this component
   setCitationMenuAnchor,
-  onTableProperties
+  onTableProperties,
+  // Rendered inside the document header instead of as its own bar
+  embedded = false
 }) {
   const { t } = useTranslation();
   // Menu dropdown states (only for menus implemented in this component)
@@ -158,11 +160,13 @@ export default function DocumentMenuBar({
   const menuButtonStyle = {
     color: '#333', 
     textTransform: 'none',
-    fontSize: '0.875rem',
+    fontSize: embedded ? '0.8rem' : '0.875rem',
     fontWeight: 400,
-    px: 2,
-    py: 0.5,
-    '&:hover': { bgcolor: '#e0e0e0' }
+    minWidth: 0,
+    px: embedded ? 1 : 2,
+    py: embedded ? 0.15 : 0.5,
+    borderRadius: 1,
+    '&:hover': { bgcolor: '#f1f3f4' }
   };
 
   // Simple table submenu hover behavior - fixed
@@ -346,17 +350,23 @@ export default function DocumentMenuBar({
 
   return (
     <>
-      <Paper sx={{ 
-        borderRadius: 0,
-        borderBottom: '1px solid #e0e0e0',
-        bgcolor: '#fafafa'
-      }}>
+      <Paper
+        elevation={0}
+        sx={embedded ? {
+          borderRadius: 0,
+          bgcolor: 'transparent'
+        } : {
+          borderRadius: 0,
+          borderBottom: '1px solid #e0e0e0',
+          bgcolor: '#fafafa'
+        }}
+      >
         <Box sx={{ 
           display: 'flex', 
           alignItems: 'center', 
-          px: 2, 
-          py: 0.5,
-          minHeight: 40
+          px: embedded ? 0 : 2, 
+          py: embedded ? 0 : 0.5,
+          minHeight: embedded ? 28 : 40
         }}>
           {/* Menu Buttons */}
           <Button size="small" onClick={(e) => setFileMenuAnchor(e.currentTarget)} sx={menuButtonStyle}>

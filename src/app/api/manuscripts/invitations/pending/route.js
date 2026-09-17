@@ -41,7 +41,7 @@ export async function GET(request) {
         status: 'PENDING',
         OR: [
           { invitedUserId: userId },
-          ...(currentUser.email ? [{ email: currentUser.email }] : []),
+          ...(currentUser.email ? [{ email: { equals: currentUser.email, mode: 'insensitive' } }] : []),
           ...(currentUser.orcidId ? [{ orcidId: currentUser.orcidId }] : [])
         ],
         expiresAt: {

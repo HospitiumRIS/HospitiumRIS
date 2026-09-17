@@ -112,21 +112,21 @@ const InstitutionDashboard = () => {
   // Get time-appropriate greeting
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();
-    
+
     if (hour < 12) {
-      return 'Good morning';
+      return t('institution_dashboard.greeting_morning');
     } else if (hour < 17) {
-      return 'Good afternoon';
+      return t('institution_dashboard.greeting_afternoon');
     } else {
-      return 'Good evening';
+      return t('institution_dashboard.greeting_evening');
     }
   };
 
   // Get user's display name
   const getUserDisplayName = () => {
-    if (authLoading) return 'User';
-    if (!user) return 'User';
-    
+    if (authLoading) return t('common.user');
+    if (!user) return t('common.user');
+
     // Try different name fields
     if (user.firstName) {
       return user.firstName;
@@ -137,30 +137,30 @@ const InstitutionDashboard = () => {
     } else if (user.email) {
       return user.email.split('@')[0]; // Use email username as fallback
     }
-    return 'User';
+    return t('common.user');
   };
 
   // Get formatted account type display name
   const getAccountTypeDisplay = () => {
-    if (!user || !user.accountType) return 'User Account';
-    
+    if (!user || !user.accountType) return t('common.user_account');
+
     const accountType = user.accountType.toLowerCase();
-    
+
     switch (accountType) {
       case 'researcher':
-        return 'Researcher';
+        return t('common.researcher');
       case 'research_admin':
-        return 'Research Administrator';
+        return t('common.research_administrator');
       case 'institution_admin':
-        return 'Institution Administrator';
+        return t('common.institution_administrator');
       case 'foundation_manager':
-        return 'Foundation Manager';
+        return t('common.foundation_manager');
       case 'super_admin':
-        return 'Super Administrator';
+        return t('common.super_administrator');
       case 'global_admin':
-        return 'Global Admin';
+        return t('common.global_admin');
       default:
-        return 'User Account';
+        return t('common.user_account');
     }
   };
 
@@ -203,7 +203,7 @@ const InstitutionDashboard = () => {
       setAnalyticsData(data);
     } catch (error) {
       console.error('Error loading analytics data:', error);
-      setError('Failed to load institutional analytics data');
+      setError(t('institution_dashboard.error_load_analytics'));
     } finally {
       setLoading(false);
     }
@@ -254,12 +254,12 @@ const InstitutionDashboard = () => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInSeconds = Math.floor((now - date) / 1000);
-    
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 604800)} weeks ago`;
+
+    if (diffInSeconds < 60) return t('institution_dashboard.time_just_now');
+    if (diffInSeconds < 3600) return t('institution_dashboard.time_min_ago', { count: Math.floor(diffInSeconds / 60) });
+    if (diffInSeconds < 86400) return t('institution_dashboard.time_hours_ago', { count: Math.floor(diffInSeconds / 3600) });
+    if (diffInSeconds < 604800) return t('institution_dashboard.time_days_ago', { count: Math.floor(diffInSeconds / 86400) });
+    if (diffInSeconds < 2592000) return t('institution_dashboard.time_weeks_ago', { count: Math.floor(diffInSeconds / 604800) });
     return formatDate(dateString);
   };
 
@@ -298,14 +298,14 @@ const InstitutionDashboard = () => {
         icon: <ArticleIcon />,
         color: '#8b6cbc',
         bgColor: alpha('#8b6cbc', 0.1),
-        label: 'Manuscript'
+        label: t('common.manuscript')
       };
     }
     return {
       icon: <FolderIcon />,
       color: '#e67e22',
       bgColor: alpha('#e67e22', 0.1),
-      label: 'Proposal'
+      label: t('common.proposal')
     };
   };
 
@@ -381,12 +381,12 @@ const InstitutionDashboard = () => {
     return (
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
-          title="Research Administration"
-          description="Institutional research output, proposals, and researcher management"
+          title={t('institution_dashboard.page_title')}
+          description={t('institution_dashboard.page_description')}
           icon={<InstitutionIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
-            { label: 'Institution', path: '/institution' },
-            { label: 'Dashboard' }
+            { label: t('institution_dashboard.breadcrumb_institution'), path: '/institution' },
+            { label: t('institution_dashboard.breadcrumb_dashboard') }
           ]}
           gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
         />
@@ -403,12 +403,12 @@ const InstitutionDashboard = () => {
     return (
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
-          title="Research Administration"
-          description="Institutional research output, proposals, and researcher management"
+          title={t('institution_dashboard.page_title')}
+          description={t('institution_dashboard.page_description')}
           icon={<InstitutionIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
-            { label: 'Institution', path: '/institution' },
-            { label: 'Dashboard' }
+            { label: t('institution_dashboard.breadcrumb_institution'), path: '/institution' },
+            { label: t('institution_dashboard.breadcrumb_dashboard') }
           ]}
           gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
         />
@@ -420,7 +420,7 @@ const InstitutionDashboard = () => {
               onClick={handleRefresh} 
               sx={{ ml: 2 }}
             >
-              Try Again
+              {t('common.try_again')}
             </Button>
           </Alert>
         </Container>
@@ -433,16 +433,16 @@ const InstitutionDashboard = () => {
       {/* Full-width Page Header */}
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
-          title={mounted ? `${greeting}, ${getUserDisplayName()}!` : `Welcome, ${getUserDisplayName()}!`}
+          title={mounted ? t('institution_dashboard.greeting_title', { greeting, name: getUserDisplayName() }) : t('institution_dashboard.welcome_title', { name: getUserDisplayName() })}
           description={
             <>
               <span style={{ fontSize: '0.95rem', fontWeight: 400, opacity: 0.9 }}>
-                Logged in as: <span style={{ fontWeight: 700, color: '#fff' }}>{getAccountTypeDisplay()}</span>
+                {t('institution_dashboard.logged_in_as')} <span style={{ fontWeight: 700, color: '#fff' }}>{getAccountTypeDisplay()}</span>
               </span>
             
               <br />
               <span style={{ fontSize: '0.875rem', opacity: 0.8 }}>
-                {mounted ? currentDate : 'Loading...'}
+                {mounted ? currentDate : t('common.loading')}
               </span>
             </>
           }
@@ -455,10 +455,10 @@ const InstitutionDashboard = () => {
         {/* Dashboard Header */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 1 }}>
-            Institutional Research Dashboard
+            {t('institution_dashboard.heading')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Comprehensive overview of research activities, proposals, and institutional metrics
+            {t('institution_dashboard.heading_desc')}
           </Typography>
         </Box>
 
@@ -492,7 +492,7 @@ const InstitutionDashboard = () => {
               <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Total Researchers
+                  {t('institution_dashboard.stat_total_researchers')}
                 </Typography>
                 <ResearchersIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
@@ -500,7 +500,7 @@ const InstitutionDashboard = () => {
                 {analyticsData.overview.totalResearchers}
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Active researchers
+                {t('institution_dashboard.stat_active_researchers')}
               </Typography>
             </Paper>
 
@@ -520,7 +520,7 @@ const InstitutionDashboard = () => {
               <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Total Manuscripts
+                  {t('institution_dashboard.stat_total_manuscripts')}
                 </Typography>
                 <ManuscriptIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
@@ -528,7 +528,7 @@ const InstitutionDashboard = () => {
                 {analyticsData.overview.totalManuscripts}
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Collaborative writings
+                {t('institution_dashboard.stat_collaborative_writings')}
               </Typography>
             </Paper>
 
@@ -548,7 +548,7 @@ const InstitutionDashboard = () => {
               <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Total Proposals
+                  {t('institution_dashboard.stat_total_proposals')}
                 </Typography>
                 <ProposalIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
@@ -556,7 +556,7 @@ const InstitutionDashboard = () => {
                 {analyticsData.overview.totalProposals}
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Research proposals
+                {t('institution_dashboard.stat_research_proposals')}
               </Typography>
             </Paper>
 
@@ -576,7 +576,7 @@ const InstitutionDashboard = () => {
               <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                  Total Publications
+                  {t('institution_dashboard.stat_total_publications')}
                 </Typography>
                 <PublicationIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
               </Box>
@@ -584,7 +584,7 @@ const InstitutionDashboard = () => {
                 {analyticsData.overview.totalPublications}
               </Typography>
               <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-                Published research
+                {t('institution_dashboard.stat_published_research')}
               </Typography>
             </Paper>
           </Box>
@@ -616,7 +616,7 @@ const InstitutionDashboard = () => {
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <LineChartIcon sx={{ color: '#8b6cbc' }} />
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Research Output Trends
+                    {t('institution_dashboard.trends_title')}
                   </Typography>
                 </Stack>
                 
@@ -701,17 +701,17 @@ const InstitutionDashboard = () => {
                   }
                 }}
               >
-                <Tab label="All Outputs" value="all" />
-                <Tab label="Manuscripts Only" value="manuscripts" />
-                <Tab label="Proposals Only" value="proposals" />
+                <Tab label={t('institution_dashboard.tab_all_outputs')} value="all" />
+                <Tab label={t('institution_dashboard.tab_manuscripts_only')} value="manuscripts" />
+                <Tab label={t('institution_dashboard.tab_proposals_only')} value="proposals" />
               </Tabs>
               
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                {trendsOutputType === 'all' 
-                  ? 'Monthly research output including manuscripts and proposals'
+                {trendsOutputType === 'all'
+                  ? t('institution_dashboard.trends_desc_all')
                   : trendsOutputType === 'manuscripts'
-                  ? 'Monthly manuscript submissions and publications'
-                  : 'Monthly proposal submissions'}
+                  ? t('institution_dashboard.trends_desc_manuscripts')
+                  : t('institution_dashboard.trends_desc_proposals')}
               </Typography>
               
               {/* Interactive Chart */}
@@ -816,7 +816,7 @@ const InstitutionDashboard = () => {
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <PieChartIcon sx={{ color: '#8b6cbc' }} />
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Proposal Status
+                    {t('institution_dashboard.proposal_status_title')}
                   </Typography>
                 </Stack>
                 
@@ -854,7 +854,7 @@ const InstitutionDashboard = () => {
                       fontSize: '0.75rem'
                     }}
                   >
-                    Active
+                    {t('common.active')}
                   </Button>
                   <Button
                     onClick={() => setProposalViewType('completed')}
@@ -871,17 +871,17 @@ const InstitutionDashboard = () => {
                       fontSize: '0.75rem'
                     }}
                   >
-                    Completed
+                    {t('common.completed')}
                   </Button>
                 </ButtonGroup>
               </Stack>
 
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                {proposalViewType === 'all' 
-                  ? 'Current distribution of all proposal statuses'
+                {proposalViewType === 'all'
+                  ? t('institution_dashboard.proposal_status_desc_all')
                   : proposalViewType === 'active'
-                  ? 'Proposals currently in progress (Draft, Submitted, Under Review)'
-                  : 'Completed proposals (Approved, Rejected)'}
+                  ? t('institution_dashboard.proposal_status_desc_active')
+                  : t('institution_dashboard.proposal_status_desc_completed')}
               </Typography>
               
               {/* Interactive Status Bars */}
@@ -897,12 +897,12 @@ const InstitutionDashboard = () => {
                 <Stack spacing={2.5}>
                   {(() => {
                     const statuses = [
-                      { label: 'Draft', count: analyticsData.overview.draftProposals || 0, color: '#9e9e9e', type: 'active' },
-                      { label: 'Submitted', count: analyticsData.overview.submittedProposals, color: '#ff9800', type: 'active' },
-                      { label: 'Under Review', count: analyticsData.overview.underReviewProposals, color: '#2196f3', type: 'active' },
-                      { label: 'Approved', count: analyticsData.overview.approvedProposals, color: '#4caf50', type: 'completed' },
-                      { label: 'Rejected', count: analyticsData.overview.rejectedProposals, color: '#f44336', type: 'completed' },
-                      { label: 'Revision Requested', count: analyticsData.overview.revisionRequestedProposals || 0, color: '#ff5722', type: 'active' }
+                      { label: t('common.draft'), count: analyticsData.overview.draftProposals || 0, color: '#9e9e9e', type: 'active' },
+                      { label: t('common.submitted'), count: analyticsData.overview.submittedProposals, color: '#ff9800', type: 'active' },
+                      { label: t('common.under_review'), count: analyticsData.overview.underReviewProposals, color: '#2196f3', type: 'active' },
+                      { label: t('common.approved'), count: analyticsData.overview.approvedProposals, color: '#4caf50', type: 'completed' },
+                      { label: t('common.rejected'), count: analyticsData.overview.rejectedProposals, color: '#f44336', type: 'completed' },
+                      { label: t('common.revision_requested'), count: analyticsData.overview.revisionRequestedProposals || 0, color: '#ff5722', type: 'active' }
                     ];
 
                     const filteredStatuses = proposalViewType === 'all' 
@@ -1012,7 +1012,7 @@ const InstitutionDashboard = () => {
             <CardContent sx={{ p: 4 }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Proposals for Review
+                  {t('institution_dashboard.proposals_review_title')}
                 </Typography>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Button
@@ -1025,7 +1025,7 @@ const InstitutionDashboard = () => {
                       textTransform: 'none'
                     }}
                   >
-                    Review All
+                    {t('institution_dashboard.action_review_all')}
                   </Button>
                   <Badge badgeContent={analyticsData.overview.submittedProposals + analyticsData.overview.underReviewProposals} color="error">
                     <ReviewIcon sx={{ color: '#8b6cbc' }} />
@@ -1033,7 +1033,7 @@ const InstitutionDashboard = () => {
                 </Stack>
               </Stack>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Recent proposals requiring administrative review
+                {t('institution_dashboard.proposals_review_desc')}
               </Typography>
 
               {analyticsData.recentProposals
@@ -1043,7 +1043,7 @@ const InstitutionDashboard = () => {
                   <Table stickyHeader>
                     <TableHead>
                       <TableRow>
-                        <TableCell sx={{ fontWeight: 600 }}>Proposal</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>{t('institution_dashboard.table_header_proposal')}</TableCell>
                         <TableCell sx={{ fontWeight: 600 }}>{t('common.status')}</TableCell>
                         <TableCell sx={{ fontWeight: 600 }}>{t('common.date')}</TableCell>
                         <TableCell sx={{ fontWeight: 600 }}>{t('common.actions')}</TableCell>
@@ -1061,7 +1061,7 @@ const InstitutionDashboard = () => {
                                 {proposal.title}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                by {proposal.author} • {proposal.department}
+                                {t('institution_dashboard.by_author_prefix')} {proposal.author} • {proposal.department}
                               </Typography>
                             </Box>
                           </TableCell>
@@ -1104,7 +1104,7 @@ const InstitutionDashboard = () => {
                     {t('common.no_data')}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    All proposals have been reviewed or there are no submitted proposals at this time.
+                    {t('institution_dashboard.empty_proposals_reviewed')}
                   </Typography>
                 </Box>
               )}
@@ -1131,15 +1131,15 @@ const InstitutionDashboard = () => {
                 <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2} sx={{ mb: 2 }}>
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 700, color: '#2d3748' }}>
-                      Manuscripts in Progress
+                      {t('institution_dashboard.manuscripts_title')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      All manuscripts currently being worked on
+                      {t('institution_dashboard.manuscripts_desc')}
                     </Typography>
                   </Box>
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <Chip 
-                      label={`${analyticsData.overview.totalManuscripts} Total`}
+                    <Chip
+                      label={t('institution_dashboard.manuscripts_total_chip', { count: analyticsData.overview.totalManuscripts })}
                       sx={{ 
                         backgroundColor: alpha('#8b6cbc', 0.1),
                         color: '#8b6cbc',
@@ -1154,7 +1154,7 @@ const InstitutionDashboard = () => {
                   {/* Search */}
                   <TextField
                     size="small"
-                    placeholder="Search by title or author..."
+                    placeholder={t('institution_dashboard.search_placeholder_manuscripts')}
                     value={manuscriptSearchTerm}
                     onChange={(e) => setManuscriptSearchTerm(e.target.value)}
                     InputProps={{
@@ -1271,7 +1271,7 @@ const InstitutionDashboard = () => {
                         }}
                       >
                         <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <span>Title</span>
+                          <span>{t('common.title')}</span>
                           {manuscriptSortBy === 'title' && <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>↓</span>}
                         </Stack>
                       </TableCell>
@@ -1289,7 +1289,7 @@ const InstitutionDashboard = () => {
                         }}
                       >
                         <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <span>Author(s)</span>
+                          <span>{t('institution_dashboard.table_header_authors')}</span>
                           {manuscriptSortBy === 'author' && <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>↓</span>}
                         </Stack>
                       </TableCell>
@@ -1302,7 +1302,7 @@ const InstitutionDashboard = () => {
                           py: 1.5
                         }}
                       >
-                        Status
+                        {t('common.status')}
                       </TableCell>
                       <TableCell 
                         onClick={() => setManuscriptSortBy('updated')}
@@ -1318,7 +1318,7 @@ const InstitutionDashboard = () => {
                         }}
                       >
                         <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <span>Last Updated</span>
+                          <span>{t('institution_dashboard.table_header_last_updated')}</span>
                           {manuscriptSortBy === 'updated' && <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>↓</span>}
                         </Stack>
                       </TableCell>
@@ -1396,17 +1396,17 @@ const InstitutionDashboard = () => {
                                 transition: 'color 0.15s ease'
                               }}
                             >
-                              {manuscript.title || 'Untitled Manuscript'}
+                              {manuscript.title || t('institution_dashboard.fallback_untitled_manuscript')}
                             </Typography>
                           </TableCell>
                           <TableCell sx={{ py: 2 }}>
                             <Typography variant="body2" color="text.secondary">
-                              {manuscript.author || 'Unknown'}
+                              {manuscript.author || t('common.unknown')}
                             </Typography>
                           </TableCell>
                           <TableCell sx={{ py: 2 }}>
                             <Chip
-                              label={manuscript.status || 'Draft'}
+                              label={manuscript.status || t('common.draft')}
                               size="small"
                               sx={{
                                 backgroundColor: manuscript.status === 'PUBLISHED' 
@@ -1426,7 +1426,7 @@ const InstitutionDashboard = () => {
                           </TableCell>
                           <TableCell sx={{ py: 2 }}>
                             <Typography variant="body2" color="text.secondary">
-                              {manuscript.updatedAt ? formatDate(manuscript.updatedAt) : manuscript.createdAt ? formatDate(manuscript.createdAt) : 'N/A'}
+                              {manuscript.updatedAt ? formatDate(manuscript.updatedAt) : manuscript.createdAt ? formatDate(manuscript.createdAt) : t('common.not_available')}
                             </Typography>
                           </TableCell>
                         </TableRow>
@@ -1458,15 +1458,15 @@ const InstitutionDashboard = () => {
                 <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2}>
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 700, color: '#2d3748' }}>
-                      Researchers
+                      {t('institution_dashboard.researchers_title')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Researchers by total output
+                      {t('institution_dashboard.researchers_desc')}
                     </Typography>
                   </Box>
                   <TextField
                     size="small"
-                    placeholder="Search by name or department..."
+                    placeholder={t('institution_dashboard.search_placeholder_researchers')}
                     value={researcherSearchTerm}
                     onChange={(e) => setResearcherSearchTerm(e.target.value)}
                     InputProps={{
@@ -1505,7 +1505,7 @@ const InstitutionDashboard = () => {
                           width: '35%'
                         }}
                       >
-                        Researcher
+                        {t('common.researcher')}
                       </TableCell>
                       <TableCell 
                         onClick={() => handleSortChange('totalOutput')}
@@ -1522,7 +1522,7 @@ const InstitutionDashboard = () => {
                         }}
                       >
                         <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <span>Total</span>
+                          <span>{t('common.total')}</span>
                           {sortBy === 'totalOutput' && (
                             <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>
                               {sortOrder === 'desc' ? '↓' : '↑'}
@@ -1545,7 +1545,7 @@ const InstitutionDashboard = () => {
                         }}
                       >
                         <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <span>Manuscripts</span>
+                          <span>{t('common.manuscripts')}</span>
                           {sortBy === 'manuscriptCount' && (
                             <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>
                               {sortOrder === 'desc' ? '↓' : '↑'}
@@ -1568,7 +1568,7 @@ const InstitutionDashboard = () => {
                         }}
                       >
                         <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <span>Proposals</span>
+                          <span>{t('common.proposals')}</span>
                           {sortBy === 'proposalCount' && (
                             <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>
                               {sortOrder === 'desc' ? '↓' : '↑'}
@@ -1591,7 +1591,7 @@ const InstitutionDashboard = () => {
                         }}
                       >
                         <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <span>Publications</span>
+                          <span>{t('institution_dashboard.table_header_publications')}</span>
                           {sortBy === 'publicationCount' && (
                             <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>
                               {sortOrder === 'desc' ? '↓' : '↑'}
@@ -1606,9 +1606,9 @@ const InstitutionDashboard = () => {
                       <TableRow>
                         <TableCell colSpan={5} sx={{ py: 6, textAlign: 'center' }}>
                           <Typography variant="body2" color="text.secondary">
-                            {researcherSearchTerm 
-                              ? `No researchers found matching "${researcherSearchTerm}"`
-                              : 'No researchers to display'
+                            {researcherSearchTerm
+                              ? t('institution_dashboard.no_researchers_match', { term: researcherSearchTerm })
+                              : t('institution_dashboard.no_researchers_display')
                             }
                           </Typography>
                           {researcherSearchTerm && (
@@ -1648,10 +1648,10 @@ const InstitutionDashboard = () => {
                                   color: '#2d3748'
                                 }}
                               >
-                                {researcher.name || 'Unknown'}
+                                {researcher.name || t('common.unknown')}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                {researcher.department || 'No Department'}
+                                {researcher.department || t('common.no_department')}
                               </Typography>
                             </Box>
                           </TableCell>
@@ -1713,7 +1713,7 @@ const InstitutionDashboard = () => {
                   >
                     {showAllResearchers
                       ? t('common.show_less')
-                      : `View All ${filteredResearchers.length} Researchers`
+                      : t('institution_dashboard.view_all_researchers', { count: filteredResearchers.length })
                     }
                   </Button>
                 </Box>
@@ -1757,10 +1757,10 @@ const InstitutionDashboard = () => {
                     </Box>
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 700, color: '#2d3748' }}>
-              Recent Research Activity
+              {t('institution_dashboard.activity_title')}
             </Typography>
                       <Typography variant="body2" color="text.secondary">
-              Latest manuscripts, proposals, and research updates
+              {t('institution_dashboard.activity_desc')}
             </Typography>
                     </Box>
                   </Stack>
@@ -1770,7 +1770,7 @@ const InstitutionDashboard = () => {
                 <Stack direction="row" spacing={2} alignItems="center">
                   <TextField
                     size="small"
-                    placeholder="Search activities..."
+                    placeholder={t('institution_dashboard.search_placeholder_activities')}
                     value={activitySearchTerm}
                     onChange={(e) => setActivitySearchTerm(e.target.value)}
                     InputProps={{
@@ -1830,9 +1830,9 @@ const InstitutionDashboard = () => {
                       })
                     }}
                   >
-                    All
-                    <Chip 
-                      label={getActivityCounts().all} 
+                    {t('common.all')}
+                    <Chip
+                      label={getActivityCounts().all}
                       size="small" 
                       sx={{ 
                         ml: 1, 
@@ -1858,9 +1858,9 @@ const InstitutionDashboard = () => {
                       })
                     }}
                   >
-                    Manuscripts
-                    <Chip 
-                      label={getActivityCounts().manuscript} 
+                    {t('common.manuscripts')}
+                    <Chip
+                      label={getActivityCounts().manuscript}
                       size="small" 
                       sx={{ 
                         ml: 1, 
@@ -1886,9 +1886,9 @@ const InstitutionDashboard = () => {
                       })
                     }}
                   >
-                    Proposals
-                    <Chip 
-                      label={getActivityCounts().proposal} 
+                    {t('common.proposals')}
+                    <Chip
+                      label={getActivityCounts().proposal}
                       size="small" 
                       sx={{ 
                         ml: 1, 
@@ -1930,9 +1930,11 @@ const InstitutionDashboard = () => {
                     {t('common.no_results')}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {activitySearchTerm 
-                      ? `No results for "${activitySearchTerm}". Try a different search term.`
-                      : `No ${activityFilter === 'all' ? '' : activityFilter + ' '}activities to display yet.`
+                    {activitySearchTerm
+                      ? t('institution_dashboard.no_results_for_search', { term: activitySearchTerm })
+                      : activityFilter === 'all'
+                      ? t('institution_dashboard.no_activities_all')
+                      : t('institution_dashboard.no_activities_of_type', { type: activityFilter === 'manuscript' ? t('common.manuscript') : t('common.proposal') })
                     }
                   </Typography>
                   {activitySearchTerm && (
@@ -2104,7 +2106,7 @@ const InstitutionDashboard = () => {
                   >
                     {showAllActivities
                       ? t('common.show_less')
-                      : `View All ${filteredActivities.length} Activities`
+                      : t('institution_dashboard.view_all_activities', { count: filteredActivities.length })
                     }
                   </Button>
                 </Box>

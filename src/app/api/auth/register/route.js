@@ -4,6 +4,7 @@ import { hashPassword, validateEmail, validatePassword } from '@/lib/auth';
 import { findInstitutionByEmailDomain, seedDomainForInstitution } from '@/lib/institution-domain';
 import { uniqueInstitutionSlug } from '@/lib/institution-slug';
 import { defaultEnabledModules } from '@/lib/institution-modules';
+import { claimPendingInvitations } from '@/lib/manuscript-invitations';
 
 export async function POST(request) {
   let body = {};
@@ -292,6 +293,12 @@ export async function POST(request) {
         errorMessage: null,
       }
     });
+
+    try {
+      await claimPendingInvitations(prisma, result);
+    } catch (claimError) {
+      console.error('Failed to claim pending manuscript invitations:', claimError);
+    }
 
     // Return success response (don't include sensitive data)
     const response = NextResponse.json({

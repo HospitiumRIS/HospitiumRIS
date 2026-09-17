@@ -85,6 +85,7 @@ const NoSSR = ({ children, fallback = null }) => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [generalError, setGeneralError] = useState('');
+  const [postLoginRedirect, setPostLoginRedirect] = useState('');
 
   // Log page visit on component mount and restore remember me preference
   useEffect(() => {
@@ -95,6 +96,16 @@ const NoSSR = ({ children, fallback = null }) => {
     if (savedRememberMe === 'true') {
       setFormData(prev => ({ ...prev, rememberMe: true }));
       logClientActivity('remember_me_preference_restored');
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirect = urlParams.get('redirect');
+    const emailFromInvite = urlParams.get('email');
+    if (redirect && redirect.startsWith('/') && !redirect.startsWith('//') && !redirect.includes('://')) {
+      setPostLoginRedirect(redirect);
+    }
+    if (emailFromInvite) {
+      setFormData(prev => ({ ...prev, email: emailFromInvite }));
     }
   }, []);
 
@@ -213,8 +224,8 @@ const NoSSR = ({ children, fallback = null }) => {
           createdAt: data.user.createdAt,
         });
         
-        // Redirect to role-specific dashboard
-        router.push(data.dashboardRoute);
+        // Redirect to role-specific dashboard, or a safe invite destination
+        router.push(postLoginRedirect || data.dashboardRoute);
       } else {
         // Log login failure
         logClientActivity('login_failed', {

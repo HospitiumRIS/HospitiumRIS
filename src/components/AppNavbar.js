@@ -12,7 +12,10 @@ const AppNavbar = () => {
   
   // Don't show navbar on activation-only pages
   const hiddenRoutes = ['/activate', '/resend-activation'];
-  const shouldHideNavbar = hiddenRoutes.some(route => pathname.startsWith(route));
+  // The manuscript editor is a full-screen workspace with its own document chrome
+  const isDocumentEditor = pathname.includes('/publications/collaborate/edit/');
+  const shouldHideNavbar =
+    isDocumentEditor || hiddenRoutes.some(route => pathname.startsWith(route));
   
   // Don't render anything while auth is loading
   if (isLoading) {

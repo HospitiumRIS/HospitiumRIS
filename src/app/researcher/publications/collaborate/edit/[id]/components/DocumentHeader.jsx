@@ -2,6 +2,9 @@
 
 import { useTranslation } from 'react-i18next';
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { format } from 'date-fns';
 import {
   Box,
   Typography,
@@ -21,14 +24,17 @@ import {
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
-  Groups as GroupsIcon,
   Circle as CircleIcon,
   PersonAdd as PersonAddIcon,
   Edit as EditIcon,
   Check as CheckIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Save as SaveIcon,
+  MoreVert as MoreVertIcon,
+  RateReview as RateReviewIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+import { getStageConfig, getStageTranslationKey } from '../../../../../../../lib/manuscript-workflow';
 
 // Styled Badge for online status indicator
 const OnlineStatusBadge = styled(Badge, {
@@ -85,11 +91,19 @@ export default function DocumentHeader({
   onlineUserIds = [], // Array of user IDs currently online from presence system
   canInvite = false, // Whether current user can invite others
   canEdit = false, // Whether current user can edit the document (including title)
+  canManageWorkflow = false, // Whether current user can advance the publication lifecycle
   onBack, 
   onInvite,
+  onOpenWorkflow, // Opens the peer review and publication protocol
   onTitleChange, // Callback when title is changed
   savingTitle = false, // Whether title is being saved
-  loading = false 
+  loading = false,
+  saving = false, // Whether the document is being saved
+  lastSaved = null,
+  pageCount = null, // Rendered page count, null hides it
+  onSave,
+  onMoreActions,
+  children // Menu bar, rendered on the second header row
 }) {
   const { t } = useTranslation();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -230,50 +244,58 @@ export default function DocumentHeader({
   const activeCount = team.filter(m => !m.isPending).length;
   const pendingCount = team.filter(m => m.isPending).length;
 
+  const savedLabel = saving
+    ? 'Saving...'
+    : lastSaved
+      ? `Saved ${format(lastSaved, 'HH:mm')}`
+      : 'Not saved yet';
+
   return (
     <Paper sx={{ 
       borderRadius: 0,
       bgcolor: 'white',
       borderBottom: '1px solid #e0e0e0',
-      py: 3,
-      px: 4,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      px: 2,
+      pt: 0.75,
+      boxShadow: 'none',
+      zIndex: 3
     }}>
-      <Stack direction="row" alignItems="center" spacing={2}>
-        {/* Back Button */}
-        <IconButton 
-          onClick={onBack}
-          sx={{ 
-            color: '#333',
-            '&:hover': { bgcolor: '#f5f5f5' },
-            mr: 1
-          }}
+      <Stack direction="row" alignItems="center" spacing={1}>
+        {/* Back to workspace */}
+        <Tooltip title={t('common.back')}>
+          <IconButton 
+            onClick={onBack}
+            size="small"
+            sx={{ 
+              color: '#444',
+              '&:hover': { bgcolor: '#f5f5f5' }
+            }}
+          >
+            <ArrowBackIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+
+        <Box
+          component={Link}
+          href="/researcher"
+          sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, mr: 0.5 }}
         >
-          <ArrowBackIcon />
-        </IconButton>
-        
-        <Typography 
-          variant="button" 
-          sx={{ 
-            fontSize: '0.9rem',
-            fontWeight: 500,
-            color: '#333',
-            cursor: 'pointer',
-            '&:hover': { color: '#8b6cbc' }
-          }}
-          onClick={onBack}
-        >
-          {t('common.back')}
-        </Typography>
+          <Image
+            src="/hospitium-logo.png"
+            alt="Hospitium RIS"
+            width={104}
+            height={24}
+            style={{ objectFit: 'contain' }}
+          />
+        </Box>
 
         {/* Document Title - Editable */}
-        <Box sx={{ flexGrow: 1, ml: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
           {loading ? (
             <Skeleton 
               variant="text" 
-              width="60%" 
-              height={32}
-              sx={{ fontSize: '1.25rem' }}
+              width="40%" 
+              height={24}
             />
           ) : isEditingTitle ? (
             // Editing mode
@@ -288,7 +310,7 @@ export default function DocumentHeader({
                 placeholder="Enter document title..."
                 sx={{
                   flex: 1,
-                  fontSize: '1.25rem',
+                  fontSize: '1rem',
                   fontWeight: 600,
                   color: '#333',
                   px: 1,
@@ -350,15 +372,15 @@ export default function DocumentHeader({
                 }}
               >
                 <Typography 
-                  variant="h5" 
+                  variant="h6" 
                   sx={{ 
                     fontWeight: 600,
-                    fontSize: '1.25rem',
+                    fontSize: '1rem',
                     color: '#333',
                     textOverflow: 'ellipsis',
                     overflow: 'hidden',
                     whiteSpace: 'nowrap',
-                    maxWidth: '500px'
+                    maxWidth: '420px'
                   }}
                 >
                   {manuscript?.title || t('common.no_data')}
@@ -367,7 +389,7 @@ export default function DocumentHeader({
                   <EditIcon 
                     className="edit-icon"
                     sx={{ 
-                      fontSize: 18, 
+                      fontSize: 16, 
                       color: '#8b6cbc',
                       opacity: 0,
                       transition: 'opacity 0.2s ease'
@@ -377,29 +399,62 @@ export default function DocumentHeader({
               </Box>
             </Tooltip>
           )}
+
+          {!loading && (
+            <Chip
+              size="small"
+              label={t(getStageTranslationKey(manuscript?.status))}
+              sx={{
+                bgcolor: getStageConfig(manuscript?.status).bg,
+                color: getStageConfig(manuscript?.status).color,
+                fontWeight: 600,
+                fontSize: '0.65rem',
+                height: 20,
+                flexShrink: 0
+              }}
+            />
+          )}
+
+          {!loading && onOpenWorkflow && canManageWorkflow && (
+            <Tooltip title={t('manuscript_workflow.workflow_tooltip')}>
+              <Button
+                size="small"
+                startIcon={<RateReviewIcon sx={{ fontSize: 15 }} />}
+                onClick={onOpenWorkflow}
+                sx={{
+                  flexShrink: 0,
+                  textTransform: 'none',
+                  fontSize: '0.7rem',
+                  color: '#8b6cbc',
+                  minWidth: 'auto',
+                  '&:hover': { bgcolor: 'rgba(139,108,188,0.08)' }
+                }}
+              >
+                {manuscript?.status === 'DRAFT'
+                  ? t('manuscript_workflow.prepare_for_review')
+                  : t('manuscript_workflow.review_and_publish')}
+              </Button>
+            </Tooltip>
+          )}
         </Box>
 
         {/* Team Members Display */}
-        <Stack direction="row" alignItems="center" spacing={2}>
+        <Stack direction="row" alignItems="center" spacing={1}>
           {loading ? (
-            <>
-              <Stack direction="row" spacing={-0.5}>
-                {[1, 2, 3].map((index) => (
-                  <Skeleton 
-                    key={index} 
-                    variant="circular" 
-                    width={36} 
-                    height={36} 
-                    sx={{ border: '2px solid white' }}
-                  />
-                ))}
-              </Stack>
-              <Skeleton variant="text" width={100} height={20} />
-            </>
+            <Stack direction="row" spacing={-0.5}>
+              {[1, 2, 3].map((index) => (
+                <Skeleton 
+                  key={index} 
+                  variant="circular" 
+                  width={26} 
+                  height={26} 
+                  sx={{ border: '2px solid white' }}
+                />
+              ))}
+            </Stack>
           ) : (
-            <>
-              {/* Team Avatars with Online Status */}
-              <Tooltip 
+            /* Team Avatars with Online Status */
+            <Tooltip 
                 title={
                   <Box sx={{ p: 1, minWidth: 200 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: 'white' }}>
@@ -504,14 +559,14 @@ export default function DocumentHeader({
                     >
                       <Avatar
                         sx={{
-                          width: 36,
-                          height: 36,
-                          fontSize: '0.85rem',
+                          width: 26,
+                          height: 26,
+                          fontSize: '0.65rem',
                           fontWeight: 600,
                           backgroundColor: member.isPending ? '#e0e0e0' : member.color,
                           color: member.isPending ? '#999' : 'white',
-                          border: '2.5px solid white',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                          border: '2px solid white',
+                          boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
                           zIndex: 10 - index,
                           opacity: member.isPending ? 0.7 : 1,
                           transition: 'all 0.2s ease',
@@ -540,14 +595,14 @@ export default function DocumentHeader({
                   {remainingCount > 0 && (
                     <Avatar
                       sx={{
-                        width: 36,
-                        height: 36,
-                        fontSize: '0.8rem',
+                        width: 26,
+                        height: 26,
+                        fontSize: '0.62rem',
                         fontWeight: 600,
                         backgroundColor: '#f5f5f5',
                         color: '#666',
-                        border: '2.5px solid white',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                        border: '2px solid white',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
                         zIndex: 4
                       }}
                     >
@@ -556,77 +611,96 @@ export default function DocumentHeader({
                   )}
                 </Stack>
               </Tooltip>
-
-              {/* Team Info Text */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    color: '#333',
-                    lineHeight: 1.2
-                  }}
-                >
-                  {activeCount} member{activeCount !== 1 ? 's' : ''}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <CircleIcon sx={{ fontSize: 8, color: '#44b700' }} />
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      fontSize: '0.7rem',
-                      color: '#666'
-                    }}
-                  >
-                    {onlineCount} online
-                  </Typography>
-                  {pendingCount > 0 && (
-                    <>
-                      <Typography variant="caption" sx={{ color: '#ccc', mx: 0.5 }}>•</Typography>
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
-                          fontSize: '0.7rem',
-                          color: '#f57c00'
-                        }}
-                      >
-                        {pendingCount} pending
-                      </Typography>
-                    </>
-                  )}
-                </Box>
-              </Box>
-            </>
           )}
         </Stack>
 
         {/* Invite Button - Only show if user has invite permissions */}
         {canInvite && (
+          <Tooltip title={t('common.invite_collaborator')}>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<PersonAddIcon fontSize="small" />}
+              onClick={onInvite}
+              sx={{ 
+                borderColor: '#8b6cbc', 
+                color: '#8b6cbc',
+                fontSize: '0.75rem',
+                py: 0.25,
+                px: 1.25,
+                borderRadius: 1.5,
+                textTransform: 'none',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+                '&:hover': {
+                  borderColor: '#7a5ca7',
+                  bgcolor: 'rgba(139, 108, 188, 0.08)'
+                }
+              }}
+            >
+              {t('common.invite_collaborator')}
+            </Button>
+          </Tooltip>
+        )}
+
+        {onSave && (
           <Button
-            variant="outlined"
+            variant="contained"
             size="small"
-            startIcon={<PersonAddIcon />}
-            onClick={onInvite}
-            sx={{ 
-              borderColor: '#8b6cbc', 
-              color: '#8b6cbc',
-              fontSize: '0.8rem',
-              py: 0.75,
-              px: 2,
-              borderRadius: 2,
+            startIcon={<SaveIcon fontSize="small" />}
+            disabled={saving}
+            onClick={onSave}
+            sx={{
+              bgcolor: '#8b6cbc',
+              fontSize: '0.75rem',
+              py: 0.25,
+              px: 1.5,
+              borderRadius: 1.5,
               textTransform: 'none',
               fontWeight: 600,
-              '&:hover': {
-                borderColor: '#7a5ca7',
-                bgcolor: 'rgba(139, 108, 188, 0.08)'
-              }
+              boxShadow: 'none',
+              whiteSpace: 'nowrap',
+              '&:hover': { bgcolor: '#7a5ca7', boxShadow: 'none' }
             }}
           >
-            {t('common.invite_collaborator')}
-</Button>
+            {saving ? 'Saving...' : 'Save'}
+          </Button>
+        )}
+
+        {onMoreActions && (
+          <IconButton onClick={onMoreActions} size="small" sx={{ color: '#444' }}>
+            <MoreVertIcon fontSize="small" />
+          </IconButton>
         )}
       </Stack>
+
+      {/* Second row: document menus with the live document status */}
+      {children && (
+        <Stack direction="row" alignItems="center" sx={{ mt: 0.25, minWidth: 0 }}>
+          <Box sx={{ flexGrow: 1, minWidth: 0, overflow: 'hidden' }}>
+            {children}
+          </Box>
+
+          <Stack direction="row" alignItems="center" spacing={0.75} sx={{ pl: 1, flexShrink: 0 }}>
+            <Typography sx={{ fontSize: '0.72rem', color: '#80868b', whiteSpace: 'nowrap' }}>
+              {manuscript?.type || 'Research Article'}
+              {' • '}
+              {manuscript?.wordCount || 0} words
+              {pageCount ? ` • ${pageCount} page${pageCount === 1 ? '' : 's'}` : ''}
+            </Typography>
+            <CircleIcon sx={{ fontSize: 5, color: '#dadce0' }} />
+            <Typography
+              sx={{
+                fontSize: '0.72rem',
+                color: saving ? '#8b6cbc' : '#80868b',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {savedLabel}
+            </Typography>
+          </Stack>
+        </Stack>
+      )}
     </Paper>
   );
 }

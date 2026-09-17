@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getUserId } from '../../../../lib/auth-server.js';
-import { searchResearchers, getResearcherEmails } from '../../../../utils/orcidService.js';
+import { sendCollaborationInviteEmail } from '../../../../lib/email.js';
+import { getInstitutionalEmailError, normalizeEmail } from '../../../../lib/institutional-email.js';
 
 const prisma = new PrismaClient();
 
@@ -38,9 +39,10 @@ export async function POST(request) {
       );
     }
 
-    if (!orcidId && !email) {
+    const emailError = getInstitutionalEmailError(email);
+    if (emailError) {
       return NextResponse.json(
-        { error: 'Either ORCID ID or email is required' },
+        { error: emailError },
         { status: 400 }
       );
     }
@@ -79,7 +81,7 @@ export async function POST(request) {
     }
 
     let invitedUserId = null;
-    let inviteeEmail = email;
+    const inviteeEmail = normalizeEmail(email);
     let inviteeGivenName = givenName;
     let inviteeFamilyName = familyName;
     let inviteeAffiliation = affiliation;
@@ -93,25 +95,18 @@ export async function POST(request) {
 
       if (existingUser) {
         invitedUserId = existingUser.id;
-        inviteeEmail = existingUser.email;
         inviteeGivenName = existingUser.givenName || existingUser.orcidGivenNames || givenName;
         inviteeFamilyName = existingUser.familyName || existingUser.orcidFamilyName || familyName;
         inviteeAffiliation = existingUser.primaryInstitution || affiliation;
         isExistingUser = true;
         console.log(`✅ Found existing user by ORCID: ${existingUser.id} (${existingUser.email})`);
-      } else {
-        // If no email provided, try to get from ORCID
-        if (!inviteeEmail) {
-          const emails = await getResearcherEmails(orcidId);
-          inviteeEmail = emails[0] || null;
-        }
       }
     }
 
-    // If not found by ORCID, check by email
+    // If not found by ORCID, check by the institution email the invite will be sent to
     if (!invitedUserId && inviteeEmail) {
       const existingUser = await prisma.user.findFirst({
-        where: { email: inviteeEmail }
+        where: { email: { equals: inviteeEmail, mode: 'insensitive' } }
       });
 
       if (existingUser) {
@@ -211,6 +206,23 @@ export async function POST(request) {
       console.log(`🔔 Created notification for existing user ${invitedUserId}`);
     }
 
+    const isProposal = manuscript.type?.toLowerCase().includes('proposal');
+    const emailResult = await sendCollaborationInviteEmail({
+      inviteeEmail,
+      inviteeName,
+      inviterName,
+      manuscriptTitle: manuscript.title,
+      role,
+      message,
+      invitationToken: invitation.token,
+      type: isProposal ? 'proposal' : 'manuscript',
+      isExistingUser
+    });
+
+    if (!emailResult.success) {
+      console.error(`📧 Failed to send invitation email to ${inviteeEmail}:`, emailResult.error);
+    }
+
     console.log(`✅ INVITATION CREATED SUCCESSFULLY:`, {
       invitationId: invitation.id,
       manuscriptId: manuscriptId,
@@ -221,7 +233,8 @@ export async function POST(request) {
         name: inviteeName,
         isExistingUser
       },
-      notificationCreated: !!invitedUserId
+      notificationCreated: !!invitedUserId,
+      emailSent: emailResult.success
     });
 
     return NextResponse.json({
@@ -237,14 +250,13 @@ export async function POST(request) {
           role: invitation.role,
           status: invitation.status,
           expiresAt: invitation.expiresAt,
-          isExistingUser
+          isExistingUser,
+          emailSent: emailResult.success
         }
       },
-      message: isExistingUser 
-        ? `Invitation sent! ${inviteeName} will see it in their notifications.`
-        : inviteeEmail 
-          ? `Invitation created for ${inviteeEmail}. They will see it when they create an account.`
-          : 'Invitation created. The researcher will see it when they join.'
+      message: isExistingUser
+        ? `Invitation sent to ${inviteeEmail}. ${inviteeName} will also see it in their account notifications.`
+        : `Invitation sent to ${inviteeEmail}. They will receive a link to create an account if they do not have one yet.`
     });
 
   } catch (error) {

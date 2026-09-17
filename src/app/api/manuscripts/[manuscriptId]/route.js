@@ -158,6 +158,14 @@ export async function PATCH(request, { params }) {
 
     const updateData = await request.json();
 
+    // Lifecycle transitions are validated and audited by the status route
+    if ('status' in updateData) {
+      return NextResponse.json(
+        { error: 'Use POST /api/manuscripts/[manuscriptId]/status to change the workflow stage' },
+        { status: 400 }
+      );
+    }
+
     // Verify user has permission to update
     const manuscript = await prisma.manuscript.findFirst({
       where: {

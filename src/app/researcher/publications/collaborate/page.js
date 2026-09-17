@@ -110,12 +110,20 @@ import {
   CloudUpload as CloudUploadIcon,
   Email as EmailIcon,
   Schedule as ScheduleIcon,
-  MoreHoriz as MoreHorizIcon
+  MoreHoriz as MoreHorizIcon,
+  RateReview as RateReviewIcon
 } from '@mui/icons-material';
 import { alpha } from '@mui/material/styles';
 import { useAuth } from '../../../../components/AuthProvider';
 import PageHeader from '../../../../components/common/PageHeader';
 import OrcidCollaboratorInvite from '../../../../components/Manuscripts/OrcidCollaboratorInvite';
+import StagePipeline from '../../../../components/Manuscripts/StagePipeline';
+import ManuscriptWorkflowDialog from '../../../../components/Manuscripts/ManuscriptWorkflowDialog';
+import {
+  MANUSCRIPT_STAGES,
+  MANUSCRIPT_STAGE_ORDER,
+  getStageTranslationKey
+} from '../../../../lib/manuscript-workflow';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
@@ -161,6 +169,39 @@ const DEFAULT_SECTIONS = [
   'References'
 ];
 
+const PROPOSAL_SECTIONS = [
+  { id: 'section-0-executive-summary', title: 'Executive Summary', description: 'Brief overview of the proposal', order: 0 },
+  { id: 'section-1-background-significance', title: 'Background and Significance', description: 'Context and importance of the research', order: 1 },
+  { id: 'section-2-research-objectives', title: 'Research Objectives', description: 'Primary and secondary objectives', order: 2 },
+  { id: 'section-3-methodology', title: 'Methodology', description: 'Research methods and approach', order: 3 },
+  { id: 'section-4-timeline-milestones', title: 'Timeline and Milestones', description: 'Project schedule and deliverables', order: 4 },
+  { id: 'section-5-budget-resources', title: 'Budget and Resources', description: 'Financial requirements and resource allocation', order: 5 },
+  { id: 'section-6-expected-outcomes', title: 'Expected Outcomes', description: 'Anticipated results and impact', order: 6 },
+  { id: 'section-7-references', title: 'References', description: 'Supporting literature', order: 7 }
+];
+
+const createEmptyProposal = () => ({
+  title: '',
+  type: 'Research Proposal',
+  fields: [],
+  otherFields: '',
+  description: '',
+  creator: '', // Populated when the modal opens
+  creatorOrcid: '', // Populated when the modal opens
+  collaborators: [],
+  sections: PROPOSAL_SECTIONS.map((section) => ({ ...section })),
+  status: 'Draft',
+  researchAreas: [],
+  keywords: [],
+  abstract: '',
+  funding: {
+    fundingSource: '',
+    grantNumber: '',
+    budget: { total: 0, items: [] },
+    fundingInstitution: ''
+  }
+});
+
 const PUBLICATION_TYPES = [
   'Article',
   'Book Chapter',
@@ -187,13 +228,11 @@ const COLLABORATOR_ROLES = [
   { value: 'Contributor', label: 'Contributor', icon: PersonIcon, color: '#4caf50', description: 'Can contribute to specific sections' }
 ];
 
-const STATUS_OPTIONS = [
-  { value: 'Draft', label: 'Draft', color: '#9e9e9e', icon: PendingIcon },
-  { value: 'In Progress', label: 'In Progress', color: '#ff9800', icon: AccessTimeIcon },
-  { value: 'Under Review', label: 'Under Review', color: '#2196f3', icon: VisibilityIcon },
-  { value: 'Completed', label: 'Completed', color: '#4caf50', icon: CheckCircleIcon },
-  { value: 'Archived', label: 'Archived', color: '#607d8b', icon: ArchiveIcon }
-];
+const STATUS_OPTIONS = MANUSCRIPT_STAGE_ORDER.map((value) => ({
+  value,
+  label: MANUSCRIPT_STAGES[value].label,
+  color: MANUSCRIPT_STAGES[value].color
+}));
 
 
 
@@ -251,6 +290,7 @@ export default function CollaborativeWriting() {
   // Team management states
   const [teamData, setTeamData] = useState({ collaborators: [], pendingInvitations: [] });
   const [teamLoading, setTeamLoading] = useState(false);
+  const [resendingInvitationId, setResendingInvitationId] = useState(null);
   const [addCollaboratorOpen, setAddCollaboratorOpen] = useState(false);
   const [editingCollaborator, setEditingCollaborator] = useState(null);
   const [collaboratorMenuAnchor, setCollaboratorMenuAnchor] = useState(null);
@@ -315,6 +355,10 @@ export default function CollaborativeWriting() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [viewingManuscript, setViewingManuscript] = useState(null);
 
+  // Peer review and publication workflow dialog
+  const [workflowDialogOpen, setWorkflowDialogOpen] = useState(false);
+  const [workflowManuscript, setWorkflowManuscript] = useState(null);
+
   // Snackbar notifications
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -367,35 +411,7 @@ export default function CollaborativeWriting() {
   const proposalSteps = ['Proposal Details', 'Select Template', 'Invite Collaborators'];
 
   // New proposal state
-  const [newProposal, setNewProposal] = useState({
-    title: '',
-    type: 'Research Proposal',
-    fields: [], // Changed from field to fields array
-    otherFields: '', // For custom fields when "Other" is selected
-    creator: '', // Will be populated when user data is available
-    creatorOrcid: '', // Will be populated when user data is available
-    collaborators: [],
-    sections: [
-      { id: 'section-0-executive-summary', title: 'Executive Summary', description: 'Brief overview of the proposal', order: 0 },
-      { id: 'section-1-background-significance', title: 'Background and Significance', description: 'Context and importance of the research', order: 1 },
-      { id: 'section-2-research-objectives', title: 'Research Objectives', description: 'Primary and secondary objectives', order: 2 },
-      { id: 'section-3-methodology', title: 'Methodology', description: 'Research methods and approach', order: 3 },
-      { id: 'section-4-timeline-milestones', title: 'Timeline and Milestones', description: 'Project schedule and deliverables', order: 4 },
-      { id: 'section-5-budget-resources', title: 'Budget and Resources', description: 'Financial requirements and resource allocation', order: 5 },
-      { id: 'section-6-expected-outcomes', title: 'Expected Outcomes', description: 'Anticipated results and impact', order: 6 },
-      { id: 'section-7-references', title: 'References', description: 'Supporting literature', order: 7 }
-    ],
-    status: 'Draft',
-    researchAreas: [],
-    keywords: [],
-    abstract: '',
-    funding: {
-      fundingSource: '',
-      grantNumber: '',
-      budget: { total: 0, items: [] },
-      fundingInstitution: ''
-    }
-  });
+  const [newProposal, setNewProposal] = useState(createEmptyProposal);
 
   // Debounced search query
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -438,7 +454,7 @@ export default function CollaborativeWriting() {
         const manuscripts = result.manuscripts || [];
         const totalManuscripts = manuscripts.length;
         const draftManuscripts = manuscripts.filter(m => m.status === 'DRAFT').length;
-        const inReviewManuscripts = manuscripts.filter(m => m.status === 'IN_REVIEW').length;
+        const inReviewManuscripts = manuscripts.filter(m => m.status === 'IN_REVIEW' || m.status === 'UNDER_REVISION').length;
         const publishedManuscripts = manuscripts.filter(m => m.status === 'PUBLISHED').length;
         const totalCollaborators = manuscripts.reduce((sum, m) => sum + (m.totalCollaborators || 0), 0);
         const activeInvitations = manuscripts.reduce((sum, m) => sum + (m.pendingInvitations || 0), 0);
@@ -757,6 +773,15 @@ export default function CollaborativeWriting() {
 
   // Proposal navigation functions
 
+  const closeProposalDialog = () => {
+    setNewProposalOpen(false);
+    setProposalActiveStep(0);
+    setCurrentProposalId(null);
+    setSelectedTemplate('blank');
+    setProposalFormError(null);
+    setNewProposal(createEmptyProposal());
+  };
+
   const handleProposalNextStep = () => {
     if (proposalActiveStep === 0) {
       // Proposal details step - validate and move to template selection
@@ -823,7 +848,7 @@ export default function CollaborativeWriting() {
                 familyName: collaborator.familyName,
                 affiliation: collaborator.affiliation,
                 role: collaborator.role || 'CONTRIBUTOR',
-                message: ''
+                message: collaborator.message || ''
               }),
             });
           }
@@ -831,35 +856,7 @@ export default function CollaborativeWriting() {
       }
       
       // Reset form and close modal
-      setNewProposal({
-        title: '',
-        type: 'Research Proposal',
-        fields: [],
-        otherFields: '',
-        creator: '', // Will be populated when modal opens
-        creatorOrcid: '', // Will be populated when modal opens
-        collaborators: [],
-        sections: [
-          { id: 'section-0-executive-summary', title: 'Executive Summary', description: 'Brief overview of the proposal', order: 0 },
-          { id: 'section-1-background-significance', title: 'Background and Significance', description: 'Context and importance of the research', order: 1 },
-          { id: 'section-2-research-objectives', title: 'Research Objectives', description: 'Primary and secondary objectives', order: 2 },
-          { id: 'section-3-methodology', title: 'Methodology', description: 'Research methods and approach', order: 3 },
-          { id: 'section-4-timeline-milestones', title: 'Timeline and Milestones', description: 'Project schedule and deliverables', order: 4 },
-          { id: 'section-5-budget-resources', title: 'Budget and Resources', description: 'Financial requirements and resource allocation', order: 5 },
-          { id: 'section-6-expected-outcomes', title: 'Expected Outcomes', description: 'Anticipated results and impact', order: 6 },
-          { id: 'section-7-references', title: 'References', description: 'Supporting literature', order: 7 }
-        ],
-        status: 'Draft',
-        researchAreas: [],
-        keywords: [],
-        abstract: '',
-        funding: {
-          fundingSource: '',
-          grantNumber: '',
-          budget: { total: 0, items: [] },
-          fundingInstitution: ''
-        }
-      });
+      setNewProposal(createEmptyProposal());
       setProposalActiveStep(0);
       setCurrentProposalId(null);
       setSelectedTemplate('blank');
@@ -1046,7 +1043,7 @@ export default function CollaborativeWriting() {
                 familyName: collaborator.familyName,
                 affiliation: collaborator.affiliation,
                 role: collaborator.role || 'CONTRIBUTOR',
-                message: ''
+                message: collaborator.message || ''
               }),
             });
           }
@@ -1128,7 +1125,7 @@ export default function CollaborativeWriting() {
             ...prev,
             totalManuscripts: prev.totalManuscripts - 1,
             draftManuscripts: manuscript.status === 'DRAFT' ? prev.draftManuscripts - 1 : prev.draftManuscripts,
-            inReviewManuscripts: manuscript.status === 'IN_REVIEW' ? prev.inReviewManuscripts - 1 : prev.inReviewManuscripts,
+            inReviewManuscripts: (manuscript.status === 'IN_REVIEW' || manuscript.status === 'UNDER_REVISION') ? prev.inReviewManuscripts - 1 : prev.inReviewManuscripts,
             publishedManuscripts: manuscript.status === 'PUBLISHED' ? prev.publishedManuscripts - 1 : prev.publishedManuscripts
           }));
           
@@ -1283,8 +1280,8 @@ export default function CollaborativeWriting() {
       const data = await response.json();
       
       if (data.success) {
-        // Refresh team data
         await fetchTeamData(selectedManuscript.id);
+        await fetchManuscripts();
         showSnackbar('Invitation cancelled successfully', 'success');
       } else {
         showSnackbar(data.error || 'Failed to cancel invitation', 'error');
@@ -1297,6 +1294,9 @@ export default function CollaborativeWriting() {
 
   // Resend invitation
   const handleResendInvitation = async (invitationId) => {
+    if (!selectedManuscript) return;
+
+    setResendingInvitationId(invitationId);
     try {
       const response = await fetch(`/api/manuscripts/invitations/${invitationId}`, {
         method: 'POST',
@@ -1305,13 +1305,26 @@ export default function CollaborativeWriting() {
       const data = await response.json();
       
       if (data.success) {
-        showSnackbar('Invitation resent successfully', 'success');
+        await fetchTeamData(selectedManuscript.id);
+        await fetchManuscripts();
+        showSnackbar('Invitation resent by email and in-app notification', 'success');
       } else {
         showSnackbar(data.error || 'Failed to resend invitation', 'error');
       }
     } catch (error) {
       console.error('Error resending invitation:', error);
       showSnackbar('Error resending invitation', 'error');
+    } finally {
+      setResendingInvitationId(null);
+    }
+  };
+
+  const formatInviteSentAt = (dateValue) => {
+    if (!dateValue) return 'Unknown';
+    try {
+      return format(new Date(dateValue), 'MMM d, yyyy · h:mm a');
+    } catch {
+      return 'Unknown';
     }
   };
 
@@ -1335,6 +1348,27 @@ export default function CollaborativeWriting() {
   const handleViewManuscript = (manuscript) => {
     setViewingManuscript(manuscript);
     setViewDialogOpen(true);
+  };
+
+  const handleOpenWorkflow = (manuscript) => {
+    setWorkflowManuscript(manuscript);
+    setWorkflowDialogOpen(true);
+    handleMenuClose();
+  };
+
+  // Reflect a stage change without refetching the whole list
+  const handleWorkflowUpdated = (result, message) => {
+    setManuscripts(prev => prev.map(m => (
+      m.id === workflowManuscript?.id
+        ? { ...m, status: result.status, publicationId: result.publicationId }
+        : m
+    )));
+    setWorkflowManuscript(prev => (prev ? { ...prev, status: result.status } : prev));
+    setViewingManuscript(prev => (
+      prev && prev.id === workflowManuscript?.id ? { ...prev, status: result.status } : prev
+    ));
+    fetchManuscripts();
+    showSnackbar(message || 'Workflow stage updated', 'success');
   };
 
 
@@ -1846,7 +1880,7 @@ export default function CollaborativeWriting() {
             <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                In Progress
+                {t('manuscript_workflow.stat_in_review')}
               </Typography>
               <AccessTimeIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
             </Box>
@@ -1854,7 +1888,7 @@ export default function CollaborativeWriting() {
               {stats.inReviewManuscripts}
             </Typography>
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Currently being worked on
+              {t('manuscript_workflow.stat_in_review_sub')}
             </Typography>
           </Paper>
         </Grid>
@@ -1995,7 +2029,7 @@ export default function CollaborativeWriting() {
                 <MenuItem value="All Status">All Status</MenuItem>
                 {STATUS_OPTIONS.map((status) => (
                   <MenuItem key={status.value} value={status.value}>
-                    {status.label}
+                    {t(getStageTranslationKey(status.value))}
                   </MenuItem>
                 ))}
               </Select>
@@ -2447,18 +2481,19 @@ export default function CollaborativeWriting() {
 
                           {/* Status */}
                           <TableCell sx={{ py: 2 }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                               <Chip
-                                label={manuscript.status}
+                                label={t(getStageTranslationKey(manuscript.status))}
                                 size="small"
                                 sx={{
                                   backgroundColor: statusOption?.color || '#8b6cbc',
                                   color: 'white',
                                   fontWeight: 500,
                                   fontSize: '0.75rem',
-                                  textTransform: 'capitalize'
+                                  alignSelf: 'flex-start'
                                 }}
                               />
+                              <StagePipeline currentStatus={manuscript.status} size={18} />
                               <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                                 {manuscript.type}
                               </Typography>
@@ -2524,12 +2559,12 @@ export default function CollaborativeWriting() {
                               return (
                                 <Tooltip 
                                   title={
-                                    <Box sx={{ p: 1 }}>
-                                      <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
-                                        Team Members ({allMembers.length})
+                                    <Box sx={{ p: 0.5 }}>
+                                      <Typography variant="caption" sx={{ fontWeight: 600, mb: 0.75, display: 'block' }}>
+                                        Team ({allMembers.length}) — click to manage
                                       </Typography>
-                                      {allMembers.map((member, idx) => (
-                                        <Box key={member.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
+                                      {allMembers.map((member) => (
+                                        <Box key={member.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.35 }}>
                                           <Box sx={{
                                             width: 8,
                                             height: 8,
@@ -2546,7 +2581,35 @@ export default function CollaborativeWriting() {
                                   arrow
                                   placement="top"
                                 >
-                                  <Stack direction="row" spacing={-0.5} sx={{ alignItems: 'center', cursor: 'pointer' }}>
+                                  <Stack
+                                    direction="row"
+                                    spacing={-0.5}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`Manage team for ${manuscript.title}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleManageTeam(manuscript);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handleManageTeam(manuscript);
+                                      }
+                                    }}
+                                    sx={{
+                                      alignItems: 'center',
+                                      cursor: 'pointer',
+                                      width: 'fit-content',
+                                      borderRadius: 2,
+                                      px: 0.5,
+                                      py: 0.25,
+                                      transition: 'background-color 0.15s ease',
+                                      '&:hover': { bgcolor: alpha('#8b6cbc', 0.08) },
+                                      '&:focus-visible': { outline: '2px solid #8b6cbc', outlineOffset: 2 }
+                                    }}
+                                  >
                                     {displayedMembers.map((member, idx) => (
                                       <Avatar
                                         key={member.id}
@@ -2650,6 +2713,21 @@ export default function CollaborativeWriting() {
                                   <EditIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
+                              {/* Advance through peer review and publication */}
+                              {manuscript.permissions?.canManageTeam && (
+                                <Tooltip title={t('manuscript_workflow.title')} arrow>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleOpenWorkflow(manuscript)}
+                                    sx={{
+                                      color: '#3b82f6',
+                                      '&:hover': { bgcolor: '#3b82f610' }
+                                    }}
+                                  >
+                                    <RateReviewIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
                               {/* Only show Team button if user has permission */}
                               {manuscript.permissions?.canManageTeam && (
                                 <Tooltip title="Manage Team" arrow>
@@ -2801,7 +2879,7 @@ export default function CollaborativeWriting() {
           Share
         </MuiMenuItem>
           <MuiMenuItem 
-            onClick={handleMenuClose}
+            onClick={() => handleOpenWorkflow(menuManuscript)}
             sx={{
               px: 2,
               py: 1.5,
@@ -2815,9 +2893,9 @@ export default function CollaborativeWriting() {
             }}
           >
           <ListItemIcon>
-            <ArchiveIcon fontSize="small" />
+            <RateReviewIcon fontSize="small" />
           </ListItemIcon>
-          Archive
+          {t('manuscript_workflow.title')}
         </MuiMenuItem>
         </MenuList>
       </Popover>
@@ -2838,160 +2916,185 @@ export default function CollaborativeWriting() {
             collaborators: []
           });
         }}
-        maxWidth="lg"
+        maxWidth="sm"
         fullWidth
-        disableScrollLock={true}
+        disableScrollLock
         PaperProps={{
           sx: {
             borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-            minHeight: '70vh'
+            boxShadow: '0 20px 60px rgba(15, 23, 42, 0.12)',
+            border: '1px solid rgba(139, 108, 188, 0.08)',
+            overflow: 'hidden',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column'
           }
         }}
       >
         <DialogTitle
           sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)',
-            color: 'white',
-            p: 3
+            m: 0,
+            px: 3,
+            py: 2.25,
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5ca7 100%)',
+            color: 'white'
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ 
-              width: 48, 
-              height: 48,
-              borderRadius: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              color: 'white'
-            }}>
-              <AddIcon />
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, minWidth: 0 }}>
+              <Box sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                flexShrink: 0
+              }}>
+                <AddIcon sx={{ fontSize: 22 }} />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.125rem', lineHeight: 1.3, letterSpacing: '-0.01em' }}>
+                  Create New Manuscript
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.85, fontSize: '0.8125rem', mt: 0.25 }}>
+                  Start a new collaborative writing project
+                </Typography>
+              </Box>
             </Box>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
-                Create New Manuscript
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.8, fontSize: '0.813rem' }}>
-                Start a new collaborative writing project
-              </Typography>
-            </Box>
+            <IconButton
+              onClick={() => {
+                setNewManuscriptOpen(false);
+                setManuscriptActiveStep(0);
+                setManuscriptFormError(null);
+                setNewManuscript({
+                  title: '',
+                  type: '',
+                  field: '',
+                  fields: [],
+                  description: '',
+                  collaborators: []
+                });
+              }}
+              size="small"
+              sx={{ color: 'white', opacity: 0.9, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}
+              aria-label="Close"
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent sx={{ p: 0 }}>
+
+        <Box sx={{
+          px: 3,
+          py: 2,
+          bgcolor: '#f8f9fb',
+          borderBottom: '1px solid rgba(0,0,0,0.06)'
+        }}>
+          <Stepper
+            activeStep={manuscriptActiveStep}
+            sx={{
+              '& .MuiStepLabel-label': { fontSize: '0.8125rem', fontWeight: 500 },
+              '& .MuiStepLabel-label.Mui-active': { color: '#8b6cbc', fontWeight: 600 },
+              '& .MuiStepLabel-label.Mui-completed': { color: '#8b6cbc' },
+              '& .MuiStepIcon-root.Mui-active': { color: '#8b6cbc' },
+              '& .MuiStepIcon-root.Mui-completed': { color: '#8b6cbc' },
+              '& .MuiStepConnector-line': { borderColor: '#e2e8f0' },
+              '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: '#8b6cbc' },
+              '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: '#8b6cbc' }
+            }}
+          >
+            {manuscriptSteps.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        </Box>
+
+        <DialogContent sx={{ p: 0, flex: 1, overflow: 'auto' }}>
           {manuscriptFormError && (
-            <Alert severity="error" sx={{ m: 3, mb: 0 }}>
+            <Alert severity="error" sx={{ mx: 3, mt: 2.5, borderRadius: 2 }}>
               {manuscriptFormError}
             </Alert>
           )}
 
-          {/* Stepper */}
-          <Box sx={{ px: 3, pt: 2, pb: 1.5, borderBottom: '1px solid #e0e0e0', backgroundColor: '#fafbfd' }}>
-            <Stepper activeStep={manuscriptActiveStep}>
-              {manuscriptSteps.map((label) => (
-                <Step key={label}>
-                  <StepLabel 
-                    sx={{
-                      '& .MuiStepLabel-root .Mui-completed': { color: '#8b6cbc' },
-                      '& .MuiStepLabel-root .Mui-active': { color: '#8b6cbc' },
-                    }}
-                  >
-                    {label}
-                  </StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-          </Box>
-
-          {/* Step Content */}
           {manuscriptActiveStep === 0 && (
-            <Box sx={{ p: 3 }}>
-              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', fontSize: '0.938rem' }}>
-                Manuscript Details
+            <Box sx={{ px: 3, py: 2.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, fontSize: '0.8125rem', lineHeight: 1.6 }}>
+                Provide the basic details for your manuscript. You can invite co-authors in the next step.
               </Typography>
-              
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                {/* Manuscript Title */}
+
+              <Stack spacing={2.25}>
                 <TextField
                   fullWidth
-                  label="Manuscript Title *"
+                  required
+                  label="Manuscript Title"
                   value={newManuscript.title}
                   onChange={(e) => setNewManuscript(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Enter a descriptive title for your manuscript..."
+                  placeholder="e.g. Comparative efficacy of treatment protocols in..."
                   sx={{
                     '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
                       '&:hover fieldset': { borderColor: '#8b6cbc' },
-                      '&.Mui-focused fieldset': { borderColor: '#8b6cbc' },
+                      '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
                     },
+                    '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
                   }}
                 />
 
-                {/* Publication Type */}
-                <FormControl fullWidth required>
-                  <InputLabel sx={{ '&.Mui-focused': { color: '#8b6cbc' } }}>Publication Type *</InputLabel>
+                <FormControl fullWidth required sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': { borderColor: '#8b6cbc' },
+                    '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
+                }}>
+                  <InputLabel>Publication Type</InputLabel>
                   <Select
                     value={newManuscript.type}
-                    label="Publication Type *"
+                    label="Publication Type"
                     onChange={(e) => setNewManuscript(prev => ({ ...prev, type: e.target.value }))}
-                    sx={{
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#8b6cbc' },
-                    }}
                   >
                     {PUBLICATION_TYPES.map((type) => (
-                      <MenuItem key={type} value={type}>
-                        {type}
-                      </MenuItem>
+                      <MenuItem key={type} value={type}>{type}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
 
-                {/* Research Fields - Multiple Selection Dropdown with Custom Entry */}
                 <Box>
-                  <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, fontSize: '0.875rem' }}>
-                    Research Fields * (Select multiple or add custom)
-                  </Typography>
-                  
                   <Autocomplete
                     multiple
                     freeSolo
                     value={newManuscript.fields}
                     onChange={(event, newValue) => {
-                      // Handle both predefined selections and custom entries
-                      // Split comma-separated values into individual fields
                       const processedValues = newValue.flatMap(value => {
                         if (typeof value === 'string') {
-                          // Split by comma and trim each field
                           return value.split(',').map(v => v.trim()).filter(v => v !== '');
                         }
                         return value;
                       });
-                      
-                      // Remove duplicates
-                      const uniqueValues = [...new Set(processedValues)];
-                      
                       setNewManuscript(prev => ({
                         ...prev,
-                        fields: uniqueValues
+                        fields: [...new Set(processedValues)]
                       }));
                     }}
                     options={MEDICAL_FIELDS.filter(field => field !== 'Other')}
                     renderTags={(value, getTagProps) =>
                       value.map((option, index) => (
                         <Chip
-                          variant="filled"
                           label={option}
+                          size="small"
                           {...getTagProps({ index })}
                           key={`${option}-${index}`}
                           sx={{
-                            backgroundColor: '#8b6cbc',
-                            color: 'white',
-                            '& .MuiChip-deleteIcon': {
-                              color: 'rgba(255, 255, 255, 0.7)',
-                              '&:hover': { color: 'white' }
-                            }
+                            bgcolor: alpha('#8b6cbc', 0.12),
+                            color: '#6b4fa8',
+                            fontWeight: 500,
+                            '& .MuiChip-deleteIcon': { color: '#8b6cbc' }
                           }}
                         />
                       ))
@@ -2999,15 +3102,17 @@ export default function CollaborativeWriting() {
                     renderInput={(params) => (
                       <TextField
                         {...params}
-                        variant="outlined"
-                        placeholder="Select or type custom fields..."
-                        helperText="Type and press Enter to add custom fields"
+                        required
+                        label="Research Fields"
+                        placeholder="Select or type a field, then press Enter"
+                        helperText="Choose from the list or add custom fields"
                         sx={{
                           '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
                             '&:hover fieldset': { borderColor: '#8b6cbc' },
-                            '&.Mui-focused fieldset': { borderColor: '#8b6cbc' },
+                            '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
                           },
-                          '& .MuiFormLabel-root.Mui-focused': { color: '#8b6cbc' }
+                          '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
                         }}
                       />
                     )}
@@ -3022,84 +3127,37 @@ export default function CollaborativeWriting() {
                         </Box>
                       );
                     }}
-                    sx={{
-                      '& .MuiAutocomplete-tag': {
-                        margin: '2px',
-                      },
-                      '& .MuiAutocomplete-inputRoot': {
-                        paddingTop: '8px',
-                        paddingBottom: '8px',
-                      }
-                    }}
-                    ChipProps={{
-                      sx: {
-                        backgroundColor: '#8b6cbc',
-                        color: 'white',
-                        '& .MuiChip-deleteIcon': {
-                          color: 'rgba(255, 255, 255, 0.7)',
-                          '&:hover': { color: 'white' }
-                        }
-                      }
-                    }}
                   />
-                  
-                  {/* Information about custom fields */}
-                  {newManuscript.fields.length > 0 && (
-                    <Box sx={{ mt: 1 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.75rem' }}>
-                        <CategoryIcon sx={{ fontSize: 13 }} />
-                        {newManuscript.fields.length} field{newManuscript.fields.length !== 1 ? 's' : ''} selected
-                        {newManuscript.fields.some(field => !MEDICAL_FIELDS.includes(field)) && (
-                          <Chip 
-                            label="Custom" 
-                            size="small" 
-                            variant="outlined"
-                            sx={{ 
-                              ml: 0.5, 
-                              height: 16, 
-                              fontSize: '0.625rem',
-                              borderColor: '#8b6cbc',
-                              color: '#8b6cbc'
-                            }} 
-                          />
-                        )}
-                      </Typography>
-                    </Box>
-                  )}
                 </Box>
 
-                {/* Description */}
                 <TextField
                   fullWidth
-                  label="Description (Optional)"
+                  label="Description"
                   value={newManuscript.description}
                   onChange={(e) => setNewManuscript(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Briefly describe your manuscript objectives, methodology, or key themes..."
+                  placeholder="Objectives, methodology, or key themes (optional)"
                   multiline
-                  rows={3}
+                  minRows={3}
                   sx={{
                     '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
                       '&:hover fieldset': { borderColor: '#8b6cbc' },
-                      '&.Mui-focused fieldset': { borderColor: '#8b6cbc' },
+                      '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
                     },
+                    '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
                   }}
                 />
-              </Box>
+              </Stack>
             </Box>
           )}
 
-          {/* Step 2: Invite Collaborators */}
           {manuscriptActiveStep === 1 && (
-            <Box sx={{ p: 3 }}>
-              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', fontSize: '0.938rem' }}>
-                Invite Collaborators
+            <Box sx={{ px: 3, py: 2.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: '0.8125rem', lineHeight: 1.6 }}>
+                Search by ORCID, then enter each co-author&apos;s institution email. Invitations are sent by email and in-app when they already have an account.
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: '0.813rem' }}>
-                Add team members using ORCID IDs or search by name.
-              </Typography>
-              
-              {/* ORCID Collaborator Invite Component */}
               <OrcidCollaboratorInvite
+                embedded
                 manuscriptId={null}
                 collaborators={newManuscript.collaborators}
                 onCollaboratorsChange={(updatedCollaborators) => {
@@ -3113,98 +3171,89 @@ export default function CollaborativeWriting() {
           )}
         </DialogContent>
 
-        <DialogActions sx={{ p: 2.5, gap: 1.5, borderTop: '1px solid #e0e0e0', backgroundColor: '#fafbfd' }}>
-          <Button 
+        <DialogActions sx={{
+          px: 3,
+          py: 2,
+          gap: 1,
+          borderTop: '1px solid rgba(0,0,0,0.06)',
+          bgcolor: '#fff'
+        }}>
+          <Button
             onClick={() => {
-            setNewManuscriptOpen(false);
-            setManuscriptActiveStep(0);
-            setManuscriptFormError(null);
-            setNewManuscript({
-              title: '',
-              type: '',
-              field: '',
-              fields: [],
-              description: '',
-              collaborators: []
-            });
+              setNewManuscriptOpen(false);
+              setManuscriptActiveStep(0);
+              setManuscriptFormError(null);
+              setNewManuscript({
+                title: '',
+                type: '',
+                field: '',
+                fields: [],
+                description: '',
+                collaborators: []
+              });
             }}
-            sx={{
-              color: '#666',
-              '&:hover': {
-                backgroundColor: 'rgba(0,0,0,0.04)'
-              }
-            }}
+            sx={{ color: 'text.secondary', textTransform: 'none', fontWeight: 500 }}
           >
             Cancel
           </Button>
-          
+
           <Box sx={{ flex: 1 }} />
-          
+
           {manuscriptActiveStep > 0 && (
-            <Button 
+            <Button
               onClick={() => setManuscriptActiveStep(prev => prev - 1)}
               variant="outlined"
+              startIcon={<ArrowBackIcon sx={{ fontSize: 18 }} />}
               sx={{
-                borderColor: '#8b6cbc',
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: alpha('#8b6cbc', 0.4),
                 color: '#8b6cbc',
-                '&:hover': {
-                  borderColor: '#8b6cbc',
-                  backgroundColor: 'rgba(139, 108, 188, 0.08)'
-                }
+                borderRadius: 2,
+                '&:hover': { borderColor: '#8b6cbc', bgcolor: alpha('#8b6cbc', 0.06) }
               }}
             >
-              <ArrowBackIcon sx={{ mr: 1, fontSize: 18 }} />
               Back
             </Button>
           )}
-          
+
           {manuscriptActiveStep === 0 ? (
-          <Button
-            variant="contained"
+            <Button
+              variant="contained"
               disabled={!newManuscript.title || !newManuscript.type || newManuscript.fields.length === 0}
               onClick={handleManuscriptNextStep}
-              sx={{ 
-                background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)',
+              endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 2,
                 px: 2.5,
-                py: 0.75,
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #7b5ca7 0%, #8565c1 100%)',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
-                },
-                '&:disabled': {
-                  background: '#e0e0e0',
-                  color: '#999'
-                },
-                transition: 'all 0.2s ease'
+                bgcolor: '#8b6cbc',
+                boxShadow: 'none',
+                '&:hover': { bgcolor: '#7b5ca7', boxShadow: '0 4px 14px rgba(139, 108, 188, 0.35)' },
+                '&:disabled': { bgcolor: '#e2e8f0', color: '#94a3b8' }
               }}
             >
-              Continue to Collaborators
-              <ArrowForwardIcon sx={{ ml: 1, fontSize: 18 }} />
-          </Button>
+              Continue
+            </Button>
           ) : (
             <Button
               variant="contained"
               disabled={isSubmittingManuscript}
-              startIcon={isSubmittingManuscript ? <CircularProgress size={18} color="inherit" /> : null}
               onClick={handleFinishManuscript}
-              sx={{ 
-                bgcolor: '#8b6cbc',
+              startIcon={isSubmittingManuscript ? <CircularProgress size={16} color="inherit" /> : <CheckIcon sx={{ fontSize: 18 }} />}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 2,
                 px: 2.5,
-                py: 0.75,
-                '&:hover': {
-                  bgcolor: '#7a5daa',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
-                },
-                '&:disabled': {
-                  background: '#e0e0e0',
-                  color: '#999'
-                },
-                transition: 'all 0.2s ease'
+                bgcolor: '#8b6cbc',
+                boxShadow: 'none',
+                '&:hover': { bgcolor: '#7b5ca7', boxShadow: '0 4px 14px rgba(139, 108, 188, 0.35)' },
+                '&:disabled': { bgcolor: '#e2e8f0', color: '#94a3b8' }
               }}
             >
-              {isSubmittingManuscript ? 'Submitting...' : 'Submit'}
+              {isSubmittingManuscript ? 'Creating...' : 'Create Manuscript'}
             </Button>
           )}
         </DialogActions>
@@ -3218,348 +3267,327 @@ export default function CollaborativeWriting() {
           setTeamData({ collaborators: [], pendingInvitations: [] });
           setAddCollaboratorOpen(false);
           setEditingCollaborator(null);
+          setResendingInvitationId(null);
         }}
-        maxWidth="lg"
+        maxWidth="md"
         fullWidth
-        disableScrollLock={true}
+        disableScrollLock
         PaperProps={{
           sx: {
             borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-            minHeight: '70vh'
+            boxShadow: '0 20px 60px rgba(15, 23, 42, 0.12)',
+            border: '1px solid rgba(139, 108, 188, 0.08)',
+            overflow: 'hidden',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column'
           }
         }}
       >
-        <DialogTitle sx={{ 
-          borderBottom: '1px solid #e0e0e0',
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)',
-          color: 'white',
-          p: 3
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ 
-              width: 40, 
-              height: 40,
-              borderRadius: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-                backgroundColor: 'rgba(255,255,255,0.2)',
-              color: 'white'
-            }}>
-              <GroupsIcon />
+        <DialogTitle
+          sx={{
+            m: 0,
+            px: 3,
+            py: 2.25,
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5ca7 100%)',
+            color: 'white'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.75, minWidth: 0 }}>
+              <Box sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                flexShrink: 0,
+                mt: 0.25
+              }}>
+                <GroupsIcon sx={{ fontSize: 22 }} />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.0625rem', lineHeight: 1.3 }}>
+                  Manage Team
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    opacity: 0.85,
+                    fontSize: '0.8125rem',
+                    mt: 0.5,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {selectedManuscript?.title}
+                </Typography>
+              </Box>
             </Box>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Manage Team
-              </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                {selectedManuscript?.title}
-              </Typography>
-            </Box>
-            </Box>
-            <IconButton 
+            <IconButton
               onClick={() => setTeamManagementOpen(false)}
-              sx={{ color: 'white' }}
+              size="small"
+              sx={{ color: 'white', opacity: 0.9, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}
+              aria-label="Close"
             >
-              <CloseIcon />
+              <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
         </DialogTitle>
 
-        <DialogContent sx={{ p: 0 }}>
+        <Box sx={{
+          px: 3,
+          py: 1.75,
+          bgcolor: '#f8f9fb',
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
+          display: 'flex',
+          gap: 1,
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Chip
+              icon={<GroupsIcon sx={{ fontSize: '16px !important' }} />}
+              label={`${teamData.collaborators.length} member${teamData.collaborators.length !== 1 ? 's' : ''}`}
+              size="small"
+              sx={{ bgcolor: alpha('#8b6cbc', 0.08), color: '#6b4fa8', fontWeight: 600, border: 'none' }}
+            />
+            <Chip
+              icon={<ScheduleIcon sx={{ fontSize: '16px !important' }} />}
+              label={`${teamData.pendingInvitations.length} pending`}
+              size="small"
+              sx={{
+                bgcolor: teamData.pendingInvitations.length > 0 ? alpha('#f57c00', 0.1) : alpha('#64748b', 0.08),
+                color: teamData.pendingInvitations.length > 0 ? '#e65100' : '#64748b',
+                fontWeight: 600,
+                border: 'none'
+              }}
+            />
+          </Box>
+          <Button
+            startIcon={<PersonAddIcon />}
+            variant="outlined"
+            size="small"
+            onClick={() => setAddCollaboratorOpen(true)}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 2,
+              borderColor: alpha('#8b6cbc', 0.4),
+              color: '#8b6cbc',
+              '&:hover': { borderColor: '#8b6cbc', bgcolor: alpha('#8b6cbc', 0.06) }
+            }}
+          >
+            Add Member
+          </Button>
+        </Box>
+
+        <DialogContent sx={{ p: 0, flex: 1, overflow: 'auto' }}>
           {teamLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 240, py: 6 }}>
               <CircularProgress sx={{ color: '#8b6cbc' }} />
             </Box>
           ) : (
-            <Box sx={{ height: '60vh', overflow: 'hidden' }}>
-              {/* Tabs for different sections */}
-              <Box sx={{ borderBottom: '1px solid #e0e0e0', px: 3, pt: 2 }}>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                  Team Overview
-                </Typography>
-                
-                <Box sx={{ display: 'flex', gap: 3, mb: 2 }}>
-                  <Chip 
-                    icon={<GroupsIcon fontSize="small" />}
-                    label={`${teamData.collaborators.length} Members`}
-                    variant="outlined"
-                    sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}
-                  />
-                  <Chip 
-                    icon={<ScheduleIcon fontSize="small" />}
-                    label={`${teamData.pendingInvitations.length} Pending`}
-                    variant="outlined"
-                    sx={{ borderColor: '#f57c00', color: '#f57c00' }}
-                  />
-                </Box>
-              </Box>
-
-              <Box sx={{ height: 'calc(100% - 100px)', overflow: 'auto', p: 3 }}>
-                {/* Current Team Members */}
-                <Box sx={{ mb: 4 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Team Members ({teamData.collaborators.length})
-                    </Typography>
-                    <Button
-                      startIcon={<PersonAddIcon />}
-                      variant="outlined"
-                      size="small"
-                      onClick={() => setAddCollaboratorOpen(true)}
-                      sx={{
-                        borderColor: '#8b6cbc',
-                        color: '#8b6cbc',
-                        '&:hover': {
-                          borderColor: '#8b6cbc',
-                          backgroundColor: '#8b6cbc10'
-                        }
-                      }}
-                    >
-                      Add Member
-                    </Button>
-                  </Box>
-
+            <Box sx={{ px: 3, py: 2.5 }}>
+              <Stack spacing={3}>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#334155' }}>
+                    Active members
+                  </Typography>
                   {teamData.collaborators.length === 0 ? (
-                    <Paper sx={{ p: 3, textAlign: 'center', bgcolor: '#f9f9f9' }}>
-                      <GroupsIcon sx={{ fontSize: 48, color: '#ccc', mb: 1 }} />
-                      <Typography color="textSecondary">
+                    <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2, border: '1px dashed rgba(139, 108, 188, 0.25)', bgcolor: '#fafbfd' }}>
+                      <GroupsIcon sx={{ fontSize: 40, color: '#cbd5e0', mb: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
                         No team members yet. Add collaborators to get started.
                       </Typography>
                     </Paper>
                   ) : (
-                    <List sx={{ bgcolor: 'background.paper', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                    <Stack spacing={1.25}>
                       {teamData.collaborators.map((collaborator) => {
-                const role = COLLABORATOR_ROLES.find(r => r.value === collaborator.role);
-                const RoleIcon = role?.icon || PersonIcon;
+                        const role = COLLABORATOR_ROLES.find(r => r.value === collaborator.role);
                         const isOwner = collaborator.role === 'OWNER';
-                
-                return (
-                          <ListItem key={collaborator.id} divider>
-                    <ListItemAvatar>
-                              <Avatar sx={{
-                                backgroundColor: isOwner ? '#8b6cbc' : '#2196f3',
-                          fontWeight: 600
-                              }}>
-                                {collaborator.user.givenName?.charAt(0)}{collaborator.user.familyName?.charAt(0)}
-                      </Avatar>
-                    </ListItemAvatar>
-                            
-                    <ListItemText
-                              primary={
-                                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <Typography variant="subtitle1" component="span" sx={{ fontWeight: 600 }}>
-                                    {collaborator.user.givenName} {collaborator.user.familyName}
-                                  </Typography>
-                                  {isOwner && (
-                                    <Chip 
-                                      label="Creator" 
-                                      size="small" 
-                                      sx={{ 
-                                        backgroundColor: '#8b6cbc', 
-                                        color: 'white',
-                                        fontSize: '0.7rem',
-                                        height: 20
-                                      }} 
-                                    />
-                                  )}
-                                </Box>
-                              }
-                      secondary={
-                                <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
-                                  <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                          <RoleIcon sx={{ fontSize: 16, color: role?.color }} />
-                          <Typography variant="caption" sx={{ color: role?.color, fontWeight: 600 }} component="span">
-                            {isOwner ? 'Creator' : collaborator.role}
-                          </Typography>
-                                  </Box>
-                                  {collaborator.user.orcidId && (
-                                    <Typography variant="caption" color="textSecondary" component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                      <img src="/orcid.svg" alt="ORCID" style={{ width: 12, height: 12 }} />
-                                      {collaborator.user.orcidId}
-                                    </Typography>
-                                  )}
-                                  {collaborator.user.primaryInstitution && (
-                                    <Typography variant="caption" color="textSecondary" component="span" sx={{ display: 'block' }}>
-                                      {collaborator.user.primaryInstitution}
-                                    </Typography>
-                                  )}
-                        </Box>
-                      }
-                      primaryTypographyProps={{ component: 'div' }}
-                      secondaryTypographyProps={{ component: 'div' }}
-                    />
-                            
-                    <ListItemSecondaryAction>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                {/* Permissions indicators */}
-                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                  <Tooltip title={collaborator.canEdit ? "Can Edit Content" : "Cannot Edit"} arrow>
-                                    <Chip 
-                                      size="small" 
-                                      icon={<EditIcon sx={{ fontSize: '14px !important' }} />}
-                                      label="Edit" 
-                                      sx={{ 
-                                        fontSize: '0.65rem', 
-                                        height: 22,
-                                        bgcolor: collaborator.canEdit ? '#e8f5e9' : '#f5f5f5',
-                                        color: collaborator.canEdit ? '#2e7d32' : '#9e9e9e',
-                                        '& .MuiChip-icon': { 
-                                          color: collaborator.canEdit ? '#2e7d32' : '#9e9e9e' 
-                                        },
-                                        border: collaborator.canEdit ? '1px solid #a5d6a7' : '1px solid #e0e0e0'
-                                      }} 
-                                    />
-                                  </Tooltip>
-                                  <Tooltip title={collaborator.canInvite ? "Can Invite Members" : "Cannot Invite"} arrow>
-                                    <Chip 
-                                      size="small" 
-                                      icon={<PersonAddIcon sx={{ fontSize: '14px !important' }} />}
-                                      label="Invite" 
-                                      sx={{ 
-                                        fontSize: '0.65rem', 
-                                        height: 22,
-                                        bgcolor: collaborator.canInvite ? '#e3f2fd' : '#f5f5f5',
-                                        color: collaborator.canInvite ? '#1565c0' : '#9e9e9e',
-                                        '& .MuiChip-icon': { 
-                                          color: collaborator.canInvite ? '#1565c0' : '#9e9e9e' 
-                                        },
-                                        border: collaborator.canInvite ? '1px solid #90caf9' : '1px solid #e0e0e0'
-                                      }} 
-                                    />
-                                  </Tooltip>
-                                  <Tooltip title={collaborator.canDelete ? "Can Delete Content" : "Cannot Delete"} arrow>
-                                    <Chip 
-                                      size="small" 
-                                      icon={<DeleteIcon sx={{ fontSize: '14px !important' }} />}
-                                      label="Delete" 
-                                      sx={{ 
-                                        fontSize: '0.65rem', 
-                                        height: 22,
-                                        bgcolor: collaborator.canDelete ? '#ffebee' : '#f5f5f5',
-                                        color: collaborator.canDelete ? '#c62828' : '#9e9e9e',
-                                        '& .MuiChip-icon': { 
-                                          color: collaborator.canDelete ? '#c62828' : '#9e9e9e' 
-                                        },
-                                        border: collaborator.canDelete ? '1px solid #ef9a9a' : '1px solid #e0e0e0'
-                                      }} 
-                                    />
-                                  </Tooltip>
-                                </Box>
-                                
-                                {/* Action buttons */}
-                                {!isOwner && (
-                                  <Box sx={{ display: 'flex', gap: 0.5, ml: 1, borderLeft: '1px solid #e0e0e0', pl: 1.5 }}>
-                                    <Tooltip title="Edit Role & Permissions" arrow>
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => {
-                                          setEditingCollaborator(collaborator);
-                                        }}
-                                        sx={{ 
-                                          color: '#8b6cbc',
-                                          '&:hover': { bgcolor: '#8b6cbc10' }
-                                        }}
-                                      >
-                                        <EditIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title="Remove from Team" arrow>
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => handleRemoveCollaborator(collaborator.id)}
-                                        sx={{ 
-                                          color: '#f44336',
-                                          '&:hover': { bgcolor: '#f4433610' }
-                                        }}
-                                      >
-                                        <DeleteIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </Box>
-                                )}
+
+                        return (
+                          <Paper
+                            key={collaborator.id}
+                            variant="outlined"
+                            sx={{
+                              p: 1.75,
+                              borderRadius: 2,
+                              borderColor: 'rgba(0,0,0,0.08)',
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: 1.5
+                            }}
+                          >
+                            <Avatar sx={{
+                              width: 40,
+                              height: 40,
+                              bgcolor: isOwner ? '#8b6cbc' : '#7c9abd',
+                              fontSize: '0.875rem',
+                              fontWeight: 600
+                            }}>
+                              {collaborator.user.givenName?.charAt(0)}{collaborator.user.familyName?.charAt(0)}
+                            </Avatar>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.25 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                  {collaborator.user.givenName} {collaborator.user.familyName}
+                                </Typography>
+                                <Chip
+                                  label={isOwner ? 'Creator' : collaborator.role}
+                                  size="small"
+                                  sx={{
+                                    height: 20,
+                                    fontSize: '0.6875rem',
+                                    fontWeight: 600,
+                                    bgcolor: isOwner ? alpha('#8b6cbc', 0.12) : alpha(role?.color || '#64748b', 0.12),
+                                    color: isOwner ? '#6b4fa8' : role?.color || '#64748b'
+                                  }}
+                                />
                               </Box>
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                );
-              })}
-            </List>
-          )}
+                              {collaborator.user.email && (
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <EmailIcon sx={{ fontSize: 13 }} />
+                                  {collaborator.user.email}
+                                </Typography>
+                              )}
+                              {collaborator.user.primaryInstitution && (
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                                  {collaborator.user.primaryInstitution}
+                                </Typography>
+                              )}
+                            </Box>
+                            {!isOwner && (
+                              <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+                                <Tooltip title="Edit role & permissions">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => setEditingCollaborator(collaborator)}
+                                    sx={{ color: '#8b6cbc', '&:hover': { bgcolor: alpha('#8b6cbc', 0.08) } }}
+                                  >
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Remove from team">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleRemoveCollaborator(collaborator.id)}
+                                    sx={{ color: '#ef4444', '&:hover': { bgcolor: alpha('#ef4444', 0.08) } }}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            )}
+                          </Paper>
+                        );
+                      })}
+                    </Stack>
+                  )}
                 </Box>
 
-                {/* Pending Invitations */}
-                {teamData.pendingInvitations.length > 0 && (
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                      Pending Invitations ({teamData.pendingInvitations.length})
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#334155' }}>
+                    Pending invitations
+                  </Typography>
+                  {teamData.pendingInvitations.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+                      No outstanding invitations for this manuscript.
                     </Typography>
-                    
-                    <List sx={{ bgcolor: 'background.paper', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                      {teamData.pendingInvitations.map((invitation) => (
-                        <ListItem key={invitation.id} divider>
-                          <ListItemAvatar>
-                            <Avatar sx={{ backgroundColor: '#f57c00' }}>
-                              <PendingIcon />
-                            </Avatar>
-                          </ListItemAvatar>
-                          
-                          <ListItemText
-                            primary={
-                              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                                {invitation.givenName} {invitation.familyName}
-                              </Typography>
-                            }
-                            secondary={
-                              <Box sx={{ mt: 0.5 }}>
-                                <Typography variant="caption" color="textSecondary" component="span" sx={{ display: 'block' }}>
+                  ) : (
+                    <Stack spacing={1.25}>
+                      {teamData.pendingInvitations.map((invitation) => {
+                        const wasReminded = invitation.updatedAt &&
+                          new Date(invitation.updatedAt).getTime() - new Date(invitation.createdAt).getTime() > 60000;
+
+                        return (
+                          <Paper
+                            key={invitation.id}
+                            variant="outlined"
+                            sx={{
+                              p: 1.75,
+                              borderRadius: 2,
+                              borderColor: alpha('#f57c00', 0.25),
+                              bgcolor: alpha('#f57c00', 0.03)
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                              <Avatar sx={{ width: 40, height: 40, bgcolor: alpha('#f57c00', 0.15), color: '#e65100' }}>
+                                <PendingIcon fontSize="small" />
+                              </Avatar>
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.25 }}>
+                                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                    {`${invitation.givenName || ''} ${invitation.familyName || ''}`.trim() || 'Invited researcher'}
+                                  </Typography>
+                                  <Chip label={invitation.role} size="small" sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 600 }} />
+                                </Box>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <EmailIcon sx={{ fontSize: 13 }} />
                                   {invitation.email}
                                 </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                                  <Chip 
-                                    label={invitation.role} 
-                                    size="small" 
-                                    sx={{ fontSize: '0.7rem', height: 20 }}
-                                  />
-                                  <Typography variant="caption" color="textSecondary" component="span">
-                                    Invited {new Date(invitation.createdAt).toLocaleDateString()}
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+                                  Sent {formatInviteSentAt(invitation.createdAt)}
+                                </Typography>
+                                {wasReminded && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                                    Last resent {formatInviteSentAt(invitation.updatedAt)}
                                   </Typography>
-                                </Box>
+                                )}
+                                {invitation.expiresAt && (
+                                  <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: '#b45309' }}>
+                                    Expires {formatInviteSentAt(invitation.expiresAt)}
+                                  </Typography>
+                                )}
                               </Box>
-                            }
-                            primaryTypographyProps={{ component: 'div' }}
-                            secondaryTypographyProps={{ component: 'div' }}
-                          />
-                          
-                          <ListItemSecondaryAction>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                              <Tooltip title="Resend Invitation">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleResendInvitation(invitation.id)}
-                                  sx={{ color: '#2196f3' }}
-                                >
-                                  <RefreshIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Cancel Invitation">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleCancelInvitation(invitation.id)}
-                                  sx={{ color: '#f44336' }}
-                                >
-                                  <CancelIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
                             </Box>
-                          </ListItemSecondaryAction>
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Box>
-                )}
-              </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1.5, pt: 1.25, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={
+                                  resendingInvitationId === invitation.id
+                                    ? <CircularProgress size={14} color="inherit" />
+                                    : <RefreshIcon sx={{ fontSize: 16 }} />
+                                }
+                                disabled={resendingInvitationId === invitation.id}
+                                onClick={() => handleResendInvitation(invitation.id)}
+                                sx={{
+                                  textTransform: 'none',
+                                  fontWeight: 600,
+                                  borderRadius: 2,
+                                  borderColor: alpha('#8b6cbc', 0.4),
+                                  color: '#8b6cbc',
+                                  '&:hover': { borderColor: '#8b6cbc', bgcolor: alpha('#8b6cbc', 0.06) }
+                                }}
+                              >
+                                {resendingInvitationId === invitation.id ? 'Sending...' : 'Resend Invite'}
+                              </Button>
+                              <Button
+                                size="small"
+                                color="error"
+                                variant="text"
+                                startIcon={<CancelIcon sx={{ fontSize: 16 }} />}
+                                onClick={() => handleCancelInvitation(invitation.id)}
+                                sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
+                              >
+                                Cancel
+                              </Button>
+                            </Box>
+                          </Paper>
+                        );
+                      })}
+                    </Stack>
+                  )}
+                </Box>
+              </Stack>
             </Box>
           )}
         </DialogContent>
@@ -3608,42 +3636,90 @@ export default function CollaborativeWriting() {
       <Dialog
         open={addCollaboratorOpen}
         onClose={() => setAddCollaboratorOpen(false)}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
-        disableScrollLock={true}
+        disableScrollLock
         PaperProps={{
           sx: {
             borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+            boxShadow: '0 20px 60px rgba(15, 23, 42, 0.12)',
+            border: '1px solid rgba(139, 108, 188, 0.08)',
+            overflow: 'hidden'
           }
         }}
       >
-        <DialogTitle sx={{
-          borderBottom: 1,
-          borderColor: 'divider',
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)',
-          color: 'white'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <PersonAddIcon />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Add Team Member
-            </Typography>
+        <DialogTitle
+          sx={{
+            m: 0,
+            px: 3,
+            py: 2.25,
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5ca7 100%)',
+            color: 'white'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
+              <Box sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.2)'
+              }}>
+                <PersonAddIcon sx={{ fontSize: 22 }} />
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.0625rem' }}>
+                  Add Team Member
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.85, fontSize: '0.8125rem' }}>
+                  Invite by ORCID and institution email
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton
+              onClick={() => setAddCollaboratorOpen(false)}
+              size="small"
+              sx={{ color: 'white', opacity: 0.9, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}
+              aria-label="Close"
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
           </Box>
         </DialogTitle>
         
-        <DialogContent sx={{ p: 0 }}>
-          {selectedManuscript && (
-            <OrcidCollaboratorInvite
-              manuscriptId={selectedManuscript.id}
-              collaborators={[]}
-              onCollaboratorsChange={async () => {
-                // Refresh team data after adding collaborator
-                await fetchTeamData(selectedManuscript.id);
-                setAddCollaboratorOpen(false);
-              }}
-            />
-          )}
+        <DialogContent
+          sx={{
+            px: 3,
+            pt: 3,
+            pb: 3.5,
+            '&.MuiDialogContent-root': { pt: 3 }
+          }}
+        >
+          <Stack spacing={3}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontSize: '0.8125rem', lineHeight: 1.65 }}
+            >
+              Search for a researcher by name, then enter their institution email. Invitations are sent by email and in-app when they already have an account.
+            </Typography>
+            {selectedManuscript && (
+              <OrcidCollaboratorInvite
+                embedded
+                manuscriptId={selectedManuscript.id}
+                collaborators={[]}
+                onCollaboratorsChange={async () => {
+                  await fetchTeamData(selectedManuscript.id);
+                  await fetchManuscripts();
+                  setAddCollaboratorOpen(false);
+                }}
+              />
+            )}
+          </Stack>
         </DialogContent>
       </Dialog>
 
@@ -4190,110 +4266,128 @@ export default function CollaborativeWriting() {
       {/* New Proposal Modal */}
       <Dialog
         open={newProposalOpen}
-        onClose={() => {
-          setNewProposalOpen(false);
-          setProposalActiveStep(0);
-          setCurrentProposalId(null);
-          setSelectedTemplate('blank');
-          setProposalFormError(null);
-          setNewProposal({
-            title: '',
-            type: 'Research Proposal',
-            fields: [],
-            otherFields: '',
-            creator: '', // Will be populated when modal opens
-            creatorOrcid: '', // Will be populated when modal opens
-            collaborators: [],
-            sections: [
-              { id: 'section-0-executive-summary', title: 'Executive Summary', description: 'Brief overview of the proposal', order: 0 },
-              { id: 'section-1-background-significance', title: 'Background and Significance', description: 'Context and importance of the research', order: 1 },
-              { id: 'section-2-research-objectives', title: 'Research Objectives', description: 'Primary and secondary objectives', order: 2 },
-              { id: 'section-3-methodology', title: 'Methodology', description: 'Research methods and approach', order: 3 },
-              { id: 'section-4-timeline-milestones', title: 'Timeline and Milestones', description: 'Project schedule and deliverables', order: 4 },
-              { id: 'section-5-budget-resources', title: 'Budget and Resources', description: 'Financial requirements and resource allocation', order: 5 },
-              { id: 'section-6-expected-outcomes', title: 'Expected Outcomes', description: 'Anticipated results and impact', order: 6 },
-              { id: 'section-7-references', title: 'References', description: 'Supporting literature', order: 7 }
-            ],
-            status: 'Draft',
-            researchAreas: [],
-            keywords: [],
-            abstract: '',
-            funding: {
-              fundingSource: '',
-              grantNumber: '',
-              budget: { total: 0, items: [] },
-              fundingInstitution: ''
-            }
-          });
-        }}
+        onClose={closeProposalDialog}
         maxWidth="md"
         fullWidth
-        disableScrollLock={true}
+        disableScrollLock
         PaperProps={{
           sx: {
             borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-            minHeight: 600
+            boxShadow: '0 20px 60px rgba(15, 23, 42, 0.12)',
+            border: '1px solid rgba(139, 108, 188, 0.08)',
+            overflow: 'hidden',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column'
           }
         }}
       >
         <DialogTitle
           sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            pb: 1.5,
-            fontSize: '1.1rem'
+            m: 0,
+            px: 3,
+            py: 2.25,
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5ca7 100%)',
+            color: 'white'
           }}
         >
-          <DescriptionIcon sx={{ fontSize: 22 }} />
-          Create New Proposal
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, minWidth: 0 }}>
+              <Box sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                flexShrink: 0
+              }}>
+                <DescriptionIcon sx={{ fontSize: 22 }} />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.125rem', lineHeight: 1.3, letterSpacing: '-0.01em' }}>
+                  Create New Proposal
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.85, fontSize: '0.8125rem', mt: 0.25 }}>
+                  Set up a research proposal and invite your co-investigators
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton
+              onClick={closeProposalDialog}
+              size="small"
+              sx={{ color: 'white', opacity: 0.9, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}
+              aria-label="Close"
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
         </DialogTitle>
 
-        <DialogContent sx={{ p: 0 }}>
+        <Box sx={{
+          px: 3,
+          py: 2,
+          bgcolor: '#f8f9fb',
+          borderBottom: '1px solid rgba(0,0,0,0.06)'
+        }}>
+          <Stepper
+            activeStep={proposalActiveStep}
+            sx={{
+              '& .MuiStepLabel-label': { fontSize: '0.8125rem', fontWeight: 500 },
+              '& .MuiStepLabel-label.Mui-active': { color: '#8b6cbc', fontWeight: 600 },
+              '& .MuiStepLabel-label.Mui-completed': { color: '#8b6cbc' },
+              '& .MuiStepIcon-root.Mui-active': { color: '#8b6cbc' },
+              '& .MuiStepIcon-root.Mui-completed': { color: '#8b6cbc' },
+              '& .MuiStepConnector-line': { borderColor: '#e2e8f0' },
+              '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: '#8b6cbc' },
+              '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: '#8b6cbc' }
+            }}
+          >
+            {proposalSteps.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        </Box>
+
+        <DialogContent sx={{ p: 0, flex: 1, overflow: 'auto' }}>
           {proposalFormError && (
-            <Alert severity="error" sx={{ m: 3, mb: 0 }}>
+            <Alert severity="error" sx={{ mx: 3, mt: 2.5, borderRadius: 2 }}>
               {proposalFormError}
             </Alert>
           )}
 
-          {/* Stepper */}
-          <Box sx={{ px: 3, pt: 2, pb: 1.5, borderBottom: '1px solid #e0e0e0', backgroundColor: '#fafbfd' }}>
-            <Stepper activeStep={proposalActiveStep}>
-              {proposalSteps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-          </Box>
-
           {/* Step Content */}
           {proposalActiveStep === 0 && (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, fontSize: '0.938rem', color: '#2D3748' }}>
-              Proposal Details
+          <Box sx={{ px: 3, py: 2.5 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, fontSize: '0.8125rem', lineHeight: 1.6 }}>
+              Provide the basic details for your proposal. You will choose a template and invite co-investigators in the next steps.
             </Typography>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            <Stack spacing={2.25}>
               {/* Proposal Title */}
               <TextField
                 fullWidth
-                label="Proposal Title *"
+                required
+                label="Proposal Title"
                 value={newProposal.title}
                 onChange={(e) => setNewProposal(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Enter proposal title..."
+                placeholder="e.g. A multicentre trial of early mobilisation after..."
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': { borderColor: '#8b6cbc' },
+                    '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
+                }}
               />
 
               {/* Research Fields */}
               <Box>
-                <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, fontSize: '0.875rem' }}>
-                  Research Fields * (Select multiple or add custom)
-                </Typography>
                 
                 <Autocomplete
                   multiple
@@ -4322,17 +4416,15 @@ export default function CollaborativeWriting() {
                   renderTags={(value, getTagProps) =>
                     value.map((option, index) => (
                       <Chip
-                        variant="filled"
                         label={option}
+                        size="small"
                         {...getTagProps({ index })}
                         key={`${option}-${index}`}
                         sx={{
-                          backgroundColor: '#8b6cbc',
-                          color: 'white',
-                          '& .MuiChip-deleteIcon': {
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            '&:hover': { color: 'white' }
-                          }
+                          bgcolor: alpha('#8b6cbc', 0.12),
+                          color: '#6b4fa8',
+                          fontWeight: 500,
+                          '& .MuiChip-deleteIcon': { color: '#8b6cbc' }
                         }}
                       />
                     ))
@@ -4340,15 +4432,17 @@ export default function CollaborativeWriting() {
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      variant="outlined"
-                      placeholder="Select or type custom fields..."
-                      helperText="Type and press Enter to add custom fields"
+                      required
+                      label="Research Fields"
+                      placeholder="Select or type a field, then press Enter"
+                      helperText="Choose from the list or add custom fields"
                       sx={{
                         '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
                           '&:hover fieldset': { borderColor: '#8b6cbc' },
-                          '&.Mui-focused fieldset': { borderColor: '#8b6cbc' },
+                          '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
                         },
-                        '& .MuiFormLabel-root.Mui-focused': { color: '#8b6cbc' }
+                        '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
                       }}
                     />
                   )}
@@ -4364,16 +4458,10 @@ export default function CollaborativeWriting() {
                     );
                   }}
                   sx={{
-                    '& .MuiAutocomplete-tag': {
-                      margin: '2px',
-                    },
-                    '& .MuiAutocomplete-inputRoot': {
-                      paddingTop: '8px',
-                      paddingBottom: '8px',
-                    }
+                    '& .MuiAutocomplete-tag': { margin: '2px' }
                   }}
                 />
-                
+
                 {/* Information about custom fields */}
                 {newProposal.fields.length > 0 && (
                   <Box sx={{ mt: 1 }}>
@@ -4398,99 +4486,168 @@ export default function CollaborativeWriting() {
                   </Box>
                 )}
               </Box>
-            </Box>
+
+              <TextField
+                fullWidth
+                label="Description"
+                value={newProposal.description}
+                onChange={(e) => setNewProposal(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Objectives, methodology, or key themes (optional)"
+                multiline
+                minRows={3}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': { borderColor: '#8b6cbc' },
+                    '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
+                }}
+              />
+            </Stack>
           </Box>
           )}
 
           {/* Step 2: Select Template */}
           {proposalActiveStep === 1 && (
-            <Box sx={{ p: 3 }}>
-              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, fontSize: '0.938rem', color: '#2D3748' }}>
-                Select Template
+            <Box sx={{ px: 3, py: 2.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, fontSize: '0.8125rem', lineHeight: 1.6 }}>
+                Choose the starting structure for &quot;{newProposal.title}&quot;. You can rename, reorder, or remove sections once the proposal is open in the editor.
               </Typography>
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                {/* Template Options */}
-                <Box>
-                  <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, fontSize: '0.875rem' }}>
-                    Choose a proposal template
-                  </Typography>
-                  
-                  <Grid container spacing={2}>
-                    {/* Blank Template */}
-                    <Grid item xs={12} md={6}>
-                      <Paper
-                        elevation={selectedTemplate === 'blank' ? 4 : 1}
-                        sx={{
-                          p: 2.5,
-                          cursor: 'pointer',
-                          border: selectedTemplate === 'blank' ? '2px solid #8b6cbc' : '2px solid transparent',
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            elevation: 3,
-                            transform: 'translateY(-2px)'
-                          }
-                        }}
-                        onClick={() => setSelectedTemplate('blank')}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                          <DescriptionIcon sx={{ mr: 2, color: '#8b6cbc', fontSize: 28 }} />
-                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                            Blank Template
-                          </Typography>
-                          {selectedTemplate === 'blank' && (
-                            <CheckCircleIcon sx={{ ml: 'auto', color: '#8b6cbc' }} />
-                          )}
-                        </Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Start with a blank proposal template with standard sections including Executive Summary, Background, Methodology, and more.
-                        </Typography>
-                        <Box sx={{ mt: 2 }}>
-                          <Chip label="Recommended" size="small" sx={{ backgroundColor: '#e3f2fd', color: '#1976d2' }} />
-                        </Box>
-                      </Paper>
-                    </Grid>
+              <Grid container spacing={2}>
+                {/* Blank Template */}
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Paper
+                    elevation={0}
+                    onClick={() => setSelectedTemplate('blank')}
+                    sx={{
+                      p: 2.5,
+                      height: '100%',
+                      cursor: 'pointer',
+                      borderRadius: 2,
+                      border: selectedTemplate === 'blank' ? '2px solid #8b6cbc' : '1px solid rgba(0,0,0,0.08)',
+                      bgcolor: selectedTemplate === 'blank' ? alpha('#8b6cbc', 0.04) : '#fff',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        borderColor: '#8b6cbc',
+                        boxShadow: '0 6px 20px rgba(139, 108, 188, 0.15)'
+                      }
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                      <Box sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 1.5,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: alpha('#8b6cbc', 0.12),
+                        flexShrink: 0
+                      }}>
+                        <DescriptionIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
+                      </Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
+                        Blank Template
+                      </Typography>
+                      {selectedTemplate === 'blank' && (
+                        <CheckCircleIcon sx={{ ml: 'auto', color: '#8b6cbc', fontSize: 20 }} />
+                      )}
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', lineHeight: 1.6 }}>
+                      Standard proposal structure with {PROPOSAL_SECTIONS.length} pre-built sections, from Executive Summary through References.
+                    </Typography>
+                    <Chip
+                      label="Recommended"
+                      size="small"
+                      sx={{ mt: 2, bgcolor: alpha('#8b6cbc', 0.12), color: '#6b4fa8', fontWeight: 500 }}
+                    />
+                  </Paper>
+                </Grid>
 
-                    {/* Upload Template (Disabled) */}
-                    <Grid item xs={12} md={6}>
-                      <Paper
-                        elevation={0}
+                {/* Upload Template (Disabled) */}
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 2.5,
+                      height: '100%',
+                      borderRadius: 2,
+                      bgcolor: '#f8f9fb',
+                      border: '1px dashed rgba(0,0,0,0.12)'
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                      <Box sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 1.5,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: 'rgba(0,0,0,0.05)',
+                        flexShrink: 0
+                      }}>
+                        <CloudUploadIcon sx={{ color: '#94a3b8', fontSize: 20 }} />
+                      </Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.9375rem', color: '#94a3b8' }}>
+                        Upload Template
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', lineHeight: 1.6 }}>
+                      Bring your own funder or institutional template (Word, PDF, or Google Docs).
+                    </Typography>
+                    <Chip
+                      label="Coming Soon"
+                      size="small"
+                      sx={{ mt: 2, bgcolor: '#fff3e0', color: '#f57c00', fontWeight: 500 }}
+                    />
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              {selectedTemplate === 'blank' && (
+                <Box sx={{
+                  mt: 2.5,
+                  p: 2,
+                  borderRadius: 2,
+                  bgcolor: '#f8f9fb',
+                  border: '1px solid rgba(0,0,0,0.06)'
+                }}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: '#475569', display: 'block', mb: 1 }}>
+                    Sections included
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                    {PROPOSAL_SECTIONS.map((section) => (
+                      <Chip
+                        key={section.id}
+                        label={section.title}
+                        size="small"
+                        variant="outlined"
                         sx={{
-                          p: 3,
-                          backgroundColor: '#f5f5f5',
-                          border: '2px solid #e0e0e0',
-                          opacity: 0.6
+                          height: 24,
+                          fontSize: '0.75rem',
+                          borderColor: alpha('#8b6cbc', 0.3),
+                          color: '#6b4fa8',
+                          bgcolor: '#fff'
                         }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                          <CloudUploadIcon sx={{ mr: 2, color: '#9e9e9e', fontSize: 28 }} />
-                          <Typography variant="h6" sx={{ fontWeight: 600, color: '#9e9e9e' }}>
-                            Upload Template
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Upload your own proposal template file (Word, PDF, or Google Docs).
-                        </Typography>
-                        <Box sx={{ mt: 2 }}>
-                          <Chip label="Coming Soon" size="small" sx={{ backgroundColor: '#fff3e0', color: '#f57c00' }} />
-                        </Box>
-                      </Paper>
-                    </Grid>
-                  </Grid>
+                      />
+                    ))}
+                  </Box>
                 </Box>
-              </Box>
+              )}
             </Box>
           )}
 
           {/* Step 3: Invite Collaborators */}
           {proposalActiveStep === 2 && (
-            <Box sx={{ p: 3 }}>
-              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, fontSize: '0.938rem', color: '#2D3748' }}>
-                Invite Collaborators
+            <Box sx={{ px: 3, py: 2.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: '0.8125rem', lineHeight: 1.6 }}>
+                Search by ORCID, then enter each co-investigator&apos;s institution email. Invitations are sent by email and in-app when they already have an account.
               </Typography>
-
-              {/* ORCID Collaborator Invite Component */}
               <OrcidCollaboratorInvite
+                embedded
                 manuscriptId={currentProposalId}
                 collaborators={newProposal.collaborators}
                 onCollaboratorsChange={(updatedCollaborators) => {
@@ -4504,68 +4661,56 @@ export default function CollaborativeWriting() {
           )}
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, gap: 2 }}>
-          <Button onClick={() => {
-              setNewProposalOpen(false);
-            setProposalActiveStep(0);
-            setCurrentProposalId(null);
-            setSelectedTemplate('blank');
-            setProposalFormError(null);
-              setNewProposal({
-                title: '',
-                type: 'Research Proposal',
-                fields: [],
-                otherFields: '',
-                creator: '', // Will be populated when modal opens
-                creatorOrcid: '', // Will be populated when modal opens
-                collaborators: [],
-              sections: [
-                { id: 'section-0-executive-summary', title: 'Executive Summary', description: 'Brief overview of the proposal', order: 0 },
-                { id: 'section-1-background-significance', title: 'Background and Significance', description: 'Context and importance of the research', order: 1 },
-                { id: 'section-2-research-objectives', title: 'Research Objectives', description: 'Primary and secondary objectives', order: 2 },
-                { id: 'section-3-methodology', title: 'Methodology', description: 'Research methods and approach', order: 3 },
-                { id: 'section-4-timeline-milestones', title: 'Timeline and Milestones', description: 'Project schedule and deliverables', order: 4 },
-                { id: 'section-5-budget-resources', title: 'Budget and Resources', description: 'Financial requirements and resource allocation', order: 5 },
-                { id: 'section-6-expected-outcomes', title: 'Expected Outcomes', description: 'Anticipated results and impact', order: 6 },
-                { id: 'section-7-references', title: 'References', description: 'Supporting literature', order: 7 }
-              ],
-                status: 'Draft',
-                researchAreas: [],
-                keywords: [],
-                abstract: '',
-                funding: {
-                  fundingSource: '',
-                  grantNumber: '',
-                  budget: { total: 0, items: [] },
-                  fundingInstitution: ''
-                }
-              });
-          }}>
+        <DialogActions sx={{
+          px: 3,
+          py: 2,
+          gap: 1,
+          borderTop: '1px solid rgba(0,0,0,0.06)',
+          bgcolor: '#fff'
+        }}>
+          <Button
+            onClick={closeProposalDialog}
+            sx={{ color: 'text.secondary', textTransform: 'none', fontWeight: 500 }}
+          >
             Cancel
           </Button>
-          
+
           <Box sx={{ flex: 1 }} />
-          
+
           {proposalActiveStep > 0 && (
-            <Button onClick={() => setProposalActiveStep(prev => prev - 1)}>
+            <Button
+              onClick={() => setProposalActiveStep(prev => prev - 1)}
+              variant="outlined"
+              startIcon={<ArrowBackIcon sx={{ fontSize: 18 }} />}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: alpha('#8b6cbc', 0.4),
+                color: '#8b6cbc',
+                borderRadius: 2,
+                '&:hover': { borderColor: '#8b6cbc', bgcolor: alpha('#8b6cbc', 0.06) }
+              }}
+            >
               Back
             </Button>
           )}
-          
-          {proposalActiveStep === 0 ? (
+
+          {proposalActiveStep < 2 ? (
             <Button
               variant="contained"
-              disabled={!newProposal.title || newProposal.fields.length === 0}
+              disabled={proposalActiveStep === 0 && (!newProposal.title || newProposal.fields.length === 0)}
               onClick={handleProposalNextStep}
-              sx={{ background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)', px: 2.5, py: 0.75 }}
-            >
-              Continue
-          </Button>
-          ) : proposalActiveStep === 1 ? (
-            <Button
-              variant="contained"
-              onClick={handleProposalNextStep}
-              sx={{ background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)', px: 2.5, py: 0.75 }}
+              endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 2,
+                px: 2.5,
+                bgcolor: '#8b6cbc',
+                boxShadow: 'none',
+                '&:hover': { bgcolor: '#7b5ca7', boxShadow: '0 4px 14px rgba(139, 108, 188, 0.35)' },
+                '&:disabled': { bgcolor: '#e2e8f0', color: '#94a3b8' }
+              }}
             >
               Continue
             </Button>
@@ -4573,11 +4718,20 @@ export default function CollaborativeWriting() {
             <Button
               variant="contained"
               disabled={isSubmittingProposal}
-              startIcon={isSubmittingProposal ? <CircularProgress size={18} color="inherit" /> : null}
               onClick={handleFinishProposal}
-              sx={{ bgcolor: '#8b6cbc', px: 2.5, py: 0.75, '&:hover': { bgcolor: '#7a5daa' } }}
+              startIcon={isSubmittingProposal ? <CircularProgress size={16} color="inherit" /> : <CheckIcon sx={{ fontSize: 18 }} />}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 2,
+                px: 2.5,
+                bgcolor: '#8b6cbc',
+                boxShadow: 'none',
+                '&:hover': { bgcolor: '#7b5ca7', boxShadow: '0 4px 14px rgba(139, 108, 188, 0.35)' },
+                '&:disabled': { bgcolor: '#e2e8f0', color: '#94a3b8' }
+              }}
             >
-              {isSubmittingProposal ? 'Submitting...' : 'Submit'}
+              {isSubmittingProposal ? 'Creating...' : 'Create Proposal'}
             </Button>
           )}
         </DialogActions>
@@ -4645,10 +4799,10 @@ export default function CollaborativeWriting() {
                     />
                   )}
                   <Chip
-                    label={viewingManuscript.status}
+                    label={t(getStageTranslationKey(viewingManuscript.status))}
                     size="small"
                     sx={{
-                      backgroundColor: STATUS_OPTIONS.find(s => s.value === viewingManuscript.status)?.color || '#9e9e9e',
+                      backgroundColor: MANUSCRIPT_STAGES[viewingManuscript.status]?.color || '#9e9e9e',
                       color: 'white',
                       fontWeight: 500
                     }}
@@ -4681,11 +4835,12 @@ export default function CollaborativeWriting() {
                   {/* Status */}
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
-                      Status
+                      {t('manuscript_workflow.workflow_stage')}
                     </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {viewingManuscript.status}
+                    <Typography variant="body1" sx={{ fontWeight: 500, mb: 1 }}>
+                      {t(getStageTranslationKey(viewingManuscript.status))}
                     </Typography>
+                    <StagePipeline currentStatus={viewingManuscript.status} />
                   </Grid>
 
                   {/* Field */}
@@ -4797,6 +4952,16 @@ export default function CollaborativeWriting() {
           >
             Close
           </Button>
+          {viewingManuscript?.permissions?.canManageTeam && (
+            <Button
+              variant="outlined"
+              startIcon={<RateReviewIcon />}
+              onClick={() => handleOpenWorkflow(viewingManuscript)}
+              sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}
+            >
+              {t('manuscript_workflow.title')}
+            </Button>
+          )}
           <Button 
             variant="contained" 
             startIcon={<EditIcon />}
@@ -4813,6 +4978,17 @@ export default function CollaborativeWriting() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Peer Review & Publication workflow */}
+      <ManuscriptWorkflowDialog
+        open={workflowDialogOpen}
+        manuscript={workflowManuscript}
+        onClose={() => {
+          setWorkflowDialogOpen(false);
+          setWorkflowManuscript(null);
+        }}
+        onUpdated={handleWorkflowUpdated}
+      />
 
       {/* Snackbar for notifications */}
       <Snackbar

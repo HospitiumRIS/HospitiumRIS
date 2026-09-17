@@ -21,6 +21,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import TextFieldsIcon from '@mui/icons-material/TextFields';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PageHeader from '../../../../components/common/PageHeader';
+import StagePipeline from '../../../../components/Manuscripts/StagePipeline';
 
 const STAGE_CONFIG = {
   DRAFT: {
@@ -61,40 +62,6 @@ const STAGE_CONFIG = {
 };
 
 const STAGE_ORDER = ['DRAFT', 'IN_REVIEW', 'UNDER_REVISION', 'PUBLISHED', 'ARCHIVED'];
-
-function StagePipeline({ currentStatus }) {
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-      {STAGE_ORDER.map((stage, i) => {
-        const cfg = STAGE_CONFIG[stage];
-        const isActive = stage === currentStatus;
-        const isPast = STAGE_CONFIG[currentStatus]?.order > cfg.order;
-        const isLast = i === STAGE_ORDER.length - 1;
-        return (
-          <Box key={stage} sx={{ display: 'flex', alignItems: 'center' }}>
-            <Tooltip title={cfg.label}>
-              <Box sx={{
-                width: 22, height: 22, borderRadius: '50%',
-                bgcolor: isActive ? cfg.color : isPast ? '#10b981' : '#e5e7eb',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: isActive ? `2px solid ${cfg.color}` : isPast ? '2px solid #10b981' : '2px solid #d1d5db',
-                boxShadow: isActive ? `0 0 0 3px ${cfg.bg}` : 'none',
-                transition: 'all 0.2s',
-                color: isActive || isPast ? 'white' : '#9ca3af',
-                fontSize: 11,
-              }}>
-                {isPast ? '✓' : (i + 1)}
-              </Box>
-            </Tooltip>
-            {!isLast && (
-              <Box sx={{ width: 14, height: 2, bgcolor: isPast ? '#10b981' : '#e5e7eb' }} />
-            )}
-          </Box>
-        );
-      })}
-    </Box>
-  );
-}
 
 function StatCard({ label, value, sub, icon }) {
   return (

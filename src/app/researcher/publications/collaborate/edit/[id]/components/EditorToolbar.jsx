@@ -138,6 +138,8 @@ export default function EditorToolbar({
   paginationControlsRef,
   paginationEnabled,
   setPaginationEnabled,
+  pageSettings,
+  onPageSettingsChange,
   PaginationControls
 }) {
   const { t } = useTranslation();
@@ -363,6 +365,8 @@ export default function EditorToolbar({
         editor={editor} 
         enabled={paginationEnabled}
         onToggle={setPaginationEnabled}
+        pageSettings={pageSettings}
+        onSettingsChange={onPageSettingsChange}
       />
 
       <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />

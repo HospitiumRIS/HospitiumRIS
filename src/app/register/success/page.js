@@ -29,16 +29,25 @@ const RegisterSuccessContent = () => {
   const { isDarkMode } = useThemeMode();
   
   const [userEmail, setUserEmail] = useState('');
+  const [nextPath, setNextPath] = useState('');
 
   useEffect(() => {
     const email = searchParams.get('email');
+    const next = searchParams.get('next');
     if (email) {
       setUserEmail(decodeURIComponent(email));
+    }
+    if (next && next.startsWith('/') && !next.startsWith('//')) {
+      setNextPath(next);
     }
   }, [searchParams]);
 
   const handleLoginClick = () => {
-    router.push('/login');
+    const params = new URLSearchParams();
+    if (userEmail) params.set('email', userEmail);
+    if (nextPath) params.set('redirect', nextPath);
+    const query = params.toString();
+    router.push(query ? `/login?${query}` : '/login');
   };
 
   return (

@@ -50,13 +50,12 @@ import {
   ListItemIcon,
   Popover,
   MenuList,
-  AppBar,
-  Toolbar,
   Breadcrumbs,
   LinearProgress,
   CircularProgress,
   Fab,
-  ButtonGroup
+  ButtonGroup,
+  Alert
 } from '@mui/material';
 
 import {
@@ -134,7 +133,6 @@ import {
 } from '@mui/icons-material';
 
 import { useAuth } from '@/components/AuthProvider';
-import { NAVBAR_OFFSET } from '@/components/TopBar';
 import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import DocumentHeader from './components/DocumentHeader';
@@ -155,11 +153,17 @@ import TrackChanges from './extensions/TrackChanges';
 import { CitationMark } from './extensions/CitationMark';
 import { PageBreak, Pagination } from './extensions/Pagination';
 import BibliographyGenerator from '@/components/Bibliography/BibliographyGenerator';
+import ManuscriptWorkflowDialog from '@/components/Manuscripts/ManuscriptWorkflowDialog';
+import { getStageTranslationKey } from '@/lib/manuscript-workflow';
 import ReferencesHoverButton from '@/components/Bibliography/ReferencesHoverButton';
 import CitationHoverMenu from './components/CitationHoverMenu';
 import EditCitationDialog from './components/EditCitationDialog';
 import CommandPalette from './components/CommandPalette';
 import PaginationControls from './components/PaginationControls';
+import DocumentPageCanvas from './components/DocumentPageCanvas';
+import CiteAsYouWritePanel from './components/CiteAsYouWritePanel';
+import EditorSidePanel from './components/EditorSidePanel';
+import { DEFAULT_MARGINS, PAGE_GAP, generatePrintCSS } from './utils/paginationHelper';
 import CiteReadyConnectDialog from './components/CiteReadyConnectDialog';
 import { getCiteReadyStatus } from '@/services/citereadyService';
 // TODO (Phase 5): import { useManuscriptSync } from './hooks/useManuscriptSync'; // Enable when backend /api/manuscripts/[id]/sync is implemented
@@ -173,6 +177,17 @@ import {
   formatCitationIEEE,
   formatCitationAMA
 } from '@/utils/citationFormatters';
+
+// Page setup used by the page canvas and the pagination extension
+const DEFAULT_PAGE_SETTINGS = {
+  pageSize: 'A4',
+  orientation: 'portrait',
+  margins: DEFAULT_MARGINS,
+  showPageNumbers: true,
+  pageNumberPosition: 'bottom-center',
+  wordsPerPage: 800,
+  autoCalculate: true,
+};
 
 // Custom TipTap Extensions Configuration
 const extensions = [
@@ -228,13 +243,8 @@ const extensions = [
   PageBreak,
   Pagination.configure({
     enabled: true,
-    pageSize: 'A4',
-    orientation: 'portrait',
-    margins: { top: 72, right: 72, bottom: 72, left: 72 },
-    showPageNumbers: true,
-    pageNumberPosition: 'bottom-center',
-    wordsPerPage: 800,
-    autoCalculate: true,
+    ...DEFAULT_PAGE_SETTINGS,
+    pageGap: PAGE_GAP,
   }),
 ];
 
@@ -455,6 +465,7 @@ export default function ManuscriptEditor() {
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [onlineUserIds, setOnlineUserIds] = useState([]); // Track online users from presence system
   const [userPermissions, setUserPermissions] = useState({ canEdit: false, canInvite: false, canDelete: false, isCreator: false });
+  const [workflowDialogOpen, setWorkflowDialogOpen] = useState(false);
   
   // Use refs for sync tracking to avoid useEffect dependency issues
   const lastKnownServerUpdateRef = useRef(null);
@@ -481,7 +492,8 @@ export default function ManuscriptEditor() {
   const [showDocumentStructure, setShowDocumentStructure] = useState(false);
   
   // Citation preferences
-  const [citeAsYouWrite, setCiteAsYouWrite] = useState(true);
+  const [showCitePanel, setShowCitePanel] = useState(false);
+  const citePanelPinnedRef = useRef(false);
   const [citationStyle, setCitationStyle] = useState('APA');
   const [zoteroConnected, setZoteroConnected] = useState(false);
   const [citeReadyConnected, setCiteReadyConnected] = useState(false);
@@ -498,8 +510,37 @@ export default function ManuscriptEditor() {
     return () => { cancelled = true; };
   }, []);
 
+  const openCitePanel = useCallback(() => {
+    setShowCitePanel(true);
+    setShowComments(false);
+  }, []);
+
+  const closeCitePanel = useCallback(() => {
+    citePanelPinnedRef.current = false;
+    setShowCitePanel(false);
+    setCiteTriggerActive(false);
+  }, []);
+
+  const toggleCitePanel = useCallback(() => {
+    setShowCitePanel(prev => {
+      const next = !prev;
+      citePanelPinnedRef.current = next;
+      if (next) setShowComments(false);
+      return next;
+    });
+  }, []);
+
+  const toggleCommentsPanel = useCallback((forceOpen) => {
+    setShowComments(prev => {
+      const next = typeof forceOpen === 'boolean' ? forceOpen : !prev;
+      if (next) setShowCitePanel(false);
+      return next;
+    });
+  }, []);
+
   // Citation functionality
-  const [citationPopupAnchor, setCitationPopupAnchor] = useState(null);
+  // True while an @keyword / cite: trigger is being typed in the document
+  const [citeTriggerActive, setCiteTriggerActive] = useState(false);
   const [citationSearch, setCitationSearch] = useState('');
   const [selectedCitationIndex, setSelectedCitationIndex] = useState(0);
   const [triggerPosition, setTriggerPosition] = useState(null);
@@ -528,6 +569,7 @@ export default function ManuscriptEditor() {
   // Pagination state
   const [paginationEnabled, setPaginationEnabled] = useState(true);
   const [pageCount, setPageCount] = useState(1);
+  const [pageSettings, setPageSettings] = useState(DEFAULT_PAGE_SETTINGS);
   
   // Database citation state for Cite as You Write
   const [quickCitations, setQuickCitations] = useState([]);
@@ -561,6 +603,25 @@ export default function ManuscriptEditor() {
       setQuickCitations([]);
     } finally {
       setQuickCitationsLoading(false);
+    }
+  }, []);
+
+  // Manual searches in the citation panel wait for a typing pause
+  const citationSearchTimerRef = useRef(null);
+  const handleCitationSearchChange = useCallback((value) => {
+    setCitationSearch(value);
+
+    if (citationSearchTimerRef.current) {
+      clearTimeout(citationSearchTimerRef.current);
+    }
+    citationSearchTimerRef.current = setTimeout(() => {
+      fetchQuickCitations(value);
+    }, 250);
+  }, [fetchQuickCitations]);
+
+  useEffect(() => () => {
+    if (citationSearchTimerRef.current) {
+      clearTimeout(citationSearchTimerRef.current);
     }
   }, []);
 
@@ -920,7 +981,7 @@ export default function ManuscriptEditor() {
       console.error('Error adding citation to manuscript library:', error);
     }
     
-    setCitationPopupAnchor(null);
+    setCiteTriggerActive(false);
     setCitationSearch('');
     setSelectedCitationIndex(0);
     setTriggerPosition(null);
@@ -975,7 +1036,7 @@ export default function ManuscriptEditor() {
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        class: 'prose prose-lg max-w-none focus:outline-none min-h-[500px] p-6',
+        class: 'prose prose-lg max-w-none focus:outline-none',
         style: 'white-space: pre-wrap;'
       },
     },
@@ -1007,6 +1068,19 @@ export default function ManuscriptEditor() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Later lifecycle stages restrict who may change the manuscript body
+  const manuscriptStatus = manuscript?.status || 'DRAFT';
+  const canManageWorkflow = userPermissions.isCreator || userPermissions.canInvite;
+  const isLockedForPublication = manuscriptStatus === 'PUBLISHED' || manuscriptStatus === 'ARCHIVED';
+  const isReviewRestricted = manuscriptStatus === 'IN_REVIEW' && !canManageWorkflow;
+  const contentEditable = userPermissions.canEdit && !isLockedForPublication && !isReviewRestricted;
+
+  useEffect(() => {
+    if (editor && !loading) {
+      editor.setEditable(contentEditable);
+    }
+  }, [editor, loading, contentEditable]);
 
   // Command palette command handler
   const handleCommand = useCallback(async (commandId) => {
@@ -1069,7 +1143,7 @@ export default function ManuscriptEditor() {
         // TODO: Trigger comment mode
         break;
       case 'toggleComments':
-        setShowComments(prev => !prev);
+        toggleCommentsPanel();
         break;
       case 'toggleTrackChanges':
         setTrackChangesEnabled(prev => !prev);
@@ -1325,17 +1399,14 @@ export default function ManuscriptEditor() {
 
   // Handle comment selection from highlight click
   const handleCommentSelection = useCallback((commentId) => {
-    // Open comments sidebar if not already open
-    if (!showComments) {
-      setShowComments(true);
-    }
+    toggleCommentsPanel(true);
     
     // Dispatch event to focus on specific comment in sidebar
     const focusEvent = new CustomEvent('focusComment', {
       detail: { commentId }
     });
     document.dispatchEvent(focusEvent);
-  }, [showComments]);
+  }, [toggleCommentsPanel]);
 
   // Handle comment selection events from highlights
   useEffect(() => {
@@ -1476,32 +1547,25 @@ export default function ManuscriptEditor() {
       const detection = detectCitationTrigger(text, from);
       
       if (detection.found) {
-        // Get cursor position for popup placement
-        const coords = editor.view.coordsAtPos(from);
         setCitationSearch(detection.query);
         setTriggerPosition({
           startPos: detection.startPos,
           endPos: detection.endPos
         });
-        setCitationPopupAnchor({
-          getBoundingClientRect: () => ({
-            left: coords.left,
-            top: coords.top + 20,
-            right: coords.left,
-            bottom: coords.top + 20,
-            width: 0,
-            height: 0
-          })
-        });
+        setCiteTriggerActive(true);
         setSelectedCitationIndex(0);
+        openCitePanel();
         
         // Fetch citations from database based on search query
         await fetchQuickCitations(detection.query);
-      } else if (citationPopupAnchor) {
-        setCitationPopupAnchor(null);
+      } else if (citeTriggerActive) {
+        setCiteTriggerActive(false);
         setCitationSearch('');
         setTriggerPosition(null);
         setQuickCitations([]);
+        if (!citePanelPinnedRef.current) {
+          setShowCitePanel(false);
+        }
       }
     };
 
@@ -1512,7 +1576,7 @@ export default function ManuscriptEditor() {
       editor.off('update', handleEditorUpdate);
       editor.off('selectionUpdate', handleEditorUpdate);
     };
-  }, [editor, citeAsYouWrite, detectCitationTrigger, citationPopupAnchor, fetchQuickCitations]);
+  }, [editor, detectCitationTrigger, citeTriggerActive, fetchQuickCitations, openCitePanel]);
 
   // Keyboard shortcuts for citation and command palette
   useEffect(() => {
@@ -1916,7 +1980,7 @@ export default function ManuscriptEditor() {
         // Toggle document outline (could show/hide left sidebar)
         break;
       case 'comments':
-        setShowComments(!showComments);
+        toggleCommentsPanel();
         break;
       case 'track-changes':
         // Toggle track changes mode
@@ -1924,7 +1988,7 @@ export default function ManuscriptEditor() {
       default:
         break;
     }
-  }, [showComments]);
+  }, [toggleCommentsPanel]);
 
   // Handle insert menu actions - moved here to fix hoisting issue
   const handleInsertAction = useCallback((action, params) => {
@@ -2227,8 +2291,7 @@ export default function ManuscriptEditor() {
         }
         break;
       case 'page-break':
-        // Insert a page break (using div with CSS class)
-        editor?.chain().focus().insertContent('<div class="page-break" style="page-break-before: always; break-before: page; margin: 2rem 0; border-top: 2px dashed #ccc; padding-top: 1rem;">Page Break</div>').run();
+        editor?.chain().focus().insertPageBreak().run();
         break;
       case 'horizontal-rule':
         editor?.chain().focus().setHorizontalRule().run();
@@ -2339,27 +2402,28 @@ export default function ManuscriptEditor() {
     }
   }, [editor?.getHTML(), autosaveEnabled, handleAutoSave]);
 
-  // Update page count when content or pagination changes
+  // The pagination extension measures the rendered document and reports how
+  // many sheets the canvas has to draw
+  const handleLayoutChange = useCallback(({ pageCount: measuredPages }) => {
+    setPageCount(measuredPages);
+  }, []);
+
+  // Keep the pagination extension in sync with the page setup chosen in the UI
   useEffect(() => {
-    if (editor && paginationEnabled) {
-      const updatePageCount = () => {
-        const count = editor.commands.getPageCount();
-        setPageCount(count);
-      };
+    if (!editor) return;
 
-      // Update immediately
-      updatePageCount();
+    editor.commands.setPaginationOptions({
+      ...pageSettings,
+      pageGap: PAGE_GAP,
+      onLayoutChange: handleLayoutChange,
+    });
+  }, [editor, pageSettings, handleLayoutChange]);
 
-      // Listen for editor updates
-      editor.on('update', updatePageCount);
-
-      return () => {
-        editor.off('update', updatePageCount);
-      };
-    } else {
+  useEffect(() => {
+    if (!paginationEnabled) {
       setPageCount(1);
     }
-  }, [editor, paginationEnabled]);
+  }, [paginationEnabled]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -2529,10 +2593,7 @@ export default function ManuscriptEditor() {
         }
         break;
       case 'new-comment':
-        // Open comment form or show comments sidebar
-        if (!showComments) {
-          setShowComments(true);
-        }
+        toggleCommentsPanel(true);
         // Focus on comment form
         setTimeout(() => {
           const addButton = document.querySelector('[aria-label="Add comment"], button:contains("Add")');
@@ -2542,16 +2603,29 @@ export default function ManuscriptEditor() {
         }, 100);
         break;
       case 'show-comments':
-        // Toggle comments sidebar
-        setShowComments(!showComments);
+        toggleCommentsPanel();
         break;
       default:
         break;
     }
-  }, [showComments, trackChangesEnabled, trackedChanges, editor]);
+  }, [toggleCommentsPanel, trackChangesEnabled, trackedChanges, editor]);
 
   // Ref for PaginationControls to access settings dialog
   const paginationControlsRef = useRef(null);
+
+  // Page setup changes (size, orientation, margins) re-flow the page canvas
+  const handlePageSettingsChange = useCallback((nextSettings) => {
+    setPageSettings(prev => ({ ...prev, ...nextSettings }));
+  }, []);
+
+  const printCSS = useMemo(
+    () => generatePrintCSS(
+      pageSettings.pageSize,
+      pageSettings.orientation,
+      pageSettings.margins
+    ),
+    [pageSettings.pageSize, pageSettings.orientation, pageSettings.margins]
+  );
 
   // Handle page menu actions
   const handlePageAction = useCallback((action) => {
@@ -2640,8 +2714,8 @@ export default function ManuscriptEditor() {
   }
 
   return (
-    <Box sx={{ height: `calc(100vh - ${NAVBAR_OFFSET}px)`, display: 'flex', flexDirection: 'column', bgcolor: '#fafafa' }}>
-      {/* Document Header Component - Always Visible */}
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#fafafa' }}>
+      {/* Document chrome: title row plus the document menus */}
       <DocumentHeader 
         manuscript={manuscript}
         collaborators={collaborators || []}
@@ -2650,12 +2724,60 @@ export default function ManuscriptEditor() {
         onlineUserIds={onlineUserIds}
         canInvite={userPermissions.canInvite}
         canEdit={userPermissions.canEdit}
+        canManageWorkflow={canManageWorkflow}
         onBack={() => router.back()}
         onInvite={handleInvite}
+        onOpenWorkflow={() => setWorkflowDialogOpen(true)}
         onTitleChange={handleTitleChange}
         savingTitle={savingTitle}
         loading={loading}
-      />
+        saving={saving}
+        lastSaved={lastSaved}
+        pageCount={paginationEnabled ? pageCount : null}
+        onSave={loading ? undefined : handleAutoSave}
+        onMoreActions={loading ? undefined : (e) => setMenuAnchor(e.currentTarget)}
+      >
+        {!loading && (
+          <DocumentMenuBar 
+            embedded
+            onFileAction={handleFileAction}
+            onEditAction={handleEditAction}
+            onViewAction={handleViewAction}
+            onInsertAction={handleInsertAction}
+            onFormatAction={handleFormatAction}
+            onReviewAction={handleReviewAction}
+            onPageAction={handlePageAction}
+            autosaveEnabled={autosaveEnabled}
+            editor={editor}
+            showComments={showComments}
+            paginationEnabled={paginationEnabled}
+            setCitationMenuAnchor={setCitationMenuAnchor}
+            onTableProperties={handleTableProperties}
+          />
+        )}
+      </DocumentHeader>
+
+      {!loading && !contentEditable && userPermissions.canEdit && (
+        <Alert
+          severity={isLockedForPublication ? 'success' : 'info'}
+          sx={{ borderRadius: 0 }}
+          action={canManageWorkflow ? (
+            <Button
+              size="small"
+              onClick={() => setWorkflowDialogOpen(true)}
+              sx={{ textTransform: 'none' }}
+            >
+              {t('manuscript_workflow.open_workflow')}
+            </Button>
+          ) : null}
+        >
+          {isLockedForPublication
+            ? t('manuscript_workflow.locked_readonly', {
+                stage: t(getStageTranslationKey(manuscriptStatus)).toLowerCase()
+              })
+            : t('manuscript_workflow.locked_review')}
+        </Alert>
+      )}
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
@@ -2663,71 +2785,6 @@ export default function ManuscriptEditor() {
         </Box>
       ) : (
         <>
-
-      {/* Top AppBar - Simplified */}
-      <AppBar position="static" sx={{ bgcolor: 'white', color: '#333', boxShadow: 'none', borderBottom: '1px solid #e0e0e0' }}>
-        <Toolbar sx={{ minHeight: '48px !important', py: 1 }}>
-          {/* Document Status */}
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ flexGrow: 1 }}>
-            <Chip
-              size="small"
-              label={manuscript?.status || 'Draft'}
-              sx={{
-                bgcolor: '#e8f5e8',
-                color: '#2e7d32',
-                fontWeight: 600,
-                fontSize: '0.75rem',
-                height: 24
-              }}
-            />
-            <Typography variant="body2" color="textSecondary" sx={{ fontSize: '0.8rem' }}>
-              {manuscript?.type || 'Research Article'} • {manuscript?.wordCount || 0} words
-              {paginationEnabled && ` • Page ${pageCount}`}
-            </Typography>
-            <Typography variant="body2" color={saving ? 'primary' : 'textSecondary'} sx={{ fontSize: '0.8rem' }}>
-              {saving ? 'Saving...' : `Last saved ${lastSaved ? format(lastSaved, 'HH:mm') : 'Never'}`}
-            </Typography>
-          </Stack>
-
-          {/* Action Buttons */}
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<SaveIcon />}
-              disabled={saving}
-              onClick={handleAutoSave}
-              sx={{ 
-                bgcolor: '#8b6cbc',
-                fontSize: '0.8rem',
-                py: 0.5
-              }}
-            >
-              {saving ? 'Saving...' : 'Save'}
-            </Button>
-            <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} size="small">
-              <MoreVertIcon />
-            </IconButton>
-          </Stack>
-        </Toolbar>
-      </AppBar>
-
-      {/* Document Menu Bar Component */}
-      <DocumentMenuBar 
-        onFileAction={handleFileAction}
-        onEditAction={handleEditAction}
-        onViewAction={handleViewAction}
-        onInsertAction={handleInsertAction}
-        onFormatAction={handleFormatAction}
-        onReviewAction={handleReviewAction}
-        onPageAction={handlePageAction}
-        autosaveEnabled={autosaveEnabled}
-        editor={editor}
-        showComments={showComments}
-        paginationEnabled={paginationEnabled}
-        setCitationMenuAnchor={setCitationMenuAnchor}
-        onTableProperties={handleTableProperties}
-      />
 
       {/* Main Content Area */}
       <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
@@ -3000,6 +3057,8 @@ export default function ManuscriptEditor() {
             paginationControlsRef={paginationControlsRef}
             paginationEnabled={paginationEnabled}
             setPaginationEnabled={setPaginationEnabled}
+            pageSettings={pageSettings}
+            onPageSettingsChange={handlePageSettingsChange}
             PaginationControls={PaginationControls}
           />
 
@@ -3008,12 +3067,11 @@ export default function ManuscriptEditor() {
             className={trackChangesEnabled ? '' : 'track-changes-disabled'}
             sx={{ 
               flexGrow: 1, 
-              overflow: 'auto',
-              bgcolor: 'white',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
             '& .ProseMirror': {
               outline: 'none',
-              padding: '2rem',
-              minHeight: '500px',
               '& p.is-editor-empty:first-of-type::before': {
                 content: 'attr(data-placeholder)',
                 float: 'left',
@@ -3068,37 +3126,72 @@ export default function ManuscriptEditor() {
               }
             }
           }}>
-            <ErrorBoundary
-              title="Editor Error"
-              message="The editor encountered an error. Your work is saved. Try refreshing the page."
-              showReload={true}
+            <DocumentPageCanvas
+              paginated={paginationEnabled}
+              pageSize={pageSettings.pageSize}
+              orientation={pageSettings.orientation}
+              margins={pageSettings.margins}
+              pageGap={PAGE_GAP}
+              pageCount={pageCount}
+              showPageNumbers={pageSettings.showPageNumbers}
+              pageNumberPosition={pageSettings.pageNumberPosition}
             >
-              <EditorContent editor={editor} />
-              
-              {/* References Hover Button */}
-              <ReferencesHoverButton
-                editor={editor}
-                onOpenBibliographyGenerator={() => {
-                  if (!manuscriptId) {
-                    console.error('Cannot open bibliography generator: manuscriptId is missing');
-                    return;
-                  }
-                  setBibliographyGeneratorOpen(true);
-                }}
-              />
-              
-              {/* Citation Hover Menu */}
-              <CitationHoverMenu
-                editor={editor}
-                onUpdateCitation={handleUpdateCitation}
-                onDeleteCitation={handleDeleteCitation}
-              />
-            </ErrorBoundary>
+              <ErrorBoundary
+                title="Editor Error"
+                message="The editor encountered an error. Your work is saved. Try refreshing the page."
+                showReload={true}
+              >
+                <EditorContent editor={editor} />
+
+                {/* References Hover Button */}
+                <ReferencesHoverButton
+                  editor={editor}
+                  onOpenBibliographyGenerator={() => {
+                    if (!manuscriptId) {
+                      console.error('Cannot open bibliography generator: manuscriptId is missing');
+                      return;
+                    }
+                    setBibliographyGeneratorOpen(true);
+                  }}
+                />
+
+                {/* Citation Hover Menu */}
+                <CitationHoverMenu
+                  editor={editor}
+                  onUpdateCitation={handleUpdateCitation}
+                  onDeleteCitation={handleDeleteCitation}
+                />
+              </ErrorBoundary>
+            </DocumentPageCanvas>
           </Box>
         </Box>
 
+        {/* Right Sidebar - Cite as You Write suggestions */}
+        <EditorSidePanel open={showCitePanel}>
+          <ErrorBoundary
+            title="Citation Suggestions Error"
+            message="The citation panel encountered an error. You can continue editing."
+          >
+            <CiteAsYouWritePanel
+              triggerActive={Boolean(citeTriggerActive)}
+              search={citationSearch}
+              onSearchChange={handleCitationSearchChange}
+              citations={filteredCitations}
+              loading={quickCitationsLoading}
+              error={quickCitationsError}
+              selectedIndex={selectedCitationIndex}
+              onSelectedIndexChange={setSelectedCitationIndex}
+              onInsert={insertCitation}
+              onDismiss={closeCitePanel}
+              onOpenLibrary={() => setCitationLibraryOpen(true)}
+              citationStyle={citationStyle}
+              formatCitation={formatCitation}
+            />
+          </ErrorBoundary>
+        </EditorSidePanel>
+
         {/* Right Sidebar - Comments */}
-        {showComments && (
+        <EditorSidePanel open={showComments}>
           <ErrorBoundary
             title="Comments Error"
             message="The comments sidebar encountered an error. You can continue editing."
@@ -3110,9 +3203,10 @@ export default function ManuscriptEditor() {
               onClearSelection={clearTextSelection}
               onCommentCreated={addCommentHighlight}
               onCommentDeleted={removeCommentHighlight}
+              onClose={() => toggleCommentsPanel(false)}
             />
           </ErrorBoundary>
-        )}
+        </EditorSidePanel>
         
         {/* Right Sidebar - Version History */}
         {showVersionHistory && (
@@ -3161,7 +3255,7 @@ export default function ManuscriptEditor() {
               bgcolor: '#7b5ca7'
             }
           }}
-          onClick={() => setShowComments(!showComments)}
+          onClick={() => toggleCommentsPanel()}
         >
           <CommentIcon />
         </Fab>
@@ -3299,18 +3393,18 @@ export default function ManuscriptEditor() {
         {/* Cite as You Write */}
         <MuiMenuItem 
           onClick={() => {
-            setCiteAsYouWrite(!citeAsYouWrite);
+            toggleCitePanel();
             setCitationMenuAnchor(null);
           }}
-          className={citeAsYouWrite ? 'checked' : ''}
+          className={showCitePanel ? 'checked' : ''}
           sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 1.5 }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
             <ListItemIcon sx={{ minWidth: 36 }}>
-              <MagicWandIcon fontSize="small" sx={{ color: citeAsYouWrite ? '#8b6cbc' : '#666' }} />
+              <MagicWandIcon fontSize="small" sx={{ color: showCitePanel ? '#8b6cbc' : '#666' }} />
             </ListItemIcon>
             <Box sx={{ flexGrow: 1 }}>Cite as You Write</Box>
-            {citeAsYouWrite && (
+            {showCitePanel && (
               <CheckBoxIcon fontSize="small" sx={{ color: '#8b6cbc', ml: 1 }} />
             )}
           </Box>
@@ -3941,185 +4035,13 @@ export default function ManuscriptEditor() {
         onInviteSent={handleInviteSent}
       />
 
-      {/* Citation Popup */}
-      <Popover
-        anchorEl={citationPopupAnchor}
-        open={Boolean(citationPopupAnchor)}
-        onClose={() => {
-          setCitationPopupAnchor(null);
-          setCitationSearch('');
-          setSelectedCitationIndex(0);
-          setTriggerPosition(null);
-        }}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        sx={{
-          '& .MuiPaper-root': {
-            maxWidth: 480,
-            minWidth: 320,
-            maxHeight: 320,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            border: '1px solid #e0e0e0',
-            borderRadius: 2,
-          },
-        }}
-      >
-        <Box sx={{ p: 2 }}>
-          {/* Search Header */}
-          <Box sx={{ mb: 1 }}>
-            <Typography variant="body2" color="textSecondary" sx={{ fontSize: '0.75rem', mb: 1 }}>
-              {citeAsYouWrite ? 'Cite as You Write is active' : 'Insert Citation'}
-            </Typography>
-            <TextField
-              size="small"
-              fullWidth
-              placeholder="Search citations by title, author, or year..."
-              value={citationSearch}
-              onChange={(e) => {
-                setCitationSearch(e.target.value);
-                setSelectedCitationIndex(0);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowDown') {
-                  e.preventDefault();
-                  setSelectedCitationIndex(prev => 
-                    prev < filteredCitations.length - 1 ? prev + 1 : 0
-                  );
-                } else if (e.key === 'ArrowUp') {
-                  e.preventDefault();
-                  setSelectedCitationIndex(prev => 
-                    prev > 0 ? prev - 1 : filteredCitations.length - 1
-                  );
-                } else if (e.key === 'Enter') {
-                  e.preventDefault();
-                  if (filteredCitations[selectedCitationIndex]) {
-                    insertCitation(filteredCitations[selectedCitationIndex]);
-                  }
-                } else if (e.key === 'Escape') {
-                  setCitationPopupAnchor(null);
-                  setCitationSearch('');
-                  setTriggerPosition(null);
-                }
-              }}
-              autoFocus
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  fontSize: '0.875rem',
-                }
-              }}
-            />
-          </Box>
-
-          {/* Citations List */}
-          <Box sx={{ maxHeight: 240, overflow: 'auto' }}>
-            {filteredCitations.length === 0 ? (
-              <Typography 
-                variant="body2" 
-                color="textSecondary" 
-                sx={{ p: 2, textAlign: 'center', fontStyle: 'italic' }}
-              >
-                No citations found
-              </Typography>
-            ) : (
-              filteredCitations.map((citation, index) => (
-                <Box
-                  key={citation.id}
-                  onClick={() => insertCitation(citation)}
-                  sx={{
-                    p: 1.5,
-                    cursor: 'pointer',
-                    borderRadius: 1,
-                    bgcolor: index === selectedCitationIndex ? '#f0f0f0' : 'transparent',
-                    '&:hover': {
-                      bgcolor: '#f5f5f5',
-                    },
-                    border: index === selectedCitationIndex ? '1px solid #8b6cbc' : '1px solid transparent',
-                  }}
-                >
-                  {/* Citation Title */}
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      fontWeight: 600, 
-                      fontSize: '0.85rem',
-                      mb: 0.5,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {citation.title}
-                  </Typography>
-                  
-                  {/* Authors */}
-                  <Typography 
-                    variant="caption" 
-                    color="textSecondary" 
-                    sx={{ 
-                      display: 'block',
-                      fontSize: '0.75rem',
-                      mb: 0.5 
-                    }}
-                  >
-                    {citation.authors.join(', ')}
-                  </Typography>
-                  
-                  {/* Publication Details */}
-                  <Typography 
-                    variant="caption" 
-                    color="primary" 
-                    sx={{ 
-                      display: 'block',
-                      fontSize: '0.7rem',
-                      fontWeight: 500 
-                    }}
-                  >
-                    {citation.type === 'journal' && citation.journal && `${citation.journal}, ${citation.year}`}
-                    {citation.type === 'book' && `${citation.publisher}, ${citation.year}`}
-                    {citation.type === 'conference' && `${citation.conference}, ${citation.year}`}
-                    {citation.type === 'book_chapter' && `${citation.book}, ${citation.year}`}
-                  </Typography>
-                  
-                  {/* Preview Citation Format */}
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      display: 'block',
-                      fontSize: '0.7rem',
-                      color: '#8b6cbc',
-                      fontStyle: 'italic',
-                      mt: 0.5
-                    }}
-                  >
-                    Will insert: {formatCitation(citation)}
-                  </Typography>
-                </Box>
-              ))
-            )}
-          </Box>
-
-          {/* Footer */}
-          <Box sx={{ 
-            mt: 1, 
-            pt: 1, 
-            borderTop: '1px solid #f0f0f0',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
-              Style: {citationStyle}
-            </Typography>
-            <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
-              ↑↓ Navigate • Enter Select • Esc Close
-            </Typography>
-          </Box>
-        </Box>
-      </Popover>
+      {/* Peer Review & Publication workflow */}
+      <ManuscriptWorkflowDialog
+        open={workflowDialogOpen}
+        manuscript={manuscript}
+        onClose={() => setWorkflowDialogOpen(false)}
+        onUpdated={(result) => setManuscript(prev => (prev ? { ...prev, status: result.status } : prev))}
+      />
 
       {/* Citation Library Modal */}
       <ErrorBoundary
@@ -4193,185 +4115,6 @@ export default function ManuscriptEditor() {
         onCommand={handleCommand}
       />
 
-      {/* Citation Popup */}
-      <Popover
-        anchorEl={citationPopupAnchor}
-        open={Boolean(citationPopupAnchor)}
-        onClose={() => {
-          setCitationPopupAnchor(null);
-          setCitationSearch('');
-          setSelectedCitationIndex(0);
-          setTriggerPosition(null);
-        }}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        sx={{
-          '& .MuiPaper-root': {
-            maxWidth: 480,
-            minWidth: 320,
-            maxHeight: 320,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            border: '1px solid #e0e0e0',
-            borderRadius: 2,
-          },
-        }}
-      >
-        <Box sx={{ p: 2 }}>
-          {/* Search Header */}
-          <Box sx={{ mb: 1 }}>
-            <Typography variant="body2" color="textSecondary" sx={{ fontSize: '0.75rem', mb: 1 }}>
-              {citeAsYouWrite ? 'Cite as You Write is active' : 'Insert Citation'}
-            </Typography>
-            <TextField
-              size="small"
-              fullWidth
-              placeholder="Search citations by title, author, or year..."
-              value={citationSearch}
-              onChange={(e) => {
-                setCitationSearch(e.target.value);
-                setSelectedCitationIndex(0);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowDown') {
-                  e.preventDefault();
-                  setSelectedCitationIndex(prev => 
-                    prev < filteredCitations.length - 1 ? prev + 1 : 0
-                  );
-                } else if (e.key === 'ArrowUp') {
-                  e.preventDefault();
-                  setSelectedCitationIndex(prev => 
-                    prev > 0 ? prev - 1 : filteredCitations.length - 1
-                  );
-                } else if (e.key === 'Enter') {
-                  e.preventDefault();
-                  if (filteredCitations[selectedCitationIndex]) {
-                    insertCitation(filteredCitations[selectedCitationIndex]);
-                  }
-                } else if (e.key === 'Escape') {
-                  setCitationPopupAnchor(null);
-                  setCitationSearch('');
-                  setTriggerPosition(null);
-                }
-              }}
-              autoFocus
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  fontSize: '0.875rem',
-                }
-              }}
-            />
-          </Box>
-
-          {/* Citations List */}
-          <Box sx={{ maxHeight: 240, overflow: 'auto' }}>
-            {filteredCitations.length === 0 ? (
-              <Typography 
-                variant="body2" 
-                color="textSecondary" 
-                sx={{ p: 2, textAlign: 'center', fontStyle: 'italic' }}
-              >
-                No citations found
-              </Typography>
-            ) : (
-              filteredCitations.map((citation, index) => (
-                <Box
-                  key={citation.id}
-                  onClick={() => insertCitation(citation)}
-                  sx={{
-                    p: 1.5,
-                    cursor: 'pointer',
-                    borderRadius: 1,
-                    bgcolor: index === selectedCitationIndex ? '#f0f0f0' : 'transparent',
-                    '&:hover': {
-                      bgcolor: '#f5f5f5',
-                    },
-                    border: index === selectedCitationIndex ? '1px solid #8b6cbc' : '1px solid transparent',
-                  }}
-                >
-                  {/* Citation Title */}
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      fontWeight: 600, 
-                      fontSize: '0.85rem',
-                      mb: 0.5,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {citation.title}
-                  </Typography>
-                  
-                  {/* Authors */}
-                  <Typography 
-                    variant="caption" 
-                    color="textSecondary" 
-                    sx={{ 
-                      display: 'block',
-                      fontSize: '0.75rem',
-                      mb: 0.5 
-                    }}
-                  >
-                    {citation.authors.join(', ')}
-                  </Typography>
-                  
-                  {/* Publication Details */}
-                  <Typography 
-                    variant="caption" 
-                    color="primary" 
-                    sx={{ 
-                      display: 'block',
-                      fontSize: '0.7rem',
-                      fontWeight: 500 
-                    }}
-                  >
-                    {citation.type === 'journal' && citation.journal && `${citation.journal}, ${citation.year}`}
-                    {citation.type === 'book' && `${citation.publisher}, ${citation.year}`}
-                    {citation.type === 'conference' && `${citation.conference}, ${citation.year}`}
-                    {citation.type === 'book_chapter' && `${citation.book}, ${citation.year}`}
-                  </Typography>
-                  
-                  {/* Preview Citation Format */}
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      display: 'block',
-                      fontSize: '0.7rem',
-                      color: '#8b6cbc',
-                      fontStyle: 'italic',
-                      mt: 0.5
-                    }}
-                  >
-                    Will insert: {formatCitation(citation)}
-                  </Typography>
-                </Box>
-              ))
-            )}
-          </Box>
-
-          {/* Footer */}
-          <Box sx={{ 
-            mt: 1, 
-            pt: 1, 
-            borderTop: '1px solid #f0f0f0',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
-              Style: {citationStyle}
-            </Typography>
-            <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
-              ↑↓ Navigate • Enter Select • Esc Close
-            </Typography>
-          </Box>
-        </Box>
-      </Popover>
       </>
       )}
 
@@ -4456,78 +4199,31 @@ export default function ManuscriptEditor() {
         }
 
         /* Pagination Styles */
+
+        /* Manual page break: fills the rest of the sheet so the next block
+           starts on the following page */
         .page-break {
-          position: relative;
-          margin: 2rem 0;
-          padding: 1rem 0;
-          border-top: 2px dashed #8b6cbc;
-          border-bottom: 2px dashed #8b6cbc;
-          background: linear-gradient(to bottom, 
-            rgba(139, 108, 188, 0.05) 0%, 
-            rgba(139, 108, 188, 0.02) 50%, 
-            rgba(139, 108, 188, 0.05) 100%);
-          text-align: center;
-          color: #8b6cbc;
-          font-size: 0.875rem;
-          font-weight: 500;
-          user-select: none;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .page-break:hover {
-          background: rgba(139, 108, 188, 0.1);
-          border-color: #7a5cac;
-        }
-
-        .page-break::before {
-          content: '--- Page Break ---';
-          display: block;
-          opacity: 0.7;
-        }
-
-        .page-number {
-          position: absolute;
-          font-size: 0.75rem;
-          color: #666;
-          font-family: 'Times New Roman', serif;
+          margin: 0;
+          padding: 0;
+          border: none;
+          background: none;
           user-select: none;
           pointer-events: none;
-          z-index: 10;
         }
 
-        /* Print styles for pagination */
-        @media print {
-          .page-break {
-            page-break-after: always;
-            break-after: page;
-            border: none !important;
-            background: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-
-          .page-break::before {
-            display: none !important;
-          }
-
-          .page-number {
-            display: none !important;
-          }
-
-          .ProseMirror {
-            padding: 0 !important;
-          }
+        .page-break.ProseMirror-selectednode {
+          background: rgba(139, 108, 188, 0.08);
+          outline: 1px dashed #8b6cbc;
         }
 
-        /* Page container for better visualization */
-        .pagination-enabled .ProseMirror {
-          max-width: 794px;
-          margin: 0 auto;
-          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-          background: white;
+        /* Space the pagination extension reserves between two sheets */
+        .page-gap {
+          user-select: none;
+          pointer-events: none;
         }
       `}</style>
+      {/* Print rules follow the active page setup */}
+      <style dangerouslySetInnerHTML={{ __html: printCSS }} />
     </Box>
   );
 }

@@ -441,8 +441,8 @@ const BibtexImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
             }
           }}
         >
-          t('common.clear')
-</Button>
+          {t('common.clear')}
+        </Button>
       </Box>
 
       {loading && <LinearProgress sx={{ mt: 2, color }} />}

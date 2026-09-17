@@ -33,25 +33,46 @@ import {
 } from '@mui/icons-material';
 import { PAGE_SIZES, DEFAULT_MARGINS, PAGE_NUMBER_POSITIONS } from '../utils/paginationHelper';
 
-const PaginationControls = forwardRef(({ editor, enabled, onToggle }, ref) => {
+const DEFAULT_PAGE_SETTINGS = {
+  pageSize: 'A4',
+  orientation: 'portrait',
+  margins: DEFAULT_MARGINS,
+  showPageNumbers: true,
+  pageNumberPosition: 'bottom-center',
+  wordsPerPage: 800,
+  autoCalculate: true,
+};
+
+const MARGIN_PRESETS = [
+  { label: 'Normal (1")', value: 72 },
+  { label: 'Narrow (0.5")', value: 48 },
+  { label: 'Wide (1.5")', value: 108 },
+];
+
+const PaginationControls = forwardRef(({
+  editor,
+  enabled,
+  onToggle,
+  pageSettings,
+  onSettingsChange,
+}, ref) => {
   const { t } = useTranslation();
   const [anchorEl, setAnchorEl] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState({
-    pageSize: 'A4',
-    orientation: 'portrait',
-    margins: DEFAULT_MARGINS,
-    showPageNumbers: true,
-    pageNumberPosition: 'bottom-center',
-    wordsPerPage: 800,
-    autoCalculate: true,
+    ...DEFAULT_PAGE_SETTINGS,
+    ...(pageSettings || {}),
   });
+
+  const openSettingsDialog = () => {
+    // Always edit a copy of what the document is currently using
+    setSettings({ ...DEFAULT_PAGE_SETTINGS, ...(pageSettings || {}) });
+    setSettingsOpen(true);
+  };
 
   // Expose openSettings method to parent via ref
   useImperativeHandle(ref, () => ({
-    openSettings: () => {
-      setSettingsOpen(true);
-    }
+    openSettings: openSettingsDialog
   }));
 
   const handleMenuOpen = (event) => {
@@ -85,7 +106,7 @@ const PaginationControls = forwardRef(({ editor, enabled, onToggle }, ref) => {
 
   const handleSettingsOpen = () => {
     handleMenuClose();
-    setSettingsOpen(true);
+    openSettingsDialog();
   };
 
   const handleSettingsClose = () => {
@@ -93,12 +114,11 @@ const PaginationControls = forwardRef(({ editor, enabled, onToggle }, ref) => {
   };
 
   const handleSettingsSave = () => {
-    if (editor) {
-      editor.chain().focus().setPaginationOptions(settings).run();
-      
-      if (settings.autoCalculate) {
-        editor.chain().focus().autoCalculatePageBreaks().run();
-      }
+    // The parent owns page settings so the page canvas re-renders with them
+    if (onSettingsChange) {
+      onSettingsChange(settings);
+    } else if (editor) {
+      editor.commands.setPaginationOptions(settings);
     }
     setSettingsOpen(false);
   };
@@ -200,7 +220,7 @@ const PaginationControls = forwardRef(({ editor, enabled, onToggle }, ref) => {
       </Menu>
 
       <Dialog open={settingsOpen} onClose={handleSettingsClose} maxWidth="sm" fullWidth>
-        <DialogTitle>Pagination Settings</DialogTitle>
+        <DialogTitle>Page Setup</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 2 }}>
             <FormControl fullWidth>
@@ -230,8 +250,36 @@ const PaginationControls = forwardRef(({ editor, enabled, onToggle }, ref) => {
 
             <Box>
               <Typography variant="subtitle2" gutterBottom>
-                Margins (pixels)
+                Margins (pixels — 72px = 1 inch)
               </Typography>
+              <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                {MARGIN_PRESETS.map(preset => (
+                  <Button
+                    key={preset.value}
+                    size="small"
+                    variant={
+                      Object.values(settings.margins).every(m => m === preset.value)
+                        ? 'contained'
+                        : 'outlined'
+                    }
+                    onClick={() => updateSetting('margins', {
+                      top: preset.value,
+                      right: preset.value,
+                      bottom: preset.value,
+                      left: preset.value,
+                    })}
+                    sx={{
+                      textTransform: 'none',
+                      fontSize: '0.75rem',
+                      ...(Object.values(settings.margins).every(m => m === preset.value)
+                        ? { bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7a5cac' } }
+                        : { color: '#666', borderColor: '#e0e0e0' })
+                    }}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </Stack>
               <Stack direction="row" spacing={2}>
                 <TextField
                   label="Top"
@@ -300,7 +348,7 @@ const PaginationControls = forwardRef(({ editor, enabled, onToggle }, ref) => {
               type="number"
               value={settings.wordsPerPage}
               onChange={(e) => updateSetting('wordsPerPage', parseInt(e.target.value) || 800)}
-              helperText="Approximate number of words per page for auto-calculation"
+              helperText="Only used by Auto-Calculate Breaks; page view itself measures real content height"
               fullWidth
             />
 

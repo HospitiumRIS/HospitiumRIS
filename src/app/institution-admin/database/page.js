@@ -449,7 +449,7 @@ const DatabaseManagementPage = () => {
 
   if (loading && Object.keys(dbStats).length === 0) {
     return (
-      <SuperAdminLayout>
+      <InstitutionAdminLayout>
         <Box sx={{ 
           minHeight: '100vh', 
           display: 'flex', 
@@ -467,12 +467,12 @@ const DatabaseManagementPage = () => {
             </Typography>
           </Box>
         </Box>
-      </SuperAdminLayout>
+      </InstitutionAdminLayout>
     );
   }
 
   return (
-    <SuperAdminLayout>
+    <InstitutionAdminLayout>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: 'background.default', minHeight: '100vh' }}>
         {/* Professional Header */}
         <Box sx={{ 
@@ -1097,7 +1097,7 @@ const DatabaseManagementPage = () => {
           </Typography>
         </Box>
       </Box>
-    </SuperAdminLayout>
+    </InstitutionAdminLayout>
   );
 };
 

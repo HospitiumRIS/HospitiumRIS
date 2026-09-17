@@ -1,10 +1,16 @@
 'use client';
+import { Suspense } from 'react';
+import { Box, CircularProgress } from '@mui/material';
 import SubmitPublication from '../../../../components/Publications/SubmitPublication.jsx';
-import { useRouter } from 'next/navigation';
-import { useTranslation } from 'react-i18next';
 
 export default function SubmitPublicationPage() {
-    const { t } = useTranslation();
-    const router = useRouter();
-    return <SubmitPublication />;
+    return (
+        <Suspense fallback={
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+                <CircularProgress sx={{ color: '#8b6cbc' }} />
+            </Box>
+        }>
+            <SubmitPublication />
+        </Suspense>
+    );
 }

@@ -834,8 +834,8 @@ const SubmissionMethodDialog = ({
                     disabled={loading}
                     sx={{ color: 'text.secondary' }}
                 >
-                    t('common.cancel')
-</Button>
+                    {t('common.cancel')}
+                </Button>
                 <Button
                     onClick={onPreview}
                     variant="contained"

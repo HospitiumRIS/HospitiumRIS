@@ -46,7 +46,6 @@ import {
 
 // Utility functions
 const formatCurrency = (amount) => {
-  const { t } = useTranslation();
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -71,6 +70,7 @@ const EnhancedTableHead = memo(({
   onRequestSort 
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   const createSortHandler = (property) => (event) => {
     onRequestSort(event, property);
@@ -123,8 +123,8 @@ const EnhancedTableHead = memo(({
           </TableCell>
         ))}
         <TableCell align="center" sx={{ width: 80 }}>
-          t('common.actions')
-</TableCell>
+          {t('common.actions')}
+        </TableCell>
       </TableRow>
     </TableHead>
   );

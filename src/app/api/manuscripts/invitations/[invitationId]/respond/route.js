@@ -69,7 +69,7 @@ export async function POST(request, { params }) {
 
     const isInvitedUser = 
       invitation.invitedUserId === userId ||
-      (invitation.email && currentUser?.email === invitation.email) ||
+      (invitation.email && currentUser?.email && invitation.email.toLowerCase() === currentUser.email.toLowerCase()) ||
       (invitation.orcidId && currentUser?.orcidId === invitation.orcidId);
 
     if (!isInvitedUser) {

@@ -37,6 +37,7 @@ import {
   Business as BusinessIcon,
   CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
+import { getInstitutionalEmailError, isInstitutionalEmail, normalizeEmail } from '@/lib/institutional-email';
 
 // Role options with descriptions
 const ROLE_OPTIONS = [
@@ -61,9 +62,13 @@ export default function InviteCollaboratorDialog({
   const [selectedResearcher, setSelectedResearcher] = useState(null);
   const [selectedRole, setSelectedRole] = useState('CONTRIBUTOR');
   const [personalMessage, setPersonalMessage] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState(null);
   const [sendSuccess, setSendSuccess] = useState(null);
+
+  const emailError = getInstitutionalEmailError(inviteEmail);
 
   // Search for researchers by name or ORCID
   const handleSearch = useCallback(async () => {
@@ -103,11 +108,16 @@ export default function InviteCollaboratorDialog({
     setSearchQuery('');
     setSendError(null);
     setSendSuccess(null);
+    setEmailTouched(false);
+    const candidate = researcher?.email ? normalizeEmail(researcher.email) : '';
+    setInviteEmail(isInstitutionalEmail(candidate) ? candidate : '');
   };
 
   // Clear selected researcher
   const handleClearSelection = () => {
     setSelectedResearcher(null);
+    setInviteEmail('');
+    setEmailTouched(false);
     setSendError(null);
     setSendSuccess(null);
   };
@@ -116,6 +126,14 @@ export default function InviteCollaboratorDialog({
   const handleSendInvitation = async () => {
     if (!selectedResearcher) {
       setSendError('Please select a researcher to invite');
+      return;
+    }
+
+    const normalizedEmail = normalizeEmail(inviteEmail);
+    const validationError = getInstitutionalEmailError(normalizedEmail);
+    if (validationError) {
+      setEmailTouched(true);
+      setSendError(validationError);
       return;
     }
 
@@ -130,7 +148,7 @@ export default function InviteCollaboratorDialog({
         body: JSON.stringify({
           manuscriptId,
           orcidId: selectedResearcher.orcidId,
-          email: selectedResearcher.email,
+          email: normalizedEmail,
           givenName: selectedResearcher.givenName,
           familyName: selectedResearcher.familyName,
           affiliation: selectedResearcher.affiliation,
@@ -145,6 +163,8 @@ export default function InviteCollaboratorDialog({
         setSendSuccess(data.message || 'Invitation sent successfully!');
         setSelectedResearcher(null);
         setPersonalMessage('');
+        setInviteEmail('');
+        setEmailTouched(false);
         setSelectedRole('CONTRIBUTOR');
         
         // Notify parent component
@@ -178,6 +198,8 @@ export default function InviteCollaboratorDialog({
       setSendError(null);
       setSendSuccess(null);
       setPersonalMessage('');
+      setInviteEmail('');
+      setEmailTouched(false);
       setSelectedRole('CONTRIBUTOR');
       onClose();
     }
@@ -377,6 +399,35 @@ export default function InviteCollaboratorDialog({
 
         <Divider sx={{ my: 2 }} />
 
+        <TextField
+          fullWidth
+          required
+          type="email"
+          label={t('manuscript_invite.email_label', 'Institution Email')}
+          placeholder={t('manuscript_invite.email_placeholder', 'name@university.edu')}
+          value={inviteEmail}
+          onChange={(e) => setInviteEmail(e.target.value)}
+          onBlur={() => setEmailTouched(true)}
+          disabled={!selectedResearcher || sending}
+          error={emailTouched && !!emailError}
+          helperText={
+            emailTouched && emailError
+              ? emailError
+              : t(
+                  'manuscript_invite.email_helper',
+                  'Invitation is emailed here. If they have an account they will also be notified in-app. Personal providers such as Gmail, Yahoo, and Outlook are not allowed.'
+                )
+          }
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <EmailIcon color="action" />
+              </InputAdornment>
+            )
+          }}
+          sx={{ mb: 2 }}
+        />
+
         {/* Role selection */}
         <FormControl fullWidth sx={{ mb: 2 }}>
           <InputLabel>Role</InputLabel>
@@ -426,7 +477,7 @@ export default function InviteCollaboratorDialog({
         <Button
           variant="contained"
           onClick={handleSendInvitation}
-          disabled={!selectedResearcher || sending}
+          disabled={!selectedResearcher || sending || !!emailError}
           startIcon={sending ? <CircularProgress size={16} color="inherit" /> : <PersonAddIcon />}
           sx={{ 
             bgcolor: '#8b6cbc',

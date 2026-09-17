@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getUserId } from '../../../../../lib/auth-server.js';
+import { sendCollaborationInviteEmail } from '../../../../../lib/email.js';
 
 const prisma = new PrismaClient();
 
@@ -152,7 +153,8 @@ export async function POST(request, { params }) {
       },
       include: {
         manuscript: true,
-        inviter: true
+        inviter: true,
+        invitedUser: true
       }
     });
 
@@ -222,8 +224,27 @@ export async function POST(request, { params }) {
       });
     }
 
-    // TODO: Send email notification
-    // This would be implemented with your email service
+    if (invitation.email) {
+      const inviterName = `${invitation.inviter?.givenName || ''} ${invitation.inviter?.familyName || ''}`.trim();
+      const inviteeName = `${invitation.givenName || ''} ${invitation.familyName || ''}`.trim();
+      const isProposal = invitation.manuscript.type?.toLowerCase().includes('proposal');
+
+      const emailResult = await sendCollaborationInviteEmail({
+        inviteeEmail: invitation.email,
+        inviteeName,
+        inviterName,
+        manuscriptTitle: invitation.manuscript.title,
+        role: invitation.role,
+        message: invitation.message,
+        invitationToken: updatedInvitation.token,
+        type: isProposal ? 'proposal' : 'manuscript',
+        isExistingUser: !!invitation.invitedUserId
+      });
+
+      if (!emailResult.success) {
+        console.error(`📧 Failed to resend invitation email to ${invitation.email}:`, emailResult.error);
+      }
+    }
 
     return NextResponse.json({
       success: true,

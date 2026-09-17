@@ -523,6 +523,7 @@ HospitiumRIS
  * @param {string} options.message - Optional personal message from inviter
  * @param {string} options.invitationToken - Token for accepting the invitation
  * @param {string} options.type - Type of collaboration (manuscript or proposal)
+ * @param {boolean} options.isExistingUser - Whether the invitee already has an account
  * @returns {Promise<Object>} - Email send result
  */
 export async function sendCollaborationInviteEmail(options) {
@@ -534,12 +535,19 @@ export async function sendCollaborationInviteEmail(options) {
     role,
     message,
     invitationToken,
-    type = 'manuscript'
+    type = 'manuscript',
+    isExistingUser = false
   } = options;
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
-  const acceptUrl = `${baseUrl}/researcher/publications/collaborate?accept=${invitationToken}`;
-  const loginUrl = `${baseUrl}/login`;
+  const collaboratePath = '/researcher/publications/collaborate';
+  const loginUrl = `${baseUrl}/login?redirect=${encodeURIComponent(collaboratePath)}`;
+  const registerUrl = `${baseUrl}/register?invite=${encodeURIComponent(invitationToken || '')}`;
+  const ctaUrl = isExistingUser ? loginUrl : registerUrl;
+  const ctaLabel = isExistingUser ? 'Log In to Respond' : 'Create Account to Accept';
+  const ctaHint = isExistingUser
+    ? 'Log in to your HospitiumRIS account to accept or decline this invitation. You will also see it in your in-app notifications.'
+    : 'You do not have a HospitiumRIS account yet. Create one with this institution email to accept the invitation. If you already have an account, log in instead.';
 
   const roleLabels = {
     OWNER: 'Owner',
@@ -652,11 +660,16 @@ export async function sendCollaborationInviteEmail(options) {
                                             <tr>
                                                 <td align="center" style="padding: 8px 0 24px 0;">
                                                     <p style="color: #4b5563; font-size: 14px; margin: 0 0 16px 0;">
-                                                        Log in to your HospitiumRIS account to accept or decline this invitation:
+                                                        ${ctaHint}
                                                     </p>
-                                                    <a href="${loginUrl}" style="display: inline-block; background-color: #8b6cbc; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 14px 32px; border-radius: 6px;">
-                                                        Log In to Respond
+                                                    <a href="${ctaUrl}" style="display: inline-block; background-color: #8b6cbc; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 14px 32px; border-radius: 6px;">
+                                                        ${ctaLabel}
                                                     </a>
+                                                    ${!isExistingUser ? `
+                                                    <p style="color: #6b7280; font-size: 13px; margin: 16px 0 0 0;">
+                                                        Already have an account? <a href="${loginUrl}" style="color: #8b6cbc; font-weight: 600;">Log in</a>
+                                                    </p>
+                                                    ` : ''}
                                                 </td>
                                             </tr>
                                         </table>
@@ -670,7 +683,7 @@ export async function sendCollaborationInviteEmail(options) {
                                             <tr>
                                                 <td style="padding: 14px 16px;">
                                                     <p style="color: #1e40af; font-size: 13px; margin: 0; line-height: 1.5;">
-                                                        <strong>Note:</strong> This invitation will expire in 30 days. You can accept or decline it from your notifications panel after logging in.
+                                                        <strong>Note:</strong> This invitation will expire in 30 days.${isExistingUser ? ' You can accept or decline it from your notifications panel after logging in.' : ' After creating your account, log in to accept or decline from your notifications panel.'}
                                                     </p>
                                                 </td>
                                             </tr>
@@ -722,9 +735,12 @@ ${'-'.repeat(50)}
 ` : ''}
 HOW TO RESPOND
 ${'-'.repeat(50)}
-Log in to your HospitiumRIS account to accept or decline:
+${ctaHint}
+${ctaUrl}
+${!isExistingUser ? `
+Already have an account? Log in:
 ${loginUrl}
-
+` : ''}
 After logging in, you'll find this invitation in your notifications panel.
 
 NOTE: This invitation will expire in 30 days.

@@ -30,7 +30,8 @@ const AccountDetailsStep = ({
   errors, 
   accountType,
   monthOptions = [],
-  yearOptions = []
+  yearOptions = [],
+  emailLocked = false
 }) => {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
@@ -269,10 +270,11 @@ const AccountDetailsStep = ({
               value={formData.email || ''}
               onChange={onInputChange}
               error={!!errors.email}
-              helperText={errors.email}
+              helperText={errors.email || (emailLocked ? t('manuscript_invite.register_email_locked', 'This email is set from your collaboration invitation.') : undefined)}
               size="small"
               sx={fieldStyle}
               InputProps={{
+                readOnly: emailLocked,
                 startAdornment: (
                   <EmailIcon sx={{ 
                     color: alpha(theme.palette.text.secondary, 0.6),
