@@ -2032,24 +2032,14 @@ export default function ManagePublications() {
                     ? 'Try adjusting your search filters'
                     : 'Start by importing publications from PubMed, Crossref, OpenAlex, or other sources'}
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
                   sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7559a3' } }}
-                    onClick={() => window.location.href = '/researcher/publications/submit'}
-                  >
-                    Import Publications
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    startIcon={<AddIcon />}
-                    sx={{ borderColor: '#8b6cbc', color: '#8b6cbc', '&:hover': { bgcolor: '#8b6cbc10' } }}
-                    onClick={() => window.location.href = '/researcher/publications/add-manual'}
-                  >
-                    Add Manually
+                  onClick={() => window.location.href = '/researcher/publications/import'}
+                >
+                  Import Publications
                 </Button>
-              </Box>
               </Box>
             ) : viewType === 'table' ? (
               <Box>

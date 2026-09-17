@@ -111,13 +111,15 @@ import {
   Email as EmailIcon,
   Schedule as ScheduleIcon,
   MoreHoriz as MoreHorizIcon,
-  RateReview as RateReviewIcon
+  RateReview as RateReviewIcon,
+  InfoOutlined as InfoOutlinedIcon
 } from '@mui/icons-material';
 import { alpha } from '@mui/material/styles';
 import { useAuth } from '../../../../components/AuthProvider';
 import PageHeader from '../../../../components/common/PageHeader';
 import OrcidCollaboratorInvite from '../../../../components/Manuscripts/OrcidCollaboratorInvite';
 import StagePipeline from '../../../../components/Manuscripts/StagePipeline';
+import TipTapEditor from '../../../../components/common/TipTapEditor';
 import ManuscriptWorkflowDialog from '../../../../components/Manuscripts/ManuscriptWorkflowDialog';
 import {
   MANUSCRIPT_STAGES,
@@ -238,6 +240,153 @@ const STATUS_OPTIONS = MANUSCRIPT_STAGE_ORDER.map((value) => ({
 
 
 
+const isEmptyRichText = (value) => {
+  if (!value) return true;
+  return !value.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+};
+
+const ManuscriptDetailsPreview = ({ manuscript, canEdit = false, onAddField }) => {
+  const description = manuscript.description;
+  const keywords = manuscript.keywords || [];
+  const hasDescription = !isEmptyRichText(description);
+  const hasKeywords = keywords.length > 0;
+
+  const addHintSx = {
+    mt: 1,
+    p: 1,
+    borderRadius: 1,
+    border: '1px dashed rgba(255,255,255,0.25)',
+    cursor: canEdit ? 'pointer' : 'default',
+    transition: 'background-color 0.15s ease',
+    '&:hover': canEdit ? { bgcolor: 'rgba(255,255,255,0.08)' } : {}
+  };
+
+  if (!hasDescription && !hasKeywords) {
+    return (
+      <Box sx={{ p: 2, textAlign: 'center' }}>
+        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.65)', display: 'block' }}>
+          No description or keywords added yet.
+        </Typography>
+        {canEdit && (
+          <Box
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddField?.('both');
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                onAddField?.('both');
+              }
+            }}
+            sx={{ ...addHintSx, mt: 1.5 }}
+          >
+            <Typography variant="caption" sx={{ color: '#c4b5fd', fontWeight: 600 }}>
+              + Click to add description & keywords
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ p: 2, width: '100%' }}>
+      {hasKeywords ? (
+        <Box sx={{ mb: hasDescription ? 1.5 : 0 }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.75, color: 'rgba(255,255,255,0.9)' }}>
+            Keywords
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {keywords.map((keyword, idx) => (
+              <Chip
+                key={idx}
+                label={keyword}
+                size="small"
+                sx={{
+                  height: 24,
+                  fontSize: '0.75rem',
+                  bgcolor: alpha('#fff', 0.15),
+                  color: '#fff',
+                  fontWeight: 500,
+                  border: '1px solid rgba(255,255,255,0.2)'
+                }}
+              />
+            ))}
+          </Box>
+        </Box>
+      ) : canEdit ? (
+        <Box
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddField?.('keywords');
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              onAddField?.('keywords');
+            }
+          }}
+          sx={{ ...addHintSx, mb: hasDescription ? 1.5 : 0 }}
+        >
+          <Typography variant="caption" sx={{ color: '#c4b5fd', fontWeight: 600 }}>
+            + Add keywords
+          </Typography>
+        </Box>
+      ) : null}
+      {hasDescription ? (
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.75, color: 'rgba(255,255,255,0.9)' }}>
+            Description
+          </Typography>
+          <Box
+            sx={{
+              fontSize: '0.875rem',
+              lineHeight: 1.6,
+              color: 'rgba(255,255,255,0.85)',
+              maxHeight: 200,
+              overflow: 'auto',
+              '& p': { m: 0, mb: 0.5 },
+              '& ul, & ol': { pl: 2, my: 0.5 },
+              '& li': { mb: 0.25 },
+              '& strong, & b': { color: '#fff' },
+              '& a': { color: '#c4b5fd' }
+            }}
+            dangerouslySetInnerHTML={{ __html: description }}
+          />
+        </Box>
+      ) : canEdit ? (
+        <Box
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddField?.('description');
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              onAddField?.('description');
+            }
+          }}
+          sx={addHintSx}
+        >
+          <Typography variant="caption" sx={{ color: '#c4b5fd', fontWeight: 600 }}>
+            + Add description
+          </Typography>
+        </Box>
+      ) : null}
+    </Box>
+  );
+};
+
 // Add custom debounce hook
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -300,6 +449,13 @@ export default function CollaborativeWriting() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuManuscript, setMenuManuscript] = useState(null);
 
+  // Manuscript details popover (description & keywords)
+  const [detailsAnchorEl, setDetailsAnchorEl] = useState(null);
+  const [detailsManuscript, setDetailsManuscript] = useState(null);
+  const [detailsForm, setDetailsForm] = useState({ description: '', keywords: [] });
+  const [detailsEditMode, setDetailsEditMode] = useState(false);
+  const [savingDetails, setSavingDetails] = useState(false);
+
   // New manuscript form state with comprehensive structure
   const [newManuscript, setNewManuscript] = useState({
     title: '',
@@ -307,6 +463,7 @@ export default function CollaborativeWriting() {
     field: '', // For simple dialog single selection
     fields: [], // For advanced dialog multiple selection
     description: '',
+    keywords: [],
     collaborators: [],
     sections: DEFAULT_SECTIONS.map((title, index) => ({
       id: `section-${index}-${title.toLowerCase().replace(/\s+/g, '-')}`,
@@ -707,7 +864,8 @@ export default function CollaborativeWriting() {
         title: newManuscript.title,
         type: newManuscript.type,
         field: newManuscript.fields.join(', '), // Convert array to comma-separated string
-        description: newManuscript.description || null
+        description: newManuscript.description || null,
+        keywords: newManuscript.keywords
       };
 
       const response = await fetch('/api/manuscripts', {
@@ -896,7 +1054,8 @@ export default function CollaborativeWriting() {
         title: newManuscript.title,
         type: newManuscript.type,
         field: newManuscript.field,
-        description: newManuscript.description || null
+        description: newManuscript.description || null,
+        keywords: newManuscript.keywords
       };
 
       const response = await fetch('/api/manuscripts', {
@@ -947,6 +1106,7 @@ export default function CollaborativeWriting() {
           field: '',
           fields: [], 
           description: '',
+          keywords: [],
           collaborators: [],
           sections: DEFAULT_SECTIONS.map((title, index) => ({
             id: `section-${index}-${title.toLowerCase().replace(/\s+/g, '-')}`,
@@ -1002,7 +1162,8 @@ export default function CollaborativeWriting() {
         title: newManuscript.title,
         type: newManuscript.type,
         field: newManuscript.fields.join(', '), // Convert array to comma-separated string for database
-        description: newManuscript.description || null
+        description: newManuscript.description || null,
+        keywords: newManuscript.keywords
       };
 
       const response = await fetch('/api/manuscripts', {
@@ -1082,6 +1243,7 @@ export default function CollaborativeWriting() {
         field: '',
         fields: [],
         description: '',
+        keywords: [],
         collaborators: []
       });
       setManuscriptActiveStep(0);
@@ -1348,6 +1510,88 @@ export default function CollaborativeWriting() {
   const handleViewManuscript = (manuscript) => {
     setViewingManuscript(manuscript);
     setViewDialogOpen(true);
+  };
+
+  const canEditManuscriptDetails = (manuscript) => (
+    manuscript?.isOwner || manuscript?.permissions?.canEdit
+  );
+
+  const openDetailsEditor = (manuscript, anchorEl, forceEdit = false) => {
+    const missingDescription = isEmptyRichText(manuscript.description);
+    const missingKeywords = !(manuscript.keywords?.length);
+    const canEdit = canEditManuscriptDetails(manuscript);
+
+    setDetailsAnchorEl(anchorEl);
+    setDetailsManuscript(manuscript);
+    setDetailsForm({
+      description: manuscript.description || '',
+      keywords: manuscript.keywords || []
+    });
+    setDetailsEditMode(forceEdit || (canEdit && (missingDescription || missingKeywords)));
+  };
+
+  const handleOpenDetailsPopover = (event, manuscript) => {
+    event.stopPropagation();
+    openDetailsEditor(manuscript, event.currentTarget);
+  };
+
+  const handleCloseDetailsPopover = () => {
+    setDetailsAnchorEl(null);
+    setDetailsManuscript(null);
+    setDetailsEditMode(false);
+    setDetailsForm({ description: '', keywords: [] });
+  };
+
+  const handleSaveDetails = async () => {
+    if (!detailsManuscript) return;
+
+    try {
+      setSavingDetails(true);
+
+      const payload = {
+        description: isEmptyRichText(detailsForm.description) ? null : detailsForm.description,
+        keywords: detailsForm.keywords
+      };
+
+      const response = await fetch(`/api/manuscripts/${detailsManuscript.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to save details');
+      }
+
+      const savedDescription = result.data.description;
+      const savedKeywords = result.data.keywords || detailsForm.keywords;
+
+      setManuscripts(prev => prev.map(m => (
+        m.id === detailsManuscript.id
+          ? { ...m, description: savedDescription, keywords: savedKeywords }
+          : m
+      )));
+
+      setDetailsManuscript(prev => prev ? {
+        ...prev,
+        description: savedDescription,
+        keywords: savedKeywords
+      } : prev);
+
+      setDetailsForm({
+        description: savedDescription || '',
+        keywords: savedKeywords
+      });
+      setDetailsEditMode(false);
+      showSnackbar('Details saved successfully', 'success');
+    } catch (error) {
+      console.error('Error saving manuscript details:', error);
+      showSnackbar(error.message || 'Failed to save details', 'error');
+    } finally {
+      setSavingDetails(false);
+    }
   };
 
   const handleOpenWorkflow = (manuscript) => {
@@ -2474,6 +2718,62 @@ export default function CollaborativeWriting() {
                                       borderRadius: 1
                                     }}
                                   />
+                                  <Tooltip
+                                    title={
+                                      <ManuscriptDetailsPreview
+                                        manuscript={manuscript}
+                                        canEdit={canEditManuscriptDetails(manuscript)}
+                                        onAddField={() => {
+                                          const anchor = document.getElementById(`details-trigger-${manuscript.id}`);
+                                          if (anchor) {
+                                            openDetailsEditor(manuscript, anchor, true);
+                                          }
+                                        }}
+                                      />
+                                    }
+                                    arrow
+                                    placement="right"
+                                    enterDelay={200}
+                                    leaveDelay={100}
+                                    disableInteractive={false}
+                                    slotProps={{
+                                      tooltip: {
+                                        sx: {
+                                          bgcolor: 'rgba(0, 0, 0, 0.82)',
+                                          backdropFilter: 'blur(8px)',
+                                          color: '#fff',
+                                          boxShadow: '0 12px 32px rgba(0,0,0,0.35)',
+                                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                                          borderRadius: 2,
+                                          minWidth: 420,
+                                          maxWidth: 560,
+                                          p: 0
+                                        }
+                                      },
+                                      arrow: {
+                                        sx: { color: 'rgba(0, 0, 0, 0.82)' }
+                                      }
+                                    }}
+                                  >
+                                    <IconButton
+                                      id={`details-trigger-${manuscript.id}`}
+                                      size="small"
+                                      onClick={(e) => handleOpenDetailsPopover(e, manuscript)}
+                                      aria-label="View or edit description and keywords"
+                                      sx={{
+                                        color: '#8b6cbc',
+                                        opacity: 0.65,
+                                        p: 0.25,
+                                        ml: -0.25,
+                                        '&:hover': {
+                                          opacity: 1,
+                                          bgcolor: alpha('#8b6cbc', 0.08)
+                                        }
+                                      }}
+                                    >
+                                      <InfoOutlinedIcon sx={{ fontSize: 17 }} />
+                                    </IconButton>
+                                  </Tooltip>
                                 </Box>
                               </Box>
                             </Box>
@@ -2913,6 +3213,7 @@ export default function CollaborativeWriting() {
             field: '',
             fields: [],
             description: '',
+            keywords: [],
             collaborators: []
           });
         }}
@@ -2975,6 +3276,7 @@ export default function CollaborativeWriting() {
                   field: '',
                   fields: [],
                   description: '',
+                  keywords: [],
                   collaborators: []
                 });
               }}
@@ -3130,23 +3432,73 @@ export default function CollaborativeWriting() {
                   />
                 </Box>
 
-                <TextField
-                  fullWidth
-                  label="Description"
-                  value={newManuscript.description}
-                  onChange={(e) => setNewManuscript(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Objectives, methodology, or key themes (optional)"
-                  multiline
-                  minRows={3}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover fieldset': { borderColor: '#8b6cbc' },
-                      '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
-                  }}
-                />
+                <Box>
+                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#2D3748' }}>
+                    Description
+                  </Typography>
+                  <Typography variant="caption" sx={{ display: 'block', mb: 1.5, color: 'text.secondary' }}>
+                    Objectives, methodology, or key themes (optional)
+                  </Typography>
+                  <TipTapEditor
+                    value={newManuscript.description}
+                    onChange={(value) => setNewManuscript(prev => ({ ...prev, description: value }))}
+                    placeholder="Describe the scope, objectives, and key themes of your manuscript..."
+                    minHeight="140px"
+                  />
+                </Box>
+
+                <Box>
+                  <Autocomplete
+                    multiple
+                    freeSolo
+                    value={newManuscript.keywords}
+                    onChange={(event, newValue) => {
+                      const processedValues = newValue.flatMap(value => {
+                        if (typeof value === 'string') {
+                          return value.split(',').map(v => v.trim()).filter(v => v !== '');
+                        }
+                        return value;
+                      });
+                      setNewManuscript(prev => ({
+                        ...prev,
+                        keywords: [...new Set(processedValues)]
+                      }));
+                    }}
+                    options={[]}
+                    renderTags={(value, getTagProps) =>
+                      value.map((option, index) => (
+                        <Chip
+                          label={option}
+                          size="small"
+                          {...getTagProps({ index })}
+                          key={`${option}-${index}`}
+                          sx={{
+                            bgcolor: alpha('#8b6cbc', 0.12),
+                            color: '#6b4fa8',
+                            fontWeight: 500,
+                            '& .MuiChip-deleteIcon': { color: '#8b6cbc' }
+                          }}
+                        />
+                      ))
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Keywords"
+                        placeholder="Type a keyword and press Enter"
+                        helperText="Add terms that describe your manuscript for search and discovery"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            '&:hover fieldset': { borderColor: '#8b6cbc' },
+                            '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
+                          },
+                          '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
+                        }}
+                      />
+                    )}
+                  />
+                </Box>
               </Stack>
             </Box>
           )}
@@ -3189,6 +3541,7 @@ export default function CollaborativeWriting() {
                 field: '',
                 fields: [],
                 description: '',
+                keywords: [],
                 collaborators: []
               });
             }}
@@ -4220,6 +4573,7 @@ export default function CollaborativeWriting() {
               field: '',
               fields: [],
               description: '',
+              keywords: [],
               collaborators: [],
               sections: DEFAULT_SECTIONS.map((title, index) => ({
                 id: `section-${index}-${title.toLowerCase().replace(/\s+/g, '-')}`,
@@ -4905,6 +5259,29 @@ export default function CollaborativeWriting() {
                     </Typography>
                   </Grid>
 
+                  {/* Keywords */}
+                  {viewingManuscript.keywords?.length > 0 && (
+                    <Grid size={12}>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                        Keywords
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {viewingManuscript.keywords.map((keyword, idx) => (
+                          <Chip
+                            key={idx}
+                            label={keyword}
+                            size="small"
+                            sx={{
+                              bgcolor: alpha('#8b6cbc', 0.12),
+                              color: '#6b4fa8',
+                              fontWeight: 500
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    </Grid>
+                  )}
+
                   {/* Description */}
                   {viewingManuscript.description && (
                     <Grid size={12}>
@@ -4912,9 +5289,17 @@ export default function CollaborativeWriting() {
                         Description
                       </Typography>
                       <Paper sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
-                        <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                          {viewingManuscript.description}
-                        </Typography>
+                        <Box
+                          sx={{
+                            lineHeight: 1.6,
+                            fontSize: '0.875rem',
+                            color: 'text.primary',
+                            '& p': { m: 0, mb: 1 },
+                            '& ul, & ol': { pl: 2.5, my: 1 },
+                            '& li': { mb: 0.5 }
+                          }}
+                          dangerouslySetInnerHTML={{ __html: viewingManuscript.description }}
+                        />
                       </Paper>
                     </Grid>
                   )}
@@ -4978,6 +5363,159 @@ export default function CollaborativeWriting() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Description & Keywords popover editor */}
+      <Popover
+        open={Boolean(detailsAnchorEl)}
+        anchorEl={detailsAnchorEl}
+        onClose={handleCloseDetailsPopover}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: 'rgba(0, 0, 0, 0.82)',
+              backdropFilter: 'blur(8px)',
+              color: '#fff',
+              boxShadow: '0 12px 32px rgba(0,0,0,0.35)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: 2,
+              minWidth: 420,
+              maxWidth: 560
+            }
+          }
+        }}
+      >
+        {detailsManuscript && (
+          <Box sx={{ p: 2 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 600, mb: 1.5, color: 'rgba(255,255,255,0.95)' }}
+              noWrap
+              title={detailsManuscript.title}
+            >
+              {detailsManuscript.title}
+            </Typography>
+
+            {detailsEditMode && canEditManuscriptDetails(detailsManuscript) ? (
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 1, color: 'rgba(255,255,255,0.9)' }}>
+                    Description
+                  </Typography>
+                  <TipTapEditor
+                    key={`details-desc-${detailsManuscript.id}-${detailsEditMode}`}
+                    value={detailsForm.description}
+                    onChange={(value) => setDetailsForm(prev => ({ ...prev, description: value }))}
+                    placeholder="Describe the scope, objectives, and key themes..."
+                    minHeight="120px"
+                  />
+                </Box>
+
+                <Box>
+                  <Autocomplete
+                    multiple
+                    freeSolo
+                    value={detailsForm.keywords}
+                    onChange={(event, newValue) => {
+                      const processedValues = newValue.flatMap(value => {
+                        if (typeof value === 'string') {
+                          return value.split(',').map(v => v.trim()).filter(v => v !== '');
+                        }
+                        return value;
+                      });
+                      setDetailsForm(prev => ({
+                        ...prev,
+                        keywords: [...new Set(processedValues)]
+                      }));
+                    }}
+                    options={[]}
+                    renderTags={(value, getTagProps) =>
+                      value.map((option, index) => (
+                        <Chip
+                          label={option}
+                          size="small"
+                          {...getTagProps({ index })}
+                          key={`${option}-${index}`}
+                          sx={{
+                            bgcolor: alpha('#8b6cbc', 0.12),
+                            color: '#6b4fa8',
+                            fontWeight: 500
+                          }}
+                        />
+                      ))
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Keywords"
+                        placeholder="Type a keyword and press Enter"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            bgcolor: 'rgba(255,255,255,0.95)',
+                            borderRadius: 2,
+                            '&:hover fieldset': { borderColor: '#8b6cbc' },
+                            '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
+                          },
+                          '& .MuiInputLabel-root.Mui-focused': { color: '#8b6cbc' }
+                        }}
+                      />
+                    )}
+                  />
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', pt: 0.5 }}>
+                  <Button
+                    size="small"
+                    onClick={handleCloseDetailsPopover}
+                    sx={{ color: 'rgba(255,255,255,0.75)', textTransform: 'none' }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={handleSaveDetails}
+                    disabled={savingDetails}
+                    startIcon={savingDetails ? <CircularProgress size={14} color="inherit" /> : <SaveIcon />}
+                    sx={{
+                      bgcolor: '#8b6cbc',
+                      textTransform: 'none',
+                      '&:hover': { bgcolor: '#7559a3' }
+                    }}
+                  >
+                    {savingDetails ? 'Saving...' : 'Save'}
+                  </Button>
+                </Box>
+              </Stack>
+            ) : (
+              <>
+                <ManuscriptDetailsPreview
+                  manuscript={detailsManuscript}
+                  canEdit={canEditManuscriptDetails(detailsManuscript)}
+                  onAddField={() => setDetailsEditMode(true)}
+                />
+                {canEditManuscriptDetails(detailsManuscript) && (
+                  <Button
+                    size="small"
+                    startIcon={<EditIcon />}
+                    onClick={() => setDetailsEditMode(true)}
+                    sx={{
+                      mt: 1.5,
+                      color: '#c4b5fd',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' }
+                    }}
+                  >
+                    Edit details
+                  </Button>
+                )}
+              </>
+            )}
+          </Box>
+        )}
+      </Popover>
 
       {/* Peer Review & Publication workflow */}
       <ManuscriptWorkflowDialog

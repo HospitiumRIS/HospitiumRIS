@@ -104,6 +104,7 @@ export async function GET(request, { params }) {
         type: manuscript.type,
         field: manuscript.field,
         description: manuscript.description,
+        keywords: manuscript.keywords || [],
         status: manuscript.status,
         content: manuscript.content || '',
         wordCount: manuscript.wordCount || 0,
@@ -157,6 +158,16 @@ export async function PATCH(request, { params }) {
     }
 
     const updateData = await request.json();
+
+    if (updateData.keywords !== undefined) {
+      updateData.keywords = Array.isArray(updateData.keywords)
+        ? updateData.keywords.map((keyword) => String(keyword).trim()).filter(Boolean)
+        : [];
+    }
+
+    if (updateData.description !== undefined) {
+      updateData.description = updateData.description?.trim() || null;
+    }
 
     // Lifecycle transitions are validated and audited by the status route
     if ('status' in updateData) {
@@ -261,6 +272,7 @@ export async function PATCH(request, { params }) {
         type: updatedManuscript.type,
         field: updatedManuscript.field,
         description: updatedManuscript.description,
+        keywords: updatedManuscript.keywords || [],
         status: updatedManuscript.status,
         content: updatedManuscript.content,
         wordCount: updatedManuscript.wordCount,

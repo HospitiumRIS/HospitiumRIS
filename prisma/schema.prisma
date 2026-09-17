@@ -705,6 +705,7 @@ model Manuscript {
   type        String // Article, Review, Proposal, etc.
   field       String? // Medical field or research area
   description String?
+  keywords    String[]         @default([])
   status      ManuscriptStatus @default(DRAFT)
 
   // Document Content

@@ -41,7 +41,11 @@ import {
   TablePagination,
   Collapse,
   CircularProgress,
+  Divider,
+  Autocomplete,
+  Slider,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import {
   Dashboard as DashboardIcon,
   TrackChanges as TrackIcon,
@@ -62,18 +66,93 @@ import {
   Flag as MilestoneIcon,
   Task as TaskIcon,
   Clear as ClearIcon,
+  CloudUpload as CloudUploadIcon,
+  AttachFile as AttachFileIcon,
+  Delete as DeleteOutlineIcon,
+  Link as LinkIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 
 import PageHeader from '../../../../../components/common/PageHeader';
+import TipTapEditor from '../../../../../components/common/TipTapEditor';
 import { useAuth } from '../../../../../components/AuthProvider';
 import { useTranslation } from 'react-i18next';
+
+const DELIVERABLE_TYPES = [
+  'Document',
+  'Report',
+  'Software',
+  'Publication',
+  'Database',
+  'Product',
+  'Policy Document',
+  'Documentation',
+  'Other',
+];
+
+const dialogScrollLockProps = { disableScrollLock: true };
+
+const normalizeItemStatus = (status) => {
+  if (!status) return 'Pending';
+  const normalized = String(status).trim().toLowerCase().replace(/_/g, ' ');
+  const statusMap = {
+    completed: 'Completed',
+    pending: 'Pending',
+    'in progress': 'In Progress',
+    delivered: 'Delivered',
+    blocked: 'Blocked',
+  };
+  return statusMap[normalized] || status;
+};
+
+const isCompletedStatus = (status) => normalizeItemStatus(status) === 'Completed';
+const isPendingStatus = (status) => {
+  const normalized = normalizeItemStatus(status);
+  return normalized === 'Pending' || normalized === 'In Progress';
+};
+
+const formatDisplayDate = (dateValue) => {
+  if (!dateValue) return null;
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return null;
+  return format(date, 'MMM d, yyyy');
+};
+
+const mapMilestoneFromRaw = (milestone, index) => ({
+  id: index + 1,
+  milestoneIndex: index,
+  title: milestone.title || milestone.name || `Milestone ${index + 1}`,
+  status: normalizeItemStatus(milestone.status),
+  dueDate: milestone.dueDate || milestone.targetDate || '',
+  completedDate: milestone.completedDate || '',
+  description: milestone.description || '',
+  progress: milestone.progress || 0,
+  notes: milestone.notes || '',
+  completionCriteria: milestone.completionCriteria || '',
+  blockers: milestone.blockers || '',
+  linkedDeliverableIds: milestone.linkedDeliverableIds || [],
+  documents: Array.isArray(milestone.documents) ? milestone.documents : [],
+});
+
+const mapDeliverableFromRaw = (deliverable, index) => ({
+  id: index + 1,
+  deliverableIndex: index,
+  title: deliverable.title || deliverable.name || `Deliverable ${index + 1}`,
+  description: deliverable.description || '',
+  status: normalizeItemStatus(deliverable.status),
+  dueDate: deliverable.dueDate || deliverable.deadline || '',
+  type: deliverable.type || 'Document',
+  notes: deliverable.notes || '',
+  completionCriteria: deliverable.completionCriteria || '',
+  linkedMilestoneIds: deliverable.linkedMilestoneIds || [],
+  documents: Array.isArray(deliverable.documents) ? deliverable.documents : [],
+});
 
 // Function to transform proposal data to project format
 const transformProposalToProject = (proposal) => {
   // Calculate progress based on milestone completion
   const milestones = proposal.milestones || [];
-  const completedMilestones = milestones.filter(m => m.status === 'Completed' || m.status === 'COMPLETED').length;
+  const completedMilestones = milestones.filter(m => isCompletedStatus(m.status)).length;
   const progress = milestones.length > 0 ? Math.round((completedMilestones / milestones.length) * 100) : 0;
 
   // Calculate days until deadline
@@ -95,8 +174,10 @@ const transformProposalToProject = (proposal) => {
   };
 
   // Get next milestone
-  const pendingMilestones = milestones.filter(m => m.status === 'Pending' || m.status === 'PENDING' || m.status === 'In Progress' || m.status === 'IN_PROGRESS');
-  const nextMilestone = pendingMilestones.length > 0 ? pendingMilestones[0]?.title || 'No pending milestones' : 'All milestones completed';
+  const pendingMilestones = milestones.filter(m => isPendingStatus(m.status));
+  const nextMilestone = pendingMilestones.length > 0
+    ? (pendingMilestones[0]?.title || pendingMilestones[0]?.name || 'Untitled milestone')
+    : (milestones.length > 0 ? 'All milestones completed' : 'No milestones defined');
 
   return {
     id: proposal.id,
@@ -118,21 +199,8 @@ const transformProposalToProject = (proposal) => {
     },
     nextMilestone: nextMilestone,
     daysUntilDeadline: daysUntilDeadline || 0,
-    milestones: milestones.map((milestone, index) => ({
-      id: index + 1,
-      title: milestone.title || milestone.name || `Milestone ${index + 1}`,
-      status: milestone.status || 'Pending',
-      dueDate: milestone.dueDate || milestone.targetDate,
-      completedDate: milestone.completedDate,
-      progress: milestone.progress || 0
-    })),
-    deliverables: (proposal.deliverables || []).map((deliverable, index) => ({
-      id: index + 1,
-      title: deliverable.title || deliverable.name || `Deliverable ${index + 1}`,
-      status: deliverable.status || 'Pending',
-      dueDate: deliverable.dueDate || deliverable.deadline,
-      type: deliverable.type || 'Document'
-    }))
+    milestones: milestones.map(mapMilestoneFromRaw),
+    deliverables: (proposal.deliverables || []).map(mapDeliverableFromRaw)
   };
 };
 
@@ -156,7 +224,23 @@ const ProjectStatusPage = () => {
   // Milestone management states
   const [milestoneDialog, setMilestoneDialog] = useState(false);
   const [newMilestoneDialog, setNewMilestoneDialog] = useState(false);
-  const [selectedMilestone, setSelectedMilestone] = useState(null);
+  const [milestoneEditContext, setMilestoneEditContext] = useState(null);
+  const [savingMilestone, setSavingMilestone] = useState(false);
+  const [milestoneEditForm, setMilestoneEditForm] = useState({
+    title: '',
+    status: 'Pending',
+    dueDate: '',
+    completedDate: '',
+    description: '',
+    progress: 0,
+    notes: '',
+    completionCriteria: '',
+    blockers: '',
+    linkedDeliverableIds: [],
+    documents: [],
+    pendingFiles: [],
+    removedDocumentIds: [],
+  });
   const [milestoneForm, setMilestoneForm] = useState({
     title: '',
     status: 'Pending',
@@ -164,13 +248,33 @@ const ProjectStatusPage = () => {
     description: '',
     progress: 0
   });
+
+  const [deliverableDialog, setDeliverableDialog] = useState(false);
+  const [deliverableDialogMode, setDeliverableDialogMode] = useState('edit');
+  const [deliverableEditContext, setDeliverableEditContext] = useState(null);
+  const [savingDeliverable, setSavingDeliverable] = useState(false);
+  const [deliverableEditForm, setDeliverableEditForm] = useState({
+    title: '',
+    type: 'Document',
+    status: 'Pending',
+    dueDate: '',
+    description: '',
+    notes: '',
+    completionCriteria: '',
+    linkedMilestoneIds: [],
+    documents: [],
+    pendingFiles: [],
+    removedDocumentIds: [],
+  });
   
   // Status update states
   const [statusUpdate, setStatusUpdate] = useState({
     newStatus: '',
     reason: '',
-    notes: ''
+    notes: '',
+    effectiveDate: '',
   });
+  const [savingStatus, setSavingStatus] = useState(false);
 
   // Fetch proposals from database
   useEffect(() => {
@@ -183,7 +287,9 @@ const ProjectStatusPage = () => {
         
         if (data.success && data.proposals) {
           // Transform proposals to project format
-          const transformedProjects = data.proposals.map(transformProposalToProject);
+          const transformedProjects = data.proposals
+            .map(transformProposalToProject)
+            .filter(project => project.status !== 'Review');
           setProjects(transformedProjects);
         } else {
           console.error('Failed to fetch proposals:', data.error);
@@ -338,8 +444,61 @@ const ProjectStatusPage = () => {
     }));
   };
 
+  const resetMilestoneEditForm = () => {
+    setMilestoneEditForm({
+      title: '',
+      status: 'Pending',
+      dueDate: '',
+      completedDate: '',
+      description: '',
+      progress: 0,
+      notes: '',
+      completionCriteria: '',
+      blockers: '',
+      linkedDeliverableIds: [],
+      documents: [],
+      pendingFiles: [],
+      removedDocumentIds: [],
+    });
+    setMilestoneEditContext(null);
+  };
+
+  const closeMilestoneDialog = () => {
+    setMilestoneDialog(false);
+    resetMilestoneEditForm();
+  };
+
   const handleUpdateMilestone = (milestone, projectId) => {
-    setSelectedMilestone({ ...milestone, projectId });
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) return;
+
+    const formatDateInput = (value) => {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      return date.toISOString().split('T')[0];
+    };
+
+    setMilestoneEditContext({
+      projectId,
+      milestoneIndex: milestone.milestoneIndex ?? project.milestones.findIndex((m) => m.id === milestone.id),
+      deliverables: project.deliverables || [],
+    });
+    setMilestoneEditForm({
+      title: milestone.title || '',
+      status: normalizeItemStatus(milestone.status),
+      dueDate: formatDateInput(milestone.dueDate),
+      completedDate: formatDateInput(milestone.completedDate),
+      description: milestone.description || '',
+      progress: milestone.progress || 0,
+      notes: milestone.notes || '',
+      completionCriteria: milestone.completionCriteria || '',
+      blockers: milestone.blockers || '',
+      linkedDeliverableIds: milestone.linkedDeliverableIds || [],
+      documents: milestone.documents || [],
+      pendingFiles: [],
+      removedDocumentIds: [],
+    });
     setMilestoneDialog(true);
   };
 
@@ -355,91 +514,403 @@ const ProjectStatusPage = () => {
     setNewMilestoneDialog(true);
   };
 
+  const openStatusUpdateDialog = (project) => {
+    setSelectedProject(project);
+    setStatusUpdate({
+      newStatus: '',
+      reason: '',
+      notes: '',
+      effectiveDate: new Date().toISOString().split('T')[0],
+    });
+    setStatusUpdateDialog(true);
+  };
+
+  const closeStatusUpdateDialog = () => {
+    setStatusUpdateDialog(false);
+    setSelectedProject(null);
+    setStatusUpdate({ newStatus: '', reason: '', notes: '', effectiveDate: '' });
+  };
+
   // Status update functions
   const handleUpdateProjectStatus = async () => {
     if (!selectedProject || !statusUpdate.newStatus) return;
 
     try {
-      // Update status in database (if needed - for now we'll just update locally)
-      // const response = await fetch(`/api/proposals/${selectedProject.id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ status: statusUpdate.newStatus })
-      // });
+      setSavingStatus(true);
 
-      // Update the project status locally
-      setProjects(prev => prev.map(project => 
-        project.id === selectedProject.id 
-          ? { 
-              ...project, 
+      const response = await fetch(`/api/proposals/${selectedProject.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentStatus: selectedProject.status,
+          newStatus: statusUpdate.newStatus,
+          reason: statusUpdate.reason,
+          notes: statusUpdate.notes,
+          effectiveDate: statusUpdate.effectiveDate,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to update status');
+      }
+
+      setProjects((prev) => prev.map((project) => (
+        project.id === selectedProject.id
+          ? {
+              ...project,
               status: statusUpdate.newStatus,
-              lastUpdate: new Date().toISOString()
+              lastUpdate: new Date().toISOString(),
             }
           : project
-      ));
+      )));
 
-      // Reset form and close dialog
-      setStatusUpdate({ newStatus: '', reason: '', notes: '' });
-      setStatusUpdateDialog(false);
-      setSelectedProject(null);
-      
-      // Show success message
+      closeStatusUpdateDialog();
       alert(`Project status updated to "${statusUpdate.newStatus}" successfully!`);
     } catch (error) {
       console.error('Error updating project status:', error);
-      alert('Failed to update project status. Please try again.');
+      alert(error.message || 'Failed to update project status. Please try again.');
+    } finally {
+      setSavingStatus(false);
     }
   };
 
-  const handleSaveMilestone = () => {
-    if (!selectedMilestone) return;
+  const handleSaveMilestone = async () => {
+    if (!milestoneEditContext || milestoneEditContext.milestoneIndex < 0) return;
 
-    setProjects(prev => prev.map(project => 
-      project.id === selectedMilestone.projectId
-        ? {
-            ...project,
-            milestones: project.milestones.map(milestone =>
-              milestone.id === selectedMilestone.id
-                ? { ...milestone, status: selectedMilestone.status }
-                : milestone
-            )
-          }
-        : project
-    ));
+    try {
+      setSavingMilestone(true);
 
-    setMilestoneDialog(false);
-    setSelectedMilestone(null);
-    alert('Milestone updated successfully!');
+      const payload = {
+        title: milestoneEditForm.title,
+        status: milestoneEditForm.status,
+        dueDate: milestoneEditForm.dueDate || null,
+        completedDate: milestoneEditForm.completedDate || null,
+        description: milestoneEditForm.description,
+        progress: milestoneEditForm.progress,
+        notes: milestoneEditForm.notes,
+        completionCriteria: milestoneEditForm.completionCriteria,
+        blockers: milestoneEditForm.blockers,
+        linkedDeliverableIds: milestoneEditForm.linkedDeliverableIds,
+        documents: milestoneEditForm.documents,
+        removedDocumentIds: milestoneEditForm.removedDocumentIds,
+      };
+
+      const formData = new FormData();
+      formData.append('milestoneIndex', String(milestoneEditContext.milestoneIndex));
+      formData.append('milestoneData', JSON.stringify(payload));
+      milestoneEditForm.pendingFiles.forEach((file) => {
+        formData.append('documents', file);
+      });
+
+      const response = await fetch(
+        `/api/proposals/${milestoneEditContext.projectId}/milestones`,
+        { method: 'PATCH', body: formData }
+      );
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to update milestone');
+      }
+
+      const remappedMilestones = (result.milestones || []).map(mapMilestoneFromRaw);
+      const completedCount = remappedMilestones.filter((m) => isCompletedStatus(m.status)).length;
+      const pendingMilestones = remappedMilestones.filter((m) => isPendingStatus(m.status));
+
+      setProjects((prev) => prev.map((project) => (
+        project.id === milestoneEditContext.projectId
+          ? {
+              ...project,
+              milestones: remappedMilestones,
+              progress: remappedMilestones.length > 0
+                ? Math.round((completedCount / remappedMilestones.length) * 100)
+                : 0,
+              completedTasks: completedCount,
+              nextMilestone: pendingMilestones.length > 0
+                ? pendingMilestones[0].title
+                : (remappedMilestones.length > 0 ? 'All milestones completed' : 'No milestones defined'),
+            }
+          : project
+      )));
+
+      closeMilestoneDialog();
+      alert('Milestone updated successfully!');
+    } catch (error) {
+      console.error('Error saving milestone:', error);
+      alert(error.message || 'Failed to update milestone. Please try again.');
+    } finally {
+      setSavingMilestone(false);
+    }
   };
 
-  const handleAddMilestone = () => {
+  const handleAddMilestone = async () => {
     if (!selectedProject || !milestoneForm.title) return;
 
-    const newMilestone = {
-      id: Date.now(), // Simple ID generation
-      title: milestoneForm.title,
-      status: milestoneForm.status,
-      dueDate: milestoneForm.dueDate,
-      description: milestoneForm.description,
-      progress: milestoneForm.progress
-    };
+    try {
+      const response = await fetch(`/api/proposals/${selectedProject.id}/milestones`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ milestoneData: milestoneForm }),
+      });
 
-    setProjects(prev => prev.map(project => 
-      project.id === selectedProject.id
-        ? { ...project, milestones: [...project.milestones, newMilestone] }
-        : project
-    ));
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to add milestone');
+      }
 
-    setNewMilestoneDialog(false);
-    setMilestoneForm({
+      const remappedMilestones = (result.milestones || []).map(mapMilestoneFromRaw);
+      setProjects((prev) => prev.map((project) => (
+        project.id === selectedProject.id
+          ? { ...project, milestones: remappedMilestones, totalTasks: remappedMilestones.length }
+          : project
+      )));
+
+      setNewMilestoneDialog(false);
+      setMilestoneForm({
+        title: '',
+        status: 'Pending',
+        dueDate: '',
+        description: '',
+        progress: 0,
+      });
+      alert('Milestone added successfully!');
+    } catch (error) {
+      console.error('Error adding milestone:', error);
+      alert(error.message || 'Failed to add milestone');
+    }
+  };
+
+  const resetDeliverableEditForm = () => {
+    setDeliverableEditForm({
       title: '',
+      type: 'Document',
       status: 'Pending',
       dueDate: '',
       description: '',
-      progress: 0
+      notes: '',
+      completionCriteria: '',
+      linkedMilestoneIds: [],
+      documents: [],
+      pendingFiles: [],
+      removedDocumentIds: [],
     });
-    alert('Milestone added successfully!');
+    setDeliverableEditContext(null);
   };
+
+  const closeDeliverableDialog = () => {
+    setDeliverableDialog(false);
+    resetDeliverableEditForm();
+  };
+
+  const handleUpdateDeliverable = (deliverable, projectId) => {
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) return;
+
+    const formatDateInput = (value) => {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      return date.toISOString().split('T')[0];
+    };
+
+    setDeliverableDialogMode('edit');
+    setDeliverableEditContext({
+      projectId,
+      deliverableIndex: deliverable.deliverableIndex ?? project.deliverables.findIndex((d) => d.id === deliverable.id),
+      milestones: project.milestones || [],
+    });
+    setDeliverableEditForm({
+      title: deliverable.title || '',
+      type: deliverable.type || 'Document',
+      status: normalizeItemStatus(deliverable.status),
+      dueDate: formatDateInput(deliverable.dueDate),
+      description: deliverable.description || '',
+      notes: deliverable.notes || '',
+      completionCriteria: deliverable.completionCriteria || '',
+      linkedMilestoneIds: deliverable.linkedMilestoneIds || [],
+      documents: deliverable.documents || [],
+      pendingFiles: [],
+      removedDocumentIds: [],
+    });
+    setDeliverableDialog(true);
+  };
+
+  const handleAddNewDeliverable = (projectId) => {
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) return;
+
+    setSelectedProject(project);
+    setDeliverableDialogMode('create');
+    setDeliverableEditContext({
+      projectId,
+      deliverableIndex: -1,
+      milestones: project.milestones || [],
+    });
+    setDeliverableEditForm({
+      title: '',
+      type: 'Document',
+      status: 'Pending',
+      dueDate: '',
+      description: '',
+      notes: '',
+      completionCriteria: '',
+      linkedMilestoneIds: [],
+      documents: [],
+      pendingFiles: [],
+      removedDocumentIds: [],
+    });
+    setDeliverableDialog(true);
+  };
+
+  const handleSaveDeliverable = async () => {
+    if (!deliverableEditContext || !deliverableEditForm.title) return;
+
+    try {
+      setSavingDeliverable(true);
+
+      const payload = {
+        title: deliverableEditForm.title,
+        type: deliverableEditForm.type,
+        status: deliverableEditForm.status,
+        dueDate: deliverableEditForm.dueDate || null,
+        description: deliverableEditForm.description,
+        notes: deliverableEditForm.notes,
+        completionCriteria: deliverableEditForm.completionCriteria,
+        linkedMilestoneIds: deliverableEditForm.linkedMilestoneIds,
+        documents: deliverableEditForm.documents,
+        removedDocumentIds: deliverableEditForm.removedDocumentIds,
+      };
+
+      const formData = new FormData();
+      formData.append('deliverableData', JSON.stringify(payload));
+      deliverableEditForm.pendingFiles.forEach((file) => {
+        formData.append('documents', file);
+      });
+
+      const isCreate = deliverableDialogMode === 'create';
+      if (!isCreate) {
+        formData.append('deliverableIndex', String(deliverableEditContext.deliverableIndex));
+      }
+
+      const response = await fetch(
+        `/api/proposals/${deliverableEditContext.projectId}/deliverables`,
+        { method: isCreate ? 'POST' : 'PATCH', body: formData }
+      );
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to save deliverable');
+      }
+
+      const remappedDeliverables = (result.deliverables || []).map(mapDeliverableFromRaw);
+      setProjects((prev) => prev.map((project) => (
+        project.id === deliverableEditContext.projectId
+          ? { ...project, deliverables: remappedDeliverables }
+          : project
+      )));
+
+      closeDeliverableDialog();
+      alert(isCreate ? 'Deliverable created successfully!' : 'Deliverable updated successfully!');
+    } catch (error) {
+      console.error('Error saving deliverable:', error);
+      alert(error.message || 'Failed to save deliverable');
+    } finally {
+      setSavingDeliverable(false);
+    }
+  };
+
+  const renderDocumentUploadSection = (form, setForm) => (
+    <Box>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#2D3748', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <AttachFileIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
+        Supporting Documents
+      </Typography>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          mb: 2,
+          borderRadius: 2,
+          borderStyle: 'dashed',
+          borderColor: alpha('#8b6cbc', 0.35),
+          bgcolor: alpha('#8b6cbc', 0.03),
+          textAlign: 'center',
+        }}
+      >
+        <Button
+          component="label"
+          variant="outlined"
+          startIcon={<CloudUploadIcon />}
+          sx={{ borderColor: '#8b6cbc', color: '#8b6cbc', textTransform: 'none' }}
+        >
+          Upload documents
+          <input
+            hidden
+            multiple
+            type="file"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.csv,.txt,.zip"
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              if (files.length === 0) return;
+              setForm((prev) => ({ ...prev, pendingFiles: [...prev.pendingFiles, ...files] }));
+              e.target.value = '';
+            }}
+          />
+        </Button>
+      </Paper>
+      {[...form.documents, ...form.pendingFiles].length === 0 ? (
+        <Typography variant="body2" color="text.secondary">No documents attached yet.</Typography>
+      ) : (
+        <List dense disablePadding>
+          {[
+            ...form.documents.map((doc) => ({ ...doc, pending: false })),
+            ...form.pendingFiles.map((file, index) => ({
+              id: `pending-${index}-${file.name}`,
+              originalName: file.name,
+              size: file.size,
+              pending: true,
+              file,
+            })),
+          ].map((doc) => (
+            <ListItem
+              key={doc.id}
+              sx={{ px: 1.5, py: 1, mb: 0.75, borderRadius: 1.5, border: '1px solid rgba(0,0,0,0.08)' }}
+              secondaryAction={
+                <IconButton
+                  edge="end"
+                  size="small"
+                  onClick={() => {
+                    if (doc.pending) {
+                      setForm((prev) => ({
+                        ...prev,
+                        pendingFiles: prev.pendingFiles.filter((f) => f !== doc.file),
+                      }));
+                    } else {
+                      setForm((prev) => ({
+                        ...prev,
+                        documents: prev.documents.filter((d) => d.id !== doc.id),
+                        removedDocumentIds: [...prev.removedDocumentIds, doc.id],
+                      }));
+                    }
+                  }}
+                >
+                  <DeleteOutlineIcon fontSize="small" />
+                </IconButton>
+              }
+            >
+              <ListItemIcon sx={{ minWidth: 36 }}>
+                <AttachFileIcon sx={{ color: '#8b6cbc' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary={doc.originalName}
+                secondary={doc.pending ? 'Ready to upload' : 'Uploaded'}
+              />
+            </ListItem>
+          ))}
+        </List>
+      )}
+    </Box>
+  );
 
   const getMilestoneIcon = (status) => {
     switch (status) {
@@ -460,6 +931,156 @@ const ProjectStatusPage = () => {
     }
   };
 
+  const getItemStatusColor = (status) => {
+    const normalized = normalizeItemStatus(status);
+    if (normalized === 'Completed' || normalized === 'Delivered') return 'success';
+    if (normalized === 'In Progress') return 'primary';
+    if (normalized === 'Blocked') return 'error';
+    return 'default';
+  };
+
+  const renderTrackingSection = (project, type) => {
+    const isMilestone = type === 'milestones';
+    const items = isMilestone ? project.milestones : project.deliverables;
+    const Icon = isMilestone ? MilestoneIcon : TaskIcon;
+    const label = isMilestone ? 'Milestones' : 'Deliverables';
+    const emptyLabel = isMilestone ? 'No milestones defined yet' : 'No deliverables defined yet';
+
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          height: '100%',
+          borderRadius: 2,
+          border: '1px solid rgba(139, 108, 188, 0.12)',
+          bgcolor: 'white',
+          overflow: 'hidden'
+        }}
+      >
+        <Box
+          sx={{
+            px: 2,
+            py: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            bgcolor: alpha('#8b6cbc', 0.06),
+            borderBottom: '1px solid rgba(139, 108, 188, 0.1)'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Icon sx={{ fontSize: 18, color: '#8b6cbc' }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2D3748' }}>
+              {label}
+            </Typography>
+            <Chip label={items.length} size="small" sx={{ height: 20, fontSize: '0.7rem', bgcolor: alpha('#8b6cbc', 0.12), color: '#6b4fa8' }} />
+          </Box>
+          <Button
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={() => (
+              isMilestone
+                ? handleAddNewMilestone(project.id)
+                : handleAddNewDeliverable(project.id)
+            )}
+            sx={{ textTransform: 'none', color: '#8b6cbc', fontWeight: 600 }}
+          >
+            Add
+          </Button>
+        </Box>
+
+        {items.length === 0 ? (
+          <Box sx={{ py: 4, px: 2, textAlign: 'center' }}>
+            <Icon sx={{ fontSize: 32, color: '#cbd5e0', mb: 1 }} />
+            <Typography variant="body2" color="text.secondary">{emptyLabel}</Typography>
+          </Box>
+        ) : (
+          <List disablePadding>
+            {items.map((item, index) => (
+              <React.Fragment key={item.id}>
+                {index > 0 && <Divider />}
+                <ListItem
+                  sx={{
+                    py: 1.5,
+                    px: 2,
+                    alignItems: 'flex-start',
+                    '&:hover': { bgcolor: alpha('#8b6cbc', 0.03) }
+                  }}
+                  secondaryAction={
+                    isMilestone ? (
+                      <IconButton
+                        edge="end"
+                        size="small"
+                        onClick={() => handleUpdateMilestone(item, project.id)}
+                        sx={{ color: '#8b6cbc' }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    ) : (
+                      <IconButton
+                        edge="end"
+                        size="small"
+                        onClick={() => handleUpdateDeliverable(item, project.id)}
+                        sx={{ color: '#8b6cbc' }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    )
+                  }
+                >
+                  <ListItemIcon sx={{ minWidth: 36, mt: 0.25 }}>
+                    {isMilestone ? getMilestoneIcon(item.status) : getDeliverableIcon(item.status)}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', pr: 4 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#2D3748' }}>
+                          {item.title}
+                        </Typography>
+                        <Chip
+                          label={normalizeItemStatus(item.status)}
+                          size="small"
+                          color={getItemStatusColor(item.status)}
+                          sx={{ height: 22, fontSize: '0.7rem' }}
+                        />
+                      </Box>
+                    }
+                    secondary={
+                      <Box sx={{ mt: 0.5 }}>
+                        {!isMilestone && (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            {item.type}
+                          </Typography>
+                        )}
+                        <Typography variant="caption" color="text.secondary">
+                          Due {formatDisplayDate(item.dueDate) || 'Not set'}
+                        </Typography>
+                        {isMilestone && item.status === 'In Progress' && item.progress > 0 && (
+                          <Box sx={{ mt: 1, maxWidth: 220 }}>
+                            <LinearProgress
+                              variant="determinate"
+                              value={item.progress}
+                              sx={{
+                                height: 4,
+                                borderRadius: 2,
+                                bgcolor: alpha('#8b6cbc', 0.12),
+                                '& .MuiLinearProgress-bar': { bgcolor: '#8b6cbc', borderRadius: 2 }
+                              }}
+                            />
+                          </Box>
+                        )}
+                      </Box>
+                    }
+                  />
+                </ListItem>
+              </React.Fragment>
+            ))}
+          </List>
+        )}
+      </Paper>
+    );
+  };
+
   const renderProjectsList = () => {
     const filteredProjects = projects.filter(project => {
       const statusMatch = filterStatus === 'All' || project.status === filterStatus;
@@ -467,502 +1088,188 @@ const ProjectStatusPage = () => {
       return statusMatch && priorityMatch;
     });
 
+    const paginatedProjects = filteredProjects.slice(
+      page * rowsPerPage,
+      page * rowsPerPage + rowsPerPage
+    );
+
+    const filterFieldSx = {
+      borderRadius: 2,
+      bgcolor: 'white',
+      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(139, 108, 188, 0.2)' },
+      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#8b6cbc' },
+      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#8b6cbc' }
+    };
+
     return (
       <Box>
-        {/* Filters */}
-        <Paper sx={{ 
-          p: 4, 
-          mb: 3, 
-          borderRadius: 4, 
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
-        }}>
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 3, 
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            '@media (max-width: 768px)': {
-              flexDirection: 'column',
-              alignItems: 'stretch'
-            }
-          }}>
-            <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={filterStatus}
-                  label="Status"
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  sx={{
-                    borderRadius: 3,
-                    backgroundColor: 'rgba(255,255,255,0.8)',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255,255,255,1)'
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8b6cbc',
-                    },
-                  }}
-                >
-                  <MenuItem value="All">All Status</MenuItem>
-                  <MenuItem value="Active">Active</MenuItem>
-                  <MenuItem value="Planning">Planning</MenuItem>
-                  <MenuItem value="Review">Review</MenuItem>
-                  <MenuItem value="Completed">Completed</MenuItem>
-                  <MenuItem value="On Hold">On Hold</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-
-            <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
-              <FormControl fullWidth>
-                <InputLabel>Priority</InputLabel>
-                <Select
-                  value={filterPriority}
-                  label="Priority"
-                  onChange={(e) => setFilterPriority(e.target.value)}
-                  sx={{
-                    borderRadius: 3,
-                    backgroundColor: 'rgba(255,255,255,0.8)',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255,255,255,1)'
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#8b6cbc',
-                    },
-                  }}
-                >
-                  <MenuItem value="All">All Priorities</MenuItem>
-                  <MenuItem value="Critical">Critical</MenuItem>
-                  <MenuItem value="High">High</MenuItem>
-                  <MenuItem value="Medium">Medium</MenuItem>
-                  <MenuItem value="Low">Low</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-
-            <Box sx={{ flex: '0 0 auto' }}>
-              <Button
-                variant="text"
-                startIcon={<ClearIcon />}
-                onClick={() => {
-                  setFilterStatus('All');
-                  setFilterPriority('All');
-                }}
-                sx={{ 
-                  borderRadius: 3,
-                  height: '56px',
-                  px: 3,
-                  color: '#8b6cbc',
-                  fontWeight: 600,
-                  '&:hover': {
-                    backgroundColor: 'rgba(139, 108, 188, 0.08)',
-                    color: '#7a5cac'
-                  }
-                }}
-              >
-                Clear All
-              </Button>
-            </Box>
-          </Box>
+        <Paper
+          sx={{
+            p: 2,
+            mb: 3,
+            borderRadius: 2,
+            border: '1px solid rgba(139, 108, 188, 0.12)',
+            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.06)'
+          }}
+        >
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
+            <FormControl size="small" sx={{ minWidth: 160, flex: 1 }}>
+              <InputLabel>Status</InputLabel>
+              <Select value={filterStatus} label="Status" onChange={(e) => setFilterStatus(e.target.value)} sx={filterFieldSx}>
+                <MenuItem value="All">All Status</MenuItem>
+                <MenuItem value="Active">Active</MenuItem>
+                <MenuItem value="Planning">Planning</MenuItem>
+                <MenuItem value="Completed">Completed</MenuItem>
+                <MenuItem value="On Hold">On Hold</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 160, flex: 1 }}>
+              <InputLabel>Priority</InputLabel>
+              <Select value={filterPriority} label="Priority" onChange={(e) => setFilterPriority(e.target.value)} sx={filterFieldSx}>
+                <MenuItem value="All">All Priorities</MenuItem>
+                <MenuItem value="Critical">Critical</MenuItem>
+                <MenuItem value="High">High</MenuItem>
+                <MenuItem value="Medium">Medium</MenuItem>
+                <MenuItem value="Low">Low</MenuItem>
+              </Select>
+            </FormControl>
+            <Button
+              size="small"
+              startIcon={<ClearIcon />}
+              onClick={() => { setFilterStatus('All'); setFilterPriority('All'); }}
+              sx={{ color: '#8b6cbc', textTransform: 'none', fontWeight: 600, alignSelf: { xs: 'flex-start', sm: 'center' } }}
+            >
+              Clear filters
+            </Button>
+          </Stack>
         </Paper>
 
-        {/* Projects Table */}
-        <TableContainer component={Paper} elevation={1} sx={{ width: '100%' }}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ bgcolor: 'grey.50' }}>
-                <TableCell />
-                <TableCell><Typography variant="subtitle2" fontWeight="bold">Project Name</Typography></TableCell>
-                <TableCell><Typography variant="subtitle2" fontWeight="bold">Status</Typography></TableCell>
-                <TableCell><Typography variant="subtitle2" fontWeight="bold">Priority</Typography></TableCell>
-                <TableCell><Typography variant="subtitle2" fontWeight="bold">Progress</Typography></TableCell>
-                <TableCell><Typography variant="subtitle2" fontWeight="bold">Lead</Typography></TableCell>
-                <TableCell><Typography variant="subtitle2" fontWeight="bold">Next Milestone</Typography></TableCell>
-                <TableCell><Typography variant="subtitle2" fontWeight="bold">Due Date</Typography></TableCell>
-                <TableCell><Typography variant="subtitle2" fontWeight="bold">Actions</Typography></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredProjects
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((project) => (
-                <React.Fragment key={project.id}>
-                  <TableRow hover>
-                    <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleToggleRow(project.id)}
-                      >
-                        {expandedRows[project.id] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                      </IconButton>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight="bold">
-                        {project.title}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={project.status} 
-                        color={getStatusColor(project.status)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={project.priority} 
-                        color={getPriorityColor(project.priority)}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 120 }}>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={project.progress} 
-                          sx={{ flexGrow: 1, height: 6, borderRadius: 3 }}
-                        />
-                        <Typography variant="body2" sx={{ minWidth: 35 }}>
-                          {project.progress}%
+        {paginatedProjects.length === 0 ? (
+          <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2, border: '1px dashed rgba(139, 108, 188, 0.25)' }}>
+            <TrackIcon sx={{ fontSize: 48, color: '#cbd5e0', mb: 1.5 }} />
+            <Typography variant="h6" color="text.secondary" gutterBottom>No projects match your filters</Typography>
+            <Typography variant="body2" color="text.secondary">Try adjusting the status or priority filters above.</Typography>
+          </Paper>
+        ) : (
+          <Stack spacing={2}>
+            {paginatedProjects.map((project) => {
+              const isExpanded = expandedRows[project.id];
+              const dueDateLabel = formatDisplayDate(project.endDate);
+              const isDueSoon = project.daysUntilDeadline <= 7 && project.daysUntilDeadline > 0;
+
+              return (
+                <Paper
+                  key={project.id}
+                  elevation={0}
+                  sx={{
+                    borderRadius: 2,
+                    border: '1px solid rgba(139, 108, 188, 0.12)',
+                    overflow: 'hidden',
+                    boxShadow: isExpanded ? '0 4px 16px rgba(139, 108, 188, 0.1)' : '0 1px 4px rgba(0,0,0,0.04)',
+                    transition: 'box-shadow 0.2s ease'
+                  }}
+                >
+                  <Box
+                    onClick={() => handleToggleRow(project.id)}
+                    sx={{
+                      px: 2,
+                      py: 2,
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 1.5,
+                      cursor: 'pointer',
+                      bgcolor: isExpanded ? alpha('#8b6cbc', 0.03) : 'white',
+                      '&:hover': { bgcolor: alpha('#8b6cbc', 0.04) }
+                    }}
+                  >
+                    <IconButton
+                      size="small"
+                      onClick={(e) => { e.stopPropagation(); handleToggleRow(project.id); }}
+                      sx={{ color: '#8b6cbc', mt: 0.25 }}
+                    >
+                      {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                    </IconButton>
+
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#2D3748', lineHeight: 1.3 }}>
+                          {project.title}
                         </Typography>
+                        <Chip label={project.status} size="small" color={getStatusColor(project.status)} />
+                        <Chip label={project.priority} size="small" variant="outlined" color={getPriorityColor(project.priority)} />
                       </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem' }}>
-                          {project.lead.name.split(' ').map(n => n[0]).join('')}
-                        </Avatar>
-                        <Typography variant="body2">
-                          {project.lead.name}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {project.nextMilestone}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography 
-                        variant="body2" 
-                        color={project.daysUntilDeadline <= 7 && project.daysUntilDeadline > 0 ? 'error.main' : 'text.primary'}
-                      >
-                        {project.endDate && new Date(project.endDate) && !isNaN(new Date(project.endDate).getTime()) 
-                          ? format(new Date(project.endDate), 'MMM dd, yyyy')
-                          : 'No deadline set'
-                        }
-                        {project.daysUntilDeadline <= 7 && project.daysUntilDeadline > 0 && (
-                          <Chip 
-                            size="small" 
-                            label={`${project.daysUntilDeadline}d`} 
-                            color="error" 
-                            sx={{ ml: 1 }} 
+
+                      <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 0.75, md: 3 }} sx={{ color: 'text.secondary' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 120 }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={project.progress}
+                            sx={{
+                              width: 72,
+                              height: 6,
+                              borderRadius: 3,
+                              bgcolor: alpha('#8b6cbc', 0.12),
+                              '& .MuiLinearProgress-bar': { bgcolor: '#8b6cbc', borderRadius: 3 }
+                            }}
                           />
-                        )}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={1}>
-                        <Tooltip title="View Details">
-                          <IconButton 
-                            size="small" 
-                            onClick={() => {
-                              setSelectedProject(project);
-                              setViewDetailsDialog(true);
-                            }}
-                          >
-                            <ViewIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Update Status">
-                          <IconButton 
-                            size="small" 
-                            onClick={() => {
-                              setSelectedProject(project);
-                              setStatusUpdateDialog(true);
-                            }}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                  
-                  {/* Expanded Row Content */}
-                  <TableRow>
-                    <TableCell colSpan={9} sx={{ py: 0 }}>
-                      <Collapse in={expandedRows[project.id]} timeout="auto" unmountOnExit>
-                        <Box sx={{ p: 4, bgcolor: 'grey.50', borderTop: '1px solid', borderColor: 'divider' }}>
-                          <Box sx={{ 
-                            display: 'flex', 
-                            gap: 4, 
-                            flexWrap: 'wrap',
-                            '& > *': { flex: 1, minWidth: { xs: '100%', md: 'calc(50% - 16px)' } }
-                          }}>
-                            {/* Milestones Section */}
-                            <Paper elevation={2} sx={{ p: 3, flex: 1, borderRadius: 2 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                                <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#8b6cbc', display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <MilestoneIcon />
-                                  Milestones ({project.milestones.length})
-                                </Typography>
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  startIcon={<AddIcon />}
-                                  onClick={() => handleAddNewMilestone(project.id)}
-                                  sx={{ 
-                                    borderColor: '#8b6cbc', 
-                                    color: '#8b6cbc',
-                                    '&:hover': { borderColor: '#7b5cac', bgcolor: 'rgba(139, 108, 188, 0.04)' }
-                                  }}
-                                >
-                                  Add Milestone
-                                </Button>
-                              </Box>
-                              
-                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                {project.milestones.map((milestone) => (
-                                  <Paper 
-                                    key={milestone.id} 
-                                    elevation={1} 
-                                    sx={{ 
-                                      p: 2.5, 
-                                      borderRadius: 2,
-                                      border: '1px solid',
-                                      borderColor: 'divider',
-                                      position: 'relative',
-                                      '&:hover': { 
-                                        boxShadow: 2,
-                                        borderColor: '#8b6cbc' 
-                                      }
-                                    }}
-                                  >
-                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                                      <Box sx={{ mt: 0.5 }}>
-                                        {getMilestoneIcon(milestone.status)}
-                                      </Box>
-                                      
-                                      <Box sx={{ flex: 1 }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                                          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                                            {milestone.title}
-                                          </Typography>
-                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Chip 
-                                              label={milestone.status} 
-                                              size="small"
-                                              color={
-                                                milestone.status === 'Completed' ? 'success' : 
-                                                milestone.status === 'In Progress' ? 'primary' : 'default'
-                                              }
-                                              sx={{ fontSize: '0.7rem' }}
-                                            />
-                                            <IconButton
-                                              size="small"
-                                              onClick={() => handleUpdateMilestone(milestone, project.id)}
-                                              sx={{ 
-                                                color: '#8b6cbc',
-                                                '&:hover': { bgcolor: 'rgba(139, 108, 188, 0.1)' }
-                                              }}
-                                            >
-                                              <EditIcon fontSize="small" />
-                                            </IconButton>
-                                          </Box>
-                                        </Box>
-                                        
-                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                                          <strong>Due:</strong> {milestone.dueDate && new Date(milestone.dueDate) && !isNaN(new Date(milestone.dueDate).getTime())
-                                            ? format(new Date(milestone.dueDate), 'MMM dd, yyyy')
-                                            : 'No due date set'
-                                          }
-                                        </Typography>
-                                        
-                                        {milestone.status === 'In Progress' && milestone.progress && (
-                                          <Box sx={{ mt: 1.5 }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                                              <Typography variant="caption" color="text.secondary">
-                                                Progress
-                                              </Typography>
-                                              <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#8b6cbc' }}>
-                                                {milestone.progress}%
-                                              </Typography>
-                                            </Box>
-                                            <LinearProgress
-                                              variant="determinate"
-                                              value={milestone.progress}
-                                              sx={{ 
-                                                height: 6, 
-                                                borderRadius: 3,
-                                                bgcolor: 'rgba(139, 108, 188, 0.1)',
-                                                '& .MuiLinearProgress-bar': {
-                                                  bgcolor: '#8b6cbc'
-                                                }
-                                              }}
-                                            />
-                                          </Box>
-                                        )}
-                                      </Box>
-                                    </Box>
-                                  </Paper>
-                                ))}
-                                
-                                {project.milestones.length === 0 && (
-                                  <Box sx={{ 
-                                    textAlign: 'center', 
-                                    py: 4, 
-                                    color: 'text.secondary',
-                                    bgcolor: 'grey.100',
-                                    borderRadius: 2,
-                                    border: '2px dashed',
-                                    borderColor: 'divider'
-                                  }}>
-                                    <MilestoneIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
-                                    <Typography variant="body2">
-                                      No milestones defined yet
-                                    </Typography>
-                                    <Typography variant="caption">
-                                      Click "Add Milestone" to create the first milestone
-                                    </Typography>
-                                  </Box>
-                                )}
-                              </Box>
-                            </Paper>
-                            
-                            {/* Deliverables Section */}
-                            <Paper elevation={2} sx={{ p: 3, flex: 1, borderRadius: 2 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                                <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#8b6cbc', display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <TaskIcon />
-                                  Deliverables ({project.deliverables.length})
-                                </Typography>
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  startIcon={<AddIcon />}
-                                  sx={{ 
-                                    borderColor: '#8b6cbc', 
-                                    color: '#8b6cbc',
-                                    '&:hover': { borderColor: '#7b5cac', bgcolor: 'rgba(139, 108, 188, 0.04)' }
-                                  }}
-                                >
-                                  Add Deliverable
-                                </Button>
-                              </Box>
-                              
-                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                {project.deliverables.map((deliverable) => (
-                                  <Paper 
-                                    key={deliverable.id} 
-                                    elevation={1} 
-                                    sx={{ 
-                                      p: 2.5, 
-                                      borderRadius: 2,
-                                      border: '1px solid',
-                                      borderColor: 'divider',
-                                      position: 'relative',
-                                      '&:hover': { 
-                                        boxShadow: 2,
-                                        borderColor: '#8b6cbc' 
-                                      }
-                                    }}
-                                  >
-                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                                      <Box sx={{ mt: 0.5 }}>
-                                        {getDeliverableIcon(deliverable.status)}
-                                      </Box>
-                                      
-                                      <Box sx={{ flex: 1 }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                                          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                                            {deliverable.title}
-                                          </Typography>
-                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Chip 
-                                              label={deliverable.status} 
-                                              size="small"
-                                              color={
-                                                deliverable.status === 'Delivered' ? 'success' : 
-                                                deliverable.status === 'In Progress' ? 'primary' : 'default'
-                                              }
-                                              sx={{ fontSize: '0.7rem' }}
-                                            />
-                                            <IconButton
-                                              size="small"
-                                              sx={{ 
-                                                color: '#8b6cbc',
-                                                '&:hover': { bgcolor: 'rgba(139, 108, 188, 0.1)' }
-                                              }}
-                                            >
-                                              <EditIcon fontSize="small" />
-                                            </IconButton>
-                                          </Box>
-                                        </Box>
-                                        
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                          <Typography variant="caption" color="text.secondary">
-                                            <strong>Type:</strong> {deliverable.type}
-                                          </Typography>
-                                          <Typography variant="caption" color="text.secondary">
-                                            <strong>Due:</strong> {deliverable.dueDate && new Date(deliverable.dueDate) && !isNaN(new Date(deliverable.dueDate).getTime())
-                                              ? format(new Date(deliverable.dueDate), 'MMM dd, yyyy')
-                                              : 'No due date set'
-                                            }
-                                          </Typography>
-                                        </Box>
-                                      </Box>
-                                    </Box>
-                                  </Paper>
-                                ))}
-                                
-                                {project.deliverables.length === 0 && (
-                                  <Box sx={{ 
-                                    textAlign: 'center', 
-                                    py: 4, 
-                                    color: 'text.secondary',
-                                    bgcolor: 'grey.100',
-                                    borderRadius: 2,
-                                    border: '2px dashed',
-                                    borderColor: 'divider'
-                                  }}>
-                                    <TaskIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
-                                    <Typography variant="body2">
-                                      No deliverables defined yet
-                                    </Typography>
-                                    <Typography variant="caption">
-                                      Click "Add Deliverable" to create the first deliverable
-                                    </Typography>
-                                  </Box>
-                                )}
-                              </Box>
-                            </Paper>
-                          </Box>
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: '#6b4fa8' }}>{project.progress}%</Typography>
                         </Box>
-                      </Collapse>
-                    </TableCell>
-                  </TableRow>
-                </React.Fragment>
-              ))}
-            </TableBody>
-          </Table>
-          
-          <TablePagination
-            component="div"
-            count={filteredProjects.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={(event, newPage) => setPage(newPage)}
-            onRowsPerPageChange={(event) => {
-              setRowsPerPage(parseInt(event.target.value, 10));
-              setPage(0);
-            }}
-          />
-        </TableContainer>
+                        <Typography variant="caption">Lead: {project.lead.name}</Typography>
+                        <Typography variant="caption" sx={{ maxWidth: 280 }} noWrap title={project.nextMilestone}>
+                          Next: {project.nextMilestone}
+                        </Typography>
+                        <Typography variant="caption" color={isDueSoon ? 'error.main' : 'text.secondary'} sx={{ fontWeight: isDueSoon ? 600 : 400 }}>
+                          Due: {dueDateLabel || 'Not set'}
+                          {isDueSoon && ` (${project.daysUntilDeadline}d)`}
+                        </Typography>
+                      </Stack>
+                    </Box>
+
+                    <Stack direction="row" spacing={0.5} onClick={(e) => e.stopPropagation()} sx={{ flexShrink: 0 }}>
+                      <Tooltip title="View details">
+                        <IconButton size="small" onClick={() => { setSelectedProject(project); setViewDetailsDialog(true); }} sx={{ color: '#8b6cbc' }}>
+                          <ViewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Update status">
+                        <IconButton size="small" onClick={() => openStatusUpdateDialog(project)} sx={{ color: '#64748b' }}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </Box>
+
+                  <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                    <Box sx={{ px: 2, pb: 2, pt: 0, bgcolor: '#fafbfd', borderTop: '1px solid rgba(139, 108, 188, 0.08)' }}>
+                      <Grid container spacing={2} sx={{ pt: 2 }}>
+                        <Grid size={{ xs: 12, md: 6 }}>{renderTrackingSection(project, 'milestones')}</Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>{renderTrackingSection(project, 'deliverables')}</Grid>
+                      </Grid>
+                    </Box>
+                  </Collapse>
+                </Paper>
+              );
+            })}
+          </Stack>
+        )}
+
+        <TablePagination
+          component={Paper}
+          elevation={0}
+          count={filteredProjects.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(event, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(event) => {
+            setRowsPerPage(parseInt(event.target.value, 10));
+            setPage(0);
+          }}
+          sx={{
+            mt: 2,
+            borderRadius: 2,
+            border: '1px solid rgba(139, 108, 188, 0.12)'
+          }}
+        />
       </Box>
     );
   };
@@ -1518,84 +1825,113 @@ const ProjectStatusPage = () => {
       </Container>
 
       {/* Status Update Dialog */}
-      <Dialog 
-        open={statusUpdateDialog} 
-        onClose={() => {
-          setStatusUpdateDialog(false);
-          setStatusUpdate({ newStatus: '', reason: '', notes: '' });
-        }}
-        maxWidth="sm"
+      <Dialog
+        open={statusUpdateDialog}
+        onClose={closeStatusUpdateDialog}
+        maxWidth="md"
         fullWidth
+        {...dialogScrollLockProps}
+        PaperProps={{ sx: { borderRadius: 3 } }}
       >
-        <DialogTitle sx={{ bgcolor: '#8b6cbc', color: 'white' }}>
-          Update Project Status
+        <DialogTitle
+          sx={{
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5cac 100%)',
+            color: 'white',
+            pb: 2,
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>Update Project Status</Typography>
+          {selectedProject && (
+            <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }} noWrap title={selectedProject.title}>
+              {selectedProject.title}
+            </Typography>
+          )}
         </DialogTitle>
         <DialogContent sx={{ pt: 3 }}>
           {selectedProject && (
-            <Box>
-              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>
-                {selectedProject.title}
-              </Typography>
-              
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Current Status: <Chip 
-                  label={selectedProject.status} 
-                  color={getStatusColor(selectedProject.status)}
-                  size="small"
-                />
-              </Typography>
+            <Stack spacing={3}>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: alpha('#8b6cbc', 0.03) }}>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Typography variant="caption" color="text.secondary">Current Status</Typography>
+                    <Box sx={{ mt: 0.5 }}>
+                      <Chip label={selectedProject.status} color={getStatusColor(selectedProject.status)} size="small" />
+                    </Box>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Typography variant="caption" color="text.secondary">Progress</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>{selectedProject.progress}%</Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <Typography variant="caption" color="text.secondary">Due Date</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                      {formatDisplayDate(selectedProject.endDate) || 'Not set'}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Paper>
 
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>New Status</InputLabel>
-                <Select
-                  value={statusUpdate.newStatus}
-                  label="New Status"
-                  onChange={(e) => setStatusUpdate(prev => ({ ...prev, newStatus: e.target.value }))}
-                >
-                  <MenuItem value="Active">Active</MenuItem>
-                  <MenuItem value="Planning">Planning</MenuItem>
-                  <MenuItem value="Review">Review</MenuItem>
-                  <MenuItem value="On Hold">On Hold</MenuItem>
-                  <MenuItem value="Completed">Completed</MenuItem>
-                </Select>
-              </FormControl>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>New Status</InputLabel>
+                    <Select
+                      value={statusUpdate.newStatus}
+                      label="New Status"
+                      onChange={(e) => setStatusUpdate((prev) => ({ ...prev, newStatus: e.target.value }))}
+                    >
+                      <MenuItem value="Active">Active</MenuItem>
+                      <MenuItem value="Planning">Planning</MenuItem>
+                      <MenuItem value="On Hold">On Hold</MenuItem>
+                      <MenuItem value="Completed">Completed</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="date"
+                    label="Effective Date"
+                    value={statusUpdate.effectiveDate}
+                    onChange={(e) => setStatusUpdate((prev) => ({ ...prev, effectiveDate: e.target.value }))}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+              </Grid>
 
               <TextField
                 fullWidth
+                size="small"
                 label="Reason for Status Change"
                 value={statusUpdate.reason}
-                onChange={(e) => setStatusUpdate(prev => ({ ...prev, reason: e.target.value }))}
-                sx={{ mb: 2 }}
+                onChange={(e) => setStatusUpdate((prev) => ({ ...prev, reason: e.target.value }))}
+                placeholder="Brief reason for this status transition..."
               />
 
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="Additional Notes"
-                value={statusUpdate.notes}
-                onChange={(e) => setStatusUpdate(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Add any additional notes about this status change..."
-              />
-            </Box>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#2D3748' }}>
+                  Additional Notes
+                </Typography>
+                <TipTapEditor
+                  value={statusUpdate.notes}
+                  onChange={(value) => setStatusUpdate((prev) => ({ ...prev, notes: value }))}
+                  placeholder="Document context, approvals, risks, or follow-up actions..."
+                  minHeight="140px"
+                />
+              </Box>
+            </Stack>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button 
-            onClick={() => {
-              setStatusUpdateDialog(false);
-              setStatusUpdate({ newStatus: '', reason: '', notes: '' });
-            }}
-          >
-            Cancel
-          </Button>
-          <Button 
-            variant="contained" 
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+          <Button onClick={closeStatusUpdateDialog} disabled={savingStatus}>Cancel</Button>
+          <Button
+            variant="contained"
             onClick={handleUpdateProjectStatus}
-            disabled={!statusUpdate.newStatus}
-            sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7b5cac' } }}
+            disabled={!statusUpdate.newStatus || savingStatus || statusUpdate.newStatus === selectedProject?.status}
+            sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7a5cac' } }}
           >
-            Update Status
+            {savingStatus ? 'Updating...' : 'Update Status'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1603,63 +1939,369 @@ const ProjectStatusPage = () => {
       {/* Update Milestone Dialog */}
       <Dialog
         open={milestoneDialog}
-        onClose={() => setMilestoneDialog(false)}
-        maxWidth="sm"
+        onClose={closeMilestoneDialog}
+        maxWidth="md"
         fullWidth
+        {...dialogScrollLockProps}
+        PaperProps={{ sx: { borderRadius: 3 } }}
       >
-        <DialogTitle>Update Milestone Status</DialogTitle>
-        <DialogContent>
-          {selectedMilestone && (
-            <Box sx={{ pt: 2 }}>
-              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>
-                {selectedMilestone.title}
+        <DialogTitle
+          sx={{
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5cac 100%)',
+            color: 'white',
+            pb: 2,
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>Update Milestone</Typography>
+          <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+            {milestoneEditForm.title || 'Milestone details'}
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Stack spacing={3}>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#2D3748' }}>
+                Status & Timeline
               </Typography>
-              
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={selectedMilestone.status}
-                  label="Status"
-                  onChange={(e) => setSelectedMilestone(prev => ({ ...prev, status: e.target.value }))}
-                >
-                  <MenuItem value="Pending">Pending</MenuItem>
-                  <MenuItem value="In Progress">In Progress</MenuItem>
-                  <MenuItem value="Completed">Completed</MenuItem>
-                  <MenuItem value="Blocked">Blocked</MenuItem>
-                </Select>
-              </FormControl>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                      value={milestoneEditForm.status}
+                      label="Status"
+                      onChange={(e) => {
+                        const status = e.target.value;
+                        setMilestoneEditForm((prev) => ({
+                          ...prev,
+                          status,
+                          completedDate: status === 'Completed' && !prev.completedDate
+                            ? new Date().toISOString().split('T')[0]
+                            : prev.completedDate,
+                        }));
+                      }}
+                    >
+                      <MenuItem value="Pending">Pending</MenuItem>
+                      <MenuItem value="In Progress">In Progress</MenuItem>
+                      <MenuItem value="Completed">Completed</MenuItem>
+                      <MenuItem value="Blocked">Blocked</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="date"
+                    label="Due Date"
+                    value={milestoneEditForm.dueDate}
+                    onChange={(e) => setMilestoneEditForm((prev) => ({ ...prev, dueDate: e.target.value }))}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="date"
+                    label="Completed Date"
+                    value={milestoneEditForm.completedDate}
+                    onChange={(e) => setMilestoneEditForm((prev) => ({ ...prev, completedDate: e.target.value }))}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                {(milestoneEditForm.status === 'In Progress' || milestoneEditForm.status === 'Completed') && (
+                  <Grid size={{ xs: 12 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                      Progress: {milestoneEditForm.progress}%
+                    </Typography>
+                    <Slider
+                      value={milestoneEditForm.progress}
+                      onChange={(_, value) => setMilestoneEditForm((prev) => ({ ...prev, progress: value }))}
+                      valueLabelDisplay="auto"
+                      min={0}
+                      max={100}
+                      sx={{ color: '#8b6cbc' }}
+                    />
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
 
-              {selectedMilestone.status === 'In Progress' && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    Progress: {selectedMilestone.progress || 0}%
-                  </Typography>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={selectedMilestone.progress || 0} 
-                    sx={{ height: 8, borderRadius: 4 }}
+            <Divider />
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#2D3748' }}>
+                Details
+              </Typography>
+              <Stack spacing={2}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Milestone Title"
+                  value={milestoneEditForm.title}
+                  onChange={(e) => setMilestoneEditForm((prev) => ({ ...prev, title: e.target.value }))}
+                />
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>Description</Typography>
+                  <TipTapEditor
+                    value={milestoneEditForm.description}
+                    onChange={(value) => setMilestoneEditForm((prev) => ({ ...prev, description: value }))}
+                    placeholder="What does this milestone involve?"
+                    minHeight="100px"
                   />
                 </Box>
-              )}
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>Completion Criteria</Typography>
+                  <TipTapEditor
+                    value={milestoneEditForm.completionCriteria}
+                    onChange={(value) => setMilestoneEditForm((prev) => ({ ...prev, completionCriteria: value }))}
+                    placeholder="How will you know this milestone is complete?"
+                    minHeight="100px"
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>Progress Notes</Typography>
+                  <TipTapEditor
+                    value={milestoneEditForm.notes}
+                    onChange={(value) => setMilestoneEditForm((prev) => ({ ...prev, notes: value }))}
+                    placeholder="Updates, observations, or context for the team..."
+                    minHeight="100px"
+                  />
+                </Box>
+                {milestoneEditForm.status === 'Blocked' && (
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>Blockers / Issues</Typography>
+                    <TipTapEditor
+                      value={milestoneEditForm.blockers}
+                      onChange={(value) => setMilestoneEditForm((prev) => ({ ...prev, blockers: value }))}
+                      placeholder="Describe what is preventing progress..."
+                      minHeight="100px"
+                    />
+                  </Box>
+                )}
+              </Stack>
+            </Box>
 
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="Notes"
-                placeholder="Add notes about milestone progress..."
-                sx={{ mb: 2 }}
+            <Divider />
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#2D3748', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <LinkIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
+                Linked Deliverables
+              </Typography>
+              <Autocomplete
+                multiple
+                options={milestoneEditContext?.deliverables || []}
+                getOptionLabel={(option) => option.title}
+                value={(milestoneEditContext?.deliverables || []).filter((d) =>
+                  milestoneEditForm.linkedDeliverableIds.includes(d.id)
+                )}
+                onChange={(_, selected) => {
+                  setMilestoneEditForm((prev) => ({
+                    ...prev,
+                    linkedDeliverableIds: selected.map((d) => d.id),
+                  }));
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    size="small"
+                    placeholder="Select deliverables this milestone contributes to..."
+                    helperText="Link outputs that should be completed or advanced by this milestone"
+                  />
+                )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      {...getTagProps({ index })}
+                      key={option.id}
+                      label={option.title}
+                      size="small"
+                      sx={{ bgcolor: alpha('#8b6cbc', 0.12), color: '#6b4fa8' }}
+                    />
+                  ))
+                }
               />
             </Box>
-          )}
+
+            <Divider />
+
+            {renderDocumentUploadSection(milestoneEditForm, setMilestoneEditForm)}
+          </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setMilestoneDialog(false)}>Cancel</Button>
-          <Button 
-            variant="contained" 
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+          <Button onClick={closeMilestoneDialog} disabled={savingMilestone}>Cancel</Button>
+          <Button
+            variant="contained"
             onClick={handleSaveMilestone}
+            disabled={savingMilestone || !milestoneEditForm.title}
+            sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7a5cac' } }}
           >
-            Update Milestone
+            {savingMilestone ? 'Saving...' : 'Save Milestone'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Deliverable Dialog */}
+      <Dialog
+        open={deliverableDialog}
+        onClose={closeDeliverableDialog}
+        maxWidth="md"
+        fullWidth
+        {...dialogScrollLockProps}
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle
+          sx={{
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5cac 100%)',
+            color: 'white',
+            pb: 2,
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            {deliverableDialogMode === 'create' ? 'Add Deliverable' : 'Update Deliverable'}
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+            {deliverableEditForm.title || 'Deliverable details'}
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Stack spacing={3}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Deliverable Title"
+                  value={deliverableEditForm.title}
+                  onChange={(e) => setDeliverableEditForm((prev) => ({ ...prev, title: e.target.value }))}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Type</InputLabel>
+                  <Select
+                    value={deliverableEditForm.type}
+                    label="Type"
+                    onChange={(e) => setDeliverableEditForm((prev) => ({ ...prev, type: e.target.value }))}
+                  >
+                    {DELIVERABLE_TYPES.map((type) => (
+                      <MenuItem key={type} value={type}>{type}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={deliverableEditForm.status}
+                    label="Status"
+                    onChange={(e) => setDeliverableEditForm((prev) => ({ ...prev, status: e.target.value }))}
+                  >
+                    <MenuItem value="Pending">Pending</MenuItem>
+                    <MenuItem value="In Progress">In Progress</MenuItem>
+                    <MenuItem value="Delivered">Delivered</MenuItem>
+                    <MenuItem value="Blocked">Blocked</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="date"
+                  label="Due Date"
+                  value={deliverableEditForm.dueDate}
+                  onChange={(e) => setDeliverableEditForm((prev) => ({ ...prev, dueDate: e.target.value }))}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+            </Grid>
+
+            <Box>
+              <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>Description</Typography>
+              <TipTapEditor
+                value={deliverableEditForm.description}
+                onChange={(value) => setDeliverableEditForm((prev) => ({ ...prev, description: value }))}
+                placeholder="Describe this deliverable and expected output..."
+                minHeight="100px"
+              />
+            </Box>
+
+            <Box>
+              <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>Completion Criteria</Typography>
+              <TipTapEditor
+                value={deliverableEditForm.completionCriteria}
+                onChange={(value) => setDeliverableEditForm((prev) => ({ ...prev, completionCriteria: value }))}
+                placeholder="Define acceptance criteria for this deliverable..."
+                minHeight="100px"
+              />
+            </Box>
+
+            <Box>
+              <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>Notes</Typography>
+              <TipTapEditor
+                value={deliverableEditForm.notes}
+                onChange={(value) => setDeliverableEditForm((prev) => ({ ...prev, notes: value }))}
+                placeholder="Progress updates, review comments, or handoff notes..."
+                minHeight="100px"
+              />
+            </Box>
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#2D3748', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <LinkIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
+                Linked Milestones
+              </Typography>
+              <Autocomplete
+                multiple
+                options={deliverableEditContext?.milestones || []}
+                getOptionLabel={(option) => option.title}
+                value={(deliverableEditContext?.milestones || []).filter((m) =>
+                  deliverableEditForm.linkedMilestoneIds.includes(m.id)
+                )}
+                onChange={(_, selected) => {
+                  setDeliverableEditForm((prev) => ({
+                    ...prev,
+                    linkedMilestoneIds: selected.map((m) => m.id),
+                  }));
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    size="small"
+                    placeholder="Select milestones that produce or validate this deliverable..."
+                  />
+                )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      {...getTagProps({ index })}
+                      key={option.id}
+                      label={option.title}
+                      size="small"
+                      sx={{ bgcolor: alpha('#8b6cbc', 0.12), color: '#6b4fa8' }}
+                    />
+                  ))
+                }
+              />
+            </Box>
+
+            <Divider />
+            {renderDocumentUploadSection(deliverableEditForm, setDeliverableEditForm)}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+          <Button onClick={closeDeliverableDialog} disabled={savingDeliverable}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveDeliverable}
+            disabled={savingDeliverable || !deliverableEditForm.title}
+            sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7a5cac' } }}
+          >
+            {savingDeliverable ? 'Saving...' : deliverableDialogMode === 'create' ? 'Create Deliverable' : 'Save Deliverable'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1670,6 +2312,7 @@ const ProjectStatusPage = () => {
         onClose={() => setNewMilestoneDialog(false)}
         maxWidth="sm"
         fullWidth
+        {...dialogScrollLockProps}
       >
         <DialogTitle>Add New Milestone</DialogTitle>
         <DialogContent>
@@ -1706,14 +2349,12 @@ const ProjectStatusPage = () => {
               </Select>
             </FormControl>
 
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Description"
+            <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>Description</Typography>
+            <TipTapEditor
               value={milestoneForm.description}
-              onChange={(e) => setMilestoneForm(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(value) => setMilestoneForm(prev => ({ ...prev, description: value }))}
               placeholder="Describe this milestone..."
+              minHeight="100px"
             />
           </Box>
         </DialogContent>
@@ -1722,6 +2363,7 @@ const ProjectStatusPage = () => {
           <Button 
             variant="contained" 
             onClick={handleAddMilestone}
+            sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7a5cac' } }}
           >
             Add Milestone
           </Button>
@@ -1737,6 +2379,7 @@ const ProjectStatusPage = () => {
         }}
         maxWidth="lg"
         fullWidth
+        {...dialogScrollLockProps}
         sx={{ '& .MuiDialog-paper': { height: '90vh' } }}
       >
         <DialogTitle sx={{ 

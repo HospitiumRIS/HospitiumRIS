@@ -307,7 +307,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { title, type, field, description } = body;
+    const { title, type, field, description, keywords } = body;
 
     // Validate required fields
     if (!title || !type) {
@@ -324,6 +324,9 @@ export async function POST(request) {
         type: type,
         field: field?.trim() || null,
         description: description?.trim() || null,
+        keywords: Array.isArray(keywords)
+          ? keywords.map((k) => String(k).trim()).filter(Boolean)
+          : [],
         status: 'DRAFT',
         createdBy: userId,
         content: '', // Initialize with empty content
