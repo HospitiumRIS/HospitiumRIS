@@ -57,6 +57,30 @@ export async function findInstitutionByEmailDomain(db, email) {
 }
 
 /**
+ * Find the VerifiedDomain row that matches this email, preferring VERIFIED
+ * over PENDING. SUSPENDED domains never match.
+ *
+ * @param {import('@prisma/client').PrismaClient | import('@prisma/client').Prisma.TransactionClient} db
+ * @param {string} email
+ * @returns {Promise<(import('@prisma/client').VerifiedDomain & { institution: import('@prisma/client').Institution })|null>}
+ */
+export async function findVerifiedDomainByEmail(db, email) {
+  const domain = extractDomain(email);
+  if (!domain) return null;
+
+  return (
+    (await db.verifiedDomain.findFirst({
+      where: { domain, status: 'VERIFIED' },
+      include: { institution: true },
+    })) ||
+    (await db.verifiedDomain.findFirst({
+      where: { domain, status: 'PENDING' },
+      include: { institution: true },
+    }))
+  );
+}
+
+/**
  * Self-heal: if a user isn't linked to a verified institution yet, re-check
  * their email domain in case a matching VerifiedDomain was added since they
  * registered (e.g. their institution admin added the domain later). Call

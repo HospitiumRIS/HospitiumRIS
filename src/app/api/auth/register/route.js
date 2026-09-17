@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { hashPassword, validateEmail, validatePassword } from '@/lib/auth';
-import { findInstitutionByEmailDomain, seedDomainForInstitution } from '@/lib/institution-domain';
-import { uniqueInstitutionSlug } from '@/lib/institution-slug';
-import { defaultEnabledModules } from '@/lib/institution-modules';
+import { findInstitutionByEmailDomain, findVerifiedDomainByEmail } from '@/lib/institution-domain';
 import { claimPendingInvitations } from '@/lib/manuscript-invitations';
 
 export async function POST(request) {
@@ -34,6 +32,7 @@ export async function POST(request) {
       // Personal details
       givenName,
       familyName,
+      accountName,
       email,
       confirmEmail,
       password,
@@ -73,13 +72,22 @@ export async function POST(request) {
     }
     
     // Foundation Admin and Operations have simplified validation
-    if (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') {
+    let foundationMatchedDomain = null;
+    let researchAdminMatchedDomain = null;
+    if (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS' || accountType === 'RESEARCH_ADMIN') {
+      if (accountType === 'RESEARCH_ADMIN' && !accountName?.trim()) {
+        errors.accountName = 'Account name is required';
+      }
+
       if (!email) {
         errors.email = 'Email is required';
       } else if (!validateEmail(email)) {
         errors.email = 'Invalid email format';
-      } else if (accountType === 'FOUNDATION_ADMIN' && !email.toLowerCase().endsWith('@hospitium.org')) {
-        errors.email = 'Only @hospitium.org email addresses are allowed for Foundation Administrator accounts';
+      } else if (accountType === 'FOUNDATION_ADMIN') {
+        foundationMatchedDomain = await findVerifiedDomainByEmail(prisma, email);
+        if (!foundationMatchedDomain) {
+          errors.email = 'Email domain is not a verified domain. Please use an email address from a verified domain.';
+        }
       }
       
       if (!password) {
@@ -95,7 +103,7 @@ export async function POST(request) {
         errors.confirmPassword = 'Passwords do not match';
       }
     } else {
-      // Standard validation for RESEARCHER and RESEARCH_ADMIN
+      // Standard validation for RESEARCHER
       if (!givenName?.trim()) {
         errors.givenName = 'Given name is required';
       }
@@ -125,7 +133,7 @@ export async function POST(request) {
     }
 
     // Account type specific validation
-    if (accountType === 'RESEARCHER' || accountType === 'RESEARCH_ADMIN') {
+    if (accountType === 'RESEARCHER') {
       if (!primaryInstitution?.trim()) {
         errors.primaryInstitution = 'Primary institution is required';
       }
@@ -135,6 +143,17 @@ export async function POST(request) {
       if (!startYear) {
         errors.startYear = 'Start year is required';
       }
+    } else if (accountType === 'RESEARCH_ADMIN') {
+      if (!email) {
+        errors.email = errors.email || 'Email is required';
+      } else if (!validateEmail(email)) {
+        errors.email = errors.email || 'Invalid email format';
+      } else {
+        researchAdminMatchedDomain = await findVerifiedDomainByEmail(prisma, email);
+        if (!researchAdminMatchedDomain) {
+          errors.email = 'Email domain is not a verified domain. Please use an email address from a verified domain.';
+        }
+      }
     } else if (accountType !== 'FOUNDATION_ADMIN' && accountType !== 'OPERATIONS') {
       // For non-researchers, non-foundation admins, and non-operations (if any future account types)
       if (!confirmEmail) {
@@ -143,20 +162,6 @@ export async function POST(request) {
         errors.confirmEmail = 'Email addresses do not match';
       }
     }
-
-    // Institution details validation for RESEARCH_ADMIN
-    if (accountType === 'RESEARCH_ADMIN') {
-      if (!institutionName?.trim()) {
-        errors.institutionName = 'Institution name is required';
-      }
-      if (!institutionType) {
-        errors.institutionType = 'Institution type is required';
-      }
-      if (!institutionCountry) {
-        errors.institutionCountry = 'Country is required';
-      }
-    }
-
 
     // Return validation errors if any
     if (Object.keys(errors).length > 0) {
@@ -198,6 +203,9 @@ export async function POST(request) {
         const nameParts = emailPrefix.split('.');
         userGivenName = nameParts[0] ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1) : (accountType === 'FOUNDATION_ADMIN' ? 'Foundation' : 'Operations');
         userFamilyName = nameParts[1] ? nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1) : (accountType === 'FOUNDATION_ADMIN' ? 'Administrator' : 'User');
+      } else if (accountType === 'RESEARCH_ADMIN') {
+        userGivenName = accountName.trim();
+        userFamilyName = '';
       } else {
         userGivenName = (orcidData?.givenNames || givenName).trim();
         userFamilyName = (orcidData?.familyName || familyName).trim();
@@ -212,6 +220,10 @@ export async function POST(request) {
       let matchedInstitution = null;
       if (accountType === 'RESEARCHER') {
         matchedInstitution = await findInstitutionByEmailDomain(tx, email);
+      } else if (accountType === 'FOUNDATION_ADMIN' && foundationMatchedDomain) {
+        matchedInstitution = foundationMatchedDomain.institution;
+      } else if (accountType === 'RESEARCH_ADMIN' && researchAdminMatchedDomain) {
+        matchedInstitution = researchAdminMatchedDomain.institution;
       }
 
       // Create user
@@ -227,55 +239,21 @@ export async function POST(request) {
           emailVerified: true,
           emailVerifyToken: null,
           emailVerifyExpires: null,
-          orcidId: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (orcidData?.orcidId || orcidId || null),
-          orcidGivenNames: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (orcidData?.givenNames || orcidGivenNames || null),
-          orcidFamilyName: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (orcidData?.familyName || orcidFamilyName || null),
+          orcidId: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS' || accountType === 'RESEARCH_ADMIN') ? null : (orcidData?.orcidId || orcidId || null),
+          orcidGivenNames: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS' || accountType === 'RESEARCH_ADMIN') ? null : (orcidData?.givenNames || orcidGivenNames || null),
+          orcidFamilyName: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS' || accountType === 'RESEARCH_ADMIN') ? null : (orcidData?.familyName || orcidFamilyName || null),
           primaryInstitution: accountType === 'FOUNDATION_ADMIN'
-            ? 'Hospitium Foundation'
+            ? (matchedInstitution?.name || 'Hospitium Foundation')
             : (accountType === 'OPERATIONS'
               ? 'Operations'
               : (matchedInstitution?.name || primaryInstitution?.trim() || null)),
-          startMonth: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (startMonth || null),
-          startYear: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') ? null : (startYear || null),
+          startMonth: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS' || accountType === 'RESEARCH_ADMIN') ? null : (startMonth || null),
+          startYear: (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS' || accountType === 'RESEARCH_ADMIN') ? null : (startYear || null),
           secondaryInstitutionId: matchedInstitution?.id || null,
           institutionVerifiedAt: matchedInstitution ? new Date() : null,
           institutionVerificationMethod: matchedInstitution ? 'EMAIL_DOMAIN' : null,
         }
       });
-
-      // Create institution record for RESEARCH_ADMIN
-      if (accountType === 'RESEARCH_ADMIN') {
-        const institution = await tx.institution.create({
-          data: {
-            userId: user.id,
-            name: institutionName.trim(),
-            slug: await uniqueInstitutionSlug(tx, institutionName.trim()),
-            type: institutionType,
-            country: institutionCountry,
-            website: institutionWebsite || null,
-            contactEmail: email,
-            enabledModules: defaultEnabledModules(),
-          }
-        });
-
-        // Auto-seed a verified domain from the admin's own email so they
-        // (and later, researchers with the same domain) are linked without
-        // a separate manual verification step.
-        await seedDomainForInstitution(tx, {
-          institutionId: institution.id,
-          email,
-          verifiedByUserId: user.id,
-        });
-
-        await tx.user.update({
-          where: { id: user.id },
-          data: {
-            secondaryInstitutionId: institution.id,
-            institutionVerifiedAt: new Date(),
-            institutionVerificationMethod: 'EMAIL_DOMAIN',
-          },
-        });
-      }
 
       // Foundation Admins don't need additional records - simplified registration
 

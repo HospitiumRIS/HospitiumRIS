@@ -41,14 +41,6 @@ const AccountDetailsStep = dynamic(() => import('../../components/Registration/A
   loading: () => <RegistrationStepSkeleton />
 });
 
-const InstitutionDetailsStep = dynamic(() => import('../../components/Registration/InstitutionDetailsStep'), {
-  loading: () => <RegistrationStepSkeleton />
-});
-
-const FoundationDetailsStep = dynamic(() => import('../../components/Registration/FoundationDetailsStep'), {
-  loading: () => <RegistrationStepSkeleton />
-});
-
 const PasswordStep = dynamic(() => import('../../components/Registration/PasswordStep'), {
   loading: () => <RegistrationStepSkeleton />
 });
@@ -112,6 +104,8 @@ const NoSSR = ({ children, fallback = null }) => {
   return children;
 };
 
+const RESEARCH_ADMIN_ACCOUNT_NAME = 'Research Administrator';
+
 const RegisterPage = () => {
   const theme = useTheme();
   const router = useRouter();
@@ -152,6 +146,8 @@ const RegisterPage = () => {
     startYear: '',
     
     // Research Admin specific
+    accountName: '',
+    matchedInstitutionId: '',
     institutionName: '',
     institutionType: '',
     institutionCountry: '',
@@ -219,7 +215,7 @@ const RegisterPage = () => {
     if (accountType === 'RESEARCHER') {
       return [...baseSteps, t('auth.step_orcid_search'), t('auth.step_account_details'), t('auth.step_password')];
     } else if (accountType === 'RESEARCH_ADMIN') {
-      return [...baseSteps, t('auth.step_orcid_search'), t('auth.step_account_details'), t('auth.step_institution_details'), t('auth.step_password')];
+      return [...baseSteps, t('auth.step_account_details'), t('auth.step_password')];
     } else if (accountType === 'FOUNDATION_ADMIN') {
       return [...baseSteps, t('auth.step_email_password')];
     } else if (accountType === 'OPERATIONS') {
@@ -269,7 +265,13 @@ const RegisterPage = () => {
   const handleAccountTypeChange = (event, newAccountType) => {
     if (newAccountType !== null) {
       setAccountType(newAccountType);
-      setFormData(prev => ({ ...prev, accountType: newAccountType }));
+      setFormData(prev => ({
+        ...prev,
+        accountType: newAccountType,
+        ...(newAccountType === 'RESEARCH_ADMIN'
+          ? { accountName: RESEARCH_ADMIN_ACCOUNT_NAME }
+          : {}),
+      }));
       // Clear account type error when user makes a selection
       if (errors.accountType) {
         setErrors(prev => ({ ...prev, accountType: '' }));
@@ -298,9 +300,13 @@ const RegisterPage = () => {
     return re.test(email);
   };
 
-  const validateFoundationEmail = (email) => {
-    const re = /^[A-Z0-9._%+-]+@hospitium\.org$/i;
-    return re.test(email);
+  const verifyEmailDomain = async (email) => {
+    const response = await fetch('/api/auth/verify-email-domain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return response.json();
   };
 
   const validatePassword = (password) => {
@@ -322,122 +328,128 @@ const RegisterPage = () => {
     };
   };
 
-  // Step validation
-  const validateStep = (step) => {
-    const newErrors = {};
-    
-    switch (step) {
-      case 0: // Account Type
-        if (!formData.accountType) {
-          newErrors.accountType = t('auth.error_account_type_required');
-        }
-        break;
-        
-      case 1: 
-        if (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') {
-          // Email & Password validation for Foundation Admins and Operations
-          if (!formData.email) {
-            newErrors.email = t('auth.error_email_required');
-          } else if (accountType === 'FOUNDATION_ADMIN' && !validateFoundationEmail(formData.email)) {
-            newErrors.email = t('auth.error_email_hospitium');
-          } else if (accountType === 'OPERATIONS' && !validateEmail(formData.email)) {
-            newErrors.email = t('auth.error_email_invalid');
-          }
-          
-          if (!formData.password) {
-            newErrors.password = t('auth.error_password_required');
-          } else {
-            const validation = validatePassword(formData.password);
-            if (!validation.isValid) {
-              newErrors.password = t('auth.error_password_weak');
-            }
-          }
-          if (!formData.confirmPassword) {
-            newErrors.confirmPassword = t('auth.error_confirm_password_required');
-          } else if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = t('auth.error_passwords_mismatch');
-          }
+  const validateResearcherAccountDetails = (newErrors) => {
+    if (!formData.givenName.trim()) {
+      newErrors.givenName = t('auth.error_given_name_required');
+    }
+    if (!formData.familyName.trim()) {
+      newErrors.familyName = t('auth.error_family_name_required');
+    }
+    if (!formData.email) {
+      newErrors.email = t('auth.error_email_required');
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = t('auth.error_email_invalid');
+    }
+    if (!formData.primaryInstitution.trim()) {
+      newErrors.primaryInstitution = t('auth.error_institution_required');
+    }
+    if (!formData.startMonth) {
+      newErrors.startMonth = t('auth.error_start_month_required');
+    }
+    if (!formData.startYear) {
+      newErrors.startYear = t('auth.error_start_year_required');
+    }
+  };
+
+  const validateResearchAdminAccountDetails = async (newErrors) => {
+    if (!formData.email) {
+      newErrors.email = t('auth.error_email_required');
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = t('auth.error_email_invalid');
+    } else {
+      try {
+        const domainCheck = await verifyEmailDomain(formData.email);
+        if (!domainCheck.valid) {
+          newErrors.email = domainCheck.message || t('auth.error_email_verified_domain');
+        } else if (!domainCheck.institutionId) {
+          newErrors.email = t(
+            'auth.error_institution_not_detected',
+            'Please verify your institutional email to detect your institution'
+          );
         } else {
-          // ORCID Search validation for RESEARCHER and RESEARCH_ADMIN
-          if (!selectedOrcidProfile) {
-            newErrors.orcidSearch = t('auth.error_orcid_required');
+          handleInstitutionMatched({
+            institutionId: domainCheck.institutionId,
+            institutionName: domainCheck.institutionName,
+          });
+        }
+      } catch (error) {
+        newErrors.email = t('auth.error_email_verified_domain');
+      }
+    }
+  };
+
+  const validatePasswordFields = (newErrors) => {
+    if (!formData.password) {
+      newErrors.password = t('auth.error_password_required');
+    } else {
+      const validation = validatePassword(formData.password);
+      if (!validation.isValid) {
+        newErrors.password = t('auth.error_password_weak');
+      }
+    }
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = t('auth.error_confirm_password_required');
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = t('auth.error_passwords_mismatch');
+    }
+  };
+
+  const handleInstitutionMatched = (match) => {
+    if (!match) {
+      setFormData(prev => ({
+        ...prev,
+        matchedInstitutionId: '',
+        primaryInstitution: '',
+        institutionName: '',
+      }));
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      matchedInstitutionId: match.institutionId || '',
+      primaryInstitution: match.institutionName || '',
+      institutionName: match.institutionName || '',
+    }));
+    setErrors(prev => ({ ...prev, email: '' }));
+  };
+
+  // Step validation
+  const validateStep = async (step) => {
+    const newErrors = {};
+
+    if (step === 0) {
+      if (!formData.accountType) {
+        newErrors.accountType = t('auth.error_account_type_required');
+      }
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    }
+
+    if (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') {
+      if (!formData.email) {
+        newErrors.email = t('auth.error_email_required');
+      } else if (!validateEmail(formData.email)) {
+        newErrors.email = t('auth.error_email_invalid');
+      } else if (accountType === 'FOUNDATION_ADMIN') {
+        try {
+          const domainCheck = await verifyEmailDomain(formData.email);
+          if (!domainCheck.valid) {
+            newErrors.email = domainCheck.message || t('auth.error_email_verified_domain');
           }
+        } catch (error) {
+          newErrors.email = t('auth.error_email_verified_domain');
         }
-        break;
-        
-      case 2: 
-        // Personal/Account Details for RESEARCHER and RESEARCH_ADMIN only
-        if (!formData.givenName.trim()) {
-          newErrors.givenName = t('auth.error_given_name_required');
-        }
-        if (!formData.familyName.trim()) {
-          newErrors.familyName = t('auth.error_family_name_required');
-        }
-        if (!formData.email) {
-          newErrors.email = t('auth.error_email_required');
-        } else if (!validateEmail(formData.email)) {
-          newErrors.email = t('auth.error_email_invalid');
-        }
-        
-        // Additional validation for institution and dates
-        if (!formData.primaryInstitution.trim()) {
-          newErrors.primaryInstitution = t('auth.error_institution_required');
-        }
-        if (!formData.startMonth) {
-          newErrors.startMonth = t('auth.error_start_month_required');
-        }
-        if (!formData.startYear) {
-          newErrors.startYear = t('auth.error_start_year_required');
-        }
-        break;
-        
-      case 3: 
-        if (accountType === 'RESEARCHER') {
-          // Researcher password validation
-          if (!formData.password) {
-            newErrors.password = t('auth.error_password_required');
-          } else {
-            const validation = validatePassword(formData.password);
-            if (!validation.isValid) {
-              newErrors.password = t('auth.error_password_weak');
-            }
-          }
-          if (!formData.confirmPassword) {
-            newErrors.confirmPassword = t('auth.error_confirm_password_required');
-          } else if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = t('auth.error_passwords_mismatch');
-          }
-        } else if (accountType === 'RESEARCH_ADMIN') {
-          // Research Admin institution validation
-          if (!formData.institutionName.trim()) {
-            newErrors.institutionName = t('auth.error_institution_name_required');
-          }
-          if (!formData.institutionType) {
-            newErrors.institutionType = t('auth.error_institution_type_required');
-          }
-          if (!formData.institutionCountry) {
-            newErrors.institutionCountry = t('auth.error_institution_country_required');
-          }
-        }
-        break;
-        
-      case 4: // Password (final step for Research Admins only)
-        if (accountType === 'RESEARCH_ADMIN') {
-          if (!formData.password) {
-            newErrors.password = t('auth.error_password_required');
-          } else {
-            const validation = validatePassword(formData.password);
-            if (!validation.isValid) {
-              newErrors.password = t('auth.error_password_weak');
-            }
-          }
-          if (!formData.confirmPassword) {
-            newErrors.confirmPassword = t('auth.error_confirm_password_required');
-          } else if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = t('auth.error_passwords_mismatch');
-          }
-        }
-        break;
+      }
+      validatePasswordFields(newErrors);
+    } else if (accountType === 'RESEARCH_ADMIN') {
+      if (step === 1) await validateResearchAdminAccountDetails(newErrors);
+      if (step === 2) validatePasswordFields(newErrors);
+    } else if (accountType === 'RESEARCHER') {
+      if (step === 1 && !selectedOrcidProfile) {
+        newErrors.orcidSearch = t('auth.error_orcid_required');
+      }
+      if (step === 2) validateResearcherAccountDetails(newErrors);
+      if (step === 3) validatePasswordFields(newErrors);
     }
     
     setErrors(newErrors);
@@ -445,8 +457,8 @@ const RegisterPage = () => {
   };
 
   // Navigation handlers
-  const handleNext = () => {
-    if (validateStep(activeStep)) {
+  const handleNext = async () => {
+    if (await validateStep(activeStep)) {
       setActiveStep(prev => prev + 1);
     }
   };
@@ -457,16 +469,22 @@ const RegisterPage = () => {
 
   // Submit handler
   const handleSubmit = async () => {
-    if (!validateStep(activeStep)) return;
-    
     setIsLoading(true);
     setFormError('');
+
+    if (!(await validateStep(activeStep))) {
+      setIsLoading(false);
+      return;
+    }
     
     try {
       const requestBody = {
         ...formData,
         // Ensure all necessary fields are included
         accountType: formData.accountType,
+        accountName: accountType === 'RESEARCH_ADMIN'
+          ? RESEARCH_ADMIN_ACCOUNT_NAME
+          : formData.accountName,
         givenName: formData.givenName,
         familyName: formData.familyName,
         email: formData.email,
@@ -532,24 +550,22 @@ const RegisterPage = () => {
           if (errorKeys.some(key => ['accountType'].includes(key))) {
             setActiveStep(0);
           } else if (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') {
-            // Foundation Admin and Operations error mapping - only 2 steps
             if (errorKeys.some(key => ['email', 'password', 'confirmPassword'].includes(key))) {
-              setActiveStep(1); // Email & Password step for Foundation Admins and Operations
+              setActiveStep(1);
+            }
+          } else if (accountType === 'RESEARCH_ADMIN') {
+            if (errorKeys.some(key => ['accountName', 'email', 'confirmEmail', 'primaryInstitution'].includes(key))) {
+              setActiveStep(1);
+            } else if (errorKeys.some(key => ['password', 'confirmPassword'].includes(key))) {
+              setActiveStep(2);
             }
           } else {
-            // Researcher and Research Admin error mapping
             if (errorKeys.some(key => ['orcidSearch'].includes(key))) {
               setActiveStep(1);
             } else if (errorKeys.some(key => ['givenName', 'familyName', 'email', 'confirmEmail', 'primaryInstitution', 'startMonth', 'startYear'].includes(key))) {
               setActiveStep(2);
-            } else if (errorKeys.some(key => ['institutionName', 'institutionType', 'institutionCountry', 'password', 'confirmPassword'].includes(key))) {
-              if (accountType === 'RESEARCHER') {
-                setActiveStep(3); // Password for Researchers
-              } else {
-                setActiveStep(3); // Institution details for Research Admins
-              }
-            } else if (errorKeys.some(key => ['password', 'confirmPassword'].includes(key)) && accountType === 'RESEARCH_ADMIN') {
-              setActiveStep(4); // Password for Research Admins
+            } else if (errorKeys.some(key => ['password', 'confirmPassword'].includes(key))) {
+              setActiveStep(3);
             }
           }
         }
@@ -580,7 +596,6 @@ const RegisterPage = () => {
 
       case 1: 
         if (accountType === 'FOUNDATION_ADMIN' || accountType === 'OPERATIONS') {
-          // Foundation Admins and Operations use simplified email & password step
           return (
             <FoundationAdminStep 
               formData={formData}
@@ -589,19 +604,37 @@ const RegisterPage = () => {
               accountType={accountType}
             />
           );
-        } else {
-          // ORCID Search (for RESEARCHER and RESEARCH_ADMIN)
+        }
+        if (accountType === 'RESEARCH_ADMIN') {
           return (
-            <OrcidSearchStep 
-              onOrcidSelect={handleOrcidSelect}
-              selectedOrcidProfile={selectedOrcidProfile}
+            <AccountDetailsStep 
+              formData={formData}
+              onInputChange={handleInputChange}
+              onInstitutionMatched={handleInstitutionMatched}
+              errors={errors}
+              accountType={accountType}
+              emailLocked={!!inviteDetails?.email}
+            />
+          );
+        }
+        return (
+          <OrcidSearchStep 
+            onOrcidSelect={handleOrcidSelect}
+            selectedOrcidProfile={selectedOrcidProfile}
+            errors={errors}
+          />
+        );
+        
+      case 2: 
+        if (accountType === 'RESEARCH_ADMIN') {
+          return (
+            <PasswordStep 
+              formData={formData}
+              onInputChange={handleInputChange}
               errors={errors}
             />
           );
         }
-        
-      case 2: 
-        // Personal/Account Details for RESEARCHER and RESEARCH_ADMIN only
         return (
           <AccountDetailsStep 
             formData={formData}
@@ -616,28 +649,6 @@ const RegisterPage = () => {
 
       case 3: 
         if (accountType === 'RESEARCHER') {
-          // Researchers go straight to password after account details
-          return (
-            <PasswordStep 
-              formData={formData}
-              onInputChange={handleInputChange}
-              errors={errors}
-            />
-          );
-        } else if (accountType === 'RESEARCH_ADMIN') {
-          // Research Admins show institution details
-          return (
-            <InstitutionDetailsStep 
-              formData={formData}
-              onInputChange={handleInputChange}
-              errors={errors}
-            />
-          );
-        }
-        break;
-
-      case 4: // Password (final step for Research Admins only)
-        if (accountType === 'RESEARCH_ADMIN') {
           return (
             <PasswordStep 
               formData={formData}
