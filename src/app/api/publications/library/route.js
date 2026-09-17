@@ -211,6 +211,117 @@ export async function POST(request) {
         return NextResponse.json({ success: true });
       }
 
+      case 'addPublications': {
+        const { folderId, publicationIds } = body;
+
+        if (!folderId || !Array.isArray(publicationIds) || publicationIds.length === 0) {
+          return NextResponse.json(
+            { success: false, error: 'Folder ID and publication IDs are required' },
+            { status: 400 }
+          );
+        }
+
+        const folder = await prisma.libraryFolder.findFirst({
+          where: { id: folderId, userId: user.id }
+        });
+
+        if (!folder) {
+          return NextResponse.json(
+            { success: false, error: 'Folder not found' },
+            { status: 404 }
+          );
+        }
+
+        const uniqueIds = [...new Set(publicationIds.filter(Boolean))];
+        const owned = await prisma.publication.findMany({
+          where: {
+            id: { in: uniqueIds },
+            authorRelations: { some: { userId: user.id } },
+          },
+          select: { id: true },
+        });
+        const ownedIds = owned.map((p) => p.id);
+
+        if (ownedIds.length > 0) {
+          await prisma.libraryFolderPublication.createMany({
+            data: ownedIds.map((publicationId) => ({ folderId, publicationId })),
+            skipDuplicates: true,
+          });
+        }
+
+        return NextResponse.json({ success: true, added: ownedIds.length });
+      }
+
+      case 'removePublications': {
+        const { folderId, publicationIds } = body;
+
+        if (!folderId || !Array.isArray(publicationIds) || publicationIds.length === 0) {
+          return NextResponse.json(
+            { success: false, error: 'Folder ID and publication IDs are required' },
+            { status: 400 }
+          );
+        }
+
+        const folder = await prisma.libraryFolder.findFirst({
+          where: { id: folderId, userId: user.id }
+        });
+
+        if (!folder) {
+          return NextResponse.json(
+            { success: false, error: 'Folder not found' },
+            { status: 404 }
+          );
+        }
+
+        const result = await prisma.libraryFolderPublication.deleteMany({
+          where: {
+            folderId,
+            publicationId: { in: publicationIds },
+          }
+        });
+
+        return NextResponse.json({ success: true, removed: result.count });
+      }
+
+      case 'movePublications': {
+        const { sourceFolderId, targetFolderId, publicationIds } = body;
+
+        if (!sourceFolderId || !targetFolderId || !Array.isArray(publicationIds) || publicationIds.length === 0) {
+          return NextResponse.json(
+            { success: false, error: 'Source folder, target folder, and publication IDs are required' },
+            { status: 400 }
+          );
+        }
+
+        const folderRows = await prisma.libraryFolder.findMany({
+          where: {
+            id: { in: [sourceFolderId, targetFolderId] },
+            userId: user.id
+          }
+        });
+
+        if (folderRows.length !== 2) {
+          return NextResponse.json(
+            { success: false, error: 'One or both folders not found' },
+            { status: 404 }
+          );
+        }
+
+        const uniqueIds = [...new Set(publicationIds.filter(Boolean))];
+
+        await prisma.$transaction([
+          prisma.libraryFolderPublication.deleteMany({
+            where: { folderId: sourceFolderId, publicationId: { in: uniqueIds } }
+          }),
+          prisma.libraryFolderPublication.createMany({
+            data: uniqueIds.map((publicationId) => ({ folderId: targetFolderId, publicationId })),
+            skipDuplicates: true,
+          }),
+        ]);
+
+        return NextResponse.json({ success: true, moved: uniqueIds.length });
+      }
+
       case 'movePublication': {
         const { sourceFolderId, targetFolderId, publicationId } = body;
         

@@ -1,22 +1,23 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../lib/prisma';
-import { getAuthenticatedUser } from '../../../../../lib/auth-server';
 import { isImaChekConfigured } from '../../../../../lib/imachek';
 import { startCaseComparison } from '../../../../../lib/image-integrity-compare';
-
-const INSTITUTION_ROLES = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
+import {
+  requireInstitutionImageIntegrityAccess,
+  institutionCasesWhere,
+} from '../../../../../lib/image-integrity-institution';
+import { MAX_COMPARE_CASES } from '../../../../../lib/image-integrity-limits';
 
 /**
  * POST /api/institution/image-integrity/compare
- * Cross-paper comparison for oversight: compare completed cases across researchers.
+ * Cross-paper comparison for oversight: compare completed cases within this institution.
  */
 export async function POST(request) {
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!INSTITUTION_ROLES.includes(user.accountType)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const auth = await requireInstitutionImageIntegrityAccess(request);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { institution } = auth;
+
     if (!isImaChekConfigured()) {
       return NextResponse.json({ error: 'ImaChek is not configured yet.' }, { status: 400 });
     }
@@ -28,9 +29,18 @@ export async function POST(request) {
     if (caseIds.length < 2) {
       return NextResponse.json({ error: 'Select at least two completed cases to compare.' }, { status: 400 });
     }
+    if (caseIds.length > MAX_COMPARE_CASES) {
+      return NextResponse.json(
+        { error: `You can compare at most ${MAX_COMPARE_CASES} cases at once.` },
+        { status: 400 }
+      );
+    }
 
     const records = await prisma.imageIntegrityCase.findMany({
-      where: { id: { in: caseIds } },
+      where: {
+        id: { in: caseIds },
+        ...institutionCasesWhere(institution),
+      },
     });
 
     if (records.length !== caseIds.length) {

@@ -38,7 +38,7 @@ import {
 import { authenticateAndFetchCollections, fetchZoteroItems, transformZoteroItems } from '../../../services/zoteroService';
 import { getZoteroSettings, isZoteroConfigured, getZoteroCredentials } from '../../../utils/zoteroSettings';
 
-const ZoteroImport = ({ onImportSuccess, color = '#db2c3a' }) => {
+const ZoteroImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
   const { t } = useTranslation();
   const [apiKey, setApiKey] = useState('');
   const [userID, setUserID] = useState('');

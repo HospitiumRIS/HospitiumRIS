@@ -30,7 +30,7 @@ const LEVELS = [
     color: '#2e7d32',
     bg: '#e8f5e9',
     title: 'Low confidence',
-    hint: 'Weak match. Often a false positive — still open the report if you want to double-check.',
+    hint: 'Weak match. Often a false positive - still open the report if you want to double-check.',
   },
 ];
 

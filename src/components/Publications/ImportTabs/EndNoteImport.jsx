@@ -16,7 +16,7 @@ import {
   CheckCircle as CheckIcon
 } from '@mui/icons-material';
 
-const EndNoteImport = ({ onImportSuccess, color = '#000000' }) => {
+const EndNoteImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState('');

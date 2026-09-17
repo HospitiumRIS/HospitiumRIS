@@ -32,12 +32,14 @@ const NetworkControls = ({
   const { t } = useTranslation();
   return (
     <Paper 
-      elevation={2} 
+      elevation={0} 
       sx={{ 
-        p: 2, 
+        p: 1.5, 
         mb: 2,
         borderRadius: 2,
-        backgroundColor: '#ffffff'
+        border: '1px solid',
+        borderColor: 'divider',
+        backgroundColor: 'transparent'
       }}
     >
       <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">

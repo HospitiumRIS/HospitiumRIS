@@ -51,6 +51,8 @@ import {
   Settings as SettingsIcon,
   ImageSearch as ImageIntegrityIcon,
   FactCheck as IntegrityReportIcon,
+  Science as LabUnitIcon,
+  FolderShared as CollectionIcon,
 } from '@mui/icons-material';
 
 const ICON = '#8b6cbc';
@@ -59,12 +61,13 @@ const ICON_FOUND = { color: ICON, fontSize: '1.1rem' };
 const ICON_DISABLED = { color: '#bdbdbd', fontSize: '1.1rem' };
 
 function item(t, labelKey, descKey, path, icon, extra = {}) {
+  const { labelDefault, descDefault, ...rest } = extra;
   return {
-    label: t(labelKey),
-    description: descKey ? t(descKey) : undefined,
+    label: t(labelKey, labelDefault),
+    description: descKey ? t(descKey, descDefault) : undefined,
     path,
     icon,
-    ...extra,
+    ...rest,
   };
 }
 
@@ -131,6 +134,10 @@ function buildInstitutionConfig(t) {
         categories: [
           category(t, 'nav_categories.integrity_oversight', [
             item(t, 'institution_nav.integrity_reports', 'institution_nav.integrity_reports_desc', '/institution/image-integrity', <IntegrityReportIcon sx={ICON_SM} />),
+            item(t, 'institution_nav.integrity_lab_units', 'institution_nav.integrity_lab_units_desc', '/institution/image-integrity/lab-units', <LabUnitIcon sx={ICON_SM} />, {
+              labelDefault: 'Labs / Units',
+              descDefault: 'Define lab and unit names researchers can optionally tag when submitting checks.',
+            }),
             item(t, 'institution_nav.integrity_usage_report', 'institution_nav.integrity_usage_desc', '/institution/image-integrity/usage', <ReportsIcon sx={ICON_SM} />),
           ]),
         ],
@@ -248,6 +255,10 @@ function buildResearcherConfig(t) {
         categories: [
           category(t, 'nav_categories.integrity_checks', [
             item(t, 'researcher.integrity_submissions', 'researcher.integrity_submissions_desc', '/researcher/image-integrity', <ImageIntegrityIcon sx={ICON_SM} />),
+            item(t, 'researcher.integrity_my_collections', 'researcher.integrity_collections_desc', '/researcher/image-integrity/collections', <CollectionIcon sx={ICON_SM} />, {
+              labelDefault: 'My Collections',
+              descDefault: 'Organize image integrity submissions into folders you can filter and review later.',
+            }),
           ]),
         ],
       },

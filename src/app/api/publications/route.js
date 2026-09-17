@@ -96,17 +96,35 @@ export async function DELETE(request) {
     }
 
     const { searchParams } = new URL(request.url);
+    let ids = [];
     const id = searchParams.get('id');
+    const idsParam = searchParams.get('ids');
 
-    if (!id) {
+    if (id) ids = [id];
+    if (idsParam) ids = idsParam.split(',').map((v) => v.trim()).filter(Boolean);
+
+    if (ids.length === 0) {
+      const contentType = request.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const body = await request.json();
+        if (Array.isArray(body?.ids)) ids = body.ids.filter(Boolean);
+        else if (body?.id) ids = [body.id];
+      }
+    }
+
+    if (ids.length === 0) {
       return NextResponse.json(
         { error: 'Publication ID is required' },
         { status: 400 }
       );
     }
 
-    const removed = await removePublicationFromUserLibrary(user.id, id);
-    if (!removed) {
+    let removed = 0;
+    for (const publicationId of ids) {
+      if (await removePublicationFromUserLibrary(user.id, publicationId)) removed += 1;
+    }
+
+    if (removed === 0) {
       return NextResponse.json(
         { error: 'Publication not found in your library' },
         { status: 404 }
@@ -115,7 +133,10 @@ export async function DELETE(request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Publication removed from your library',
+      removed,
+      message: ids.length === 1
+        ? 'Publication removed from your library'
+        : `${removed} publication(s) removed from your library`,
     });
   } catch (error) {
     console.error('Error deleting publication:', error);

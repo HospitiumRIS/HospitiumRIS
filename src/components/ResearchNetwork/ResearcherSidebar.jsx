@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Drawer,
   Box,
@@ -8,10 +9,9 @@ import {
   Avatar,
   Chip,
   Stack,
-  Divider,
   Button,
   Collapse,
-  alpha
+  alpha,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -19,52 +19,137 @@ import {
   Article as ArticleIcon,
   Description as DescriptionIcon,
   Assignment as AssignmentIcon,
-  Email as EmailIcon,
   Person as PersonIcon,
   ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon
+  ExpandLess as ExpandLessIcon,
+  ArrowForward as ArrowIcon,
 } from '@mui/icons-material';
+
+const PURPLE = '#8b6cbc';
+
+const SectionLabel = ({ children }) => (
+  <Typography
+    variant="caption"
+    sx={{
+      fontWeight: 700,
+      color: '#64748b',
+      mb: 1.25,
+      display: 'block',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+      fontSize: '0.68rem',
+    }}
+  >
+    {children}
+  </Typography>
+);
+
+const AccordionRow = ({ icon, iconColor, title, count, open, onToggle, children }) => (
+  <Box sx={{ mb: 1.25 }}>
+    <Box
+      onClick={onToggle}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 1.5,
+        p: 1.25,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: open ? alpha(iconColor, 0.35) : alpha(PURPLE, 0.12),
+        bgcolor: open ? alpha(iconColor, 0.06) : 'background.paper',
+        cursor: 'pointer',
+        transition: 'all 0.18s',
+        '&:hover': {
+          borderColor: alpha(iconColor, 0.4),
+          bgcolor: alpha(iconColor, 0.06),
+          transform: 'translateY(-1px)',
+          boxShadow: `0 4px 12px ${alpha(iconColor, 0.12)}`,
+        },
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
+        <Box
+          sx={{
+            width: 32,
+            height: 32,
+            borderRadius: 1.5,
+            bgcolor: alpha(iconColor, 0.12),
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          {React.cloneElement(icon, { sx: { fontSize: 17, color: iconColor } })}
+        </Box>
+        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>
+          {title}
+        </Typography>
+        <Chip
+          label={count}
+          size="small"
+          sx={{
+            height: 20,
+            minWidth: 20,
+            fontSize: '0.68rem',
+            fontWeight: 700,
+            bgcolor: iconColor,
+            color: 'white',
+          }}
+        />
+      </Box>
+      {open
+        ? <ExpandLessIcon sx={{ fontSize: 18, color: '#94a3b8' }} />
+        : <ExpandMoreIcon sx={{ fontSize: 18, color: '#94a3b8' }} />}
+    </Box>
+    <Collapse in={open}>
+      <Box
+        sx={{
+          mt: 1,
+          p: 1.25,
+          borderRadius: 2,
+          bgcolor: alpha(PURPLE, 0.04),
+          border: `1px solid ${alpha(PURPLE, 0.08)}`,
+        }}
+      >
+        {children}
+      </Box>
+    </Collapse>
+  </Box>
+);
 
 const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscripts, proposals, allResearchers, onSelectResearcher }) => {
   const { t } = useTranslation();
+  const router = useRouter();
   const [showPublications, setShowPublications] = useState(false);
   const [showManuscripts, setShowManuscripts] = useState(false);
   const [showProposals, setShowProposals] = useState(false);
 
   if (!researcher) return null;
 
-  const getInitials = (name) => {
-    return (name || '?')
+  const getInitials = (name) =>
+    (name || '?')
       .split(' ')
-      .map(n => n[0])
+      .map((n) => n[0])
       .join('')
       .substring(0, 2)
       .toUpperCase();
-  };
 
-  const sharedPublications = publications?.filter(pub =>
-    pub.co_authors?.includes(researcher.id)
-  ) || [];
+  const sharedPublications = publications?.filter((pub) => pub.co_authors?.includes(researcher.id)) || [];
+  const sharedManuscripts = manuscripts?.filter((ms) => ms.collaborators?.includes(researcher.id)) || [];
+  const sharedProposals = proposals?.filter((p) => p.coInvestigators?.includes(researcher.id)) || [];
 
-  const sharedManuscripts = manuscripts?.filter(ms =>
-    ms.collaborators?.includes(researcher.id)
-  ) || [];
-
-  const sharedProposals = proposals?.filter(p =>
-    p.coInvestigators?.includes(researcher.id)
-  ) || [];
-
-  // Renders a row of clickable collaborator chips for a given work item
   const renderCollaboratorChips = (collaboratorIds = [], pendingIds = []) => {
-    const ids = collaboratorIds.filter(id => id !== researcher.id);
+    const ids = collaboratorIds.filter((id) => id !== researcher.id);
     if (ids.length === 0) return null;
 
     return (
-      <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ gap: 0.5, mt: 1 }}>
-        {ids.map(id => {
-          const person = allResearchers?.find(r => r.id === id);
+      <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+        {ids.map((id) => {
+          const person = allResearchers?.find((r) => r.id === id);
           const isPendingPerson = pendingIds.includes(id);
-          const bgColor = person?.isLead ? '#fbbf24' : isPendingPerson ? '#94a3b8' : '#8b6cbc';
+          const bgColor = person?.isLead ? '#fbbf24' : isPendingPerson ? '#94a3b8' : PURPLE;
 
           return (
             <Chip
@@ -83,15 +168,28 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
                 fontSize: '0.7rem',
                 bgcolor: 'white',
                 border: '1px solid',
-                borderColor: '#e2e8f0',
+                borderColor: alpha(PURPLE, 0.18),
                 cursor: person ? 'pointer' : 'default',
-                '&:hover': person ? { bgcolor: '#f5f0fa', borderColor: '#8b6cbc' } : undefined
+                '&:hover': person ? { bgcolor: alpha(PURPLE, 0.06), borderColor: PURPLE } : undefined,
               }}
             />
           );
         })}
       </Stack>
     );
+  };
+
+  const stats = [
+    { value: researcher.publicationsCount || 0, label: t('research_network.publications'), color: PURPLE },
+    { value: researcher.manuscriptsCount || 0, label: t('research_network.manuscripts'), color: '#a084d1' },
+    ...(researcher.proposalsCount > 0
+      ? [{ value: researcher.proposalsCount, label: t('research_network.proposals'), color: '#7a5cb0' }]
+      : []),
+  ];
+
+  const handleViewProfile = () => {
+    if (researcher.isLead) router.push('/researcher/profile');
+    else if (researcher.id) router.push(`/researcher/profile/${researcher.id}`);
   };
 
   return (
@@ -101,171 +199,184 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
       onClose={onClose}
       PaperProps={{
         sx: {
-          width: { xs: '100%', sm: 450 },
-          p: 0
-        }
+          width: { xs: '100%', sm: 420 },
+          p: 0,
+          borderTopLeftRadius: { xs: 0, sm: 16 },
+          borderBottomLeftRadius: { xs: 0, sm: 16 },
+          overflow: 'hidden',
+          boxShadow: '-12px 0 40px rgba(139, 108, 188, 0.18)',
+        },
       }}
     >
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#f8fafc' }}>
-        {/* Header - Purple background */}
-        <Box sx={{
-          p: 2.5,
-          background: '#8b6cbc',
-          color: 'white',
-          position: 'relative'
-        }}>
-          <IconButton 
-            onClick={onClose} 
-            size="small" 
-            sx={{ 
+        <Box
+          sx={{
+            p: 2.75,
+            pr: 5,
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)',
+            color: 'white',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
               position: 'absolute',
-              top: 12,
-              right: 12,
+              top: -40,
+              right: -30,
+              width: 140,
+              height: 140,
+              borderRadius: '50%',
+              bgcolor: 'rgba(255,255,255,0.12)',
+            },
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              bottom: -50,
+              left: -20,
+              width: 120,
+              height: 120,
+              borderRadius: '50%',
+              bgcolor: 'rgba(255,255,255,0.08)',
+            },
+          }}
+        >
+          <IconButton
+            onClick={onClose}
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              zIndex: 1,
               color: 'white',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }
+              bgcolor: 'rgba(255,255,255,0.16)',
+              backdropFilter: 'blur(8px)',
+              '&:hover': { bgcolor: 'rgba(255,255,255,0.28)' },
             }}
           >
             <CloseIcon fontSize="small" />
           </IconButton>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, mb: 2, position: 'relative', zIndex: 1 }}>
             <Avatar
               sx={{
-                width: 56,
-                height: 56,
-                bgcolor: 'rgba(255,255,255,0.2)',
+                width: 64,
+                height: 64,
+                bgcolor: 'rgba(255,255,255,0.22)',
                 color: 'white',
-                fontSize: '1.25rem',
-                fontWeight: 600,
-                border: '2px solid rgba(255,255,255,0.3)'
+                fontSize: '1.35rem',
+                fontWeight: 700,
+                border: '2px solid rgba(255,255,255,0.45)',
+                boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
               }}
             >
               {getInitials(researcher.name)}
             </Avatar>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="h6" fontWeight={600} sx={{ fontSize: '1.1rem', color: 'white' }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.05rem', color: 'white', lineHeight: 1.25, mb: 0.35 }}>
                 {researcher.name}
               </Typography>
-              <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.75rem' }}>
                 {researcher.isLead ? t('research_network.lead_current_user') : t('research_network.collaborator')}
               </Typography>
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <PersonIcon sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }} />
-            <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
-              {researcher.role || t('research_network.researcher')}
-            </Typography>
-          </Box>
+          <Stack spacing={0.85} sx={{ position: 'relative', zIndex: 1, mb: 1.5 }}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Box sx={{ width: 22, height: 22, borderRadius: 1, bgcolor: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <PersonIcon sx={{ fontSize: 13 }} />
+              </Box>
+              <Typography variant="body2" sx={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.92)' }}>
+                {researcher.role || t('research_network.researcher')}
+              </Typography>
+            </Stack>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Box sx={{ width: 22, height: 22, borderRadius: 1, bgcolor: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <BusinessIcon sx={{ fontSize: 13 }} />
+              </Box>
+              <Typography variant="body2" sx={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.92)' }}>
+                {researcher.institution}
+              </Typography>
+            </Stack>
+          </Stack>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-            <BusinessIcon sx={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }} />
-            <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.9)' }}>
-              {researcher.institution}
-            </Typography>
-          </Box>
-
-          <Stack direction="row" spacing={0.75} flexWrap="wrap" sx={{ gap: 0.75 }}>
+          <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ position: 'relative', zIndex: 1 }}>
             {researcher.isPending && (
-              <Chip 
-                label={t('research_network.pending')} 
-                size="small" 
-                sx={{ 
-                  height: 22, 
-                  fontSize: '0.7rem',
+              <Chip
+                label={t('research_network.pending')}
+                size="small"
+                sx={{
+                  height: 22,
+                  fontSize: '0.68rem',
                   bgcolor: 'rgba(255,255,255,0.2)',
                   color: 'white',
-                  fontWeight: 500,
-                  border: '1px solid rgba(255,255,255,0.3)'
-                }} 
+                  fontWeight: 600,
+                  border: '1px solid rgba(255,255,255,0.35)',
+                }}
               />
             )}
             {researcher.orcidId && (
-              <Chip 
+              <Chip
                 label={`ORCID: ${researcher.orcidId}`}
-                size="small" 
-                sx={{ 
-                  height: 22, 
-                  fontSize: '0.7rem',
+                size="small"
+                sx={{
+                  height: 22,
+                  fontSize: '0.68rem',
                   bgcolor: 'rgba(255,255,255,0.2)',
                   color: 'white',
-                  fontWeight: 500,
-                  border: '1px solid rgba(255,255,255,0.3)'
-                }} 
+                  fontWeight: 600,
+                  border: '1px solid rgba(255,255,255,0.35)',
+                }}
               />
             )}
           </Stack>
         </Box>
 
-        {/* Statistics - Compact */}
-        <Box sx={{ p: 2.5, bgcolor: 'white' }}>
-          <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ mb: 1.5, display: 'block', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            {t('research_network.collaboration_stats')}
-          </Typography>
-          <Stack direction="row" spacing={1.5}>
-            <Box sx={{ 
-              flex: 1, 
-              p: 1.5, 
-              bgcolor: '#f1f5f9',
-              borderRadius: 2,
-              textAlign: 'center'
-            }}>
-              <Typography variant="h5" sx={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a', mb: 0.25 }}>
-                {researcher.publicationsCount || 0}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                {t('research_network.publications')}
-              </Typography>
-            </Box>
-            <Box sx={{ 
-              flex: 1, 
-              p: 1.5, 
-              bgcolor: '#f1f5f9',
-              borderRadius: 2,
-              textAlign: 'center'
-            }}>
-              <Typography variant="h5" sx={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a', mb: 0.25 }}>
-                {researcher.manuscriptsCount || 0}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                {t('research_network.manuscripts')}
-              </Typography>
-            </Box>
-            {researcher.proposalsCount > 0 && (
-              <Box sx={{ 
-                flex: 1, 
-                p: 1.5, 
-                bgcolor: '#f1f5f9',
-                borderRadius: 2,
-                textAlign: 'center'
-              }}>
-                <Typography variant="h5" sx={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a', mb: 0.25 }}>
-                  {researcher.proposalsCount}
+        <Box sx={{ p: 2.25, bgcolor: 'white', borderBottom: `1px solid ${alpha(PURPLE, 0.1)}` }}>
+          <SectionLabel>{t('research_network.collaboration_stats')}</SectionLabel>
+          <Stack direction="row" spacing={1}>
+            {stats.map((item) => (
+              <Box
+                key={item.label}
+                sx={{
+                  flex: 1,
+                  py: 1.5,
+                  px: 1,
+                  borderRadius: 2,
+                  textAlign: 'center',
+                  bgcolor: alpha(item.color, 0.07),
+                  border: `1px solid ${alpha(item.color, 0.14)}`,
+                }}
+              >
+                <Typography variant="h5" sx={{ fontSize: '1.45rem', fontWeight: 700, color: item.color, lineHeight: 1.15, mb: 0.25 }}>
+                  {item.value}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                  {t('research_network.proposals')}
+                <Typography variant="caption" sx={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 500 }}>
+                  {item.label}
                 </Typography>
               </Box>
-            )}
+            ))}
           </Stack>
         </Box>
 
-        {/* Content - Scrollable */}
-        <Box sx={{ flex: 1, overflow: 'auto', p: 2.5 }}>
+        <Box sx={{ flex: 1, overflow: 'auto', p: 2.25 }}>
           {researcher.specialization && (
-            <Box sx={{ mb: 2.5 }}>
-              <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ mb: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                {t('research_network.specialization')}
-              </Typography>
-              <Stack direction="row" spacing={0.75} flexWrap="wrap" sx={{ gap: 0.75 }}>
+            <Box sx={{ mb: 2.25 }}>
+              <SectionLabel>{t('research_network.specialization')}</SectionLabel>
+              <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
                 {researcher.specialization.split(',').map((spec, idx) => (
-                  <Chip 
-                    key={idx} 
-                    label={spec.trim()} 
-                    size="small" 
-                    variant="outlined"
-                    sx={{ height: 24, fontSize: '0.75rem' }}
+                  <Chip
+                    key={idx}
+                    label={spec.trim()}
+                    size="small"
+                    sx={{
+                      height: 24,
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      bgcolor: alpha(PURPLE, 0.1),
+                      color: PURPLE,
+                      border: `1px solid ${alpha(PURPLE, 0.18)}`,
+                    }}
                   />
                 ))}
               </Stack>
@@ -273,24 +384,32 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
           )}
 
           {(researcher.globalCitations > 0 || researcher.hIndex > 0) && (
-            <Box sx={{ mb: 2.5, p: 1.5, bgcolor: '#f1f5f9', borderRadius: 2 }}>
+            <Box
+              sx={{
+                mb: 2.25,
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: alpha(PURPLE, 0.05),
+                border: `1px solid ${alpha(PURPLE, 0.12)}`,
+              }}
+            >
               <Stack direction="row" spacing={3}>
                 {researcher.globalCitations > 0 && (
                   <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block', mb: 0.25 }}>
+                    <Typography variant="caption" sx={{ fontSize: '0.68rem', color: '#64748b', display: 'block', mb: 0.25 }}>
                       {t('research_network.citations')}
                     </Typography>
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: PURPLE }}>
                       {researcher.globalCitations}
                     </Typography>
                   </Box>
                 )}
                 {researcher.hIndex > 0 && (
                   <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block', mb: 0.25 }}>
+                    <Typography variant="caption" sx={{ fontSize: '0.68rem', color: '#64748b', display: 'block', mb: 0.25 }}>
                       {t('research_network.h_index')}
                     </Typography>
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: PURPLE }}>
                       {researcher.hIndex}
                     </Typography>
                   </Box>
@@ -299,225 +418,133 @@ const ResearcherSidebar = ({ open, onClose, researcher, publications, manuscript
             </Box>
           )}
 
-          {/* Shared Publications - Collapsible */}
           {sharedPublications.length > 0 && (
-            <Box sx={{ mb: 2.5 }}>
-              <Button
-                fullWidth
-                onClick={() => setShowPublications(!showPublications)}
-                endIcon={showPublications ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                sx={{ 
-                  justifyContent: 'space-between',
-                  textTransform: 'none',
-                  color: 'text.primary',
-                  bgcolor: 'white',
-                  border: '1px solid',
-                  borderColor: '#e2e8f0',
-                  borderRadius: 2,
-                  p: 1.25,
-                  '&:hover': {
-                    bgcolor: '#f8fafc',
-                    borderColor: '#cbd5e1'
-                  }
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <ArticleIcon sx={{ fontSize: 18, color: '#6366f1' }} />
-                  <Typography variant="body2" fontWeight={600}>
-                    {t('research_network.shared_publications')}
+            <AccordionRow
+              icon={<ArticleIcon />}
+              iconColor={PURPLE}
+              title={t('research_network.shared_publications')}
+              count={sharedPublications.length}
+              open={showPublications}
+              onToggle={() => setShowPublications(!showPublications)}
+            >
+              {sharedPublications.slice(0, 5).map((pub, idx) => (
+                <Box
+                  key={idx}
+                  sx={{
+                    p: 1.25,
+                    mb: idx < Math.min(4, sharedPublications.length - 1) ? 1 : 0,
+                    borderRadius: 1.5,
+                    bgcolor: 'background.paper',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.4, fontSize: '0.82rem', lineHeight: 1.4 }}>
+                    {pub.title}
                   </Typography>
-                  <Chip 
-                    label={sharedPublications.length} 
-                    size="small" 
-                    sx={{ height: 20, fontSize: '0.7rem', bgcolor: '#6366f1', color: 'white' }}
-                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
+                    {pub.journal || t('common.unknown')} • {pub.year || t('common.not_available')}
+                  </Typography>
                 </Box>
-              </Button>
-              <Collapse in={showPublications}>
-                <Box sx={{ mt: 1.5, pl: 1 }}>
-                  {sharedPublications.slice(0, 5).map((pub, idx) => (
-                    <Box 
-                      key={idx} 
-                      sx={{ 
-                        mb: 1.5,
-                        pb: 1.5,
-                        borderBottom: idx < Math.min(4, sharedPublications.length - 1) ? '1px solid' : 'none',
-                        borderColor: 'divider'
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight={500} sx={{ mb: 0.5, fontSize: '0.875rem', lineHeight: 1.4 }}>
-                        {pub.title}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                        {pub.journal || t('common.unknown')} • {pub.year || t('common.not_available')}
-                      </Typography>
-                    </Box>
-                  ))}
-                  {sharedPublications.length > 5 && (
-                    <Typography variant="caption" color="primary" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
-                      {t('research_network.more_count', { count: sharedPublications.length - 5 })}
-                    </Typography>
-                  )}
-                </Box>
-              </Collapse>
-            </Box>
+              ))}
+              {sharedPublications.length > 5 && (
+                <Typography variant="caption" sx={{ fontSize: '0.72rem', fontWeight: 600, color: PURPLE, display: 'block', mt: 1 }}>
+                  {t('research_network.more_count', { count: sharedPublications.length - 5 })}
+                </Typography>
+              )}
+            </AccordionRow>
           )}
 
-          {/* Shared Manuscripts - Collapsible */}
           {sharedManuscripts.length > 0 && (
-            <Box sx={{ mb: 2.5 }}>
-              <Button
-                fullWidth
-                onClick={() => setShowManuscripts(!showManuscripts)}
-                endIcon={showManuscripts ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                sx={{ 
-                  justifyContent: 'space-between',
-                  textTransform: 'none',
-                  color: 'text.primary',
-                  bgcolor: 'white',
-                  border: '1px solid',
-                  borderColor: '#e2e8f0',
-                  borderRadius: 2,
-                  p: 1.25,
-                  '&:hover': {
-                    bgcolor: '#f8fafc',
-                    borderColor: '#cbd5e1'
-                  }
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <DescriptionIcon sx={{ fontSize: 18, color: '#8b5cf6' }} />
-                  <Typography variant="body2" fontWeight={600}>
-                    {t('research_network.shared_manuscripts')}
+            <AccordionRow
+              icon={<DescriptionIcon />}
+              iconColor="#a084d1"
+              title={t('research_network.shared_manuscripts')}
+              count={sharedManuscripts.length}
+              open={showManuscripts}
+              onToggle={() => setShowManuscripts(!showManuscripts)}
+            >
+              {sharedManuscripts.slice(0, 5).map((ms, idx) => (
+                <Box
+                  key={idx}
+                  sx={{
+                    p: 1.25,
+                    mb: idx < Math.min(4, sharedManuscripts.length - 1) ? 1 : 0,
+                    borderRadius: 1.5,
+                    bgcolor: 'background.paper',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.82rem', lineHeight: 1.4 }}>
+                    {ms.title}
                   </Typography>
-                  <Chip 
-                    label={sharedManuscripts.length} 
-                    size="small" 
-                    sx={{ height: 20, fontSize: '0.7rem', bgcolor: '#8b5cf6', color: 'white' }}
-                  />
+                  <Stack direction="row" spacing={0.5} sx={{ mb: 0.25 }}>
+                    <Chip label={ms.type || t('research_network.manuscript')} size="small" sx={{ height: 18, fontSize: '0.63rem', bgcolor: alpha(PURPLE, 0.1), color: PURPLE }} />
+                    <Chip label={ms.status || t('common.draft')} size="small" sx={{ height: 18, fontSize: '0.63rem' }} />
+                  </Stack>
+                  {renderCollaboratorChips(ms.collaborators, ms.pendingInvitations)}
                 </Box>
-              </Button>
-              <Collapse in={showManuscripts}>
-                <Box sx={{ mt: 1.5, pl: 1 }}>
-                  {sharedManuscripts.slice(0, 5).map((ms, idx) => (
-                    <Box 
-                      key={idx} 
-                      sx={{ 
-                        mb: 1.5,
-                        pb: 1.5,
-                        borderBottom: idx < Math.min(4, sharedManuscripts.length - 1) ? '1px solid' : 'none',
-                        borderColor: 'divider'
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight={500} sx={{ mb: 0.5, fontSize: '0.875rem', lineHeight: 1.4 }}>
-                        {ms.title}
-                      </Typography>
-                      <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
-                        <Chip 
-                          label={ms.type || t('research_network.manuscript')} 
-                          size="small" 
-                          sx={{ height: 18, fontSize: '0.65rem' }}
-                        />
-                        <Chip
-                          label={ms.status || t('common.draft')}
-                          size="small"
-                          sx={{ height: 18, fontSize: '0.65rem' }}
-                        />
-                      </Stack>
-                      {renderCollaboratorChips(ms.collaborators, ms.pendingInvitations)}
-                    </Box>
-                  ))}
-                  {sharedManuscripts.length > 5 && (
-                    <Typography variant="caption" color="primary" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
-                      {t('research_network.more_count', { count: sharedManuscripts.length - 5 })}
-                    </Typography>
-                  )}
-                </Box>
-              </Collapse>
-            </Box>
+              ))}
+              {sharedManuscripts.length > 5 && (
+                <Typography variant="caption" sx={{ fontSize: '0.72rem', fontWeight: 600, color: PURPLE, display: 'block', mt: 1 }}>
+                  {t('research_network.more_count', { count: sharedManuscripts.length - 5 })}
+                </Typography>
+              )}
+            </AccordionRow>
           )}
 
-          {/* Shared Proposals - Collapsible */}
           {sharedProposals.length > 0 && (
-            <Box sx={{ mb: 2.5 }}>
-              <Button
-                fullWidth
-                onClick={() => setShowProposals(!showProposals)}
-                endIcon={showProposals ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                sx={{
-                  justifyContent: 'space-between',
-                  textTransform: 'none',
-                  color: 'text.primary',
-                  bgcolor: 'white',
-                  border: '1px solid',
-                  borderColor: '#e2e8f0',
-                  borderRadius: 2,
-                  p: 1.25,
-                  '&:hover': {
-                    bgcolor: '#f8fafc',
-                    borderColor: '#cbd5e1'
-                  }
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <AssignmentIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
-                  <Typography variant="body2" fontWeight={600}>
-                    {t('research_network.shared_proposals')}
+            <AccordionRow
+              icon={<AssignmentIcon />}
+              iconColor="#7a5cb0"
+              title={t('research_network.shared_proposals')}
+              count={sharedProposals.length}
+              open={showProposals}
+              onToggle={() => setShowProposals(!showProposals)}
+            >
+              {sharedProposals.slice(0, 5).map((p, idx) => (
+                <Box
+                  key={idx}
+                  sx={{
+                    p: 1.25,
+                    mb: idx < Math.min(4, sharedProposals.length - 1) ? 1 : 0,
+                    borderRadius: 1.5,
+                    bgcolor: 'background.paper',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.4, fontSize: '0.82rem', lineHeight: 1.4 }}>
+                    {p.title}
                   </Typography>
-                  <Chip
-                    label={sharedProposals.length}
-                    size="small"
-                    sx={{ height: 20, fontSize: '0.7rem', bgcolor: '#f59e0b', color: 'white' }}
-                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
+                    {p.status || t('common.draft')}
+                  </Typography>
+                  {renderCollaboratorChips(p.coInvestigators)}
                 </Box>
-              </Button>
-              <Collapse in={showProposals}>
-                <Box sx={{ mt: 1.5, pl: 1 }}>
-                  {sharedProposals.slice(0, 5).map((p, idx) => (
-                    <Box
-                      key={idx}
-                      sx={{
-                        mb: 1.5,
-                        pb: 1.5,
-                        borderBottom: idx < Math.min(4, sharedProposals.length - 1) ? '1px solid' : 'none',
-                        borderColor: 'divider'
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight={500} sx={{ mb: 0.5, fontSize: '0.875rem', lineHeight: 1.4 }}>
-                        {p.title}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                        {p.status || t('common.draft')}
-                      </Typography>
-                      {renderCollaboratorChips(p.coInvestigators)}
-                    </Box>
-                  ))}
-                  {sharedProposals.length > 5 && (
-                    <Typography variant="caption" color="primary" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
-                      {t('research_network.more_count', { count: sharedProposals.length - 5 })}
-                    </Typography>
-                  )}
-                </Box>
-              </Collapse>
-            </Box>
+              ))}
+              {sharedProposals.length > 5 && (
+                <Typography variant="caption" sx={{ fontSize: '0.72rem', fontWeight: 600, color: PURPLE, display: 'block', mt: 1 }}>
+                  {t('research_network.more_count', { count: sharedProposals.length - 5 })}
+                </Typography>
+              )}
+            </AccordionRow>
           )}
         </Box>
 
-        {/* Actions - Footer */}
-        <Box sx={{ p: 2.5, bgcolor: 'white', borderTop: 1, borderColor: 'divider' }}>
-          <Button 
-            variant="contained" 
-            fullWidth 
+        <Box sx={{ p: 2.25, bgcolor: 'white', borderTop: `1px solid ${alpha(PURPLE, 0.1)}` }}>
+          <Button
+            variant="contained"
+            fullWidth
             startIcon={<PersonIcon />}
-            sx={{ 
-              textTransform: 'none', 
+            endIcon={<ArrowIcon sx={{ fontSize: 16 }} />}
+            onClick={handleViewProfile}
+            sx={{
+              textTransform: 'none',
               fontWeight: 600,
-              background: '#8b6cbc',
-              py: 1.25,
+              bgcolor: PURPLE,
+              py: 1.2,
               borderRadius: 2,
-              '&:hover': {
-                background: '#7a5aa8',
-              }
+              boxShadow: `0 6px 16px ${alpha(PURPLE, 0.28)}`,
+              '&:hover': { bgcolor: '#7a5cb0', boxShadow: `0 8px 20px ${alpha(PURPLE, 0.35)}` },
             }}
           >
             {t('research_network.view_profile')}

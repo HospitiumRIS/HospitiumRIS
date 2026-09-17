@@ -1,6 +1,11 @@
 import prisma from './prisma';
 import imachek, { isImaChekConfigured, normalizeAnalysisPayload } from './imachek';
 
+const caseOrgInclude = {
+  labUnit: { select: { id: true, name: true } },
+  collection: { select: { id: true, name: true, color: true } },
+};
+
 function resultPatch(latest, record) {
   return {
     analysisStatus: latest.analysisStatus,
@@ -31,6 +36,7 @@ async function enrichFromCaseInfo(record) {
     return await prisma.imageIntegrityCase.update({
       where: { id: record.id },
       data: resultPatch(latest, record),
+      include: caseOrgInclude,
     });
   } catch (error) {
     console.error(`ImaChek case info enrich failed for ${record.id}:`, error);
@@ -60,6 +66,7 @@ export async function refreshIntegrityCaseFromImaChek(record, { force = false } 
           analysisStatus: latest.analysisStatus,
           errorMessage: `ImaChek analysis ended with status "${latest.analysisStatus}".`,
         },
+        include: caseOrgInclude,
       });
     }
 
@@ -69,6 +76,7 @@ export async function refreshIntegrityCaseFromImaChek(record, { force = false } 
         status: latest.isCompleted ? 'COMPLETED' : 'PROCESSING',
         ...resultPatch(latest, record),
       },
+      include: caseOrgInclude,
     });
 
     if (latest.isCompleted) {
@@ -102,6 +110,10 @@ export async function refreshIntegrityCasesFromImaChek(cases = []) {
     return {
       ...updated,
       submittedBy: c.submittedBy || updated.submittedBy,
+      labUnit: updated.labUnit || c.labUnit || null,
+      collection: updated.collection || c.collection || null,
+      labUnitId: updated.labUnitId ?? c.labUnitId ?? null,
+      collectionId: updated.collectionId ?? c.collectionId ?? null,
     };
   });
 }

@@ -19,8 +19,9 @@ import {
 } from '@mui/material';
 import { CompareArrows as CompareIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { MAX_COMPARE_CASES } from '../../lib/image-integrity-limits';
 
-const MAX_COMPARE = 10;
+const MAX_COMPARE = MAX_COMPARE_CASES;
 
 function orderedIds(cases, anchorId) {
   const ids = cases.map((item) => item.id);

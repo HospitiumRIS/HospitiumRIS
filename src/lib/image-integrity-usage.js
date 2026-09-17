@@ -49,11 +49,17 @@ function departmentOf(record) {
 }
 
 function labOf(record) {
+  const taggedLab = record.labUnit?.name?.trim();
+  if (taggedLab) return taggedLab;
   return (
     record.submittedBy?.primaryInstitution?.trim() ||
     record.submittedBy?.secondaryInstitution?.name?.trim() ||
     ''
   );
+}
+
+function collectionOf(record) {
+  return record.collection?.name?.trim() || '';
 }
 
 export function parseDateRange(startDate, endDate) {
@@ -222,6 +228,7 @@ function bySubmission(cases) {
       email: record.submittedBy?.email || '',
       department: departmentOf(record) || '—',
       lab: labOf(record) || '—',
+      collection: collectionOf(record) || '—',
       status: record.status,
       flagged: isFlagged(record),
       manipulation: record.manipulationCount || 0,

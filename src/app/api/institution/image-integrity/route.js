@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
-import { getAuthenticatedUser } from '../../../../lib/auth-server';
 import { isImaChekConfigured } from '../../../../lib/imachek';
 import { refreshIntegrityCasesFromImaChek } from '../../../../lib/image-integrity-sync';
+import {
+  requireInstitutionImageIntegrityAccess,
+  institutionCasesWhere,
+} from '../../../../lib/image-integrity-institution';
 
-const INSTITUTION_ROLES = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
 const IMAGE_FORMATS = ['png', 'jpg', 'jpeg'];
 
 function withPreview(record) {
@@ -18,22 +20,20 @@ function withPreview(record) {
 
 /**
  * GET /api/institution/image-integrity
- * Read-only oversight view: every researcher's image integrity submissions.
+ * Read-only oversight view: image integrity submissions for this institution.
  * Supports optional ?status=&search= filtering.
  */
 export async function GET(request) {
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!INSTITUTION_ROLES.includes(user.accountType)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const auth = await requireInstitutionImageIntegrityAccess(request);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { institution } = auth;
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const search = searchParams.get('search');
 
-    const where = {};
+    const where = { ...institutionCasesWhere(institution) };
     if (status && status !== 'ALL') {
       where.status = status;
     }
@@ -56,6 +56,8 @@ export async function GET(request) {
         submittedBy: {
           select: { id: true, givenName: true, familyName: true, email: true, primaryInstitution: true },
         },
+        labUnit: { select: { id: true, name: true } },
+        collection: { select: { id: true, name: true } },
       },
     });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Box,
   Container,
@@ -35,8 +35,10 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Autocomplete,
   Checkbox,
 } from '@mui/material';
+import { createFilterOptions } from '@mui/material/Autocomplete';
 import {
   Add as AddIcon,
   Visibility as ViewIcon,
@@ -66,6 +68,17 @@ import CompareCasesDialog from '../../../components/ImageIntegrity/CompareCasesD
 import IntegrityResultSummary, {
   SimilarityLegend,
 } from '../../../components/ImageIntegrity/IntegrityResultSummary';
+import { MAX_BATCH_FILES, MAX_FILE_SIZE } from '../../../lib/image-integrity-limits';
+
+const PURPLE = '#8b6cbc';
+const collectionNameFilter = createFilterOptions({
+  stringify: (option) => option?.name || '',
+});
+
+const fieldFocusSx = {
+  '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: PURPLE },
+  '& .MuiInputLabel-root.Mui-focused': { color: PURPLE },
+};
 
 const STATUS_CONFIG = {
   UPLOADING: { label: 'Uploading', color: '#2196f3', bgColor: '#e3f2fd' },
@@ -76,8 +89,6 @@ const STATUS_CONFIG = {
 
 const SUPPORTED_EXTENSIONS = ['png', 'tif', 'tiff', 'jpg', 'jpeg', 'zip', 'pdf'];
 const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg'];
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
-const MAX_BATCH_FILES = 20;
 
 const StatusChip = ({ status }) => {
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.UPLOADING;
@@ -107,6 +118,16 @@ function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function resolveLabUnit(caseItem, labUnits = []) {
+  if (caseItem?.labUnit?.name) return caseItem.labUnit;
+  return labUnits.find((unit) => unit.id === caseItem?.labUnitId) || null;
+}
+
+function resolveCollection(caseItem, collections = []) {
+  if (caseItem?.collection?.name) return caseItem.collection;
+  return collections.find((collection) => collection.id === caseItem?.collectionId) || null;
 }
 
 function FileTypeIcon({ extension, sx }) {
@@ -392,13 +413,21 @@ const emptyForm = {
   authors: [''],
   compareGlobal: true,
   files: [],
+  labUnitId: '',
+  collectionId: '',
+  notes: '',
+  tags: '',
 };
 
 export default function ResearcherImageIntegrityPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const collectionIdFromUrl = searchParams.get('collectionId') || '';
   const { user } = useAuth();
   const [cases, setCases] = useState([]);
+  const [labUnits, setLabUnits] = useState([]);
+  const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [configured, setConfigured] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -415,12 +444,15 @@ export default function ResearcherImageIntegrityPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [findingsFilter, setFindingsFilter] = useState('ALL');
+  const [collectionFilter, setCollectionFilter] = useState(collectionIdFromUrl || 'ALL');
+  const [labFilter, setLabFilter] = useState('ALL');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedIds, setSelectedIds] = useState([]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareSubmitting, setCompareSubmitting] = useState(false);
   const [compareError, setCompareError] = useState('');
+  const [creatingCollection, setCreatingCollection] = useState(false);
   const pollRef = useRef(null);
 
   const isBatch = form.files.length > 1;
@@ -456,14 +488,20 @@ export default function ResearcherImageIntegrityPage() {
       if (findingsFilter === 'FLAGGED' && !(c.status === 'COMPLETED' && flagged)) return false;
       if (findingsFilter === 'CLEAN' && !(c.status === 'COMPLETED' && !flagged)) return false;
 
+      if (labFilter === 'NONE' && c.labUnitId) return false;
+      if (labFilter !== 'ALL' && labFilter !== 'NONE' && c.labUnitId !== labFilter) return false;
+
+      const labName = resolveLabUnit(c, labUnits)?.name || '';
+      const collectionName = resolveCollection(c, collections)?.name || '';
+
       if (!q) return true;
-      const haystack = [c.title, c.fileName, c.doi, c.description, c.errorMessage]
+      const haystack = [c.title, c.fileName, c.doi, c.description, c.errorMessage, labName, collectionName]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [cases, searchQuery, statusFilter, typeFilter, findingsFilter]);
+  }, [cases, searchQuery, statusFilter, typeFilter, findingsFilter, labFilter, labUnits, collections]);
 
   const pagedCases = useMemo(() => {
     const start = page * rowsPerPage;
@@ -472,7 +510,7 @@ export default function ResearcherImageIntegrityPage() {
 
   useEffect(() => {
     setPage(0);
-  }, [searchQuery, statusFilter, typeFilter, findingsFilter]);
+  }, [searchQuery, statusFilter, typeFilter, findingsFilter, collectionFilter, labFilter]);
 
   // Contributor is derived from the logged-in researcher's profile (name +
   // ORCID iD), not free text, so submissions are always correctly attributed.
@@ -486,9 +524,27 @@ export default function ResearcherImageIntegrityPage() {
     return user?.orcidId ? `${contributorName} (ORCID: ${user.orcidId})` : contributorName;
   }, [contributorName, user]);
 
+  const fetchOptions = useCallback(async () => {
+    try {
+      const [labRes, collectionRes] = await Promise.all([
+        fetch('/api/researcher/image-integrity/lab-units'),
+        fetch('/api/researcher/image-integrity/collections'),
+      ]);
+      const labData = await labRes.json();
+      const collectionData = await collectionRes.json();
+      if (labRes.ok) setLabUnits(labData.labUnits || []);
+      if (collectionRes.ok) setCollections(collectionData.collections || []);
+    } catch (error) {
+      console.error('Failed to load image integrity options:', error);
+    }
+  }, []);
+
   const fetchCases = useCallback(async () => {
     try {
-      const res = await fetch('/api/researcher/image-integrity');
+      const params = new URLSearchParams();
+      if (collectionFilter === 'NONE') params.set('collectionId', 'none');
+      else if (collectionFilter !== 'ALL') params.set('collectionId', collectionFilter);
+      const res = await fetch(`/api/researcher/image-integrity?${params.toString()}`);
       const data = await res.json();
       if (res.ok) {
         setCases(data.cases || []);
@@ -499,7 +555,15 @@ export default function ResearcherImageIntegrityPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [collectionFilter]);
+
+  useEffect(() => {
+    fetchOptions();
+  }, [fetchOptions]);
+
+  useEffect(() => {
+    setCollectionFilter(collectionIdFromUrl || 'ALL');
+  }, [collectionIdFromUrl]);
 
   useEffect(() => {
     fetchCases();
@@ -524,8 +588,54 @@ export default function ResearcherImageIntegrityPage() {
   };
 
   const handleCloseDialog = () => {
-    if (submitting) return;
+    if (submitting || creatingCollection) return;
     setDialogOpen(false);
+  };
+
+  const handleCreateCollection = async (name) => {
+    const trimmed = String(name || '').trim();
+    if (!trimmed) return null;
+    const existing = collections.find((c) => c.name.toLowerCase() === trimmed.toLowerCase());
+    if (existing) {
+      setForm((f) => ({ ...f, collectionId: existing.id }));
+      return existing;
+    }
+    setCreatingCollection(true);
+    setFormError('');
+    try {
+      const res = await fetch('/api/researcher/image-integrity/collections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed, color: PURPLE }),
+      });
+      const data = await res.json();
+      if (res.status === 409 && data.collection?.id) {
+        const collection = {
+          ...data.collection,
+          submissionCount: data.collection.submissionCount || 0,
+        };
+        setCollections((prev) => {
+          if (prev.some((c) => c.id === collection.id)) return prev;
+          return [...prev, collection].sort((a, b) => a.name.localeCompare(b.name));
+        });
+        setForm((f) => ({ ...f, collectionId: collection.id }));
+        return collection;
+      }
+      if (!res.ok) {
+        setFormError(data.error || t('researcher.integrity_collection_save_failed', 'Failed to save collection.'));
+        return null;
+      }
+      const collection = { ...data.collection, submissionCount: 0 };
+      setCollections((prev) => [...prev, collection].sort((a, b) => a.name.localeCompare(b.name)));
+      setForm((f) => ({ ...f, collectionId: collection.id }));
+      return collection;
+    } catch (error) {
+      console.error(error);
+      setFormError(t('researcher.integrity_collection_save_failed', 'Failed to save collection.'));
+      return null;
+    } finally {
+      setCreatingCollection(false);
+    }
   };
 
   const authorList = form.authors?.length ? form.authors : [''];
@@ -697,6 +807,10 @@ export default function ResearcherImageIntegrityPage() {
       const authors = (form.authors || []).map((a) => a.trim()).filter(Boolean);
       if (authors.length) body.append('authors', JSON.stringify(authors));
       body.append('compareGlobal', form.compareGlobal ? 'true' : 'false');
+      if (form.labUnitId) body.append('labUnitId', form.labUnitId);
+      if (form.collectionId) body.append('collectionId', form.collectionId);
+      if (form.notes.trim()) body.append('notes', form.notes.trim());
+      if (form.tags.trim()) body.append('tags', form.tags.trim());
       form.files.forEach((file) => body.append('files', file));
 
       const res = await fetch('/api/researcher/image-integrity', { method: 'POST', body });
@@ -1038,6 +1152,38 @@ export default function ResearcherImageIntegrityPage() {
                   <MenuItem value="CLEAN">{t('researcher.integrity_stat_clean', 'No findings')}</MenuItem>
                 </Select>
               </FormControl>
+              <FormControl size="small" sx={{ minWidth: 160, bgcolor: 'background.paper' }}>
+                <InputLabel>{t('researcher.integrity_lab_units_label', 'Labs / Units')}</InputLabel>
+                <Select
+                  label={t('researcher.integrity_lab_units_label', 'Labs / Units')}
+                  value={labFilter}
+                  onChange={(e) => setLabFilter(e.target.value)}
+                >
+                  <MenuItem value="ALL">{t('common.all', 'All')}</MenuItem>
+                  <MenuItem value="NONE">{t('researcher.integrity_lab_unit_none', 'No lab/unit tag')}</MenuItem>
+                  {labUnits.map((unit) => (
+                    <MenuItem key={unit.id} value={unit.id}>
+                      {unit.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 160, bgcolor: 'background.paper' }}>
+                <InputLabel>{t('researcher.integrity_filter_collection', 'Collection')}</InputLabel>
+                <Select
+                  label={t('researcher.integrity_filter_collection', 'Collection')}
+                  value={collectionFilter}
+                  onChange={(e) => setCollectionFilter(e.target.value)}
+                >
+                  <MenuItem value="ALL">{t('common.all', 'All')}</MenuItem>
+                  <MenuItem value="NONE">{t('researcher.integrity_collection_unassigned', 'Uncollected')}</MenuItem>
+                  {collections.map((collection) => (
+                    <MenuItem key={collection.id} value={collection.id}>
+                      {collection.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               <Tooltip title={t('common.refresh', 'Refresh')}>
                 <IconButton onClick={fetchCases} sx={{ bgcolor: 'background.paper' }}>
                   <RefreshIcon />
@@ -1070,6 +1216,8 @@ export default function ResearcherImageIntegrityPage() {
                   </TableCell>
                   <TableCell sx={{ width: 72 }}>{t('researcher.integrity_col_preview', 'Preview')}</TableCell>
                   <TableCell>{t('researcher.integrity_col_submission', 'Submission')}</TableCell>
+                  <TableCell>{t('researcher.integrity_lab_units_label', 'Labs / Units')}</TableCell>
+                  <TableCell>{t('researcher.integrity_collection_name', 'Collection')}</TableCell>
                   <TableCell>{t('researcher.integrity_col_findings', 'Findings')}</TableCell>
                   <TableCell>{t('researcher.integrity_col_status', 'Status')}</TableCell>
                   <TableCell>{t('researcher.integrity_col_submitted', 'Submitted')}</TableCell>
@@ -1079,13 +1227,13 @@ export default function ResearcherImageIntegrityPage() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
                       <CircularProgress size={28} />
                     </TableCell>
                   </TableRow>
                 ) : filteredCases.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
                       <Stack alignItems="center" spacing={1}>
                         <ScienceIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
                         <Typography color="text.secondary">
@@ -1105,6 +1253,8 @@ export default function ResearcherImageIntegrityPage() {
                               setStatusFilter('ALL');
                               setTypeFilter('ALL');
                               setFindingsFilter('ALL');
+                              setCollectionFilter('ALL');
+                              setLabFilter('ALL');
                             }}
                           >
                             {t('researcher.integrity_clear_filters', 'Clear filters')}
@@ -1147,6 +1297,52 @@ export default function ResearcherImageIntegrityPage() {
                             DOI: {c.doi}
                           </Typography>
                         ) : null}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const lab = resolveLabUnit(c, labUnits);
+                          return lab ? (
+                            <Chip
+                              size="small"
+                              icon={<ScienceIcon sx={{ fontSize: '16px !important' }} />}
+                              label={lab.name}
+                              sx={{
+                                maxWidth: 180,
+                                fontWeight: 600,
+                                bgcolor: 'rgba(139, 108, 188, 0.1)',
+                                color: '#6f4fa0',
+                                '& .MuiChip-icon': { color: PURPLE },
+                                '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+                              }}
+                            />
+                          ) : (
+                            <Typography variant="body2" color="text.disabled">
+                              —
+                            </Typography>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const collection = resolveCollection(c, collections);
+                          return collection ? (
+                            <Chip
+                              size="small"
+                              label={collection.name}
+                              sx={{
+                                maxWidth: 180,
+                                fontWeight: 600,
+                                bgcolor: collection.color ? `${collection.color}22` : 'rgba(139, 108, 188, 0.1)',
+                                color: collection.color || '#6f4fa0',
+                                '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+                              }}
+                            />
+                          ) : (
+                            <Typography variant="body2" color="text.disabled">
+                              —
+                            </Typography>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         <IntegrityResultSummary caseItem={c} />
@@ -1263,34 +1459,39 @@ export default function ResearcherImageIntegrityPage() {
       >
         <DialogTitle
           sx={{
-            px: 3,
-            py: 2,
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)',
+            color: 'white',
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'space-between',
             gap: 2,
-            bgcolor: '#faf8fc',
-            borderBottom: '1px solid',
-            borderColor: 'divider',
+            py: 1.75,
+            px: 2.5,
+            mb: 0,
           }}
         >
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'white', lineHeight: 1.25 }}>
               {t('researcher.integrity_new_check', 'New Integrity Check')}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.88)', display: 'block', mt: 0.35 }}>
               {t(
                 'researcher.integrity_new_check_subtitle',
                 'Upload manuscript images or a PDF, then add details. Enter a DOI to auto-fill authors from Crossref.'
               )}
             </Typography>
           </Box>
-          <IconButton onClick={handleCloseDialog} disabled={submitting} size="small" sx={{ mt: -0.5 }}>
-            <CloseIcon />
+          <IconButton
+            onClick={handleCloseDialog}
+            disabled={submitting || creatingCollection}
+            size="small"
+            sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.16)', '&:hover': { bgcolor: 'rgba(255,255,255,0.28)' } }}
+          >
+            <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ px: 3, py: 2.5 }}>
+        <DialogContent sx={{ px: 3, pt: '24px !important', pb: 2.5 }}>
           <Stack spacing={2.75}>
             {formError && (
               <Alert severity="error" onClose={() => setFormError('')}>
@@ -1460,9 +1661,175 @@ export default function ResearcherImageIntegrityPage() {
 
             <Divider />
 
-            {/* 3. Attribution + options */}
+            {/* 3. Organization (optional) */}
             <Box>
-              <SectionLabel>{t('researcher.integrity_section_options', '3. Submission options')}</SectionLabel>
+              <SectionLabel>{t('researcher.integrity_section_organization', '3. Organization (optional)')}</SectionLabel>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                  gap: 2,
+                  mb: 1.5,
+                }}
+              >
+                <Autocomplete
+                  options={labUnits}
+                  value={labUnits.find((unit) => unit.id === form.labUnitId) || null}
+                  onChange={(_, value) => setForm((f) => ({ ...f, labUnitId: value?.id || '' }))}
+                  getOptionLabel={(option) => option.name || ''}
+                  isOptionEqualToValue={(a, b) => a.id === b.id}
+                  disabled={!labUnits.length}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={t('researcher.integrity_lab_units_label', 'Labs / Units')}
+                      placeholder={
+                        labUnits.length
+                          ? t('researcher.integrity_lab_units_placeholder', 'Select a lab or unit')
+                          : t('researcher.integrity_lab_units_empty_hint', 'No labs published by your institution yet')
+                      }
+                      size="small"
+                      helperText={t(
+                        'researcher.integrity_lab_units_hint',
+                        'Optional tag from your institution’s list'
+                      )}
+                      sx={fieldFocusSx}
+                    />
+                  )}
+                  renderOption={(props, option) => {
+                    const { key, ...rest } = props;
+                    return (
+                      <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ScienceIcon sx={{ fontSize: 18, color: PURPLE }} />
+                        <Box>
+                          <Typography variant="body2">{option.name}</Typography>
+                          {option.description ? (
+                            <Typography variant="caption" color="text.secondary">
+                              {option.description}
+                            </Typography>
+                          ) : null}
+                        </Box>
+                      </Box>
+                    );
+                  }}
+                />
+                <Autocomplete
+                  options={collections}
+                  value={collections.find((collection) => collection.id === form.collectionId) || null}
+                  onChange={async (_, value) => {
+                    if (!value) {
+                      setForm((f) => ({ ...f, collectionId: '' }));
+                      return;
+                    }
+                    if (value.isCreate) {
+                      await handleCreateCollection(value.name);
+                      return;
+                    }
+                    setForm((f) => ({ ...f, collectionId: value.id }));
+                  }}
+                  getOptionLabel={(option) => option.name || ''}
+                  isOptionEqualToValue={(a, b) => a.id === b.id}
+                  filterOptions={(options, params) => {
+                    const filtered = collectionNameFilter(options, params);
+                    const input = params.inputValue.trim();
+                    const exists = options.some((option) => option.name.toLowerCase() === input.toLowerCase());
+                    if (input && !exists) {
+                      filtered.push({ id: `__create__${input}`, name: input, isCreate: true });
+                    }
+                    return filtered;
+                  }}
+                  loading={creatingCollection}
+                  disabled={creatingCollection}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={t('researcher.integrity_collection_name', 'Collection')}
+                      placeholder={t('researcher.integrity_collection_placeholder', 'Select or type to create')}
+                      size="small"
+                      helperText={t(
+                        'researcher.integrity_collection_hint',
+                        'Group this check, or type a new name to create one'
+                      )}
+                      sx={fieldFocusSx}
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {creatingCollection ? <CircularProgress color="inherit" size={16} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => {
+                    const { key, ...rest } = props;
+                    if (option.isCreate) {
+                      return (
+                        <Box
+                          component="li"
+                          key={key}
+                          {...rest}
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1, color: PURPLE }}
+                        >
+                          <AddIcon sx={{ fontSize: 18 }} />
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {t('researcher.integrity_collection_create_option', 'Create "{{name}}"', {
+                              name: option.name,
+                            })}
+                          </Typography>
+                        </Box>
+                      );
+                    }
+                    return (
+                      <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: '50%',
+                            bgcolor: option.color || PURPLE,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <Typography variant="body2">{option.name}</Typography>
+                      </Box>
+                    );
+                  }}
+                  noOptionsText={t(
+                    'researcher.integrity_collection_no_options',
+                    'Type a name to create a collection'
+                  )}
+                />
+              </Box>
+              <Stack spacing={1.5}>
+                <TextField
+                  label={t('researcher.integrity_field_notes', 'Notes')}
+                  value={form.notes}
+                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                  multiline
+                  minRows={2}
+                  fullWidth
+                  size="small"
+                  sx={fieldFocusSx}
+                />
+                <TextField
+                  label={t('researcher.integrity_field_tags', 'Tags')}
+                  value={form.tags}
+                  onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
+                  placeholder={t('researcher.integrity_tags_hint', 'Comma-separated tags')}
+                  fullWidth
+                  size="small"
+                  sx={fieldFocusSx}
+                />
+              </Stack>
+            </Box>
+
+            <Divider />
+
+            {/* 4. Attribution + options */}
+            <Box>
+              <SectionLabel>{t('researcher.integrity_section_options', '4. Submission options')}</SectionLabel>
               <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 spacing={1.5}
@@ -1536,13 +1903,13 @@ export default function ResearcherImageIntegrityPage() {
             gap: 1,
           }}
         >
-          <Button onClick={handleCloseDialog} disabled={submitting} sx={{ textTransform: 'none' }}>
+          <Button onClick={handleCloseDialog} disabled={submitting || creatingCollection} sx={{ textTransform: 'none' }}>
             {t('common.cancel', 'Cancel')}
           </Button>
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={submitting || form.files.length === 0}
+            disabled={submitting || creatingCollection || form.files.length === 0}
             startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <ImageIntegrityIcon />}
             sx={{
               textTransform: 'none',

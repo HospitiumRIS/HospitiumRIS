@@ -1,7 +1,6 @@
 import prisma from './prisma';
 import imachek from './imachek';
-
-const MAX_COMPARE_CASES = 10;
+import { MAX_COMPARE_CASES } from './image-integrity-limits';
 
 /**
  * Start an ImaChek cross-case comparison on a set of local records.

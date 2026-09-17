@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -11,9 +11,6 @@ import {
     Button,
     Box,
     IconButton,
-    List,
-    ListItem,
-    ListItemText,
     Divider,
     Chip,
     CircularProgress,
@@ -21,7 +18,8 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Alert
+    Alert,
+    Stack
 } from '@mui/material';
 import {
     Close as CloseIcon,
@@ -31,41 +29,102 @@ import {
 } from '@mui/icons-material';
 import LibrarySelectionModal from './LibrarySelectionModal';
 
+const PURPLE = '#8b6cbc';
+
+function folderLabel(folder, folders) {
+    if (!folder) return '';
+    const parent = folders.find((item) => item.id === folder.parent);
+    return parent ? `${parent.name} / ${folder.name}` : folder.name;
+}
+
 /**
- * MultiPublicationPreviewDialog - Shows a list of selected publications for review before importing
+ * MultiPublicationPreviewDialog - Review selected publications and assign library folders
  */
-const MultiPublicationPreviewDialog = ({ 
-    open, 
-    onClose, 
+const MultiPublicationPreviewDialog = ({
+    open,
+    onClose,
     publications = [],
     onImport,
     onViewDetails,
     importing = false
 }) => {
     const { t } = useTranslation();
-    const [selectedLibrary, setSelectedLibrary] = useState('');
-    const [selectedLibraryName, setSelectedLibraryName] = useState('');
+    const [folders, setFolders] = useState([]);
+    const [defaultFolder, setDefaultFolder] = useState('');
+    const [folderByPub, setFolderByPub] = useState({});
     const [libraryModalOpen, setLibraryModalOpen] = useState(false);
+    const [folderTargetPubId, setFolderTargetPubId] = useState(null);
 
-    // Reset state when dialog closes
     useEffect(() => {
         if (!open) {
-            setSelectedLibrary('');
-            setSelectedLibraryName('');
+            setDefaultFolder('');
+            setFolderByPub({});
+            setFolderTargetPubId(null);
+            return;
         }
+
+        const loadFolders = async () => {
+            try {
+                const res = await fetch('/api/publications/library');
+                const data = await res.json();
+                if (data.success && data.folders) {
+                    setFolders(data.folders);
+                }
+            } catch (error) {
+                console.error('Error fetching folders:', error);
+            }
+        };
+
+        loadFolders();
     }, [open]);
 
-    const handleLibrarySelect = (folderId, folderName) => {
-        setSelectedLibrary(folderId);
-        setSelectedLibraryName(folderName);
+    const importable = useMemo(
+        () => (publications || []).filter((pub) => !pub.inLibrary),
+        [publications]
+    );
+
+    const alreadyInLibrary = (publications || []).length - importable.length;
+
+    const resolvedFolder = (pubId) => folderByPub[pubId] || defaultFolder || '';
+
+    const allHaveFolders = importable.length > 0 && importable.every((pub) => Boolean(resolvedFolder(pub.id)));
+
+    const applyDefaultToAll = () => {
+        if (!defaultFolder) return;
+        const next = {};
+        importable.forEach((pub) => {
+            next[pub.id] = defaultFolder;
+        });
+        setFolderByPub(next);
+    };
+
+    const handleFolderChange = (pubId, folderId) => {
+        setFolderByPub((prev) => ({ ...prev, [pubId]: folderId }));
+    };
+
+    const openFolderPicker = (pubId = null) => {
+        setFolderTargetPubId(pubId);
+        setLibraryModalOpen(true);
+    };
+
+    const handleLibrarySelect = (folderId) => {
+        if (folderTargetPubId) {
+            handleFolderChange(folderTargetPubId, folderId);
+        } else {
+            setDefaultFolder(folderId);
+        }
+        setFolderTargetPubId(null);
     };
 
     if (!publications || publications.length === 0) return null;
 
     const handleImport = async () => {
-        if (onImport) {
-            await onImport(publications, selectedLibrary);
-        }
+        if (!onImport) return;
+        const assignments = {};
+        importable.forEach((pub) => {
+            assignments[pub.id] = resolvedFolder(pub.id);
+        });
+        await onImport(importable, defaultFolder || null, assignments);
     };
 
     const formatAuthors = (authors) => {
@@ -75,233 +134,191 @@ const MultiPublicationPreviewDialog = ({
     };
 
     return (
-        <Dialog 
-            open={open} 
+        <Dialog
+            open={open}
             onClose={onClose}
             maxWidth="md"
             fullWidth
             PaperProps={{
-                sx: { minHeight: '60vh', maxHeight: '80vh' }
+                sx: { minHeight: '60vh', maxHeight: '85vh', borderRadius: 3, overflow: 'hidden' }
             }}
         >
-            <DialogTitle sx={{ 
-                backgroundColor: '#8b6cbc', 
+            <DialogTitle sx={{
+                background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)',
                 color: 'white',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                pb: 2
+                py: 1.75,
+                px: 2.5
             }}>
                 <Box>
-                    <Typography variant="h6">
-                        {t('import_tabs.preview_selected_title')}
+                    <Typography variant="h6" sx={{ color: 'white', fontWeight: 700 }}>
+                        Review & import
                     </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                        {t(publications.length === 1 ? 'import_tabs.publications_ready_one' : 'import_tabs.publications_ready_other', { count: publications.length })}
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                        {importable.length} to import{alreadyInLibrary > 0 ? ` · ${alreadyInLibrary} already in library` : ''}
                     </Typography>
                 </Box>
                 <IconButton
                     onClick={onClose}
                     disabled={importing}
-                    sx={{ color: 'white' }}
+                    sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.16)', '&:hover': { bgcolor: 'rgba(255,255,255,0.28)' } }}
                 >
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
 
             <DialogContent sx={{ p: 0 }}>
-                <List sx={{ width: '100%' }}>
-                    {publications.map((pub, index) => (
-                        <React.Fragment key={pub.id || index}>
-                            <ListItem
-                                sx={{
-                                    flexDirection: 'column',
-                                    alignItems: 'flex-start',
-                                    py: 2,
-                                    px: 3,
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(139, 108, 188, 0.05)'
-                                    }
-                                }}
+                <Box sx={{ px: 3, py: 2, borderBottom: '1px solid #eee', bgcolor: '#fafafa' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: '#1e293b' }}>
+                        Library folders
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                        Choose a default folder, then override any paper that should go somewhere else.
+                    </Typography>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+                        <FormControl size="small" sx={{ minWidth: 220, flex: 1 }}>
+                            <InputLabel>Default folder</InputLabel>
+                            <Select
+                                value={defaultFolder}
+                                label="Default folder"
+                                onChange={(e) => setDefaultFolder(e.target.value)}
+                                disabled={importing}
                             >
-                                <Box sx={{ width: '100%', mb: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-                                        <Typography variant="body1" sx={{ fontWeight: 600, flex: 1, pr: 2 }}>
-                                            {index + 1}. {pub.title}
-                                        </Typography>
-                                        {onViewDetails && (
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => onViewDetails(pub)}
-                                                sx={{ 
-                                                    color: '#8b6cbc',
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(139, 108, 188, 0.1)'
-                                                    }
-                                                }}
-                                                title={t('import_tabs.view_full_details')}
-                                            >
-                                                <VisibilityIcon fontSize="small" />
-                                            </IconButton>
-                                        )}
-                                    </Box>
-                                    
-                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                        {formatAuthors(pub.authors)}
-                                    </Typography>
-                                    
-                                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-                                        <Chip 
-                                            label={pub.year} 
-                                            size="small" 
-                                            sx={{ 
-                                                backgroundColor: '#8b6cbc20',
-                                                color: '#8b6cbc',
-                                                fontWeight: 500
-                                            }}
-                                        />
-                                        {pub.journal && (
-                                            <Typography variant="caption" color="text.secondary">
-                                                {pub.journal}
-                                            </Typography>
-                                        )}
-                                        {pub.source && (
-                                            <Chip 
-                                                label={pub.source} 
-                                                size="small"
-                                                sx={{ 
-                                                    backgroundColor: '#8b6cbc',
-                                                    color: 'white',
-                                                    fontWeight: 500
-                                                }}
-                                            />
-                                        )}
-                                    </Box>
-
-                                    {pub.abstract && (
-                                        <Typography 
-                                            variant="caption" 
-                                            color="text.secondary"
-                                            sx={{ 
-                                                display: '-webkit-box',
-                                                WebkitLineClamp: 2,
-                                                WebkitBoxOrient: 'vertical',
-                                                overflow: 'hidden',
-                                                mt: 1,
-                                                lineHeight: 1.4
-                                            }}
-                                        >
-                                            {pub.abstract}
-                                        </Typography>
-                                    )}
-                                </Box>
-                            </ListItem>
-                            {index < publications.length - 1 && <Divider />}
-                        </React.Fragment>
-                    ))}
-                </List>
-
-                {/* Library Selection */}
-                <Box sx={{ px: 3, pb: 2, pt: 2, backgroundColor: '#fafafa' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <FolderIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8b6cbc' }}>
-                                {t('import_tabs.add_to_library')}
-                            </Typography>
-                        </Box>
+                                <MenuItem value="">Select a folder</MenuItem>
+                                {folders.map((folder) => (
+                                    <MenuItem key={folder.id} value={folder.id}>
+                                        {folderLabel(folder, folders)}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
                         <Button
                             variant="outlined"
                             size="small"
-                            startIcon={<FolderIcon />}
-                            onClick={() => setLibraryModalOpen(true)}
-                            disabled={importing}
-                            sx={{
-                                borderColor: '#8b6cbc',
-                                color: '#8b6cbc',
-                                '&:hover': {
-                                    borderColor: '#7b5ca7',
-                                    backgroundColor: 'rgba(139, 108, 188, 0.08)'
-                                }
-                            }}
+                            onClick={applyDefaultToAll}
+                            disabled={!defaultFolder || importing}
+                            sx={{ borderColor: PURPLE, color: PURPLE, whiteSpace: 'nowrap' }}
                         >
-                            {selectedLibrary ? t('import_tabs.change_folder') : t('import_tabs.select_folder')}
+                            Apply to all
                         </Button>
-                    </Box>
-                    {selectedLibrary ? (
-                        <Box sx={{ 
-                            p: 1.5, 
-                            bgcolor: 'rgba(139, 108, 188, 0.08)', 
-                            borderRadius: 1,
-                            border: '1px solid rgba(139, 108, 188, 0.2)'
-                        }}>
-                            <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
-                                {t('import_tabs.selected_folder', { name: selectedLibraryName })}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                                {t(publications.length === 1 ? 'import_tabs.all_import_one' : 'import_tabs.all_import_other', { count: publications.length })}
-                            </Typography>
-                        </Box>
-                    ) : (
-                        <Alert severity="info" sx={{ mt: 1 }}>
-                            <Typography variant="caption">
-                                {t('import_tabs.select_folder_prompt')}
-                            </Typography>
-                        </Alert>
-                    )}
+                        <Button
+                            variant="text"
+                            size="small"
+                            startIcon={<FolderIcon />}
+                            onClick={() => openFolderPicker(null)}
+                            disabled={importing}
+                            sx={{ color: PURPLE, whiteSpace: 'nowrap' }}
+                        >
+                            New folder
+                        </Button>
+                    </Stack>
                 </Box>
+
+                {importable.length === 0 && (
+                    <Box sx={{ px: 3, py: 3 }}>
+                        <Alert severity="info">All selected publications are already in your library.</Alert>
+                    </Box>
+                )}
+
+                {publications.map((pub, index) => (
+                    <React.Fragment key={pub.id || index}>
+                        <Box sx={{ px: 3, py: 2, '&:hover': { bgcolor: 'rgba(139, 108, 188, 0.04)' } }}>
+                            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 1 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 700, flex: 1, color: '#1e293b' }}>
+                                    {index + 1}. {pub.title}
+                                </Typography>
+                                {onViewDetails && (
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => onViewDetails(pub)}
+                                        sx={{ color: PURPLE }}
+                                        title={t('import_tabs.view_full_details')}
+                                    >
+                                        <VisibilityIcon fontSize="small" />
+                                    </IconButton>
+                                )}
+                            </Box>
+
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                {formatAuthors(pub.authors)}
+                            </Typography>
+
+                            <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mb: 1.25 }}>
+                                {pub.year && (
+                                    <Chip label={pub.year} size="small" sx={{ bgcolor: 'rgba(139, 108, 188, 0.12)', color: PURPLE }} />
+                                )}
+                                {pub.journal && (
+                                    <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center' }}>
+                                        {pub.journal}
+                                    </Typography>
+                                )}
+                                {pub.inLibrary && (
+                                    <Chip label="Already in library" size="small" sx={{ bgcolor: 'rgba(46, 125, 50, 0.12)', color: '#2e7d32', fontWeight: 600 }} />
+                                )}
+                                {pub.qualityScore != null && (
+                                    <Chip label={`Quality ${pub.qualityScore}`} size="small" variant="outlined" sx={{ borderColor: 'rgba(139, 108, 188, 0.35)', color: PURPLE }} />
+                                )}
+                            </Stack>
+
+                            {!pub.inLibrary && (
+                                <FormControl size="small" fullWidth>
+                                    <InputLabel>Save to folder</InputLabel>
+                                    <Select
+                                        value={resolvedFolder(pub.id)}
+                                        label="Save to folder"
+                                        onChange={(e) => handleFolderChange(pub.id, e.target.value)}
+                                        disabled={importing}
+                                    >
+                                        <MenuItem value="">Select a folder</MenuItem>
+                                        {folders.map((folder) => (
+                                            <MenuItem key={folder.id} value={folder.id}>
+                                                {folderLabel(folder, folders)}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            )}
+                        </Box>
+                        {index < publications.length - 1 && <Divider />}
+                    </React.Fragment>
+                ))}
             </DialogContent>
 
-            <DialogActions sx={{ px: 3, py: 2, backgroundColor: '#f5f5f5' }}>
-                <Button 
-                    onClick={onClose}
-                    disabled={importing}
-                >
+            <DialogActions sx={{ px: 3, py: 2, bgcolor: '#f8f7fb', borderTop: '1px solid #eee' }}>
+                <Button onClick={onClose} disabled={importing}>
                     {t('common.cancel')}
                 </Button>
                 <Button
                     variant="contained"
                     onClick={handleImport}
-                    disabled={importing || !selectedLibrary}
-                    startIcon={importing ? <CircularProgress size={16} /> : <ImportIcon />}
-                    sx={{
-                        backgroundColor: '#8b6cbc',
-                        '&:hover': {
-                            backgroundColor: '#7b5ca7'
-                        },
-                        '&.Mui-disabled': {
-                            backgroundColor: 'rgba(139, 108, 188, 0.3)',
-                            color: 'rgba(255, 255, 255, 0.5)'
-                        }
-                    }}
+                    disabled={importing || importable.length === 0 || !allHaveFolders}
+                    startIcon={importing ? <CircularProgress size={16} color="inherit" /> : <ImportIcon />}
+                    sx={{ bgcolor: PURPLE, '&:hover': { bgcolor: '#7b5ca7' } }}
                 >
                     {importing
                         ? t('import_tabs.importing')
-                        : t(publications.length === 1 ? 'import_tabs.import_publications_one' : 'import_tabs.import_publications_other', { count: publications.length })}
+                        : `Import ${importable.length} publication${importable.length === 1 ? '' : 's'}`}
                 </Button>
             </DialogActions>
 
-            {/* Library Selection Modal */}
             <LibrarySelectionModal
                 open={libraryModalOpen}
                 onClose={() => setLibraryModalOpen(false)}
                 onSelect={(folderId) => {
-                    // Fetch folder name and set as selected folder
+                    handleLibrarySelect(folderId);
                     fetch('/api/publications/library')
-                        .then(res => res.json())
-                        .then(data => {
+                        .then((res) => res.json())
+                        .then((data) => {
                             if (data.success && data.folders) {
-                                const folder = data.folders.find(f => f.id === folderId);
-                                if (folder) {
-                                    handleLibrarySelect(folderId, folder.name);
-                                }
+                                setFolders(data.folders);
                             }
                         });
-                    // Don't close the modal - let user add to multiple folders or perform other actions
                 }}
                 publicationTitle={null}
                 multiplePublications={true}
-                publicationCount={publications.length}
+                publicationCount={importable.length}
             />
         </Dialog>
     );

@@ -1,22 +1,21 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../lib/prisma';
-import { getAuthenticatedUser } from '../../../../../lib/auth-server';
 import { parseDateRange, filterCases, buildUsageReport, organizationOptions } from '../../../../../lib/image-integrity-usage';
-
-const INSTITUTION_ROLES = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
+import {
+  requireInstitutionImageIntegrityAccess,
+  institutionCasesWhere,
+} from '../../../../../lib/image-integrity-institution';
 
 /**
  * GET /api/institution/image-integrity/usage
  * Usage Report for administrators: Summary + Detail (sessions, monthly,
- * account, group, lab) over a date range, with optional org filter.
+ * account, group, lab) over a date range, scoped to this institution.
  */
 export async function GET(request) {
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!INSTITUTION_ROLES.includes(user.accountType)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const auth = await requireInstitutionImageIntegrityAccess(request);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { institution } = auth;
 
     const { searchParams } = new URL(request.url);
     const view = searchParams.get('view') === 'detail' ? 'detail' : 'summary';
@@ -32,6 +31,7 @@ export async function GET(request) {
     }
 
     const cases = await prisma.imageIntegrityCase.findMany({
+      where: institutionCasesWhere(institution),
       include: {
         submittedBy: {
           select: {
@@ -44,6 +44,8 @@ export async function GET(request) {
             researchProfile: { select: { department: true } },
           },
         },
+        labUnit: { select: { id: true, name: true } },
+        collection: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     });

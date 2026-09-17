@@ -4,11 +4,15 @@ import { getAuthenticatedUser } from '../../../../lib/auth-server';
 import imachek, { isImaChekConfigured, ImaChekNotConfiguredError, ImaChekApiError, extractCaseId } from '../../../../lib/imachek';
 import { saveIntegrityFile, previewUrlForCase } from '../../../../lib/image-integrity-files';
 import { refreshIntegrityCasesFromImaChek } from '../../../../lib/image-integrity-sync';
+import { MAX_BATCH_FILES, MAX_FILE_SIZE } from '../../../../lib/image-integrity-limits';
+import {
+  validateLabUnitForResearcher,
+  validateCollectionForResearcher,
+  parseTagsInput,
+} from '../../../../lib/image-integrity-lab-units';
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB, per ImaChek file requirements
 const SUPPORTED_FORMATS = ['png', 'tif', 'tiff', 'jpg', 'jpeg', 'zip', 'pdf'];
 const IMAGE_FORMATS = ['png', 'jpg', 'jpeg']; // browser-displayable thumbnails only
-const MAX_BATCH_FILES = 20;
 
 function withPreview(record) {
   if (!record) return record;
@@ -36,6 +40,11 @@ function stripExtension(fileName = '') {
  * per upload" rules trivially satisfied regardless of what else is in the
  * batch.
  */
+const caseInclude = {
+  labUnit: { select: { id: true, name: true } },
+  collection: { select: { id: true, name: true, color: true } },
+};
+
 async function createAndUploadCase({
   title,
   contributor,
@@ -45,6 +54,10 @@ async function createAndUploadCase({
   file,
   compareGlobal,
   submittedById,
+  labUnitId,
+  collectionId,
+  notes,
+  tags,
 }) {
   const extension = getExtension(file.name);
   const fileBytes = Buffer.from(await file.arrayBuffer());
@@ -63,7 +76,12 @@ async function createAndUploadCase({
       comparedGlobalRepository: compareGlobal,
       status: 'UPLOADING',
       submittedById,
+      labUnitId: labUnitId || null,
+      collectionId: collectionId || null,
+      notes: notes || null,
+      tags: tags?.length ? tags : undefined,
     },
+    include: caseInclude,
   });
 
   try {
@@ -80,6 +98,7 @@ async function createAndUploadCase({
         errorMessage:
           'ImaChek is not configured yet. Ask an administrator to set IMACHEK_API_URL and IMACHEK_API_KEY.',
       },
+      include: caseInclude,
     });
     return { record: withPreview(record), ok: false };
   }
@@ -107,6 +126,7 @@ async function createAndUploadCase({
           : `ImaChek did not return a case_id. Response: ${JSON.stringify(uploadResult)?.slice(0, 300) || 'empty'}`,
         analysisStartedAt: externalCaseId ? new Date() : null,
       },
+      include: caseInclude,
     });
     return { record: withPreview(record), ok: Boolean(externalCaseId) };
   } catch (uploadError) {
@@ -118,6 +138,7 @@ async function createAndUploadCase({
     record = await prisma.imageIntegrityCase.update({
       where: { id: record.id },
       data: { status: 'FAILED', errorMessage: message },
+      include: caseInclude,
     });
     return { record: withPreview(record), ok: false };
   }
@@ -137,9 +158,20 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const collectionId = searchParams.get('collectionId');
+
+    const where = { submittedById: user.id };
+    if (collectionId === 'none') {
+      where.collectionId = null;
+    } else if (collectionId) {
+      where.collectionId = collectionId;
+    }
+
     const cases = await prisma.imageIntegrityCase.findMany({
-      where: { submittedById: user.id },
+      where,
       orderBy: { createdAt: 'desc' },
+      include: caseInclude,
     });
 
     const refreshed = await refreshIntegrityCasesFromImaChek(cases);
@@ -182,6 +214,19 @@ export async function POST(request) {
     const doi = formData.get('doi') || null;
     const description = (formData.get('description') || '').toString().trim() || null;
     const compareGlobal = formData.get('compareGlobal') === 'true';
+    const labUnitIdRaw = (formData.get('labUnitId') || '').toString().trim();
+    const collectionIdRaw = (formData.get('collectionId') || '').toString().trim();
+    const notes = (formData.get('notes') || '').toString().trim() || null;
+    const tags = parseTagsInput(formData.get('tags'));
+
+    const labCheck = await validateLabUnitForResearcher(user, labUnitIdRaw || null);
+    if (labCheck.error) {
+      return NextResponse.json({ error: labCheck.error }, { status: 400 });
+    }
+    const collectionCheck = await validateCollectionForResearcher(user, collectionIdRaw || null);
+    if (collectionCheck.error) {
+      return NextResponse.json({ error: collectionCheck.error }, { status: 400 });
+    }
 
     let authors = [];
     const authorsRaw = formData.get('authors');
@@ -251,6 +296,10 @@ export async function POST(request) {
         file,
         compareGlobal,
         submittedById: user.id,
+        labUnitId: labCheck.labUnitId,
+        collectionId: collectionCheck.collectionId,
+        notes,
+        tags,
       });
       results.push({ ok, case: record });
     }

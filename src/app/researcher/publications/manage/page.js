@@ -17,7 +17,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  MenuItem,
   InputAdornment,
   Select,
   FormControl,
@@ -35,7 +34,12 @@ import {
   TableSortLabel,
   TablePagination,
   Checkbox,
-  Snackbar
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Snackbar,
+  alpha
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -70,7 +74,9 @@ import {
   Check as CheckIcon,
   Close as CloseIcon,
   Clear as ClearIcon,
-  AutoAwesome as AIIcon
+  AutoAwesome as AIIcon,
+  FileDownload as ExportIcon,
+  Inbox as UnfiledIcon
 } from '@mui/icons-material';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
@@ -124,6 +130,9 @@ export default function ManagePublications() {
   
   // View mode for library dialog: 'add' or 'browse'
   const [libraryViewMode, setLibraryViewMode] = useState('add');
+  const [libraryFilter, setLibraryFilter] = useState('all'); // 'all' | 'unfiled' | folderId
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [exportAnchor, setExportAnchor] = useState(null);
   
   // Move publication between folders
   const [movePublicationDialogOpen, setMovePublicationDialogOpen] = useState(false);
@@ -337,7 +346,29 @@ export default function ManagePublications() {
       
       const matchesType = typeFilter === 'all' || pub.type === typeFilter;
 
-      return matchesSearch && matchesType;
+      let matchesLibrary = true;
+      if (libraryFilter === 'unfiled') {
+        const filed = new Set(Object.values(folderPublications).flat());
+        matchesLibrary = !filed.has(pub.id);
+      } else if (libraryFilter !== 'all') {
+        const descendants = [];
+        const walk = (parentId) => {
+          folders.forEach((folder) => {
+            if (folder.parent === parentId) {
+              descendants.push(folder.id);
+              walk(folder.id);
+            }
+          });
+        };
+        walk(libraryFilter);
+        const ids = new Set();
+        [libraryFilter, ...descendants].forEach((fid) => {
+          (folderPublications[fid] || []).forEach((id) => ids.add(id));
+        });
+        matchesLibrary = ids.has(pub.id);
+      }
+
+      return matchesSearch && matchesType && matchesLibrary;
     });
 
     // Sort publications
@@ -358,7 +389,7 @@ export default function ManagePublications() {
 
     setFilteredPublications(filtered);
     setPage(0); // Reset to first page when filters change
-  }, [publications, searchQuery, typeFilter, sortBy]);
+  }, [publications, searchQuery, typeFilter, sortBy, libraryFilter, folderPublications, folders]);
 
   // Calculate recent publications count (client-side only to avoid hydration mismatch)
   const recentPublicationsCount = React.useMemo(() => {
@@ -451,15 +482,18 @@ export default function ManagePublications() {
   };
   
   const handleSelectAllPublications = (event) => {
+    const pageIds = filteredPublications
+      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+      .map((pub) => pub.id);
     if (event.target.checked) {
-      const currentPagePublications = filteredPublications.slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage
-      );
-      setSelectedPublications(currentPagePublications.map(pub => pub.id));
+      setSelectedPublications((prev) => Array.from(new Set([...prev, ...pageIds])));
     } else {
-      setSelectedPublications([]);
+      setSelectedPublications((prev) => prev.filter((id) => !pageIds.includes(id)));
     }
+  };
+
+  const handleSelectAllFiltered = () => {
+    setSelectedPublications(filteredPublications.map((pub) => pub.id));
   };
   
   const handleSelectPublication = (publicationId) => {
@@ -471,38 +505,198 @@ export default function ManagePublications() {
       }
     });
   };
+
+  const escapeCsv = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+  const downloadTextFile = (filename, content, mime = 'text/plain') => {
+    const blob = new Blob([content], { type: `${mime};charset=utf-8` });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const getSelectedPublicationRecords = () =>
+    publications.filter((pub) => selectedPublications.includes(pub.id));
+
+  const handleExportSelected = (format) => {
+    const pubs = getSelectedPublicationRecords();
+    if (pubs.length === 0) return;
+    setExportAnchor(null);
+    if (format === 'csv') {
+      const header = ['Title', 'Authors', 'Journal', 'Year', 'DOI', 'Type', 'URL'];
+      const rows = pubs.map((pub) => [
+        pub.title,
+        Array.isArray(pub.authors) ? pub.authors.join('; ') : pub.authors,
+        pub.journal,
+        pub.year,
+        pub.doi,
+        pub.type,
+        pub.url,
+      ].map(escapeCsv).join(','));
+      downloadTextFile(`library-export-${pubs.length}.csv`, [header.join(','), ...rows].join('\n'), 'text/csv');
+    } else {
+      const bib = pubs.map((pub, i) => {
+        const key = (pub.doi || pub.id || `item${i}`).toString().replace(/[^a-zA-Z0-9]/g, '').slice(0, 24) || `item${i}`;
+        const authors = Array.isArray(pub.authors) ? pub.authors.join(' and ') : pub.authors;
+        return `@article{${key},\n  title={${pub.title || ''}},\n  author={${authors || ''}},\n  journal={${pub.journal || ''}},\n  year={${pub.year || ''}},\n  doi={${pub.doi || ''}},\n  url={${pub.url || ''}}\n}`;
+      }).join('\n\n');
+      downloadTextFile(`library-export-${pubs.length}.bib`, bib, 'application/x-bibtex');
+    }
+    showSnackbar(`Exported ${pubs.length} publication(s)`, 'success');
+  };
   
   const handleBatchDelete = () => {
     setBatchDeleteDialogOpen(true);
   };
+
+  const handleOpenBatchAdd = () => {
+    setSelectedFolder(libraryFilter !== 'all' && libraryFilter !== 'unfiled' ? libraryFilter : null);
+    setLibraryViewMode('batch-add');
+    setLibraryDialogOpen(true);
+  };
+
+  const handleOpenBatchMove = () => {
+    setSelectedFolder(null);
+    setLibraryViewMode('batch-move');
+    setLibraryDialogOpen(true);
+  };
+
+  const applyFolderMembership = (folderId, publicationIds, mode) => {
+    setFolderPublications((prev) => {
+      const current = new Set(prev[folderId] || []);
+      publicationIds.forEach((id) => {
+        if (mode === 'add') current.add(id);
+        else current.delete(id);
+      });
+      return { ...prev, [folderId]: Array.from(current) };
+    });
+  };
+
+  const confirmBatchAddToFolder = async () => {
+    if (!selectedFolder || selectedPublications.length === 0) return;
+    const folderName = folders.find((f) => f.id === selectedFolder)?.name || 'folder';
+    try {
+      setBatchBusy(true);
+      const response = await fetch('/api/publications/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'addPublications',
+          folderId: selectedFolder,
+          publicationIds: selectedPublications,
+        }),
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Failed to add to folder');
+      applyFolderMembership(selectedFolder, selectedPublications, 'add');
+      setLibraryDialogOpen(false);
+      showSnackbar(`Added ${selectedPublications.length} item(s) to "${folderName}"`, 'success');
+    } catch (error) {
+      showSnackbar(error.message || 'Failed to add to folder', 'error');
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
+  const confirmBatchMoveToFolder = async () => {
+    if (!selectedFolder || selectedPublications.length === 0) return;
+    if (libraryFilter === 'all' || libraryFilter === 'unfiled') {
+      return confirmBatchAddToFolder();
+    }
+    if (selectedFolder === libraryFilter) {
+      showSnackbar('Choose a different folder to move into', 'warning');
+      return;
+    }
+    const folderName = folders.find((f) => f.id === selectedFolder)?.name || 'folder';
+    try {
+      setBatchBusy(true);
+      const response = await fetch('/api/publications/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'movePublications',
+          sourceFolderId: libraryFilter,
+          targetFolderId: selectedFolder,
+          publicationIds: selectedPublications,
+        }),
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Failed to move items');
+      applyFolderMembership(libraryFilter, selectedPublications, 'remove');
+      applyFolderMembership(selectedFolder, selectedPublications, 'add');
+      setLibraryDialogOpen(false);
+      setSelectedPublications([]);
+      showSnackbar(`Moved ${selectedPublications.length} item(s) to "${folderName}"`, 'success');
+    } catch (error) {
+      showSnackbar(error.message || 'Failed to move items', 'error');
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
+  const handleBatchRemoveFromFolder = async () => {
+    if (libraryFilter === 'all' || libraryFilter === 'unfiled' || selectedPublications.length === 0) return;
+    const folderName = folders.find((f) => f.id === libraryFilter)?.name || 'folder';
+    try {
+      setBatchBusy(true);
+      const response = await fetch('/api/publications/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'removePublications',
+          folderId: libraryFilter,
+          publicationIds: selectedPublications,
+        }),
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Failed to remove from folder');
+      applyFolderMembership(libraryFilter, selectedPublications, 'remove');
+      setSelectedPublications([]);
+      showSnackbar(`Removed ${selectedPublications.length} item(s) from "${folderName}"`, 'success');
+    } catch (error) {
+      showSnackbar(error.message || 'Failed to remove from folder', 'error');
+    } finally {
+      setBatchBusy(false);
+    }
+  };
   
   const confirmBatchDelete = async () => {
+    const ids = [...selectedPublications];
     try {
-      // Delete publications from database
-      const deletePromises = selectedPublications.map(pubId =>
-        fetch(`/api/publications?id=${pubId}`, {
-          method: 'DELETE'
-        })
-      );
-      
-      const results = await Promise.all(deletePromises);
-      
-      // Check if all deletions were successful
-      const failedDeletions = results.filter(res => !res.ok);
-      
-      if (failedDeletions.length > 0) {
-        throw new Error(`Failed to delete ${failedDeletions.length} publication(s)`);
+      setBatchBusy(true);
+      const response = await fetch('/api/publications', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to delete ${ids.length} publication(s)`);
       }
-      
-      // Update local state
-      setPublications(prev => prev.filter(pub => !selectedPublications.includes(pub.id)));
+
+      setPublications((prev) => prev.filter((pub) => !ids.includes(pub.id)));
+      setFolderPublications((prev) => {
+        const next = {};
+        Object.entries(prev).forEach(([folderId, pubIds]) => {
+          next[folderId] = pubIds.filter((id) => !ids.includes(id));
+        });
+        return next;
+      });
       setSelectedPublications([]);
       setBatchDeleteDialogOpen(false);
-      
-      showSnackbar(`Successfully deleted ${selectedPublications.length} publication(s)`, 'success');
+
+      showSnackbar(`Successfully deleted ${data.removed || ids.length} publication(s)`, 'success');
     } catch (error) {
       console.error('Error deleting publications:', error);
       showSnackbar(error.message || 'Failed to delete some publications', 'error');
+    } finally {
+      setBatchBusy(false);
     }
   };
 
@@ -703,13 +897,6 @@ export default function ManagePublications() {
     return folders.filter(f => folderIds.includes(f.id));
   };
 
-  // Open library dialog in browse mode
-  const handleOpenLibraryBrowser = () => {
-    setSelectedPublication(null);
-    setLibraryViewMode('browse');
-    setLibraryDialogOpen(true);
-  };
-
   // Open move publication dialog
   const handleOpenMovePublication = (publication, currentFolderId) => {
     setPublicationToMove(publication);
@@ -879,6 +1066,9 @@ export default function ManagePublications() {
           if (idsToDelete.includes(selectedFolder)) {
             setSelectedFolder(null);
           }
+          if (idsToDelete.includes(libraryFilter)) {
+            setLibraryFilter('all');
+          }
           
           setDeleteFolderDialogOpen(false);
           setFolderToDelete(null);
@@ -958,18 +1148,20 @@ export default function ManagePublications() {
     }
   };
 
-  const renderFolderTree = (parentId = null, level = 0) => {
+  const renderFolderTree = (parentId = null, level = 0, options = {}) => {
+    const selectedId = options.selectedId ?? selectedFolder;
+    const onSelect = options.onSelect ?? ((id) => setSelectedFolder(id));
     return folders
       .filter(folder => folder.parent === parentId)
       .map(folder => {
         const hasChildren = folders.some(f => f.parent === folder.id);
-        const isSelected = selectedFolder === folder.id;
+        const isSelected = selectedId === folder.id;
         const isEditing = editingFolderId === folder.id;
         
         return (
           <Box key={folder.id}>
             <Box
-              onClick={() => !isEditing && setSelectedFolder(folder.id)}
+              onClick={() => !isEditing && onSelect(folder.id)}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1125,7 +1317,7 @@ export default function ManagePublications() {
                 </Box>
               )}
             </Box>
-            {folder.expanded && renderFolderTree(folder.id, level + 1)}
+            {folder.expanded && renderFolderTree(folder.id, level + 1, options)}
             {showNewFolderInput && newFolderParent === folder.id && (
               <Box sx={{ pl: 2 + (level + 1) * 3, pr: 2, py: 1 }}>
                 <Box sx={{ display: 'flex', gap: 1 }}>
@@ -1164,6 +1356,10 @@ export default function ManagePublications() {
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
+  const filedPublicationCount = new Set(Object.values(folderPublications).flat()).size;
+  const unfiledPublicationCount = Math.max(0, publications.length - filedPublicationCount);
+  const viewingFolder = libraryFilter !== 'all' && libraryFilter !== 'unfiled';
+  const allFilteredSelected = filteredPublications.length > 0 && filteredPublications.every((p) => selectedPublications.includes(p.id));
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -1210,12 +1406,20 @@ export default function ManagePublications() {
           sx={{ 
             mb: 2, 
             '&:hover': { boxShadow: 4 },
-            transition: 'box-shadow 0.2s ease'
+            transition: 'box-shadow 0.2s ease',
+            border: selectedPublications.includes(publication.id) ? '1px solid #8b6cbc' : '1px solid transparent',
+            bgcolor: selectedPublications.includes(publication.id) ? alpha('#8b6cbc', 0.04) : 'background.paper',
           }}
         >
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Box sx={{ flex: 1 }}>
+          <Box sx={{ flex: 1, display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                <Checkbox
+                  checked={selectedPublications.includes(publication.id)}
+                  onChange={() => handleSelectPublication(publication.id)}
+                  sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' }, mt: 0.25, p: 0.5 }}
+                />
+                <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
               {getTypeIcon(publication.type)}
                   <Box sx={{ ml: 1, flex: 1 }}>
@@ -1271,6 +1475,7 @@ export default function ManagePublications() {
                     {publication.abstract}
               </Typography>
             )}
+          </Box>
           </Box>
           
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, ml: 2 }}>
@@ -1386,9 +1591,9 @@ export default function ManagePublications() {
           <TableRow sx={{ bgcolor: '#8b6cbc' }}>
             <TableCell padding="checkbox" sx={{ borderBottom: 'none' }}>
               <Checkbox
-                sx={{ color: 'white', '&.Mui-checked': { color: 'white' } }}
-                indeterminate={selectedPublications.length > 0 && selectedPublications.length < publications.length}
-                checked={publications.length > 0 && selectedPublications.length === publications.length}
+                sx={{ color: 'white', '&.Mui-checked': { color: 'white' }, '&.MuiCheckbox-indeterminate': { color: 'white' } }}
+                indeterminate={publications.some((p) => selectedPublications.includes(p.id)) && !publications.every((p) => selectedPublications.includes(p.id))}
+                checked={publications.length > 0 && publications.every((p) => selectedPublications.includes(p.id))}
                 onChange={handleSelectAllPublications}
               />
             </TableCell>
@@ -1408,8 +1613,10 @@ export default function ManagePublications() {
             <TableRow 
               key={publication.id}
               sx={{ 
-                bgcolor: index % 2 === 0 ? '#fafafa' : 'white',
-                '&:hover': { backgroundColor: '#f0f0f0' },
+                bgcolor: selectedPublications.includes(publication.id)
+                  ? alpha('#8b6cbc', 0.08)
+                  : index % 2 === 0 ? '#fafafa' : 'white',
+                '&:hover': { backgroundColor: alpha('#8b6cbc', 0.12) },
                 transition: 'background-color 0.2s ease'
               }}
             >
@@ -1660,22 +1867,6 @@ export default function ManagePublications() {
           { label: t('researcher.manage_publications') }
         ]}
         actionButton={
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              variant="outlined"
-              startIcon={<FolderOpenIcon />}
-              sx={{ 
-                borderColor: 'white',
-                color: 'white',
-                '&:hover': { 
-                  borderColor: 'white',
-                  bgcolor: 'rgba(255,255,255,0.1)'
-                }
-              }}
-              onClick={handleOpenLibraryBrowser}
-            >
-              {t('researcher.my_library')}
-            </Button>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -1691,7 +1882,6 @@ export default function ManagePublications() {
             >
               {t('researcher.import_publication')}
             </Button>
-          </Box>
         }
       />
 
@@ -1953,14 +2143,90 @@ export default function ManagePublications() {
           </Alert>
         )}
 
+        {/* Library + publications */}
+        <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'stretch', flexDirection: { xs: 'column', md: 'row' } }}>
+          <Paper sx={{ width: { xs: '100%', md: 280 }, flexShrink: 0, borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: { md: 'calc(100vh - 220px)' } }}>
+            <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{t('researcher.my_library')}</Typography>
+                <Typography variant="caption" color="text.secondary">{folders.length} folder{folders.length === 1 ? '' : 's'}</Typography>
+              </Box>
+              <Tooltip title="New folder">
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setNewFolderParent(null);
+                    setShowNewFolderInput(true);
+                    setLibraryViewMode('browse');
+                    setLibraryDialogOpen(true);
+                  }}
+                  sx={{ color: '#8b6cbc' }}
+                >
+                  <AddIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+            <Box sx={{ flex: 1, overflow: 'auto', py: 1 }}>
+              {[
+                { id: 'all', label: 'All publications', count: publications.length, icon: <ArticleIcon sx={{ fontSize: 18, color: '#8b6cbc' }} /> },
+                { id: 'unfiled', label: 'Unfiled', count: unfiledPublicationCount, icon: <UnfiledIcon sx={{ fontSize: 18, color: '#8b6cbc' }} /> },
+              ].map((item) => (
+                <Box
+                  key={item.id}
+                  onClick={() => { setLibraryFilter(item.id); setPage(0); setSelectedPublications([]); }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 2,
+                    py: 1,
+                    cursor: 'pointer',
+                    bgcolor: libraryFilter === item.id ? alpha('#8b6cbc', 0.1) : 'transparent',
+                    borderLeft: libraryFilter === item.id ? '3px solid #8b6cbc' : '3px solid transparent',
+                    '&:hover': { bgcolor: alpha('#8b6cbc', 0.06) },
+                  }}
+                >
+                  {item.icon}
+                  <Typography variant="body2" sx={{ flex: 1, fontWeight: libraryFilter === item.id ? 600 : 400 }}>{item.label}</Typography>
+                  <Chip label={item.count} size="small" sx={{ height: 20, fontSize: '0.65rem', bgcolor: alpha('#8b6cbc', 0.1), color: '#8b6cbc' }} />
+                </Box>
+              ))}
+              <Divider sx={{ my: 1 }} />
+              <Box sx={{ px: 2, py: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', letterSpacing: 0.6 }}>FOLDERS</Typography>
+                <Tooltip title="Manage folders">
+                  <IconButton size="small" onClick={() => { setLibraryViewMode('browse'); setLibraryDialogOpen(true); }} sx={{ color: '#8b6cbc' }}>
+                    <FolderOpenIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+              {libraryLoading ? (
+                <Box sx={{ px: 2, py: 2 }}><LinearProgress /></Box>
+              ) : folders.length === 0 ? (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', px: 2, py: 1.5 }}>
+                  No folders yet. Create one to organize your library.
+                </Typography>
+              ) : (
+                renderFolderTree(null, 0, {
+                  selectedId: libraryFilter,
+                  onSelect: (id) => { setLibraryFilter(id); setPage(0); setSelectedPublications([]); },
+                })
+              )}
+            </Box>
+          </Paper>
+
         {/* Publications List */}
-        <Paper sx={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+        <Paper sx={{ flex: 1, minWidth: 0, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}>
           <Box sx={{ p: 2.5, bgcolor: 'white' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
                 <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.125rem' }}>
-                  Publications
+                  {libraryFilter === 'all'
+                    ? 'Publications'
+                    : libraryFilter === 'unfiled'
+                      ? 'Unfiled'
+                      : folders.find((f) => f.id === libraryFilter)?.name || 'Publications'}
             </Typography>
                 <Chip 
                   label={filteredPublications.length}
@@ -1992,24 +2258,49 @@ export default function ManagePublications() {
                   />
                 )}
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                 {selectedPublications.length > 0 && (
-                  <Button
-                    variant="contained"
-                    color="error"
-                    startIcon={<DeleteIcon />}
-                    onClick={handleBatchDelete}
-                    size="small"
-                    sx={{
-                      bgcolor: '#f44336',
-                      '&:hover': { bgcolor: '#d32f2f' }
-                    }}
-                  >
-                    Delete {selectedPublications.length} Publication{selectedPublications.length > 1 ? 's' : ''}
-                  </Button>
+                  <>
+                    <Button size="small" variant="outlined" startIcon={<LibraryAddIcon />} disabled={batchBusy} onClick={handleOpenBatchAdd} sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}>
+                      Add to folder
+                    </Button>
+                    {viewingFolder && (
+                      <>
+                        <Button size="small" variant="outlined" startIcon={<MoveIcon />} disabled={batchBusy} onClick={handleOpenBatchMove} sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}>
+                          Move
+                        </Button>
+                        <Button size="small" variant="outlined" startIcon={<CloseIcon />} disabled={batchBusy} onClick={handleBatchRemoveFromFolder} sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}>
+                          Remove from folder
+                        </Button>
+                      </>
+                    )}
+                    <Button size="small" variant="outlined" startIcon={<ExportIcon />} onClick={(e) => setExportAnchor(e.currentTarget)} sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}>
+                      Export
+                    </Button>
+                    <Menu anchorEl={exportAnchor} open={Boolean(exportAnchor)} onClose={() => setExportAnchor(null)}>
+                      <MenuItem onClick={() => handleExportSelected('csv')}>
+                        <ListItemIcon><ExportIcon fontSize="small" /></ListItemIcon>
+                        <ListItemText>CSV</ListItemText>
+                      </MenuItem>
+                      <MenuItem onClick={() => handleExportSelected('bibtex')}>
+                        <ListItemIcon><ArticleIcon fontSize="small" /></ListItemIcon>
+                        <ListItemText>BibTeX</ListItemText>
+                      </MenuItem>
+                    </Menu>
+                    <Button size="small" variant="contained" color="error" startIcon={<DeleteIcon />} disabled={batchBusy} onClick={handleBatchDelete}>
+                      Delete
+                    </Button>
+                    {!allFilteredSelected && (
+                      <Button size="small" onClick={handleSelectAllFiltered} sx={{ color: '#8b6cbc', textTransform: 'none' }}>
+                        Select all {filteredPublications.length}
+                      </Button>
+                    )}
+                  </>
                 )}
                 <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                  Showing {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, filteredPublications.length)} of {filteredPublications.length} publications
+                  {filteredPublications.length === 0
+                    ? 'No publications'
+                    : `Showing ${page * rowsPerPage + 1}-${Math.min((page + 1) * rowsPerPage, filteredPublications.length)} of ${filteredPublications.length}`}
                 </Typography>
               </Box>
             </Box>
@@ -2028,8 +2319,8 @@ export default function ManagePublications() {
                   No publications found
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                  {searchQuery || typeFilter !== 'all'
-                    ? 'Try adjusting your search filters'
+                  {searchQuery || typeFilter !== 'all' || libraryFilter !== 'all'
+                    ? 'Try adjusting your search, type, or folder filter'
                     : 'Start by importing publications from PubMed, Crossref, OpenAlex, or other sources'}
                 </Typography>
                 <Button
@@ -2105,6 +2396,7 @@ export default function ManagePublications() {
             )}
           </Box>
         </Paper>
+        </Box>
 
         {/* Add to Library Dialog */}
         <Dialog
@@ -2132,7 +2424,7 @@ export default function ManagePublications() {
           <DialogTitle sx={{ bgcolor: '#8b6cbc', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <LibraryAddIcon sx={{ mr: 1 }} />
-              {libraryViewMode === 'add' ? 'Add to My Library' : 'Library Browser'}
+              {libraryViewMode === 'add' ? 'Add to My Library' : libraryViewMode === 'batch-add' ? `Add ${selectedPublications.length} to folder` : libraryViewMode === 'batch-move' ? `Move ${selectedPublications.length} to folder` : 'Library Browser'}
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Tooltip title="Create new folder at root">
@@ -2165,13 +2457,19 @@ export default function ManagePublications() {
           </DialogTitle>
           <DialogContent dividers sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>
             {/* Selected publication banner (only in add mode) */}
-            {libraryViewMode === 'add' && selectedPublication && (
+            {['add', 'batch-add', 'batch-move'].includes(libraryViewMode) && (selectedPublication || selectedPublications.length > 0) && (
               <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                  Adding publication:
+                  {libraryViewMode === 'batch-move'
+                    ? 'Moving to folder:'
+                    : libraryViewMode === 'batch-add'
+                      ? 'Adding to folder:'
+                      : 'Adding publication:'}
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {selectedPublication.title}
+                  {libraryViewMode === 'add'
+                    ? selectedPublication?.title
+                    : `${selectedPublications.length} selected publication${selectedPublications.length === 1 ? '' : 's'}`}
                 </Typography>
               </Box>
             )}
@@ -2397,6 +2695,26 @@ export default function ManagePublications() {
                     }}
                   >
                     Add to Folder
+                  </Button>
+                )}
+                {libraryViewMode === 'batch-add' && (
+                  <Button
+                    variant="contained"
+                    onClick={confirmBatchAddToFolder}
+                    disabled={!selectedFolder || batchBusy}
+                    sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7559a3' } }}
+                  >
+                    {batchBusy ? 'Adding…' : `Add ${selectedPublications.length} to folder`}
+                  </Button>
+                )}
+                {libraryViewMode === 'batch-move' && (
+                  <Button
+                    variant="contained"
+                    onClick={confirmBatchMoveToFolder}
+                    disabled={!selectedFolder || batchBusy}
+                    sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7559a3' } }}
+                  >
+                    {batchBusy ? 'Moving…' : `Move ${selectedPublications.length} here`}
                   </Button>
                 )}
               </Box>
@@ -3217,6 +3535,7 @@ export default function ManagePublications() {
               variant="contained"
               color="error"
               onClick={confirmBatchDelete}
+              disabled={batchBusy}
               startIcon={<DeleteIcon />}
               sx={{
                 bgcolor: '#f44336',

@@ -18,7 +18,7 @@ import {
   TableChart as CsvIcon
 } from '@mui/icons-material';
 
-const MendeleyImport = ({ onImportSuccess, color = '#9d1620' }) => {
+const MendeleyImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(false);

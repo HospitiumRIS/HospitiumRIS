@@ -32,7 +32,7 @@ const NetworkLegend = () => {
 
   return (
     <Paper
-      elevation={2}
+      elevation={0}
       sx={{
         position: 'absolute',
         bottom: 16,
@@ -40,7 +40,9 @@ const NetworkLegend = () => {
         p: 2,
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
         backdropFilter: 'blur(10px)',
-        borderRadius: 2,
+        borderRadius: 2.5,
+        border: '1px solid',
+        borderColor: 'divider',
         minWidth: 280,
         maxWidth: 320,
         zIndex: 10

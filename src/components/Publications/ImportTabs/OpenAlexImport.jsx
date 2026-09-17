@@ -18,7 +18,7 @@ import SearchResultsDialog from '../SearchResultsDialog';
 import PublicationPreviewDialog from '../PublicationPreviewDialog';
 import { importFromOpenAlex } from '../../../services/openAlexService';
 
-const OpenAlexImport = ({ onImportSuccess, color = '#2563eb' }) => {
+const OpenAlexImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [keywords, setKeywords] = useState('');
@@ -324,7 +324,7 @@ const OpenAlexImport = ({ onImportSuccess, color = '#2563eb' }) => {
         />
       </Box>
 
-      {loading && <LinearProgress sx={{ mb: 2, '& .MuiLinearProgress-bar': { bgcolor: '#2563eb' } }} />}
+      {loading && <LinearProgress sx={{ mb: 2, '& .MuiLinearProgress-bar': { bgcolor: '#8b6cbc' } }} />}
 
       <Button
         variant="contained"
@@ -332,9 +332,9 @@ const OpenAlexImport = ({ onImportSuccess, color = '#2563eb' }) => {
         disabled={loading}
         startIcon={<SearchIcon />}
         sx={{ 
-          bgcolor: '#2563eb', 
+          bgcolor: '#8b6cbc',
           '&:hover': { 
-            bgcolor: '#1d4ed8' 
+            bgcolor: '#7559a3' 
           },
           '&:disabled': {
             bgcolor: '#cccccc'

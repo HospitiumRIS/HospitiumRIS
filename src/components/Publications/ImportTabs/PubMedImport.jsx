@@ -9,27 +9,17 @@ import {
   Button,
   LinearProgress,
   Alert,
-  Snackbar,
-  Chip,
-  Stack,
-  Paper,
-  IconButton,
-  Tooltip,
-  Collapse
+  Snackbar
 } from '@mui/material';
 import {
-  Search as SearchIcon,
-  Add as AddIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Help as HelpIcon
+  Search as SearchIcon
 } from '@mui/icons-material';
 import SearchResultsDialog from '../SearchResultsDialog';
 import PublicationPreviewDialog from '../PublicationPreviewDialog';
 import MultiPublicationPreviewDialog from '../MultiPublicationPreviewDialog';
 import { searchAndFormatPubMed } from '../../../services/pubmedService';
 
-const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
+const PubMedImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
   const { t } = useTranslation();
   const [searchFields, setSearchFields] = useState({
     keywords: '',
@@ -322,15 +312,16 @@ const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
     }
   }, [onImportSuccess]);
 
-  const handleImportMultiple = useCallback(async (publications, libraryId = null) => {
+  const handleImportMultiple = useCallback(async (publications, libraryId = null, folderAssignments = {}) => {
     setImporting(true);
     try {
       let successCount = 0;
       let failCount = 0;
-      const importedPublicationIds = [];
+      const importedByFolder = {};
 
-      // Import publications one by one
       for (const publication of publications) {
+        if (publication.inLibrary) continue;
+
         try {
           const response = await fetch('/api/publications/import', {
             method: 'POST',
@@ -342,11 +333,15 @@ const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
 
           if (response.ok) {
             const data = await response.json();
-            const importedId = data.publication?.id;
-            if (importedId) {
-              importedPublicationIds.push(importedId);
+            const importedId = data.publications?.[0]?.id || data.publication?.id;
+            const folderId = folderAssignments[publication.id] || libraryId;
+            if (importedId && folderId) {
+              if (!importedByFolder[folderId]) importedByFolder[folderId] = [];
+              importedByFolder[folderId].push(importedId);
             }
             successCount++;
+          } else if (response.status === 409) {
+            failCount++;
           } else {
             failCount++;
           }
@@ -356,70 +351,31 @@ const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
         }
       }
 
-      // If library is selected, add all imported publications to library
-      if (libraryId && importedPublicationIds.length > 0) {
-        console.log('Adding multiple publications to library:', {
-          libraryId,
-          publicationCount: importedPublicationIds.length,
-          publicationIds: importedPublicationIds
-        });
-        
-        let libraryAddSuccessCount = 0;
-        let libraryAddFailCount = 0;
-        
-        for (const publicationId of importedPublicationIds) {
-          try {
-            const libraryResponse = await fetch('/api/publications/library', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                action: 'addPublication',
-                folderId: libraryId,
-                publicationId
-              }),
-            });
-
-            const libraryData = await libraryResponse.json();
-            
-            if (!libraryResponse.ok) {
-              console.error('Failed to add publication to library:', publicationId, libraryData);
-              libraryAddFailCount++;
-            } else {
-              libraryAddSuccessCount++;
-            }
-          } catch (libraryError) {
-            console.error('Error adding to library:', libraryError);
-            libraryAddFailCount++;
-          }
-        }
-        
-        console.log('Library addition complete:', {
-          success: libraryAddSuccessCount,
-          failed: libraryAddFailCount
-        });
-        
-        if (libraryAddFailCount > 0) {
-          setSnackbar({
-            open: true,
-            message: `${successCount} publications imported, but ${libraryAddFailCount} failed to add to library`,
-            severity: 'warning'
+      for (const [folderId, publicationIds] of Object.entries(importedByFolder)) {
+        try {
+          await fetch('/api/publications/library', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'addPublications',
+              folderId,
+              publicationIds
+            }),
           });
+        } catch (libraryError) {
+          console.error('Error adding publications to folder:', folderId, libraryError);
         }
       }
 
-      // Show summary message
       if (successCount > 0) {
+        const folderCount = Object.keys(importedByFolder).length;
         setSnackbar({
           open: true,
-          message: libraryId
-            ? `Successfully imported ${successCount} publication${successCount !== 1 ? 's' : ''} and added to library${failCount > 0 ? `, ${failCount} failed` : ''}`
+          message: folderCount > 0
+            ? `Imported ${successCount} publication${successCount !== 1 ? 's' : ''} into ${folderCount} folder${folderCount !== 1 ? 's' : ''}${failCount > 0 ? `, ${failCount} skipped` : ''}`
             : `Successfully imported ${successCount} publication${successCount !== 1 ? 's' : ''}${failCount > 0 ? `, ${failCount} failed` : ''}`,
           severity: failCount > 0 ? 'warning' : 'success'
         });
-        
-        // Notify parent of successful imports
         onImportSuccess(publications.slice(0, successCount));
       } else {
         setSnackbar({
@@ -429,10 +385,8 @@ const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
         });
       }
 
-      // Close dialogs
       setResultsDialogOpen(false);
       setMultiPreviewDialogOpen(false);
-      
     } catch (error) {
       console.error('Bulk import failed:', error);
       setSnackbar({
@@ -505,17 +459,16 @@ const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
   };
 
   return (
-    <Box sx={{ maxWidth: 700 }}>
+    <Box sx={{ maxWidth: 800 }}>
       <Typography variant="h6" gutterBottom>
         Search PubMed Database
       </Typography>
-      
+
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Fill in one or more fields to search the PubMed database. All fields will be combined with AND logic.
       </Typography>
 
-      {/* Search Fields */}
-      <Stack spacing={2} sx={{ mb: 3 }}>
+      <Box sx={{ mb: 2 }}>
         <TextField
           fullWidth
           label="Keywords"
@@ -529,78 +482,79 @@ const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
           }}
           helperText="General keywords or terms to search for"
         />
+      </Box>
 
+      <Box sx={{ mb: 2 }}>
         <TextField
           fullWidth
           label="Author"
-          placeholder="e.g., Smith J, Johnson AB"
+          placeholder="Author name (last name and initials)"
           value={searchFields.author}
           onChange={handleFieldChange('author')}
           onKeyPress={handleKeyPress}
           disabled={loading}
           helperText="Author name (last name and initials)"
         />
+      </Box>
 
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <TextField
-            fullWidth
-            label="Year"
-            placeholder="e.g., 2023 or 2020:2023"
-            value={searchFields.year}
-            onChange={handleFieldChange('year')}
-            onKeyPress={handleKeyPress}
-            disabled={loading}
-            helperText="Publication year or range"
-          />
+      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <TextField
+          label="Year"
+          placeholder="Publication year or range"
+          value={searchFields.year}
+          onChange={handleFieldChange('year')}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          sx={{ flex: 1 }}
+          helperText="Publication year or range"
+        />
+        <TextField
+          label="Journal"
+          placeholder="Journal name"
+          value={searchFields.journal}
+          onChange={handleFieldChange('journal')}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          sx={{ flex: 1 }}
+          helperText="Journal name"
+        />
+      </Box>
 
-          <TextField
-            fullWidth
-            label="Journal"
-            placeholder="e.g., Nature, Science"
-            value={searchFields.journal}
-            onChange={handleFieldChange('journal')}
-            onKeyPress={handleKeyPress}
-            disabled={loading}
-            helperText="Journal name"
-          />
-        </Box>
-
+      <Box sx={{ mb: 2 }}>
         <TextField
           fullWidth
           label="Title"
-          placeholder="e.g., clinical trial, systematic review"
+          placeholder="Words or phrases in the title"
           value={searchFields.title}
           onChange={handleFieldChange('title')}
           onKeyPress={handleKeyPress}
           disabled={loading}
           helperText="Words or phrases in the title"
         />
+      </Box>
 
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <TextField
-            fullWidth
-            label="Country (Optional)"
-            placeholder="e.g., United States, China"
-            value={searchFields.country}
-            onChange={handleFieldChange('country')}
-            onKeyPress={handleKeyPress}
-            disabled={loading}
-            helperText="Country in author affiliation"
-          />
-
-          <TextField
-            fullWidth
-            label="Funder (Optional)"
-            placeholder="e.g., NIH, NSF"
-            value={searchFields.funder}
-            onChange={handleFieldChange('funder')}
-            onKeyPress={handleKeyPress}
-            disabled={loading}
-            helperText="Funding agency or grant number"
-          />
-        </Box>
-      </Stack>
-
+      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <TextField
+          label="Country (Optional)"
+          placeholder="Country in author affiliation"
+          value={searchFields.country}
+          onChange={handleFieldChange('country')}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          sx={{ flex: 1 }}
+          helperText="Country in author affiliation"
+        />
+        <TextField
+          label="Funder (Optional)"
+          placeholder="Funding agency or grant number"
+          value={searchFields.funder}
+          onChange={handleFieldChange('funder')}
+          onKeyPress={handleKeyPress}
+          disabled={loading}
+          sx={{ flex: 1 }}
+          helperText="Funding agency or grant number"
+        />
+      </Box>
 
       {loading && <LinearProgress sx={{ mb: 2, '& .MuiLinearProgress-bar': { bgcolor: '#8b6cbc' } }} />}
 
@@ -609,14 +563,10 @@ const PubMedImport = ({ onImportSuccess, color = '#326295' }) => {
         onClick={() => handleSearch(false)}
         disabled={loading || !hasSearchCriteria()}
         startIcon={<SearchIcon />}
-        sx={{ 
-          bgcolor: '#8b6cbc', 
-          '&:hover': { 
-            bgcolor: '#7559a3' 
-          },
-          '&:disabled': {
-            bgcolor: '#cccccc'
-          }
+        sx={{
+          bgcolor: '#8b6cbc',
+          '&:hover': { bgcolor: '#7559a3' },
+          '&:disabled': { bgcolor: '#cccccc' }
         }}
       >
         {loading ? t('common.loading') : t('common.search')}

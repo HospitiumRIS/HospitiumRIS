@@ -41,6 +41,11 @@ import {
   Science as ScienceIcon,
   Close as CloseIcon,
   CompareArrows as CompareIcon,
+  Assignment as ChecksIcon,
+  CheckCircleOutline as CompletedIcon,
+  HourglassEmpty as ProcessingIcon,
+  ErrorOutline as FailedIcon,
+  Flag as FlagIcon,
 } from '@mui/icons-material';
 import PageHeader from '../../../components/common/PageHeader';
 import { useTranslation } from 'react-i18next';
@@ -48,6 +53,7 @@ import CompareCasesDialog from '../../../components/ImageIntegrity/CompareCasesD
 import IntegrityResultSummary, {
   SimilarityLegend,
 } from '../../../components/ImageIntegrity/IntegrityResultSummary';
+import IntegrityStatCards from '../../../components/ImageIntegrity/IntegrityStatCards';
 
 const STATUS_CONFIG = {
   UPLOADING: { label: 'Uploading', color: '#2196f3', bgColor: '#e3f2fd' },
@@ -100,29 +106,6 @@ function FileTypeIcon({ extension, sx }) {
   if (extension === 'pdf') return <PdfIcon sx={sx} />;
   if (extension === 'zip') return <ZipIcon sx={sx} />;
   return <FileIcon sx={sx} />;
-}
-
-function SummaryCard({ label, value, color }) {
-  return (
-    <Paper
-      variant="outlined"
-      sx={{
-        px: 2,
-        py: 1.5,
-        borderRadius: 2,
-        minWidth: 120,
-        flex: 1,
-        borderColor: 'divider',
-      }}
-    >
-      <Typography variant="h5" sx={{ fontWeight: 700, color: color || 'text.primary', lineHeight: 1.2 }}>
-        {value}
-      </Typography>
-      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-        {label}
-      </Typography>
-    </Paper>
-  );
 }
 
 function SubmissionThumbnail({ caseItem, onOpen }) {
@@ -196,7 +179,27 @@ export default function InstitutionImageIntegrityPage() {
   const [compareSubmitting, setCompareSubmitting] = useState(false);
   const [compareError, setCompareError] = useState('');
   const [notice, setNotice] = useState(null);
+  const [fetchError, setFetchError] = useState('');
   const pollRef = useRef(null);
+
+  const mapApiError = useCallback(
+    (status, message) => {
+      if (status === 401) {
+        return t('institution_nav.integrity_error_unauthorized', 'Please sign in again to view submission reports.');
+      }
+      if (status === 403) {
+        return t(
+          'institution_nav.integrity_error_forbidden',
+          message || 'Institution admin access is required to view submission reports.'
+        );
+      }
+      if (status >= 500) {
+        return t('institution_nav.integrity_error_server', 'Something went wrong loading submission reports. Please try again.');
+      }
+      return message || t('institution_nav.integrity_load_failed', 'Failed to load submission reports.');
+    },
+    [t]
+  );
 
   const fetchCases = useCallback(async ({ silent } = {}) => {
     if (!silent) setLoading(true);
@@ -207,16 +210,26 @@ export default function InstitutionImageIntegrityPage() {
       const res = await fetch(`/api/institution/image-integrity?${params.toString()}`);
       const data = await res.json();
       if (res.ok) {
+        setFetchError('');
         setCases(data.cases || []);
         setSummary(data.summary || null);
         setConfigured(data.configured !== false);
+      } else {
+        setFetchError(mapApiError(res.status, data.error));
+        setCases([]);
+        setSummary(null);
       }
     } catch (error) {
       console.error('Failed to load submission reports:', error);
+      setFetchError(
+        t('institution_nav.integrity_error_server', 'Something went wrong loading submission reports. Please try again.')
+      );
+      setCases([]);
+      setSummary(null);
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [search, statusFilter]);
+  }, [search, statusFilter, mapApiError, t]);
 
   useEffect(() => {
     const timeout = setTimeout(() => fetchCases(), 300);
@@ -328,17 +341,32 @@ export default function InstitutionImageIntegrityPage() {
         icon={<ImageIntegrityIcon sx={{ fontSize: 32 }} />}
         breadcrumbs={[{ label: t('institution.portal_title', 'Institution Portal'), path: '/institution' }]}
         actionButton={
-          <Button
-            variant="contained"
-            onClick={() => router.push('/institution/image-integrity/usage')}
-            sx={{ bgcolor: 'white', color: '#8b6cbc', '&:hover': { bgcolor: '#f5f5f5' }, textTransform: 'none', fontWeight: 700 }}
-          >
-            {t('institution_nav.integrity_usage_report', 'Usage Report')}
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              onClick={() => router.push('/institution/image-integrity/lab-units')}
+              sx={{ borderColor: 'white', color: 'white', textTransform: 'none', fontWeight: 600 }}
+            >
+              {t('institution_nav.integrity_lab_units', 'Labs / Units')}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => router.push('/institution/image-integrity/usage')}
+              sx={{ bgcolor: 'white', color: '#8b6cbc', '&:hover': { bgcolor: '#f5f5f5' }, textTransform: 'none', fontWeight: 700 }}
+            >
+              {t('institution_nav.integrity_usage_report', 'Usage Report')}
+            </Button>
+          </Stack>
         }
       />
 
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        {fetchError && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {fetchError}
+          </Alert>
+        )}
+
         {!configured && (
           <Alert severity="warning" sx={{ mb: 3 }}>
             {t(
@@ -404,31 +432,37 @@ export default function InstitutionImageIntegrityPage() {
           </Paper>
         )}
 
-        {summary && (
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2.5 }}>
-            <SummaryCard label={t('institution_nav.integrity_total', 'Total')} value={summary.total} />
-            <SummaryCard
-              label={t('institution_nav.integrity_completed', 'Completed')}
-              value={summary.completed}
-              color="#2e7d32"
-            />
-            <SummaryCard
-              label={t('institution_nav.integrity_processing', 'In progress')}
-              value={summary.processing}
-              color="#ed6c02"
-            />
-            <SummaryCard
-              label={t('institution_nav.integrity_failed', 'Failed')}
-              value={summary.failed || 0}
-              color="#d32f2f"
-            />
-            <SummaryCard
-              label={t('institution_nav.integrity_flagged', 'With findings')}
-              value={summary.flagged}
-              color="#ed6c02"
-            />
-          </Stack>
-        )}
+        <Box sx={{ mb: 2.5 }}>
+          <IntegrityStatCards
+            items={[
+              {
+                icon: <ChecksIcon />,
+                label: t('institution_nav.integrity_total', 'Total'),
+                value: summary?.total ?? 0,
+              },
+              {
+                icon: <CompletedIcon />,
+                label: t('institution_nav.integrity_completed', 'Completed'),
+                value: summary?.completed ?? 0,
+              },
+              {
+                icon: <ProcessingIcon />,
+                label: t('institution_nav.integrity_processing', 'In progress'),
+                value: summary?.processing ?? 0,
+              },
+              {
+                icon: <FailedIcon />,
+                label: t('institution_nav.integrity_failed', 'Failed'),
+                value: summary?.failed || 0,
+              },
+              {
+                icon: <FlagIcon />,
+                label: t('institution_nav.integrity_flagged', 'With findings'),
+                value: summary?.flagged ?? 0,
+              },
+            ]}
+          />
+        </Box>
 
         <Paper
           sx={{
@@ -550,6 +584,7 @@ export default function InstitutionImageIntegrityPage() {
                   <TableCell sx={{ width: 72 }}>{t('researcher.integrity_col_preview', 'Preview')}</TableCell>
                   <TableCell>{t('researcher.integrity_col_submission', 'Submission')}</TableCell>
                   <TableCell>{t('institution_nav.integrity_submitted_by', 'Submitted by')}</TableCell>
+                  <TableCell>{t('institution_nav.integrity_lab_units', 'Labs / Units')}</TableCell>
                   <TableCell>{t('researcher.integrity_col_findings', 'Findings')}</TableCell>
                   <TableCell>{t('researcher.integrity_col_status', 'Status')}</TableCell>
                   <TableCell>{t('researcher.integrity_col_submitted', 'Submitted')}</TableCell>
@@ -559,13 +594,13 @@ export default function InstitutionImageIntegrityPage() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
                       <CircularProgress size={28} sx={{ color: '#8b6cbc' }} />
                     </TableCell>
                   </TableRow>
                 ) : filteredCases.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
                       <Stack alignItems="center" spacing={1}>
                         <ScienceIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
                         <Typography color="text.secondary">
@@ -621,6 +656,11 @@ export default function InstitutionImageIntegrityPage() {
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {c.submittedBy?.email || ''}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {c.labUnit?.name || '—'}
                           </Typography>
                         </TableCell>
                         <TableCell>

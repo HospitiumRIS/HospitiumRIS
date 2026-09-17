@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../../lib/prisma';
-import { getAuthenticatedUser } from '../../../../../../lib/auth-server';
 import imachek, { isImaChekConfigured } from '../../../../../../lib/imachek';
-
-const INSTITUTION_ROLES = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
+import {
+  requireInstitutionImageIntegrityAccess,
+  institutionCasesWhere,
+} from '../../../../../../lib/image-integrity-institution';
 
 /**
  * POST /api/institution/image-integrity/[id]/report
@@ -14,14 +15,17 @@ const INSTITUTION_ROLES = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
  */
 export async function POST(request, { params }) {
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!INSTITUTION_ROLES.includes(user.accountType)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const auth = await requireInstitutionImageIntegrityAccess(request);
+    if (auth.errorResponse) return auth.errorResponse;
+    const { institution } = auth;
 
     const { id } = await params;
-    const record = await prisma.imageIntegrityCase.findUnique({ where: { id } });
+    const record = await prisma.imageIntegrityCase.findFirst({
+      where: {
+        id,
+        ...institutionCasesWhere(institution),
+      },
+    });
     if (!record) {
       return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
     }

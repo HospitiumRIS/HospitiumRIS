@@ -14,7 +14,7 @@ import {
   AccountCircle as OrcidIcon
 } from '@mui/icons-material';
 
-const OrcidImport = ({ onImportSuccess, color = '#A6CE39' }) => {
+const OrcidImport = ({ onImportSuccess, color = '#8b6cbc' }) => {
   const { t } = useTranslation();
   const [orcidId, setOrcidId] = useState('');
   const [loading, setLoading] = useState(false);

@@ -68,21 +68,21 @@ model User {
   startYear          String?
 
   // Verified institution membership (domain-matched, controls access)
-  secondaryInstitutionId         String?
-  institutionVerifiedAt          DateTime?
-  institutionVerificationMethod  String? // EMAIL_DOMAIN, MANUAL
+  secondaryInstitutionId        String?
+  institutionVerifiedAt         DateTime?
+  institutionVerificationMethod String? // EMAIL_DOMAIN, MANUAL
 
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  institution           Institution?  @relation("InstitutionOwner")
-  secondaryInstitution  Institution?  @relation("InstitutionMembers", fields: [secondaryInstitutionId], references: [id])
-  foundation      Foundation?
-  researchProfile ResearchProfile?
-  publications    PublicationAuthor[]
-  settings        UserSettings[]
+  institution          Institution?        @relation("InstitutionOwner")
+  secondaryInstitution Institution?        @relation("InstitutionMembers", fields: [secondaryInstitutionId], references: [id])
+  foundation           Foundation?
+  researchProfile      ResearchProfile?
+  publications         PublicationAuthor[]
+  settings             UserSettings[]
 
   // Manuscript Relations
   createdManuscripts       ManuscriptCollaborator[] @relation("InvitedCollaborators")
@@ -108,7 +108,8 @@ model User {
   trainingCertificates  TrainingCertificate[]
 
   // Image Integrity (ImaChek) Relations
-  imageIntegrityCases ImageIntegrityCase[]
+  imageIntegrityCases       ImageIntegrityCase[]
+  imageIntegrityCollections ImageIntegrityCollection[]
 
   // Grant tracker follow-up assignments
   grantFollowUpAssignments Proposal[] @relation("ProposalGrantFollowUp")
@@ -165,9 +166,10 @@ model Institution {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user            User?            @relation("InstitutionOwner", fields: [userId], references: [id], onDelete: SetNull)
-  members         User[]           @relation("InstitutionMembers")
-  verifiedDomains VerifiedDomain[]
+  user                   User?                   @relation("InstitutionOwner", fields: [userId], references: [id], onDelete: SetNull)
+  members                User[]                  @relation("InstitutionMembers")
+  verifiedDomains        VerifiedDomain[]
+  imageIntegrityLabUnits ImageIntegrityLabUnit[]
 
   @@map("institutions")
 }
@@ -183,24 +185,24 @@ model VerifiedDomain {
   institutionId String
 
   // Domain Details
-  domain        String // e.g., "university.edu", "hospital.org"
-  status        DomainStatus @default(PENDING)
-  verifiedAt    DateTime?
-  verifiedBy    String? // User ID who verified
-  
+  domain     String // e.g., "university.edu", "hospital.org"
+  status     DomainStatus @default(PENDING)
+  verifiedAt DateTime?
+  verifiedBy String? // User ID who verified
+
   // Verification Details
   verificationMethod String? // DNS, Email, Manual
   verificationToken  String? @unique
   verificationData   Json? // Store verification-specific data
-  
+
   // Domain Settings
-  autoApproveUsers Boolean @default(false) // Auto-approve users with this domain
+  autoApproveUsers    Boolean  @default(false) // Auto-approve users with this domain
   allowedAccountTypes String[] // Account types allowed for this domain
-  
+
   // Metadata
-  notes         String?
-  suspendedAt   DateTime?
-  suspendedBy   String?
+  notes            String?
+  suspendedAt      DateTime?
+  suspendedBy      String?
   suspensionReason String?
 
   // Timestamps
@@ -596,7 +598,7 @@ enum NotificationType {
   TRACKED_CHANGE_ADDED
   TRACKED_CHANGE_ACCEPTED
   TRACKED_CHANGE_REJECTED
-  
+
   // Proposals
   PROPOSAL_SUBMITTED
   PROPOSAL_REVIEW_ASSIGNED
@@ -606,7 +608,7 @@ enum NotificationType {
   PROPOSAL_REJECTED
   PROPOSAL_REVISION_REQUESTED
   PROPOSAL_DEADLINE_APPROACHING
-  
+
   // Ethics
   ETHICS_SUBMITTED
   ETHICS_REVIEW_ASSIGNED
@@ -617,7 +619,7 @@ enum NotificationType {
   ETHICS_REVISION_REQUESTED
   ETHICS_EXPIRING_SOON
   ETHICS_AMENDMENT_SUBMITTED
-  
+
   // Grants
   GRANT_STATUS_CHANGED
   GRANT_DEADLINE_APPROACHING
@@ -627,7 +629,7 @@ enum NotificationType {
   GRANT_MILESTONE_DUE
   GRANT_REPORT_DUE
   GRANT_COMMUNICATION_RECEIVED
-  
+
   // Training
   TRAINING_AVAILABLE
   TRAINING_REGISTERED
@@ -637,37 +639,37 @@ enum NotificationType {
   TRAINING_CANCELLED
   TRAINING_MATERIALS_UPDATED
   TRAINING_NEW_REGISTRATION
-  
+
   // Publications
   PUBLICATION_IMPORTED
   PUBLICATION_IMPORT_FAILED
   COAUTHOR_PUBLICATION_DETECTED
-  
+
   // Preprints
   PREPRINT_SUBMITTED
   PREPRINT_UNDER_REVIEW
   PREPRINT_ACCEPTED
   PREPRINT_PUBLISHED
   PREPRINT_REJECTED
-  
+
   // User & Account
   ACCOUNT_ACTIVATED
   ACCOUNT_STATUS_CHANGED
   ACCOUNT_TYPE_CHANGED
   EMAIL_VERIFIED
   NEW_USER_REGISTRATION
-  
+
   // Campaigns & Donations
   DONATION_RECEIVED
   CAMPAIGN_MILESTONE_REACHED
   CAMPAIGN_ACTIVITY_SCHEDULED
-  
+
   // Internal Grants
   INTERNAL_GRANT_SUBMITTED
   INTERNAL_GRANT_APPROVED
   INTERNAL_GRANT_REJECTED
   INTERNAL_GRANT_REVIEW_ASSIGNED
-  
+
   // System
   SYSTEM_NOTIFICATION
   SYSTEM_MAINTENANCE
@@ -854,10 +856,10 @@ model Notification {
   preprintId          String?
 
   // Notification Details
-  type     NotificationType
-  title    String
-  message  String
-  data     Json? // Additional structured data
+  type    NotificationType
+  title   String
+  message String
+  data    Json? // Additional structured data
 
   // Priority & Category
   priority NotificationPriority @default(NORMAL)
@@ -870,10 +872,10 @@ model Notification {
   archivedAt DateTime?
 
   // Action tracking
-  actionRequired Boolean  @default(false)
+  actionRequired Boolean   @default(false)
   actionUrl      String? // Deep link to relevant page
   actionLabel    String? // Button text (e.g., "Review Proposal")
-  actionTaken    Boolean  @default(false)
+  actionTaken    Boolean   @default(false)
   actionTakenAt  DateTime?
 
   // Delivery channels
@@ -1180,22 +1182,21 @@ model Proposal {
   updatedAt DateTime @updatedAt
 
   // Relations
-  publications       ProposalPublication[]
-  manuscripts        ProposalManuscript[]
-  reviews            ProposalReview[]
-  ethicsLinks        ProposalEthicsLink[]
-  grantApplications  GrantApplication[]
-  notifications      Notification[]
-  reviewTracking     ProposalReviewTracking?
-  grantFollowUpUser  User?                   @relation("ProposalGrantFollowUp", fields: [grantFollowUpUserId], references: [id], onDelete: SetNull)
-
-  @@index([grantFollowUpUserId])
-  @@index([grantTrackingStatus])
+  publications      ProposalPublication[]
+  manuscripts       ProposalManuscript[]
+  reviews           ProposalReview[]
+  ethicsLinks       ProposalEthicsLink[]
+  grantApplications GrantApplication[]
+  notifications     Notification[]
+  reviewTracking    ProposalReviewTracking?
+  grantFollowUpUser User?                   @relation("ProposalGrantFollowUp", fields: [grantFollowUpUserId], references: [id], onDelete: SetNull)
 
   // TODO: Add userId when authentication is implemented
   // userId      String
   // user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([grantFollowUpUserId])
+  @@index([grantTrackingStatus])
   @@map("proposals")
 }
 
@@ -1285,22 +1286,22 @@ enum EthicsApplicationStatus {
 model EthicsApplication {
   id     String @id @default(cuid())
   userId String // Creator/Principal Investigator
-  
+
   // Application Details
-  title                    String
-  principalInvestigator    String
-  principalInvestigatorId  String? // User ID if in system
-  department               String
-  researchType             String // Clinical Trial, Survey, Interview, Observational, etc.
-  
+  title                   String
+  principalInvestigator   String
+  principalInvestigatorId String? // User ID if in system
+  department              String
+  researchType            String // Clinical Trial, Survey, Interview, Observational, etc.
+
   // Research Details
-  researchSummary          String @db.Text
-  researchObjectives       String @db.Text
-  methodology              String @db.Text
-  studyDuration            String?
-  
+  researchSummary    String  @db.Text
+  researchObjectives String  @db.Text
+  methodology        String  @db.Text
+  studyDuration      String?
+
   // Participant Details
-  participantPopulation    String @db.Text
+  participantPopulation    String  @db.Text
   participantCount         Int?
   ageRange                 String?
   inclusionCriteria        String? @db.Text
@@ -1308,145 +1309,145 @@ model EthicsApplication {
   recruitmentMethod        String? @db.Text
   vulnerablePopulations    Boolean @default(false)
   vulnerablePopulationDesc String? @db.Text
-  
+
   // Risk Assessment
-  riskLevel                String // MINIMAL, LOW, MODERATE, HIGH
-  potentialRisks           String @db.Text
-  riskMitigation           String @db.Text
-  potentialBenefits        String @db.Text
-  riskBenefitRatio         String? @db.Text
-  
+  riskLevel         String // MINIMAL, LOW, MODERATE, HIGH
+  potentialRisks    String  @db.Text
+  riskMitigation    String  @db.Text
+  potentialBenefits String  @db.Text
+  riskBenefitRatio  String? @db.Text
+
   // Consent Process
-  consentProcess           String @db.Text
-  consentFormAttached      Boolean @default(false)
-  informationSheetAttached Boolean @default(false)
-  consentWaiverRequested   Boolean @default(false)
+  consentProcess             String  @db.Text
+  consentFormAttached        Boolean @default(false)
+  informationSheetAttached   Boolean @default(false)
+  consentWaiverRequested     Boolean @default(false)
   consentWaiverJustification String? @db.Text
-  
+
   // Data Protection & Privacy
-  dataCollectionMethods    String @db.Text
-  dataStorageMethods       String @db.Text
-  dataSecurityMeasures     String @db.Text
-  dataRetentionPeriod      String?
-  dataAnonymization        Boolean @default(false)
-  dataSharingPlans         String? @db.Text
-  
+  dataCollectionMethods String  @db.Text
+  dataStorageMethods    String  @db.Text
+  dataSecurityMeasures  String  @db.Text
+  dataRetentionPeriod   String?
+  dataAnonymization     Boolean @default(false)
+  dataSharingPlans      String? @db.Text
+
   // Approval Details
-  status                   EthicsApplicationStatus @default(DRAFT)
-  referenceNumber          String? @unique
-  committeeId              String? // Ethics committee assigned
-  committeeName            String?
-  submittedDate            DateTime?
-  reviewDate               DateTime?
-  approvalDate             DateTime?
-  expiryDate               DateTime?
-  
+  status          EthicsApplicationStatus @default(DRAFT)
+  referenceNumber String?                 @unique
+  committeeId     String? // Ethics committee assigned
+  committeeName   String?
+  submittedDate   DateTime?
+  reviewDate      DateTime?
+  approvalDate    DateTime?
+  expiryDate      DateTime?
+
   // Conditions (for conditional approval)
-  approvalConditions       String? @db.Text
-  conditionsMet            Boolean @default(false)
-  
+  approvalConditions String? @db.Text
+  conditionsMet      Boolean @default(false)
+
   // Documents
-  documents                Json[] // consent forms, information sheets, questionnaires, etc.
+  documents Json[] // consent forms, information sheets, questionnaires, etc.
 
   // APPLICATION = submitted through Hospitium; EXTERNAL_CERTIFICATE = uploaded existing clearance
-  source                   String                  @default("APPLICATION")
-  
+  source String @default("APPLICATION")
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   linkedProposals ProposalEthicsLink[]
   reviews         EthicsReview[]
   amendments      EthicsAmendment[]
   notifications   Notification[]
-  
+
   @@map("ethics_applications")
 }
 
 model EthicsReview {
-  id                    String @id @default(cuid())
-  ethicsApplicationId   String
-  
+  id                  String @id @default(cuid())
+  ethicsApplicationId String
+
   // Reviewer Information
-  reviewerId            String // User ID
-  reviewerName          String
-  reviewerRole          String? // Chair, Member, External Reviewer
-  
+  reviewerId   String // User ID
+  reviewerName String
+  reviewerRole String? // Chair, Member, External Reviewer
+
   // Review Decision
-  decision              String // APPROVED, CONDITIONAL_APPROVAL, REJECTED, REVISION_REQUESTED
-  
+  decision String // APPROVED, CONDITIONAL_APPROVAL, REJECTED, REVISION_REQUESTED
+
   // Review Content
-  overallComments       String @db.Text
-  ethicalConcerns       String? @db.Text
-  riskAssessmentReview  String? @db.Text
-  consentReview         String? @db.Text
-  dataProtectionReview  String? @db.Text
-  recommendations       String? @db.Text
-  
+  overallComments      String  @db.Text
+  ethicalConcerns      String? @db.Text
+  riskAssessmentReview String? @db.Text
+  consentReview        String? @db.Text
+  dataProtectionReview String? @db.Text
+  recommendations      String? @db.Text
+
   // Conditions (if conditional approval)
-  conditions            String? @db.Text
-  
+  conditions String? @db.Text
+
   // Review Metadata
-  reviewDate            DateTime @default(now())
-  
+  reviewDate DateTime @default(now())
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   ethicsApplication EthicsApplication @relation(fields: [ethicsApplicationId], references: [id], onDelete: Cascade)
-  
+
   @@map("ethics_reviews")
 }
 
 model EthicsAmendment {
-  id                    String @id @default(cuid())
-  ethicsApplicationId   String
-  
+  id                  String @id @default(cuid())
+  ethicsApplicationId String
+
   // Amendment Details
-  amendmentNumber       Int
-  amendmentType         String // MINOR, MAJOR, SUBSTANTIAL
-  description           String @db.Text
-  justification         String @db.Text
-  
+  amendmentNumber Int
+  amendmentType   String // MINOR, MAJOR, SUBSTANTIAL
+  description     String @db.Text
+  justification   String @db.Text
+
   // Status
-  status                String @default("PENDING") // PENDING, APPROVED, REJECTED
-  submittedDate         DateTime @default(now())
-  reviewedDate          DateTime?
-  approvalDate          DateTime?
-  
+  status        String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  submittedDate DateTime  @default(now())
+  reviewedDate  DateTime?
+  approvalDate  DateTime?
+
   // Documents
-  documents             Json[]
-  
+  documents Json[]
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   ethicsApplication EthicsApplication @relation(fields: [ethicsApplicationId], references: [id], onDelete: Cascade)
-  
+
   @@unique([ethicsApplicationId, amendmentNumber])
   @@map("ethics_amendments")
 }
 
 // Junction table for Proposal-Ethics linking
 model ProposalEthicsLink {
-  id                    String @id @default(cuid())
-  proposalId            String
-  ethicsApplicationId   String
-  
+  id                  String @id @default(cuid())
+  proposalId          String
+  ethicsApplicationId String
+
   // Link metadata
-  linkedDate            DateTime @default(now())
-  linkedBy              String // User ID who created the link
-  
+  linkedDate DateTime @default(now())
+  linkedBy   String // User ID who created the link
+
   // Timestamps
   createdAt DateTime @default(now())
-  
+
   // Relations
   proposal          Proposal          @relation(fields: [proposalId], references: [id], onDelete: Cascade)
   ethicsApplication EthicsApplication @relation(fields: [ethicsApplicationId], references: [id], onDelete: Cascade)
-  
+
   @@unique([proposalId, ethicsApplicationId])
   @@map("proposal_ethics_links")
 }
@@ -1467,177 +1468,177 @@ model GrantApplication {
   id         String @id @default(cuid())
   proposalId String // Must link to APPROVED proposal
   userId     String // Researcher who created
-  
+
   // Grant Details
-  grantorName            String
-  grantorEmail           String // Primary contact email for tracking
-  grantorContactPerson   String?
-  grantorPhone           String?
-  grantProgram           String?
-  grantOpportunityId     String? // Link to GrantOpportunity if exists
-  
+  grantorName          String
+  grantorEmail         String // Primary contact email for tracking
+  grantorContactPerson String?
+  grantorPhone         String?
+  grantProgram         String?
+  grantOpportunityId   String? // Link to GrantOpportunity if exists
+
   // Application Details
-  applicationTitle       String
-  requestedAmount        Decimal @db.Decimal(15, 2)
-  submissionDeadline     DateTime?
-  applicationDate        DateTime?
-  
+  applicationTitle   String
+  requestedAmount    Decimal   @db.Decimal(15, 2)
+  submissionDeadline DateTime?
+  applicationDate    DateTime?
+
   // Status Tracking
-  status                 GrantApplicationStatus @default(PREPARING)
-  stage                  String @default("preparation") // preparation, submitted, under_review, awarded, closed
-  priority               String @default("Medium") // High, Medium, Low
-  
+  status   GrantApplicationStatus @default(PREPARING)
+  stage    String                 @default("preparation") // preparation, submitted, under_review, awarded, closed
+  priority String                 @default("Medium") // High, Medium, Low
+
   // Grant-specific requirements
-  requirements           Json? // Array of requirement objects
-  notes                  String? @db.Text
-  
+  requirements Json? // Array of requirement objects
+  notes        String? @db.Text
+
   // Email tracking
-  grantInstitutionEmail  String // Email to track communications
-  emailThreadId          String? // For grouping related emails
-  
+  grantInstitutionEmail String // Email to track communications
+  emailThreadId         String? // For grouping related emails
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   submittedAt DateTime?
-  
+
   // Relations
-  proposal        Proposal              @relation(fields: [proposalId], references: [id])
-  communications  GrantCommunication[]
-  milestones      GrantMilestone[]
-  award           GrantAward?
-  notifications   Notification[]
-  
+  proposal       Proposal             @relation(fields: [proposalId], references: [id])
+  communications GrantCommunication[]
+  milestones     GrantMilestone[]
+  award          GrantAward?
+  notifications  Notification[]
+
   @@map("grant_applications")
 }
 
 model GrantCommunication {
   id                 String @id @default(cuid())
   grantApplicationId String
-  
+
   // Communication Details
-  type               String // EMAIL_INCOMING, EMAIL_OUTGOING, CALL, MEETING, NOTE
-  direction          String? // INCOMING, OUTGOING (for emails)
-  
+  type      String // EMAIL_INCOMING, EMAIL_OUTGOING, CALL, MEETING, NOTE
+  direction String? // INCOMING, OUTGOING (for emails)
+
   // Email Details
-  fromEmail          String?
-  fromName           String?
-  toEmail            String?
-  toName             String?
-  ccEmails           String[] // Array of CC emails
-  subject            String?
-  body               String? @db.Text
-  htmlBody           String? @db.Text
-  
+  fromEmail String?
+  fromName  String?
+  toEmail   String?
+  toName    String?
+  ccEmails  String[] // Array of CC emails
+  subject   String?
+  body      String?  @db.Text
+  htmlBody  String?  @db.Text
+
   // Call/Meeting Details
-  participantName    String?
-  participantEmail   String?
-  duration           Int? // minutes
-  location           String?
-  
+  participantName  String?
+  participantEmail String?
+  duration         Int? // minutes
+  location         String?
+
   // Common Fields
-  summary            String @db.Text
-  date               DateTime @default(now())
-  
+  summary String   @db.Text
+  date    DateTime @default(now())
+
   // Attachments
-  attachments        Json[] // Array of file metadata
-  
+  attachments Json[] // Array of file metadata
+
   // Follow-up
-  followUpRequired   Boolean @default(false)
-  followUpDate       DateTime?
-  followUpCompleted  Boolean @default(false)
-  followUpNotes      String? @db.Text
-  
+  followUpRequired  Boolean   @default(false)
+  followUpDate      DateTime?
+  followUpCompleted Boolean   @default(false)
+  followUpNotes     String?   @db.Text
+
   // Email Metadata (for threading)
-  emailMessageId     String? // Unique message ID
-  emailInReplyTo     String? // Message ID this is replying to
-  emailReferences    String[] // Array of reference message IDs
-  
+  emailMessageId  String? // Unique message ID
+  emailInReplyTo  String? // Message ID this is replying to
+  emailReferences String[] // Array of reference message IDs
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   grantApplication GrantApplication @relation(fields: [grantApplicationId], references: [id], onDelete: Cascade)
-  
+
   @@map("grant_communications")
 }
 
 model GrantMilestone {
   id                 String @id @default(cuid())
   grantApplicationId String
-  
+
   // Milestone Details
-  title              String
-  description        String? @db.Text
-  dueDate            DateTime?
-  completedDate      DateTime?
-  status             String @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, OVERDUE
-  
+  title         String
+  description   String?   @db.Text
+  dueDate       DateTime?
+  completedDate DateTime?
+  status        String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, OVERDUE
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   grantApplication GrantApplication @relation(fields: [grantApplicationId], references: [id], onDelete: Cascade)
-  
+
   @@map("grant_milestones")
 }
 
 model GrantAward {
   id                 String @id @default(cuid())
   grantApplicationId String @unique
-  
+
   // Award Details
-  awardedAmount      Decimal @db.Decimal(15, 2)
-  awardDate          DateTime
-  startDate          DateTime
-  endDate            DateTime
-  grantNumber        String?
-  contractSigned     Boolean @default(false)
-  contractDate       DateTime?
-  
+  awardedAmount  Decimal   @db.Decimal(15, 2)
+  awardDate      DateTime
+  startDate      DateTime
+  endDate        DateTime
+  grantNumber    String?
+  contractSigned Boolean   @default(false)
+  contractDate   DateTime?
+
   // Reporting Requirements
-  reportingSchedule  Json? // Array of reporting milestone objects
-  
+  reportingSchedule Json? // Array of reporting milestone objects
+
   // Compliance
   complianceRequirements Json? // Array of compliance item objects
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   grantApplication GrantApplication @relation(fields: [grantApplicationId], references: [id], onDelete: Cascade)
   reports          GrantReport[]
-  
+
   @@map("grant_awards")
 }
 
 model GrantReport {
   id           String @id @default(cuid())
   grantAwardId String
-  
+
   // Report Details
-  reportType            String // PROGRESS, FINANCIAL, FINAL
-  reportingPeriodStart  DateTime
-  reportingPeriodEnd    DateTime
-  dueDate               DateTime
-  submittedDate         DateTime?
-  
+  reportType           String // PROGRESS, FINANCIAL, FINAL
+  reportingPeriodStart DateTime
+  reportingPeriodEnd   DateTime
+  dueDate              DateTime
+  submittedDate        DateTime?
+
   // Content
-  content               String? @db.Text
-  status                String @default("PENDING") // PENDING, IN_PROGRESS, SUBMITTED, APPROVED
-  
+  content String? @db.Text
+  status  String  @default("PENDING") // PENDING, IN_PROGRESS, SUBMITTED, APPROVED
+
   // Documents
-  documents             Json[] // Array of file metadata
-  
+  documents Json[] // Array of file metadata
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   grantAward GrantAward @relation(fields: [grantAwardId], references: [id], onDelete: Cascade)
-  
+
   @@map("grant_reports")
 }
 
@@ -1695,8 +1696,8 @@ model InternalGrantRequest {
   // Request Details
   title           String
   purpose         String // Research, Equipment, Travel, Training, Operations, Other
-  description     String  @db.Text
-  requestedAmount Decimal @db.Decimal(15, 2)
+  description     String   @db.Text
+  requestedAmount Decimal  @db.Decimal(15, 2)
   approvedAmount  Decimal? @db.Decimal(15, 2)
 
   // Project Dates
@@ -1704,8 +1705,8 @@ model InternalGrantRequest {
   projectEndDate   DateTime?
 
   // Status & Workflow
-  status String @default("draft")      // draft, submitted, under_review, approved, rejected, revision_requested
-  stage  String @default("intake")     // intake, initial_review, committee_review, final_decision
+  status String @default("draft") // draft, submitted, under_review, approved, rejected, revision_requested
+  stage  String @default("intake") // intake, initial_review, committee_review, final_decision
 
   // Decision Details
   decisionDate  DateTime?
@@ -1786,8 +1787,8 @@ model PreprintSubmission {
   license     String?
 
   // Server / Provider
-  server      String // biorxiv, medrxiv, africarxiv
-  serverName  String // Display name: bioRxiv, medRxiv, AfricArXiv
+  server     String // biorxiv, medrxiv, africarxiv
+  serverName String // Display name: bioRxiv, medRxiv, AfricArXiv
 
   // Manuscript
   manuscriptFileName String?
@@ -1799,23 +1800,23 @@ model PreprintSubmission {
   serverUrl String? // URL on the preprint server once published
 
   // OSF-specific (AfricArXiv)
-  osfNodeId              String?
-  osfPreprintId          String?
-  osfReviewsState        String? // OSF review state: pending, accepted, rejected, etc.
-  osfDateCreated         DateTime?
-  osfDateModified        DateTime?
-  osfDatePublished       DateTime?
+  osfNodeId               String?
+  osfPreprintId           String?
+  osfReviewsState         String? // OSF review state: pending, accepted, rejected, etc.
+  osfDateCreated          DateTime?
+  osfDateModified         DateTime?
+  osfDatePublished        DateTime?
   osfDateLastTransitioned DateTime?
-  osfIsPublished         Boolean?
-  osfIsPreprintOrphan    Boolean?
-  osfLicenseRecord       Json? // Store license details as JSON
-  osfHasCoi              Boolean?
-  osfCoiStatement        String? @db.Text
-  osfHasDoi              Boolean?
-  osfArticleDoi          String?
-  osfPreprintDoiCreated  DateTime?
-  osfPreprintDoiUrl      String?
-  osfDownloadUrl         String?
+  osfIsPublished          Boolean?
+  osfIsPreprintOrphan     Boolean?
+  osfLicenseRecord        Json? // Store license details as JSON
+  osfHasCoi               Boolean?
+  osfCoiStatement         String?   @db.Text
+  osfHasDoi               Boolean?
+  osfArticleDoi           String?
+  osfPreprintDoiCreated   DateTime?
+  osfPreprintDoiUrl       String?
+  osfDownloadUrl          String?
 
   // medRxiv-specific
   ethicsStatement  String? @db.Text
@@ -1885,22 +1886,22 @@ model Training {
   endDate         DateTime
   maxParticipants Int
   status          TrainingStatus @default(DRAFT)
-  
+
   // Institution scoping
-  institutionId   String // User's primaryInstitution
-  createdBy       String // User ID of creator
-  
+  institutionId String // User's primaryInstitution
+  createdBy     String // User ID of creator
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  modules        TrainingModule[]
-  materials      TrainingMaterial[]
-  registrations  TrainingRegistration[]
-  certificates   TrainingCertificate[]
-  notifications  Notification[]
-  
+  modules       TrainingModule[]
+  materials     TrainingMaterial[]
+  registrations TrainingRegistration[]
+  certificates  TrainingCertificate[]
+  notifications Notification[]
+
   @@map("trainings")
 }
 
@@ -1909,39 +1910,39 @@ model TrainingModule {
   trainingId  String
   title       String
   description String?      @db.Text
-  order       Int          // Display order
+  order       Int // Display order
   status      ModuleStatus @default(ACTIVE)
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  training  Training                  @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  training  Training                 @relation(fields: [trainingId], references: [id], onDelete: Cascade)
   materials TrainingMaterial[]
   progress  TrainingModuleProgress[]
-  
+
   @@map("training_modules")
 }
 
 model TrainingMaterial {
   id          String              @id @default(cuid())
   trainingId  String
-  moduleId    String?             // Optional: can be linked to a specific module
+  moduleId    String? // Optional: can be linked to a specific module
   name        String
   fileUrl     String
-  fileType    String              // pdf, doc, ppt, etc.
+  fileType    String // pdf, doc, ppt, etc.
   accessLevel MaterialAccessLevel @default(PUBLIC)
-  uploadedBy  String              // User ID
-  
+  uploadedBy  String // User ID
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   training Training        @relation(fields: [trainingId], references: [id], onDelete: Cascade)
   module   TrainingModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
-  
+
   @@map("training_materials")
 }
 
@@ -1951,17 +1952,17 @@ model TrainingRegistration {
   userId       String
   status       TrainingRegistrationStatus @default(REGISTERED)
   registeredAt DateTime                   @default(now())
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  training         Training                 @relation(fields: [trainingId], references: [id], onDelete: Cascade)
-  user             User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  moduleProgress   TrainingModuleProgress[]
-  certificate      TrainingCertificate?
-  
+  training       Training                 @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleProgress TrainingModuleProgress[]
+  certificate    TrainingCertificate?
+
   @@unique([trainingId, userId])
   @@map("training_registrations")
 }
@@ -1972,15 +1973,15 @@ model TrainingModuleProgress {
   moduleId       String
   status         ModuleProgressStatus @default(PENDING)
   completedAt    DateTime?
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   registration TrainingRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
   module       TrainingModule       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  
+
   @@unique([registrationId, moduleId])
   @@map("training_module_progress")
 }
@@ -1992,17 +1993,17 @@ model TrainingCertificate {
   registrationId String   @unique
   certificateUrl String
   issuedAt       DateTime @default(now())
-  uploadedBy     String   // User ID of admin who uploaded
-  
+  uploadedBy     String // User ID of admin who uploaded
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   training     Training             @relation(fields: [trainingId], references: [id], onDelete: Cascade)
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   registration TrainingRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-  
+
   @@map("training_certificates")
 }
 
@@ -2032,56 +2033,56 @@ enum ReviewStageStatus {
 model ProposalReviewPipeline {
   id            String @id @default(cuid())
   institutionId String // Institution that owns this pipeline
-  
+
   // Pipeline Details
-  name          String
-  description   String?
-  isActive      Boolean @default(true)
-  isDefault     Boolean @default(false) // Default pipeline for new proposals
-  
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+  isDefault   Boolean @default(false) // Default pipeline for new proposals
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  stages            ProposalReviewStage[]
-  proposalTracking  ProposalReviewTracking[]
-  
+  stages           ProposalReviewStage[]
+  proposalTracking ProposalReviewTracking[]
+
   @@map("proposal_review_pipelines")
 }
 
 model ProposalReviewStage {
   id         String @id @default(cuid())
   pipelineId String
-  
+
   // Stage Details
-  name           String
-  description    String?
-  stageType      ReviewStageType
-  order          Int // Order in the pipeline (1, 2, 3, etc.)
-  
+  name        String
+  description String?
+  stageType   ReviewStageType
+  order       Int // Order in the pipeline (1, 2, 3, etc.)
+
   // Stage Configuration
   isRequired     Boolean @default(true) // Can this stage be skipped?
   autoApprove    Boolean @default(false) // Auto-approve if conditions met
   daysToComplete Int? // Expected days to complete this stage
-  
+
   // Reviewer Assignment
   reviewerRoles  String[] // Account types that can review this stage
   reviewerEmails String[] // Specific email addresses of reviewers
-  
+
   // Approval Requirements
   requiresAllReviewers Boolean @default(false) // All reviewers must approve
   minimumApprovals     Int     @default(1) // Minimum number of approvals needed
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  pipeline         ProposalReviewPipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
-  stageProgress    ProposalStageProgress[]
-  stageReviews     ProposalStageReview[]
-  
+  pipeline      ProposalReviewPipeline  @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  stageProgress ProposalStageProgress[]
+  stageReviews  ProposalStageReview[]
+
   @@unique([pipelineId, order])
   @@map("proposal_review_stages")
 }
@@ -2090,23 +2091,23 @@ model ProposalReviewTracking {
   id         String @id @default(cuid())
   proposalId String @unique
   pipelineId String
-  
+
   // Current Status
   currentStageId    String?
   currentStageOrder Int     @default(1)
   overallStatus     String  @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, COMPLETED, REJECTED
-  
+
   // Timestamps
   startedAt   DateTime?
   completedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  
+
   // Relations
-  proposal       Proposal                @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-  pipeline       ProposalReviewPipeline  @relation(fields: [pipelineId], references: [id])
-  stageProgress  ProposalStageProgress[]
-  
+  proposal      Proposal                @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  pipeline      ProposalReviewPipeline  @relation(fields: [pipelineId], references: [id])
+  stageProgress ProposalStageProgress[]
+
   @@map("proposal_review_tracking")
 }
 
@@ -2114,30 +2115,30 @@ model ProposalStageProgress {
   id         String @id @default(cuid())
   trackingId String
   stageId    String
-  
+
   // Progress Details
-  status         ReviewStageStatus @default(NOT_STARTED)
-  startedAt      DateTime?
-  completedAt    DateTime?
-  
+  status      ReviewStageStatus @default(NOT_STARTED)
+  startedAt   DateTime?
+  completedAt DateTime?
+
   // Review Outcome
-  outcome        String? // Detailed outcome description
-  conditions     String? // Conditions if approved with contingencies
+  outcome         String? // Detailed outcome description
+  conditions      String? // Conditions if approved with contingencies
   rejectionReason String? @db.Text
-  
+
   // Metadata
-  assignedReviewers String[] // User IDs or emails of assigned reviewers
+  assignedReviewers  String[] // User IDs or emails of assigned reviewers
   completedReviewers String[] // User IDs or emails who completed review
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   tracking ProposalReviewTracking @relation(fields: [trackingId], references: [id], onDelete: Cascade)
   stage    ProposalReviewStage    @relation(fields: [stageId], references: [id])
   reviews  ProposalStageReview[]
-  
+
   @@unique([trackingId, stageId])
   @@map("proposal_stage_progress")
 }
@@ -2146,29 +2147,29 @@ model ProposalStageReview {
   id              String @id @default(cuid())
   stageProgressId String
   stageId         String
-  
+
   // Reviewer Information
   reviewerId    String // User ID
   reviewerName  String
   reviewerEmail String
   reviewerRole  String? // Their role/title
-  
+
   // Review Decision
-  decision      ReviewStageStatus
-  comments      String? @db.Text
-  conditions    String? @db.Text // If approved with contingencies
-  
+  decision   ReviewStageStatus
+  comments   String?           @db.Text
+  conditions String?           @db.Text // If approved with contingencies
+
   // Review Metadata
   reviewDate DateTime @default(now())
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   stageProgress ProposalStageProgress @relation(fields: [stageProgressId], references: [id], onDelete: Cascade)
   stage         ProposalReviewStage   @relation(fields: [stageId], references: [id])
-  
+
   @@map("proposal_stage_reviews")
 }
 
@@ -2229,25 +2230,25 @@ model AutoReviewWorkflow {
   name        String
   description String?      @db.Text
   type        WorkflowType
-  
+
   // Configuration
   isActive           Boolean @default(true)
   isDefault          Boolean @default(false) // Default workflow for this type
   autoRouteOnPass    Boolean @default(false) // Auto-route to next stage if all checks pass
-  requireHumanReview Boolean @default(true)  // Always require human review even if auto-checks pass
-  
+  requireHumanReview Boolean @default(true) // Always require human review even if auto-checks pass
+
   // Metadata
   createdBy String? // User ID
   version   Int     @default(1)
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   stages     AutoReviewStage[]
   executions WorkflowExecution[]
-  
+
   @@map("auto_review_workflows")
 }
 
@@ -2256,56 +2257,56 @@ model AutoReviewStage {
   workflowId  String
   name        String
   description String? @db.Text
-  
+
   // Stage Configuration
-  order              Int
-  isRequired         Boolean @default(true)
-  allowSkip          Boolean @default(false)
-  autoApproveOnPass  Boolean @default(false) // Auto-approve if all validations pass
-  daysToComplete     Int?    // Expected days to complete this stage
-  
+  order             Int
+  isRequired        Boolean @default(true)
+  allowSkip         Boolean @default(false)
+  autoApproveOnPass Boolean @default(false) // Auto-approve if all validations pass
+  daysToComplete    Int? // Expected days to complete this stage
+
   // Reviewer Requirements
   requiresAllReviewers Boolean @default(false) // All reviewers must approve
-  minimumApprovals     Int     @default(1)     // Minimum number of approvals needed
-  
+  minimumApprovals     Int     @default(1) // Minimum number of approvals needed
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  workflow           AutoReviewWorkflow      @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  parameters         ValidationParameter[]
-  reviewers          StageReviewer[]
-  stageExecutions    StageExecution[]
-  
+  workflow        AutoReviewWorkflow    @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  parameters      ValidationParameter[]
+  reviewers       StageReviewer[]
+  stageExecutions StageExecution[]
+
   @@unique([workflowId, order])
   @@map("auto_review_stages")
 }
 
 model ValidationParameter {
-  id       String                  @id @default(cuid())
-  stageId  String
-  name     String
-  type     ValidationParameterType
-  
+  id      String                  @id @default(cuid())
+  stageId String
+  name    String
+  type    ValidationParameterType
+
   // Configuration (stored as JSON for flexibility)
   config Json // Different config based on type
-  
+
   // Validation Settings
-  isRequired      Boolean @default(true)
-  failOnError     Boolean @default(true) // Fail stage if this validation fails
-  weight          Int     @default(1)    // Weight for scoring (1-10)
-  errorMessage    String? @db.Text       // Custom error message
-  successMessage  String? @db.Text       // Custom success message
-  
+  isRequired     Boolean @default(true)
+  failOnError    Boolean @default(true) // Fail stage if this validation fails
+  weight         Int     @default(1) // Weight for scoring (1-10)
+  errorMessage   String? @db.Text // Custom error message
+  successMessage String? @db.Text // Custom success message
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  stage              AutoReviewStage       @relation(fields: [stageId], references: [id], onDelete: Cascade)
-  validationResults  ValidationResult[]
-  
+  stage             AutoReviewStage    @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  validationResults ValidationResult[]
+
   @@map("validation_parameters")
 }
 
@@ -2314,21 +2315,21 @@ model ReviewerRole {
   name        String
   type        ReviewerRoleType
   description String?          @db.Text
-  
+
   // Permissions
   canApprove       Boolean @default(true)
   canReject        Boolean @default(true)
   canRequestChange Boolean @default(true)
   canComment       Boolean @default(true)
   canOverride      Boolean @default(false) // Can override auto-review results
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   stageReviewers StageReviewer[]
-  
+
   @@unique([name])
   @@map("reviewer_roles")
 }
@@ -2338,61 +2339,61 @@ model StageReviewer {
   stageId String
   userId  String? // Null if external reviewer
   roleId  String
-  
+
   // External Reviewer Info (if userId is null)
   externalEmail String?
   externalName  String?
-  
+
   // Assignment Details
   isRequired Boolean @default(true) // Is this reviewer required for approval
-  order      Int     @default(0)    // Order of review (0 = parallel)
-  
+  order      Int     @default(0) // Order of review (0 = parallel)
+
   // Invitation Status
   invitedAt  DateTime?
   acceptedAt DateTime?
   declinedAt DateTime?
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  stage           AutoReviewStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
-  role            ReviewerRole    @relation(fields: [roleId], references: [id])
+  stage           AutoReviewStage  @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  role            ReviewerRole     @relation(fields: [roleId], references: [id])
   reviewDecisions ReviewDecision[]
-  
+
   @@map("stage_reviewers")
 }
 
 model WorkflowExecution {
-  id         String                   @id @default(cuid())
+  id         String @id @default(cuid())
   workflowId String
-  
+
   // Submission Reference
   submissionType String // 'clinical_trial', 'proposal', 'ethics_application'
   submissionId   String // ID of the clinical trial, proposal, or ethics application
-  
+
   // Execution Status
-  status        WorkflowExecutionStatus @default(PENDING)
-  currentStage  Int?                    // Current stage order
-  
+  status       WorkflowExecutionStatus @default(PENDING)
+  currentStage Int? // Current stage order
+
   // Results
-  overallScore     Float?   @default(0) // 0-100 score based on validation weights
-  autoChecksPassed Boolean  @default(false)
-  finalDecision    String?  // APPROVED, REJECTED, REQUIRES_CHANGES
-  
+  overallScore     Float?  @default(0) // 0-100 score based on validation weights
+  autoChecksPassed Boolean @default(false)
+  finalDecision    String? // APPROVED, REJECTED, REQUIRES_CHANGES
+
   // Metadata
   startedAt   DateTime?
   completedAt DateTime?
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   workflow        AutoReviewWorkflow @relation(fields: [workflowId], references: [id])
   stageExecutions StageExecution[]
-  
+
   @@unique([submissionType, submissionId])
   @@map("workflow_executions")
 }
@@ -2401,61 +2402,61 @@ model StageExecution {
   id          String @id @default(cuid())
   executionId String
   stageId     String
-  
+
   // Execution Status
-  status      StageExecutionStatus @default(NOT_STARTED)
-  stageOrder  Int
-  
+  status     StageExecutionStatus @default(NOT_STARTED)
+  stageOrder Int
+
   // Results
   autoChecksPassed Boolean @default(false)
   score            Float?  @default(0) // 0-100 score for this stage
-  
+
   // Review Summary
   totalReviewers     Int @default(0)
   completedReviewers Int @default(0)
   approvals          Int @default(0)
   rejections         Int @default(0)
-  
+
   // Metadata
   startedAt   DateTime?
   completedAt DateTime?
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  execution         WorkflowExecution    @relation(fields: [executionId], references: [id], onDelete: Cascade)
-  stage             AutoReviewStage      @relation(fields: [stageId], references: [id])
+  execution         WorkflowExecution  @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  stage             AutoReviewStage    @relation(fields: [stageId], references: [id])
   validationResults ValidationResult[]
   reviewDecisions   ReviewDecision[]
-  
+
   @@unique([executionId, stageId])
   @@map("stage_executions")
 }
 
 model ValidationResult {
-  id                String @id @default(cuid())
-  stageExecutionId  String
-  parameterId       String
-  
+  id               String @id @default(cuid())
+  stageExecutionId String
+  parameterId      String
+
   // Result
-  passed        Boolean
-  score         Float?  @default(0) // 0-100
-  message       String? @db.Text
-  details       Json?   // Detailed validation results
-  
+  passed  Boolean
+  score   Float?  @default(0) // 0-100
+  message String? @db.Text
+  details Json? // Detailed validation results
+
   // Metadata
   executedAt DateTime @default(now())
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   stageExecution StageExecution      @relation(fields: [stageExecutionId], references: [id], onDelete: Cascade)
   parameter      ValidationParameter @relation(fields: [parameterId], references: [id])
-  
+
   @@map("validation_results")
 }
 
@@ -2463,25 +2464,25 @@ model ReviewDecision {
   id               String @id @default(cuid())
   stageExecutionId String
   reviewerId       String
-  
+
   // Decision
   decision String // APPROVED, REJECTED, REQUIRES_CHANGES
   comments String? @db.Text
-  
+
   // Conditions (if approved with conditions)
   conditions String? @db.Text
-  
+
   // Override
   overrideAutoReview Boolean @default(false)
   overrideReason     String? @db.Text
-  
+
   // Metadata
   reviewedAt DateTime @default(now())
-  
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   stageExecution StageExecution @relation(fields: [stageExecutionId], references: [id], onDelete: Cascade)
   reviewer       StageReviewer  @relation(fields: [reviewerId], references: [id])
@@ -2506,6 +2507,39 @@ enum ImageIntegrityStatus {
   FAILED
 }
 
+model ImageIntegrityLabUnit {
+  id            String               @id @default(cuid())
+  institutionId String
+  institution   Institution          @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?              @db.Text
+  isActive      Boolean              @default(true)
+  sortOrder     Int                  @default(0)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  cases         ImageIntegrityCase[]
+
+  @@unique([institutionId, name])
+  @@index([institutionId, isActive])
+  @@map("image_integrity_lab_units")
+}
+
+model ImageIntegrityCollection {
+  id          String               @id @default(cuid())
+  userId      String
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?              @db.Text
+  color       String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  cases       ImageIntegrityCase[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("image_integrity_collections")
+}
+
 model ImageIntegrityCase {
   id String @id @default(cuid())
 
@@ -2513,21 +2547,29 @@ model ImageIntegrityCase {
   externalCaseId String? @unique // ImaChek `case_id` once upload succeeds
 
   // Submission metadata (mirrors ImaChek Upload File request)
-  title       String
-  contributor String?
-  doi         String?
-  authors     Json? // string[] of author display names
-  description String? @db.Text
-  fileName    String
-  fileFormat  String?
-  fileSizeBytes Int?
+  title                    String
+  contributor              String?
+  doi                      String?
+  authors                  Json? // string[] of author display names
+  description              String? @db.Text
+  fileName                 String
+  fileFormat               String?
+  fileSizeBytes            Int?
   comparedGlobalRepository Boolean @default(false) // repository[] = "global" was used
+
+  // Optional org / personal organization (Hospitium-side only)
+  labUnitId    String?
+  labUnit      ImageIntegrityLabUnit?    @relation(fields: [labUnitId], references: [id], onDelete: SetNull)
+  collectionId String?
+  collection   ImageIntegrityCollection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  notes        String?                   @db.Text
+  tags         Json? // string[]
 
   // Status tracking
   status           ImageIntegrityStatus @default(UPLOADING)
   analysisStatus   String? // case_analysis_status from ImaChek: "processing" | "completed"
-  analysisProgress Int     @default(0) // case_analysis_progress 0-100
-  errorMessage     String? @db.Text
+  analysisProgress Int                  @default(0) // case_analysis_progress 0-100
+  errorMessage     String?              @db.Text
 
   // Cached analysis results (from Get Single Case Info / Get Analysis Status)
   manipulationCount Int?
@@ -2555,5 +2597,7 @@ model ImageIntegrityCase {
 
   @@index([submittedById])
   @@index([status])
+  @@index([labUnitId])
+  @@index([collectionId])
   @@map("image_integrity_cases")
 }

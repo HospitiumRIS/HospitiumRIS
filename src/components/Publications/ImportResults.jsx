@@ -261,15 +261,16 @@ const ImportResults = ({ results, onRemove, onConfirmImport }) => {
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center',
-          bgcolor: '#8b6cbc10'
+          background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)',
+          color: 'white'
         }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: 'white' }}>
             Publication Details
           </Typography>
           <IconButton 
             onClick={() => setViewDialogOpen(false)}
             size="small"
-            sx={{ color: '#8b6cbc' }}
+            sx={{ color: 'white' }}
           >
             <CloseIcon />
           </IconButton>

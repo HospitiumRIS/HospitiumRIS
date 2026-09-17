@@ -182,13 +182,18 @@ export const transformPubMedData = (pmid, pubData) => {
         return uniqueFunders;
     };
 
+    const pubTypes = Array.isArray(pubData.pubtype)
+        ? pubData.pubtype.filter(Boolean)
+        : [];
+
     return {
         id: `pubmed_${pmid}_${Date.now()}`,
         title: pubData.title || 'Unknown Title',
         authors: formatAuthors(pubData.authors),
         year: extractYear(pubData.pubdate),
         journal: pubData.fulljournalname || pubData.source || 'Unknown Journal',
-        type: 'article',
+        type: pubTypes[0] || 'article',
+        pubTypes,
         abstract: pubData.abstract || '',
         keywords: pubData.keywords || [],
         doi: extractDOI(pubData.articleids),

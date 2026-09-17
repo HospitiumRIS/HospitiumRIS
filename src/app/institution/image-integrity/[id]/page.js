@@ -13,9 +13,9 @@ import {
   LinearProgress,
   Alert,
   Stack,
-  Tabs,
-  Tab,
   Link as MuiLink,
+  Snackbar,
+  alpha,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -24,17 +24,42 @@ import {
   FolderZip as ZipIcon,
   InsertDriveFile as FileIcon,
   BrokenImage as BrokenImageIcon,
+  Edit as EditIcon,
+  ImageSearch as SimilarIcon,
+  Flag as FlagIcon,
+  OpenInNew as OpenInNewIcon,
 } from '@mui/icons-material';
 import PageHeader from '../../../../components/common/PageHeader';
 import { useTranslation } from 'react-i18next';
 import { SimilarityLegend } from '../../../../components/ImageIntegrity/IntegrityResultSummary';
+import IntegrityStatCards from '../../../../components/ImageIntegrity/IntegrityStatCards';
+import IntegrityDetailError from '../../../../components/ImageIntegrity/IntegrityDetailError';
 
-const STATUS_CONFIG = {
-  UPLOADING: { label: 'Uploading', color: '#2196f3', bgColor: '#e3f2fd' },
-  PROCESSING: { label: 'Analyzing', color: '#ff9800', bgColor: '#fff3e0' },
-  COMPLETED: { label: 'Completed', color: '#4caf50', bgColor: '#e8f5e9' },
-  FAILED: { label: 'Failed', color: '#f44336', bgColor: '#ffebee' },
-};
+function statusConfigFor(t, status) {
+  const configs = {
+    UPLOADING: {
+      label: t('researcher.integrity_status_uploading', 'Uploading'),
+      color: '#2196f3',
+      bgColor: '#e3f2fd',
+    },
+    PROCESSING: {
+      label: t('researcher.integrity_analyzing', 'Analyzing'),
+      color: '#ff9800',
+      bgColor: '#fff3e0',
+    },
+    COMPLETED: {
+      label: t('researcher.integrity_status_completed', 'Completed'),
+      color: '#4caf50',
+      bgColor: '#e8f5e9',
+    },
+    FAILED: {
+      label: t('researcher.integrity_status_failed', 'Failed'),
+      color: '#f44336',
+      bgColor: '#ffebee',
+    },
+  };
+  return configs[status] || configs.UPLOADING;
+}
 
 const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg'];
 const PURPLE = '#8b6cbc';
@@ -75,35 +100,17 @@ function Field({ label, children }) {
   const isText = typeof content === 'string' || typeof content === 'number';
   return (
     <Box>
-      <Typography variant="caption" sx={{ color: '#718096', fontWeight: 600, display: 'block', mb: 0.5 }}>
+      <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, display: 'block', mb: 0.5 }}>
         {label}
       </Typography>
       {isText ? (
-        <Typography variant="body2" sx={{ fontWeight: 600, color: '#2D3748', wordBreak: 'break-word' }}>
+        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b', wordBreak: 'break-word' }}>
           {content}
         </Typography>
       ) : (
         content
       )}
     </Box>
-  );
-}
-
-function Metric({ label, value, hint }) {
-  return (
-    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, flex: 1, minWidth: 140 }}>
-      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-        {label}
-      </Typography>
-      <Typography variant="h4" sx={{ fontWeight: 700, color: '#2D3748', lineHeight: 1.2, my: 0.5 }}>
-        {value}
-      </Typography>
-      {hint && (
-        <Typography variant="caption" color="text.secondary">
-          {hint}
-        </Typography>
-      )}
-    </Paper>
   );
 }
 
@@ -119,8 +126,8 @@ function PreviewBlock({ record, t }) {
         borderRadius: 2,
         border: '1px solid',
         borderColor: 'divider',
-        bgcolor: 'grey.50',
-        minHeight: 220,
+        bgcolor: alpha(PURPLE, 0.04),
+        minHeight: 240,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -134,16 +141,16 @@ function PreviewBlock({ record, t }) {
           src={previewUrl}
           alt={record.fileName}
           onError={() => setBroken(true)}
-          sx={{ maxWidth: '100%', maxHeight: 280, objectFit: 'contain' }}
+          sx={{ maxWidth: '100%', maxHeight: 300, objectFit: 'contain' }}
         />
       ) : (
         <Stack alignItems="center" spacing={1}>
           {broken ? (
-            <BrokenImageIcon sx={{ fontSize: 36, color: '#a0aec0' }} />
+            <BrokenImageIcon sx={{ fontSize: 36, color: '#94a3b8' }} />
           ) : (
             <FileTypeIcon extension={extension} sx={{ fontSize: 36, color: PURPLE }} />
           )}
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
             {record.fileName}
           </Typography>
           {!isImage && (
@@ -184,11 +191,11 @@ function verdictFor(record, t) {
       label: t('researcher.integrity_verdict_matches', 'Possible matches'),
       text: t(
         'researcher.integrity_possible_matches_help',
-        'ImaChek found similar images at lower confidence. These are often false positives — check the report if you want to be sure.'
+        'Similar images were found at lower confidence. These are often false positives — check the report if you want to be sure.'
       ),
-      color: '#1d4ed8',
-      bg: '#eff6ff',
-      border: '#93c5fd',
+      color: PURPLE,
+      bg: alpha(PURPLE, 0.08),
+      border: alpha(PURPLE, 0.28),
     };
   }
   return {
@@ -210,23 +217,24 @@ export default function InstitutionImageIntegrityDetailPage() {
   const [relatedCases, setRelatedCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reportLoading, setReportLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState(0);
+  const [error, setError] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' });
   const pollRef = useRef(null);
 
   const fetchDetail = useCallback(async (force = false) => {
     try {
       const res = await fetch(`/api/institution/image-integrity/${id}${force ? '?refresh=1' : ''}`);
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error || 'Failed to load submission.');
+        setError({ status: res.status, message: data.error || 'Failed to load submission.' });
         return;
       }
+      setError(null);
       setRecord(data.case);
       setRelatedCases(data.relatedCases || []);
     } catch (err) {
       console.error(err);
-      setError('Failed to load submission.');
+      setError({ status: 500, message: 'Failed to load submission.' });
     } finally {
       setLoading(false);
     }
@@ -247,9 +255,9 @@ export default function InstitutionImageIntegrityDetailPage() {
     setReportLoading(true);
     try {
       const res = await fetch(`/api/institution/image-integrity/${id}/report`, { method: 'POST' });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        alert(data.error || 'Failed to generate report.');
+        setSnackbar({ open: true, message: data.error || 'Failed to generate report.', severity: 'error' });
         return;
       }
       setRecord(data.case);
@@ -258,7 +266,7 @@ export default function InstitutionImageIntegrityDetailPage() {
       }
     } catch (err) {
       console.error(err);
-      alert('Failed to generate report.');
+      setSnackbar({ open: true, message: 'Failed to generate report.', severity: 'error' });
     } finally {
       setReportLoading(false);
     }
@@ -269,13 +277,12 @@ export default function InstitutionImageIntegrityDetailPage() {
       title={title}
       description={t(
         'institution_nav.integrity_detail_subtitle',
-        'What ImaChek found in this researcher’s submission'
+        'Review what this integrity check found in the researcher’s submission'
       )}
       icon={<ImageIntegrityIcon sx={{ fontSize: 32 }} />}
       breadcrumbs={[
         { label: t('institution.portal_title', 'Institution Portal'), path: '/institution' },
         { label: t('institution.image_integrity', 'Image Integrity'), path: '/institution/image-integrity' },
-        ...(record?.title ? [{ label: record.title }] : []),
       ]}
     />
   );
@@ -296,19 +303,21 @@ export default function InstitutionImageIntegrityDetailPage() {
       <Box>
         {header(t('institution.image_integrity', 'Image Integrity'))}
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-          <Alert severity="error">{error || 'Submission not found.'}</Alert>
-          <Button
-            onClick={() => router.push('/institution/image-integrity')}
-            sx={{ mt: 2, color: PURPLE, textTransform: 'none' }}
-          >
-            {t('institution_nav.integrity_back_to_list', 'Back to Submission Reports')}
-          </Button>
+          <IntegrityDetailError
+            status={error?.status || 404}
+            message={error?.message}
+            onBack={() => router.push('/institution/image-integrity')}
+            onRetry={() => {
+              setLoading(true);
+              fetchDetail(true);
+            }}
+          />
         </Container>
       </Box>
     );
   }
 
-  const statusConfig = STATUS_CONFIG[record.status] || STATUS_CONFIG.UPLOADING;
+  const statusConfig = statusConfigFor(t, record.status);
   const classification = record.classification || {};
   const similarityLevel = record.similarityLevel || {};
   const authors = Array.isArray(record.authors) ? record.authors.filter(Boolean) : [];
@@ -317,9 +326,6 @@ export default function InstitutionImageIntegrityDetailPage() {
   const verdict = verdictFor(record, t);
   const otherRelated = relatedCases.filter((related) => related.id !== record.id);
   const submitterName = personName(record.submittedBy) || record.contributor || '—';
-  const submitterLabel = record.submittedBy?.email
-    ? `${submitterName} · ${record.submittedBy.email}`
-    : submitterName;
 
   return (
     <Box>
@@ -327,13 +333,12 @@ export default function InstitutionImageIntegrityDetailPage() {
         title={record.title}
         description={t(
           'institution_nav.integrity_detail_subtitle',
-          'What ImaChek found in this researcher’s submission'
+          'Review what this integrity check found in the researcher’s submission'
         )}
         icon={<ImageIntegrityIcon sx={{ fontSize: 32 }} />}
         breadcrumbs={[
           { label: t('institution.portal_title', 'Institution Portal'), path: '/institution' },
           { label: t('institution.image_integrity', 'Image Integrity'), path: '/institution/image-integrity' },
-          { label: record.title },
         ]}
         actionButton={
           <Stack direction="row" spacing={1}>
@@ -354,13 +359,10 @@ export default function InstitutionImageIntegrityDetailPage() {
               variant="contained"
               disabled={record.status !== 'COMPLETED' || reportLoading}
               onClick={handleGenerateReport}
+              startIcon={reportLoading ? <CircularProgress size={14} color="inherit" /> : <OpenInNewIcon />}
               sx={{ bgcolor: 'white', color: PURPLE, fontWeight: 700, textTransform: 'none' }}
             >
-              {reportLoading ? (
-                <CircularProgress size={16} />
-              ) : (
-                t('researcher.integrity_view_report', 'View Full Report')
-              )}
+              {t('researcher.integrity_view_report', 'View Full Report')}
             </Button>
           </Stack>
         }
@@ -370,16 +372,16 @@ export default function InstitutionImageIntegrityDetailPage() {
         <Button
           startIcon={<BackIcon />}
           onClick={() => router.push('/institution/image-integrity')}
-          sx={{ mb: 2, color: PURPLE, textTransform: 'none', fontWeight: 600, px: 0 }}
+          sx={{ mb: 2.5, color: PURPLE, textTransform: 'none', fontWeight: 600, px: 0 }}
         >
           {t('institution_nav.integrity_back_to_list', 'Back to Submission Reports')}
         </Button>
 
-        <Paper sx={{ p: 2.5, mb: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+        <Paper elevation={0} sx={{ p: 2.5, mb: 2.5, borderRadius: 2.5, border: '1px solid', borderColor: 'divider' }}>
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'auto 1.4fr 1.6fr 1fr 1fr' },
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'auto 1.3fr 1.5fr 1fr 1fr' },
               gap: 2.5,
               alignItems: 'start',
             }}
@@ -401,7 +403,14 @@ export default function InstitutionImageIntegrityDetailPage() {
               {record.fileSizeBytes ? ` · ${formatBytes(record.fileSizeBytes)}` : ''}
             </Field>
             <Field label={t('institution_nav.integrity_submitted_by', 'Submitted by')}>
-              {submitterLabel}
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e293b' }}>
+                {submitterName}
+              </Typography>
+              {record.submittedBy?.email && (
+                <Typography variant="caption" color="text.secondary">
+                  {record.submittedBy.email}
+                </Typography>
+              )}
             </Field>
             <Field label={t('researcher.integrity_col_submitted', 'Submitted')}>
               {formatDateTime(record.createdAt)}
@@ -421,7 +430,7 @@ export default function InstitutionImageIntegrityDetailPage() {
                 sx={{
                   height: 8,
                   borderRadius: 4,
-                  bgcolor: 'rgba(139,108,188,0.12)',
+                  bgcolor: alpha(PURPLE, 0.12),
                   '& .MuiLinearProgress-bar': { bgcolor: PURPLE, borderRadius: 4 },
                 }}
               />
@@ -432,13 +441,13 @@ export default function InstitutionImageIntegrityDetailPage() {
           )}
 
           {record.status === 'FAILED' && (
-            <Alert severity="error" sx={{ mt: 2.5 }}>
+            <Alert severity="error" sx={{ mt: 2.5, borderRadius: 2 }}>
               {record.errorMessage || t('researcher.integrity_failed', 'Analysis failed.')}
             </Alert>
           )}
 
           {record.reportUrl && (
-            <Alert severity={reportStillValid ? 'info' : 'warning'} sx={{ mt: 2.5 }}>
+            <Alert severity={reportStillValid ? 'info' : 'warning'} sx={{ mt: 2.5, borderRadius: 2 }}>
               {reportStillValid
                 ? t(
                     'researcher.integrity_report_ttl',
@@ -453,227 +462,205 @@ export default function InstitutionImageIntegrityDetailPage() {
         </Paper>
 
         {record.status === 'COMPLETED' && (
-          <Stack spacing={1.5} sx={{ mb: 2.5 }}>
+          <Stack spacing={2.5} sx={{ mb: 2.5 }}>
             <Paper
-              variant="outlined"
+              elevation={0}
               sx={{
-                p: 2,
-                borderRadius: 2,
+                p: 2.25,
+                borderRadius: 2.5,
                 bgcolor: verdict.bg,
+                border: '1px solid',
                 borderColor: verdict.border,
               }}
             >
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: verdict.color }}>
-                {verdict.label}
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#374151', mt: 0.5, lineHeight: 1.6 }}>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+                <FlagIcon sx={{ fontSize: 18, color: verdict.color }} />
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: verdict.color }}>
+                  {verdict.label}
+                </Typography>
+              </Stack>
+              <Typography variant="body2" sx={{ color: '#374151', lineHeight: 1.65 }}>
                 {verdict.text}
               </Typography>
             </Paper>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-              <Metric
-                label={t('researcher.integrity_manip_plain_label', 'Possible edits')}
-                value={record.manipulationCount ?? 0}
-                hint={t('researcher.integrity_manip_hint', 'Regions that may have been altered')}
-              />
-              <Metric
-                label={t('researcher.integrity_sim_plain_label', 'Similar images')}
-                value={record.similarityCount ?? 0}
-                hint={t('researcher.integrity_sim_hint', 'Images that look like they were reused')}
-              />
-            </Stack>
+            <IntegrityStatCards
+              items={[
+                {
+                  icon: <EditIcon />,
+                  label: t('researcher.integrity_manip_plain_label', 'Possible edits'),
+                  value: record.manipulationCount ?? 0,
+                  hint: t('researcher.integrity_manip_hint', 'Regions that may have been altered'),
+                },
+                {
+                  icon: <SimilarIcon />,
+                  label: t('researcher.integrity_sim_plain_label', 'Similar images'),
+                  value: record.similarityCount ?? 0,
+                  hint: t('researcher.integrity_sim_hint', 'Images that look like they were reused'),
+                },
+                {
+                  icon: <FlagIcon />,
+                  label: t('researcher.integrity_high', 'High confidence'),
+                  value: similarityLevel.high ?? 0,
+                  hint: t('researcher.integrity_high_conf_hint', 'Likely the same image'),
+                },
+                {
+                  icon: <SimilarIcon />,
+                  label: t('researcher.integrity_medium', 'Medium'),
+                  value: similarityLevel.medium ?? 0,
+                  hint: t('researcher.integrity_medium_conf_hint', 'Possible reuse'),
+                },
+              ]}
+            />
 
-            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block', mb: 1 }}>
+            <Paper elevation={0} sx={{ p: 2.25, borderRadius: 2.5, border: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', display: 'block', mb: 1 }}>
                 {t('researcher.integrity_legend_title', 'Similarity confidence')}
               </Typography>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 1.25 }}>
-                {[
-                  { label: t('researcher.integrity_high', 'High'), value: similarityLevel.high ?? 0, hint: 'Likely the same image' },
-                  { label: t('researcher.integrity_medium', 'Medium'), value: similarityLevel.medium ?? 0, hint: 'Possible reuse' },
-                  { label: t('researcher.integrity_low', 'Low'), value: similarityLevel.low ?? 0, hint: 'Weak match, often a false positive' },
-                ].map((item) => (
-                  <Box key={item.label} sx={{ flex: 1 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                      {item.label}: {item.value}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {item.hint}
-                    </Typography>
-                  </Box>
-                ))}
-              </Stack>
               <SimilarityLegend />
             </Paper>
           </Stack>
         )}
 
-        <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-          <Tabs
-            value={activeTab}
-            onChange={(_, v) => setActiveTab(v)}
-            sx={{
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-              minHeight: 48,
-              '& .MuiTab-root': {
-                minHeight: 48,
-                textTransform: 'none',
-                fontWeight: 600,
-                color: '#718096',
-                '&.Mui-selected': { color: PURPLE },
-              },
-              '& .MuiTabs-indicator': { backgroundColor: PURPLE, height: 2 },
-            }}
-          >
-            <Tab label={t('common.overview', 'Overview')} />
-            <Tab label={t('researcher.integrity_findings', 'Findings')} disabled={record.status !== 'COMPLETED'} />
-            <Tab
-              label={t('researcher.integrity_classification', 'Classification')}
-              disabled={record.status !== 'COMPLETED'}
-            />
-          </Tabs>
-
-          <Box sx={{ p: 3 }}>
-            {activeTab === 0 && (
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', md: 'row' },
-                  gap: 3,
-                }}
-              >
-                <Box sx={{ flex: { md: '0 0 38%' }, minWidth: 0 }}>
-                  <Typography variant="caption" sx={{ color: '#718096', fontWeight: 600, display: 'block', mb: 1 }}>
-                    {t('researcher.integrity_col_preview', 'Preview')}
-                  </Typography>
-                  <PreviewBlock record={record} t={t} />
-                </Box>
-                <Stack spacing={2} sx={{ flex: 1, minWidth: 0 }}>
-                  <Field label={t('researcher.integrity_field_title', 'Title')}>{record.title}</Field>
-                  {record.doi && <Field label={t('researcher.integrity_field_doi', 'DOI')}>{record.doi}</Field>}
-                  <Field label={t('researcher.integrity_field_authors', 'Authors')}>
-                    {authors.length ? authors.join(', ') : '—'}
-                  </Field>
-                  <Field label={t('researcher.integrity_compare_short', 'Compared to global repository')}>
-                    {record.comparedGlobalRepository
-                      ? t('common.enabled', 'Yes')
-                      : t('common.disabled', 'No')}
-                  </Field>
-                  {(record.pageAmount || record.croppedAmount) && (
-                    <Field label={t('researcher.integrity_processing_stats', 'Extracted from file')}>
-                      {t('researcher.integrity_pages', 'Pages')}: {record.pageAmount ?? '—'}
-                      {' · '}
-                      {t('researcher.integrity_cropped', 'Cropped regions')}: {record.croppedAmount ?? '—'}
-                    </Field>
-                  )}
-                  {otherRelated.length > 0 && (
-                    <Box>
-                      <Typography variant="caption" sx={{ color: '#718096', fontWeight: 600, display: 'block', mb: 0.5 }}>
-                        {t('researcher.integrity_compared_cases', 'Also compared with')}
-                      </Typography>
-                      <Stack spacing={0.5}>
-                        {otherRelated.map((related) => {
-                          const relatedName = personName(related.submittedBy);
-                          return (
-                            <MuiLink
-                              key={related.id}
-                              component="button"
-                              type="button"
-                              underline="hover"
-                              onClick={() => router.push(`/institution/image-integrity/${related.id}`)}
-                              sx={{ textAlign: 'left', color: PURPLE, fontWeight: 600, fontSize: '0.875rem' }}
-                            >
-                              {related.title}
-                              {relatedName ? ` · ${relatedName}` : ''}
-                            </MuiLink>
-                          );
-                        })}
-                      </Stack>
-                    </Box>
-                  )}
-                  {record.description && (
-                    <Box>
-                      <Typography variant="caption" sx={{ color: '#718096', fontWeight: 600, display: 'block', mb: 0.5 }}>
-                        {t('researcher.integrity_field_description', 'Description')}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#2D3748', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                        {record.description}
-                      </Typography>
-                    </Box>
-                  )}
-                </Stack>
-              </Box>
-            )}
-
-            {activeTab === 1 && record.status === 'COMPLETED' && (
-              <Stack spacing={2}>
-                <Typography variant="body1" sx={{ color: '#2D3748', lineHeight: 1.7 }}>
-                  {verdict.text}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-                  {t(
-                    'researcher.integrity_disclaimer',
-                    'ImaChek prefers to over-flag rather than miss a problem. Treat every finding as something to inspect in the visual report, not as a final judgement.'
-                  )}
-                </Typography>
+        <Paper elevation={0} sx={{ p: 2.5, mb: 2.5, borderRadius: 2.5, border: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
+            {t('common.overview', 'Overview')}
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+            <Box sx={{ flex: { md: '0 0 40%' }, minWidth: 0 }}>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, display: 'block', mb: 1 }}>
+                {t('researcher.integrity_col_preview', 'Preview')}
+              </Typography>
+              <PreviewBlock record={record} t={t} />
+            </Box>
+            <Stack spacing={2} sx={{ flex: 1, minWidth: 0 }}>
+              <Field label={t('researcher.integrity_field_title', 'Title')}>{record.title}</Field>
+              {record.doi && <Field label={t('researcher.integrity_field_doi', 'DOI')}>{record.doi}</Field>}
+              <Field label={t('researcher.integrity_field_authors', 'Authors')}>
+                {authors.length ? authors.join(', ') : '—'}
+              </Field>
+              <Field label={t('researcher.integrity_compare_short', 'Compared to global repository')}>
+                {record.comparedGlobalRepository ? t('common.enabled', 'Yes') : t('common.disabled', 'No')}
+              </Field>
+              {(record.pageAmount || record.croppedAmount) && (
+                <Field label={t('researcher.integrity_processing_stats', 'Extracted from file')}>
+                  {t('researcher.integrity_pages', 'Pages')}: {record.pageAmount ?? '—'}
+                  {' · '}
+                  {t('researcher.integrity_cropped', 'Cropped regions')}: {record.croppedAmount ?? '—'}
+                </Field>
+              )}
+              {record.description && (
                 <Box>
-                  <Button
-                    variant="contained"
-                    disabled={reportLoading}
-                    onClick={handleGenerateReport}
-                    sx={{
-                      bgcolor: PURPLE,
-                      fontWeight: 700,
-                      textTransform: 'none',
-                      '&:hover': { bgcolor: '#7b5cac' },
-                    }}
-                  >
-                    {t('researcher.integrity_view_report', 'View Full Report')}
-                  </Button>
-                </Box>
-              </Stack>
-            )}
-
-            {activeTab === 2 && record.status === 'COMPLETED' && (
-              <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {t(
-                    'researcher.integrity_classification_help',
-                    'How ImaChek grouped the images it extracted from this file.'
-                  )}
-                </Typography>
-                {Object.keys(classification).length === 0 ? (
-                  <Typography color="text.secondary">
-                    {t('researcher.integrity_no_classification', 'No classification data available.')}
+                  <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, display: 'block', mb: 0.5 }}>
+                    {t('researcher.integrity_field_description', 'Description')}
                   </Typography>
-                ) : (
-                  <Stack spacing={1}>
-                    {Object.entries(classification).map(([key, value]) => (
-                      <Box
-                        key={key}
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          py: 1.25,
-                          px: 2,
-                          borderRadius: 1.5,
-                          border: '1px solid',
-                          borderColor: 'divider',
-                        }}
-                      >
-                        <Typography sx={{ textTransform: 'capitalize' }}>{key.replace(/_/g, ' ')}</Typography>
-                        <Typography sx={{ fontWeight: 700 }}>{value}</Typography>
-                      </Box>
-                    ))}
-                  </Stack>
-                )}
-              </Box>
-            )}
+                  <Typography variant="body2" sx={{ color: '#1e293b', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                    {record.description}
+                  </Typography>
+                </Box>
+              )}
+            </Stack>
           </Box>
         </Paper>
+
+        {record.status === 'COMPLETED' && (
+          <Paper elevation={0} sx={{ p: 2.5, mb: 2.5, borderRadius: 2.5, border: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+              {t('researcher.integrity_findings', 'Findings')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 2 }}>
+              {t(
+                'researcher.integrity_disclaimer',
+                'This check prefers to over-flag rather than miss a problem. Treat every finding as something to inspect in the visual report, not as a final judgement.'
+              )}
+            </Typography>
+            <Button
+              variant="contained"
+              disabled={reportLoading}
+              onClick={handleGenerateReport}
+              startIcon={reportLoading ? <CircularProgress size={14} color="inherit" /> : <OpenInNewIcon />}
+              sx={{ bgcolor: PURPLE, fontWeight: 700, textTransform: 'none', '&:hover': { bgcolor: '#7b5cac' } }}
+            >
+              {t('researcher.integrity_view_report', 'View Full Report')}
+            </Button>
+          </Paper>
+        )}
+
+        {record.status === 'COMPLETED' && Object.keys(classification).length > 0 && (
+          <Paper elevation={0} sx={{ p: 2.5, mb: 2.5, borderRadius: 2.5, border: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.75 }}>
+              {t('researcher.integrity_classification', 'Classification')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {t(
+                'researcher.integrity_classification_help',
+                'How images extracted from this file were grouped.'
+              )}
+            </Typography>
+            <Stack spacing={1}>
+              {Object.entries(classification).map(([key, value]) => (
+                <Box
+                  key={key}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    py: 1.25,
+                    px: 2,
+                    borderRadius: 1.5,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: alpha(PURPLE, 0.03),
+                  }}
+                >
+                  <Typography sx={{ textTransform: 'capitalize' }}>{key.replace(/_/g, ' ')}</Typography>
+                  <Typography sx={{ fontWeight: 700 }}>{value}</Typography>
+                </Box>
+              ))}
+            </Stack>
+          </Paper>
+        )}
+
+        {otherRelated.length > 0 && (
+          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2.5, border: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+              {t('researcher.integrity_compared_cases', 'Also compared with')}
+            </Typography>
+            <Stack spacing={0.75}>
+              {otherRelated.map((related) => {
+                const relatedName = personName(related.submittedBy);
+                return (
+                  <MuiLink
+                    key={related.id}
+                    component="button"
+                    type="button"
+                    underline="hover"
+                    onClick={() => router.push(`/institution/image-integrity/${related.id}`)}
+                    sx={{ textAlign: 'left', color: PURPLE, fontWeight: 600, fontSize: '0.875rem' }}
+                  >
+                    {related.title}
+                    {relatedName ? ` · ${relatedName}` : ''}
+                  </MuiLink>
+                );
+              })}
+            </Stack>
+          </Paper>
+        )}
       </Container>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={5000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          variant="filled"
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
