@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../../lib/auth-server';
+import { requireTrainingAdminAccess } from '@/lib/training-admin-server';
 
 /**
  * GET /api/training/[id]/registrations
@@ -10,16 +11,8 @@ export async function GET(request, { params }) {
   try {
     const user = await getAuthenticatedUser(request);
 
-    if (!user || user.accountType !== 'RESEARCH_ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      );
-    }
-
     const { id } = await params;
 
-    // Check training exists and belongs to user's institution
     const training = await prisma.training.findUnique({
       where: { id },
     });
@@ -31,17 +24,8 @@ export async function GET(request, { params }) {
       );
     }
 
-    const ownInstitution = await prisma.institution.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!ownInstitution || training.institutionId !== ownInstitution.id) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      );
-    }
+    const access = await requireTrainingAdminAccess(user, training);
+    if (access.error) return access.error;
 
     const registrations = await prisma.trainingRegistration.findMany({
       where: { trainingId: id },

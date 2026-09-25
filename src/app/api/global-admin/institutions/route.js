@@ -3,10 +3,14 @@ import prisma from '@/lib/prisma';
 import { requireGlobalAdmin } from '@/lib/require-global-admin';
 import { uniqueInstitutionSlug, slugify } from '@/lib/institution-slug';
 import { defaultEnabledModules } from '@/lib/institution-modules';
+import { loadInstitutionAdmins } from '@/lib/institution-admins';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function serializeInstitution(institution) {
+async function serializeInstitution(institution) {
+  const admins = await loadInstitutionAdmins(institution.id, institution.userId);
+  const primaryAdmin = admins.find((admin) => admin.isPrimary) || admins[0] || null;
+
   return {
     id: institution.id,
     name: institution.name,
@@ -18,15 +22,8 @@ function serializeInstitution(institution) {
     enabledModules: Array.isArray(institution.enabledModules) ? institution.enabledModules : [],
     createdAt: institution.createdAt,
     updatedAt: institution.updatedAt,
-    admin: institution.user
-      ? {
-          id: institution.user.id,
-          givenName: institution.user.givenName,
-          familyName: institution.user.familyName,
-          email: institution.user.email,
-          status: institution.user.status,
-        }
-      : null,
+    admin: primaryAdmin,
+    admins,
     domains: institution.verifiedDomains || [],
     memberCount: institution._count?.members ?? 0,
   };
@@ -68,7 +65,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      institutions: institutions.map(serializeInstitution),
+      institutions: await Promise.all(institutions.map(serializeInstitution)),
     });
   } catch (err) {
     console.error('Error fetching institutions:', err);
@@ -124,7 +121,7 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       message: 'Institution created',
-      institution: serializeInstitution(institution),
+      institution: await serializeInstitution(institution),
     }, { status: 201 });
   } catch (err) {
     console.error('Error creating institution:', err);

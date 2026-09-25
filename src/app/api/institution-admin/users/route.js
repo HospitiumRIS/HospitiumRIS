@@ -170,13 +170,20 @@ export async function POST(request) {
     }
 
     const body = await request.json();
+    const accountType = body.accountType || 'RESEARCHER';
     const givenName = body.givenName?.trim();
-    const familyName = body.familyName?.trim();
+    const familyName = body.familyName?.trim() || '';
     const email = body.email?.trim()?.toLowerCase();
     const password = body.password;
-    const accountType = body.accountType || 'RESEARCHER';
 
-    if (!givenName || !familyName || !email || !password) {
+    if (!givenName || !email || !password) {
+      return NextResponse.json(
+        { success: false, message: 'Name, email, and password are required' },
+        { status: 400 }
+      );
+    }
+
+    if (accountType === 'RESEARCHER' && !familyName) {
       return NextResponse.json(
         { success: false, message: 'First name, last name, email, and password are required' },
         { status: 400 }

@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../../lib/auth-server';
+import {
+  requireTrainingAdminAccess,
+  userHasTrainingInstitutionAccess,
+} from '@/lib/training-admin-server';
 
 /**
  * GET /api/training/[id]/modules
@@ -31,15 +35,7 @@ export async function GET(request, { params }) {
       );
     }
 
-    const isAdminUser = user.accountType === 'RESEARCH_ADMIN' || user.accountType === 'INSTITUTION_ADMIN';
-    let hasAccess = training.institutionId === user.secondaryInstitutionId;
-    if (!hasAccess && isAdminUser) {
-      const ownInstitution = await prisma.institution.findUnique({
-        where: { userId: user.id },
-        select: { id: true },
-      });
-      hasAccess = training.institutionId === ownInstitution?.id;
-    }
+    const hasAccess = await userHasTrainingInstitutionAccess(user, training.institutionId);
 
     if (!hasAccess) {
       return NextResponse.json(
@@ -85,17 +81,9 @@ export async function POST(request, { params }) {
   try {
     const user = await getAuthenticatedUser(request);
 
-    if (!user || user.accountType !== 'RESEARCH_ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      );
-    }
-
     const { id } = await params;
     const body = await request.json();
 
-    // Check training exists and belongs to user's institution
     const training = await prisma.training.findUnique({
       where: { id },
     });
@@ -107,17 +95,8 @@ export async function POST(request, { params }) {
       );
     }
 
-    const ownInstitution = await prisma.institution.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!ownInstitution || training.institutionId !== ownInstitution.id) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      );
-    }
+    const access = await requireTrainingAdminAccess(user, training);
+    if (access.error) return access.error;
 
     const { title, description, order } = body;
 

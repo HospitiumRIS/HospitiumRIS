@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { deleteEthicsApplicationFiles, saveEthicsFile, ethicsFileUrl } from '../../../../../lib/ethics-files';
+import {
+  deleteEthicsApplicationFiles,
+  saveEthicsFile,
+  ethicsFileUrl,
+  validateEthicsDocument,
+} from '../../../../../lib/ethics-files';
+import { getAuthenticatedUser } from '../../../../../lib/auth-server';
+import { canAccessEthicsApplication, canModifyEthicsApplication } from '../../../../../lib/ethics-access';
 
 const prisma = new PrismaClient();
 
@@ -107,6 +114,11 @@ function buildEthicsUpdateData(data) {
 // GET - Get specific ethics application
 export async function GET(request, { params }) {
   try {
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
 
     const application = await prisma.ethicsApplication.findUnique({
@@ -146,6 +158,10 @@ export async function GET(request, { params }) {
       );
     }
 
+    if (!(await canAccessEthicsApplication(prisma, user, application))) {
+      return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
+    }
+
     return NextResponse.json({
       success: true,
       application
@@ -162,6 +178,11 @@ export async function GET(request, { params }) {
 // PUT - Update ethics application
 export async function PUT(request, { params }) {
   try {
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     console.log('PUT request received for ethics application:', id);
     
@@ -182,7 +203,7 @@ export async function PUT(request, { params }) {
 
     const existingApp = await prisma.ethicsApplication.findUnique({
       where: { id },
-      select: { documents: true }
+      select: { documents: true, userId: true, status: true }
     });
 
     if (!existingApp) {
@@ -190,6 +211,10 @@ export async function PUT(request, { params }) {
         { success: false, error: 'Ethics application not found' },
         { status: 404 }
       );
+    }
+
+    if (!(await canModifyEthicsApplication(prisma, user, existingApp))) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 
     const existingDocuments = Array.isArray(existingApp.documents) ? existingApp.documents : [];
@@ -201,20 +226,29 @@ export async function PUT(request, { params }) {
       for (const file of files) {
         if (!file || typeof file === 'string' || !file.size) continue;
 
+        const validation = validateEthicsDocument(file);
+        if (!validation.ok) {
+          return NextResponse.json({ success: false, error: validation.error }, { status: 400 });
+        }
+
         const originalName = file.name || 'document';
         if (existingKeys.has(documentKey({ type, originalName }))) {
           continue;
         }
 
-        const { storedName, size } = await saveEthicsFile(id, file);
+        const { storedName, size, fileId } = await saveEthicsFile(id, file, {
+          user,
+          module: 'ETHICS_DOCUMENT',
+        });
         const doc = {
           type,
           name: originalName,
           originalName,
           fileName: storedName,
+          fileId: fileId || null,
           size,
           mimeType: file.type || 'application/octet-stream',
-          url: ethicsFileUrl(id, storedName),
+          url: ethicsFileUrl(id, storedName, fileId),
           uploadedAt: new Date().toISOString(),
         };
         uploadedDocuments.push(doc);
@@ -251,6 +285,11 @@ export async function PUT(request, { params }) {
 // DELETE - Delete ethics application (only if DRAFT)
 export async function DELETE(request, { params }) {
   try {
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
 
     const application = await prisma.ethicsApplication.findUnique({
@@ -262,6 +301,10 @@ export async function DELETE(request, { params }) {
         { success: false, error: 'Ethics application not found' },
         { status: 404 }
       );
+    }
+
+    if (!(await canModifyEthicsApplication(prisma, user, application))) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 
     const isExternalCertificate =

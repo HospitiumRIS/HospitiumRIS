@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../lib/auth-server';
+import {
+  normalizeTargetGroups,
+  trainingBelongsToInstitution,
+  TRAINING_ADMIN_TYPES,
+} from '@/lib/training-admin';
+import { resolveTrainingInstitution } from '@/lib/training-admin-server';
 
 /**
  * GET /api/training/[id]
@@ -116,7 +122,7 @@ export async function PUT(request, { params }) {
   try {
     const user = await getAuthenticatedUser(request);
 
-    if (!user || user.accountType !== 'RESEARCH_ADMIN') {
+    if (!user || !TRAINING_ADMIN_TYPES.includes(user.accountType)) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 403 }
@@ -126,7 +132,6 @@ export async function PUT(request, { params }) {
     const { id } = await params;
     const body = await request.json();
 
-    // Check if training exists and belongs to user's institution
     const existingTraining = await prisma.training.findUnique({
       where: { id },
     });
@@ -138,12 +143,9 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const ownInstitution = await prisma.institution.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
+    const ownInstitution = await resolveTrainingInstitution(user);
 
-    if (!ownInstitution || existingTraining.institutionId !== ownInstitution.id) {
+    if (!trainingBelongsToInstitution(existingTraining, ownInstitution?.id)) {
       return NextResponse.json(
         { error: 'Access denied - Training belongs to different institution' },
         { status: 403 }
@@ -167,7 +169,16 @@ export async function PUT(request, { params }) {
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
     if (department !== undefined) updateData.department = department;
-    if (targetGroup !== undefined) updateData.targetGroup = targetGroup;
+    if (targetGroup !== undefined) {
+      const normalized = normalizeTargetGroups(targetGroup);
+      if (normalized.length === 0) {
+        return NextResponse.json(
+          { error: 'At least one target group is required' },
+          { status: 400 }
+        );
+      }
+      updateData.targetGroup = normalized;
+    }
     if (location !== undefined) updateData.location = location;
     if (startDate !== undefined) updateData.startDate = new Date(startDate);
     if (endDate !== undefined) updateData.endDate = new Date(endDate);
@@ -212,7 +223,7 @@ export async function DELETE(request, { params }) {
   try {
     const user = await getAuthenticatedUser(request);
 
-    if (!user || user.accountType !== 'RESEARCH_ADMIN') {
+    if (!user || !TRAINING_ADMIN_TYPES.includes(user.accountType)) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 403 }
@@ -221,7 +232,6 @@ export async function DELETE(request, { params }) {
 
     const { id } = await params;
 
-    // Check if training exists and belongs to user's institution
     const existingTraining = await prisma.training.findUnique({
       where: { id },
       include: {
@@ -236,12 +246,9 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const ownInstitution = await prisma.institution.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
+    const ownInstitution = await resolveTrainingInstitution(user);
 
-    if (!ownInstitution || existingTraining.institutionId !== ownInstitution.id) {
+    if (!trainingBelongsToInstitution(existingTraining, ownInstitution?.id)) {
       return NextResponse.json(
         { error: 'Access denied - Training belongs to different institution' },
         { status: 403 }

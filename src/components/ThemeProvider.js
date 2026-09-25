@@ -75,6 +75,16 @@ const commonThemeSettings = {
         },
       },
     },
+    MuiDialog: {
+      defaultProps: {
+        disableScrollLock: true,
+      },
+    },
+    MuiModal: {
+      defaultProps: {
+        disableScrollLock: true,
+      },
+    },
   },
 };
 
@@ -232,6 +242,9 @@ const darkTheme = createTheme({
       },
     },
     MuiDialog: {
+      defaultProps: {
+        disableScrollLock: true,
+      },
       styleOverrides: {
         paper: {
           borderRadius: 6,

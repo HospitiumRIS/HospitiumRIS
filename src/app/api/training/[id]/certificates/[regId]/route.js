@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../../../lib/auth-server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import {
+  validateTrainingCertificate,
+  saveTrainingCertificate,
+  deleteTrainingFile,
+} from '../../../../../../lib/training-files';
+import { requireTrainingAdminAccess } from '@/lib/training-admin-server';
 
 /**
  * POST /api/training/[id]/certificates/[regId]
@@ -12,16 +16,8 @@ export async function POST(request, { params }) {
   try {
     const user = await getAuthenticatedUser(request);
 
-    if (!user || user.accountType !== 'RESEARCH_ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      );
-    }
-
     const { id, regId } = await params;
 
-    // Check registration exists and belongs to user's institution
     const registration = await prisma.trainingRegistration.findUnique({
       where: { id: regId },
       include: {
@@ -37,19 +33,9 @@ export async function POST(request, { params }) {
       );
     }
 
-    const ownInstitution = await prisma.institution.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
+    const access = await requireTrainingAdminAccess(user, registration.training);
+    if (access.error) return access.error;
 
-    if (!ownInstitution || registration.training.institutionId !== ownInstitution.id) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      );
-    }
-
-    // Check if registration is completed
     if (registration.status !== 'COMPLETED') {
       return NextResponse.json(
         { error: 'Cannot upload certificate - registration not completed' },
@@ -67,49 +53,48 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Create upload directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), 'uploads', 'training', 'certificates');
-    await mkdir(uploadDir, { recursive: true });
+    const validation = validateTrainingCertificate(file);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const originalName = file.name;
-    const fileName = `cert_${registration.userId}_${timestamp}_${originalName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const filePath = path.join(uploadDir, fileName);
-
-    // Save file
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
-
-    // Create or update certificate record
-    const certificateUrl = `/uploads/training/certificates/${fileName}`;
-    
     const existingCertificate = await prisma.trainingCertificate.findUnique({
       where: { registrationId: regId },
     });
 
     let certificate;
     if (existingCertificate) {
-      certificate = await prisma.trainingCertificate.update({
-        where: { id: existingCertificate.id },
-        data: {
-          certificateUrl,
-          uploadedBy: user.id,
-          issuedAt: new Date(),
-        },
-      });
+      certificate = existingCertificate;
     } else {
       certificate = await prisma.trainingCertificate.create({
         data: {
           trainingId: id,
           userId: registration.userId,
           registrationId: regId,
-          certificateUrl,
+          certificateUrl: '',
           uploadedBy: user.id,
         },
       });
     }
+
+    const { fileUrl } = await saveTrainingCertificate(certificate.id, file, {
+      user,
+      entityTenantId: registration.training.institutionId,
+      registrationUserId: registration.userId,
+    });
+
+    if (certificate.certificateUrl && certificate.certificateUrl !== fileUrl) {
+      await deleteTrainingFile(certificate.certificateUrl, user);
+    }
+
+    certificate = await prisma.trainingCertificate.update({
+      where: { id: certificate.id },
+      data: {
+        certificateUrl: fileUrl,
+        uploadedBy: user.id,
+        issuedAt: new Date(),
+      },
+    });
 
     return NextResponse.json({
       success: true,

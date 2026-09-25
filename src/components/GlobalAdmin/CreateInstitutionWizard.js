@@ -5,10 +5,6 @@ import { useTranslation } from 'react-i18next';
 import {
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   TextField,
   Typography,
   Stepper,
@@ -17,13 +13,30 @@ import {
   Chip,
   InputAdornment,
   Alert,
+  Stack,
+  alpha,
 } from '@mui/material';
 import {
   Add as AddIcon,
+  Business as BusinessIcon,
   Delete as DeleteIcon,
+  Domain as DomainIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
+import { PasswordFields } from './InstitutionManageDialogs';
+import {
+  InstitutionModal,
+  InstitutionModalBody,
+  InstitutionModalFooter,
+  InstitutionModalHeader,
+  InstitutionModalSection,
+} from './InstitutionModalShell';
 
-const STEPS = ['Institution', 'Verified domains', 'Admin'];
+const STEPS = [
+  { label: 'Institution', icon: BusinessIcon },
+  { label: 'Verified domains', icon: DomainIcon },
+  { label: 'Admin', icon: PersonIcon },
+];
 
 function slugifyPreview(text) {
   return (text || '')
@@ -36,8 +49,7 @@ function slugifyPreview(text) {
 }
 
 const emptyAdmin = {
-  givenName: '',
-  familyName: '',
+  name: '',
   email: '',
   password: '',
   confirmPassword: '',
@@ -169,8 +181,8 @@ const CreateInstitutionWizard = ({ open, onClose, onComplete }) => {
 
   const addAdmin = async () => {
     if (!institutionId) return;
-    if (!admin.givenName.trim() || !admin.familyName.trim()) {
-      setError('Admin first and last name are required');
+    if (!admin.name.trim()) {
+      setError('Admin name is required');
       return;
     }
     if (!admin.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(admin.email)) {
@@ -193,10 +205,11 @@ const CreateInstitutionWizard = ({ open, onClose, onComplete }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          givenName: admin.givenName.trim(),
-          familyName: admin.familyName.trim(),
+          name: admin.name.trim(),
           email: admin.email.trim(),
           password: admin.password,
+          confirmPassword: admin.confirmPassword,
+          isPrimary: true,
         }),
       });
       const data = await response.json();
@@ -228,160 +241,179 @@ const CreateInstitutionWizard = ({ open, onClose, onComplete }) => {
         ? t('global_admin.save_domains', { defaultValue: 'Save domains' })
         : t('global_admin.create_admin', { defaultValue: 'Create admin' });
 
+  const StepIcon = STEPS[step]?.icon || BusinessIcon;
+
   return (
-    <Dialog open={open} onClose={submitting ? undefined : onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          {t('global_admin.add_institution')}
-        </Typography>
-      </DialogTitle>
-      <DialogContent>
-        <Stepper activeStep={step} alternativeLabel sx={{ mt: 1, mb: 3 }}>
-          {STEPS.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
+    <InstitutionModal open={open} onClose={onClose} disableClose={submitting}>
+      <InstitutionModalHeader
+        icon={StepIcon}
+        title={t('global_admin.add_institution')}
+        subtitle={`Step ${step + 1} of ${STEPS.length} · ${STEPS[step].label}`}
+        onClose={onClose}
+        disableClose={submitting}
+      />
+      <InstitutionModalBody>
+        <Box
+          sx={{
+            px: 1,
+            py: 1.5,
+            borderRadius: 2,
+            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Stepper
+            activeStep={step}
+            alternativeLabel
+            sx={{
+              '& .MuiStepLabel-label': { fontWeight: 500, mt: 0.5 },
+              '& .MuiStepIcon-root.Mui-active': { color: 'primary.main' },
+              '& .MuiStepIcon-root.Mui-completed': { color: 'success.main' },
+            }}
+          >
+            {STEPS.map(({ label }) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        </Box>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+          <Alert severity="error" onClose={() => setError('')} sx={{ borderRadius: 2 }}>
             {error}
           </Alert>
         )}
 
         {step === 0 && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            <TextField
-              fullWidth
-              required
-              label={t('global_admin.institution_name')}
-              name="name"
-              value={form.name}
-              onChange={handleFormChange}
-            />
-            <TextField
-              fullWidth
-              required
-              label={t('global_admin.institution_slug', { defaultValue: 'Slug' })}
-              name="slug"
-              value={form.slug}
-              onChange={(event) => {
-                setSlugTouched(true);
-                handleFormChange(event);
-              }}
-              helperText="Used in URLs. Letters, numbers, and hyphens only."
-            />
-            <TextField
-              fullWidth
-              required
-              type="email"
-              label={t('global_admin.contact_email', { defaultValue: 'Contact email' })}
-              name="contactEmail"
-              value={form.contactEmail}
-              onChange={handleFormChange}
-            />
-          </Box>
+          <InstitutionModalSection title="Institution details">
+            <Stack spacing={2.5}>
+              <TextField
+                fullWidth
+                required
+                label={t('global_admin.institution_name')}
+                name="name"
+                value={form.name}
+                onChange={handleFormChange}
+              />
+              <TextField
+                fullWidth
+                required
+                label={t('global_admin.institution_slug', { defaultValue: 'Slug' })}
+                name="slug"
+                value={form.slug}
+                onChange={(event) => {
+                  setSlugTouched(true);
+                  handleFormChange(event);
+                }}
+                helperText="Used in URLs. Letters, numbers, and hyphens only."
+              />
+              <TextField
+                fullWidth
+                required
+                type="email"
+                label={t('global_admin.contact_email', { defaultValue: 'Contact email' })}
+                name="contactEmail"
+                value={form.contactEmail}
+                onChange={handleFormChange}
+              />
+            </Stack>
+          </InstitutionModalSection>
         )}
 
         {step === 1 && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Add the email domains this institution owns (e.g. university.edu). Users with matching addresses can be linked automatically.
-            </Typography>
-            <TextField
-              fullWidth
-              label={t('global_admin.domain', { defaultValue: 'Domain' })}
-              value={domainInput}
-              onChange={(event) => setDomainInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  addDomainChip();
-                }
-              }}
-              placeholder="university.edu"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Button onClick={addDomainChip} startIcon={<AddIcon />} size="small">
-                      Add
-                    </Button>
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {domains.map((domain) => (
-                <Chip
-                  key={domain}
-                  label={domain}
-                  onDelete={() => setDomains((prev) => prev.filter((item) => item !== domain))}
-                  deleteIcon={<DeleteIcon />}
-                />
-              ))}
-            </Box>
-            {domains.length === 0 && (
-              <Typography variant="caption" color="text.secondary">
-                Add at least one domain to continue.
+          <InstitutionModalSection title="Verified domains">
+            <Stack spacing={2}>
+              <Typography variant="body2" color="text.secondary">
+                Add the email domains this institution owns (e.g. university.edu). Users with matching addresses can be linked automatically.
               </Typography>
-            )}
-          </Box>
+              <TextField
+                fullWidth
+                label={t('global_admin.domain', { defaultValue: 'Domain' })}
+                value={domainInput}
+                onChange={(event) => setDomainInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addDomainChip();
+                  }
+                }}
+                placeholder="university.edu"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Button onClick={addDomainChip} startIcon={<AddIcon />} size="small" variant="outlined">
+                        Add
+                      </Button>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, minHeight: 36 }}>
+                {domains.map((domain) => (
+                  <Chip
+                    key={domain}
+                    label={domain}
+                    color="primary"
+                    variant="outlined"
+                    onDelete={() => setDomains((prev) => prev.filter((item) => item !== domain))}
+                    deleteIcon={<DeleteIcon />}
+                  />
+                ))}
+              </Box>
+              {domains.length === 0 && (
+                <Typography variant="caption" color="text.secondary">
+                  Add at least one domain to continue.
+                </Typography>
+              )}
+            </Stack>
+          </InstitutionModalSection>
         )}
 
         {step === 2 && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            <TextField
-              fullWidth
-              required
-              label="First name"
-              value={admin.givenName}
-              onChange={(event) => setAdmin((prev) => ({ ...prev, givenName: event.target.value }))}
-            />
-            <TextField
-              fullWidth
-              required
-              label="Last name"
-              value={admin.familyName}
-              onChange={(event) => setAdmin((prev) => ({ ...prev, familyName: event.target.value }))}
-            />
-            <TextField
-              fullWidth
-              required
-              type="email"
-              label="Admin email"
-              value={admin.email}
-              onChange={(event) => setAdmin((prev) => ({ ...prev, email: event.target.value }))}
-            />
-            <TextField
-              fullWidth
-              required
-              type="password"
-              label="Password"
-              value={admin.password}
-              onChange={(event) => setAdmin((prev) => ({ ...prev, password: event.target.value }))}
-              helperText="Minimum 8 characters"
-            />
-            <TextField
-              fullWidth
-              required
-              type="password"
-              label="Confirm password"
-              value={admin.confirmPassword}
-              onChange={(event) => setAdmin((prev) => ({ ...prev, confirmPassword: event.target.value }))}
-            />
-          </Box>
+          <InstitutionModalSection title="Primary system admin">
+            <Stack spacing={2.5}>
+              <TextField
+                fullWidth
+                required
+                label="Admin name"
+                placeholder="Institution System Admin"
+                helperText="Display name for the institution system admin account"
+                value={admin.name}
+                onChange={(event) => setAdmin((prev) => ({ ...prev, name: event.target.value }))}
+              />
+              <TextField
+                fullWidth
+                required
+                type="email"
+                label="Admin email"
+                name="admin-email"
+                autoComplete="off"
+                value={admin.email}
+                onChange={(event) => setAdmin((prev) => ({ ...prev, email: event.target.value }))}
+              />
+              <PasswordFields
+                password={admin.password}
+                confirmPassword={admin.confirmPassword}
+                onPasswordChange={(value) => setAdmin((prev) => ({ ...prev, password: value }))}
+                onConfirmChange={(value) => setAdmin((prev) => ({ ...prev, confirmPassword: value }))}
+                required
+                helperText="Minimum 8 characters"
+              />
+            </Stack>
+          </InstitutionModalSection>
         )}
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={onClose} disabled={submitting}>
+      </InstitutionModalBody>
+      <InstitutionModalFooter>
+        <Button onClick={onClose} disabled={submitting} color="inherit">
           {step === 0 ? 'Cancel' : 'Close'}
         </Button>
-        <Button onClick={handlePrimary} variant="contained" disabled={submitting}>
+        <Button onClick={handlePrimary} variant="contained" disabled={submitting} sx={{ minWidth: 150 }}>
           {primaryLabel}
         </Button>
-      </DialogActions>
-    </Dialog>
+      </InstitutionModalFooter>
+    </InstitutionModal>
   );
 };
 

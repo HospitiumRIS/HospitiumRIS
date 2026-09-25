@@ -5,14 +5,8 @@ import {
   Box,
   Paper,
   Typography,
-  Card,
-  CardContent,
   Button,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
   Table,
   TableBody,
@@ -32,15 +26,16 @@ import {
   Alert,
   CircularProgress,
   Tooltip,
-  Snackbar
+  Snackbar,
+  Grid,
+  alpha,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   People as UsersIcon,
   Search as SearchIcon,
   FilterList as FilterIcon,
-  Refresh as RefreshIcon,
   Visibility as ViewIcon,
-  VisibilityOff,
   Edit as EditIcon,
   Delete as DeleteIcon,
   PersonAdd as PersonAddIcon,
@@ -51,21 +46,41 @@ import {
   Science as ResearcherIcon,
   AdminPanelSettings as AdminIcon,
   LockReset as LockResetIcon,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../../components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import InstitutionAdminLayout from '../../../components/InstitutionAdmin/InstitutionAdminLayout';
+import { PasswordFields } from '../../../components/GlobalAdmin/InstitutionManageDialogs';
+import {
+  InstitutionModal,
+  InstitutionModalBody,
+  InstitutionModalFooter,
+  InstitutionModalHeader,
+  InstitutionModalSection,
+  StatCard,
+} from '../../../components/GlobalAdmin/InstitutionModalShell';
 
 const MANAGEABLE_ACCOUNT_TYPES = [
   { name: 'RESEARCHER', displayName: 'Researcher' },
   { name: 'RESEARCH_ADMIN', displayName: 'Research Admin' },
 ];
 
-function generatePassword(length = 14) {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => chars[byte % chars.length]).join('');
+function formatUserName(userData) {
+  return [userData?.givenName, userData?.familyName].filter(Boolean).join(' ');
+}
+
+function DetailField({ label, value }) {
+  return (
+    <Box>
+      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem' }}>
+        {label}
+      </Typography>
+      <Typography variant="body2" sx={{ fontWeight: 500, mt: 0.5 }}>
+        {value || '-'}
+      </Typography>
+    </Box>
+  );
 }
 
 const emptyCreateForm = {
@@ -79,6 +94,7 @@ const emptyCreateForm = {
 };
 
 const UserManagementPage = () => {
+  const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   
@@ -93,9 +109,8 @@ const UserManagementPage = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  
   const [searchInput, setSearchInput] = useState('');
+  const [searchReady, setSearchReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [accountTypeFilter, setAccountTypeFilter] = useState('');
@@ -214,13 +229,17 @@ const UserManagementPage = () => {
   const handlePasswordUser = (userData) => {
     setSelectedUser(userData);
     setPasswordForm({ password: '', confirmPassword: '' });
-    setShowPassword(false);
     setPasswordDialogOpen(true);
   };
 
   const handleSubmitEdit = async () => {
     if (!selectedUser) return;
-    if (!editForm.givenName.trim() || !editForm.familyName.trim()) {
+    const isResearchAdmin = editForm.accountType === 'RESEARCH_ADMIN';
+    if (!editForm.givenName.trim()) {
+      showAlert(isResearchAdmin ? 'Name is required' : 'First and last name are required', 'error');
+      return;
+    }
+    if (!isResearchAdmin && !editForm.familyName.trim()) {
       showAlert('First and last name are required', 'error');
       return;
     }
@@ -231,7 +250,7 @@ const UserManagementPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           givenName: editForm.givenName.trim(),
-          familyName: editForm.familyName.trim(),
+          familyName: isResearchAdmin ? '' : editForm.familyName.trim(),
           email: editForm.email.trim(),
           status: editForm.status,
           emailVerified: editForm.emailVerified,
@@ -283,7 +302,12 @@ const UserManagementPage = () => {
   };
 
   const handleSubmitCreate = async () => {
-    if (!createForm.givenName.trim() || !createForm.familyName.trim()) {
+    const isResearchAdmin = createForm.accountType === 'RESEARCH_ADMIN';
+    if (!createForm.givenName.trim()) {
+      showAlert(isResearchAdmin ? 'Name is required' : 'First and last name are required', 'error');
+      return;
+    }
+    if (!isResearchAdmin && !createForm.familyName.trim()) {
       showAlert('First and last name are required', 'error');
       return;
     }
@@ -306,7 +330,7 @@ const UserManagementPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           givenName: createForm.givenName.trim(),
-          familyName: createForm.familyName.trim(),
+          familyName: isResearchAdmin ? '' : createForm.familyName.trim(),
           email: createForm.email.trim(),
           accountType: createForm.accountType,
           password: createForm.password,
@@ -421,75 +445,90 @@ const UserManagementPage = () => {
     return null;
   }
 
+  const tablePaperSx = {
+    borderRadius: 3,
+    overflow: 'hidden',
+    border: '1px solid',
+    borderColor: 'divider',
+    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)',
+  };
+
+  const headCellSx = {
+    fontWeight: 700,
+    fontSize: '0.75rem',
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: 'text.secondary',
+    bgcolor: alpha(theme.palette.primary.main, 0.04),
+    borderBottom: '1px solid',
+    borderColor: 'divider',
+    py: 1.75,
+  };
+
+  const hasFilters = Boolean(searchInput || statusFilter || accountTypeFilter);
+
   return (
     <InstitutionAdminLayout>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: 'background.default', minHeight: '100vh' }}>
-        {/* Professional Header */}
-        <Box sx={{ 
-          mb: 4,
-          pb: 3,
-          borderBottom: '2px solid',
-          borderColor: 'divider'
-        }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: '#8b6cbc', width: 56, height: 56, boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)' }}>
-                <UsersIcon fontSize="large" />
-              </Avatar>
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 3,
+            p: { xs: 2.5, md: 3 },
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
+          }}
+        >
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            justifyContent="space-between"
+            alignItems={{ xs: 'flex-start', md: 'center' }}
+            spacing={2}
+          >
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Box
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: alpha(theme.palette.primary.main, 0.16),
+                  color: 'primary.main',
+                  boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.16)}`,
+                }}
+              >
+                <UsersIcon fontSize="small" />
+              </Box>
               <Box>
-                <Typography 
-                  variant="h4" 
-                  sx={{ 
-                    fontWeight: 700,
-                    mb: 0.5,
-                    letterSpacing: '-0.02em'
-                  }}
-                >
+                <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.25 }}>
                   User Management
                 </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                   Manage user accounts, permissions, and settings
                 </Typography>
               </Box>
-            </Box>
-            
-            <Stack direction="row" spacing={2}>
-              <Button
-                variant="outlined"
-                startIcon={<RefreshIcon />}
-                onClick={fetchUsers}
-                sx={{
-                  borderColor: '#8b6cbc',
-                  color: '#8b6cbc',
-                  '&:hover': {
-                    borderColor: '#7a5caa',
-                    bgcolor: '#f3e5f5'
-                  }
-                }}
-              >
-                Refresh
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<PersonAddIcon />}
-                onClick={() => {
-                  setCreateForm(emptyCreateForm);
-                  setShowPassword(false);
-                  setCreateDialogOpen(true);
-                }}
-                sx={{
-                  bgcolor: '#8b6cbc',
-                  '&:hover': {
-                    bgcolor: '#7a5caa'
-                  },
-                  boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
-                }}
-              >
-                Create user
-              </Button>
             </Stack>
-          </Box>
-        </Box>
+            <Button
+              variant="contained"
+              startIcon={<PersonAddIcon />}
+              onClick={() => {
+                setCreateForm(emptyCreateForm);
+                setCreateDialogOpen(true);
+              }}
+              sx={{
+                borderRadius: 2,
+                px: 2.5,
+                boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.28)}`,
+              }}
+            >
+              Create user
+            </Button>
+          </Stack>
+        </Paper>
 
       {/* Snackbar for notifications */}
       <Snackbar
@@ -508,634 +547,394 @@ const UserManagementPage = () => {
         </Alert>
       </Snackbar>
 
-      {/* Statistics Cards */}
-      <Box sx={{ 
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 2,
-        mb: 3
-      }}>
-        <Box sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
-          <Card sx={{ 
-            height: '100%',
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
-            color: 'white',
-            position: 'relative',
-            overflow: 'hidden',
-            transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
-            '&:hover': {
-              transform: 'translateY(-4px)',
-              boxShadow: '0 8px 24px rgba(139, 108, 188, 0.3)'
-            },
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: '100px',
-              height: '100px',
-              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-              borderRadius: '50%',
-              transform: 'translate(40%, -40%)'
-            }
-          }}>
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 2.5 }}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', width: 44, height: 44 }}>
-                  <CheckIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-                    {stats.byStatus?.active || 0}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
-                    Active Users
-                  </Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Box>
-        
-        <Box sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
-          <Card sx={{ 
-            height: '100%',
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
-            color: 'white',
-            position: 'relative',
-            overflow: 'hidden',
-            transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
-            '&:hover': {
-              transform: 'translateY(-4px)',
-              boxShadow: '0 8px 24px rgba(139, 108, 188, 0.3)'
-            },
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: '100px',
-              height: '100px',
-              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-              borderRadius: '50%',
-              transform: 'translate(40%, -40%)'
-            }
-          }}>
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 2.5 }}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', width: 44, height: 44 }}>
-                  <PendingIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-                    {stats.byStatus?.pending || 0}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
-                    Pending Users
-                  </Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Box>
-        
-        <Box sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
-          <Card sx={{ 
-            height: '100%',
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
-            color: 'white',
-            position: 'relative',
-            overflow: 'hidden',
-            transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
-            '&:hover': {
-              transform: 'translateY(-4px)',
-              boxShadow: '0 8px 24px rgba(139, 108, 188, 0.3)'
-            },
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: '100px',
-              height: '100px',
-              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-              borderRadius: '50%',
-              transform: 'translate(40%, -40%)'
-            }
-          }}>
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 2.5 }}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', width: 44, height: 44 }}>
-                  <BlockIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-                    {stats.byStatus?.suspended || 0}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
-                    Suspended
-                  </Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Box>
-        
-        <Box sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px' }}>
-          <Card sx={{ 
-            height: '100%',
-            background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
-            color: 'white',
-            position: 'relative',
-            overflow: 'hidden',
-            transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
-            '&:hover': {
-              transform: 'translateY(-4px)',
-              boxShadow: '0 8px 24px rgba(139, 108, 188, 0.3)'
-            },
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: '100px',
-              height: '100px',
-              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-              borderRadius: '50%',
-              transform: 'translate(40%, -40%)'
-            }
-          }}>
-            <CardContent sx={{ position: 'relative', zIndex: 1, p: 2.5 }}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', width: 44, height: 44 }}>
-                  <UsersIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-                    {totalUsers}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '0.875rem' }}>
-                    Total Users
-                  </Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Box>
-      </Box>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard icon={CheckIcon} label="Active users" value={stats.byStatus?.active || 0} />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard icon={PendingIcon} label="Pending users" value={stats.byStatus?.pending || 0} />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard icon={BlockIcon} label="Suspended" value={stats.byStatus?.suspended || 0} />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard icon={UsersIcon} label="Total users" value={totalUsers} />
+          </Grid>
+        </Grid>
 
-      {/* Filters and Search */}
-      <Paper 
-        elevation={0}
-        sx={{ 
-          p: 3, 
-          mb: 3,
-          borderRadius: 3,
-          border: '1px solid',
-          borderColor: 'divider',
-          background: 'linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(249,250,251,1) 100%)'
-        }}
-      >
-        <Box sx={{ 
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            md: '2fr 1.5fr 1.5fr 1fr'
-          },
-          gap: 2,
-          alignItems: 'center'
-        }}>
-          <TextField
-            fullWidth
-            placeholder="Search by name, email, or ORCID..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              )
-            }}
-          />
-          
-          <FormControl fullWidth>
-            <InputLabel>Status Filter</InputLabel>
-            <Select
-              value={statusFilter}
-              label="Status Filter"
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(0);
-              }}
-            >
-              <MenuItem value="">All Statuses</MenuItem>
-              <MenuItem value="ACTIVE">Active</MenuItem>
-              <MenuItem value="PENDING">Pending</MenuItem>
-              <MenuItem value="INACTIVE">Inactive</MenuItem>
-              <MenuItem value="SUSPENDED">Suspended</MenuItem>
-            </Select>
-          </FormControl>
-          
-          <FormControl fullWidth>
-            <InputLabel>Account Type Filter</InputLabel>
-            <Select
-              value={accountTypeFilter}
-              label="Account Type Filter"
-              onChange={(e) => {
-                setAccountTypeFilter(e.target.value);
-                setPage(0);
-              }}
-            >
-              <MenuItem value="">All Types</MenuItem>
-              <MenuItem value="RESEARCHER">Researcher</MenuItem>
-              <MenuItem value="RESEARCH_ADMIN">Research Admin</MenuItem>
-              <MenuItem value="INSTITUTION_ADMIN">Institution Admin</MenuItem>
-            </Select>
-          </FormControl>
-          
-          <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<FilterIcon />}
-            onClick={() => {
-              setSearchInput('');
-              setSearchQuery('');
-              setStatusFilter('');
-              setAccountTypeFilter('');
-              setPage(0);
+        <Paper elevation={0} sx={tablePaperSx}>
+          <Box
+            sx={{
+              px: { xs: 2, md: 2.5 },
+              py: 2,
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              bgcolor: alpha(theme.palette.background.default, 0.6),
             }}
           >
-            Clear Filters
-          </Button>
-        </Box>
-      </Paper>
-
-      {/* Users Table */}
-      <Paper 
-        elevation={0}
-        sx={{ 
-          borderRadius: 3,
-          border: '1px solid',
-          borderColor: 'divider',
-          background: 'linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(249,250,251,1) 100%)',
-          overflow: 'hidden'
-        }}
-      >
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: '2fr 1fr 1fr auto' },
+                gap: 2,
+                alignItems: 'center',
+              }}
+            >
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Search by name, email, or ORCID..."
+                value={searchInput}
+                onFocus={() => setSearchReady(true)}
+                onChange={(e) => setSearchInput(e.target.value)}
+                inputProps={{ readOnly: !searchReady }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchInput ? (
+                    <InputAdornment position="end">
+                      <IconButton size="small" aria-label="Clear search" onClick={() => setSearchInput('')}>
+                        <ClearIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                  sx: { borderRadius: 2, bgcolor: 'background.paper' },
+                }}
+              />
+              <FormControl fullWidth size="small">
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={statusFilter}
+                  label="Status"
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setPage(0);
+                  }}
+                >
+                  <MenuItem value="">All statuses</MenuItem>
+                  <MenuItem value="ACTIVE">Active</MenuItem>
+                  <MenuItem value="PENDING">Pending</MenuItem>
+                  <MenuItem value="INACTIVE">Inactive</MenuItem>
+                  <MenuItem value="SUSPENDED">Suspended</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth size="small">
+                <InputLabel>Account type</InputLabel>
+                <Select
+                  value={accountTypeFilter}
+                  label="Account type"
+                  onChange={(e) => {
+                    setAccountTypeFilter(e.target.value);
+                    setPage(0);
+                  }}
+                >
+                  <MenuItem value="">All types</MenuItem>
+                  <MenuItem value="RESEARCHER">Researcher</MenuItem>
+                  <MenuItem value="RESEARCH_ADMIN">Research Admin</MenuItem>
+                  <MenuItem value="INSTITUTION_ADMIN">Institution Admin</MenuItem>
+                </Select>
+              </FormControl>
+              <Button
+                variant="outlined"
+                startIcon={<FilterIcon />}
+                disabled={!hasFilters}
+                onClick={() => {
+                  setSearchInput('');
+                  setSearchQuery('');
+                  setStatusFilter('');
+                  setAccountTypeFilter('');
+                  setPage(0);
+                }}
+                sx={{ borderRadius: 2, whiteSpace: 'nowrap' }}
+              >
+                Clear
+              </Button>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+              {loading ? 'Loading...' : `${totalUsers} user${totalUsers === 1 ? '' : 's'} total`}
+            </Typography>
           </Box>
-        ) : (
-          <>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: 'grey.50' }}>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>User</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>Email</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>Account Type</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>Verified</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>Joined</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.875rem', color: 'text.primary' }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {users.length === 0 ? (
+
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+              <Stack spacing={2} alignItems="center">
+                <CircularProgress size={36} />
+                <Typography variant="body2" color="text.secondary">Loading users...</Typography>
+              </Stack>
+            </Box>
+          ) : (
+            <>
+              <TableContainer>
+                <Table>
+                  <TableHead>
                     <TableRow>
-                      <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          No users found
-                        </Typography>
-                      </TableCell>
+                      <TableCell sx={headCellSx}>User</TableCell>
+                      <TableCell sx={headCellSx}>Email</TableCell>
+                      <TableCell sx={headCellSx}>Account type</TableCell>
+                      <TableCell sx={headCellSx}>Status</TableCell>
+                      <TableCell sx={headCellSx}>Verified</TableCell>
+                      <TableCell sx={headCellSx}>Joined</TableCell>
+                      <TableCell sx={headCellSx} align="right">Actions</TableCell>
                     </TableRow>
-                  ) : users.map((userData) => (
-                    <TableRow 
-                      key={userData.id} 
-                      sx={{ 
-                        '&:hover': { 
-                          bgcolor: 'action.hover',
-                          cursor: 'pointer'
-                        },
-                        transition: 'all 0.2s ease-in-out'
-                      }}
-                    >
-                      <TableCell>
-                        <Stack direction="row" spacing={2} alignItems="center">
-                          <Avatar sx={{ 
-                            bgcolor: '#8b6cbc',
-                            fontWeight: 600,
-                            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)'
-                          }}>
-                            {getInitials(userData.givenName, userData.familyName)}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body1" fontWeight="medium">
-                              {userData.givenName} {userData.familyName}
+                  </TableHead>
+                  <TableBody>
+                    {users.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center" sx={{ py: 10 }}>
+                          <Stack spacing={2} alignItems="center" sx={{ maxWidth: 360, mx: 'auto' }}>
+                            <Box
+                              sx={{
+                                width: 64,
+                                height: 64,
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                color: 'primary.main',
+                              }}
+                            >
+                              <UsersIcon sx={{ fontSize: 32 }} />
+                            </Box>
+                            <Typography variant="h6" fontWeight={600}>
+                              {hasFilters ? 'No matching users' : 'No users yet'}
                             </Typography>
-                            {userData.orcidId && (
-                              <Typography variant="caption" color="text.secondary">
-                                ORCID: {userData.orcidId}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>{userData.email}</TableCell>
-                      <TableCell>{getAccountTypeChip(userData.accountType)}</TableCell>
-                      <TableCell>{getStatusChip(userData.status)}</TableCell>
-                      <TableCell>
-                        {userData.emailVerified ? (
-                          <Chip icon={<CheckIcon />} label="Verified" color="success" size="small" />
-                        ) : (
-                          <Chip icon={<CancelIcon />} label="Unverified" color="default" size="small" />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(userData.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Stack direction="row" spacing={1} justifyContent="center">
-                          <Tooltip title="View Details">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleViewUser(userData)}
-                            >
-                              <ViewIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Edit User">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleEditUser(userData)}
-                            >
-                              <EditIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Set password">
-                            <IconButton
-                              size="small"
-                              onClick={() => handlePasswordUser(userData)}
-                            >
-                              <LockResetIcon />
-                            </IconButton>
-                          </Tooltip>
-                          {userData.accountType !== 'INSTITUTION_ADMIN' && userData.id !== user.id && (
-                            <Tooltip title="Delete User">
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() => handleDeleteUser(userData)}
+                            <Typography variant="body2" color="text.secondary" textAlign="center">
+                              {hasFilters
+                                ? 'Try adjusting your search or filters.'
+                                : 'Create the first user account for your institution.'}
+                            </Typography>
+                            {hasFilters ? (
+                              <Button
+                                variant="outlined"
+                                onClick={() => {
+                                  setSearchInput('');
+                                  setSearchQuery('');
+                                  setStatusFilter('');
+                                  setAccountTypeFilter('');
+                                  setPage(0);
+                                }}
+                                sx={{ borderRadius: 2 }}
                               >
-                                <DeleteIcon />
+                                Clear filters
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="contained"
+                                startIcon={<PersonAddIcon />}
+                                onClick={() => {
+                                  setCreateForm(emptyCreateForm);
+                                  setCreateDialogOpen(true);
+                                }}
+                                sx={{ borderRadius: 2 }}
+                              >
+                                Create user
+                              </Button>
+                            )}
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ) : users.map((userData) => (
+                      <TableRow
+                        key={userData.id}
+                        hover
+                        sx={{
+                          cursor: 'pointer',
+                          '&:last-child td': { borderBottom: 0 },
+                          '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.03) },
+                        }}
+                        onClick={() => handleViewUser(userData)}
+                      >
+                        <TableCell sx={{ py: 2 }}>
+                          <Stack direction="row" spacing={1.5} alignItems="center">
+                            <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: 13, fontWeight: 600 }}>
+                              {getInitials(userData.givenName, userData.familyName)}
+                            </Avatar>
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography variant="body2" fontWeight={600} noWrap>
+                                {formatUserName(userData)}
+                              </Typography>
+                              {userData.orcidId && (
+                                <Typography variant="caption" color="text.secondary" noWrap>
+                                  ORCID: {userData.orcidId}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Stack>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 220 }}>
+                            {userData.email}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{getAccountTypeChip(userData.accountType)}</TableCell>
+                        <TableCell>{getStatusChip(userData.status)}</TableCell>
+                        <TableCell>
+                          {userData.emailVerified ? (
+                            <Chip icon={<CheckIcon />} label="Verified" color="success" size="small" variant="filled" />
+                          ) : (
+                            <Chip icon={<CancelIcon />} label="Unverified" size="small" variant="outlined" />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {new Date(userData.createdAt).toLocaleDateString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right" onClick={(event) => event.stopPropagation()} sx={{ whiteSpace: 'nowrap' }}>
+                          <Box
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              borderRadius: 2,
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              bgcolor: 'background.paper',
+                              px: 0.5,
+                            }}
+                          >
+                            <Tooltip title="View details">
+                              <IconButton size="small" onClick={() => handleViewUser(userData)}>
+                                <ViewIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
-                          )}
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            
-            <TablePagination
-              component="div"
-              count={totalUsers}
-              page={page}
-              onPageChange={(e, newPage) => setPage(newPage)}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => {
-                setRowsPerPage(parseInt(e.target.value, 10));
-                setPage(0);
-              }}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
-        )}
-      </Paper>
+                            <Tooltip title="Edit user">
+                              <IconButton size="small" onClick={() => handleEditUser(userData)}>
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Set password">
+                              <IconButton size="small" onClick={() => handlePasswordUser(userData)}>
+                                <LockResetIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            {userData.accountType !== 'INSTITUTION_ADMIN' && userData.id !== user.id && (
+                              <Tooltip title="Delete user">
+                                <IconButton size="small" color="error" onClick={() => handleDeleteUser(userData)}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <TablePagination
+                component="div"
+                count={totalUsers}
+                page={page}
+                onPageChange={(e, newPage) => setPage(newPage)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value, 10));
+                  setPage(0);
+                }}
+                rowsPerPageOptions={[10, 25, 50, 100]}
+              />
+            </>
+          )}
+        </Paper>
 
-      {/* View User Dialog */}
-      <Dialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-        disableScrollLock
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
-          color: 'white',
-          pb: 3
-        }}>
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Avatar sx={{ 
-              width: 56, 
-              height: 56,
-              bgcolor: 'rgba(255,255,255,0.2)',
-              fontSize: '1.5rem',
-              fontWeight: 700,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-            }}>
-              {selectedUser && getInitials(selectedUser.givenName, selectedUser.familyName)}
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                {selectedUser?.givenName} {selectedUser?.familyName}
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.95 }}>
-                {selectedUser?.email}
-              </Typography>
-            </Box>
-          </Stack>
-        </DialogTitle>
-        <DialogContent sx={{ p: 3, bgcolor: '#fafafa' }}>
+      <InstitutionModal open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md">
+        <InstitutionModalHeader
+          icon={ViewIcon}
+          title={selectedUser ? formatUserName(selectedUser) : 'User details'}
+          subtitle={selectedUser?.email}
+          onClose={() => setDialogOpen(false)}
+        />
+        <InstitutionModalBody>
           {selectedUser && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
+            <>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 {getAccountTypeChip(selectedUser.accountType)}
                 {getStatusChip(selectedUser.status)}
                 {selectedUser.emailVerified && (
-                  <Chip 
-                    icon={<CheckIcon />} 
-                    label="Email Verified" 
-                    sx={{ 
-                      bgcolor: '#f3e5f5',
-                      color: '#8b6cbc',
-                      border: '1px solid #e1bee7',
-                      fontWeight: 600
-                    }}
-                    size="small" 
-                  />
+                  <Chip icon={<CheckIcon />} label="Email verified" color="success" size="small" variant="outlined" />
                 )}
               </Stack>
 
-              <Paper elevation={0} sx={{ p: 3, borderRadius: 2, bgcolor: 'white' }}>
-
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 2 }}>
-                  Basic Information
-                </Typography>
-                <Box sx={{ 
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
-                  gap: 2.5
-                }}>
-                  <Box>
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>User ID</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.id}</Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>ORCID ID</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.orcidId || 'N/A'}</Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Primary Institution</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.primaryInstitution || 'N/A'}</Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Research Start</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>
-                      {selectedUser.startMonth && selectedUser.startYear
+              <InstitutionModalSection title="Basic information">
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2.5 }}>
+                  <DetailField label="User ID" value={selectedUser.id} />
+                  <DetailField label="ORCID ID" value={selectedUser.orcidId} />
+                  <DetailField label="Primary institution" value={selectedUser.primaryInstitution} />
+                  <DetailField
+                    label="Research start"
+                    value={
+                      selectedUser.startMonth && selectedUser.startYear
                         ? `${selectedUser.startMonth} ${selectedUser.startYear}`
-                        : 'N/A'}
-                    </Typography>
-                  </Box>
+                        : '-'
+                    }
+                  />
                 </Box>
-              </Paper>
+              </InstitutionModalSection>
 
               {selectedUser.institution && (
-                <Paper elevation={0} sx={{ p: 3, borderRadius: 2, bgcolor: 'white' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 2 }}>
-                    Institution Details
-                  </Typography>
-                  <Box sx={{ 
-                    display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
-                    gap: 2.5
-                  }}>
-                    <Box>
-                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Institution Name</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.institution.name}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Institution Type</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.institution.type}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Country</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.institution.country}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Website</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.institution.website || 'N/A'}</Typography>
-                    </Box>
+                <InstitutionModalSection title="Institution details">
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2.5 }}>
+                    <DetailField label="Institution name" value={selectedUser.institution.name} />
+                    <DetailField label="Institution type" value={selectedUser.institution.type} />
+                    <DetailField label="Country" value={selectedUser.institution.country} />
+                    <DetailField label="Website" value={selectedUser.institution.website} />
                   </Box>
-                </Paper>
+                </InstitutionModalSection>
               )}
 
               {selectedUser.foundation && (
-                <Paper elevation={0} sx={{ p: 3, borderRadius: 2, bgcolor: 'white' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 2 }}>
-                    Foundation Details
-                  </Typography>
-                  <Box sx={{ 
-                    display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
-                    gap: 2.5
-                  }}>
-                    <Box>
-                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Foundation Name</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.foundation.foundationName}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Institution Name</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.foundation.institutionName}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Type</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.foundation.type}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Country</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>{selectedUser.foundation.country}</Typography>
-                    </Box>
+                <InstitutionModalSection title="Foundation details">
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2.5 }}>
+                    <DetailField label="Foundation name" value={selectedUser.foundation.foundationName} />
+                    <DetailField label="Institution name" value={selectedUser.foundation.institutionName} />
+                    <DetailField label="Type" value={selectedUser.foundation.type} />
+                    <DetailField label="Country" value={selectedUser.foundation.country} />
                   </Box>
-                </Paper>
+                </InstitutionModalSection>
               )}
 
-              <Paper elevation={0} sx={{ p: 3, borderRadius: 2, bgcolor: 'white' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 2 }}>
-                  Activity Stats
-                </Typography>
-
-                <Box sx={{ 
-                  display: 'grid',
-                  gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
-                  gap: 3
-                }}>
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f3e5f5', borderRadius: 2 }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 0.5 }}>{selectedUser._count?.manuscripts || 0}</Typography>
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase' }}>Manuscripts</Typography>
-                  </Box>
-
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f3e5f5', borderRadius: 2 }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 0.5 }}>{selectedUser._count?.publications || 0}</Typography>
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase' }}>Publications</Typography>
-                  </Box>
-
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: '#f3e5f5', borderRadius: 2 }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 0.5 }}>{selectedUser._count?.notifications || 0}</Typography>
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase' }}>Notifications</Typography>
-                  </Box>
+              <InstitutionModalSection title="Activity stats">
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, gap: 2 }}>
+                  {[
+                    { label: 'Manuscripts', value: selectedUser._count?.manuscripts || 0 },
+                    { label: 'Publications', value: selectedUser._count?.publications || 0 },
+                    { label: 'Notifications', value: selectedUser._count?.notifications || 0 },
+                  ].map((stat) => (
+                    <Box
+                      key={stat.label}
+                      sx={{
+                        textAlign: 'center',
+                        p: 2,
+                        borderRadius: 2,
+                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      }}
+                    >
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', mb: 0.5 }}>
+                        {stat.value}
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase' }}>
+                        {stat.label}
+                      </Typography>
+                    </Box>
+                  ))}
                 </Box>
-              </Paper>
+              </InstitutionModalSection>
 
-              <Paper elevation={0} sx={{ p: 3, borderRadius: 2, bgcolor: 'white' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 2 }}>
-                  Account Timeline
-                </Typography>
-                <Box sx={{ 
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
-                  gap: 2.5
-                }}>
-                  <Box>
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Account Created</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>
-                      {new Date(selectedUser.createdAt).toLocaleString()}
-                    </Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Last Updated</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500, mt: 0.5 }}>
-                      {new Date(selectedUser.updatedAt).toLocaleString()}
-                    </Typography>
-                  </Box>
+              <InstitutionModalSection title="Account timeline">
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2.5 }}>
+                  <DetailField label="Account created" value={new Date(selectedUser.createdAt).toLocaleString()} />
+                  <DetailField label="Last updated" value={new Date(selectedUser.updatedAt).toLocaleString()} />
                 </Box>
-              </Paper>
-            </Box>
+              </InstitutionModalSection>
+            </>
           )}
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, bgcolor: '#fafafa', borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button 
-            onClick={() => setDialogOpen(false)}
-            sx={{ 
-              color: 'text.secondary',
-              '&:hover': { bgcolor: 'action.hover' }
-            }}
-          >
+        </InstitutionModalBody>
+        <InstitutionModalFooter>
+          <Button onClick={() => setDialogOpen(false)} color="inherit">
             Close
           </Button>
           <Button
@@ -1145,85 +944,148 @@ const UserManagementPage = () => {
               setDialogOpen(false);
               handleEditUser(selectedUser);
             }}
-            sx={{
-              bgcolor: '#8b6cbc',
-              '&:hover': { bgcolor: '#7a5caa' },
-              boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
-            }}
           >
-            Edit User
+            Edit user
           </Button>
-        </DialogActions>
-      </Dialog>
+        </InstitutionModalFooter>
+      </InstitutionModal>
 
-      {/* Edit User Dialog */}
-      <Dialog
-        open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        disableScrollLock
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
-          color: 'white',
-          pb: 2
-        }}>
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Avatar sx={{ 
-              bgcolor: 'rgba(255,255,255,0.2)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-            }}>
-              <EditIcon />
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                Edit User
-              </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.95 }}>
-                Update user information and settings
-              </Typography>
-            </Box>
-          </Stack>
-        </DialogTitle>
-        <DialogContent sx={{ p: 3 }}>
-          <Stack spacing={2.5} sx={{ mt: 1 }}>
-            <TextField
-              fullWidth
-              label="Given Name"
-              value={editForm.givenName}
-              onChange={(e) => setEditForm({ ...editForm, givenName: e.target.value })}
-            />
-            <TextField
-              fullWidth
-              label="Family Name"
-              value={editForm.familyName}
-              onChange={(e) => setEditForm({ ...editForm, familyName: e.target.value })}
-            />
-            <TextField
-              fullWidth
-              type="email"
-              label="Email"
-              value={editForm.email}
-              onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-            />
+      <InstitutionModal open={editDialogOpen} onClose={() => !saving && setEditDialogOpen(false)} disableClose={saving}>
+        <InstitutionModalHeader
+          icon={EditIcon}
+          title="Edit user"
+          subtitle={selectedUser ? formatUserName(selectedUser) : 'Update user information and settings'}
+          onClose={() => setEditDialogOpen(false)}
+          disableClose={saving}
+        />
+        <InstitutionModalBody>
+          <InstitutionModalSection title="Profile">
+            <Stack spacing={2.5}>
+              {editForm.accountType === 'RESEARCH_ADMIN' ? (
+                <TextField
+                  fullWidth
+                  label="Name"
+                  value={editForm.givenName}
+                  onChange={(e) => setEditForm({ ...editForm, givenName: e.target.value, familyName: '' })}
+                />
+              ) : (
+                <>
+                  <TextField
+                    fullWidth
+                    label="Given name"
+                    value={editForm.givenName}
+                    onChange={(e) => setEditForm({ ...editForm, givenName: e.target.value })}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Family name"
+                    value={editForm.familyName}
+                    onChange={(e) => setEditForm({ ...editForm, familyName: e.target.value })}
+                  />
+                </>
+              )}
+              <TextField
+                fullWidth
+                type="email"
+                label="Email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+              />
+              {editForm.accountType === 'RESEARCHER' && (
+                <TextField
+                  fullWidth
+                  label="ORCID iD"
+                  placeholder="0000-0001-2345-6789"
+                  value={editForm.orcidId}
+                  onChange={(e) => setEditForm({ ...editForm, orcidId: e.target.value })}
+                  helperText="Optional. Format: 0000-0001-2345-6789"
+                />
+              )}
+            </Stack>
+          </InstitutionModalSection>
+          <InstitutionModalSection title="Account settings">
+            <Stack spacing={2.5}>
+              <FormControl fullWidth>
+                <InputLabel>Account type</InputLabel>
+                <Select
+                  value={editForm.accountType}
+                  label="Account type"
+                  disabled={selectedUser?.accountType === 'INSTITUTION_ADMIN' || selectedUser?.id === user.id}
+                  onChange={(e) => setEditForm({ ...editForm, accountType: e.target.value })}
+                >
+                  {selectedUser?.accountType === 'INSTITUTION_ADMIN' && (
+                    <MenuItem value="INSTITUTION_ADMIN">Institution Admin</MenuItem>
+                  )}
+                  {MANAGEABLE_ACCOUNT_TYPES.map((type) => (
+                    <MenuItem key={type.name} value={type.name}>
+                      {type.displayName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={editForm.status}
+                  label="Status"
+                  disabled={selectedUser?.id === user.id}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                >
+                  <MenuItem value="ACTIVE">Active</MenuItem>
+                  <MenuItem value="PENDING">Pending</MenuItem>
+                  <MenuItem value="INACTIVE">Inactive</MenuItem>
+                  <MenuItem value="SUSPENDED">Suspended</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <InputLabel>Email verified</InputLabel>
+                <Select
+                  value={editForm.emailVerified}
+                  label="Email verified"
+                  onChange={(e) => setEditForm({ ...editForm, emailVerified: e.target.value === true || e.target.value === 'true' })}
+                >
+                  <MenuItem value={true}>Yes</MenuItem>
+                  <MenuItem value={false}>No</MenuItem>
+                </Select>
+              </FormControl>
+            </Stack>
+          </InstitutionModalSection>
+        </InstitutionModalBody>
+        <InstitutionModalFooter>
+          <Button onClick={() => setEditDialogOpen(false)} disabled={saving} color="inherit">
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleSubmitEdit} disabled={saving} startIcon={<CheckIcon />}>
+            {saving ? 'Saving...' : 'Save changes'}
+          </Button>
+        </InstitutionModalFooter>
+      </InstitutionModal>
+
+      <InstitutionModal open={createDialogOpen} onClose={() => !saving && setCreateDialogOpen(false)} disableClose={saving}>
+        <InstitutionModalHeader
+          icon={PersonAddIcon}
+          title="Create user"
+          subtitle="Add a new user account to your institution"
+          onClose={() => setCreateDialogOpen(false)}
+          disableClose={saving}
+        />
+        <InstitutionModalBody>
+          <InstitutionModalSection title="Account type">
             <FormControl fullWidth>
-              <InputLabel>Account Type</InputLabel>
+              <InputLabel>Account type</InputLabel>
               <Select
-                value={editForm.accountType}
-                label="Account Type"
-                disabled={selectedUser?.accountType === 'INSTITUTION_ADMIN' || selectedUser?.id === user.id}
-                onChange={(e) => setEditForm({ ...editForm, accountType: e.target.value })}
+                value={createForm.accountType}
+                label="Account type"
+                onChange={(e) => {
+                  const nextType = e.target.value;
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    accountType: nextType,
+                    familyName: nextType === 'RESEARCH_ADMIN' ? '' : prev.familyName,
+                    orcidId: nextType === 'RESEARCHER' ? prev.orcidId : '',
+                  }));
+                }}
               >
-                {selectedUser?.accountType === 'INSTITUTION_ADMIN' && (
-                  <MenuItem value="INSTITUTION_ADMIN">Institution Admin</MenuItem>
-                )}
                 {MANAGEABLE_ACCOUNT_TYPES.map((type) => (
                   <MenuItem key={type.name} value={type.name}>
                     {type.displayName}
@@ -1231,259 +1093,138 @@ const UserManagementPage = () => {
                 ))}
               </Select>
             </FormControl>
-            {editForm.accountType === 'RESEARCHER' && (
+          </InstitutionModalSection>
+          <InstitutionModalSection title="Profile">
+            <Stack spacing={2.5}>
+              {createForm.accountType === 'RESEARCH_ADMIN' ? (
+                <TextField
+                  fullWidth
+                  required
+                  label="Name"
+                  value={createForm.givenName}
+                  onChange={(e) => setCreateForm({ ...createForm, givenName: e.target.value, familyName: '' })}
+                />
+              ) : (
+                <>
+                  <TextField
+                    fullWidth
+                    required
+                    label="First name"
+                    value={createForm.givenName}
+                    onChange={(e) => setCreateForm({ ...createForm, givenName: e.target.value })}
+                  />
+                  <TextField
+                    fullWidth
+                    required
+                    label="Last name"
+                    value={createForm.familyName}
+                    onChange={(e) => setCreateForm({ ...createForm, familyName: e.target.value })}
+                  />
+                </>
+              )}
               <TextField
                 fullWidth
-                label="ORCID iD"
-                placeholder="0000-0001-2345-6789"
-                value={editForm.orcidId}
-                onChange={(e) => setEditForm({ ...editForm, orcidId: e.target.value })}
-                helperText="Optional. Format: 0000-0001-2345-6789"
+                required
+                type="email"
+                label="Email"
+                autoComplete="off"
+                value={createForm.email}
+                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
               />
-            )}
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={editForm.status}
-                label="Status"
-                disabled={selectedUser?.id === user.id}
-                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-              >
-                <MenuItem value="ACTIVE">Active</MenuItem>
-                <MenuItem value="PENDING">Pending</MenuItem>
-                <MenuItem value="INACTIVE">Inactive</MenuItem>
-                <MenuItem value="SUSPENDED">Suspended</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl fullWidth>
-              <InputLabel>Email Verified</InputLabel>
-              <Select
-                value={editForm.emailVerified}
-                label="Email Verified"
-                onChange={(e) => setEditForm({ ...editForm, emailVerified: e.target.value === true || e.target.value === 'true' })}
-              >
-                <MenuItem value={true}>Yes</MenuItem>
-                <MenuItem value={false}>No</MenuItem>
-              </Select>
-            </FormControl>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, bgcolor: '#fafafa', borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button 
-            onClick={() => setEditDialogOpen(false)}
-            sx={{ 
-              color: 'text.secondary',
-              '&:hover': { bgcolor: 'action.hover' }
-            }}
-          >
+              {createForm.accountType === 'RESEARCHER' && (
+                <TextField
+                  fullWidth
+                  label="ORCID iD"
+                  placeholder="0000-0001-2345-6789"
+                  value={createForm.orcidId}
+                  onChange={(e) => setCreateForm({ ...createForm, orcidId: e.target.value })}
+                  helperText="Optional for researcher accounts"
+                />
+              )}
+            </Stack>
+          </InstitutionModalSection>
+          <InstitutionModalSection title="Credentials">
+            <PasswordFields
+              required
+              password={createForm.password}
+              confirmPassword={createForm.confirmPassword}
+              onPasswordChange={(value) => setCreateForm((prev) => ({ ...prev, password: value }))}
+              onConfirmChange={(value) => setCreateForm((prev) => ({ ...prev, confirmPassword: value }))}
+              helperText="Minimum 8 characters"
+            />
+          </InstitutionModalSection>
+        </InstitutionModalBody>
+        <InstitutionModalFooter>
+          <Button onClick={() => setCreateDialogOpen(false)} disabled={saving} color="inherit">
             Cancel
           </Button>
-          <Button 
-            variant="contained" 
-            onClick={handleSubmitEdit}
-            disabled={saving}
-            startIcon={<CheckIcon />}
-            sx={{
-              bgcolor: '#8b6cbc',
-              '&:hover': { bgcolor: '#7a5caa' },
-              boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
-            }}
-          >
-            Save Changes
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={createDialogOpen}
-        onClose={saving ? undefined : () => setCreateDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        disableScrollLock
-      >
-        <DialogTitle>Create user</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '12px !important' }}>
-          <TextField
-            fullWidth
-            required
-            label="First name"
-            value={createForm.givenName}
-            onChange={(e) => setCreateForm({ ...createForm, givenName: e.target.value })}
-          />
-          <TextField
-            fullWidth
-            required
-            label="Last name"
-            value={createForm.familyName}
-            onChange={(e) => setCreateForm({ ...createForm, familyName: e.target.value })}
-          />
-          <TextField
-            fullWidth
-            required
-            type="email"
-            label="Email"
-            autoComplete="off"
-            value={createForm.email}
-            onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-          />
-          <FormControl fullWidth>
-            <InputLabel>Account type</InputLabel>
-            <Select
-              value={createForm.accountType}
-              label="Account type"
-              onChange={(e) => setCreateForm({ ...createForm, accountType: e.target.value })}
-            >
-              {MANAGEABLE_ACCOUNT_TYPES.map((type) => (
-                <MenuItem key={type.name} value={type.name}>
-                  {type.displayName}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          {createForm.accountType === 'RESEARCHER' && (
-            <TextField
-              fullWidth
-              label="ORCID iD"
-              placeholder="0000-0001-2345-6789"
-              value={createForm.orcidId}
-              onChange={(e) => setCreateForm({ ...createForm, orcidId: e.target.value })}
-              helperText="Optional for researcher accounts"
-            />
-          )}
-          <TextField
-            fullWidth
-            required
-            type={showPassword ? 'text' : 'password'}
-            label="Password"
-            autoComplete="new-password"
-            value={createForm.password}
-            onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-            helperText="Minimum 8 characters"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton type="button" onClick={() => setShowPassword((prev) => !prev)} edge="end">
-                    {showPassword ? <VisibilityOff /> : <ViewIcon />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <TextField
-            fullWidth
-            required
-            type={showPassword ? 'text' : 'password'}
-            label="Confirm password"
-            autoComplete="new-password"
-            value={createForm.confirmPassword}
-            onChange={(e) => setCreateForm({ ...createForm, confirmPassword: e.target.value })}
-          />
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Button
-              type="button"
-              size="small"
-              onClick={() => {
-                const next = generatePassword();
-                setCreateForm((prev) => ({ ...prev, password: next, confirmPassword: next }));
-                setShowPassword(true);
-              }}
-            >
-              Generate password
-            </Button>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setCreateDialogOpen(false)} disabled={saving}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmitCreate} disabled={saving} sx={{ bgcolor: '#8b6cbc' }}>
+          <Button variant="contained" onClick={handleSubmitCreate} disabled={saving}>
             {saving ? 'Creating...' : 'Create user'}
           </Button>
-        </DialogActions>
-      </Dialog>
+        </InstitutionModalFooter>
+      </InstitutionModal>
 
-      <Dialog
-        open={passwordDialogOpen}
-        onClose={saving ? undefined : () => setPasswordDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        disableScrollLock
-      >
-        <DialogTitle>Set password</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '12px !important' }}>
-          <Typography variant="body2" color="text.secondary">
-            Set a new password for {selectedUser?.givenName} {selectedUser?.familyName} ({selectedUser?.email}).
-          </Typography>
-          <TextField
-            fullWidth
-            required
-            type={showPassword ? 'text' : 'password'}
-            label="New password"
-            autoComplete="new-password"
-            value={passwordForm.password}
-            onChange={(e) => setPasswordForm({ ...passwordForm, password: e.target.value })}
-            helperText="Minimum 8 characters"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton type="button" onClick={() => setShowPassword((prev) => !prev)} edge="end">
-                    {showPassword ? <VisibilityOff /> : <ViewIcon />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <TextField
-            fullWidth
-            required
-            type={showPassword ? 'text' : 'password'}
-            label="Confirm password"
-            autoComplete="new-password"
-            value={passwordForm.confirmPassword}
-            onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-          />
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Button
-              type="button"
-              size="small"
-              onClick={() => {
-                const next = generatePassword();
-                setPasswordForm({ password: next, confirmPassword: next });
-                setShowPassword(true);
-              }}
-            >
-              Generate password
-            </Button>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setPasswordDialogOpen(false)} disabled={saving}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmitPassword} disabled={saving} sx={{ bgcolor: '#8b6cbc' }}>
+      <InstitutionModal open={passwordDialogOpen} onClose={() => !saving && setPasswordDialogOpen(false)} disableClose={saving}>
+        <InstitutionModalHeader
+          icon={LockResetIcon}
+          title="Set password"
+          subtitle={selectedUser ? `${formatUserName(selectedUser)} (${selectedUser.email})` : 'Set a new password'}
+          onClose={() => setPasswordDialogOpen(false)}
+          disableClose={saving}
+        />
+        <InstitutionModalBody>
+          <InstitutionModalSection title="New credentials">
+            <PasswordFields
+              required
+              password={passwordForm.password}
+              confirmPassword={passwordForm.confirmPassword}
+              onPasswordChange={(value) => setPasswordForm((prev) => ({ ...prev, password: value }))}
+              onConfirmChange={(value) => setPasswordForm((prev) => ({ ...prev, confirmPassword: value }))}
+              helperText="Minimum 8 characters"
+            />
+          </InstitutionModalSection>
+        </InstitutionModalBody>
+        <InstitutionModalFooter>
+          <Button onClick={() => setPasswordDialogOpen(false)} disabled={saving} color="inherit">
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleSubmitPassword} disabled={saving}>
             {saving ? 'Saving...' : 'Save password'}
           </Button>
-        </DialogActions>
-      </Dialog>
+        </InstitutionModalFooter>
+      </InstitutionModal>
 
-      {/* Delete User Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        maxWidth="sm"
-      >
-        <DialogTitle>Confirm Delete User</DialogTitle>
-        <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            This action cannot be undone. All user data and related records will be permanently deleted.
+      <InstitutionModal open={deleteDialogOpen} onClose={() => !saving && setDeleteDialogOpen(false)} disableClose={saving}>
+        <InstitutionModalHeader
+          icon={DeleteIcon}
+          title="Delete user"
+          subtitle="This action cannot be undone"
+          tone="danger"
+          onClose={() => setDeleteDialogOpen(false)}
+          disableClose={saving}
+        />
+        <InstitutionModalBody>
+          <Alert severity="warning" sx={{ borderRadius: 2 }}>
+            This permanently deletes all user data and related records for{' '}
+            <strong>{selectedUser ? formatUserName(selectedUser) : 'this user'}</strong>.
           </Alert>
-          <Typography>
-            Are you sure you want to delete user <strong>{selectedUser?.givenName} {selectedUser?.familyName}</strong>?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" color="error" onClick={handleSubmitDelete} disabled={saving}>
-            Delete User
+          <InstitutionModalSection title="Confirm deletion">
+            <Typography variant="body2" color="text.secondary">
+              Are you sure you want to delete{' '}
+              <strong>{selectedUser ? formatUserName(selectedUser) : 'this user'}</strong>
+              {selectedUser?.email ? ` (${selectedUser.email})` : ''}?
+            </Typography>
+          </InstitutionModalSection>
+        </InstitutionModalBody>
+        <InstitutionModalFooter>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={saving} color="inherit">
+            Cancel
           </Button>
-        </DialogActions>
-      </Dialog>
+          <Button variant="contained" color="error" onClick={handleSubmitDelete} disabled={saving}>
+            {saving ? 'Deleting...' : 'Delete user'}
+          </Button>
+        </InstitutionModalFooter>
+      </InstitutionModal>
       </Box>
     </InstitutionAdminLayout>
   );

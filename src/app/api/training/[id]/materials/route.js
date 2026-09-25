@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../../lib/auth-server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import {
+  validateTrainingMaterial,
+  saveTrainingMaterial,
+} from '../../../../../lib/training-files';
+import {
+  isTrainingAdmin,
+  requireTrainingAdminAccess,
+  userHasTrainingInstitutionAccess,
+} from '@/lib/training-admin-server';
 
 /**
  * GET /api/training/[id]/materials
@@ -21,7 +28,6 @@ export async function GET(request, { params }) {
 
     const { id } = await params;
 
-    // Check training exists and user has access
     const training = await prisma.training.findUnique({
       where: { id },
     });
@@ -33,15 +39,7 @@ export async function GET(request, { params }) {
       );
     }
 
-    const isAdminUser = user.accountType === 'RESEARCH_ADMIN' || user.accountType === 'INSTITUTION_ADMIN';
-    let hasAccess = training.institutionId === user.secondaryInstitutionId;
-    if (!hasAccess && isAdminUser) {
-      const ownInstitution = await prisma.institution.findUnique({
-        where: { userId: user.id },
-        select: { id: true },
-      });
-      hasAccess = training.institutionId === ownInstitution?.id;
-    }
+    const hasAccess = await userHasTrainingInstitutionAccess(user, training.institutionId);
 
     if (!hasAccess) {
       return NextResponse.json(
@@ -50,7 +48,6 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Check if user is registered
     const userRegistration = await prisma.trainingRegistration.findUnique({
       where: {
         trainingId_userId: {
@@ -60,29 +57,19 @@ export async function GET(request, { params }) {
       },
     });
 
-    // Get materials
     const materials = await prisma.trainingMaterial.findMany({
-      where: {
-        trainingId: id,
-      },
+      where: { trainingId: id },
       include: {
         module: {
-          select: {
-            id: true,
-            title: true,
-          },
+          select: { id: true, title: true },
         },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Filter based on access level
-    const filteredMaterials = materials.filter(material => {
-      // Admin sees all
-      if (user.accountType === 'RESEARCH_ADMIN') return true;
-      // Public materials visible to all
+    const filteredMaterials = materials.filter((material) => {
+      if (isTrainingAdmin(user)) return true;
       if (material.accessLevel === 'PUBLIC') return true;
-      // Registered-only materials only for registered users
       if (material.accessLevel === 'REGISTERED_ONLY' && userRegistration) return true;
       return false;
     });
@@ -108,16 +95,8 @@ export async function POST(request, { params }) {
   try {
     const user = await getAuthenticatedUser(request);
 
-    if (!user || user.accountType !== 'RESEARCH_ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      );
-    }
-
     const { id } = await params;
 
-    // Check training exists and belongs to user's institution
     const training = await prisma.training.findUnique({
       where: { id },
     });
@@ -129,17 +108,8 @@ export async function POST(request, { params }) {
       );
     }
 
-    const ownInstitution = await prisma.institution.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!ownInstitution || training.institutionId !== ownInstitution.id) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      );
-    }
+    const access = await requireTrainingAdminAccess(user, training);
+    if (access.error) return access.error;
 
     const formData = await request.formData();
     const file = formData.get('file');
@@ -154,47 +124,43 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Create upload directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), 'uploads', 'training', 'materials');
-    await mkdir(uploadDir, { recursive: true });
+    const validation = validateTrainingMaterial(file);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
 
-    // Generate unique filename
-    const timestamp = Date.now();
     const originalName = file.name;
-    const fileExtension = path.extname(originalName);
-    const fileName = `${timestamp}_${originalName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const filePath = path.join(uploadDir, fileName);
 
-    // Save file
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
-
-    // Create database record
-    const fileUrl = `/uploads/training/materials/${fileName}`;
     const material = await prisma.trainingMaterial.create({
       data: {
         trainingId: id,
         moduleId: moduleId || null,
         name: name || originalName,
-        fileUrl,
-        fileType: fileExtension.replace('.', ''),
+        fileUrl: '',
+        fileType: validation.ext,
         accessLevel,
         uploadedBy: user.id,
       },
+    });
+
+    const { fileUrl } = await saveTrainingMaterial(material.id, file, {
+      user,
+      entityTenantId: training.institutionId,
+    });
+
+    const updated = await prisma.trainingMaterial.update({
+      where: { id: material.id },
+      data: { fileUrl },
       include: {
         module: {
-          select: {
-            id: true,
-            title: true,
-          },
+          select: { id: true, title: true },
         },
       },
     });
 
     return NextResponse.json({
       success: true,
-      material,
+      material: updated,
     }, { status: 201 });
   } catch (error) {
     console.error('Error uploading material:', error);

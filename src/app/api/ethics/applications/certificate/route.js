@@ -148,16 +148,20 @@ export async function POST(request) {
       console.warn('Could not set ethics source column; run the latest Prisma migration.', sourceError);
     }
 
-    const { storedName, size } = await saveEthicsFile(application.id, file);
+    const { storedName, size, fileId } = await saveEthicsFile(application.id, file, {
+      user,
+      module: 'ETHICS_CERTIFICATE',
+    });
     const documents = [
       {
         type: 'Ethics Clearance Certificate',
         name: file.name,
         originalName: file.name,
         fileName: storedName,
+        fileId: fileId || null,
         size,
         mimeType: file.type || 'application/octet-stream',
-        url: ethicsFileUrl(application.id, storedName),
+        url: ethicsFileUrl(application.id, storedName, fileId),
         uploadedAt: now.toISOString(),
         source: 'EXTERNAL_CERTIFICATE',
       },

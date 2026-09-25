@@ -25,8 +25,11 @@ export async function GET(request, { params }) {
     }
 
     try {
-      const { buffer } = await readIntegrityFile(record.id, record.fileName);
-      const mime = getMimeType(record.fileFormat, record.fileName);
+      const { buffer, mimeType } = await readIntegrityFile(record.id, record.fileName, {
+        user,
+        fileId: record.storedFileId,
+      });
+      const mime = mimeType || getMimeType(record.fileFormat, record.fileName);
       const disposition = request.nextUrl.searchParams.get('download') === '1' ? 'attachment' : 'inline';
 
       return new NextResponse(buffer, {

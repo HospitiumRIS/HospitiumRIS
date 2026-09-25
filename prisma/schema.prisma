@@ -156,7 +156,8 @@ model Institution {
   country      String  @default("")
   website      String?
   contactEmail String?
-  logo         String?
+  logo           String?
+  storageBucket  String? // Optional per-tenant bucket override for hard isolation
 
   // Module keys this institution may access (publications, projects, etc.)
   enabledModules Json @default("[\"publications\",\"projects\",\"clinical_trials\",\"image_integrity\",\"training\",\"administration\",\"analytics\"]")
@@ -1880,7 +1881,7 @@ model Training {
   title           String
   description     String?        @db.Text
   department      String
-  targetGroup     TargetGroup[]
+  targetGroup     String[]
   location        String?
   startDate       DateTime
   endDate         DateTime
@@ -2555,6 +2556,7 @@ model ImageIntegrityCase {
   fileName                 String
   fileFormat               String?
   fileSizeBytes            Int?
+  storedFileId             String?
   comparedGlobalRepository Boolean @default(false) // repository[] = "global" was used
 
   // Optional org / personal organization (Hospitium-side only)
@@ -2600,4 +2602,55 @@ model ImageIntegrityCase {
   @@index([labUnitId])
   @@index([collectionId])
   @@map("image_integrity_cases")
+}
+
+enum StoredFileModule {
+  ETHICS_DOCUMENT
+  ETHICS_CERTIFICATE
+  PROPOSAL_DOCUMENT
+  PROPOSAL_DELIVERABLE
+  PROPOSAL_MILESTONE
+  IMAGE_INTEGRITY
+  TRAINING_MATERIAL
+  TRAINING_CERTIFICATE
+  INSTITUTION_LOGO
+}
+
+enum FileVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum FileStatus {
+  PENDING
+  AVAILABLE
+  QUARANTINED
+  DELETED
+}
+
+model StoredFile {
+  id           String           @id @default(cuid())
+  tenantId     String?
+  ownerUserId  String
+  module       StoredFileModule
+  entityType   String
+  entityId     String
+  bucket       String
+  storageKey   String           @unique
+  visibility   FileVisibility   @default(PRIVATE)
+  originalName String
+  mimeType     String
+  sizeBytes    BigInt
+  sha256       String?
+  status       FileStatus       @default(PENDING)
+  legacyPath   String?
+  createdAt    DateTime         @default(now())
+  availableAt  DateTime?
+  deletedAt    DateTime?
+  purgeAfter   DateTime?
+
+  @@index([tenantId, module])
+  @@index([entityType, entityId])
+  @@index([status, createdAt])
+  @@map("stored_files")
 }

@@ -15,7 +15,7 @@ function withPreview(record) {
   if (!record) return record;
   return {
     ...record,
-    previewUrl: previewUrlForCase(record.id),
+    previewUrl: previewUrlForCase(record.id, record.storedFileId),
     isImagePreview: IMAGE_FORMATS.includes((record.fileFormat || '').toLowerCase()),
   };
 }
@@ -55,7 +55,10 @@ export async function POST(request, { params }) {
 
     let fileBuffer;
     try {
-      ({ buffer: fileBuffer } = await readIntegrityFile(record.id, record.fileName));
+      ({ buffer: fileBuffer } = await readIntegrityFile(record.id, record.fileName, {
+        user,
+        fileId: record.storedFileId,
+      }));
     } catch {
       return NextResponse.json(
         {

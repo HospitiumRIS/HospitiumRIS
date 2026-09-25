@@ -4,6 +4,8 @@ import { requireGlobalAdmin } from '@/lib/require-global-admin';
 import { uniqueInstitutionSlug, slugify } from '@/lib/institution-slug';
 import { normalizeEnabledModules } from '@/lib/institution-modules';
 import { INSTITUTION_TYPE_VALUES } from '@/lib/institution-types';
+import { loadInstitutionAdmins } from '@/lib/institution-admins';
+import { deleteInstitutionLogoFile } from '@/lib/institution-logo';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -32,7 +34,10 @@ const institutionInclude = {
   },
 };
 
-function serializeInstitution(institution) {
+async function serializeInstitution(institution) {
+  const admins = await loadInstitutionAdmins(institution.id, institution.userId);
+  const primaryAdmin = admins.find((admin) => admin.isPrimary) || admins[0] || null;
+
   return {
     id: institution.id,
     name: institution.name,
@@ -44,15 +49,8 @@ function serializeInstitution(institution) {
     enabledModules: Array.isArray(institution.enabledModules) ? institution.enabledModules : [],
     createdAt: institution.createdAt,
     updatedAt: institution.updatedAt,
-    admin: institution.user
-      ? {
-          id: institution.user.id,
-          givenName: institution.user.givenName,
-          familyName: institution.user.familyName,
-          email: institution.user.email,
-          status: institution.user.status,
-        }
-      : null,
+    admin: primaryAdmin,
+    admins,
     domains: institution.verifiedDomains || [],
     memberCount: institution._count?.members ?? 0,
   };
@@ -75,7 +73,7 @@ export async function GET(request, { params }) {
 
     return NextResponse.json({
       success: true,
-      institution: serializeInstitution(institution),
+      institution: await serializeInstitution(institution),
     });
   } catch (err) {
     console.error('Error fetching institution:', err);
@@ -156,10 +154,81 @@ export async function PUT(request, { params }) {
     return NextResponse.json({
       success: true,
       message: 'Institution updated',
-      institution: serializeInstitution(institution),
+      institution: await serializeInstitution(institution),
     });
   } catch (err) {
     console.error('Error updating institution:', err);
     return NextResponse.json({ error: 'Failed to update institution' }, { status: 500 });
+  }
+}
+
+export async function DELETE(_request, { params }) {
+  try {
+    const { user, error } = await requireGlobalAdmin();
+    if (error) return error;
+
+    const { id } = await params;
+    const institution = await prisma.institution.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        logo: true,
+        userId: true,
+        _count: { select: { members: true } },
+      },
+    });
+
+    if (!institution) {
+      return NextResponse.json({ error: 'Institution not found' }, { status: 404 });
+    }
+
+    const adminConditions = [{ secondaryInstitutionId: id }];
+    if (institution.userId) {
+      adminConditions.push({ id: institution.userId });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.updateMany({
+        where: {
+          OR: adminConditions,
+          accountType: 'INSTITUTION_ADMIN',
+        },
+        data: {
+          accountType: 'RESEARCHER',
+          secondaryInstitutionId: null,
+          institutionVerifiedAt: null,
+          institutionVerificationMethod: null,
+        },
+      });
+
+      await tx.user.updateMany({
+        where: { secondaryInstitutionId: id },
+        data: {
+          secondaryInstitutionId: null,
+          institutionVerifiedAt: null,
+          institutionVerificationMethod: null,
+        },
+      });
+
+      await tx.institution.delete({ where: { id } });
+    });
+
+    if (institution.logo) {
+      await deleteInstitutionLogoFile(institution.logo, user);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Institution deleted',
+      deleted: {
+        id: institution.id,
+        name: institution.name,
+        memberCount: institution._count.members,
+      },
+    });
+  } catch (err) {
+    console.error('Error deleting institution:', err);
+    return NextResponse.json({ error: 'Failed to delete institution' }, { status: 500 });
   }
 }

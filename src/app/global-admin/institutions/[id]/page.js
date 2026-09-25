@@ -144,7 +144,7 @@ const InstitutionModulesPage = () => {
   }
 
   const allSelected = selected.length === INSTITUTION_MODULES.length;
-  const typeLabel = INSTITUTION_TYPES.find((type) => type.value === institution?.type)?.label || institution?.type || '—';
+  const typeLabel = INSTITUTION_TYPES.find((type) => type.value === institution?.type)?.label || institution?.type || '-';
 
   return (
     <GlobalAdminLayout>
@@ -194,7 +194,7 @@ const InstitutionModulesPage = () => {
               </Paper>
               <Paper sx={{ p: 2, flex: 1 }}>
                 <Typography variant="caption" color="text.secondary">Contact email</Typography>
-                <Typography variant="body1" fontWeight={600}>{institution.contactEmail || '—'}</Typography>
+                <Typography variant="body1" fontWeight={600}>{institution.contactEmail || '-'}</Typography>
               </Paper>
               <Paper sx={{ p: 2, flex: 1 }}>
                 <Typography variant="caption" color="text.secondary">Type</Typography>
@@ -202,7 +202,7 @@ const InstitutionModulesPage = () => {
               </Paper>
               <Paper sx={{ p: 2, flex: 1 }}>
                 <Typography variant="caption" color="text.secondary">Country</Typography>
-                <Typography variant="body1" fontWeight={600}>{institution.country || '—'}</Typography>
+                <Typography variant="body1" fontWeight={600}>{institution.country || '-'}</Typography>
               </Paper>
             </Stack>
 
@@ -222,7 +222,7 @@ const InstitutionModulesPage = () => {
                   </Stack>
                   <Typography variant="body1" fontWeight={600}>
                     {institution.admin
-                      ? `${institution.admin.givenName} ${institution.admin.familyName}`
+                      ? [institution.admin.givenName, institution.admin.familyName].filter(Boolean).join(' ')
                       : 'Not assigned'}
                   </Typography>
                   {institution.admin && (

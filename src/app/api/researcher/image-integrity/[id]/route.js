@@ -140,7 +140,10 @@ export async function DELETE(request, { params }) {
       }
     }
 
-    await deleteIntegrityFile(record.id, record.fileName);
+    await deleteIntegrityFile(record.id, record.fileName, {
+      user,
+      fileId: record.storedFileId,
+    });
     await prisma.imageIntegrityCase.delete({ where: { id: record.id } });
 
     return NextResponse.json({ success: true });

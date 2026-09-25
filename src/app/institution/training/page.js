@@ -12,12 +12,6 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  MenuItem,
   IconButton,
   Table,
   TableBody,
@@ -43,24 +37,27 @@ import PageHeader from '@/components/common/PageHeader';
 import { Home as HomeIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthProvider';
+import TrainingFormDialog from '@/components/Training/TrainingFormDialog';
+import { formatTargetGroupLabel, TRAINING_ADMIN_TYPES } from '@/lib/training-admin';
+import {
+  InstitutionModal,
+  InstitutionModalBody,
+  InstitutionModalFooter,
+  InstitutionModalHeader,
+} from '@/components/GlobalAdmin/InstitutionModalShell';
+import { Delete as DeleteIconModal } from '@mui/icons-material';
 
-const TARGET_GROUPS = [
-  'NURSES',
-  'DOCTORS',
-  'RESEARCHERS',
-  'LAB_TECHNICIANS',
-  'ADMINISTRATORS',
-  'ALL_STAFF',
-];
-
-const TRAINING_STATUSES = [
-  'DRAFT',
-  'PUBLISHED',
-  'COMPLETED',
-  'CANCELLED',
-];
-
-const TRAINING_ADMIN_TYPES = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
+function normalizeTrainingSeed(seed) {
+  if (!seed) return null;
+  if (seed.departments || seed.targetGroups) {
+    return {
+      ...seed,
+      department: (seed.departments || []).join(', '),
+      targetGroup: seed.targetGroups || seed.targetGroup || [],
+    };
+  }
+  return seed;
+}
 
 export default function InstitutionTrainingPage() {
   const { t } = useTranslation();
@@ -76,22 +73,9 @@ export default function InstitutionTrainingPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTraining, setSelectedTraining] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [autoSaving, setAutoSaving] = useState(false);
   const [currentDraftId, setCurrentDraftId] = useState(null);
 
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    departments: [],
-    targetGroups: [],
-    location: '',
-    startDate: '',
-    endDate: '',
-    maxParticipants: 30,
-    status: 'PUBLISHED',
-  });
-
-  const [departmentInput, setDepartmentInput] = useState('');
+  const [formSeed, setFormSeed] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -110,16 +94,6 @@ export default function InstitutionTrainingPage() {
     loadDrafts();
   }, [authLoading, isAuthenticated, user, router]);
 
-  // Auto-save draft when form data changes
-  useEffect(() => {
-    if (createDialogOpen && (formData.title || formData.description || formData.departments.length > 0)) {
-      const timer = setTimeout(() => {
-        saveDraft();
-      }, 2000); // Auto-save after 2 seconds of inactivity
-      return () => clearTimeout(timer);
-    }
-  }, [formData, createDialogOpen]);
-
   const loadDrafts = () => {
     try {
       const savedDrafts = localStorage.getItem('trainingDrafts');
@@ -131,48 +105,8 @@ export default function InstitutionTrainingPage() {
     }
   };
 
-  const saveDraft = async () => {
-    try {
-      setAutoSaving(true);
-      const draftId = currentDraftId || `draft_${Date.now()}`;
-      const draft = {
-        id: draftId,
-        ...formData,
-        savedAt: new Date().toISOString(),
-      };
-
-      const savedDrafts = localStorage.getItem('trainingDrafts');
-      let draftsArray = savedDrafts ? JSON.parse(savedDrafts) : [];
-      
-      const existingIndex = draftsArray.findIndex(d => d.id === draftId);
-      if (existingIndex >= 0) {
-        draftsArray[existingIndex] = draft;
-      } else {
-        draftsArray.push(draft);
-      }
-
-      localStorage.setItem('trainingDrafts', JSON.stringify(draftsArray));
-      setDrafts(draftsArray);
-      setCurrentDraftId(draftId);
-    } catch (err) {
-      console.error('Error saving draft:', err);
-    } finally {
-      setAutoSaving(false);
-    }
-  };
-
   const loadDraft = (draft) => {
-    setFormData({
-      title: draft.title,
-      description: draft.description,
-      departments: draft.departments,
-      targetGroups: draft.targetGroups,
-      location: draft.location,
-      startDate: draft.startDate,
-      endDate: draft.endDate,
-      maxParticipants: draft.maxParticipants,
-      status: draft.status,
-    });
+    setFormSeed(draft);
     setCurrentDraftId(draft.id);
     setCreateDialogOpen(true);
   };
@@ -230,36 +164,14 @@ export default function InstitutionTrainingPage() {
   };
 
   const handleCreateOpen = () => {
-    setFormData({
-      title: '',
-      description: '',
-      departments: [],
-      targetGroups: [],
-      location: '',
-      startDate: '',
-      endDate: '',
-      maxParticipants: 30,
-      status: 'PUBLISHED',
-    });
-    setDepartmentInput('');
+    setFormSeed(null);
     setCurrentDraftId(null);
     setCreateDialogOpen(true);
   };
 
   const handleEditOpen = (training) => {
     setSelectedTraining(training);
-    setFormData({
-      title: training.title,
-      description: training.description || '',
-      departments: Array.isArray(training.departments) ? training.departments : [training.department].filter(Boolean),
-      targetGroups: Array.isArray(training.targetGroups) ? training.targetGroups : [training.targetGroup].filter(Boolean),
-      location: training.location || '',
-      startDate: new Date(training.startDate).toISOString().split('T')[0],
-      endDate: new Date(training.endDate).toISOString().split('T')[0],
-      maxParticipants: training.maxParticipants,
-      status: training.status,
-    });
-    setDepartmentInput('');
+    setFormSeed(training);
     setEditDialogOpen(true);
   };
 
@@ -268,18 +180,9 @@ export default function InstitutionTrainingPage() {
     setDeleteDialogOpen(true);
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (apiData) => {
     try {
       setSubmitting(true);
-      // Transform data for API
-      const apiData = {
-        ...formData,
-        department: formData.departments.join(', '),
-        targetGroup: formData.targetGroups, // Send as array
-      };
-      delete apiData.departments;
-      delete apiData.targetGroups;
-
       const response = await fetch('/api/training', {
         method: 'POST',
         credentials: 'include',
@@ -313,18 +216,9 @@ export default function InstitutionTrainingPage() {
     }
   };
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (apiData) => {
     try {
       setSubmitting(true);
-      // Transform data for API
-      const apiData = {
-        ...formData,
-        department: formData.departments.join(', '),
-        targetGroup: formData.targetGroups, // Send as array
-      };
-      delete apiData.departments;
-      delete apiData.targetGroups;
-
       const response = await fetch(`/api/training/${selectedTraining.id}`, {
         method: 'PUT',
         credentials: 'include',
@@ -520,7 +414,18 @@ export default function InstitutionTrainingPage() {
                   </TableCell>
                   <TableCell>{training.department}</TableCell>
                   <TableCell>
-                    <Chip label={training.targetGroup} size="small" variant="outlined" />
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {(Array.isArray(training.targetGroup) ? training.targetGroup : [training.targetGroup])
+                        .filter(Boolean)
+                        .map((group) => (
+                          <Chip
+                            key={group}
+                            label={formatTargetGroupLabel(group)}
+                            size="small"
+                            variant="outlined"
+                          />
+                        ))}
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <Typography variant="caption" display="block">
@@ -578,234 +483,61 @@ export default function InstitutionTrainingPage() {
         </Table>
       </TableContainer>
 
-      {/* Create/Edit Dialog */}
-      <Dialog
-        open={createDialogOpen || editDialogOpen}
+      <TrainingFormDialog
+        open={createDialogOpen}
+        mode="create"
+        initialTraining={normalizeTrainingSeed(formSeed)}
+        submitting={submitting}
         onClose={() => {
           setCreateDialogOpen(false);
-          setEditDialogOpen(false);
+          setFormSeed(null);
         }}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box component="span">
-            {createDialogOpen ? 'Create New Training' : 'Edit Training'}
-          </Box>
-          {autoSaving && (
-            <Chip label="Auto-saving..." size="small" color="info" />
-          )}
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={3} sx={{ mt: 1 }}>
-            <TextField
-              label="Training Title"
-              fullWidth
-              required
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            />
-            <TextField
-              label="Description"
-              fullWidth
-              multiline
-              rows={3}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
-            {/* Departments Multi-Input */}
-            <Box>
-              <TextField
-                label="Add Department"
-                fullWidth
-                value={departmentInput}
-                onChange={(e) => setDepartmentInput(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && departmentInput.trim()) {
-                    e.preventDefault();
-                    if (!formData.departments.includes(departmentInput.trim())) {
-                      setFormData({ ...formData, departments: [...formData.departments, departmentInput.trim()] });
-                    }
-                    setDepartmentInput('');
-                  }
-                }}
-                placeholder="Type department name and press Enter"
-                helperText="Press Enter to add multiple departments"
-              />
-              {formData.departments.length > 0 && (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-                  {formData.departments.map((dept, index) => (
-                    <Chip
-                      key={index}
-                      label={dept}
-                      onDelete={() => {
-                        setFormData({
-                          ...formData,
-                          departments: formData.departments.filter((_, i) => i !== index)
-                        });
-                      }}
-                      color="primary"
-                      variant="outlined"
-                    />
-                  ))}
-                </Box>
-              )}
-            </Box>
-            {/* Target Groups Multi-Select */}
-            <TextField
-              label="Target Groups"
-              fullWidth
-              required
-              select
-              value={formData.targetGroups}
-              onChange={(e) => setFormData({ ...formData, targetGroups: e.target.value })}
-              SelectProps={{
-                multiple: true,
-                renderValue: (selected) => (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((value) => (
-                      <Chip key={value} label={String(value).replace(/_/g, ' ')} size="small" />
-                    ))}
-                  </Box>
-                ),
-              }}
-              helperText="Select one or more target groups"
-            >
-              {TARGET_GROUPS.map((group) => (
-                <MenuItem key={group} value={group}>
-                  {group.replace(/_/g, ' ')}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              label="Location"
-              fullWidth
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="Start Date"
-                type="date"
-                fullWidth
-                required
-                InputLabelProps={{ shrink: true }}
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              />
-              <TextField
-                label="End Date"
-                type="date"
-                fullWidth
-                required
-                InputLabelProps={{ shrink: true }}
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-              />
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="Max Participants"
-                type="number"
-                fullWidth
-                required
-                value={formData.maxParticipants}
-                onChange={(e) => setFormData({ ...formData, maxParticipants: e.target.value ? parseInt(e.target.value) : '' })}
-              />
-              <TextField
-                label="Status"
-                fullWidth
-                required
-                select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              >
-                {TRAINING_STATUSES.map((status) => (
-                  <MenuItem key={status} value={status}>
-                    {status}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, flexDirection: 'column', alignItems: 'stretch', gap: 1 }}>
-          {/* Debug Info */}
-          <Box sx={{ fontSize: '0.75rem', color: 'text.secondary', p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
-            <Typography variant="caption" display="block">Validation Status:</Typography>
-            <Typography variant="caption" display="block">
-              Title: {formData.title?.trim() ? '✓' : '✗'} | 
-              Departments: {formData.departments.length > 0 ? `✓ (${formData.departments.length})` : '✗'} | 
-              Target Groups: {formData.targetGroups.length > 0 ? `✓ (${formData.targetGroups.length})` : '✗'} | 
-              Start: {formData.startDate ? '✓' : '✗'} | 
-              End: {formData.endDate ? '✓' : '✗'}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button
-              onClick={() => {
-                setCreateDialogOpen(false);
-                setEditDialogOpen(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => {
-                console.log('Form Data:', formData);
-                console.log('Validation:', {
-                  title: formData.title,
-                  departments: formData.departments,
-                  targetGroups: formData.targetGroups,
-                  startDate: formData.startDate,
-                  endDate: formData.endDate
-                });
-                if (createDialogOpen) handleCreate();
-                else handleUpdate();
-              }}
-              disabled={
-                submitting || 
-                !formData.title?.trim() || 
-                formData.departments.length === 0 || 
-                formData.targetGroups.length === 0 ||
-                !formData.startDate ||
-                !formData.endDate
-              }
-              sx={{
-                backgroundColor: '#8b6cbc',
-                '&:hover': { backgroundColor: '#7a5caa' },
-              }}
-            >
-              {submitting ? 'Saving...' : createDialogOpen ? 'Create' : 'Update'}
-            </Button>
-          </Box>
-        </DialogActions>
-      </Dialog>
+        onSubmit={handleCreate}
+      />
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Training</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete "{selectedTraining?.title}"?
+      <TrainingFormDialog
+        open={editDialogOpen}
+        mode="edit"
+        initialTraining={selectedTraining}
+        submitting={submitting}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setSelectedTraining(null);
+        }}
+        onSubmit={handleUpdate}
+      />
+
+      <InstitutionModal
+        open={deleteDialogOpen}
+        onClose={() => !submitting && setDeleteDialogOpen(false)}
+        disableClose={submitting}
+      >
+        <InstitutionModalHeader
+          icon={DeleteIconModal}
+          title="Delete training"
+          subtitle="This action cannot be undone"
+          tone="danger"
+          onClose={() => setDeleteDialogOpen(false)}
+          disableClose={submitting}
+          dense
+        />
+        <InstitutionModalBody dense>
+          <Typography variant="body2" color="text.secondary">
+            Are you sure you want to delete <strong>{selectedTraining?.title}</strong>?
           </Typography>
-          <Alert severity="warning" sx={{ mt: 2 }}>
-            This action cannot be undone. All associated modules, materials, and progress data will be deleted.
+          <Alert severity="warning" sx={{ borderRadius: 2 }}>
+            All associated modules, materials, and progress data will be permanently deleted.
           </Alert>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleDelete}
-            disabled={submitting}
-          >
-            {submitting ? 'Deleting...' : 'Delete'}
+        </InstitutionModalBody>
+        <InstitutionModalFooter>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={submitting} color="inherit" size="small">
+            Cancel
           </Button>
-        </DialogActions>
-      </Dialog>
+          <Button variant="contained" color="error" onClick={handleDelete} disabled={submitting} size="small">
+            {submitting ? 'Deleting...' : 'Delete training'}
+          </Button>
+        </InstitutionModalFooter>
+      </InstitutionModal>
     </Container>
     </>
   );

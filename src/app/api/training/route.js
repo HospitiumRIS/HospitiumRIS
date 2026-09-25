@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../lib/auth-server';
+import { normalizeTargetGroups, TRAINING_ADMIN_TYPES } from '@/lib/training-admin';
+import { resolveTrainingInstitution } from '@/lib/training-admin-server';
 
 /**
  * GET /api/training
@@ -29,7 +31,7 @@ export async function GET(request) {
     const where = {};
 
     // If not admin or includeAll not set, only show published trainings
-    const isTrainingAdmin = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'].includes(user.accountType);
+    const isTrainingAdmin = TRAINING_ADMIN_TYPES.includes(user.accountType);
     if (!includeAll || !isTrainingAdmin) {
       where.status = 'PUBLISHED';
     } else if (status) {
@@ -115,7 +117,7 @@ export async function POST(request) {
   try {
     const user = await getAuthenticatedUser(request);
 
-    if (!user || !['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'].includes(user.accountType)) {
+    if (!user || !TRAINING_ADMIN_TYPES.includes(user.accountType)) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 403 }
@@ -143,13 +145,15 @@ export async function POST(request) {
       );
     }
 
-    // Ensure targetGroup is an array
-    const targetGroupArray = Array.isArray(targetGroup) ? targetGroup : targetGroup.split(',').map(g => g.trim());
+    const targetGroupArray = normalizeTargetGroups(targetGroup);
+    if (targetGroupArray.length === 0) {
+      return NextResponse.json(
+        { error: 'At least one target group is required' },
+        { status: 400 }
+      );
+    }
 
-    const ownInstitution = await prisma.institution.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
+    const ownInstitution = await resolveTrainingInstitution(user);
 
     if (!ownInstitution) {
       return NextResponse.json(

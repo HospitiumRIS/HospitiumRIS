@@ -1,35 +1,42 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
-  Container,
-  Paper,
-  Typography,
   Button,
+  Chip,
+  CircularProgress,
+  Container,
+  Grid,
+  IconButton,
+  InputAdornment,
+  Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
-  IconButton,
-  Tooltip,
-  Avatar,
   TextField,
-  InputAdornment,
+  Tooltip,
+  Typography,
   Alert,
+  Avatar,
+  alpha,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Search as SearchIcon,
   Business as InstitutionIcon,
-  Refresh as RefreshIcon,
   Email as EmailIcon,
-  Person as PersonIcon,
   ChevronRight as ChevronRightIcon,
+  Domain as DomainIcon,
+  Apps as AppsIcon,
+  CheckCircle as CheckCircleIcon,
+  Groups as GroupsIcon,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../../components/AuthProvider';
@@ -41,7 +48,63 @@ import {
   EditInstitutionDialog,
   ReassignAdminDialog,
   ResetAdminPasswordDialog,
+  DeleteInstitutionDialog,
 } from '../../../components/GlobalAdmin/InstitutionManageDialogs';
+
+function formatAdminName(admin) {
+  return [admin?.givenName, admin?.familyName].filter(Boolean).join(' ');
+}
+
+function adminInitials(admin) {
+  const name = formatAdminName(admin);
+  if (name) return name.slice(0, 2).toUpperCase();
+  return admin?.email?.slice(0, 2).toUpperCase() || '?';
+}
+
+function StatCard({ icon: Icon, label, value }) {
+  const theme = useTheme();
+  const purple = theme.palette.primary;
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2.5,
+        height: '100%',
+        borderRadius: 3,
+        border: '1px solid',
+        borderColor: alpha(purple.main, 0.22),
+        background: `linear-gradient(145deg, ${alpha(purple.main, 0.16)} 0%, ${alpha(purple.main, 0.06)} 55%, ${alpha(purple.light, 0.04)} 100%)`,
+      }}
+    >
+      <Stack direction="row" spacing={2} alignItems="center">
+        <Box
+          sx={{
+            width: 44,
+            height: 44,
+            borderRadius: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: alpha(purple.main, 0.2),
+            color: purple.main,
+            boxShadow: `0 6px 16px ${alpha(purple.main, 0.16)}`,
+          }}
+        >
+          <Icon fontSize="small" />
+        </Box>
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.1, color: purple.dark }}>
+            {value}
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.25, color: alpha(purple.dark, 0.72) }}>
+            {label}
+          </Typography>
+        </Box>
+      </Stack>
+    </Paper>
+  );
+}
 
 const InstitutionsPage = () => {
   const { t } = useTranslation();
@@ -51,6 +114,7 @@ const InstitutionsPage = () => {
   const [institutions, setInstitutions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchReady, setSearchReady] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [activeInstitution, setActiveInstitution] = useState(null);
   const [dialog, setDialog] = useState(null);
@@ -109,44 +173,110 @@ const InstitutionsPage = () => {
     fetchInstitutions();
   };
 
-  const filteredInstitutions = institutions.filter((inst) => {
+  const handleInstitutionDeleted = (_payload, message) => {
+    showAlert(message || 'Institution deleted', 'success');
+    fetchInstitutions();
+  };
+
+  const filteredInstitutions = useMemo(() => {
     const term = searchTerm.toLowerCase();
-    return (
+    if (!term) return institutions;
+    return institutions.filter((inst) =>
       inst.name?.toLowerCase().includes(term) ||
       inst.slug?.toLowerCase().includes(term) ||
       inst.contactEmail?.toLowerCase().includes(term) ||
       inst.admin?.email?.toLowerCase().includes(term) ||
       `${inst.admin?.givenName || ''} ${inst.admin?.familyName || ''}`.toLowerCase().includes(term)
     );
-  });
+  }, [institutions, searchTerm]);
+
+  const stats = useMemo(() => ({
+    total: institutions.length,
+    withAdmin: institutions.filter((inst) => inst.admin).length,
+    active: institutions.filter((inst) => inst.admin?.status === 'ACTIVE').length,
+    domains: institutions.reduce((sum, inst) => sum + (inst.domains?.length || 0), 0),
+  }), [institutions]);
 
   if (!user || user.accountType !== 'GLOBAL_ADMIN') {
     return null;
   }
 
+  const tablePaperSx = {
+    borderRadius: 3,
+    overflow: 'hidden',
+    border: '1px solid',
+    borderColor: 'divider',
+    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)',
+  };
+
+  const headCellSx = {
+    fontWeight: 700,
+    fontSize: '0.75rem',
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: 'text.secondary',
+    bgcolor: alpha(theme.palette.primary.main, 0.04),
+    borderBottom: '1px solid',
+    borderColor: 'divider',
+    py: 1.75,
+  };
+
   return (
     <GlobalAdminLayout>
-      <Container maxWidth="xl" sx={{ pt: { xs: 6, sm: 7, md: 8 } }}>
-        <Box sx={{ mb: 4, pb: 3, borderBottom: '2px solid', borderColor: 'divider' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, letterSpacing: '-0.02em', color: theme.palette.text.primary }}>
-                {t('global_admin.manage_institutions')}
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('global_admin.institution_admins')}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchInstitutions} color="primary">
-                {t('common.refresh')}
-              </Button>
-              <Button variant="contained" startIcon={<AddIcon />} onClick={() => setWizardOpen(true)} color="primary">
-                {t('global_admin.add_institution')}
-              </Button>
-            </Box>
-          </Box>
-        </Box>
+      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 } }}>
+        {/* Page header */}
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 3,
+            p: { xs: 2.5, md: 3 },
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
+          }}
+        >
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            justifyContent="space-between"
+            alignItems={{ xs: 'flex-start', md: 'center' }}
+            spacing={2}
+          >
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Box
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: alpha(theme.palette.primary.main, 0.16),
+                  color: 'primary.main',
+                  boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.16)}`,
+                }}
+              >
+                <InstitutionIcon fontSize="small" />
+              </Box>
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.25 }}>
+                  {t('global_admin.manage_institutions')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  {t('global_admin.institution_admins')} - onboard tenants, domains, and system admins
+                </Typography>
+              </Box>
+            </Stack>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setWizardOpen(true)}
+              sx={{ borderRadius: 2, px: 2.5, boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.28)}` }}
+            >
+              {t('global_admin.add_institution')}
+            </Button>
+          </Stack>
+        </Paper>
 
         {alert.show && (
           <Alert severity={alert.severity} sx={{ mb: 3, borderRadius: 2 }} onClose={() => setAlert({ ...alert, show: false })}>
@@ -154,58 +284,111 @@ const InstitutionsPage = () => {
           </Alert>
         )}
 
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <TextField
-            fullWidth
-            type="search"
-            name="institutionSearch"
-            autoComplete="off"
-            placeholder="Search institutions by name, slug, or email..."
-            value={searchTerm}
-            onChange={(e) => {
-              if (dialog) return;
-              setSearchTerm(e.target.value);
-            }}
-            inputProps={{
-              autoComplete: 'off',
-              autoCorrect: 'off',
-              spellCheck: 'false',
-              'data-lpignore': 'true',
-              'data-1p-ignore': 'true',
-              'data-form-type': 'other',
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Paper>
+        {/* Summary stats */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard icon={InstitutionIcon} label="Total institutions" value={stats.total} />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard icon={GroupsIcon} label="With system admin" value={stats.withAdmin} />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard icon={CheckCircleIcon} label="Active admins" value={stats.active} />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard icon={DomainIcon} label="Verified domains" value={stats.domains} />
+          </Grid>
+        </Grid>
 
-        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        {/* Search + table */}
+        <Paper elevation={0} sx={tablePaperSx}>
+          <Box
+            sx={{
+              px: { xs: 2, md: 2.5 },
+              py: 2,
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              bgcolor: alpha(theme.palette.background.default, 0.6),
+            }}
+          >
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }} justifyContent="space-between">
+              <Box sx={{ position: 'relative', flex: 1, maxWidth: { sm: 480 } }}>
+                <Box
+                  aria-hidden
+                  sx={{ position: 'absolute', left: -9999, width: 1, height: 1, overflow: 'hidden' }}
+                >
+                  <input type="text" name="username" autoComplete="username" tabIndex={-1} readOnly />
+                  <input type="password" name="password" autoComplete="current-password" tabIndex={-1} readOnly />
+                </Box>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="text"
+                  name="institution-filter"
+                  role="search"
+                  autoComplete="off"
+                  placeholder="Search by name, slug, email, or admin..."
+                  value={searchTerm}
+                  onFocus={() => setSearchReady(true)}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  inputProps={{
+                    autoComplete: 'off',
+                    autoCorrect: 'off',
+                    spellCheck: 'false',
+                    readOnly: !searchReady,
+                    'data-lpignore': 'true',
+                    'data-1p-ignore': 'true',
+                    'data-form-type': 'search',
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon fontSize="small" color="action" />
+                      </InputAdornment>
+                    ),
+                    endAdornment: searchTerm ? (
+                      <InputAdornment position="end">
+                        <IconButton size="small" aria-label="Clear search" onClick={() => setSearchTerm('')}>
+                          <ClearIcon fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    ) : null,
+                    sx: { borderRadius: 2, bgcolor: 'background.paper' },
+                  }}
+                />
+              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                {loading
+                  ? 'Loading...'
+                  : `${filteredInstitutions.length} of ${institutions.length} institution${institutions.length === 1 ? '' : 's'}`}
+              </Typography>
+            </Stack>
+          </Box>
+
           <TableContainer>
             <Table>
-              <TableHead sx={{ bgcolor: 'primary.main' }}>
+              <TableHead>
                 <TableRow>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('global_admin.institution_name')}</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('global_admin.institution_slug', { defaultValue: 'Slug' })}</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('global_admin.contact_email', { defaultValue: 'Contact email' })}</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('admin.users')}</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('global_admin.verified_domains', { defaultValue: 'Domains' })}</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('global_admin.modules', { defaultValue: 'Modules' })}</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.status')}</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }} align="right">{t('common.actions')}</TableCell>
+                  <TableCell sx={headCellSx}>{t('global_admin.institution_name')}</TableCell>
+                  <TableCell sx={headCellSx}>{t('global_admin.institution_slug', { defaultValue: 'Slug' })}</TableCell>
+                  <TableCell sx={headCellSx}>{t('global_admin.contact_email', { defaultValue: 'Contact' })}</TableCell>
+                  <TableCell sx={headCellSx}>System admin</TableCell>
+                  <TableCell sx={headCellSx} align="center">{t('global_admin.verified_domains', { defaultValue: 'Domains' })}</TableCell>
+                  <TableCell sx={headCellSx} align="center">{t('global_admin.modules', { defaultValue: 'Modules' })}</TableCell>
+                  <TableCell sx={headCellSx}>{t('common.status')}</TableCell>
+                  <TableCell sx={headCellSx} align="right">{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Loading institutions...
-                      </Typography>
+                    <TableCell colSpan={8} align="center" sx={{ py: 10 }}>
+                      <Stack spacing={2} alignItems="center">
+                        <CircularProgress size={36} />
+                        <Typography variant="body2" color="text.secondary">
+                          Loading institutions...
+                        </Typography>
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 ) : filteredInstitutions.length > 0 ? (
@@ -213,80 +396,131 @@ const InstitutionsPage = () => {
                     <TableRow
                       key={institution.id}
                       hover
-                      sx={{ cursor: 'pointer' }}
+                      sx={{
+                        cursor: 'pointer',
+                        '&:last-child td': { borderBottom: 0 },
+                        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.03) },
+                      }}
                       onClick={() => router.push(`/global-admin/institutions/${institution.id}`)}
                     >
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <InstitutionIcon fontSize="small" color="primary" />
+                      <TableCell sx={{ py: 2 }}>
+                        <Stack direction="row" spacing={1.5} alignItems="center">
+                          <Avatar
+                            sx={{
+                              width: 36,
+                              height: 36,
+                              bgcolor: alpha(theme.palette.primary.main, 0.12),
+                              color: 'primary.main',
+                              fontSize: 14,
+                            }}
+                          >
+                            <InstitutionIcon fontSize="small" />
+                          </Avatar>
                           <Typography variant="body2" fontWeight={600}>
                             {institution.name}
                           </Typography>
-                        </Box>
+                        </Stack>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {institution.slug}
-                        </Typography>
+                        <Chip
+                          label={institution.slug}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            fontFamily: 'monospace',
+                            fontSize: '0.75rem',
+                            borderColor: alpha(theme.palette.divider, 0.9),
+                          }}
+                        />
                       </TableCell>
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <EmailIcon fontSize="small" color="action" />
-                          <Typography variant="body2">{institution.contactEmail || '—'}</Typography>
-                        </Box>
+                        <Stack direction="row" spacing={0.75} alignItems="center">
+                          <EmailIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
+                          <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 180 }}>
+                            {institution.contactEmail || '-'}
+                          </Typography>
+                        </Stack>
                       </TableCell>
                       <TableCell>
                         {institution.admin ? (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-                              <PersonIcon fontSize="small" />
+                          <Stack direction="row" spacing={1.25} alignItems="center">
+                            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 12 }}>
+                              {adminInitials(institution.admin)}
                             </Avatar>
-                            <Box>
-                              <Typography variant="body2" fontWeight={500}>
-                                {institution.admin.givenName} {institution.admin.familyName}
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: 160 }}>
+                                {formatAdminName(institution.admin)}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 180, display: 'block' }}>
                                 {institution.admin.email}
+                                {(institution.admins?.length || 0) > 1
+                                  ? ` · +${institution.admins.length - 1} more`
+                                  : ''}
                               </Typography>
                             </Box>
-                          </Box>
+                          </Stack>
                         ) : (
-                          <Chip label="No admin" size="small" variant="outlined" />
+                          <Chip label="No admin" size="small" variant="outlined" color="warning" />
                         )}
                       </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {institution.domains?.length || 0}
-                        </Typography>
+                      <TableCell align="center">
+                        <Chip
+                          icon={<DomainIcon sx={{ fontSize: '14px !important' }} />}
+                          label={institution.domains?.length || 0}
+                          size="small"
+                          variant="outlined"
+                        />
                       </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {institution.enabledModules?.length || 0}
-                        </Typography>
+                      <TableCell align="center">
+                        <Chip
+                          icon={<AppsIcon sx={{ fontSize: '14px !important' }} />}
+                          label={institution.enabledModules?.length || 0}
+                          size="small"
+                          variant="outlined"
+                        />
                       </TableCell>
                       <TableCell>
                         <Chip
                           label={institution.admin?.status || 'PENDING'}
                           color={institution.admin?.status === 'ACTIVE' ? 'success' : 'default'}
                           size="small"
-                          sx={{ fontWeight: 600 }}
+                          variant={institution.admin?.status === 'ACTIVE' ? 'filled' : 'outlined'}
+                          sx={{ fontWeight: 600, minWidth: 72 }}
                         />
                       </TableCell>
-                      <TableCell align="right" onClick={(event) => event.stopPropagation()} sx={{ whiteSpace: 'nowrap' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                      <TableCell
+                        align="right"
+                        onClick={(event) => event.stopPropagation()}
+                        sx={{ whiteSpace: 'nowrap', py: 1.5 }}
+                      >
+                        <Box
+                          sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            bgcolor: 'background.paper',
+                            px: 0.5,
+                          }}
+                        >
                           <InstitutionActionButtons
                             institution={institution}
                             onEdit={() => openDialog('edit', institution)}
                             onReassign={() => openDialog('reassign', institution)}
                             onReset={() => openDialog('reset', institution)}
+                            onDelete={() => openDialog('delete', institution)}
                           />
                           <Tooltip title="Open institution">
                             <IconButton
                               size="small"
                               color="primary"
-                              onClick={() => router.push(`/global-admin/institutions/${institution.id}`)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                router.push(`/global-admin/institutions/${institution.id}`);
+                              }}
                             >
-                              <ChevronRightIcon />
+                              <ChevronRightIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         </Box>
@@ -295,10 +529,45 @@ const InstitutionsPage = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        No institutions found
-                      </Typography>
+                    <TableCell colSpan={8} align="center" sx={{ py: 10 }}>
+                      <Stack spacing={2} alignItems="center" sx={{ maxWidth: 360, mx: 'auto' }}>
+                        <Box
+                          sx={{
+                            width: 64,
+                            height: 64,
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            color: 'primary.main',
+                          }}
+                        >
+                          <InstitutionIcon sx={{ fontSize: 32 }} />
+                        </Box>
+                        <Typography variant="h6" fontWeight={600}>
+                          {searchTerm ? 'No matching institutions' : 'No institutions yet'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" textAlign="center">
+                          {searchTerm
+                            ? 'Try a different search term or clear the filter to see all institutions.'
+                            : 'Create your first institution to assign domains and a system admin.'}
+                        </Typography>
+                        {searchTerm ? (
+                          <Button variant="outlined" onClick={() => setSearchTerm('')} sx={{ borderRadius: 2 }}>
+                            Clear search
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => setWizardOpen(true)}
+                            sx={{ borderRadius: 2 }}
+                          >
+                            {t('global_admin.add_institution')}
+                          </Button>
+                        )}
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 )}
@@ -332,6 +601,12 @@ const InstitutionsPage = () => {
           institution={activeInstitution}
           onClose={closeDialog}
           onSaved={handleDialogSaved}
+        />
+        <DeleteInstitutionDialog
+          open={dialog === 'delete'}
+          institution={activeInstitution}
+          onClose={closeDialog}
+          onDeleted={handleInstitutionDeleted}
         />
       </Container>
     </GlobalAdminLayout>

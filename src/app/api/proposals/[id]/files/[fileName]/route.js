@@ -1,85 +1,63 @@
 import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
-import path from 'path';
 import prisma from '../../../../../../lib/prisma';
+import { requireAuth } from '../../../../../../lib/auth-server';
+import { canAccessProposal, resolveProposalFilePath } from '../../../../../../lib/proposal-files';
+import { sanitizeFileName } from '../../../../../../lib/sanitize-file-name';
 
 export async function GET(request, { params }) {
     try {
-        const { id, fileName } = params;
+        const auth = await requireAuth(request);
+        if (auth.error) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
-        // Fetch the proposal to verify it exists and get file information
+        const { id, fileName: rawFileName } = await params;
+        const fileName = sanitizeFileName(rawFileName);
+
         const proposal = await prisma.proposal.findUnique({
             where: { id }
         });
 
-        if (!proposal) {
-            return NextResponse.json(
-                { error: 'Proposal not found' },
-                { status: 404 }
-            );
+        if (!proposal || !canAccessProposal(auth.user, proposal)) {
+            return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
 
-        // Find the file in the proposal's file arrays
         let fileInfo = null;
-        let fileArray = null;
 
-        // Check ethics documents
-        if (proposal.ethicsDocuments) {
-            fileInfo = proposal.ethicsDocuments.find(file => file.fileName === fileName);
-            if (fileInfo) fileArray = 'ethicsDocuments';
-        }
-
-        // Check data management plan
-        if (!fileInfo && proposal.dataManagementPlan) {
-            fileInfo = proposal.dataManagementPlan.find(file => file.fileName === fileName);
-            if (fileInfo) fileArray = 'dataManagementPlan';
-        }
-
-        // Check other related files
-        if (!fileInfo && proposal.otherRelatedFiles) {
-            fileInfo = proposal.otherRelatedFiles.find(file => file.fileName === fileName);
-            if (fileInfo) fileArray = 'otherRelatedFiles';
+        for (const arr of [proposal.ethicsDocuments, proposal.dataManagementPlan, proposal.otherRelatedFiles]) {
+            if (!arr) continue;
+            fileInfo = arr.find((file) => sanitizeFileName(file.fileName) === fileName);
+            if (fileInfo) break;
         }
 
         if (!fileInfo) {
-            return NextResponse.json(
-                { error: 'File not found' },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
 
-        // Check if file exists on disk
-        const filePath = fileInfo.filePath;
-        
+        const filePath = resolveProposalFilePath(fileInfo);
+        if (!filePath) {
+            return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        }
+
         try {
             await fs.access(filePath);
-        } catch (error) {
-            console.error('File not found on disk:', filePath);
-            return NextResponse.json(
-                { error: 'File not found on disk' },
-                { status: 404 }
-            );
+        } catch {
+            return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
 
-        // Read the file
         const fileBuffer = await fs.readFile(filePath);
+        const safeOriginalName = String(fileInfo.originalName || fileName).replace(/"/g, '');
 
-        // Set appropriate headers for file download
         const headers = new Headers();
         headers.set('Content-Type', fileInfo.mimeType || 'application/octet-stream');
-        headers.set('Content-Disposition', `attachment; filename="${fileInfo.originalName}"`);
-        headers.set('Content-Length', fileInfo.size.toString());
+        headers.set('Content-Disposition', `attachment; filename="${safeOriginalName}"`);
+        headers.set('Content-Length', String(fileBuffer.length));
+        headers.set('Cache-Control', 'private, no-store');
 
-        return new NextResponse(fileBuffer, {
-            status: 200,
-            headers
-        });
-
+        return new NextResponse(fileBuffer, { status: 200, headers });
     } catch (error) {
         console.error('Error downloading file:', error);
-        return NextResponse.json(
-            { error: 'Failed to download file' },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: 'Failed to download file' }, { status: 500 });
     }
 }

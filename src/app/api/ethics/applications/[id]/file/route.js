@@ -2,14 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '../../../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../../../lib/auth-server';
 import { readEthicsFile, getEthicsMimeType, sanitizeFileName } from '../../../../../../lib/ethics-files';
-
-const STAFF_ACCOUNT_TYPES = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN', 'GLOBAL_ADMIN'];
-
-function canAccess(user, application) {
-  if (!user || !application) return false;
-  if (application.userId === user.id) return true;
-  return STAFF_ACCOUNT_TYPES.includes(user.accountType);
-}
+import { canAccessEthicsApplication } from '../../../../../../lib/ethics-access';
 
 function documentFileName(doc) {
   return doc?.fileName || doc?.originalName || doc?.name || '';
@@ -33,8 +26,8 @@ export async function GET(request, { params }) {
     if (!application) {
       return NextResponse.json({ error: 'Ethics application not found' }, { status: 404 });
     }
-    if (!canAccess(user, application)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!(await canAccessEthicsApplication(prisma, user, application))) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
     const documents = Array.isArray(application.documents) ? application.documents : [];
@@ -48,7 +41,10 @@ export async function GET(request, { params }) {
     }
 
     try {
-      const { buffer } = await readEthicsFile(application.id, storedName);
+      const { buffer, mimeType } = await readEthicsFile(application.id, storedName, {
+        user,
+        fileId: match?.fileId,
+      });
       const downloadName = match?.originalName || match?.name || storedName;
       const disposition =
         request.nextUrl.searchParams.get('download') === '1' ? 'attachment' : 'inline';
@@ -56,7 +52,7 @@ export async function GET(request, { params }) {
       return new NextResponse(buffer, {
         status: 200,
         headers: {
-          'Content-Type': match?.mimeType || getEthicsMimeType(storedName),
+          'Content-Type': mimeType || match?.mimeType || getEthicsMimeType(storedName),
           'Content-Length': String(buffer.length),
           'Content-Disposition': `${disposition}; filename="${String(downloadName).replace(/"/g, '')}"`,
           'Cache-Control': 'private, max-age=3600',

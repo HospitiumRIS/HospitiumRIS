@@ -41,10 +41,11 @@ docker-compose.override.yml
 .vercel
 
 # user-generated content and runtime logs (preserved on server)
-/uploads/proposals/
-/uploads/ethics/
-/uploads/training/materials/
-/uploads/image-integrity/
+/uploads/
+/backups/
+/exports/
+/.storage-local/
+/.storage-local-test/
 /logs/*.log
 
 # typescript

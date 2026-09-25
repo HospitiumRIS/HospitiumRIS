@@ -17,7 +17,7 @@ export async function GET() {
       return NextResponse.json({ error: 'No logo uploaded' }, { status: 404 });
     }
 
-    const file = await readInstitutionLogoFile(institution.logo);
+    const file = await readInstitutionLogoFile(institution.logo, user);
     if (!file) {
       return NextResponse.json({ error: 'Logo file not found' }, { status: 404 });
     }
@@ -52,13 +52,13 @@ export async function POST(request) {
 
     let logo;
     try {
-      logo = await saveInstitutionLogo(institution.id, file);
+      logo = await saveInstitutionLogo(institution.id, file, { user });
     } catch (saveError) {
       return NextResponse.json({ error: saveError.message }, { status: 400 });
     }
 
     if (institution.logo && institution.logo !== logo) {
-      await deleteInstitutionLogoFile(institution.logo);
+      await deleteInstitutionLogoFile(institution.logo, user);
     }
 
     const updated = await prisma.institution.update({
@@ -87,7 +87,7 @@ export async function DELETE() {
       return NextResponse.json({ error: 'No institution found for this admin' }, { status: 404 });
     }
 
-    await deleteInstitutionLogoFile(institution.logo);
+    await deleteInstitutionLogoFile(institution.logo, user);
     await prisma.institution.update({
       where: { id: institution.id },
       data: { logo: null },

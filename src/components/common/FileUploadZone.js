@@ -2,7 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 import React, { useCallback, useState } from 'react';
-import { Box, Typography, Paper, IconButton, Chip, LinearProgress } from '@mui/material';
+import { Box, Typography, Paper, IconButton, alpha, useTheme } from '@mui/material';
 import {
   CloudUpload as UploadIcon,
   Delete as DeleteIcon,
@@ -10,39 +10,65 @@ import {
   CheckCircle as CheckIcon,
 } from '@mui/icons-material';
 
-export default function FileUploadZone({ 
-  label, 
-  description, 
+export default function FileUploadZone({
+  label,
+  description,
   acceptedTypes = '.pdf,.doc,.docx',
-  maxSize = 10485760, // 10MB
+  maxSize = 10485760,
   files = [],
   onChange,
   multiple = false,
-  required = false
+  required = false,
+  compact = false,
+  dense = false,
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
   const [dragActive, setDragActive] = useState(false);
-  const [uploading, setUploading] = useState(false);
+
+  const handleFiles = useCallback(
+    (fileList) => {
+      const newFiles = Array.from(fileList);
+
+      const validFiles = newFiles.filter((file) => {
+        if (file.size > maxSize) {
+          alert(`File ${file.name} is too large. Maximum size is ${maxSize / 1048576}MB`);
+          return false;
+        }
+        return true;
+      });
+
+      if (multiple) {
+        onChange([...files, ...validFiles]);
+      } else {
+        onChange(validFiles.slice(0, 1));
+      }
+    },
+    [files, maxSize, multiple, onChange]
+  );
 
   const handleDrag = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
+    if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
-    } else if (e.type === "dragleave") {
+    } else if (e.type === 'dragleave') {
       setDragActive(false);
     }
   }, []);
 
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFiles(e.dataTransfer.files);
-    }
-  }, []);
+  const handleDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFiles(e.dataTransfer.files);
+      }
+    },
+    [handleFiles]
+  );
 
   const handleChange = (e) => {
     e.preventDefault();
@@ -51,28 +77,8 @@ export default function FileUploadZone({
     }
   };
 
-  const handleFiles = (fileList) => {
-    const newFiles = Array.from(fileList);
-    
-    // Validate file size
-    const validFiles = newFiles.filter(file => {
-      if (file.size > maxSize) {
-        alert(`File ${file.name} is too large. Maximum size is ${maxSize / 1048576}MB`);
-        return false;
-      }
-      return true;
-    });
-
-    if (multiple) {
-      onChange([...files, ...validFiles]);
-    } else {
-      onChange(validFiles.slice(0, 1));
-    }
-  };
-
   const removeFile = (index) => {
-    const newFiles = files.filter((_, i) => i !== index);
-    onChange(newFiles);
+    onChange(files.filter((_, i) => i !== index));
   };
 
   const formatFileSize = (bytes) => {
@@ -80,97 +86,140 @@ export default function FileUploadZone({
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
   };
 
+  const inputId = `file-upload-${label?.replace(/\s+/g, '-').toLowerCase() || 'file'}`;
+
   return (
-    <Box sx={{ mb: 3 }}>
-      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#2D3748' }}>
-        {label} {required && <span style={{ color: '#e53e3e' }}>*</span>}
-      </Typography>
-      {description && (
-        <Typography variant="caption" sx={{ display: 'block', mb: 1.5, color: '#718096' }}>
+    <Box sx={{ mb: compact ? 0 : 3 }}>
+      {!compact && (
+        <>
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+            {label} {required && <Box component="span" sx={{ color: 'error.main' }}>*</Box>}
+          </Typography>
+          {description && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+              {description}
+            </Typography>
+          )}
+        </>
+      )}
+
+      {(compact || dense) && !dense && description && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
           {description}
+          {required && (
+            <>
+              {' '}
+              <Box component="span" sx={{ color: 'error.main' }}>*</Box>
+            </>
+          )}
         </Typography>
       )}
-      
+
       <Paper
+        elevation={0}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
         sx={{
-          p: 3,
-          border: dragActive ? '2px dashed #8b6cbc' : '2px dashed #e2e8f0',
-          bgcolor: dragActive ? 'rgba(139, 108, 188, 0.05)' : '#fafafa',
+          p: dense ? 1.25 : compact ? 2 : 3,
+          border: '2px dashed',
+          borderColor: dragActive ? 'primary.main' : 'divider',
+          bgcolor: dragActive ? alpha(theme.palette.primary.main, 0.06) : alpha(theme.palette.background.default, 0.6),
           borderRadius: 2,
           textAlign: 'center',
           cursor: 'pointer',
-          transition: 'all 0.3s ease',
+          transition: 'all 0.2s ease',
           '&:hover': {
-            borderColor: '#8b6cbc',
-            bgcolor: 'rgba(139, 108, 188, 0.02)',
-          }
+            borderColor: alpha(theme.palette.primary.main, 0.5),
+            bgcolor: alpha(theme.palette.primary.main, 0.04),
+          },
         }}
       >
         <input
           type="file"
-          id={`file-upload-${label}`}
+          id={inputId}
           multiple={multiple}
           accept={acceptedTypes}
           onChange={handleChange}
           style={{ display: 'none' }}
         />
-        <label htmlFor={`file-upload-${label}`} style={{ cursor: 'pointer', display: 'block' }}>
-          <UploadIcon sx={{ fontSize: 48, color: dragActive ? '#8b6cbc' : '#a0aec0', mb: 1 }} />
-          <Typography variant="body1" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.5 }}>
-            {dragActive ? t('common.drop_files') : t('common.drag_drop')}
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#718096' }}>
-            {t('common.or_browse')}
-          </Typography>
-          <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#a0aec0' }}>
-            Accepted: {acceptedTypes} • Max size: {maxSize / 1048576}MB
-          </Typography>
+        <label htmlFor={inputId} style={{ cursor: 'pointer', display: 'block' }}>
+          {dense ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25, flexWrap: 'wrap' }}>
+              <UploadIcon sx={{ fontSize: 28, color: dragActive ? 'primary.main' : 'text.disabled' }} />
+              <Box sx={{ textAlign: 'left' }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {dragActive ? t('common.drop_files') : t('common.drag_drop')} {t('common.or_browse')}
+                  {required && (
+                    <Box component="span" sx={{ color: 'error.main' }}> *</Box>
+                  )}
+                </Typography>
+                <Typography variant="caption" color="text.disabled">
+                  PDF or image - Max {maxSize / 1048576}MB
+                </Typography>
+              </Box>
+            </Box>
+          ) : (
+            <>
+              <UploadIcon
+                sx={{
+                  fontSize: compact ? 40 : 48,
+                  color: dragActive ? 'primary.main' : 'text.disabled',
+                  mb: 1,
+                }}
+              />
+              <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                {dragActive ? t('common.drop_files') : t('common.drag_drop')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('common.or_browse')}
+              </Typography>
+              <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1 }}>
+                Accepted: {acceptedTypes} - Max size: {maxSize / 1048576}MB
+              </Typography>
+            </>
+          )}
         </label>
       </Paper>
-
-      {uploading && (
-        <Box sx={{ mt: 2 }}>
-          <LinearProgress sx={{ '& .MuiLinearProgress-bar': { bgcolor: '#8b6cbc' } }} />
-        </Box>
-      )}
 
       {files.length > 0 && (
         <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
           {files.map((file, index) => (
             <Paper
               key={index}
+              elevation={0}
               sx={{
-                p: 2,
+                p: 1.5,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                bgcolor: 'rgba(139, 108, 188, 0.05)',
-                border: '1px solid rgba(139, 108, 188, 0.2)',
+                bgcolor: alpha(theme.palette.primary.main, 0.06),
+                border: '1px solid',
+                borderColor: alpha(theme.palette.primary.main, 0.2),
+                borderRadius: 2,
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1 }}>
-                <FileIcon sx={{ color: '#8b6cbc' }} />
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#2D3748' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
+                <FileIcon color="primary" fontSize="small" />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body2" fontWeight={600} noWrap>
                     {file.name}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: '#718096' }}>
+                  <Typography variant="caption" color="text.secondary">
                     {formatFileSize(file.size)}
                   </Typography>
                 </Box>
-                <CheckIcon sx={{ color: '#10b981', fontSize: 20 }} />
+                <CheckIcon color="success" sx={{ fontSize: 20, flexShrink: 0 }} />
               </Box>
               <IconButton
                 size="small"
                 onClick={() => removeFile(index)}
-                sx={{ color: '#e53e3e', '&:hover': { bgcolor: 'rgba(229, 62, 62, 0.1)' } }}
+                color="error"
+                aria-label="Remove file"
               >
                 <DeleteIcon fontSize="small" />
               </IconButton>

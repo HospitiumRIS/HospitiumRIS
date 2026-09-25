@@ -1,33 +1,50 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
+  Avatar,
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
+  Checkbox,
+  Chip,
   FormControl,
+  FormControlLabel,
   IconButton,
   InputAdornment,
   InputLabel,
   MenuItem,
   Select,
+  Stack,
   TextField,
   Tooltip,
   Typography,
+  alpha,
 } from '@mui/material';
 import {
+  Cancel as CancelIcon,
+  CheckCircle as CheckCircleIcon,
+  Delete as DeleteIcon,
   Edit as EditIcon,
   LockReset as LockResetIcon,
   ManageAccounts as ManageAccountsIcon,
   Visibility,
   VisibilityOff,
 } from '@mui/icons-material';
+import { COUNTRIES } from '../../lib/countries';
 import { INSTITUTION_TYPES } from '../../lib/institution-types';
+import {
+  InstitutionModal,
+  InstitutionModalBody,
+  InstitutionModalFooter,
+  InstitutionModalHeader,
+  InstitutionModalSection,
+} from './InstitutionModalShell';
+
+function formatAdminName(admin) {
+  return [admin?.givenName, admin?.familyName].filter(Boolean).join(' ');
+}
 
 function generatePassword(length = 14) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
@@ -47,7 +64,7 @@ function AutofillTrap({ username = '' }) {
   );
 }
 
-function PasswordFields({ password, confirmPassword, onPasswordChange, onConfirmChange, required, helperText }) {
+export function PasswordFields({ password, confirmPassword, onPasswordChange, onConfirmChange, required, helperText }) {
   const [showPassword, setShowPassword] = useState(false);
 
   const fillGenerated = () => {
@@ -56,6 +73,9 @@ function PasswordFields({ password, confirmPassword, onPasswordChange, onConfirm
     onConfirmChange(next);
     setShowPassword(true);
   };
+
+  const showMatchStatus = Boolean(confirmPassword);
+  const passwordsMatch = password.length > 0 && password === confirmPassword;
 
   return (
     <>
@@ -93,6 +113,28 @@ function PasswordFields({ password, confirmPassword, onPasswordChange, onConfirm
         autoComplete="new-password"
         value={confirmPassword}
         onChange={(event) => onConfirmChange(event.target.value)}
+        error={showMatchStatus && !passwordsMatch}
+        helperText={
+          showMatchStatus
+            ? passwordsMatch
+              ? 'Passwords match'
+              : 'Passwords do not match'
+            : ' '
+        }
+        FormHelperTextProps={{
+          sx: showMatchStatus && passwordsMatch ? { color: 'success.main' } : undefined,
+        }}
+        InputProps={{
+          endAdornment: showMatchStatus ? (
+            <InputAdornment position="end">
+              {passwordsMatch ? (
+                <CheckCircleIcon color="success" fontSize="small" aria-label="Passwords match" />
+              ) : (
+                <CancelIcon color="error" fontSize="small" aria-label="Passwords do not match" />
+              )}
+            </InputAdornment>
+          ) : undefined,
+        }}
       />
       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Button type="button" size="small" onClick={fillGenerated}>
@@ -115,6 +157,14 @@ export function EditInstitutionDialog({ open, institution, onClose, onSaved, onE
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const countryOptions = useMemo(() => {
+    const current = form.country?.trim();
+    if (current && !COUNTRIES.some((country) => country.name === current)) {
+      return [{ code: 'LEGACY', name: current }, ...COUNTRIES];
+    }
+    return COUNTRIES;
+  }, [form.country]);
 
   useEffect(() => {
     if (!open || !institution) return;
@@ -182,92 +232,119 @@ export function EditInstitutionDialog({ open, institution, onClose, onSaved, onE
   };
 
   return (
-    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('global_admin.edit_institution', { defaultValue: 'Edit institution' })}</DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '12px !important' }}>
+    <InstitutionModal open={open} onClose={onClose} disableClose={saving}>
+      <InstitutionModalHeader
+        icon={EditIcon}
+        title={t('global_admin.edit_institution', { defaultValue: 'Edit institution' })}
+        subtitle={institution?.name}
+        onClose={onClose}
+        disableClose={saving}
+      />
+      <InstitutionModalBody>
         {error && (
-          <Alert severity="error" onClose={() => setError('')}>
+          <Alert severity="error" onClose={() => setError('')} sx={{ borderRadius: 2 }}>
             {error}
           </Alert>
         )}
-        <TextField
-          fullWidth
-          required
-          label={t('global_admin.institution_name')}
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-        />
-        <TextField
-          fullWidth
-          required
-          label={t('global_admin.institution_slug', { defaultValue: 'Slug' })}
-          name="slug"
-          value={form.slug}
-          onChange={handleChange}
-          helperText="Used in URLs. Letters, numbers, and hyphens only."
-        />
-        <TextField
-          fullWidth
-          type="email"
-          label={t('global_admin.contact_email', { defaultValue: 'Contact email' })}
-          name="contactEmail"
-          autoComplete="off"
-          value={form.contactEmail}
-          onChange={handleChange}
-        />
-        <TextField
-          fullWidth
-          label={t('global_admin.website', { defaultValue: 'Website' })}
-          name="website"
-          value={form.website}
-          onChange={handleChange}
-          placeholder="https://example.edu"
-        />
-        <FormControl fullWidth>
-          <InputLabel>{t('global_admin.institution_type')}</InputLabel>
-          <Select
-            name="type"
-            value={form.type}
-            label={t('global_admin.institution_type')}
-            onChange={handleChange}
-          >
-            {INSTITUTION_TYPES.map((type) => (
-              <MenuItem key={type.value} value={type.value}>
-                {type.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <TextField
-          fullWidth
-          label={t('global_admin.country', { defaultValue: 'Country' })}
-          name="country"
-          value={form.country}
-          onChange={handleChange}
-        />
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={saving}>
+        <InstitutionModalSection title="Basic information">
+          <Stack spacing={2.5}>
+            <TextField
+              fullWidth
+              required
+              label={t('global_admin.institution_name')}
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+            />
+            <TextField
+              fullWidth
+              required
+              label={t('global_admin.institution_slug', { defaultValue: 'Slug' })}
+              name="slug"
+              value={form.slug}
+              onChange={handleChange}
+              helperText="Used in URLs. Letters, numbers, and hyphens only."
+            />
+            <TextField
+              fullWidth
+              type="email"
+              label={t('global_admin.contact_email', { defaultValue: 'Contact email' })}
+              name="contactEmail"
+              autoComplete="off"
+              value={form.contactEmail}
+              onChange={handleChange}
+            />
+          </Stack>
+        </InstitutionModalSection>
+        <InstitutionModalSection title="Profile">
+          <Stack spacing={2.5}>
+            <TextField
+              fullWidth
+              label={t('global_admin.website', { defaultValue: 'Website' })}
+              name="website"
+              value={form.website}
+              onChange={handleChange}
+              placeholder="https://example.edu"
+            />
+            <FormControl fullWidth>
+              <InputLabel>{t('global_admin.institution_type')}</InputLabel>
+              <Select
+                name="type"
+                value={form.type}
+                label={t('global_admin.institution_type')}
+                onChange={handleChange}
+              >
+                {INSTITUTION_TYPES.map((type) => (
+                  <MenuItem key={type.value} value={type.value}>
+                    {type.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>{t('global_admin.country', { defaultValue: 'Country' })}</InputLabel>
+              <Select
+                name="country"
+                value={form.country}
+                label={t('global_admin.country', { defaultValue: 'Country' })}
+                onChange={handleChange}
+                MenuProps={{ PaperProps: { style: { maxHeight: 280 } } }}
+              >
+                <MenuItem value="">
+                  <em>Select country</em>
+                </MenuItem>
+                {countryOptions.map((country) => (
+                  <MenuItem key={country.code} value={country.name}>
+                    {country.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </InstitutionModalSection>
+      </InstitutionModalBody>
+      <InstitutionModalFooter>
+        <Button onClick={onClose} disabled={saving} color="inherit">
           {t('common.cancel')}
         </Button>
-        <Button variant="contained" onClick={handleSave} disabled={saving}>
+        <Button variant="contained" onClick={handleSave} disabled={saving} sx={{ minWidth: 120 }}>
           {saving ? t('common.saving') : t('common.save')}
         </Button>
-      </DialogActions>
-    </Dialog>
+      </InstitutionModalFooter>
+    </InstitutionModal>
   );
 }
 
 export function ReassignAdminDialog({ open, institution, onClose, onSaved }) {
   const { t } = useTranslation();
-  const hasAdmin = Boolean(institution?.admin);
+  const admins = institution?.admins || (institution?.admin ? [institution.admin] : []);
+  const hasAdmin = admins.length > 0;
   const [form, setForm] = useState({
-    givenName: '',
-    familyName: '',
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
+    isPrimary: true,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -275,33 +352,64 @@ export function ReassignAdminDialog({ open, institution, onClose, onSaved }) {
   useEffect(() => {
     if (!open) return;
     setForm({
-      givenName: '',
-      familyName: '',
+      name: '',
       email: '',
       password: '',
       confirmPassword: '',
+      isPrimary: !hasAdmin,
     });
     setError('');
     setSaving(false);
-  }, [open, institution?.id]);
+  }, [open, institution?.id, hasAdmin]);
 
   const handleChange = (event) => {
-    const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = event.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
     setError('');
+  };
+
+  const handleSetPrimary = async (userId) => {
+    if (!institution) return;
+    setSaving(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/global-admin/institutions/${institution.id}/admin`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'set-primary', userId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || 'Failed to set primary admin');
+        return;
+      }
+      onSaved?.(data.admin, data.message || 'Primary system admin updated');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to set primary admin');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSave = async () => {
     if (!institution) return;
-    if (!form.givenName.trim() || !form.familyName.trim()) {
-      setError('First and last name are required');
+    if (!form.name.trim()) {
+      setError('Admin name is required');
       return;
     }
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       setError('A valid admin email is required');
       return;
     }
-    if (form.password && form.password.length < 8) {
+    if (!form.password) {
+      setError('Password is required');
+      return;
+    }
+    if (form.password.length < 8) {
       setError('Password must be at least 8 characters');
       return;
     }
@@ -313,105 +421,161 @@ export function ReassignAdminDialog({ open, institution, onClose, onSaved }) {
     setSaving(true);
     try {
       const response = await fetch(`/api/global-admin/institutions/${institution.id}/admin`, {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          givenName: form.givenName.trim(),
-          familyName: form.familyName.trim(),
+          name: form.name.trim(),
           email: form.email.trim(),
-          password: form.password || undefined,
+          password: form.password,
+          confirmPassword: form.confirmPassword,
+          isPrimary: form.isPrimary,
         }),
       });
       const data = await response.json();
       if (!response.ok) {
-        setError(data.error || 'Failed to reassign admin');
+        setError(data.error || 'Failed to add system admin');
         return;
       }
-      onSaved?.(data.admin, data.message || 'Institution admin reassigned');
+      onSaved?.(data.admin, data.message || 'System admin added');
       onClose?.();
     } catch (err) {
       console.error(err);
-      setError('Failed to reassign admin');
+      setError('Failed to add system admin');
     } finally {
       setSaving(false);
     }
   };
 
+  const modalTitle = hasAdmin
+    ? t('global_admin.add_system_admin', { defaultValue: 'Add system admin' })
+    : t('global_admin.assign_admin', { defaultValue: 'Assign admin' });
+
   return (
-    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        {hasAdmin
-          ? t('global_admin.reassign_admin', { defaultValue: 'Reassign admin' })
-          : t('global_admin.assign_admin', { defaultValue: 'Assign admin' })}
-      </DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '12px !important' }}>
+    <InstitutionModal open={open} onClose={onClose} disableClose={saving}>
+      <InstitutionModalHeader
+        icon={ManageAccountsIcon}
+        title={modalTitle}
+        subtitle={institution?.name}
+        onClose={onClose}
+        disableClose={saving}
+      />
+      <InstitutionModalBody>
         <AutofillTrap />
         {error && (
-          <Alert severity="error" onClose={() => setError('')}>
+          <Alert severity="error" onClose={() => setError('')} sx={{ borderRadius: 2 }}>
             {error}
           </Alert>
         )}
         {hasAdmin && (
-          <Alert severity="info">
-            Current admin: {institution.admin.givenName} {institution.admin.familyName} ({institution.admin.email}).
-            They will lose institution admin access if you assign someone else.
-          </Alert>
+          <InstitutionModalSection title="Current system admins">
+            <Stack spacing={1.25}>
+              {admins.map((admin) => (
+                <Box
+                  key={admin.id}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1.5,
+                    p: 1.5,
+                    borderRadius: 2,
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: admin.isPrimary ? 'primary.main' : 'divider',
+                    boxShadow: admin.isPrimary
+                      ? (theme) => `0 0 0 1px ${alpha(theme.palette.primary.main, 0.18)}`
+                      : 'none',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+                    <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: 14 }}>
+                      {formatAdminName(admin).slice(0, 1).toUpperCase() || '?'}
+                    </Avatar>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="body2" fontWeight={600} noWrap>
+                        {formatAdminName(admin)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap>
+                        {admin.email}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                    {admin.isPrimary ? (
+                      <Chip label="Primary" size="small" color="primary" variant="filled" />
+                    ) : (
+                      <Button size="small" variant="outlined" onClick={() => handleSetPrimary(admin.id)} disabled={saving}>
+                        Make primary
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+              ))}
+            </Stack>
+          </InstitutionModalSection>
         )}
-        <TextField
-          fullWidth
-          required
-          label="First name"
-          name="givenName"
-          autoComplete="off"
-          value={form.givenName}
-          onChange={handleChange}
-        />
-        <TextField
-          fullWidth
-          required
-          label="Last name"
-          name="familyName"
-          autoComplete="off"
-          value={form.familyName}
-          onChange={handleChange}
-        />
-        <TextField
-          fullWidth
-          required
-          type="email"
-          label="Admin email"
-          name="email"
-          autoComplete="off"
-          value={form.email}
-          onChange={handleChange}
-        />
-        <PasswordFields
-          password={form.password}
-          confirmPassword={form.confirmPassword}
-          onPasswordChange={(value) => setForm((prev) => ({ ...prev, password: value }))}
-          onConfirmChange={(value) => setForm((prev) => ({ ...prev, confirmPassword: value }))}
-          required={!hasAdmin}
-          helperText="Required for a new account. Leave blank to keep an existing user's password."
-        />
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={saving}>
+        <InstitutionModalSection title="New system admin">
+          <Stack spacing={2.5}>
+            <TextField
+              fullWidth
+              required
+              label="Admin name"
+              name="name"
+              autoComplete="off"
+              placeholder="Institution System Admin"
+              helperText="Display name for the institution system admin account"
+              value={form.name}
+              onChange={handleChange}
+            />
+            <TextField
+              fullWidth
+              required
+              type="email"
+              label="Admin email"
+              name="email"
+              autoComplete="off"
+              value={form.email}
+              onChange={handleChange}
+            />
+            <PasswordFields
+              password={form.password}
+              confirmPassword={form.confirmPassword}
+              onPasswordChange={(value) => setForm((prev) => ({ ...prev, password: value }))}
+              onConfirmChange={(value) => setForm((prev) => ({ ...prev, confirmPassword: value }))}
+              required
+              helperText="Minimum 8 characters"
+            />
+            {hasAdmin && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    name="isPrimary"
+                    checked={form.isPrimary}
+                    onChange={handleChange}
+                  />
+                }
+                label="Set as primary system admin"
+              />
+            )}
+          </Stack>
+        </InstitutionModalSection>
+      </InstitutionModalBody>
+      <InstitutionModalFooter>
+        <Button onClick={onClose} disabled={saving} color="inherit">
           {t('common.cancel')}
         </Button>
-        <Button variant="contained" onClick={handleSave} disabled={saving}>
-          {saving
-            ? t('common.saving')
-            : hasAdmin
-              ? t('global_admin.reassign_admin', { defaultValue: 'Reassign admin' })
-              : t('global_admin.assign_admin', { defaultValue: 'Assign admin' })}
+        <Button variant="contained" onClick={handleSave} disabled={saving} sx={{ minWidth: 140 }}>
+          {saving ? t('common.saving') : modalTitle}
         </Button>
-      </DialogActions>
-    </Dialog>
+      </InstitutionModalFooter>
+    </InstitutionModal>
   );
 }
 
 export function ResetAdminPasswordDialog({ open, institution, onClose, onSaved }) {
   const { t } = useTranslation();
+  const admins = institution?.admins || (institution?.admin ? [institution.admin] : []);
+  const [selectedAdminId, setSelectedAdminId] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [saving, setSaving] = useState(false);
@@ -419,14 +583,18 @@ export function ResetAdminPasswordDialog({ open, institution, onClose, onSaved }
 
   useEffect(() => {
     if (!open) return;
+    const defaultAdmin = admins.find((admin) => admin.isPrimary) || admins[0];
+    setSelectedAdminId(defaultAdmin?.id || '');
     setPassword('');
     setConfirmPassword('');
     setError('');
     setSaving(false);
-  }, [open, institution?.id]);
+  }, [open, institution?.id, admins]);
+
+  const selectedAdmin = admins.find((admin) => admin.id === selectedAdminId) || admins[0];
 
   const handleSave = async () => {
-    if (!institution?.admin) {
+    if (!selectedAdmin) {
       setError('This institution has no admin');
       return;
     }
@@ -444,7 +612,12 @@ export function ResetAdminPasswordDialog({ open, institution, onClose, onSaved }
       const response = await fetch(`/api/global-admin/institutions/${institution.id}/admin`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({
+          action: 'reset-password',
+          userId: selectedAdmin.id,
+          password,
+          confirmPassword,
+        }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -462,52 +635,176 @@ export function ResetAdminPasswordDialog({ open, institution, onClose, onSaved }
   };
 
   return (
-    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="sm" fullWidth>
-      <form
+    <InstitutionModal open={open} onClose={onClose} disableClose={saving}>
+      <Box
+        component="form"
         autoComplete="off"
         onSubmit={(event) => {
           event.preventDefault();
           handleSave();
         }}
       >
-      <DialogTitle>
-        {t('global_admin.reset_admin_password', { defaultValue: 'Reset admin password' })}
-      </DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '12px !important' }}>
-        <AutofillTrap username={institution?.admin?.email || ''} />
-        {error && (
-          <Alert severity="error" onClose={() => setError('')}>
-            {error}
-          </Alert>
-        )}
-        {institution?.admin && (
-          <Typography variant="body2" color="text.secondary">
-            Set a new password for {institution.admin.givenName} {institution.admin.familyName} ({institution.admin.email}).
-          </Typography>
-        )}
-        <PasswordFields
-          password={password}
-          confirmPassword={confirmPassword}
-          onPasswordChange={setPassword}
-          onConfirmChange={setConfirmPassword}
-          required
-          helperText="Minimum 8 characters"
+        <InstitutionModalHeader
+          icon={LockResetIcon}
+          title={t('global_admin.reset_admin_password', { defaultValue: 'Reset admin password' })}
+          subtitle={institution?.name}
+          onClose={onClose}
+          disableClose={saving}
         />
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button type="button" onClick={onClose} disabled={saving}>
-          {t('common.cancel')}
-        </Button>
-        <Button type="submit" variant="contained" disabled={saving || !institution?.admin}>
-          {saving ? t('common.saving') : t('global_admin.reset_password', { defaultValue: 'Reset password' })}
-        </Button>
-      </DialogActions>
-      </form>
-    </Dialog>
+        <InstitutionModalBody>
+          <AutofillTrap username={selectedAdmin?.email || ''} />
+          {error && (
+            <Alert severity="error" onClose={() => setError('')} sx={{ borderRadius: 2 }}>
+              {error}
+            </Alert>
+          )}
+          <InstitutionModalSection title="Account">
+            <Stack spacing={2.5}>
+              {admins.length > 1 && (
+                <FormControl fullWidth>
+                  <InputLabel>System admin</InputLabel>
+                  <Select
+                    value={selectedAdminId}
+                    label="System admin"
+                    onChange={(event) => setSelectedAdminId(event.target.value)}
+                  >
+                    {admins.map((admin) => (
+                      <MenuItem key={admin.id} value={admin.id}>
+                        {formatAdminName(admin)} ({admin.email}){admin.isPrimary ? ' - Primary' : ''}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+              {selectedAdmin && (
+                <Typography variant="body2" color="text.secondary">
+                  Set a new password for {formatAdminName(selectedAdmin)} ({selectedAdmin.email}).
+                </Typography>
+              )}
+            </Stack>
+          </InstitutionModalSection>
+          <InstitutionModalSection title="New password">
+            <PasswordFields
+              password={password}
+              confirmPassword={confirmPassword}
+              onPasswordChange={setPassword}
+              onConfirmChange={setConfirmPassword}
+              required
+              helperText="Minimum 8 characters"
+            />
+          </InstitutionModalSection>
+        </InstitutionModalBody>
+        <InstitutionModalFooter>
+          <Button type="button" onClick={onClose} disabled={saving} color="inherit">
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" variant="contained" disabled={saving || !selectedAdmin} sx={{ minWidth: 140 }}>
+            {saving ? t('common.saving') : t('global_admin.reset_password', { defaultValue: 'Reset password' })}
+          </Button>
+        </InstitutionModalFooter>
+      </Box>
+    </InstitutionModal>
   );
 }
 
-export function InstitutionActionButtons({ institution, onEdit, onReassign, onReset }) {
+export function DeleteInstitutionDialog({ open, institution, onClose, onDeleted }) {
+  const { t } = useTranslation();
+  const [confirmName, setConfirmName] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!open) return;
+    setConfirmName('');
+    setError('');
+    setDeleting(false);
+  }, [open, institution?.id]);
+
+  const nameMatches = confirmName.trim() === (institution?.name || '');
+
+  const handleDelete = async () => {
+    if (!institution || !nameMatches) return;
+
+    setDeleting(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/global-admin/institutions/${institution.id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || 'Failed to delete institution');
+        return;
+      }
+      onDeleted?.(data.deleted, data.message || 'Institution deleted');
+      onClose?.();
+    } catch (err) {
+      console.error(err);
+      setError('Failed to delete institution');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <InstitutionModal open={open} onClose={onClose} disableClose={deleting}>
+      <InstitutionModalHeader
+        icon={DeleteIcon}
+        title={t('global_admin.delete_institution', { defaultValue: 'Delete institution' })}
+        subtitle="This action cannot be undone"
+        tone="danger"
+        onClose={onClose}
+        disableClose={deleting}
+      />
+      <InstitutionModalBody>
+        {error && (
+          <Alert severity="error" onClose={() => setError('')} sx={{ borderRadius: 2 }}>
+            {error}
+          </Alert>
+        )}
+        <Alert severity="warning" sx={{ borderRadius: 2 }}>
+          This permanently deletes <strong>{institution?.name}</strong>, its verified domains, and linked institution data.
+          System admins will be demoted to researcher accounts and members will be unlinked from this institution.
+        </Alert>
+        <InstitutionModalSection title="Confirm deletion">
+          <Stack spacing={2}>
+            <Typography variant="body2" color="text.secondary">
+              Type <strong>{institution?.name}</strong> to confirm.
+            </Typography>
+            <TextField
+              fullWidth
+              label="Institution name"
+              value={confirmName}
+              onChange={(event) => {
+                setConfirmName(event.target.value);
+                setError('');
+              }}
+              autoComplete="off"
+              error={Boolean(confirmName) && !nameMatches}
+              helperText={confirmName && !nameMatches ? 'Name does not match' : ' '}
+            />
+          </Stack>
+        </InstitutionModalSection>
+      </InstitutionModalBody>
+      <InstitutionModalFooter>
+        <Button onClick={onClose} disabled={deleting} color="inherit">
+          {t('common.cancel')}
+        </Button>
+        <Button
+          variant="contained"
+          color="error"
+          onClick={handleDelete}
+          disabled={deleting || !nameMatches}
+          sx={{ minWidth: 120 }}
+        >
+          {deleting ? t('common.deleting', { defaultValue: 'Deleting...' }) : t('common.delete')}
+        </Button>
+      </InstitutionModalFooter>
+    </InstitutionModal>
+  );
+}
+
+export function InstitutionActionButtons({ institution, onEdit, onReassign, onReset, onDelete }) {
   const { t } = useTranslation();
 
   return (
@@ -517,7 +814,10 @@ export function InstitutionActionButtons({ institution, onEdit, onReassign, onRe
           type="button"
           size="small"
           color="primary"
-          onClick={onEdit}
+          onClick={(event) => {
+            event.stopPropagation();
+            onEdit();
+          }}
           aria-label="Edit institution details"
         >
           <EditIcon fontSize="small" />
@@ -526,7 +826,7 @@ export function InstitutionActionButtons({ institution, onEdit, onReassign, onRe
       <Tooltip
         title={
           institution.admin
-            ? t('global_admin.reassign_admin', { defaultValue: 'Reassign admin' })
+            ? t('global_admin.add_system_admin', { defaultValue: 'Add system admin' })
             : t('global_admin.assign_admin', { defaultValue: 'Assign admin' })
         }
       >
@@ -534,8 +834,11 @@ export function InstitutionActionButtons({ institution, onEdit, onReassign, onRe
           type="button"
           size="small"
           color="primary"
-          onClick={onReassign}
-          aria-label="Reassign institution admin"
+          onClick={(event) => {
+            event.stopPropagation();
+            onReassign();
+          }}
+          aria-label="Add institution system admin"
         >
           <ManageAccountsIcon fontSize="small" />
         </IconButton>
@@ -552,13 +855,30 @@ export function InstitutionActionButtons({ institution, onEdit, onReassign, onRe
             type="button"
             size="small"
             color="primary"
-            onClick={onReset}
+            onClick={(event) => {
+              event.stopPropagation();
+              onReset();
+            }}
             disabled={!institution.admin}
             aria-label="Reset admin password"
           >
             <LockResetIcon fontSize="small" />
           </IconButton>
         </span>
+      </Tooltip>
+      <Tooltip title={t('global_admin.delete_institution', { defaultValue: 'Delete institution' })}>
+        <IconButton
+          type="button"
+          size="small"
+          color="error"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete();
+          }}
+          aria-label="Delete institution"
+        >
+          <DeleteIcon fontSize="small" />
+        </IconButton>
       </Tooltip>
     </>
   );

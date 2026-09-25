@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../../../lib/auth-server';
+import { requireTrainingAdminAccess } from '@/lib/training-admin-server';
 
 /**
  * PUT /api/training/[id]/modules/[moduleId]
@@ -10,17 +11,9 @@ export async function PUT(request, { params }) {
   try {
     const user = await getAuthenticatedUser(request);
 
-    if (!user || user.accountType !== 'RESEARCH_ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      );
-    }
-
-    const { id, moduleId } = params;
+    const { id, moduleId } = await params;
     const body = await request.json();
 
-    // Check module exists and belongs to user's institution
     const module = await prisma.trainingModule.findUnique({
       where: { id: moduleId },
       include: {
@@ -35,17 +28,8 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const ownInstitution = await prisma.institution.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!ownInstitution || module.training.institutionId !== ownInstitution.id) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      );
-    }
+    const access = await requireTrainingAdminAccess(user, module.training);
+    if (access.error) return access.error;
 
     const { title, description, order, status } = body;
 
@@ -81,16 +65,8 @@ export async function DELETE(request, { params }) {
   try {
     const user = await getAuthenticatedUser(request);
 
-    if (!user || user.accountType !== 'RESEARCH_ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      );
-    }
-
     const { moduleId } = await params;
 
-    // Check module exists and belongs to user's institution
     const module = await prisma.trainingModule.findUnique({
       where: { id: moduleId },
       include: {
@@ -105,17 +81,8 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const ownInstitution = await prisma.institution.findUnique({
-      where: { userId: user.id },
-      select: { id: true },
-    });
-
-    if (!ownInstitution || module.training.institutionId !== ownInstitution.id) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      );
-    }
+    const access = await requireTrainingAdminAccess(user, module.training);
+    if (access.error) return access.error;
 
     // Delete module (cascade will delete progress entries)
     await prisma.trainingModule.delete({

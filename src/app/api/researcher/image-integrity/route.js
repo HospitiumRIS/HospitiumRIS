@@ -18,7 +18,7 @@ function withPreview(record) {
   if (!record) return record;
   return {
     ...record,
-    previewUrl: previewUrlForCase(record.id),
+    previewUrl: previewUrlForCase(record.id, record.storedFileId),
     isImagePreview: IMAGE_FORMATS.includes((record.fileFormat || '').toLowerCase()),
   };
 }
@@ -54,6 +54,7 @@ async function createAndUploadCase({
   file,
   compareGlobal,
   submittedById,
+  user,
   labUnitId,
   collectionId,
   notes,
@@ -85,9 +86,16 @@ async function createAndUploadCase({
   });
 
   try {
-    await saveIntegrityFile(record.id, fileForUpload);
+    const stored = await saveIntegrityFile(record.id, fileForUpload, { user });
+    if (stored.fileId) {
+      record = await prisma.imageIntegrityCase.update({
+        where: { id: record.id },
+        data: { storedFileId: stored.fileId },
+        include: caseInclude,
+      });
+    }
   } catch (storeError) {
-    console.error('Failed to store image integrity file locally:', storeError);
+    console.error('Failed to store image integrity file:', storeError);
   }
 
   if (!isImaChekConfigured()) {
@@ -296,6 +304,7 @@ export async function POST(request) {
         file,
         compareGlobal,
         submittedById: user.id,
+        user,
         labUnitId: labCheck.labUnitId,
         collectionId: collectionCheck.collectionId,
         notes,

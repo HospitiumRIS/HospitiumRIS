@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 import { logApiActivity, logDatabaseActivity, getRequestMetadata } from '../../../utils/activityLogger.js';
-import { getUserId } from '../../../lib/auth-server.js';
+import { getUserId, requireAuth } from '../../../lib/auth-server.js';
+import { saveProposalDocument } from '../../../lib/proposal-files.js';
 
 const prisma = new PrismaClient();
 
@@ -101,9 +100,12 @@ export async function POST(request) {
     
     try {
         await logApiActivity('POST', '/api/proposals', 200, requestMetadata);
-        
-        // TODO: Add proper authentication when auth is set up
-        const session = { user: { id: 'dev-user-id', orcidId: null } };
+
+        const auth = await requireAuth(request);
+        if (auth.error) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        const user = auth.user;
 
         const formData = await request.formData();
         const proposalDataString = formData.get('proposalData');
@@ -117,68 +119,35 @@ export async function POST(request) {
 
         const proposalData = JSON.parse(proposalDataString);
 
-        // Create uploads directory if it doesn't exist
-        const uploadsDir = join(process.cwd(), 'uploads', 'proposals');
-        await mkdir(uploadsDir, { recursive: true });
+        if (user.accountType === 'RESEARCHER') {
+            if (user.orcidId && proposalData.principalInvestigatorOrcid && proposalData.principalInvestigatorOrcid !== user.orcidId) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+            if (!proposalData.principalInvestigatorOrcid && user.orcidId) {
+                proposalData.principalInvestigatorOrcid = user.orcidId;
+            }
+        }
 
-        // Handle file uploads
         const uploadedFiles = {
             ethicsDocuments: [],
             dataManagementPlan: [],
             otherRelatedFiles: []
         };
 
-        // Process ethics documents
-        const ethicsFiles = formData.getAll('ethicsDocuments');
-        for (const file of ethicsFiles) {
-            if (file && file.size > 0) {
-                const fileName = `ethics_${Date.now()}_${file.name}`;
-                const filePath = join(uploadsDir, fileName);
-                const bytes = await file.arrayBuffer();
-                await writeFile(filePath, Buffer.from(bytes));
-                uploadedFiles.ethicsDocuments.push({
-                    originalName: file.name,
-                    fileName: fileName,
-                    filePath: filePath,
-                    size: file.size,
-                    mimeType: file.type
-                });
-            }
-        }
+        const fileGroups = [
+            { key: 'ethicsDocuments', formField: 'ethicsDocuments', prefix: 'ethics' },
+            { key: 'dataManagementPlan', formField: 'dataManagementPlan', prefix: 'dmp' },
+            { key: 'otherRelatedFiles', formField: 'otherRelatedFiles', prefix: 'other' },
+        ];
 
-        // Process data management plan files
-        const dmpFiles = formData.getAll('dataManagementPlan');
-        for (const file of dmpFiles) {
-            if (file && file.size > 0) {
-                const fileName = `dmp_${Date.now()}_${file.name}`;
-                const filePath = join(uploadsDir, fileName);
-                const bytes = await file.arrayBuffer();
-                await writeFile(filePath, Buffer.from(bytes));
-                uploadedFiles.dataManagementPlan.push({
-                    originalName: file.name,
-                    fileName: fileName,
-                    filePath: filePath,
-                    size: file.size,
-                    mimeType: file.type
-                });
-            }
-        }
-
-        // Process other related files
-        const otherFiles = formData.getAll('otherRelatedFiles');
-        for (const file of otherFiles) {
-            if (file && file.size > 0) {
-                const fileName = `other_${Date.now()}_${file.name}`;
-                const filePath = join(uploadsDir, fileName);
-                const bytes = await file.arrayBuffer();
-                await writeFile(filePath, Buffer.from(bytes));
-                uploadedFiles.otherRelatedFiles.push({
-                    originalName: file.name,
-                    fileName: fileName,
-                    filePath: filePath,
-                    size: file.size,
-                    mimeType: file.type
-                });
+        for (const { key, formField, prefix } of fileGroups) {
+            for (const file of formData.getAll(formField)) {
+                if (!file || !file.size) continue;
+                try {
+                    uploadedFiles[key].push(await saveProposalDocument(prefix, file));
+                } catch (err) {
+                    return NextResponse.json({ error: err.message || 'Invalid file' }, { status: 400 });
+                }
             }
         }
 

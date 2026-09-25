@@ -90,8 +90,16 @@ export async function PATCH(request, { params }) {
     if (typeof body.givenName === 'string' && body.givenName.trim()) {
       data.givenName = body.givenName.trim();
     }
-    if (typeof body.familyName === 'string' && body.familyName.trim()) {
-      data.familyName = body.familyName.trim();
+    if (typeof body.familyName === 'string') {
+      const trimmedFamilyName = body.familyName.trim();
+      if (trimmedFamilyName) {
+        data.familyName = trimmedFamilyName;
+      } else if (
+        existingUser.accountType === 'RESEARCH_ADMIN' ||
+        body.accountType === 'RESEARCH_ADMIN'
+      ) {
+        data.familyName = '';
+      }
     }
 
     if (typeof body.email === 'string') {

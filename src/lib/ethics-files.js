@@ -1,5 +1,11 @@
 import { mkdir, writeFile, readFile, unlink, access, rm } from 'fs/promises';
 import path from 'path';
+import { sanitizeFileName } from './sanitize-file-name.js';
+import { uploadServerSide } from './storage/files-service.js';
+import { readStoredFileBytes } from './storage/read.js';
+import { resolveTenantId } from './tenant.js';
+
+export { sanitizeFileName };
 
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'ethics');
 
@@ -9,13 +15,46 @@ const MIME_BY_EXT = {
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   webp: 'image/webp',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 };
 
+export const ETHICS_DOCUMENT_MAX_BYTES = 25 * 1024 * 1024;
+export const ETHICS_DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
 export const ETHICS_CERTIFICATE_MAX_BYTES = 15 * 1024 * 1024;
 export const ETHICS_CERTIFICATE_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'webp'];
 
-export function sanitizeFileName(fileName = 'upload') {
-  return fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+function getExtension(fileName) {
+  const parts = String(fileName).split('.');
+  return parts.length > 1 ? parts.pop().toLowerCase() : '';
+}
+
+export function useEthicsStorage() {
+  return process.env.STORAGE_CUTOVER_ETHICS === 'true' || process.env.STORAGE_DRIVER === 'r2';
+}
+
+export function validateEthicsDocument(file) {
+  if (!file || !file.size) return { ok: false, error: 'Empty file' };
+  if (file.size > ETHICS_DOCUMENT_MAX_BYTES) {
+    return { ok: false, error: `File exceeds ${ETHICS_DOCUMENT_MAX_BYTES / (1024 * 1024)} MB limit` };
+  }
+  const ext = getExtension(file.name);
+  if (!ETHICS_DOCUMENT_EXTENSIONS.includes(ext)) {
+    return { ok: false, error: `File type .${ext || '?'} is not allowed` };
+  }
+  return { ok: true, ext };
+}
+
+export function validateEthicsCertificate(file) {
+  if (!file || !file.size) return { ok: false, error: 'Empty file' };
+  if (file.size > ETHICS_CERTIFICATE_MAX_BYTES) {
+    return { ok: false, error: `File exceeds ${ETHICS_CERTIFICATE_MAX_BYTES / (1024 * 1024)} MB limit` };
+  }
+  const ext = getExtension(file.name);
+  if (!ETHICS_CERTIFICATE_EXTENSIONS.includes(ext)) {
+    return { ok: false, error: `File type .${ext || '?'} is not allowed` };
+  }
+  return { ok: true, ext };
 }
 
 export function getEthicsFilePath(applicationId, fileName) {
@@ -32,17 +71,46 @@ export function getFileExtension(fileName = '') {
   return parts.length > 1 ? parts.pop().toLowerCase() : '';
 }
 
-export async function saveEthicsFile(applicationId, file) {
+/**
+ * @param {string} applicationId
+ * @param {File} file
+ * @param {{ user?: object, module?: string, entityTenantId?: string }} [options]
+ */
+export async function saveEthicsFile(applicationId, file, options = {}) {
+  const storedName = `${Date.now()}_${sanitizeFileName(file.name || 'certificate')}`;
+
+  if (useEthicsStorage() && options.user) {
+    const stored = await uploadServerSide({
+      user: options.user,
+      module: options.module || 'ETHICS_DOCUMENT',
+      entityType: 'EthicsApplication',
+      entityId: applicationId,
+      file,
+      entityTenantId: options.entityTenantId || resolveTenantId(options.user),
+    });
+    return {
+      storedName,
+      size: stored.sizeBytes,
+      fileId: stored.id,
+    };
+  }
+
   const dir = path.join(UPLOAD_DIR, applicationId);
   await mkdir(dir, { recursive: true });
-  const storedName = `${Date.now()}_${sanitizeFileName(file.name || 'certificate')}`;
   const filePath = path.join(dir, storedName);
   const bytes = Buffer.from(await file.arrayBuffer());
   await writeFile(filePath, bytes);
   return { filePath, storedName, size: bytes.length };
 }
 
-export async function readEthicsFile(applicationId, fileName) {
+export async function readEthicsFile(applicationId, fileName, { user, fileId } = {}) {
+  if (fileId && user) {
+    const result = await readStoredFileBytes(user, fileId);
+    if (result) {
+      return { buffer: result.buffer, filePath: null, mimeType: result.mimeType };
+    }
+  }
+
   const filePath = getEthicsFilePath(applicationId, fileName);
   await access(filePath);
   const buffer = await readFile(filePath);
@@ -65,6 +133,7 @@ export async function deleteEthicsApplicationFiles(applicationId) {
   }
 }
 
-export function ethicsFileUrl(applicationId, storedName) {
+export function ethicsFileUrl(applicationId, storedName, fileId) {
+  if (fileId) return `/api/files/${fileId}`;
   return `/api/ethics/applications/${applicationId}/file?name=${encodeURIComponent(storedName)}`;
 }
