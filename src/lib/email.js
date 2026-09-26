@@ -770,3 +770,96 @@ This email was sent to ${inviteeEmail} because ${inviterName} invited you to col
     return { success: false, error: error.message };
   }
 }
+
+function wrapProposalEmail({ heading, intro, bodyHtml, actionUrl, actionLabel }) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; color: #1e293b;">
+      <div style="background: linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%); color: white; padding: 24px 28px;">
+        <h1 style="margin: 0; font-size: 22px;">HospitiumRIS</h1>
+        <p style="margin: 8px 0 0; opacity: 0.92;">${heading}</p>
+      </div>
+      <div style="padding: 28px; border: 1px solid #e2e8f0; border-top: none;">
+        <p style="margin-top: 0;">${intro}</p>
+        ${bodyHtml}
+        ${actionUrl ? `
+          <p style="margin: 28px 0 8px;">
+            <a href="${actionUrl}" style="display: inline-block; background: #8b6cbc; color: white; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-weight: 700;">
+              ${actionLabel || 'Open in HospitiumRIS'}
+            </a>
+          </p>
+        ` : ''}
+        <p style="color: #64748b; font-size: 13px; margin-bottom: 0;">This message was sent by HospitiumRIS.</p>
+      </div>
+    </div>
+  `;
+}
+
+export async function sendProposalReviewInviteEmail({
+  to,
+  reviewerName,
+  inviterName,
+  proposalTitle,
+  reviewUrl,
+  message,
+}) {
+  try {
+    const transporter = createTransporter();
+    const html = wrapProposalEmail({
+      heading: 'Proposal review invitation',
+      intro: `Hello ${reviewerName || 'colleague'},`,
+      bodyHtml: `
+        <p><strong>${inviterName || 'A research administrator'}</strong> has invited you to review:</p>
+        <p style="font-weight: 700; color: #8b6cbc;">${proposalTitle}</p>
+        ${message ? `<p style="background: #f8fafc; padding: 12px 14px; border-radius: 8px;">${message}</p>` : ''}
+        <p>Please open the proposal, complete your review, and record a decision.</p>
+      `,
+      actionUrl: reviewUrl,
+      actionLabel: 'Review proposal',
+    });
+    const result = await transporter.sendMail({
+      from: process.env.FROM_EMAIL || 'HospitiumRIS <noreply@hospitiumris.com>',
+      to,
+      subject: `Review invitation: ${proposalTitle}`,
+      html,
+      text: `${inviterName || 'A research administrator'} invited you to review "${proposalTitle}". ${reviewUrl || ''}`,
+    });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Proposal review invite email failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function sendProposalStatusEmail({
+  to,
+  recipientName,
+  proposalTitle,
+  statusLabel,
+  details,
+  actionUrl,
+}) {
+  try {
+    const transporter = createTransporter();
+    const html = wrapProposalEmail({
+      heading: 'Proposal status update',
+      intro: `Hello ${recipientName || 'researcher'},`,
+      bodyHtml: `
+        <p>The status of <strong>${proposalTitle}</strong> is now <strong>${statusLabel}</strong>.</p>
+        ${details ? `<p>${details}</p>` : ''}
+      `,
+      actionUrl,
+      actionLabel: 'View proposal',
+    });
+    const result = await transporter.sendMail({
+      from: process.env.FROM_EMAIL || 'HospitiumRIS <noreply@hospitiumris.com>',
+      to,
+      subject: `Proposal update: ${proposalTitle} is ${statusLabel}`,
+      html,
+      text: `The status of "${proposalTitle}" is now ${statusLabel}. ${details || ''} ${actionUrl || ''}`,
+    });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Proposal status email failed:', error);
+    return { success: false, error: error.message };
+  }
+}

@@ -224,8 +224,11 @@ const ProposalsListPage = () => {
     handleMenuClose();
   };
 
+  const isProposalEditable = (proposal) =>
+    proposal?.status === 'DRAFT' || proposal?.status === 'REVISION_REQUESTED';
+
   const handleEditProposal = (proposal) => {
-    // Navigate to proposal edit
+    if (!isProposalEditable(proposal)) return;
     router.push(`/researcher/projects/proposals/edit/${proposal.id}`);
     handleMenuClose();
   };
@@ -963,17 +966,20 @@ const ProposalsListPage = () => {
                               </Tooltip>
                             </>
                           ) : (
-                            <Tooltip title="Edit">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleEditProposal(proposal)}
-                                sx={{ 
-                                  color: '#8b6cbc',
-                                  '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.08)' }
-                                }}
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
+                            <Tooltip title={isProposalEditable(proposal) ? 'Edit' : 'Submitted proposals cannot be edited'}>
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  disabled={!isProposalEditable(proposal)}
+                                  onClick={() => handleEditProposal(proposal)}
+                                  sx={{ 
+                                    color: '#8b6cbc',
+                                    '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.08)' }
+                                  }}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </span>
                             </Tooltip>
                           )}
                           <Tooltip title="More">
@@ -1059,7 +1065,11 @@ const ProposalsListPage = () => {
                 Discard Draft
               </MenuItem>
             ] : [
-              <MenuItem key="edit" onClick={() => handleEditProposal(selectedProposal)}>
+              <MenuItem
+                key="edit"
+                disabled={!isProposalEditable(selectedProposal)}
+                onClick={() => handleEditProposal(selectedProposal)}
+              >
                 <EditIcon fontSize="small" sx={{ mr: 1 }} />
                 Edit Proposal
               </MenuItem>,

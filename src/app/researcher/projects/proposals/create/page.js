@@ -473,6 +473,10 @@ const CreateProposalPage = () => {
       
       if (data.success) {
         const proposal = data.proposal;
+        if (proposal.status && proposal.status !== 'DRAFT' && proposal.status !== 'REVISION_REQUESTED') {
+          router.replace(`/researcher/projects/proposals/view/${id}`);
+          return;
+        }
         
         // Populate form data with existing proposal
         const loadedForm = {
@@ -1120,6 +1124,12 @@ const CreateProposalPage = () => {
 
     try {
       const result = await saveDraftToDatabase('UNDER_REVIEW', true);
+      const submittedId = result?.proposal?.id || proposalIdRef.current;
+      if (submittedId) {
+        await fetch(`/api/proposals/${submittedId}/submit`, { method: 'POST' }).catch((err) => {
+          console.error('Failed to enter review pipeline:', err);
+        });
+      }
       
       // Send notifications to submitter, Research Admin, and co-investigators
       try {

@@ -4,6 +4,7 @@ import { logApiActivity, logDatabaseActivity, getRequestMetadata } from '../../.
 import { getUserId, requireAuth } from '../../../lib/auth-server.js';
 import { saveProposalDocument } from '../../../lib/proposal-files.js';
 import { collectBudgetDocuments, persistProposalBudgetFields } from '../../../lib/proposal-budget.js';
+import { ensureProposalInReviewPipeline, isProposalInReview } from '../../../lib/proposal-review-pipeline.js';
 
 const prisma = new PrismaClient();
 
@@ -248,6 +249,14 @@ export async function POST(request) {
                 });
             } catch (err) {
                 console.error('Failed to link ethics application to proposal:', err);
+            }
+        }
+
+        if (isProposalInReview(proposal.status)) {
+            try {
+                await ensureProposalInReviewPipeline(prisma, proposal.id, { status: proposal.status });
+            } catch (err) {
+                console.error('Failed to assign review pipeline:', err);
             }
         }
 

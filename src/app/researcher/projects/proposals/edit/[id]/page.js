@@ -277,6 +277,10 @@ const EditProposalPage = () => {
         
         if (data.success) {
           const proposal = data.proposal;
+          if (proposal.status && proposal.status !== 'DRAFT' && proposal.status !== 'REVISION_REQUESTED') {
+            router.replace(`/researcher/projects/proposals/view/${proposalId}`);
+            return;
+          }
           
           // Map proposal data to form data
           setFormData({

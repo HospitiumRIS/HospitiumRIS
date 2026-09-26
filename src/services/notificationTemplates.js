@@ -261,6 +261,20 @@ export const notificationTemplates = {
     })
   },
 
+  PROPOSAL_STATUS_CHANGED: {
+    type: 'PROPOSAL_STATUS_CHANGED',
+    category: 'PROPOSAL',
+    priority: 'HIGH',
+    generate: ({ proposalTitle, statusLabel, details }) => ({
+      title: 'Proposal status updated',
+      message: `Your proposal "${proposalTitle}" is now ${statusLabel}.${details ? ` ${details}` : ''}`,
+      actionLabel: 'View Proposal',
+      category: 'PROPOSAL',
+      priority: 'HIGH',
+      actionRequired: true
+    })
+  },
+
   PROPOSAL_REVISION_REQUESTED: {
     type: 'PROPOSAL_REVISION_REQUESTED',
     category: 'PROPOSAL',

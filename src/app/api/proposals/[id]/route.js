@@ -9,6 +9,7 @@ import {
     resolveProposalTenantId,
 } from '../../../../lib/proposal-files.js';
 import { collectBudgetDocuments, persistProposalBudgetFields, readProposalBudgetFields } from '../../../../lib/proposal-budget.js';
+import { ensureProposalInReviewPipeline, isProposalInReview } from '../../../../lib/proposal-review-pipeline.js';
 
 const prisma = new PrismaClient();
 
@@ -148,8 +149,24 @@ export async function GET(request, { params }) {
             });
         }
 
-        // Transform dates to ISO strings for frontend
         const linkedEthics = proposal.ethicsLinks?.[0]?.ethicsApplication || null;
+        if (linkedEthics?.documents && Array.isArray(linkedEthics.documents)) {
+            linkedEthics.documents.forEach((doc) => {
+                const storedName = doc.fileName || doc.originalName || doc.name;
+                allDocuments.push({
+                    ...doc,
+                    category: doc.type || 'Ethics Documents',
+                    fileName: storedName,
+                    type: doc.mimeType || 'application/pdf',
+                    size: doc.size,
+                    url: doc.url
+                        || (doc.fileId ? `/api/files/${doc.fileId}` : null)
+                        || (storedName ? `/api/ethics/applications/${linkedEthics.id}/file?name=${encodeURIComponent(storedName)}` : null),
+                    uploadedAt: doc.uploadedAt || proposal.createdAt,
+                    ethicsApplicationId: linkedEthics.id,
+                });
+            });
+        }
         const transformedProposal = {
             ...proposal,
             startDate: proposal.startDate?.toISOString(),
@@ -287,7 +304,10 @@ export async function PUT(request, { params }) {
             ethicsCommittee: proposalData.ethicsCommittee,
             approvalDate: proposalData.approvalDate ? new Date(proposalData.approvalDate) : null,
             publicationRelevance: proposalData.publicationRelevance,
-            status: proposalData.status || 'DRAFT',
+            status: (isProposalInReview(existingProposal.status) || ['APPROVED', 'REJECTED'].includes(existingProposal.status))
+              && proposalData.status === 'DRAFT'
+                ? existingProposal.status
+                : (proposalData.status || 'DRAFT'),
             updatedAt: new Date()
         };
 
@@ -323,6 +343,14 @@ export async function PUT(request, { params }) {
             });
         } catch (err) {
             console.error('Failed to persist proposal budget fields:', err);
+        }
+
+        if (isProposalInReview(updateData.status)) {
+            try {
+                await ensureProposalInReviewPipeline(prisma, id, { status: updateData.status });
+            } catch (err) {
+                console.error('Failed to assign review pipeline:', err);
+            }
         }
 
         if (proposalData.linkedEthicsApplicationId) {

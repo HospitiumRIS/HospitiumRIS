@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { notifyProposalOwner } from '../../../../../lib/proposal-review-comms.js';
 
 const prisma = new PrismaClient();
 
 export async function POST(request, { params }) {
   try {
-    const { id: proposalId } = params;
+    const { id: proposalId } = await params;
     const body = await request.json();
     const {
       stageId,
@@ -161,6 +162,12 @@ export async function POST(request, { params }) {
             where: { id: proposalId },
             data: { status: 'APPROVED' },
           });
+          const approvedProposal = await prisma.proposal.findUnique({ where: { id: proposalId } });
+          await notifyProposalOwner(prisma, approvedProposal, {
+            templateKey: 'PROPOSAL_APPROVED',
+            statusLabel: 'Approved',
+            details: comments || 'All review stages are complete.',
+          }).catch((err) => console.error('Failed to notify researcher of approval:', err));
         }
       } else if (finalDecision === 'DISAPPROVED') {
         // Proposal rejected
@@ -176,6 +183,12 @@ export async function POST(request, { params }) {
           where: { id: proposalId },
           data: { status: 'REJECTED' },
         });
+        const rejectedProposal = await prisma.proposal.findUnique({ where: { id: proposalId } });
+        await notifyProposalOwner(prisma, rejectedProposal, {
+          templateKey: 'PROPOSAL_REJECTED',
+          statusLabel: 'Not approved',
+          details: comments || conditions || 'The current review stage was not approved.',
+        }).catch((err) => console.error('Failed to notify researcher of rejection:', err));
       }
     }
 

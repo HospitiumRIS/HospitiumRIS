@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { ensureProposalInReviewPipeline } from '../../../../../lib/proposal-review-pipeline.js';
 
 const prisma = new PrismaClient();
 
 export async function POST(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
-    // Check if proposal exists
     const proposal = await prisma.proposal.findUnique({
       where: { id },
     });
@@ -19,71 +19,22 @@ export async function POST(request, { params }) {
       );
     }
 
-    if (proposal.status !== 'DRAFT') {
+    const existingTracking = await prisma.proposalReviewTracking.findUnique({
+      where: { proposalId: id },
+    });
+
+    if (!['DRAFT', 'REVISION_REQUESTED', 'SUBMITTED', 'UNDER_REVIEW'].includes(proposal.status) && existingTracking) {
       return NextResponse.json(
-        { error: 'Only draft proposals can be submitted' },
+        { error: 'This proposal cannot be submitted for review' },
         { status: 400 }
       );
     }
 
-    // Get the default pipeline
-    const defaultPipeline = await prisma.proposalReviewPipeline.findFirst({
-      where: {
-        isDefault: true,
-        isActive: true,
-      },
-      include: {
-        stages: {
-          orderBy: {
-            order: 'asc',
-          },
-        },
-      },
+    await ensureProposalInReviewPipeline(prisma, id, { status: 'UNDER_REVIEW' });
+
+    const updatedProposal = await prisma.proposal.findUnique({
+      where: { id },
     });
-
-    if (!defaultPipeline) {
-      return NextResponse.json(
-        { error: 'No default review pipeline configured. Please contact administration.' },
-        { status: 400 }
-      );
-    }
-
-    // Update proposal status and create tracking
-    const updatedProposal = await prisma.$transaction(async (tx) => {
-      // Update proposal status
-      const updated = await tx.proposal.update({
-        where: { id },
-        data: { status: 'SUBMITTED' },
-      });
-
-      // Create review tracking
-      const tracking = await tx.proposalReviewTracking.create({
-        data: {
-          proposalId: id,
-          pipelineId: defaultPipeline.id,
-          currentStageOrder: 1,
-          overallStatus: 'IN_PROGRESS',
-          startedAt: new Date(),
-        },
-      });
-
-      // Create stage progress for all stages
-      for (const stage of defaultPipeline.stages) {
-        await tx.proposalStageProgress.create({
-          data: {
-            trackingId: tracking.id,
-            stageId: stage.id,
-            status: stage.order === 1 ? 'IN_PROGRESS' : 'NOT_STARTED',
-            startedAt: stage.order === 1 ? new Date() : null,
-            assignedReviewers: stage.reviewerEmails || [],
-          },
-        });
-      }
-
-      return updated;
-    });
-
-    // TODO: Send notifications to reviewers of first stage
 
     return NextResponse.json({
       proposal: updatedProposal,
@@ -95,5 +46,7 @@ export async function POST(request, { params }) {
       { error: 'Failed to submit proposal' },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }

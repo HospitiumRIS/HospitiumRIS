@@ -1,2019 +1,549 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useTranslation } from 'react-i18next';
 import {
+  Alert,
   Box,
-  Container,
-  Typography,
-  Card,
-  CardContent,
   Button,
   Chip,
-  Stack,
-  Divider,
   CircularProgress,
-  IconButton,
-  Avatar,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Grid,
-  Tabs,
-  Tab,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
+  Container,
   MenuItem,
-  Snackbar,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails
+  Paper,
+  Stack,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
+  alpha,
 } from '@mui/material';
 import {
-  RateReview as ReviewIcon,
-  CheckCircle as ApproveIcon,
-  Cancel as RejectIcon,
-  AttachMoney as BudgetIcon,
-  Schedule as TimelineIcon,
-  Person as PrincipalInvestigatorIcon,
-  School as DepartmentIcon,
-  Assignment as ProposalIcon,
-  Assignment as AssignmentIcon,
-  History as HistoryIcon,
   ArrowBack as BackIcon,
-  AttachFile as AttachFileIcon,
-  Description as DocumentIcon,
-  PictureAsPdf as PdfIcon,
-  InsertDriveFile as FileIcon,
-  Close as CloseIcon,
-  Edit as EditIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  ExpandMore as ExpandMoreIcon
+  AssignmentTurnedIn as DeliverableIcon,
+  Flag as MilestoneIcon,
+  Home as HomeIcon,
+  PersonAdd as AssignIcon,
+  RateReview as ReviewIcon,
+  Science as ScienceIcon,
+  Security as EthicsIcon,
+  Timeline as TimelineIcon,
+  Visibility as ViewIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
 import PageHeader from '../../../../../components/common/PageHeader';
+import ProposalReviewStatus from '../../../../../components/Proposals/ProposalReviewStatus';
 import { useAuth } from '../../../../../components/AuthProvider';
 
-const ProposalDetailsPage = () => {
-  const { t } = useTranslation();
+const PURPLE = '#8b6cbc';
+const sectionCardSx = {
+  p: 2.5,
+  borderRadius: 2,
+  border: '1px solid',
+  borderColor: 'divider',
+  background: 'white',
+  boxShadow: 'none',
+};
+const htmlSx = {
+  color: '#334155',
+  lineHeight: 1.7,
+  fontSize: '0.95rem',
+  '& p': { m: 0, mb: 1.25 },
+  '& p:last-child': { mb: 0 },
+  '& ul, & ol': { m: 0, pl: 2.5, mb: 1.25 },
+  '& li': { mb: 0.5 },
+  '& strong': { fontWeight: 700 },
+};
+
+const isEmptyHtml = (value) => !value || String(value).replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').trim() === '';
+const looksLikeHtml = (value) => typeof value === 'string' && /<\/?[a-z][\s\S]*>/i.test(value);
+
+function HtmlContent({ value, empty = 'Not provided' }) {
+  if (isEmptyHtml(value)) {
+    return <Typography variant="body2" color="text.secondary">{empty}</Typography>;
+  }
+  if (!looksLikeHtml(value)) {
+    return <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{value}</Typography>;
+  }
+  return <Box sx={htmlSx} dangerouslySetInnerHTML={{ __html: value }} />;
+}
+
+const formatDate = (value) => {
+  if (!value) return 'Not set';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Not set' : date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
+const formatCurrency = (amount, currency = 'USD') => {
+  if (amount === null || amount === undefined || amount === '') return 'Not set';
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(amount));
+  } catch {
+    return `${amount}`;
+  }
+};
+
+const statusChip = (status) => {
+  const tones = {
+    UNDER_REVIEW: { bg: PURPLE, color: '#fff' },
+    APPROVED: { bg: '#16a34a', color: '#fff' },
+    REJECTED: { bg: '#dc2626', color: '#fff' },
+    REVISION_REQUESTED: { bg: '#d97706', color: '#fff' },
+  };
+  const tone = tones[status] || { bg: '#64748b', color: '#fff' };
+  return <Chip size="small" label={String(status || '').replaceAll('_', ' ')} sx={{ bgcolor: tone.bg, color: tone.color, fontWeight: 700, textTransform: 'capitalize' }} />;
+};
+
+export default function InstitutionProposalReviewDetailPage() {
   const { user } = useAuth();
   const params = useParams();
   const router = useRouter();
-  const proposalId = params.id;
-
-  const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [proposal, setProposal] = useState(null);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState(0);
-  const [reviewDialog, setReviewDialog] = useState(false);
-  const [reviewForm, setReviewForm] = useState({
-    decision: '',
-    overallComments: '',
-    rejectionReason: '',
-    revisionRequirements: '',
-    sectionReviews: {
-      researchObjectives: { compliant: null, comments: '' },
-      methodology: { compliant: null, comments: '' },
-      ethicsCompliance: { compliant: null, comments: '' },
-      budgetJustification: { compliant: null, comments: '' },
-      timeline: { compliant: null, comments: '' },
-      teamQualifications: { compliant: null, comments: '' }
-    },
-    recommendation: ''
-  });
-  const [submittingReview, setSubmittingReview] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [tracking, setTracking] = useState(null);
+  const [reviewers, setReviewers] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [activeTab, setActiveTab] = useState(0);
+  const [inviteEmails, setInviteEmails] = useState('');
+  const [inviteMessage, setInviteMessage] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [decision, setDecision] = useState('');
+  const [comments, setComments] = useState('');
+  const [extra, setExtra] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (mounted) {
-      loadProposal();
-      loadReviews();
-    }
-  }, [proposalId, mounted]);
-
-  const loadProposal = async () => {
+  const load = async () => {
     try {
       setLoading(true);
-      setError(null);
-
-      const response = await fetch(`/api/proposals/${proposalId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch proposal: ${response.status}`);
-      }
-
-      const result = await response.json();
-      const data = result.proposal || result; // Handle both wrapped and unwrapped responses
-      
-      const transformedProposal = {
-        id: data.id,
-        title: data.title,
-        principalInvestigator: data.principalInvestigator || 'Unknown',
-        department: data.departments?.[0] || 'Unknown',
-        status: data.status,
-        budget: data.totalBudgetAmount || 0,
-        submittedDate: data.createdAt,
-        description: data.description || data.abstract || data.researchObjectives || 'No description available',
-        researchArea: data.researchAreas?.[0] || 'General Research',
-        duration: data.endDate && data.startDate 
-          ? `${Math.ceil((new Date(data.endDate) - new Date(data.startDate)) / (1000 * 60 * 60 * 24 * 30))} months`
-          : 'Not specified',
-        startDate: data.startDate,
-        endDate: data.endDate,
-        collaborators: data.coInvestigators || [],
-        ethicsApproval: data.ethicsApprovalStatus || 'Pending',
-        fundingSource: data.fundingSource || 'Internal',
-        fundingInstitution: data.fundingInstitution || 'N/A',
-        grantNumber: data.grantNumber || 'N/A',
-        researchObjectives: data.researchObjectives || '',
-        methodology: data.methodology || '',
-        milestones: data.milestones || [],
-        deliverables: data.deliverables || [],
-        ethicalConsiderations: data.ethicalConsiderationsOverview || '',
-        dataSecurityMeasures: data.dataSecurityMeasures || '',
-        consentProcedures: data.consentProcedures || '',
-        reviewHistory: data.reviewHistory || [],
-        documents: data.documents || [],
-        researchAreas: data.researchAreas || [],
-        totalBudgetAmount: data.totalBudgetAmount || 0,
-        daysInReview: 0
-      };
-
-      setProposal(transformedProposal);
-      
-      // Calculate daysInReview after mount to avoid hydration mismatch
-      if (mounted && data.status === 'UNDER_REVIEW' && data.updatedAt) {
-        const days = Math.ceil((new Date() - new Date(data.updatedAt)) / (1000 * 60 * 60 * 24));
-        setProposal(prev => ({ ...prev, daysInReview: days }));
-      }
-    } catch (error) {
-      console.error('Error loading proposal:', error);
-      setError(`Error loading proposal: ${error.message}`);
+      const [proposalRes, trackingRes, reviewersRes, reviewsRes] = await Promise.all([
+        fetch(`/api/proposals/${params.id}`),
+        fetch(`/api/proposals/${params.id}/review-status`),
+        fetch(`/api/proposals/${params.id}/reviewers`),
+        fetch(`/api/proposals/${params.id}/review`),
+      ]);
+      const proposalData = await proposalRes.json();
+      if (!proposalRes.ok || !proposalData.success) throw new Error(proposalData.error || 'Failed to load proposal');
+      setProposal(proposalData.proposal);
+      if (trackingRes.ok) setTracking((await trackingRes.json()).tracking || null);
+      if (reviewersRes.ok) setReviewers((await reviewersRes.json()).assignedReviewers || []);
+      if (reviewsRes.ok) setReviews((await reviewsRes.json()).reviews || []);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadReviews = async () => {
-    try {
-      const response = await fetch(`/api/proposals/${proposalId}/review`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+  useEffect(() => {
+    if (params.id) load();
+  }, [params.id]);
+
+  const timeline = useMemo(() => {
+    if (!proposal) return [];
+    const items = [];
+    if (proposal.startDate) items.push({ id: 'start', kind: 'start', title: 'Project start', date: proposal.startDate });
+    (proposal.milestones || []).forEach((item, index) => {
+      items.push({ id: item.id || `ms-${index}`, kind: 'milestone', title: item.title || `Milestone ${index + 1}`, date: item.targetDate, description: item.description });
+    });
+    (proposal.deliverables || []).forEach((item, index) => {
+      const linked = (proposal.milestones || []).find((milestone) => milestone.id === item.milestoneId);
+      items.push({
+        id: item.id || `dl-${index}`,
+        kind: 'deliverable',
+        title: item.title || `Deliverable ${index + 1}`,
+        date: item.dueDate,
+        description: item.description,
+        meta: [item.type, linked?.title ? `Output of ${linked.title}` : null].filter(Boolean).join(' · '),
       });
+    });
+    if (proposal.endDate) items.push({ id: 'end', kind: 'end', title: 'Project end', date: proposal.endDate });
+    return items.sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+  }, [proposal]);
 
-      if (response.ok) {
-        const result = await response.json();
-        setReviews(result.reviews || []);
-      }
-    } catch (error) {
-      console.error('Error loading reviews:', error);
-    }
-  };
-
-  const handleSubmitReview = async () => {
+  const inviteReviewers = async () => {
+    setInviting(true);
+    setError('');
     try {
-      setSubmittingReview(true);
-      setError(null);
-      
-      const reviewPayload = {
-        proposalId: proposal.id,
-        decision: reviewForm.decision,
-        overallComments: reviewForm.overallComments,
-        rejectionReason: reviewForm.rejectionReason,
-        revisionRequirements: reviewForm.revisionRequirements,
-        sectionReviews: reviewForm.sectionReviews,
-        recommendation: reviewForm.recommendation,
-        reviewer: user?.name || user?.givenName + ' ' + user?.familyName || 'Research Administrator',
-        reviewDate: new Date().toISOString(),
-        complianceScore: {
-          total: 6,
-          compliant: Object.values(reviewForm.sectionReviews).filter(s => s.compliant === true).length,
-          nonCompliant: Object.values(reviewForm.sectionReviews).filter(s => s.compliant === false).length
-        }
-      };
-
-      console.log('Submitting comprehensive review:', reviewPayload);
-
-      // Submit review to database
-      const response = await fetch(`/api/proposals/${proposal.id}/review`, {
+      const response = await fetch(`/api/proposals/${params.id}/reviewers`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(reviewPayload)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emails: inviteEmails.split(/[,\s]+/), message: inviteMessage }),
       });
-
-      const result = await response.json();
-
-      console.log('API Response:', { status: response.status, result });
-
-      if (!response.ok) {
-        const errorMessage = result.error || result.details || 'Failed to submit review';
-        console.error('API Error:', errorMessage, result);
-        throw new Error(errorMessage);
-      }
-
-      console.log('Review submitted successfully:', result);
-
-      // Update local state with the new status from server
-      const newStatus = result.proposal?.status || reviewForm.decision === 'approved' ? 'APPROVED' : 
-                       reviewForm.decision === 'rejected' ? 'REJECTED' : 
-                       reviewForm.decision === 'requires_revision' ? 'REVISION_REQUESTED' : 
-                       'UNDER_REVIEW';
-
-      setProposal({
-        ...proposal,
-        status: newStatus,
-        reviewHistory: [
-          ...proposal.reviewHistory,
-          {
-            id: result.review?.id || Date.now(),
-            reviewer: reviewPayload.reviewer,
-            decision: reviewForm.decision,
-            overallComments: reviewForm.overallComments,
-            rejectionReason: reviewForm.rejectionReason,
-            revisionRequirements: reviewForm.revisionRequirements,
-            sectionReviews: reviewForm.sectionReviews,
-            recommendation: reviewForm.recommendation,
-            complianceScore: reviewPayload.complianceScore,
-            date: new Date().toISOString()
-          }
-        ],
-        daysInReview: 0
-      });
-
-      // Show success message
-      setSnackbar({
-        open: true,
-        message: result.message || 'Review submitted successfully!',
-        severity: 'success'
-      });
-
-      // Reload reviews to update the Review History tab
-      loadReviews();
-
-      setReviewDialog(false);
-      setReviewForm({
-        decision: '',
-        overallComments: '',
-        rejectionReason: '',
-        revisionRequirements: '',
-        sectionReviews: {
-          researchObjectives: { compliant: null, comments: '' },
-          methodology: { compliant: null, comments: '' },
-          ethicsCompliance: { compliant: null, comments: '' },
-          budgetJustification: { compliant: null, comments: '' },
-          timeline: { compliant: null, comments: '' },
-          teamQualifications: { compliant: null, comments: '' }
-        },
-        recommendation: ''
-      });
-      
-    } catch (error) {
-      console.error('Error submitting review:', error);
-      setError('Failed to submit review: ' + error.message);
-      setSnackbar({
-        open: true,
-        message: 'Error: ' + error.message,
-        severity: 'error'
-      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to invite reviewers');
+      setReviewers(data.assignedReviewers || []);
+      setInviteEmails('');
+      setInviteMessage('');
+      setNotice('Reviewer invitations sent. The researcher has been notified.');
+    } catch (err) {
+      setError(err.message);
     } finally {
-      setSubmittingReview(false);
+      setInviting(false);
     }
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
-
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'approved': return 'success';
-      case 'submitted': return 'warning';
-      case 'under_review': return 'info';
-      case 'rejected': return 'error';
-      default: return 'default';
+  const submitDecision = async () => {
+    if (!decision || !comments.trim()) {
+      setError('Choose a decision and add comments.');
+      return;
     }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'approved': return <ApproveIcon fontSize="small" />;
-      case 'submitted': return <ProposalIcon fontSize="small" />;
-      case 'under_review': return <ReviewIcon fontSize="small" />;
-      case 'rejected': return <RejectIcon fontSize="small" />;
-      default: return <ProposalIcon fontSize="small" />;
-    }
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    setSubmitting(true);
+    setError('');
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'N/A';
-      return format(date, 'MMM dd, yyyy');
-    } catch (error) {
-      return 'N/A';
+      const reviewerName = `${user?.givenName || ''} ${user?.familyName || ''}`.trim() || user?.email || 'Research administrator';
+      const response = await fetch(`/api/proposals/${params.id}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          decision,
+          overallComments: comments,
+          rejectionReason: decision === 'rejected' ? extra : '',
+          revisionRequirements: decision === 'requires_revision' ? extra : '',
+          recommendation: comments,
+          reviewer: reviewerName,
+          reviewDate: new Date().toISOString(),
+          sectionReviews: {},
+          complianceScore: {},
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || data.details || 'Failed to submit review');
+      setNotice('Review recorded. The researcher has been notified by email and in-app notification.');
+      setDecision('');
+      setComments('');
+      setExtra('');
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const getOrdinal = (n) => {
-    const s = ['th', 'st', 'nd', 'rd'];
-    const v = n % 100;
-    return n + (s[(v - 20) % 10] || s[v] || s[0]);
-  };
-
-  const renderTabContent = () => {
-    if (!proposal) return null;
-
-    switch (activeTab) {
-      case 0: // Overview
-        return (
-          <Box>
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3, mb: 3 }}>
-              {/* Basic Information */}
-              <Box sx={{ flex: 1 }}>
-                <Card sx={{ 
-                  height: '100%',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 2,
-                  transition: 'all 0.3s',
-                  '&:hover': {
-                    boxShadow: '0 4px 16px rgba(139,108,188,0.15)',
-                    borderColor: '#8b6cbc'
-                  }
-                }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
-                      <ProposalIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
-                      Proposal Details
-                    </Typography>
-                    <Stack spacing={2.5}>
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Title</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>{proposal.title}</Typography>
-                      </Box>
-                      <Divider />
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 1, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Research Areas</Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                          {proposal.researchAreas.map((area, index) => (
-                            <Chip key={index} label={area} size="small" sx={{ bgcolor: '#f3e5f5', color: '#7b1fa2', fontWeight: 600 }} />
-                          ))}
-                        </Box>
-                      </Box>
-                      <Divider />
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</Typography>
-                        <Typography variant="body2" sx={{ lineHeight: 1.7, color: '#555' }}>{proposal.description}</Typography>
-                      </Box>
-                      <Divider />
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Duration</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>{proposal.duration}</Typography>
-                      </Box>
-                      {proposal.startDate && proposal.endDate && (
-                        <>
-                          <Divider />
-                          <Box>
-                            <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Project Timeline</Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 500, color: '#2c3e50' }}>
-                              {formatDate(proposal.startDate)} - {formatDate(proposal.endDate)}
-                            </Typography>
-                          </Box>
-                        </>
-                      )}
-                      <Divider />
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 1, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('common.status')}</Typography>
-                        <Chip 
-                          label={proposal.status ? proposal.status.replace('_', ' ') : 'Unknown'} 
-                          color={getStatusColor(proposal.status)}
-                          icon={getStatusIcon(proposal.status)}
-                        />
-                      </Box>
-                      {proposal.status === 'UNDER_REVIEW' && (
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary">Days in Review</Typography>
-                          <Typography variant="body2" sx={{ color: proposal.daysInReview > 30 ? 'error.main' : 'text.primary' }}>
-                            {proposal.daysInReview} days
-                            {proposal.daysInReview > 30 && ' (Review Overdue)'}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Box>
-
-              {/* Principal Investigator & Team */}
-              <Box sx={{ flex: 1 }}>
-                <Card sx={{ 
-                  height: '100%',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 2,
-                  transition: 'all 0.3s',
-                  '&:hover': {
-                    boxShadow: '0 4px 16px rgba(139,108,188,0.15)',
-                    borderColor: '#8b6cbc'
-                  }
-                }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
-                      <PrincipalInvestigatorIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
-                      Principal Investigator & Team
-                    </Typography>
-                    <Stack spacing={2.5}>
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Principal Investigator</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>{proposal.principalInvestigator}</Typography>
-                      </Box>
-                      <Divider />
-                      <Box>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Department</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>{proposal.department}</Typography>
-                      </Box>
-                      {proposal.collaborators.length > 0 && (
-                        <>
-                          <Divider />
-                          <Box>
-                            <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 1.5, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Co-Investigators</Typography>
-                            <List dense sx={{ bgcolor: '#fafafa', borderRadius: 1, p: 1 }}>
-                              {proposal.collaborators.slice(0, 3).map((collaborator, index) => (
-                                <ListItem key={index} sx={{ px: 1, py: 0.5 }}>
-                                  <ListItemIcon>
-                                    <Avatar sx={{ bgcolor: '#8b6cbc', width: 32, height: 32, fontSize: '0.875rem' }}>
-                                    {collaborator?.name?.charAt(0) || collaborator?.charAt?.(0) || 'C'}
-                                  </Avatar>
-                                </ListItemIcon>
-                                <ListItemText 
-                                  primary={collaborator?.name || collaborator} 
-                                  secondary={collaborator?.email}
-                                />
-                              </ListItem>
-                            ))}
-                              {proposal.collaborators.length > 3 && (
-                                <Typography variant="body2" color="text.secondary" sx={{ ml: 5, fontStyle: 'italic' }}>
-                                  +{proposal.collaborators.length - 3} more collaborators
-                                </Typography>
-                              )}
-                            </List>
-                          </Box>
-                        </>
-                      )}
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Box>
-            </Box>
-
-            {/* Funding Information */}
-            <Box>
-                <Card sx={{ 
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 2,
-                  transition: 'all 0.3s',
-                  '&:hover': {
-                    boxShadow: '0 4px 16px rgba(139,108,188,0.15)',
-                    borderColor: '#8b6cbc'
-                  }
-                }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                      <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
-                        <BudgetIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
-                        Funding Information
-                      </Typography>
-                    </Box>
-                    <Grid container spacing={3}>
-                      <Grid item xs={12} md={3}>
-                        <Box sx={{ textAlign: 'center', py: 3, bgcolor: '#f3e5f5', borderRadius: 2 }}>
-                          <Typography variant="h3" sx={{ color: '#8b6cbc', fontWeight: 'bold' }}>
-                            {formatCurrency(proposal.totalBudgetAmount)}
-                          </Typography>
-                          <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mt: 1 }}>
-                            Total Budget Requested
-                          </Typography>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={12} md={9}>
-                        <Stack spacing={2.5}>
-                          <Box>
-                            <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Funding Source</Typography>
-                            <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>{proposal.fundingSource}</Typography>
-                          </Box>
-                          <Divider />
-                          <Box>
-                            <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Funding Institution</Typography>
-                            <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>{proposal.fundingInstitution}</Typography>
-                          </Box>
-                          {proposal.grantNumber !== 'N/A' && (
-                            <>
-                              <Divider />
-                              <Box>
-                                <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Grant Number</Typography>
-                                <Typography variant="body1" sx={{ fontWeight: 600, color: '#2c3e50' }}>{proposal.grantNumber}</Typography>
-                              </Box>
-                            </>
-                          )}
-                        </Stack>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-            </Box>
-          </Box>
-        );
-      
-      case 1: // Research Details
-        return (
-          <Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <Card sx={{ 
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                border: '1px solid #e0e0e0',
-                borderRadius: 2
-              }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>Research Objectives</Typography>
-                  </Box>
-                  <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#555' }}>
-                    {proposal.researchObjectives || 'No research objectives provided.'}
-                  </Typography>
-                </CardContent>
-              </Card>
-              
-              <Card sx={{ 
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                border: '1px solid #e0e0e0',
-                borderRadius: 2
-              }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>Methodology</Typography>
-                  </Box>
-                  <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#555' }}>
-                    {proposal.methodology || 'No methodology provided.'}
-                  </Typography>
-                </CardContent>
-              </Card>
-              
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-                {proposal.milestones.length > 0 && (
-                  <Box sx={{ flex: 1 }}>
-                  <Card sx={{ 
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                    border: '1px solid #e0e0e0',
-                    borderRadius: 2,
-                    height: '100%'
-                  }}>
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
-                        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
-                          <TimelineIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
-                          Milestones
-                        </Typography>
-                      </Box>
-                      <List sx={{ p: 0 }}>
-                        {proposal.milestones.map((milestone, index) => (
-                          <ListItem key={index} divider={index < proposal.milestones.length - 1} sx={{ px: 0, py: 2 }}>
-                            <ListItemIcon sx={{ minWidth: 40 }}>
-                              <Box sx={{ 
-                                bgcolor: '#8b6cbc', 
-                                color: 'white', 
-                                borderRadius: '50%', 
-                                width: 32, 
-                                height: 32, 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center',
-                                fontSize: '0.875rem',
-                                fontWeight: 700
-                              }}>
-                                {index + 1}
-                              </Box>
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={
-                                <Typography variant="subtitle2" component="span" sx={{ fontWeight: 600, color: '#2c3e50', display: 'block', mb: 0.5 }}>
-                                  {milestone.title || `Milestone ${index + 1}`}
-                                </Typography>
-                              }
-                              secondary={
-                                <Box component="span" sx={{ display: 'block' }}>
-                                  <Typography variant="body2" component="span" color="text.secondary" sx={{ mb: 0.5, lineHeight: 1.6, display: 'block' }}>
-                                    {milestone.description || 'No description provided'}
-                                  </Typography>
-                                  {(milestone.dueDate || milestone.targetDate || milestone.date) && (
-                                    <Chip 
-                                      icon={<TimelineIcon sx={{ fontSize: 14 }} />}
-                                      label={`Due: ${formatDate(milestone.dueDate || milestone.targetDate || milestone.date)}`}
-                                      size="small"
-                                      sx={{ 
-                                        mt: 0.5,
-                                        bgcolor: '#f3e5f5',
-                                        color: '#7b1fa2',
-                                        fontWeight: 600,
-                                        fontSize: '0.7rem'
-                                      }}
-                                    />
-                                  )}
-                                </Box>
-                              }
-                              primaryTypographyProps={{ component: 'span' }}
-                              secondaryTypographyProps={{ component: 'span' }}
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    </CardContent>
-                  </Card>
-                  </Box>
-                )}
-                {proposal.deliverables.length > 0 && (
-                  <Box sx={{ flex: 1 }}>
-                  <Card sx={{ 
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                    border: '1px solid #e0e0e0',
-                    borderRadius: 2,
-                    height: '100%'
-                  }}>
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
-                        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
-                          <AssignmentIcon sx={{ mr: 1.5, color: '#4caf50', fontSize: 24 }} />
-                          Deliverables
-                        </Typography>
-                        {reviews.length > 0 && (
-                          <Chip 
-                            label="Compliant" 
-                            size="small"
-                            sx={{ 
-                              bgcolor: '#10b981', 
-                              color: 'white',
-                              fontWeight: 600,
-                              '& .MuiChip-icon': { color: 'white' }
-                            }}
-                            icon={<CheckCircleIcon />}
-                          />
-                        )}
-                      </Box>
-                      <List sx={{ p: 0 }}>
-                        {proposal.deliverables.map((deliverable, index) => (
-                          <ListItem key={index} divider={index < proposal.deliverables.length - 1} sx={{ px: 0, py: 2 }}>
-                            <ListItemIcon sx={{ minWidth: 40 }}>
-                              <Box sx={{ 
-                                bgcolor: '#4caf50', 
-                                color: 'white', 
-                                borderRadius: '50%', 
-                                width: 32, 
-                                height: 32, 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center',
-                                fontSize: '0.875rem',
-                                fontWeight: 700
-                              }}>
-                                {index + 1}
-                              </Box>
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={
-                                <Typography variant="subtitle2" component="span" sx={{ fontWeight: 600, color: '#2c3e50', display: 'block', mb: 0.5 }}>
-                                  {deliverable.title || `Deliverable ${index + 1}`}
-                                </Typography>
-                              }
-                              secondary={
-                                <Box component="span" sx={{ display: 'block' }}>
-                                  <Typography variant="body2" component="span" color="text.secondary" sx={{ mb: 0.5, lineHeight: 1.6, display: 'block' }}>
-                                    {typeof deliverable === 'string' ? deliverable : (deliverable.description || '')}
-                                  </Typography>
-                                  {(deliverable.dueDate || deliverable.deliveryDate || deliverable.targetDate || deliverable.date) && (
-                                    <Chip 
-                                      icon={<TimelineIcon sx={{ fontSize: 14 }} />}
-                                      label={`Delivery: ${formatDate(deliverable.dueDate || deliverable.deliveryDate || deliverable.targetDate || deliverable.date)}`}
-                                      size="small"
-                                      sx={{ 
-                                        mt: 0.5,
-                                        bgcolor: '#e8f5e9',
-                                        color: '#2e7d32',
-                                        fontWeight: 600,
-                                        fontSize: '0.7rem'
-                                      }}
-                                    />
-                                  )}
-                                </Box>
-                              }
-                              primaryTypographyProps={{ component: 'span' }}
-                              secondaryTypographyProps={{ component: 'span' }}
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    </CardContent>
-                  </Card>
-                  </Box>
-                )}
-              </Box>
-            </Box>
-          </Box>
-        );
-
-      case 2: // Ethics & Compliance
-        return (
-          <Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Card sx={{ mb: 2 }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
-                        <ReviewIcon sx={{ mr: 1, color: '#8b6cbc' }} />
-                        Ethics Approval Status
-                      </Typography>
-                      {reviews.length > 0 && (
-                        <Chip 
-                          label={proposal.ethicsApproval === 'Approved' ? 'Compliant' : 'Non-Compliant'}
-                          size="small"
-                          sx={{ 
-                            bgcolor: proposal.ethicsApproval === 'Approved' ? '#10b981' : '#ef4444', 
-                            color: 'white',
-                            fontWeight: 600,
-                            '& .MuiChip-icon': { color: 'white' }
-                          }}
-                          icon={proposal.ethicsApproval === 'Approved' ? <CheckCircleIcon /> : <ErrorIcon />}
-                        />
-                      )}
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Chip 
-                        label={proposal.ethicsApproval} 
-                        size="medium"
-                        color={proposal.ethicsApproval === 'Approved' ? 'success' : 'warning'}
-                        sx={{ mr: 2 }}
-                      />
-                      {proposal.ethicsApproval !== 'Approved' && (
-                        <Alert severity="warning" sx={{ flex: 1 }}>
-                          Ethics approval required before final project approval
-                        </Alert>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-              
-              {proposal.ethicalConsiderations && (
-                <Card sx={{ 
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: 2
-                }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>Ethical Considerations</Typography>
-                    </Box>
-                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#555' }}>
-                      {proposal.ethicalConsiderations}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              )}
-              
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-                {proposal.consentProcedures && (
-                  <Box sx={{ flex: 1 }}>
-                  <Card>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                        <Typography variant="h6">Consent Procedures</Typography>
-                      </Box>
-                      <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                        {proposal.consentProcedures}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                  </Box>
-                )}
-                {proposal.dataSecurityMeasures && (
-                  <Box sx={{ flex: 1 }}>
-                  <Card>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                        <Typography variant="h6">Data Security Measures</Typography>
-                      </Box>
-                      <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                        {proposal.dataSecurityMeasures}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                  </Box>
-                )}
-              </Box>
-            </Box>
-          </Box>
-        );
-      
-      case 3: // Supporting Documents
-        return (
-          <Box>
-            {proposal.documents && proposal.documents.length > 0 ? (
-              <Card sx={{ 
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                border: '1px solid #e0e0e0',
-                borderRadius: 2
-              }}>
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
-                      <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
-                        <AttachFileIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
-                        Supporting Documents
-                      </Typography>
-                      {reviews.length > 0 && (
-                        <Chip 
-                          label="Compliant" 
-                          size="small"
-                          sx={{ 
-                            bgcolor: '#10b981', 
-                            color: 'white',
-                            fontWeight: 600,
-                            '& .MuiChip-icon': { color: 'white' }
-                          }}
-                          icon={<CheckCircleIcon />}
-                        />
-                      )}
-                    </Box>
-                    <List sx={{ p: 0 }}>
-                      {proposal.documents.map((doc, index) => {
-                        const isPdf = doc.fileName?.toLowerCase().endsWith('.pdf') || doc.type === 'application/pdf';
-                        const isImage = doc.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(doc.fileName);
-                        
-                        return (
-                          <ListItem 
-                            key={doc.id || index} 
-                            divider={index < proposal.documents.length - 1}
-                            sx={{ 
-                              px: 0, 
-                              py: 2,
-                              '&:hover': {
-                                bgcolor: '#f5f3f7',
-                                cursor: 'pointer'
-                              }
-                            }}
-                          >
-                            <ListItemIcon sx={{ minWidth: 48 }}>
-                              <Box sx={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: 1,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                bgcolor: isPdf ? '#f44336' : isImage ? '#4caf50' : '#2196f3',
-                                color: 'white'
-                              }}>
-                                {isPdf ? <PdfIcon /> : isImage ? <DocumentIcon /> : <FileIcon />}
-                              </Box>
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={
-                                <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                  <Typography variant="subtitle2" component="span" sx={{ fontWeight: 600, color: '#2c3e50' }}>
-                                    {doc.originalName || doc.fileName || doc.name || 'Untitled Document'}
-                                  </Typography>
-                                  {doc.category && (
-                                    <Chip 
-                                      label={doc.category}
-                                      size="small"
-                                      sx={{ 
-                                        height: 20,
-                                        fontSize: '0.7rem',
-                                        bgcolor: doc.category === 'Ethics Documents' ? '#fef3c7' : 
-                                                 doc.category === 'Data Management Plan' ? '#dbeafe' : '#f3f4f6',
-                                        color: doc.category === 'Ethics Documents' ? '#92400e' : 
-                                               doc.category === 'Data Management Plan' ? '#1e40af' : '#374151',
-                                        fontWeight: 600
-                                      }}
-                                    />
-                                  )}
-                                </Box>
-                              }
-                              secondary={
-                                <Box component="span" sx={{ display: 'block' }}>
-                                  <Typography variant="caption" component="span" color="text.secondary" sx={{ display: 'block' }}>
-                                    {doc.type || doc.mimeType || 'Unknown type'} • {doc.size ? `${(doc.size / 1024).toFixed(2)} KB` : 'Size unknown'}
-                                  </Typography>
-                                  {doc.uploadedAt && (
-                                    <Typography variant="caption" component="span" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                                      Uploaded: {formatDate(doc.uploadedAt)}
-                                    </Typography>
-                                  )}
-                                </Box>
-                              }
-                              primaryTypographyProps={{ component: 'span' }}
-                              secondaryTypographyProps={{ component: 'span' }}
-                            />
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              startIcon={<AttachFileIcon />}
-                              onClick={() => {
-                                if (doc.url || doc.path) {
-                                  window.open(doc.url || doc.path, '_blank');
-                                }
-                              }}
-                              sx={{
-                                borderColor: '#8b6cbc',
-                                color: '#8b6cbc',
-                                '&:hover': {
-                                  borderColor: '#7b5cac',
-                                  bgcolor: '#f3e5f5'
-                                }
-                              }}
-                            >
-                              View
-                            </Button>
-                          </ListItem>
-                        );
-                      })}
-                    </List>
-                  </CardContent>
-                </Card>
-            ) : (
-              <Card sx={{ 
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                border: '1px solid #e0e0e0',
-                borderRadius: 2
-              }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
-                    <AttachFileIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
-                    Supporting Documents
-                  </Typography>
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    No documents have been uploaded for this proposal yet.
-                  </Alert>
-                </CardContent>
-              </Card>
-            )}
-          </Box>
-        );
-      
-      case 4: // Review History
-        return (
-          <Box>
-            {reviews.length > 0 ? (
-              <Stack spacing={2}>
-                {reviews.map((review, index) => (
-                  <Accordion 
-                    key={review.id || index}
-                    defaultExpanded={index === 0}
-                    sx={{ 
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px !important',
-                      '&:before': { display: 'none' },
-                      '&.Mui-expanded': {
-                        margin: '0 !important',
-                        mb: 2
-                      }
-                    }}
-                  >
-                    <AccordionSummary
-                      expandIcon={<ExpandMoreIcon sx={{ color: '#8b6cbc' }} />}
-                      sx={{
-                        '&:hover': { bgcolor: '#f5f3f7' },
-                        borderRadius: '8px',
-                        '&.Mui-expanded': {
-                          borderBottomLeftRadius: 0,
-                          borderBottomRightRadius: 0
-                        }
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar sx={{ bgcolor: '#8b6cbc', width: 48, height: 48 }}>
-                            {review.reviewerName?.charAt(0) || 'R'}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="h6" sx={{ fontWeight: 700, color: '#2c3e50' }}>
-                              {getOrdinal(reviews.length - index)} Review
-                            </Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#666', mt: 0.5 }}>
-                              {review.reviewerName || 'Anonymous Reviewer'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {formatDate(review.reviewDate)}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Chip 
-                          label={review.decision?.replace('_', ' ')} 
-                          color={
-                            review.decision === 'APPROVED' ? 'success' : 
-                            review.decision === 'REJECTED' ? 'error' : 
-                            'warning'
-                          }
-                          sx={{ fontWeight: 700 }}
-                        />
-                      </Box>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ p: 3, pt: 2 }}>
-                      {/* Compliance Score */}
-                      {review.complianceScore && (
-                        <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: '#2c3e50' }}>
-                            Compliance Summary
-                          </Typography>
-                          <Box sx={{ display: 'flex', gap: 3 }}>
-                            <Box>
-                              <Typography variant="caption" color="text.secondary">Total Sections</Typography>
-                              <Typography variant="h6" sx={{ fontWeight: 700 }}>{review.complianceScore.total || 6}</Typography>
-                            </Box>
-                            <Box>
-                              <Typography variant="caption" color="text.secondary">Compliant</Typography>
-                              <Typography variant="h6" sx={{ fontWeight: 700, color: '#4caf50' }}>{review.complianceScore.compliant || 0}</Typography>
-                            </Box>
-                            <Box>
-                              <Typography variant="caption" color="text.secondary">Non-Compliant</Typography>
-                              <Typography variant="h6" sx={{ fontWeight: 700, color: '#f44336' }}>{review.complianceScore.nonCompliant || 0}</Typography>
-                            </Box>
-                          </Box>
-                        </Box>
-                      )}
-
-                      {/* Overall Comments */}
-                      <Box sx={{ mb: 3 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: '#2c3e50' }}>
-                          Overall Comments
-                        </Typography>
-                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: '#555' }}>
-                          {review.overallComments}
-                        </Typography>
-                      </Box>
-
-                      {/* Rejection Reason */}
-                      {review.rejectionReason && (
-                        <Box sx={{ mb: 3 }}>
-                          <Alert severity="error" sx={{ mb: 1 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                              Reason for Rejection
-                            </Typography>
-                            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-                              {review.rejectionReason}
-                            </Typography>
-                          </Alert>
-                        </Box>
-                      )}
-
-                      {/* Revision Requirements */}
-                      {review.revisionRequirements && (
-                        <Box sx={{ mb: 3 }}>
-                          <Alert severity="warning" sx={{ mb: 1 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                              Required Revisions
-                            </Typography>
-                            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-                              {review.revisionRequirements}
-                            </Typography>
-                          </Alert>
-                        </Box>
-                      )}
-
-                      {/* Section Reviews */}
-                      {review.sectionReviews && Object.keys(review.sectionReviews).length > 0 && (
-                        <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, color: '#2c3e50' }}>
-                            Section-by-Section Review
-                          </Typography>
-                          <Stack spacing={2}>
-                            {Object.entries(review.sectionReviews).map(([sectionKey, sectionData]) => (
-                              <Card key={sectionKey} variant="outlined" sx={{ bgcolor: '#fafafa' }}>
-                                <CardContent sx={{ p: 2 }}>
-                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, textTransform: 'capitalize' }}>
-                                      {sectionKey.replace(/([A-Z])/g, ' $1').trim()}
-                                    </Typography>
-                                    <Chip 
-                                      label={sectionData.compliant ? 'Compliant' : sectionData.compliant === false ? 'Non-Compliant' : 'Not Rated'}
-                                      size="small"
-                                      color={sectionData.compliant ? 'success' : sectionData.compliant === false ? 'error' : 'default'}
-                                    />
-                                  </Box>
-                                  {sectionData.comments && (
-                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                                      {sectionData.comments}
-                                    </Typography>
-                                  )}
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </Stack>
-                        </Box>
-                      )}
-
-                      {/* Recommendation */}
-                      {review.recommendation && (
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: '#2c3e50' }}>
-                            Reviewer Recommendation
-                          </Typography>
-                          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: '#555', fontStyle: 'italic' }}>
-                            {review.recommendation}
-                          </Typography>
-                        </Box>
-                      )}
-                    </AccordionDetails>
-                  </Accordion>
-                ))}
-              </Stack>
-            ) : (
-              <Card sx={{ 
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                border: '1px solid #e0e0e0',
-                borderRadius: 2
-              }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', fontWeight: 700, color: '#2c3e50' }}>
-                    <HistoryIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 24 }} />
-                    Review History
-                  </Typography>
-                  <Alert severity="info">
-                    {t('common.no_data')}
-                  </Alert>
-                </CardContent>
-              </Card>
-            )}
-          </Box>
-        );
-      
-      default:
-        return null;
-    }
-  };
-
-  if (!mounted || loading) {
+  if (loading) {
     return (
-      <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
-        <PageHeader
-          title="Proposal Details"
-          description="Review proposal information"
-          icon={<ProposalIcon sx={{ fontSize: 32 }} />}
-          breadcrumbs={[
-            { label: 'Institution', path: '/institution' },
-            { label: 'Proposal Review', path: '/institution/proposals/review' },
-            { label: 'Details' }
-          ]}
-          gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
-        />
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-            <CircularProgress size={60} sx={{ color: '#8b6cbc' }} />
-          </Box>
-        </Container>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
-        <PageHeader
-          title="Proposal Details"
-          description="Review proposal information"
-          icon={<ProposalIcon sx={{ fontSize: 32 }} />}
-          breadcrumbs={[
-            { label: 'Institution', path: '/institution' },
-            { label: 'Proposal Review', path: '/institution/proposals/review' },
-            { label: 'Details' }
-          ]}
-          gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
-        />
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Alert severity="error" sx={{ mb: 4 }}>
-            {error}
-            <Button 
-              variant="outlined" 
-              onClick={loadProposal} 
-              sx={{ ml: 2 }}
-            >
-              {t('common.retry')}
-            </Button>
-          </Alert>
-        </Container>
+      <Box sx={{ minHeight: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress sx={{ color: PURPLE }} />
       </Box>
     );
   }
 
   if (!proposal) {
-    return null;
+    return (
+      <Container maxWidth={false} sx={{ py: 4, maxWidth: '1600px' }}>
+        <Alert severity="error">{error || 'Proposal not found'}</Alert>
+      </Container>
+    );
   }
 
   return (
-    <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+    <>
       <PageHeader
         title={proposal.title}
-        description={`Principal Investigator: ${proposal.principalInvestigator} • ${proposal.department}`}
-        icon={<ProposalIcon sx={{ fontSize: 32 }} />}
+        description={`${proposal.principalInvestigator || 'Principal investigator not set'} · ${(proposal.departments || []).join(', ') || 'No department'}`}
+        icon={<ReviewIcon sx={{ fontSize: 32 }} />}
         breadcrumbs={[
-          { label: 'Institution', path: '/institution' },
-          { label: 'Proposal Review', path: '/institution/proposals/review' },
-          { label: 'Details' }
+          { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/institution' },
+          { label: 'Proposal review', path: '/institution/proposals/review' },
+          { label: 'Review' },
         ]}
-        gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
         actionButton={
-          <Stack direction="row" spacing={2}>
+          <Stack direction="row" spacing={1.25} alignItems="center">
+            {statusChip(proposal.status)}
             <Button
-              variant="outlined"
+              variant="contained"
               startIcon={<BackIcon />}
               onClick={() => router.push('/institution/proposals/review')}
-              sx={{
-                bgcolor: 'rgba(255,255,255,0.2)',
-                color: 'white',
-                borderColor: 'rgba(255,255,255,0.3)',
-                '&:hover': {
-                  bgcolor: 'rgba(255,255,255,0.3)',
-                  borderColor: 'rgba(255,255,255,0.5)',
-                },
-                backdropFilter: 'blur(10px)'
-              }}
+              sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}
             >
-              {t('common.back')}
+              Back to list
             </Button>
-            {proposal.status === 'UNDER_REVIEW' && (
-              <Button
-                variant="contained"
-                startIcon={<ReviewIcon />}
-                onClick={() => setReviewDialog(true)}
-                sx={{
-                  bgcolor: 'rgba(255,255,255,0.95)',
-                  color: '#8b6cbc',
-                  '&:hover': {
-                    bgcolor: 'white',
-                  },
-                  fontWeight: 600
-                }}
-              >
-                {t('common.review')}
-              </Button>
-            )}
           </Stack>
         }
       />
 
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Summary Bar */}
-        <Card sx={{ 
-          mb: 4, 
-          bgcolor: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)', 
-          border: '1px solid #e0e0e0',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.08)'
-        }}>
-          <CardContent sx={{ py: 3, px: 4 }}>
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: { xs: 'column', sm: 'row' }, 
-              gap: 4,
-              alignItems: 'center',
-              justifyContent: 'space-around'
-            }}>
-              <Box sx={{ textAlign: 'center', flex: 1 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.7rem' }}>
-                  Budget
-                </Typography>
-                <Typography variant="h5" sx={{ color: '#8b6cbc', fontWeight: 800, mt: 0.5 }}>
-                  {formatCurrency(proposal.totalBudgetAmount)}
-                </Typography>
+      <Container maxWidth={false} sx={{ py: 3, maxWidth: '1600px', mx: 'auto' }}>
+        {error ? <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert> : null}
+        {notice ? <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setNotice('')}>{notice}</Alert> : null}
+
+        <Paper sx={{ ...sectionCardSx, mb: 2 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+            {[
+              ['Status', statusChip(proposal.status)],
+              ['Timeline', `${formatDate(proposal.startDate)} - ${formatDate(proposal.endDate)}`],
+              ['Budget', formatCurrency(proposal.totalBudgetAmount, proposal.budgetCurrency)],
+              ['Reviewers invited', reviewers.length ? `${reviewers.length}` : 'None yet'],
+            ].map(([label, value]) => (
+              <Box key={label} sx={{ flex: 1 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</Typography>
+                <Box sx={{ mt: 0.75 }}>{typeof value === 'string' ? <Typography variant="body2" sx={{ fontWeight: 700 }}>{value}</Typography> : value}</Box>
               </Box>
-              
-              <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', sm: 'block' } }} />
-              
-              <Box sx={{ textAlign: 'center', flex: 1 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.7rem' }}>
-                  Status
-                </Typography>
-                <Box sx={{ mt: 1 }}>
-                  <Chip
-                    icon={getStatusIcon(proposal.status)}
-                    label={proposal.status ? proposal.status.replace('_', ' ') : 'Unknown'}
-                    color={getStatusColor(proposal.status)}
-                    sx={{ fontWeight: 700, fontSize: '0.875rem', px: 1 }}
-                  />
+            ))}
+          </Stack>
+        </Paper>
+
+        <Paper sx={{ ...sectionCardSx, p: 0, mb: 2, overflow: 'hidden' }}>
+          <Tabs
+            value={activeTab}
+            onChange={(_, value) => setActiveTab(value)}
+            variant="scrollable"
+            sx={{
+              '& .MuiTab-root': { textTransform: 'none', fontWeight: 700, minHeight: 52, color: '#64748b' },
+              '& .Mui-selected': { color: `${PURPLE} !important` },
+              '& .MuiTabs-indicator': { backgroundColor: PURPLE, height: 3 },
+            }}
+          >
+            <Tab icon={<ScienceIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Overview" />
+            <Tab icon={<TimelineIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Timeline" />
+            <Tab icon={<EthicsIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Ethics and files" />
+            <Tab icon={<ReviewIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Review and assignment" />
+          </Tabs>
+        </Paper>
+
+        {activeTab === 0 && (
+          <Stack spacing={2}>
+            <Paper sx={sectionCardSx}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>Study team</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                <strong>Principal investigator:</strong> {proposal.principalInvestigator || 'Not set'}
+                {proposal.principalInvestigatorOrcid ? ` (${proposal.principalInvestigatorOrcid})` : ''}
+              </Typography>
+              {(proposal.coInvestigators || []).length ? (
+                <Stack spacing={0.75}>
+                  {proposal.coInvestigators.map((person, index) => (
+                    <Typography key={person.id || index} variant="body2">
+                      {person.name || [person.givenName, person.familyName].filter(Boolean).join(' ') || 'Co-investigator'}
+                      {person.role ? ` · ${person.role}` : ''}
+                      {person.affiliation || person.institution ? ` · ${person.affiliation || person.institution}` : ''}
+                    </Typography>
+                  ))}
+                </Stack>
+              ) : (
+                <Typography variant="body2" color="text.secondary">No co-investigators listed</Typography>
+              )}
+            </Paper>
+            {(proposal.researchAreas || []).length ? (
+              <Paper sx={sectionCardSx}>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>Research areas</Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {proposal.researchAreas.map((area) => (
+                    <Chip key={area} label={area} size="small" sx={{ bgcolor: alpha(PURPLE, 0.1), color: PURPLE, fontWeight: 700 }} />
+                  ))}
+                </Stack>
+              </Paper>
+            ) : null}
+            <Paper sx={sectionCardSx}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>Abstract</Typography>
+              <HtmlContent value={proposal.abstract} />
+            </Paper>
+            <Paper sx={sectionCardSx}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>Objectives</Typography>
+              <HtmlContent value={proposal.researchObjectives} />
+            </Paper>
+            <Paper sx={sectionCardSx}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>Methodology</Typography>
+              <HtmlContent value={proposal.methodology} />
+            </Paper>
+          </Stack>
+        )}
+
+        {activeTab === 1 && (
+          <Paper sx={sectionCardSx}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Project timeline</Typography>
+            {timeline.map((item, index) => (
+              <Box key={item.id} sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 28 }}>
+                  <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: alpha(PURPLE, 0.12), color: PURPLE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {item.kind === 'deliverable' ? <DeliverableIcon sx={{ fontSize: 16 }} /> : <MilestoneIcon sx={{ fontSize: 16 }} />}
+                  </Box>
+                  {index < timeline.length - 1 ? <Box sx={{ width: 2, flex: 1, minHeight: 24, bgcolor: alpha(PURPLE, 0.18), my: 0.5 }} /> : null}
+                </Box>
+                <Box sx={{ flex: 1, mb: 2, p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{item.title}</Typography>
+                    <Typography variant="caption" sx={{ color: PURPLE, fontWeight: 700 }}>{formatDate(item.date)}</Typography>
+                  </Stack>
+                  {item.meta ? <Typography variant="caption" color="text.secondary">{item.meta}</Typography> : null}
+                  {item.description ? <Box sx={{ mt: 1 }}><HtmlContent value={item.description} empty="" /></Box> : null}
                 </Box>
               </Box>
-              
-              <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', sm: 'block' } }} />
-              
-              <Box sx={{ textAlign: 'center', flex: 1 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.7rem' }}>
-                  Duration
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, mt: 0.5, color: '#2c3e50' }}>
-                  {proposal.duration}
-                </Typography>
-              </Box>
-              
-              <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', sm: 'block' } }} />
-              
-              <Box sx={{ textAlign: 'center', flex: 1 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.7rem' }}>
-                  Submitted
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, mt: 0.5, color: '#2c3e50' }}>
-                  {formatDate(proposal.submittedDate)}
-                </Typography>
-              </Box>
-            </Box>
-          </CardContent>
-        </Card>
+            ))}
+          </Paper>
+        )}
 
-        {/* Tabs */}
-        <Card>
-          <Tabs 
-            value={activeTab} 
-            onChange={(e, newValue) => setActiveTab(newValue)}
-            sx={{ 
-              bgcolor: 'white',
-              borderBottom: '2px solid #e0e0e0',
-              px: 3,
-              '& .MuiTab-root': {
-                textTransform: 'none',
-                fontWeight: 600,
-                fontSize: '0.95rem',
-                minHeight: 56,
-                color: '#666',
-                '&.Mui-selected': {
-                  color: '#8b6cbc',
-                }
-              },
-              '& .MuiTabs-indicator': {
-                height: 3,
-                backgroundColor: '#8b6cbc',
-                borderRadius: '3px 3px 0 0'
-              }
-            }}
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            <Tab icon={<ProposalIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Overview" />
-            <Tab icon={<AssignmentIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Research Details" />
-            <Tab icon={<ReviewIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Ethics & Compliance" />
-            <Tab icon={<AttachFileIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Supporting Documents" />
-            <Tab icon={<HistoryIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Review History" />
-          </Tabs>
-          <Box sx={{ p: 4, bgcolor: '#fafafa', minHeight: '400px' }}>
-            {renderTabContent()}
-          </Box>
-        </Card>
-      </Container>
-
-      {/* Comprehensive Review Dialog */}
-      <Dialog 
-        open={reviewDialog} 
-        onClose={() => setReviewDialog(false)}
-        maxWidth="lg"
-        fullWidth
-        PaperProps={{
-          sx: { height: '90vh' }
-        }}
-      >
-        <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #8b6cbc 0%, #7b5cac 100%)',
-          color: 'white',
-          p: 3
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <ReviewIcon sx={{ mr: 1.5, fontSize: 28 }} />
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  Comprehensive Proposal Review
+        {activeTab === 2 && (
+          <Stack spacing={2}>
+            <Paper sx={sectionCardSx}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>Ethics</Typography>
+              <Typography variant="body2"><strong>Status:</strong> {proposal.ethicsApprovalStatus || 'Not set'}</Typography>
+              <Typography variant="body2"><strong>Reference:</strong> {proposal.ethicsApprovalReference || 'Not set'}</Typography>
+              <Typography variant="body2"><strong>Committee:</strong> {proposal.ethicsCommittee || 'Not set'}</Typography>
+              {proposal.ethicsLinks?.[0]?.ethicsApplication ? (
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  <strong>Linked application:</strong> {proposal.ethicsLinks[0].ethicsApplication.title}
+                  {proposal.ethicsLinks[0].ethicsApplication.referenceNumber
+                    ? ` (${proposal.ethicsLinks[0].ethicsApplication.referenceNumber})`
+                    : ''}
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
-                  {proposal?.title}
-                </Typography>
-              </Box>
-            </Box>
-            <IconButton 
-              onClick={() => setReviewDialog(false)}
-              sx={{ color: 'white' }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        
-        <DialogContent sx={{ p: 0 }}>
-          <Box sx={{ p: 4, maxHeight: 'calc(90vh - 200px)', overflowY: 'auto' }}>
-            <Stack spacing={4}>
-              {/* Section-by-Section Compliance Review */}
-              <Box>
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 700, color: '#2c3e50' }}>
-                  Section Compliance Review
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                  Evaluate each section of the proposal for compliance with institutional standards and requirements.
-                </Typography>
-                
-                <Stack spacing={3}>
-                  {/* Research Objectives */}
-                  <Card sx={{ border: '1px solid #e0e0e0' }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                        1. Research Objectives
-                      </Typography>
-                      <FormControl component="fieldset">
-                        <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-                          <Button
-                            variant={reviewForm.sectionReviews.researchObjectives.compliant === true ? 'contained' : 'outlined'}
-                            color="success"
-                            size="small"
-                            onClick={() => setReviewForm({
-                              ...reviewForm,
-                              sectionReviews: {
-                                ...reviewForm.sectionReviews,
-                                researchObjectives: { ...reviewForm.sectionReviews.researchObjectives, compliant: true }
-                              }
-                            })}
-                          >
-                            Compliant
-                          </Button>
-                          <Button
-                            variant={reviewForm.sectionReviews.researchObjectives.compliant === false ? 'contained' : 'outlined'}
-                            color="error"
-                            size="small"
-                            onClick={() => setReviewForm({
-                              ...reviewForm,
-                              sectionReviews: {
-                                ...reviewForm.sectionReviews,
-                                researchObjectives: { ...reviewForm.sectionReviews.researchObjectives, compliant: false }
-                              }
-                            })}
-                          >
-                            Non-Compliant
-                          </Button>
-                        </Stack>
-                      </FormControl>
-                      <TextField
-                        fullWidth
-                        multiline
-                        minRows={2}
-                        maxRows={10}
+              ) : null}
+              {proposal.ethicalConsiderationsOverview ? (
+                <Box sx={{ mt: 1.5 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>Considerations</Typography>
+                  <HtmlContent value={proposal.ethicalConsiderationsOverview} />
+                </Box>
+              ) : null}
+            </Paper>
+            <Paper sx={sectionCardSx}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>Documents</Typography>
+              {(proposal.documents || []).length ? (
+                <Stack spacing={1}>
+                  {proposal.documents.map((file, index) => (
+                    <Stack key={index} direction="row" justifyContent="space-between" sx={{ px: 1.5, py: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>{file.originalName || file.fileName || 'Document'}</Typography>
+                        <Typography variant="caption" color="text.secondary">{file.category || 'File'}</Typography>
+                      </Box>
+                      <Button
                         size="small"
-                        label={t('common.comments')}
-                        value={reviewForm.sectionReviews.researchObjectives.comments}
-                        onChange={(e) => setReviewForm({
-                          ...reviewForm,
-                          sectionReviews: {
-                            ...reviewForm.sectionReviews,
-                            researchObjectives: { ...reviewForm.sectionReviews.researchObjectives, comments: e.target.value }
-                          }
-                        })}
-                        placeholder="Provide specific feedback on research objectives..."
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Methodology */}
-                  <Card sx={{ border: '1px solid #e0e0e0' }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                        2. Methodology
-                      </Typography>
-                      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-                        <Button
-                          variant={reviewForm.sectionReviews.methodology.compliant === true ? 'contained' : 'outlined'}
-                          color="success"
-                          size="small"
-                          onClick={() => setReviewForm({
-                            ...reviewForm,
-                            sectionReviews: {
-                              ...reviewForm.sectionReviews,
-                              methodology: { ...reviewForm.sectionReviews.methodology, compliant: true }
-                            }
-                          })}
-                        >
-                          Compliant
-                        </Button>
-                        <Button
-                          variant={reviewForm.sectionReviews.methodology.compliant === false ? 'contained' : 'outlined'}
-                          color="error"
-                          size="small"
-                          onClick={() => setReviewForm({
-                            ...reviewForm,
-                            sectionReviews: {
-                              ...reviewForm.sectionReviews,
-                              methodology: { ...reviewForm.sectionReviews.methodology, compliant: false }
-                            }
-                          })}
-                        >
-                          Non-Compliant
-                        </Button>
-                      </Stack>
-                      <TextField
-                        fullWidth
-                        multiline
-                        minRows={2}
-                        maxRows={10}
-                        size="small"
-                        label={t('common.comments')}
-                        value={reviewForm.sectionReviews.methodology.comments}
-                        onChange={(e) => setReviewForm({
-                          ...reviewForm,
-                          sectionReviews: {
-                            ...reviewForm.sectionReviews,
-                            methodology: { ...reviewForm.sectionReviews.methodology, comments: e.target.value }
-                          }
-                        })}
-                        placeholder="Provide specific feedback on methodology..."
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Ethics Compliance */}
-                  <Card sx={{ border: '1px solid #e0e0e0' }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                        3. Ethics & Compliance
-                      </Typography>
-                      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-                        <Button
-                          variant={reviewForm.sectionReviews.ethicsCompliance.compliant === true ? 'contained' : 'outlined'}
-                          color="success"
-                          size="small"
-                          onClick={() => setReviewForm({
-                            ...reviewForm,
-                            sectionReviews: {
-                              ...reviewForm.sectionReviews,
-                              ethicsCompliance: { ...reviewForm.sectionReviews.ethicsCompliance, compliant: true }
-                            }
-                          })}
-                        >
-                          Compliant
-                        </Button>
-                        <Button
-                          variant={reviewForm.sectionReviews.ethicsCompliance.compliant === false ? 'contained' : 'outlined'}
-                          color="error"
-                          size="small"
-                          onClick={() => setReviewForm({
-                            ...reviewForm,
-                            sectionReviews: {
-                              ...reviewForm.sectionReviews,
-                              ethicsCompliance: { ...reviewForm.sectionReviews.ethicsCompliance, compliant: false }
-                            }
-                          })}
-                        >
-                          Non-Compliant
-                        </Button>
-                      </Stack>
-                      <TextField
-                        fullWidth
-                        multiline
-                        minRows={2}
-                        maxRows={10}
-                        size="small"
-                        label={t('common.comments')}
-                        value={reviewForm.sectionReviews.ethicsCompliance.comments}
-                        onChange={(e) => setReviewForm({
-                          ...reviewForm,
-                          sectionReviews: {
-                            ...reviewForm.sectionReviews,
-                            ethicsCompliance: { ...reviewForm.sectionReviews.ethicsCompliance, comments: e.target.value }
-                          }
-                        })}
-                        placeholder="Provide specific feedback on ethics compliance..."
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Budget Justification */}
-                  <Card sx={{ border: '1px solid #e0e0e0' }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                        4. Budget Justification
-                      </Typography>
-                      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-                        <Button
-                          variant={reviewForm.sectionReviews.budgetJustification.compliant === true ? 'contained' : 'outlined'}
-                          color="success"
-                          size="small"
-                          onClick={() => setReviewForm({
-                            ...reviewForm,
-                            sectionReviews: {
-                              ...reviewForm.sectionReviews,
-                              budgetJustification: { ...reviewForm.sectionReviews.budgetJustification, compliant: true }
-                            }
-                          })}
-                        >
-                          Compliant
-                        </Button>
-                        <Button
-                          variant={reviewForm.sectionReviews.budgetJustification.compliant === false ? 'contained' : 'outlined'}
-                          color="error"
-                          size="small"
-                          onClick={() => setReviewForm({
-                            ...reviewForm,
-                            sectionReviews: {
-                              ...reviewForm.sectionReviews,
-                              budgetJustification: { ...reviewForm.sectionReviews.budgetJustification, compliant: false }
-                            }
-                          })}
-                        >
-                          Non-Compliant
-                        </Button>
-                      </Stack>
-                      <TextField
-                        fullWidth
-                        multiline
-                        minRows={2}
-                        maxRows={10}
-                        size="small"
-                        label={t('common.comments')}
-                        value={reviewForm.sectionReviews.budgetJustification.comments}
-                        onChange={(e) => setReviewForm({
-                          ...reviewForm,
-                          sectionReviews: {
-                            ...reviewForm.sectionReviews,
-                            budgetJustification: { ...reviewForm.sectionReviews.budgetJustification, comments: e.target.value }
-                          }
-                        })}
-                        placeholder="Provide specific feedback on budget justification..."
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Timeline */}
-                  <Card sx={{ border: '1px solid #e0e0e0' }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                        5. Timeline & Milestones
-                      </Typography>
-                      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-                        <Button
-                          variant={reviewForm.sectionReviews.timeline.compliant === true ? 'contained' : 'outlined'}
-                          color="success"
-                          size="small"
-                          onClick={() => setReviewForm({
-                            ...reviewForm,
-                            sectionReviews: {
-                              ...reviewForm.sectionReviews,
-                              timeline: { ...reviewForm.sectionReviews.timeline, compliant: true }
-                            }
-                          })}
-                        >
-                          Compliant
-                        </Button>
-                        <Button
-                          variant={reviewForm.sectionReviews.timeline.compliant === false ? 'contained' : 'outlined'}
-                          color="error"
-                          size="small"
-                          onClick={() => setReviewForm({
-                            ...reviewForm,
-                            sectionReviews: {
-                              ...reviewForm.sectionReviews,
-                              timeline: { ...reviewForm.sectionReviews.timeline, compliant: false }
-                            }
-                          })}
-                        >
-                          Non-Compliant
-                        </Button>
-                      </Stack>
-                      <TextField
-                        fullWidth
-                        multiline
-                        minRows={2}
-                        maxRows={10}
-                        size="small"
-                        label={t('common.comments')}
-                        value={reviewForm.sectionReviews.timeline.comments}
-                        onChange={(e) => setReviewForm({
-                          ...reviewForm,
-                          sectionReviews: {
-                            ...reviewForm.sectionReviews,
-                            timeline: { ...reviewForm.sectionReviews.timeline, comments: e.target.value }
-                          }
-                        })}
-                        placeholder="Provide specific feedback on timeline and milestones..."
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Team Qualifications */}
-                  <Card sx={{ border: '1px solid #e0e0e0' }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                        6. Team Qualifications
-                      </Typography>
-                      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-                        <Button
-                          variant={reviewForm.sectionReviews.teamQualifications.compliant === true ? 'contained' : 'outlined'}
-                          color="success"
-                          size="small"
-                          onClick={() => setReviewForm({
-                            ...reviewForm,
-                            sectionReviews: {
-                              ...reviewForm.sectionReviews,
-                              teamQualifications: { ...reviewForm.sectionReviews.teamQualifications, compliant: true }
-                            }
-                          })}
-                        >
-                          Compliant
-                        </Button>
-                        <Button
-                          variant={reviewForm.sectionReviews.teamQualifications.compliant === false ? 'contained' : 'outlined'}
-                          color="error"
-                          size="small"
-                          onClick={() => setReviewForm({
-                            ...reviewForm,
-                            sectionReviews: {
-                              ...reviewForm.sectionReviews,
-                              teamQualifications: { ...reviewForm.sectionReviews.teamQualifications, compliant: false }
-                            }
-                          })}
-                        >
-                          Non-Compliant
-                        </Button>
-                      </Stack>
-                      <TextField
-                        fullWidth
-                        multiline
-                        minRows={2}
-                        maxRows={10}
-                        size="small"
-                        label={t('common.comments')}
-                        value={reviewForm.sectionReviews.teamQualifications.comments}
-                        onChange={(e) => setReviewForm({
-                          ...reviewForm,
-                          sectionReviews: {
-                            ...reviewForm.sectionReviews,
-                            teamQualifications: { ...reviewForm.sectionReviews.teamQualifications, comments: e.target.value }
-                          }
-                        })}
-                        placeholder="Provide specific feedback on team qualifications..."
-                      />
-                    </CardContent>
-                  </Card>
+                        startIcon={<ViewIcon />}
+                        disabled={!file.url}
+                        onClick={() => file.url && window.open(file.url, '_blank', 'noopener')}
+                        sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}
+                      >
+                        Open
+                      </Button>
+                    </Stack>
+                  ))}
                 </Stack>
-              </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">No documents linked</Typography>
+              )}
+            </Paper>
+          </Stack>
+        )}
 
-              <Divider />
+        {activeTab === 3 && (
+          <Stack spacing={2}>
+            <Paper sx={sectionCardSx}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Review pipeline</Typography>
+              {tracking ? <ProposalReviewStatus tracking={tracking} /> : <Typography variant="body2" color="text.secondary">No pipeline assigned yet.</Typography>}
+            </Paper>
 
-              {/* Overall Decision */}
-              <Box>
-                <Typography variant="h6" sx={{ mb: 3, fontWeight: 700, color: '#2c3e50' }}>
-                  Overall Decision
-                </Typography>
-                
-                <FormControl fullWidth sx={{ mb: 3 }}>
-                  <InputLabel>Final Decision *</InputLabel>
-                  <Select
-                    value={reviewForm.decision}
-                    label="Final Decision *"
-                    onChange={(e) => setReviewForm({...reviewForm, decision: e.target.value})}
-                  >
-                    <MenuItem value="approved">
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <ApproveIcon sx={{ mr: 1, color: '#4caf50' }} />
-                        {t('common.approved')}
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="rejected">
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <RejectIcon sx={{ mr: 1, color: '#f44336' }} />
-                        {t('common.rejected')}
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="requires_revision">
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <EditIcon sx={{ mr: 1, color: '#ff9800' }} />
-                        Requires Revision
-                      </Box>
-                    </MenuItem>
-                  </Select>
-                </FormControl>
+            <Paper sx={sectionCardSx}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Invite reviewers</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Send an email invitation with a link to this review. The researcher is notified that reviewers have been assigned.
+              </Typography>
+              {reviewers.length ? (
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+                  {reviewers.map((email) => (
+                    <Chip key={email} label={email} size="small" sx={{ bgcolor: alpha(PURPLE, 0.1), color: PURPLE, fontWeight: 700 }} />
+                  ))}
+                </Stack>
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>No reviewers invited yet.</Typography>
+              )}
+              <TextField
+                fullWidth
+                size="small"
+                label="Reviewer emails"
+                placeholder="reviewer@university.edu, colleague@hospital.org"
+                value={inviteEmails}
+                onChange={(event) => setInviteEmails(event.target.value)}
+                sx={{ mb: 1.5 }}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                multiline
+                minRows={2}
+                label="Optional message"
+                value={inviteMessage}
+                onChange={(event) => setInviteMessage(event.target.value)}
+                sx={{ mb: 1.5 }}
+              />
+              <Button
+                variant="contained"
+                startIcon={<AssignIcon />}
+                disabled={inviting || !inviteEmails.trim()}
+                onClick={inviteReviewers}
+                sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 }}
+              >
+                {inviting ? 'Sending...' : 'Send invitations'}
+              </Button>
+            </Paper>
 
+            <Paper sx={sectionCardSx}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Record a decision</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                The researcher receives an in-app notification and email when this decision is saved.
+              </Typography>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="Decision"
+                value={decision}
+                onChange={(event) => setDecision(event.target.value)}
+                sx={{ mb: 1.5 }}
+              >
+                <MenuItem value="approved">Approve</MenuItem>
+                <MenuItem value="requires_revision">Request revision</MenuItem>
+                <MenuItem value="rejected">Reject</MenuItem>
+              </TextField>
+              <TextField
+                fullWidth
+                multiline
+                minRows={4}
+                label="Comments"
+                value={comments}
+                onChange={(event) => setComments(event.target.value)}
+                sx={{ mb: 1.5 }}
+              />
+              {decision === 'rejected' || decision === 'requires_revision' ? (
                 <TextField
-                  label={`${t('common.comments')} *`}
-                  multiline
-                  minRows={4}
-                  maxRows={15}
                   fullWidth
-                  value={reviewForm.overallComments}
-                  onChange={(e) => setReviewForm({...reviewForm, overallComments: e.target.value})}
-                  placeholder="Provide comprehensive comments summarizing your review..."
-                  sx={{ mb: 3 }}
-                  required
-                />
-
-                {/* Rejection Reason */}
-                {reviewForm.decision === 'rejected' && (
-                  <Box>
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        Rejection requires detailed justification
-                      </Typography>
-                    </Alert>
-                    <TextField
-                      label="Reason for Rejection *"
-                      multiline
-                      minRows={4}
-                      maxRows={15}
-                      fullWidth
-                      value={reviewForm.rejectionReason}
-                      onChange={(e) => setReviewForm({...reviewForm, rejectionReason: e.target.value})}
-                      placeholder="Provide detailed reasons for rejecting this proposal. Be specific about which aspects do not meet institutional standards..."
-                      required
-                      error={reviewForm.decision === 'rejected' && !reviewForm.rejectionReason}
-                      helperText="This will be communicated to the principal investigator"
-                    />
-                  </Box>
-                )}
-
-                {/* Revision Requirements */}
-                {reviewForm.decision === 'requires_revision' && (
-                  <Box>
-                    <Alert severity="warning" sx={{ mb: 2 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        Specify required revisions clearly
-                      </Typography>
-                    </Alert>
-                    <TextField
-                      label="Required Revisions *"
-                      multiline
-                      minRows={5}
-                      maxRows={15}
-                      fullWidth
-                      value={reviewForm.revisionRequirements}
-                      onChange={(e) => setReviewForm({...reviewForm, revisionRequirements: e.target.value})}
-                      placeholder="List specific revisions required before resubmission. Be clear and actionable in your requirements..."
-                      required
-                      error={reviewForm.decision === 'requires_revision' && !reviewForm.revisionRequirements}
-                      helperText="Provide a detailed list of changes needed"
-                    />
-                  </Box>
-                )}
-
-                {/* Recommendation */}
-                <TextField
-                  label="Reviewer Recommendation"
                   multiline
                   minRows={3}
-                  maxRows={12}
-                  fullWidth
-                  value={reviewForm.recommendation}
-                  onChange={(e) => setReviewForm({...reviewForm, recommendation: e.target.value})}
-                  placeholder="Any additional recommendations or suggestions for the research team..."
-                  sx={{ mt: 3 }}
+                  label={decision === 'rejected' ? 'Rejection reason' : 'Revision requirements'}
+                  value={extra}
+                  onChange={(event) => setExtra(event.target.value)}
+                  sx={{ mb: 1.5 }}
                 />
-              </Box>
+              ) : null}
+              <Button
+                variant="contained"
+                disabled={submitting}
+                onClick={submitDecision}
+                sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 }}
+              >
+                {submitting ? 'Saving...' : 'Save decision and notify researcher'}
+              </Button>
+            </Paper>
 
-              {/* Review Summary */}
-              {reviewForm.decision && (
-                <Card sx={{ bgcolor: '#f5f5f5', border: '2px solid #8b6cbc' }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ mb: 2, color: '#8b6cbc', fontWeight: 700 }}>
-                      {t('common.summary')}
-                    </Typography>
-                    <Stack spacing={1}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">Decision:</Typography>
-                        <Chip 
-                          label={reviewForm.decision.replace('_', ' ').toUpperCase()} 
-                          color={
-                            reviewForm.decision === 'approved' ? 'success' : 
-                            reviewForm.decision === 'rejected' ? 'error' : 
-                            'warning'
-                          }
-                          size="small"
-                        />
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">Sections Reviewed:</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>6</Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">Compliant Sections:</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#4caf50' }}>
-                          {Object.values(reviewForm.sectionReviews).filter(s => s.compliant === true).length}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">Non-Compliant Sections:</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#f44336' }}>
-                          {Object.values(reviewForm.sectionReviews).filter(s => s.compliant === false).length}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </CardContent>
-                </Card>
+            <Paper sx={sectionCardSx}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Previous reviews</Typography>
+              {reviews.length ? (
+                <Stack spacing={1.25}>
+                  {reviews.map((review) => (
+                    <Box key={review.id} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{review.reviewerName}</Typography>
+                        <Typography variant="caption" color="text.secondary">{formatDate(review.reviewDate)}</Typography>
+                      </Stack>
+                      <Typography variant="caption" sx={{ color: PURPLE, fontWeight: 700 }}>{String(review.decision || '').replaceAll('_', ' ')}</Typography>
+                      <Typography variant="body2" sx={{ mt: 1 }}>{review.overallComments}</Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              ) : (
+                <Typography variant="body2" color="text.secondary">No written reviews yet.</Typography>
               )}
-            </Stack>
-          </Box>
-        </DialogContent>
-        
-        <DialogActions sx={{ p: 3, borderTop: '1px solid #e0e0e0', bgcolor: '#fafafa' }}>
-          <Button 
-            onClick={() => setReviewDialog(false)}
-            sx={{ mr: 'auto' }}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button 
-            variant="outlined"
-            onClick={() => {
-              // Reset form
-              setReviewForm({
-                decision: '',
-                overallComments: '',
-                rejectionReason: '',
-                revisionRequirements: '',
-                sectionReviews: {
-                  researchObjectives: { compliant: null, comments: '' },
-                  methodology: { compliant: null, comments: '' },
-                  ethicsCompliance: { compliant: null, comments: '' },
-                  budgetJustification: { compliant: null, comments: '' },
-                  timeline: { compliant: null, comments: '' },
-                  teamQualifications: { compliant: null, comments: '' }
-                },
-                recommendation: ''
-              });
-            }}
-            sx={{ mr: 1 }}
-          >
-            {t('common.reset')}
-          </Button>
-          <Button 
-            variant="contained" 
-            onClick={handleSubmitReview}
-            disabled={
-              !reviewForm.decision || 
-              !reviewForm.overallComments ||
-              (reviewForm.decision === 'rejected' && !reviewForm.rejectionReason) ||
-              (reviewForm.decision === 'requires_revision' && !reviewForm.revisionRequirements) ||
-              submittingReview
-            }
-            sx={{ 
-              bgcolor: '#8b6cbc',
-              '&:hover': { bgcolor: '#7b5cac' },
-              minWidth: 150
-            }}
-          >
-            {submittingReview ? t('common.submitting') : t('common.submit')}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-          variant="filled"
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+            </Paper>
+          </Stack>
+        )}
+      </Container>
+    </>
   );
-};
-
-export default ProposalDetailsPage;
+}

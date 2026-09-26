@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { logApiActivity, getRequestMetadata } from '../../../../../utils/activityLogger.js';
+import { notifyProposalOwner } from '../../../../../lib/proposal-review-comms.js';
 
 const prisma = new PrismaClient();
 
@@ -102,6 +103,26 @@ export async function POST(request, { params }) {
                 updatedAt: new Date()
             }
         });
+
+        const templateByStatus = {
+            APPROVED: 'PROPOSAL_APPROVED',
+            REJECTED: 'PROPOSAL_REJECTED',
+            REVISION_REQUESTED: 'PROPOSAL_REVISION_REQUESTED',
+        };
+        const detailsByStatus = {
+            APPROVED: recommendation || overallComments,
+            REJECTED: rejectionReason || overallComments,
+            REVISION_REQUESTED: revisionRequirements || overallComments,
+        };
+        try {
+            await notifyProposalOwner(prisma, updatedProposal, {
+                templateKey: templateByStatus[newStatus] || 'PROPOSAL_STATUS_CHANGED',
+                statusLabel: newStatus.replaceAll('_', ' ').toLowerCase(),
+                details: detailsByStatus[newStatus] || overallComments,
+            });
+        } catch (notifyError) {
+            console.error('Failed to notify researcher of review decision:', notifyError);
+        }
 
         // Log the activity
         await logApiActivity(

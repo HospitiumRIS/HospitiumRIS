@@ -1,15 +1,10 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { ensureProposalInReviewPipeline, isProposalInReview } from '../../../../../lib/proposal-review-pipeline.js';
 
 const prisma = new PrismaClient();
 
-export async function GET(request, { params }) {
-  try {
-    const { id } = params;
-
-    const tracking = await prisma.proposalReviewTracking.findUnique({
-      where: { proposalId: id },
-      include: {
+const trackingInclude = {
         pipeline: {
           include: {
             stages: {
@@ -34,7 +29,34 @@ export async function GET(request, { params }) {
             },
           },
         },
-      },
+};
+
+export async function GET(request, { params }) {
+  try {
+    const { id } = await params;
+
+    const proposal = await prisma.proposal.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    });
+
+    if (proposal && isProposalInReview(proposal.status)) {
+      const existing = await prisma.proposalReviewTracking.findUnique({
+        where: { proposalId: id },
+        select: { id: true },
+      });
+      if (!existing) {
+        try {
+          await ensureProposalInReviewPipeline(prisma, id, { status: proposal.status });
+        } catch (err) {
+          console.error('Failed to assign review pipeline:', err);
+        }
+      }
+    }
+
+    const tracking = await prisma.proposalReviewTracking.findUnique({
+      where: { proposalId: id },
+      include: trackingInclude,
     });
 
     if (!tracking) {
@@ -51,5 +73,7 @@ export async function GET(request, { params }) {
       { error: 'Failed to fetch review status' },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
