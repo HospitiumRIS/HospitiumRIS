@@ -70,7 +70,7 @@ function SectionLabel({ children }) {
   );
 }
 
-export default function UploadCertificateDialog({ open, onClose, onUploaded, user }) {
+export default function UploadCertificateDialog({ open, onClose, onUploaded, user, defaults }) {
   const { t } = useTranslation();
   const [form, setForm] = useState(EMPTY_FORM);
   const [files, setFiles] = useState([]);
@@ -90,7 +90,14 @@ export default function UploadCertificateDialog({ open, onClose, onUploaded, use
     if (!open) return;
     setForm({
       ...EMPTY_FORM,
-      principalInvestigator: defaultInvestigator,
+      title: defaults?.title || '',
+      principalInvestigator: defaults?.principalInvestigator || defaultInvestigator,
+      department: defaults?.department || '',
+      researchType: defaults?.researchType || '',
+      committeeName: defaults?.committeeName || '',
+      referenceNumber: defaults?.referenceNumber || '',
+      approvalDate: defaults?.approvalDate || '',
+      expiryDate: defaults?.expiryDate || '',
     });
     setFiles([]);
     setError('');

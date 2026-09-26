@@ -1144,6 +1144,8 @@ model Proposal {
   grantStartDate     DateTime?
   grantEndDate       DateTime?
   totalBudgetAmount  Decimal?  @db.Decimal(15, 2)
+  budgetCurrency     String?
+  budgetDocuments    Json[] // Detailed budget breakdown files
 
   // Ethical Considerations
   ethicalConsiderationsOverview String?

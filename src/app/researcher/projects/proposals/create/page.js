@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import OrcidSearchModal from './components/OrcidSearchModal';
+import EthicsLinkModal from './components/EthicsLinkModal';
+import UploadCertificateDialog from '../../../../../components/Ethics/UploadCertificateDialog';
 import {
   Box,
   Container,
@@ -38,10 +40,17 @@ import {
   AccordionDetails,
   Autocomplete,
   Snackbar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  alpha,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -186,6 +195,26 @@ const FUNDING_SOURCES = [
   'International Research Fund'
 ];
 
+const CURRENCIES = [
+  { code: 'USD', name: 'US Dollar', symbol: '$' },
+  { code: 'EUR', name: 'Euro', symbol: '€' },
+  { code: 'GBP', name: 'GBP', symbol: '£' },
+  { code: 'KES', name: 'KES', symbol: 'KSh' },
+];
+const currencySymbol = (code) => CURRENCIES.find((item) => item.code === code)?.symbol || code || '';
+const fileDisplayName = (file) => file?.name || file?.originalName || file?.fileName || 'Document';
+const fileDisplaySize = (file) => {
+  const size = Number(file?.size) || 0;
+  if (!size) return '';
+  return size >= 1024 * 1024 ? `${(size / (1024 * 1024)).toFixed(1)} MB` : `${(size / 1024).toFixed(1)} KB`;
+};
+const stripHtml = (value) => String(value || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+const truncateText = (value, max = 180) => {
+  const text = stripHtml(value);
+  if (!text) return '';
+  return text.length > max ? `${text.slice(0, max).trim()}...` : text;
+};
+
 const STATUS_OPTIONS = [
   'Draft',
   'Under Review',
@@ -210,14 +239,169 @@ const steps = [
   'Project Management',
   'Funding and Grants',
   'Ethical Considerations & Data Management',
-  'Related Publications & Files',
+  'Supporting Files',
   'Proposal Summary'
 ];
+
+const PURPLE = '#8b6cbc';
+const fieldFocusSx = {
+  '& .MuiOutlinedInput-root:hover fieldset': { borderColor: PURPLE },
+  '& .MuiOutlinedInput-root.Mui-focused fieldset': { borderColor: PURPLE },
+  '& .MuiInputLabel-root.Mui-focused': { color: PURPLE },
+};
+const sectionCardSx = {
+  p: 2.5,
+  borderRadius: 2,
+  border: '1px solid',
+  borderColor: 'divider',
+  background: 'white',
+  boxShadow: 'none',
+  width: '100%',
+};
+const formatProposalDate = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+const toDateInputValue = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string') {
+    const datePart = value.includes('T') ? value.split('T')[0] : value.slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : '';
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+const createItemId = (prefix) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+const appendProposalFiles = (submitData, field, files) => {
+  (files || []).forEach((file) => {
+    if (file instanceof File) {
+      submitData.append(field, file);
+    }
+  });
+};
+const buildProposalSubmitData = (formData, user, status) => {
+  const submitData = new FormData();
+  submitData.append('proposalData', JSON.stringify({
+    title: formData.title,
+    principalInvestigator: formData.piOption === 'useProfile'
+      ? `${user?.givenName || ''} ${user?.familyName || ''}`.trim() || 'Current User'
+      : formData.principalInvestigator,
+    principalInvestigatorOrcid: formData.piOption === 'useProfile'
+      ? user?.orcidId || null
+      : formData.principalInvestigatorOrcid,
+    principalInvestigatorEmail: formData.piOption === 'searchOther' ? formData.principalInvestigatorEmail || null : null,
+    principalInvestigatorInstitution: formData.piOption === 'searchOther' ? formData.principalInvestigatorInstitution || null : null,
+    principalInvestigatorDepartment: formData.piOption === 'searchOther' ? formData.principalInvestigatorDepartment || null : null,
+    coInvestigators: formData.coInvestigators,
+    departments: formData.departments,
+    startDate: formData.startDate,
+    endDate: formData.endDate,
+    researchAreas: formData.fields,
+    researchObjectives: formData.researchObjectives,
+    methodology: formData.methodology,
+    abstract: formData.abstract,
+    milestones: formData.milestones,
+    deliverables: formData.deliverables,
+    fundingSource: formData.fundingSource,
+    grantNumber: formData.grantNumber,
+    fundingInstitution: formData.fundingInstitution,
+    grantStartDate: formData.grantStartDate,
+    grantEndDate: formData.grantEndDate,
+    totalBudgetAmount: formData.totalBudgetAmount,
+    budgetCurrency: formData.budgetCurrency || 'USD',
+    savedBudgetDocuments: (formData.budgetDocuments || []).filter((file) => !(file instanceof File)),
+    ethicalConsiderationsOverview: formData.ethicalConsiderationsOverview,
+    consentProcedures: formData.consentProcedures,
+    dataSecurityMeasures: formData.dataSecurityMeasures,
+    ethicsApprovalStatus: formData.ethicsApprovalStatus,
+    ethicsApprovalReference: formData.ethicsApprovalReference,
+    ethicsCommittee: formData.ethicsCommittee,
+    approvalDate: formData.approvalDate,
+    linkedEthicsApplicationId: formData.linkedEthicsApplicationId || null,
+    selectedPublications: formData.selectedPublications,
+    publicationRelevance: formData.publicationRelevance,
+    linkedCollaborativeProposals: formData.linkedCollaborativeProposals,
+    impactStatement: formData.impactStatement,
+    disseminationPlan: formData.disseminationPlan,
+    status,
+  }));
+  appendProposalFiles(submitData, 'ethicsDocuments', formData.ethicsDocuments);
+  appendProposalFiles(submitData, 'dataManagementPlan', formData.dataManagementPlan);
+  appendProposalFiles(submitData, 'otherRelatedFiles', formData.otherRelatedFiles);
+  appendProposalFiles(submitData, 'budgetDocuments', formData.budgetDocuments);
+  return submitData;
+};
+const selectMenuProps = { disableScrollLock: true, PaperProps: { sx: { maxHeight: 280 } } };
+const milestoneLabel = (milestone, index) => milestone.title?.trim() || `Milestone ${index + 1}`;
+const projectDurationLabel = (startDate, endDate) => {
+  if (!startDate || !endDate) return '';
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return '';
+  const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+  if (days < 31) return `${days} day${days === 1 ? '' : 's'}`;
+  const months = Math.round(days / 30.44);
+  if (months < 24) return `About ${months} month${months === 1 ? '' : 's'}`;
+  const years = (days / 365.25).toFixed(1).replace(/\.0$/, '');
+  return `About ${years} year${years === '1' ? '' : 's'}`;
+};
+const STEP_META = [
+  { label: 'Core', title: 'Core Information', hint: 'Title, investigators, and institution' },
+  { label: 'Research', title: 'Research details', hint: 'Areas, objectives, abstract, and methods' },
+  { label: 'Management', title: 'Project Management', hint: 'Milestones, deliverables, and outputs' },
+  { label: 'Funding', title: 'Funding and budget', hint: 'Source, currency, and proposed budget' },
+  { label: 'Ethics', title: 'Ethical considerations', hint: 'Link an application or upload a certificate' },
+  { label: 'Files', title: 'Supporting files', hint: 'Upload documents and note their relevance' },
+  { label: 'Review', title: 'Proposal summary', hint: 'Check details, then submit' },
+];
+
+function StepIntro({ index, title, hint }) {
+  return (
+    <Box sx={{ mb: 2.5, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+      <Stack direction="row" spacing={1.5} alignItems="flex-start">
+        <Box
+          sx={{
+            width: 28,
+            height: 28,
+            borderRadius: '50%',
+            bgcolor: alpha(PURPLE, 0.12),
+            color: PURPLE,
+            fontWeight: 800,
+            fontSize: 13,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            mt: 0.15,
+          }}
+        >
+          {index}
+        </Box>
+        <Box>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1e293b', lineHeight: 1.25 }}>
+            {title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+            {hint}
+          </Typography>
+        </Box>
+      </Stack>
+    </Box>
+  );
+}
 
 const CreateProposalPage = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
+  const profileName = `${user?.givenName || ''} ${user?.familyName || ''}`.trim() || 'Your profile';
+  const profileOrcid = user?.orcidId || '';
   
   // Form state
   const [activeStep, setActiveStep] = useState(0);
@@ -235,20 +419,30 @@ const CreateProposalPage = () => {
   // ORCID search modals
   const [piSearchModalOpen, setPiSearchModalOpen] = useState(false);
   const [coInvSearchModalOpen, setCoInvSearchModalOpen] = useState(false);
+  const [viewingInvestigator, setViewingInvestigator] = useState(null);
+  const [departmentsTouched, setDepartmentsTouched] = useState(false);
+  const [researchAreasTouched, setResearchAreasTouched] = useState(false);
   
   // Ethics application linking
-  const [ethicsLinkOption, setEthicsLinkOption] = useState('manual'); // 'manual' or 'existing'
+  const [ethicsLinkOption, setEthicsLinkOption] = useState('existing');
   const [existingEthicsApplications, setExistingEthicsApplications] = useState([]);
   const [selectedEthicsApplication, setSelectedEthicsApplication] = useState(null);
   const [loadingEthicsApps, setLoadingEthicsApps] = useState(false);
+  const [ethicsSearchModalOpen, setEthicsSearchModalOpen] = useState(false);
+  const [ethicsCertUploadOpen, setEthicsCertUploadOpen] = useState(false);
   
   // Unsaved changes and auto-save state
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState(null);
   const [lastSavedData, setLastSavedData] = useState(null);
   const [autoSaving, setAutoSaving] = useState(false);
   const [proposalId, setProposalId] = useState(null); // For updating existing drafts
+  const formDataRef = useRef(null);
+  const userRef = useRef(user);
+  const proposalIdRef = useRef(proposalId);
+  const hasUnsavedChangesRef = useRef(false);
+  const skipLeaveSaveRef = useRef(false);
+  const persistInFlightRef = useRef(null);
+  const flushDraftSaveRef = useRef(async () => null);
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -281,17 +475,25 @@ const CreateProposalPage = () => {
         const proposal = data.proposal;
         
         // Populate form data with existing proposal
-        setFormData({
+        const loadedForm = {
           // Step 1: Core Information
           title: proposal.title || '',
           type: proposal.type || '',
-          piOption: 'useProfile',
+          piOption: (
+            proposal.principalInvestigatorEmail
+            || (proposal.principalInvestigatorOrcid && user?.orcidId && proposal.principalInvestigatorOrcid !== user.orcidId)
+          ) ? 'searchOther' : 'useProfile',
           principalInvestigator: proposal.principalInvestigator || '',
           principalInvestigatorOrcid: proposal.principalInvestigatorOrcid || '',
+          principalInvestigatorEmail: proposal.principalInvestigatorEmail || '',
+          principalInvestigatorInstitution: proposal.principalInvestigatorInstitution || '',
+          principalInvestigatorDepartment: proposal.principalInvestigatorDepartment || '',
           principalInvestigatorAffiliations: [],
           coInvestigators: proposal.coInvestigators || [],
           institution: proposal.institution || '',
           departments: proposal.departments || [],
+          startDate: toDateInputValue(proposal.startDate),
+          endDate: toDateInputValue(proposal.endDate),
           email: proposal.email || '',
           phone: proposal.phone || '',
           orcidId: proposal.orcidId || '',
@@ -303,16 +505,30 @@ const CreateProposalPage = () => {
           methodology: proposal.methodology || '',
           
           // Step 3: Project Management
-          milestones: proposal.milestones || [],
-          deliverables: proposal.deliverables || [],
+          milestones: (proposal.milestones || []).map((milestone, index) => ({
+            id: milestone.id || `ms_loaded_${index}`,
+            title: milestone.title || '',
+            targetDate: milestone.targetDate || '',
+            description: milestone.description || '',
+          })),
+          deliverables: (proposal.deliverables || []).map((deliverable, index) => ({
+            id: deliverable.id || `dl_loaded_${index}`,
+            title: deliverable.title || '',
+            dueDate: deliverable.dueDate || '',
+            description: deliverable.description || '',
+            type: deliverable.type || '',
+            milestoneId: deliverable.milestoneId || '',
+          })),
           
           // Step 4: Funding and Grants
           fundingSource: proposal.fundingSource || '',
           grantNumber: proposal.grantNumber || '',
           fundingInstitution: proposal.fundingInstitution || '',
-          grantStartDate: proposal.grantStartDate || '',
-          grantEndDate: proposal.grantEndDate || '',
+          grantStartDate: toDateInputValue(proposal.grantStartDate),
+          grantEndDate: toDateInputValue(proposal.grantEndDate),
           totalBudgetAmount: proposal.totalBudgetAmount || '',
+          budgetCurrency: proposal.budgetCurrency || 'USD',
+          budgetDocuments: proposal.budgetDocuments || [],
           
           // Step 5: Ethical Considerations & Data Management
           ethicalConsiderationsOverview: proposal.ethicalConsiderationsOverview || '',
@@ -320,10 +536,10 @@ const CreateProposalPage = () => {
           ethicsApprovalStatus: proposal.ethicsApprovalStatus || '',
           ethicsApprovalReference: proposal.ethicsApprovalReference || '',
           ethicsCommittee: proposal.ethicsCommittee || '',
-          approvalDate: proposal.approvalDate || '',
+          approvalDate: toDateInputValue(proposal.approvalDate),
           dataSecurityMeasures: proposal.dataSecurityMeasures || '',
           linkedEthicsApplicationId: proposal.linkedEthicsApplicationId || null,
-          linkedEthicsDocuments: [],
+          linkedEthicsDocuments: proposal.linkedEthicsDocuments || [],
           ethicsDocuments: [],
           dataManagementPlan: [],
           
@@ -340,10 +556,17 @@ const CreateProposalPage = () => {
           
           // Status
           status: proposal.status || 'Draft'
-        });
+        };
 
-        // Set as last saved data to prevent unsaved changes detection
-        setLastSavedData({...formData});
+        setFormData(loadedForm);
+        formDataRef.current = loadedForm;
+
+        const linkedEthics = proposal.ethicsLinks?.[0]?.ethicsApplication;
+        if (linkedEthics) {
+          setSelectedEthicsApplication(linkedEthics);
+        }
+
+        setLastSavedData(loadedForm);
         setHasUnsavedChanges(false);
       }
     } catch (error) {
@@ -361,10 +584,15 @@ const CreateProposalPage = () => {
     piOption: 'useProfile', // Default to using profile
     principalInvestigator: '',
     principalInvestigatorOrcid: '',
+    principalInvestigatorEmail: '',
+    principalInvestigatorInstitution: '',
+    principalInvestigatorDepartment: '',
     principalInvestigatorAffiliations: [],
     coInvestigators: [],
     institution: '',
     departments: [],
+    startDate: '',
+    endDate: '',
     email: '',
     phone: '',
     orcidId: '',
@@ -386,6 +614,8 @@ const CreateProposalPage = () => {
     grantStartDate: '',
     grantEndDate: '',
     totalBudgetAmount: '',
+    budgetCurrency: 'USD',
+    budgetDocuments: [],
     
     // Step 5: Ethical Considerations & Data Management
     ethicalConsiderationsOverview: '',
@@ -417,49 +647,53 @@ const CreateProposalPage = () => {
 
   // Track changes to form data
   useEffect(() => {
+    formDataRef.current = formData;
+    userRef.current = user;
+    proposalIdRef.current = proposalId;
     if (lastSavedData) {
       const hasChanges = JSON.stringify(formData) !== JSON.stringify(lastSavedData);
+      hasUnsavedChangesRef.current = hasChanges;
       setHasUnsavedChanges(hasChanges);
     } else {
-      // If no saved data yet, consider any non-empty form as having changes
       const hasAnyData = Object.values(formData).some(value => {
         if (Array.isArray(value)) return value.length > 0;
         if (typeof value === 'string') return value.trim() !== '';
         return value !== null && value !== undefined && value !== '';
       });
+      hasUnsavedChangesRef.current = hasAnyData;
       setHasUnsavedChanges(hasAnyData);
     }
-  }, [formData, lastSavedData]);
+  }, [formData, lastSavedData, user, proposalId]);
 
-  // Auto-save when moving between steps
+  // Auto-save shortly after edits stop
   useEffect(() => {
-    if (hasUnsavedChanges && !autoSaving && formData.title?.trim()) {
-      const autoSaveTimer = setTimeout(() => {
-        handleAutoSave();
-      }, 3000); // Auto-save after 3 seconds of inactivity
-
-      return () => clearTimeout(autoSaveTimer);
-    }
-  }, [activeStep, hasUnsavedChanges, formData.title]);
-
-  // Handle browser navigation/close
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
+    if (!hasUnsavedChanges || !formData.title?.trim()) return undefined;
+    const autoSaveTimer = setTimeout(() => {
+      flushDraftSaveRef.current({ showNotification: false });
+    }, 2000);
+    return () => clearTimeout(autoSaveTimer);
+  }, [formData, hasUnsavedChanges]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleStartDateChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      startDate: value,
+      endDate: value && prev.endDate && prev.endDate < value ? '' : prev.endDate,
+    }));
+  };
+
+  const handleEndDateChange = (value) => {
+    if (formData.startDate && value && value < formData.startDate) {
+      return;
+    }
+    handleInputChange('endDate', value);
   };
 
   // Fetch existing ethics applications
@@ -514,9 +748,11 @@ const CreateProposalPage = () => {
           linkedEthicsDocuments: ethicsDocuments
         }));
         
+        setEthicsLinkOption('existing');
+        setEthicsSearchModalOpen(false);
         setSnackbar({
           open: true,
-          message: `Ethics application linked successfully${ethicsDocuments.length > 0 ? ` with ${ethicsDocuments.length} document(s)` : ''}`,
+          message: `Ethics record linked${ethicsDocuments.length > 0 ? ` with ${ethicsDocuments.length} document(s)` : ''}`,
           severity: 'success'
         });
       }
@@ -534,167 +770,168 @@ const CreateProposalPage = () => {
         consentProcedures: application.consentProcess || '',
         dataSecurityMeasures: application.dataSecurityMeasures || ''
       }));
+      setEthicsLinkOption('existing');
+      setEthicsSearchModalOpen(false);
     }
   };
 
-  // Load ethics applications when switching to existing option
+  const handleUnlinkEthicsApplication = () => {
+    setSelectedEthicsApplication(null);
+    setFormData((prev) => ({
+      ...prev,
+      linkedEthicsApplicationId: null,
+      linkedEthicsDocuments: [],
+      ethicsApprovalStatus: '',
+      ethicsApprovalReference: '',
+      ethicsCommittee: '',
+      approvalDate: '',
+      ethicalConsiderationsOverview: '',
+      consentProcedures: '',
+      dataSecurityMeasures: '',
+    }));
+  };
+
+  const handleEthicsCertificateUploaded = async (application) => {
+    await handleEthicsApplicationSelect(application);
+    setFormData((prev) => ({
+      ...prev,
+      ethicsDocuments: [],
+    }));
+
+    if (proposalId && application?.id && user?.id) {
+      try {
+        await fetch(`/api/proposals/${proposalId}/link-ethics`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ethicsApplicationId: application.id,
+            linkedBy: user.id,
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to link uploaded ethics certificate to proposal:', err);
+      }
+    }
+
+    setSnackbar({
+      open: true,
+      message: 'Ethics certificate uploaded. It is now available in Ethics Applications.',
+      severity: 'success',
+    });
+  };
+
   useEffect(() => {
-    if (ethicsLinkOption === 'existing' && existingEthicsApplications.length === 0) {
+    if (ethicsSearchModalOpen) {
       fetchEthicsApplications();
     }
-  }, [ethicsLinkOption]);
+  }, [ethicsSearchModalOpen]);
 
-  // Auto-save function
-  const handleAutoSave = async () => {
-    if (autoSaving) return;
-    
-    // Don't auto-save if there's no meaningful content
-    if (!formData.title?.trim()) {
-      return;
+  const persistDraft = async (status = 'DRAFT', {
+    showNotification = true,
+    keepalive = false,
+    data,
+    id,
+  } = {}) => {
+    const currentForm = data || formDataRef.current || formData;
+    const currentUser = userRef.current || user;
+    const currentId = id || proposalIdRef.current || proposalId;
+
+    if (!currentForm?.title?.trim()) {
+      if (showNotification) {
+        setSnackbar({
+          open: true,
+          message: 'Please enter a proposal title before saving.',
+          severity: 'warning'
+        });
+      }
+      throw new Error('Title is required');
     }
-    
-    setAutoSaving(true);
-    try {
-      await saveDraftToDatabase('DRAFT', false); // Silent save
-    } catch (error) {
-      console.error('Auto-save failed:', error);
-      // Don't show error notifications for auto-save failures
-      // The user can still manually save
-    } finally {
-      setAutoSaving(false);
+
+    const submitData = buildProposalSubmitData(currentForm, currentUser, status);
+    const method = currentId ? 'PUT' : 'POST';
+    const url = currentId ? `/api/proposals/${currentId}` : '/api/proposals';
+    const response = await fetch(url, {
+      method,
+      body: submitData,
+      keepalive,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error:', response.status, errorText);
+      throw new Error(`Failed to save proposal: ${response.status} - ${errorText}`);
     }
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to save proposal');
+    }
+
+    if (result.proposal?.id && result.proposal.id !== proposalIdRef.current) {
+      proposalIdRef.current = result.proposal.id;
+      setProposalId(result.proposal.id);
+    }
+
+    hasUnsavedChangesRef.current = false;
+    setLastSavedData({ ...currentForm });
+    setHasUnsavedChanges(false);
+
+    if (showNotification) {
+      setSnackbar({
+        open: true,
+        message: status === 'DRAFT' ? 'Draft saved successfully!' : 'Proposal submitted successfully!',
+        severity: 'success'
+      });
+    }
+
+    return result;
   };
 
-  // Generic save function
+  const flushDraftSave = async ({ showNotification = false, keepalive = false } = {}) => {
+    const currentForm = formDataRef.current || formData;
+    if (!currentForm?.title?.trim() || !hasUnsavedChangesRef.current) {
+      return null;
+    }
+    if (persistInFlightRef.current) {
+      return persistInFlightRef.current;
+    }
+
+    const run = (async () => {
+      if (!keepalive) setAutoSaving(true);
+      try {
+        return await persistDraft('DRAFT', { showNotification, keepalive, data: currentForm });
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        if (showNotification) {
+          setSnackbar({
+            open: true,
+            message: 'Failed to save proposal. Please try again.',
+            severity: 'error'
+          });
+        }
+        return null;
+      } finally {
+        if (!keepalive) setAutoSaving(false);
+        persistInFlightRef.current = null;
+      }
+    })();
+
+    persistInFlightRef.current = run;
+    return run;
+  };
+
+  flushDraftSaveRef.current = flushDraftSave;
+
+  const handleAutoSave = async () => {
+    await flushDraftSave({ showNotification: false });
+  };
+
   const saveDraftToDatabase = async (status = 'DRAFT', showNotification = true) => {
     try {
-      // Validate required fields for saving
-      if (!formData.title?.trim()) {
-        if (showNotification) {
-          setSnackbar({
-            open: true,
-            message: 'Please enter a proposal title before saving.',
-            severity: 'warning'
-          });
-        }
-        throw new Error('Title is required');
-      }
-
-      // Create FormData for file uploads
-      const submitData = new FormData();
-
-      // Add all form fields as JSON
-      const proposalData = {
-        // Core Information
-        title: formData.title,
-        principalInvestigator: formData.piOption === 'useProfile' ? 
-          `${user?.givenName || ''} ${user?.familyName || ''}`.trim() || 'Current User' : 
-          formData.principalInvestigatorName,
-        principalInvestigatorOrcid: formData.piOption === 'useProfile' ? 
-          user?.orcidId || null : 
-          formData.principalInvestigatorOrcid,
-        coInvestigators: formData.coInvestigators,
-        departments: formData.departments,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-
-        // Research Details
-        researchAreas: formData.fields,
-        researchObjectives: formData.researchObjectives,
-        methodology: formData.methodology,
-        abstract: formData.abstract,
-
-        // Project Management
-        milestones: formData.milestones,
-        deliverables: formData.deliverables,
-
-        // Funding and Grants
-        fundingSource: formData.fundingSource,
-        grantNumber: formData.grantNumber,
-        fundingInstitution: formData.fundingInstitution,
-        grantStartDate: formData.grantStartDate,
-        grantEndDate: formData.grantEndDate,
-        totalBudgetAmount: formData.totalBudgetAmount,
-
-        // Ethical Considerations
-        ethicalConsiderationsOverview: formData.ethicalConsiderationsOverview,
-        consentProcedures: formData.consentProcedures,
-        dataSecurityMeasures: formData.dataSecurityMeasures,
-        ethicsApprovalStatus: formData.ethicsApprovalStatus,
-        ethicsApprovalReference: formData.ethicsApprovalReference,
-        ethicsCommittee: formData.ethicsCommittee,
-        approvalDate: formData.approvalDate,
-
-        // Related Publications & Files
-        selectedPublications: formData.selectedPublications,
-        publicationRelevance: formData.publicationRelevance,
-        linkedCollaborativeProposals: formData.linkedCollaborativeProposals,
-
-        // Summary
-        impactStatement: formData.impactStatement,
-        disseminationPlan: formData.disseminationPlan,
-
-        // Status
-        status: status
-      };
-
-      submitData.append('proposalData', JSON.stringify(proposalData));
-
-      // Add files
-      formData.ethicsDocuments.forEach((file) => {
-        submitData.append(`ethicsDocuments`, file);
-      });
-
-      formData.dataManagementPlan.forEach((file) => {
-        submitData.append(`dataManagementPlan`, file);
-      });
-
-      formData.otherRelatedFiles.forEach((file) => {
-        submitData.append(`otherRelatedFiles`, file);
-      });
-
-      // Use PUT if updating existing proposal, POST if creating new
-      const method = proposalId ? 'PUT' : 'POST';
-      const url = proposalId ? `/api/proposals/${proposalId}` : '/api/proposals';
-
-      const response = await fetch(url, {
-        method: method,
-        body: submitData
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error:', response.status, errorText);
-        throw new Error(`Failed to save proposal: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.success) {
-        // Update proposal ID if this was a new proposal
-        if (!proposalId && result.proposal?.id) {
-          setProposalId(result.proposal.id);
-        }
-        
-        // Update last saved data
-        setLastSavedData({ ...formData });
-        setHasUnsavedChanges(false);
-
-        if (showNotification) {
-          setSnackbar({
-            open: true,
-            message: status === 'DRAFT' ? 'Draft saved successfully!' : 'Proposal submitted successfully!',
-            severity: 'success'
-          });
-        }
-
-        return result;
-      } else {
-        throw new Error(result.error || 'Failed to save proposal');
-      }
+      return await persistDraft(status, { showNotification, data: formData, id: proposalId });
     } catch (error) {
       console.error('Error saving proposal:', error);
-      if (showNotification) {
+      if (showNotification && error.message !== 'Title is required') {
         setSnackbar({
           open: true,
           message: 'Failed to save proposal. Please try again.',
@@ -704,6 +941,48 @@ const CreateProposalPage = () => {
       throw error;
     }
   };
+
+  useEffect(() => {
+    const originalPush = router.push.bind(router);
+    const originalReplace = router.replace.bind(router);
+
+    const withDraftSave = (navigate) => async (href, options) => {
+      if (skipLeaveSaveRef.current) {
+        return navigate(href, options);
+      }
+      const target = typeof href === 'string' ? href : '';
+      const stayingOnCreate = target.includes('/researcher/projects/proposals/create');
+      if (!stayingOnCreate) {
+        await flushDraftSaveRef.current({ showNotification: false });
+      }
+      return navigate(href, options);
+    };
+
+    router.push = withDraftSave(originalPush);
+    router.replace = withDraftSave(originalReplace);
+
+    return () => {
+      router.push = originalPush;
+      router.replace = originalReplace;
+    };
+  }, [router]);
+
+  useEffect(() => {
+    const saveOnLeave = () => {
+      flushDraftSaveRef.current({ showNotification: false, keepalive: true });
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        saveOnLeave();
+      }
+    };
+    window.addEventListener('pagehide', saveOnLeave);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('pagehide', saveOnLeave);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   const handleFieldToggle = (field) => {
     setFormData(prev => ({
@@ -804,6 +1083,22 @@ const CreateProposalPage = () => {
     event.target.value = '';
   };
 
+  const handleBudgetDocumentUpload = (event) => {
+    const files = Array.from(event.target.files || []);
+    setFormData((prev) => ({
+      ...prev,
+      budgetDocuments: [...(prev.budgetDocuments || []), ...files],
+    }));
+    event.target.value = '';
+  };
+
+  const removeBudgetDocument = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      budgetDocuments: (prev.budgetDocuments || []).filter((_, i) => i !== index),
+    }));
+  };
+
   const removeEthicsDocument = (index) => {
     setFormData(prev => ({
       ...prev,
@@ -869,6 +1164,25 @@ const CreateProposalPage = () => {
           })
         }));
 
+        if (formData.piOption === 'searchOther' && formData.principalInvestigatorEmail) {
+          notifications.push(fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'PROPOSAL_INVITATION',
+              title: 'Proposal Principal Investigator Invitation',
+              message: `You have been invited as principal investigator on the proposal: "${formData.title}"`,
+              recipientEmail: formData.principalInvestigatorEmail,
+              metadata: {
+                proposalId: result.proposal?.id,
+                proposalTitle: formData.title,
+                inviterName: (`${user?.givenName || ''} ${user?.familyName || ''}`.trim() || 'Unknown User'),
+                role: 'Principal Investigator',
+              },
+            }),
+          }));
+        }
+
         // 3. Notifications to co-investigators
         if (formData.coInvestigators && formData.coInvestigators.length > 0) {
           for (const coInvestigator of formData.coInvestigators) {
@@ -902,7 +1216,7 @@ const CreateProposalPage = () => {
         // Don't fail the whole process if notifications fail
       }
       
-      // Redirect after a short delay to show the snackbar
+      skipLeaveSaveRef.current = true;
       setTimeout(() => {
         router.push('/researcher/projects/proposals/list');
       }, 2000);
@@ -920,41 +1234,9 @@ const CreateProposalPage = () => {
     handleSubmitProposal();
   };
 
-  // Navigation with unsaved changes check
-  const handleNavigation = (navigationFn) => {
-    if (hasUnsavedChanges) {
-      setPendingNavigation(() => navigationFn);
-      setShowUnsavedModal(true);
-    } else {
-      navigationFn();
-    }
-  };
-
-  const handleUnsavedModalSave = async () => {
-    try {
-      await saveDraftToDatabase('DRAFT', true);
-      setShowUnsavedModal(false);
-      if (pendingNavigation) {
-        pendingNavigation();
-        setPendingNavigation(null);
-      }
-    } catch (error) {
-      console.error('Failed to save draft:', error);
-    }
-  };
-
-  const handleUnsavedModalDiscard = () => {
-    setShowUnsavedModal(false);
-    setHasUnsavedChanges(false);
-    if (pendingNavigation) {
-      pendingNavigation();
-      setPendingNavigation(null);
-    }
-  };
-
-  const handleUnsavedModalCancel = () => {
-    setShowUnsavedModal(false);
-    setPendingNavigation(null);
+  const handleNavigation = async (navigationFn) => {
+    await flushDraftSave({ showNotification: false });
+    navigationFn();
   };
 
   // Related files upload handler
@@ -1116,32 +1398,65 @@ const CreateProposalPage = () => {
   const handleAddMilestone = () => {
     setFormData(prev => ({
       ...prev,
-      milestones: [...prev.milestones, { title: '', targetDate: '', description: '' }]
+      milestones: [...prev.milestones, { id: createItemId('ms'), title: '', targetDate: '', description: '' }]
     }));
   };
 
   const handleRemoveMilestone = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      milestones: prev.milestones.filter((_, i) => i !== index)
-    }));
+    setFormData((prev) => {
+      const removedId = prev.milestones[index]?.id;
+      return {
+        ...prev,
+        milestones: prev.milestones.filter((_, i) => i !== index),
+        deliverables: prev.deliverables.map((item) =>
+          item.milestoneId && removedId && item.milestoneId === removedId
+            ? { ...item, milestoneId: '' }
+            : item
+        ),
+      };
+    });
   };
 
   const handleMilestoneChange = (index, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      milestones: prev.milestones.map((item, i) => 
+    setFormData((prev) => {
+      const milestones = prev.milestones.map((item, i) =>
         i === index ? { ...item, [field]: value } : item
-      )
-    }));
+      );
+      const milestoneId = prev.milestones[index]?.id;
+      const deliverables = field === 'targetDate' && value && milestoneId
+        ? prev.deliverables.map((item) =>
+            item.milestoneId === milestoneId && item.dueDate && item.dueDate > value
+              ? { ...item, dueDate: value }
+              : item
+          )
+        : prev.deliverables;
+      return { ...prev, milestones, deliverables };
+    });
   };
 
   // Deliverable handlers
   const handleAddDeliverable = () => {
     setFormData(prev => ({
       ...prev,
-      deliverables: [...prev.deliverables, { title: '', dueDate: '', description: '', type: '' }]
+      deliverables: [...prev.deliverables, { id: createItemId('dl'), title: '', dueDate: '', description: '', type: '', milestoneId: '' }]
     }));
+  };
+
+  const handleDeliverableMilestoneChange = (index, milestoneId) => {
+    setFormData((prev) => {
+      const milestone = prev.milestones.find((item) => item.id === milestoneId);
+      return {
+        ...prev,
+        deliverables: prev.deliverables.map((item, i) => {
+          if (i !== index) return item;
+          const next = { ...item, milestoneId };
+          if (milestone?.targetDate && (!item.dueDate || item.dueDate > milestone.targetDate)) {
+            next.dueDate = milestone.targetDate;
+          }
+          return next;
+        }),
+      };
+    });
   };
 
   const handleRemoveDeliverable = (index) => {
@@ -1161,29 +1476,46 @@ const CreateProposalPage = () => {
   };
 
   // ORCID search handlers
+  const usingProfilePi = (formData.piOption || 'useProfile') !== 'searchOther';
+  const selectedPi = {
+    name: usingProfilePi ? profileName : formData.principalInvestigator,
+    orcidId: usingProfilePi ? profileOrcid : formData.principalInvestigatorOrcid,
+    institution: usingProfilePi
+      ? (user?.primaryInstitution || '')
+      : (formData.principalInvestigatorInstitution || formData.principalInvestigatorAffiliations?.[0] || ''),
+    department: usingProfilePi ? '' : (formData.principalInvestigatorDepartment || ''),
+    email: usingProfilePi ? (user?.email || '') : (formData.principalInvestigatorEmail || ''),
+  };
+
   const handlePrincipalInvestigatorSelect = (researcher) => {
     setFormData(prev => ({
       ...prev,
-      principalInvestigator: researcher.creditName,
+      principalInvestigator: researcher.creditName || `${researcher.givenNames || ''} ${researcher.familyName || ''}`.trim(),
       principalInvestigatorOrcid: researcher.orcidId,
+      principalInvestigatorEmail: researcher.email || '',
+      principalInvestigatorInstitution: researcher.institution || researcher.affiliations?.[0] || '',
+      principalInvestigatorDepartment: researcher.department || '',
       principalInvestigatorAffiliations: researcher.affiliations || []
     }));
   };
 
   const handleCoInvestigatorSelect = (researcher) => {
     const newCoInvestigator = {
-      name: researcher.creditName,
-      email: '', // Will need to be filled manually
+      name: researcher.creditName || `${researcher.givenNames || ''} ${researcher.familyName || ''}`.trim(),
+      email: researcher.email || '',
       role: researcher.employmentSummary || '',
-      institution: researcher.affiliations?.[0] || '',
+      institution: researcher.institution || researcher.affiliations?.[0] || '',
+      department: researcher.department || '',
       orcidId: researcher.orcidId,
       affiliations: researcher.affiliations || []
     };
 
-    setFormData(prev => ({
-      ...prev,
-      coInvestigators: [...prev.coInvestigators, newCoInvestigator]
-    }));
+    setFormData((prev) => {
+      if (researcher.orcidId && prev.coInvestigators.some((person) => person.orcidId === researcher.orcidId)) {
+        return prev;
+      }
+      return { ...prev, coInvestigators: [...prev.coInvestigators, newCoInvestigator] };
+    });
   };
 
   const handleCoInvestigatorChange = (index, field, value) => {
@@ -1214,11 +1546,16 @@ const CreateProposalPage = () => {
   const handleSaveDraft = async () => {
     setLoading(true);
     try {
-      await saveDraftToDatabase('DRAFT', true);
-      // Navigate to proposals list after successful save
-      setTimeout(() => {
-        router.push('/researcher/projects/proposals/list');
-      }, 1000);
+      const result = await saveDraftToDatabase('DRAFT', true);
+      const savedId = result?.proposal?.id || proposalIdRef.current;
+      if (savedId && typeof window !== 'undefined') {
+        const currentId = new URL(window.location.href).searchParams.get('id');
+        if (currentId !== savedId) {
+          skipLeaveSaveRef.current = true;
+          router.replace(`/researcher/projects/proposals/create?id=${savedId}`, { scroll: false });
+          skipLeaveSaveRef.current = false;
+        }
+      }
     } catch (err) {
       setError('Failed to save draft');
     } finally {
@@ -1232,38 +1569,12 @@ const CreateProposalPage = () => {
       case 0: // Core Information
         return (
           <Box>
-            {/* Step Header */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              mb: 3,
-              p: 2,
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, rgba(139, 108, 188, 0.1) 0%, rgba(139, 108, 188, 0.05) 100%)',
-              border: '1px solid rgba(139, 108, 188, 0.2)'
-            }}>
-              <InfoIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 28 }} />
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.25, fontSize: '1.3rem' }}>
-                  Core Information
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#8b6cbc', fontWeight: 500, fontSize: '0.85rem' }}>
-                  Basic details about your research proposal
-                </Typography>
-              </Box>
-            </Box>
+            <StepIntro index={1} title="Core Information" hint="Title, investigators, and institution" />
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             
             {/* Basic Project Information Card */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
+            <Paper sx={sectionCardSx}>
               <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
                 Basic Project Information
               </Typography>
@@ -1294,700 +1605,250 @@ const CreateProposalPage = () => {
             </Paper>
 
             {/* Principal Investigator Card */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-                <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                  Principal Investigator
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 2, color: '#666', fontSize: '0.85rem' }}>
-                  Who will be the principal investigator for this proposal?
-                </Typography>
-                
-                <RadioGroup
-                  value={formData.piOption || 'useProfile'}
-                  onChange={(e) => handleInputChange('piOption', e.target.value)}
-                  sx={{ mb: 2 }}
-                >
-                  <FormControlLabel
-                    value="useProfile"
-                    control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />}
-                    label={
-                      <Box>
-                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                          Use my profile as Principal Investigator
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#666' }}>
-                          Steve Gaita (0009-0009-4810-6393)
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                  <FormControlLabel
-                    value="searchOther"
-                    control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />}
-                    label={
-                      <Box>
-                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                          Search for a different Principal Investigator
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#666' }}>
-                          Find and select another researcher using ORCID search
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                </RadioGroup>
+            <Paper sx={sectionCardSx}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
+                    Principal Investigator
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Use your profile, or search ORCID for someone else.
+                  </Typography>
+                </Box>
+                {formData.piOption === 'searchOther' ? (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<SearchIcon />}
+                    onClick={() => setPiSearchModalOpen(true)}
+                    sx={{ borderColor: PURPLE, color: PURPLE, textTransform: 'none', fontWeight: 700 }}
+                  >
+                    {formData.principalInvestigator ? 'Change PI' : 'Search ORCID'}
+                  </Button>
+                ) : null}
+              </Stack>
 
-                {formData.piOption === 'searchOther' && (
-                  <Box sx={{ mb: 2 }}>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
+                {[
+                  { id: 'useProfile', label: 'Use my profile' },
+                  { id: 'searchOther', label: 'Search another researcher' },
+                ].map((option) => {
+                  const active = (formData.piOption || 'useProfile') === option.id;
+                  return (
                     <Button
-                      variant="outlined"
-                      startIcon={<SearchIcon />}
-                      onClick={() => setPiSearchModalOpen(true)}
+                      key={option.id}
+                      size="small"
+                      variant={active ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          piOption: option.id,
+                          ...(option.id === 'useProfile'
+                            ? {
+                                principalInvestigatorEmail: '',
+                                principalInvestigator: '',
+                                principalInvestigatorOrcid: '',
+                                principalInvestigatorInstitution: '',
+                                principalInvestigatorDepartment: '',
+                              }
+                            : {}),
+                        }));
+                      }}
                       sx={{
-                        borderColor: '#8b6cbc',
-                        color: '#8b6cbc',
-                        '&:hover': {
-                          borderColor: '#7a5aa8',
-                          backgroundColor: 'rgba(139, 108, 188, 0.04)'
-                        }
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        bgcolor: active ? PURPLE : 'white',
+                        borderColor: PURPLE,
+                        color: active ? 'white' : PURPLE,
+                        '&:hover': { bgcolor: active ? '#7a5aad' : 'rgba(139, 108, 188, 0.06)', borderColor: PURPLE },
                       }}
                     >
-                      Search ORCID Database
+                      {option.label}
                     </Button>
-                  </Box>
-                )}
+                  );
+                })}
+              </Stack>
 
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Box>
-              <TextField
-                fullWidth
-                      label="Principal Investigator Name *"
-                      value={
-                        formData.piOption === 'useProfile' || !formData.piOption
-                          ? 'Steve Gaita'
-                          : formData.principalInvestigator
-                      }
-                      onChange={(e) => handleInputChange('principalInvestigator', e.target.value)}
-                      placeholder="Name from your ORCID profile"
-                      disabled={formData.piOption === 'useProfile' || !formData.piOption}
-                      InputProps={{
-                        startAdornment: (
-                          <PersonIcon sx={{ mr: 1, color: '#8b6cbc' }} />
-                        ),
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                        },
-                        '& .MuiInputLabel-root.Mui-focused': {
-                          color: '#8b6cbc',
-                        },
-                      }}
-                    />
-                    <Typography variant="caption" sx={{ color: '#666', mt: 0.5, display: 'block' }}>
-                      {formData.piOption === 'searchOther' && formData.principalInvestigator
-                        ? `Selected from ORCID: ${formData.principalInvestigator}`
-                        : 'Name from your ORCID profile'
-                      }
-                    </Typography>
-                  </Box>
-
-                  <Box>
-              <TextField
-                fullWidth
-                      label="Principal Investigator ORCID ID"
-                      value={
-                        formData.piOption === 'useProfile' || !formData.piOption
-                          ? '0009-0009-4810-6393'
-                          : formData.principalInvestigatorOrcid
-                      }
-                      onChange={(e) => handleInputChange('principalInvestigatorOrcid', e.target.value)}
-                      placeholder="ORCID ID from your profile"
-                      disabled={formData.piOption === 'useProfile' || !formData.piOption}
-                      InputProps={{
-                        startAdornment: (
-                          <Box sx={{ 
-                            backgroundColor: '#8b6cbc', 
-                            color: 'white', 
-                            px: 1, 
-                            py: 0.5, 
-                            borderRadius: 1, 
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            mr: 1
-                          }}>
-                            ORCID
-                          </Box>
-                        ),
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                        },
-                        '& .MuiInputLabel-root.Mui-focused': {
-                          color: '#8b6cbc',
-                        },
-                      }}
-                    />
-                    <Typography variant="caption" sx={{ color: '#666', mt: 0.5, display: 'block' }}>
-                      ORCID ID from your profile
-                    </Typography>
-                  </Box>
-                </Box>
-              </Paper>
+              {formData.piOption === 'searchOther' && !formData.principalInvestigator ? (
+                <Typography variant="body2" color="text.secondary">
+                  Search ORCID to select a principal investigator and add an invite email.
+                </Typography>
+              ) : (
+                <TableContainer sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: PURPLE }}>
+                        <TableCell sx={{ color: 'white', fontWeight: 700, borderBottom: 'none' }}>Name</TableCell>
+                        <TableCell sx={{ color: 'white', fontWeight: 700, borderBottom: 'none' }}>ORCID</TableCell>
+                        <TableCell sx={{ color: 'white', fontWeight: 700, borderBottom: 'none' }}>Institution</TableCell>
+                        <TableCell sx={{ color: 'white', fontWeight: 700, borderBottom: 'none' }}>Department</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow
+                        hover
+                        onClick={() => setViewingInvestigator({
+                          title: 'Principal investigator details',
+                          ...selectedPi,
+                          role: 'Principal Investigator',
+                        })}
+                        sx={{ cursor: 'pointer' }}
+                      >
+                        <TableCell sx={{ fontWeight: 700, color: '#1e293b' }}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <span>{selectedPi.name || 'Not recorded'}</span>
+                            {usingProfilePi ? (
+                              <Chip
+                                size="small"
+                                label="You"
+                                sx={{ height: 20, fontSize: 11, fontWeight: 700, bgcolor: alpha(PURPLE, 0.12), color: PURPLE }}
+                              />
+                            ) : null}
+                          </Stack>
+                        </TableCell>
+                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>
+                          {selectedPi.orcidId || 'Not set'}
+                        </TableCell>
+                        <TableCell>{selectedPi.institution || 'Not set'}</TableCell>
+                        <TableCell>{selectedPi.department || 'Not set'}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Click the row to view full details.
+                </Typography>
+                {!usingProfilePi && selectedPi.email ? (
+                  <Chip
+                    size="small"
+                    label={`Invite: ${selectedPi.email}`}
+                    sx={{ height: 22, fontWeight: 700, bgcolor: alpha(PURPLE, 0.1), color: '#6f4fa0' }}
+                  />
+                ) : null}
+              </Stack>
+            </Paper>
 
             {/* Co-Investigators Card */}
-            <Paper 
-              sx={{ 
-                p: 2.5, 
-                border: '1px solid #e0e0e0', 
-                borderRadius: 2,
-                background: 'linear-gradient(135deg, rgba(139, 108, 188, 0.02) 0%, rgba(255, 255, 255, 0.8) 100%)',
-                width: '100%'
-              }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                  <TeamIcon sx={{ mr: 2, color: '#8b6cbc', fontSize: 20 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                  Co-Investigators
-                </Typography>
+            <Paper sx={sectionCardSx}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
+                <Box>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
+                      Co-Investigators
+                    </Typography>
+                    {formData.coInvestigators.length > 0 ? (
+                      <Chip
+                        size="small"
+                        label={formData.coInvestigators.length}
+                        sx={{ height: 20, fontWeight: 700, bgcolor: alpha(PURPLE, 0.12), color: PURPLE }}
+                      />
+                    ) : null}
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    Optional. Search ORCID to add collaborators.
+                  </Typography>
                 </Box>
-                <Typography variant="body2" sx={{ color: '#666', mb: 2, fontSize: '0.85rem' }}>
-                  Add team members and collaborators for this research proposal
-                </Typography>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Button
                   variant="outlined"
-                    size="medium"
-                    startIcon={<SearchIcon />}
+                  size="small"
+                  startIcon={<SearchIcon />}
                   onClick={handleAddCoInvestigator}
-                    sx={{ 
-                      borderColor: '#8b6cbc', 
-                      color: '#8b6cbc',
-                      alignSelf: 'flex-start',
-                      '&:hover': {
-                        borderColor: '#7a5aa8',
-                        backgroundColor: 'rgba(139, 108, 188, 0.04)'
-                      }
-                    }}
-                  >
-                    Search & Add Co-Investigator
+                  sx={{ borderColor: PURPLE, color: PURPLE, textTransform: 'none', fontWeight: 700 }}
+                >
+                  Add co-investigator
                 </Button>
-              
-                  {formData.coInvestigators.length > 0 && (
-                    <Box sx={{ mt: 1 }}>
-                      <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, color: '#2D3748' }}>
-                        Selected Co-Investigators ({formData.coInvestigators.length})
-                      </Typography>
-              
-              {formData.coInvestigators.map((coInv, index) => (
-                    <Paper 
-                      key={index} 
-                      sx={{ 
-                        p: 2, 
-                        border: '1px solid #e0e0e0', 
-                        borderRadius: 2,
-                        background: 'rgba(255, 255, 255, 0.9)'
-                      }}
-                    >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1rem' }}>
-                      Co-Investigator {index + 1}
-                    </Typography>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleRemoveCoInvestigator(index)}
-                          sx={{ 
-                            color: '#f44336',
-                            '&:hover': {
-                              backgroundColor: 'rgba(244, 67, 54, 0.04)'
-                            }
-                          }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
-                      
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                      <TextField
-                        fullWidth
-                        label="Full Name"
-                        value={coInv.name}
-                          disabled
-                          InputProps={{
-                            startAdornment: (
-                              <PersonIcon sx={{ mr: 1, color: '#8b6cbc' }} />
-                            ),
-                          }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              backgroundColor: '#f8f9fa',
-                            },
-                          }}
-                        />
-                        
-                        {coInv.orcidId && (
-                      <TextField
-                        fullWidth
-                            label="ORCID ID"
-                            value={coInv.orcidId}
-                            disabled
-                            InputProps={{
-                              startAdornment: (
-                                <Box sx={{ 
-                                  backgroundColor: '#8b6cbc', 
-                                  color: 'white', 
-                                  px: 1, 
-                                  py: 0.5, 
-                                  borderRadius: 1, 
-                                  fontSize: '0.75rem',
-                                  fontWeight: 600,
-                                  mr: 1
-                                }}>
-                                  ORCID
-                                </Box>
-                              ),
-                            }}
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                backgroundColor: '#f8f9fa',
-                              },
-                            }}
-                          />
-                        )}
-                        
-                        <TextField
-                          fullWidth
-                          label="Email *"
-                        type="email"
-                        value={coInv.email}
-                        onChange={(e) => handleCoInvestigatorChange(index, 'email', e.target.value)}
-                          placeholder="Enter email address"
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              '&:hover fieldset': {
-                                borderColor: '#8b6cbc',
-                              },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#8b6cbc',
-                              },
-                            },
-                            '& .MuiInputLabel-root.Mui-focused': {
-                              color: '#8b6cbc',
-                            },
-                          }}
-                        />
-                        
-                      <TextField
-                        fullWidth
-                          label="Role/Position"
-                        value={coInv.role}
-                          disabled
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              backgroundColor: '#f8f9fa',
-                            },
-                          }}
-                        />
-                        
-                      <TextField
-                        fullWidth
-                        label="Institution"
-                        value={coInv.institution}
-                          disabled
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              backgroundColor: '#f8f9fa',
-                            },
-                          }}
-                        />
-                      </Box>
-                </Paper>
-              ))}
-                    </Box>
-                  )}
-                </Box>
-              </Paper>
+              </Stack>
+
+              {formData.coInvestigators.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No co-investigators added yet.
+                </Typography>
+              ) : (
+                <>
+                  <TableContainer sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: PURPLE }}>
+                          <TableCell sx={{ color: 'white', fontWeight: 700, borderBottom: 'none' }}>Name</TableCell>
+                          <TableCell sx={{ color: 'white', fontWeight: 700, borderBottom: 'none' }}>ORCID</TableCell>
+                          <TableCell sx={{ color: 'white', fontWeight: 700, borderBottom: 'none' }}>Institution</TableCell>
+                          <TableCell sx={{ color: 'white', fontWeight: 700, borderBottom: 'none' }}>Department</TableCell>
+                          <TableCell align="right" sx={{ color: 'white', fontWeight: 700, borderBottom: 'none', width: 56 }} />
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {formData.coInvestigators.map((coInv, index) => (
+                          <TableRow
+                            key={coInv.orcidId || `${coInv.name}-${index}`}
+                            hover
+                            onClick={() => setViewingInvestigator({
+                              title: 'Co-investigator details',
+                              name: coInv.name,
+                              orcidId: coInv.orcidId,
+                              institution: coInv.institution,
+                              department: coInv.department,
+                              email: coInv.email,
+                              role: coInv.role || 'Co-investigator',
+                            })}
+                            sx={{ cursor: 'pointer', '&:nth-of-type(even)': { bgcolor: '#fafafa' } }}
+                          >
+                            <TableCell sx={{ fontWeight: 700, color: '#1e293b' }}>{coInv.name || 'Not recorded'}</TableCell>
+                            <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{coInv.orcidId || 'Not set'}</TableCell>
+                            <TableCell>{coInv.institution || 'Not set'}</TableCell>
+                            <TableCell>{coInv.department || 'Not set'}</TableCell>
+                            <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                              <Tooltip title="Remove">
+                                <IconButton size="small" onClick={() => handleRemoveCoInvestigator(index)} sx={{ color: '#b91c1c' }}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                    Click a row to view full details.
+                  </Typography>
+                </>
+              )}
+            </Paper>
 
             {/* Departments Card */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <ManagementIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 20 }} />
+            <Paper sx={sectionCardSx}>
+              <Box sx={{ mb: 1.5 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                  Departments *
+                  Departments
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Required. Search the list or type to add a department.
                 </Typography>
               </Box>
-              <Typography variant="body2" sx={{ mb: 2, color: '#666', fontSize: '0.85rem' }}>
-                Select one or more departments. You can also add new departments not in the list.
-              </Typography>
-              
+
               <Autocomplete
                 multiple
                 freeSolo
                 options={DEPARTMENTS}
                 value={formData.departments || []}
-                onChange={handleDepartmentChange}
+                onChange={(event, newValue) => {
+                  setDepartmentsTouched(true);
+                  handleDepartmentChange(event, newValue);
+                }}
+                onBlur={() => setDepartmentsTouched(true)}
                 filterOptions={(options, params) => {
-                  const filtered = options.filter(option =>
+                  const filtered = options.filter((option) =>
                     option.toLowerCase().includes(params.inputValue.toLowerCase())
                   );
-                  
-                  // Add option to create new department if input doesn't match any existing
                   const { inputValue } = params;
-                  const isExisting = options.some(option => 
+                  const isExisting = options.some((option) =>
                     inputValue.toLowerCase() === option.toLowerCase()
                   );
-                  
                   if (inputValue !== '' && !isExisting) {
                     filtered.push(`Add "${inputValue}"`);
                   }
-                  
-                  return filtered;
-                }}
-                getOptionLabel={(option) => {
-                  // Handle "Add new" options
-                  if (typeof option === 'string' && option.startsWith('Add "')) {
-                    return option.slice(5, -1); // Remove 'Add "' and '"'
-                  }
-                  return option;
-                }}
-                renderOption={(props, option) => {
-                  const { key, ...otherProps } = props;
-                  return (
-                    <Box component="li" key={key} {...otherProps}>
-                      {option.startsWith('Add "') ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <AddIcon sx={{ mr: 1, color: '#8b6cbc', fontSize: 18 }} />
-                          <Typography>
-                            Add "{option.slice(5, -1)}"
-                          </Typography>
-                        </Box>
-                      ) : (
-                        option
-                      )}
-                    </Box>
-                  );
-                }}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => {
-                    const isCustom = !DEPARTMENTS.includes(option);
-                    return (
-                      <Chip
-                        variant="outlined"
-                        label={option}
-                        {...getTagProps({ index })}
-                        key={index}
-                        sx={{
-                          borderColor: isCustom ? '#ff9800' : '#8b6cbc',
-                          color: isCustom ? '#ff9800' : '#8b6cbc',
-                          backgroundColor: isCustom ? 'rgba(255, 152, 0, 0.04)' : 'transparent',
-                          '& .MuiChip-deleteIcon': {
-                            color: isCustom ? '#ff9800' : '#8b6cbc',
-                            '&:hover': {
-                              color: isCustom ? '#f57c00' : '#7a5aa8'
-                            }
-                          }
-                        }}
-                      />
-                    );
-                  })
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select or add departments"
-                    placeholder={formData.departments?.length === 0 ? "Type to search or add new department" : "Add more departments"}
-                    error={formData.departments && formData.departments.length === 0}
-                    helperText={
-                      formData.departments && formData.departments.length === 0
-                        ? "At least one department is required"
-                        : `${formData.departments?.length || 0} department(s) selected`
-                    }
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        '&:hover fieldset': {
-                          borderColor: '#8b6cbc',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#8b6cbc',
-                        },
-                      },
-                      '& .MuiInputLabel-root.Mui-focused': {
-                        color: '#8b6cbc',
-                      },
-                    }}
-                  />
-                )}
-                sx={{
-                  '& .MuiAutocomplete-popupIndicator': {
-                    color: '#8b6cbc',
-                  },
-                  '& .MuiAutocomplete-clearIndicator': {
-                    color: '#8b6cbc',
-                  },
-                }}
-              />
-              
-              {formData.departments && formData.departments.length > 0 && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 1 }}>
-                    Selected Departments ({formData.departments.length}):
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-                    {formData.departments.map((dept, index) => {
-                      const isCustom = !DEPARTMENTS.includes(dept);
-                      return (
-                        <Chip
-                          key={index}
-                          label={dept}
-                          size="small"
-                          sx={{
-                            backgroundColor: isCustom ? '#ff9800' : '#8b6cbc',
-                            color: 'white',
-                            fontSize: '0.75rem'
-                          }}
-                        />
-                      );
-                    })}
-                  </Box>
-                  
-                  {/* Legend */}
-                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ 
-                        width: 12, 
-                        height: 12, 
-                        backgroundColor: '#8b6cbc', 
-                        borderRadius: 1 
-                      }} />
-                      <Typography variant="caption" sx={{ color: '#666', fontSize: '0.7rem' }}>
-                        Standard
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ 
-                        width: 12, 
-                        height: 12, 
-                        backgroundColor: '#ff9800', 
-                        borderRadius: 1 
-                      }} />
-                      <Typography variant="caption" sx={{ color: '#666', fontSize: '0.7rem' }}>
-                        Custom
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              )}
-            </Paper>
-
-            {/* Project Timeline Card */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <ScheduleIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 20 }} />
-                <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                  Project Timeline
-                </Typography>
-              </Box>
-              <Typography variant="body2" sx={{ mb: 2, color: '#666', fontSize: '0.85rem' }}>
-                Specify the expected start and end dates for your project (optional).
-              </Typography>
-              
-              <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-                <TextField
-                  fullWidth
-                  label="Start Date"
-                  type="date"
-                  value={formData.startDate || ''}
-                  onChange={(e) => handleInputChange('startDate', e.target.value)}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  helperText="Optional - When do you plan to start?"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&:hover fieldset': {
-                        borderColor: '#8b6cbc',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#8b6cbc',
-                      },
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#8b6cbc',
-                    },
-                  }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="End Date"
-                  type="date"
-                  value={formData.endDate || ''}
-                  onChange={(e) => handleInputChange('endDate', e.target.value)}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  helperText="Optional - Expected completion date"
-                  error={
-                    formData.startDate && 
-                    formData.endDate && 
-                    new Date(formData.endDate) < new Date(formData.startDate)
-                  }
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&:hover fieldset': {
-                        borderColor: '#8b6cbc',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#8b6cbc',
-                      },
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#8b6cbc',
-                    },
-                  }}
-                />
-              </Box>
-              
-              {/* Date validation error */}
-              {formData.startDate && 
-               formData.endDate && 
-               new Date(formData.endDate) < new Date(formData.startDate) && (
-                <Box sx={{ mt: 1 }}>
-                  <Typography variant="caption" sx={{ color: '#f44336' }}>
-                    End date cannot be before start date
-                  </Typography>
-                </Box>
-              )}
-              
-              {(formData.startDate || formData.endDate) && (
-                <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'rgba(139, 108, 188, 0.04)', borderRadius: 2 }}>
-                  <Typography variant="caption" sx={{ color: '#666', display: 'block', mb: 0.5 }}>
-                    Project Duration:
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#2D3748', fontWeight: 500 }}>
-                    {formData.startDate ? new Date(formData.startDate).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    }) : 'Not specified'} 
-                    {' → '}
-                    {formData.endDate ? new Date(formData.endDate).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    }) : 'Not specified'}
-                  </Typography>
-                  {formData.startDate && formData.endDate && (
-                    <Typography variant="caption" sx={{ color: '#8b6cbc', display: 'block', mt: 0.5 }}>
-                      Duration: {Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24))} days
-                    </Typography>
-                  )}
-                </Box>
-              )}
-            </Paper>
-
-            </Box>
-        </Box>
-        );
-
-      case 1: // Research Details
-        return (
-          <Box>
-            {/* Step Header */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              mb: 3,
-              p: 2,
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, rgba(139, 108, 188, 0.1) 0%, rgba(139, 108, 188, 0.05) 100%)',
-              border: '1px solid rgba(139, 108, 188, 0.2)'
-            }}>
-              <ScienceIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 28 }} />
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.25, fontSize: '1.3rem' }}>
-                  Research Scope & Details
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#8b6cbc', fontWeight: 500, fontSize: '0.85rem' }}>
-                  Define your research areas, objectives, methods, and provide an abstract.
-                </Typography>
-              </Box>
-            </Box>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            
-            {/* Research Areas Card */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <ScienceIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 20 }} />
-                <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                  Research Areas *
-                </Typography>
-              </Box>
-              <Typography variant="body2" sx={{ mb: 2, color: '#666', fontSize: '0.85rem' }}>
-                Select all relevant research areas for your project
-              </Typography>
-              
-              <Autocomplete
-                multiple
-                freeSolo
-                options={RESEARCH_FIELDS}
-                value={formData.fields || []}
-                onChange={handleResearchAreasChange}
-                filterOptions={(options, params) => {
-                  const filtered = options.filter(option =>
-                    option.toLowerCase().includes(params.inputValue.toLowerCase())
-                  );
-                  
-                  const { inputValue } = params;
-                  const isExisting = options.some(option => 
-                    inputValue.toLowerCase() === option.toLowerCase()
-                  );
-                  
-                  if (inputValue !== '' && !isExisting) {
-                    filtered.push(`Add "${inputValue}"`);
-                  }
-                  
                   return filtered;
                 }}
                 getOptionLabel={(option) => {
@@ -2001,12 +1862,164 @@ const CreateProposalPage = () => {
                   return (
                     <Box component="li" key={key} {...otherProps}>
                       {option.startsWith('Add "') ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <AddIcon sx={{ mr: 1, color: '#8b6cbc', fontSize: 18 }} />
-                          <Typography>
-                            Add "{option.slice(5, -1)}"
-                          </Typography>
-                        </Box>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <AddIcon sx={{ color: PURPLE, fontSize: 18 }} />
+                          <Typography>Add {option.slice(5, -1)}</Typography>
+                        </Stack>
+                      ) : (
+                        option
+                      )}
+                    </Box>
+                  );
+                }}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => {
+                    const isCustom = !DEPARTMENTS.includes(option);
+                    return (
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={option}
+                        {...getTagProps({ index })}
+                        key={index}
+                        sx={{
+                          fontWeight: 700,
+                          borderColor: isCustom ? '#d97706' : PURPLE,
+                          color: isCustom ? '#b45309' : PURPLE,
+                          bgcolor: isCustom ? 'rgba(217, 119, 6, 0.06)' : alpha(PURPLE, 0.06),
+                          '& .MuiChip-deleteIcon': {
+                            color: isCustom ? '#d97706' : PURPLE,
+                          },
+                        }}
+                      />
+                    );
+                  })
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder={formData.departments?.length ? 'Add another department' : 'Search or add a department'}
+                    error={departmentsTouched && !formData.departments?.length}
+                    helperText={
+                      departmentsTouched && !formData.departments?.length
+                        ? 'Select at least one department'
+                        : formData.departments?.length
+                          ? `${formData.departments.length} selected. Custom departments use an amber chip.`
+                          : ' '
+                    }
+                    sx={fieldFocusSx}
+                  />
+                )}
+                sx={{
+                  '& .MuiAutocomplete-popupIndicator': { color: PURPLE },
+                  '& .MuiAutocomplete-clearIndicator': { color: PURPLE },
+                }}
+              />
+            </Paper>
+
+            {/* Project Timeline Card */}
+            <Paper sx={sectionCardSx}>
+              <Box sx={{ mb: 1.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
+                  Project Timeline
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Optional start and end dates for the project.
+                </Typography>
+              </Box>
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <TextField
+                  fullWidth
+                  label="Start date"
+                  type="date"
+                  value={formData.startDate || ''}
+                  onChange={(e) => handleStartDateChange(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={fieldFocusSx}
+                />
+                <TextField
+                  fullWidth
+                  label="End date"
+                  type="date"
+                  value={formData.endDate || ''}
+                  onChange={(e) => handleEndDateChange(e.target.value)}
+                  disabled={!formData.startDate}
+                  InputLabelProps={{ shrink: true }}
+                  helperText={formData.startDate ? ' ' : 'Choose a start date first'}
+                  slotProps={{ htmlInput: { min: formData.startDate || undefined } }}
+                  sx={fieldFocusSx}
+                />
+              </Stack>
+
+              {(formData.startDate || formData.endDate) ? (
+                <Typography variant="caption" sx={{ display: 'block', mt: 1, color: PURPLE, fontWeight: 700 }}>
+                  {[formatProposalDate(formData.startDate) || 'Start not set', formatProposalDate(formData.endDate) || 'End not set'].join(' - ')}
+                  {projectDurationLabel(formData.startDate, formData.endDate) ? ` (${projectDurationLabel(formData.startDate, formData.endDate)})` : ''}
+                </Typography>
+              ) : null}
+            </Paper>
+
+            </Box>
+        </Box>
+        );
+
+      case 1: // Research Details
+        return (
+          <Box>
+            <StepIntro index={2} title="Research details" hint="Areas, objectives, abstract, and methods" />
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            
+            {/* Research Areas Card */}
+            <Paper sx={sectionCardSx}>
+              <Box sx={{ mb: 1.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
+                  Research Areas
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Required. Search the list or type to add a research area.
+                </Typography>
+              </Box>
+
+              <Autocomplete
+                multiple
+                freeSolo
+                options={RESEARCH_FIELDS}
+                value={formData.fields || []}
+                onChange={(event, newValue) => {
+                  setResearchAreasTouched(true);
+                  handleResearchAreasChange(event, newValue);
+                }}
+                onBlur={() => setResearchAreasTouched(true)}
+                filterOptions={(options, params) => {
+                  const filtered = options.filter((option) =>
+                    option.toLowerCase().includes(params.inputValue.toLowerCase())
+                  );
+                  const { inputValue } = params;
+                  const isExisting = options.some((option) =>
+                    inputValue.toLowerCase() === option.toLowerCase()
+                  );
+                  if (inputValue !== '' && !isExisting) {
+                    filtered.push(`Add "${inputValue}"`);
+                  }
+                  return filtered;
+                }}
+                getOptionLabel={(option) => {
+                  if (typeof option === 'string' && option.startsWith('Add "')) {
+                    return option.slice(5, -1);
+                  }
+                  return option;
+                }}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <Box component="li" key={key} {...otherProps}>
+                      {option.startsWith('Add "') ? (
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <AddIcon sx={{ color: PURPLE, fontSize: 18 }} />
+                          <Typography>Add {option.slice(5, -1)}</Typography>
+                        </Stack>
                       ) : (
                         option
                       )}
@@ -2018,20 +2031,19 @@ const CreateProposalPage = () => {
                     const isCustom = !RESEARCH_FIELDS.includes(option);
                     return (
                       <Chip
+                        size="small"
                         variant="outlined"
                         label={option}
                         {...getTagProps({ index })}
                         key={index}
                         sx={{
-                          borderColor: isCustom ? '#ff9800' : '#8b6cbc',
-                          color: isCustom ? '#ff9800' : '#8b6cbc',
-                          backgroundColor: isCustom ? 'rgba(255, 152, 0, 0.04)' : 'transparent',
+                          fontWeight: 700,
+                          borderColor: isCustom ? '#d97706' : PURPLE,
+                          color: isCustom ? '#b45309' : PURPLE,
+                          bgcolor: isCustom ? 'rgba(217, 119, 6, 0.06)' : alpha(PURPLE, 0.06),
                           '& .MuiChip-deleteIcon': {
-                            color: isCustom ? '#ff9800' : '#8b6cbc',
-                            '&:hover': {
-                              color: isCustom ? '#f57c00' : '#7a5aa8'
-                            }
-                          }
+                            color: isCustom ? '#d97706' : PURPLE,
+                          },
                         }}
                       />
                     );
@@ -2040,49 +2052,27 @@ const CreateProposalPage = () => {
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="Select or add research areas"
-                    placeholder={formData.fields?.length === 0 ? "Type to search or add new area" : "Add more areas"}
-                    error={formData.fields && formData.fields.length === 0}
+                    placeholder={formData.fields?.length ? 'Add another research area' : 'Search or add a research area'}
+                    error={researchAreasTouched && !formData.fields?.length}
                     helperText={
-                      formData.fields && formData.fields.length === 0
-                        ? "At least one research area is required"
-                        : `${formData.fields?.length || 0} area(s) selected`
+                      researchAreasTouched && !formData.fields?.length
+                        ? 'Select at least one research area'
+                        : formData.fields?.length
+                          ? `${formData.fields.length} selected. Custom areas use an amber chip.`
+                          : ' '
                     }
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        '&:hover fieldset': {
-                          borderColor: '#8b6cbc',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#8b6cbc',
-                        },
-                      },
-                      '& .MuiInputLabel-root.Mui-focused': {
-                        color: '#8b6cbc',
-                      },
-                    }}
+                    sx={fieldFocusSx}
                   />
                 )}
                 sx={{
-                  '& .MuiAutocomplete-popupIndicator': {
-                    color: '#8b6cbc',
-                  },
-                  '& .MuiAutocomplete-clearIndicator': {
-                    color: '#8b6cbc',
-                  },
+                  '& .MuiAutocomplete-popupIndicator': { color: PURPLE },
+                  '& .MuiAutocomplete-clearIndicator': { color: PURPLE },
                 }}
               />
             </Paper>
 
             {/* Research Objectives Card */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
+            <Paper sx={sectionCardSx}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
                 Research Objectives *
               </Typography>
@@ -2098,14 +2088,7 @@ const CreateProposalPage = () => {
             </Paper>
 
             {/* Research Methods Card */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
+            <Paper sx={sectionCardSx}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
                 Research Methods *
               </Typography>
@@ -2121,14 +2104,7 @@ const CreateProposalPage = () => {
             </Paper>
 
             {/* Abstract Card */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
+            <Paper sx={sectionCardSx}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
                 Abstract *
               </Typography>
@@ -2150,43 +2126,24 @@ const CreateProposalPage = () => {
       case 2: // Project Management
         return (
           <Box>
-            {/* Step Header */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              mb: 3,
-              p: 2,
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, rgba(139, 108, 188, 0.1) 0%, rgba(139, 108, 188, 0.05) 100%)',
-              border: '1px solid rgba(139, 108, 188, 0.2)'
-            }}>
-              <ManagementIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 28 }} />
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.25, fontSize: '1.3rem' }}>
-                  Project Management & Timeline
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#8b6cbc', fontWeight: 500, fontSize: '0.85rem' }}>
-                  Define project milestones, deliverables, and potential risks.
-                </Typography>
-              </Box>
-            </Box>
+            <StepIntro index={3} title="Project Management" hint="Milestones, deliverables, and outputs" />
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             
             {/* Project Milestones Card */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <TimelineIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 20 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                    Project Milestones
+            <Paper sx={sectionCardSx}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
+                <Box>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
+                      Project Milestones
+                    </Typography>
+                    {formData.milestones.length > 0 ? (
+                      <Chip size="small" label={formData.milestones.length} sx={{ height: 20, fontWeight: 700, bgcolor: alpha(PURPLE, 0.12), color: PURPLE }} />
+                    ) : null}
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    Optional. Key checkpoints. Linked deliverables appear as outputs.
                   </Typography>
                 </Box>
                 <Button
@@ -2194,157 +2151,114 @@ const CreateProposalPage = () => {
                   size="small"
                   startIcon={<AddIcon />}
                   onClick={handleAddMilestone}
-                  sx={{
-                    borderColor: '#8b6cbc',
-                    color: '#8b6cbc',
-                    '&:hover': {
-                      borderColor: '#7a5aa8',
-                      backgroundColor: 'rgba(139, 108, 188, 0.04)'
-                    }
-                  }}
+                  sx={{ borderColor: PURPLE, color: PURPLE, textTransform: 'none', fontWeight: 700 }}
                 >
-                  Add Milestone
+                  Add milestone
                 </Button>
-              </Box>
-              <Typography variant="body2" sx={{ mb: 2, color: '#666', fontSize: '0.85rem' }}>
-                Add key milestones and target dates for your project (optional).
-              </Typography>
+              </Stack>
 
               {formData.milestones.length === 0 ? (
-                <Box sx={{ 
-                  textAlign: 'center', 
-                  py: 3, 
-                  border: '2px dashed #e0e0e0', 
-                  borderRadius: 2,
-                  backgroundColor: '#fafafa'
-                }}>
-                  <TimelineIcon sx={{ fontSize: 48, color: '#ccc', mb: 1 }} />
-                  <Typography variant="body2" sx={{ color: '#666' }}>
-                    No milestones added yet
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#999' }}>
-                    Click "Add Milestone" to get started, or leave blank to populate later
-                  </Typography>
-                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  No milestones added yet.
+                </Typography>
               ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {formData.milestones.map((milestone, index) => (
-                    <Paper 
-                      key={index}
-                      sx={{ 
-                        p: 2, 
-                        border: '1px solid #e0e0e0', 
-                        borderRadius: 2,
-                        background: 'rgba(255, 255, 255, 0.9)'
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2D3748' }}>
-                          Milestone {index + 1}
-                        </Typography>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleRemoveMilestone(index)}
-                          sx={{ 
-                            color: '#f44336',
-                            '&:hover': {
-                              backgroundColor: 'rgba(244, 67, 54, 0.04)'
-                            }
-                          }}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Box>
-                      
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <TextField
-                          fullWidth
-                          label="Milestone Title"
-                          value={milestone.title}
-                          onChange={(e) => handleMilestoneChange(index, 'title', e.target.value)}
-                          placeholder="Enter milestone title"
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              '&:hover fieldset': {
-                                borderColor: '#8b6cbc',
-                              },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#8b6cbc',
-                              },
-                            },
-                            '& .MuiInputLabel-root.Mui-focused': {
-                              color: '#8b6cbc',
-                            },
-                          }}
-                        />
-                        
-                        <TextField
-                          fullWidth
-                          label="Target Date"
-                          type="date"
-                          value={milestone.targetDate}
-                          onChange={(e) => handleMilestoneChange(index, 'targetDate', e.target.value)}
-                          InputLabelProps={{
-                            shrink: true,
-                          }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              '&:hover fieldset': {
-                                borderColor: '#8b6cbc',
-                              },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#8b6cbc',
-                              },
-                            },
-                            '& .MuiInputLabel-root.Mui-focused': {
-                              color: '#8b6cbc',
-                            },
-                          }}
-                        />
-                        
-                        <TextField
-                          fullWidth
-                          multiline
-                          rows={2}
-                          label="Description"
-                          value={milestone.description}
-                          onChange={(e) => handleMilestoneChange(index, 'description', e.target.value)}
-                          placeholder="Describe what will be achieved at this milestone"
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              '&:hover fieldset': {
-                                borderColor: '#8b6cbc',
-                              },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#8b6cbc',
-                              },
-                            },
-                            '& .MuiInputLabel-root.Mui-focused': {
-                              color: '#8b6cbc',
-                            },
-                          }}
-                        />
-                      </Box>
-                    </Paper>
-                  ))}
-                </Box>
+                <Stack spacing={1.5}>
+                  {formData.milestones.map((milestone, index) => {
+                    const outputs = formData.deliverables.filter((item) => item.milestoneId && item.milestoneId === milestone.id);
+                    return (
+                      <Paper key={milestone.id || index} variant="outlined" sx={{ p: 1.75, borderColor: 'divider', boxShadow: 'none' }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.25 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                            {milestoneLabel(milestone, index)}
+                          </Typography>
+                          <Tooltip title="Remove">
+                            <IconButton size="small" onClick={() => handleRemoveMilestone(index)} sx={{ color: '#b91c1c' }}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                        <Stack spacing={1.25}>
+                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+                            <TextField
+                              fullWidth
+                              size="small"
+                              label="Title"
+                              value={milestone.title}
+                              onChange={(e) => handleMilestoneChange(index, 'title', e.target.value)}
+                              placeholder="Milestone title"
+                              sx={fieldFocusSx}
+                            />
+                            <TextField
+                              fullWidth
+                              size="small"
+                              label="Target date"
+                              type="date"
+                              value={milestone.targetDate || ''}
+                              onChange={(e) => handleMilestoneChange(index, 'targetDate', e.target.value)}
+                              InputLabelProps={{ shrink: true }}
+                              slotProps={{
+                                htmlInput: {
+                                  min: formData.startDate || undefined,
+                                  max: formData.endDate || undefined,
+                                },
+                              }}
+                              sx={fieldFocusSx}
+                            />
+                          </Stack>
+                          <Box>
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', display: 'block', mb: 0.5 }}>
+                              Description
+                            </Typography>
+                            <TipTapEditor
+                              value={milestone.description || ''}
+                              onChange={(value) => handleMilestoneChange(index, 'description', value)}
+                              placeholder="What this milestone achieves"
+                              minHeight="100px"
+                            />
+                          </Box>
+                          <Box>
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b' }}>
+                              Outputs
+                            </Typography>
+                            {outputs.length === 0 ? (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                Link a deliverable to this milestone to mark it as an output.
+                              </Typography>
+                            ) : (
+                              <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+                                {outputs.map((item) => (
+                                  <Chip
+                                    key={item.id || item.title}
+                                    size="small"
+                                    label={item.title?.trim() || 'Untitled deliverable'}
+                                    sx={{ fontWeight: 700, bgcolor: alpha(PURPLE, 0.1), color: PURPLE }}
+                                  />
+                                ))}
+                              </Stack>
+                            )}
+                          </Box>
+                        </Stack>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
               )}
             </Paper>
 
             {/* Project Deliverables Card */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <AssignmentIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 20 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                    Project Deliverables
+            <Paper sx={sectionCardSx}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
+                <Box>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
+                      Project Deliverables
+                    </Typography>
+                    {formData.deliverables.length > 0 ? (
+                      <Chip size="small" label={formData.deliverables.length} sx={{ height: 20, fontWeight: 700, bgcolor: alpha(PURPLE, 0.12), color: PURPLE }} />
+                    ) : null}
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    Optional. Link a deliverable to a milestone to make it that milestone's output.
                   </Typography>
                 </Box>
                 <Button
@@ -2352,216 +2266,122 @@ const CreateProposalPage = () => {
                   size="small"
                   startIcon={<AddIcon />}
                   onClick={handleAddDeliverable}
-                  sx={{
-                    borderColor: '#8b6cbc',
-                    color: '#8b6cbc',
-                    '&:hover': {
-                      borderColor: '#7a5aa8',
-                      backgroundColor: 'rgba(139, 108, 188, 0.04)'
-                    }
-                  }}
+                  sx={{ borderColor: PURPLE, color: PURPLE, textTransform: 'none', fontWeight: 700 }}
                 >
-                  Add Deliverable
+                  Add deliverable
                 </Button>
-              </Box>
-              <Typography variant="body2" sx={{ mb: 2, color: '#666', fontSize: '0.85rem' }}>
-                Define specific deliverables and their due dates (optional).
-              </Typography>
+              </Stack>
 
               {formData.deliverables.length === 0 ? (
-                <Box sx={{ 
-                  textAlign: 'center', 
-                  py: 3, 
-                  border: '2px dashed #e0e0e0', 
-                  borderRadius: 2,
-                  backgroundColor: '#fafafa'
-                }}>
-                  <AssignmentIcon sx={{ fontSize: 48, color: '#ccc', mb: 1 }} />
-                  <Typography variant="body2" sx={{ color: '#666' }}>
-                    No deliverables added yet
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#999' }}>
-                    Click "Add Deliverable" to get started, or leave blank to populate later
-                  </Typography>
-                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  No deliverables added yet.
+                </Typography>
               ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {formData.deliverables.map((deliverable, index) => (
-                    <Paper 
-                      key={index}
-                      sx={{ 
-                        p: 2, 
-                        border: '1px solid #e0e0e0', 
-                        borderRadius: 2,
-                        background: 'rgba(255, 255, 255, 0.9)'
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2D3748' }}>
-                          Deliverable {index + 1}
-                        </Typography>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleRemoveDeliverable(index)}
-                          sx={{ 
-                            color: '#f44336',
-                            '&:hover': {
-                              backgroundColor: 'rgba(244, 67, 54, 0.04)'
-                            }
-                          }}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Box>
-                      
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        {/* Title - Full Width */}
-                        <TextField
-                          fullWidth
-                          label="Deliverable Title"
-                          value={deliverable.title}
-                          onChange={(e) => handleDeliverableChange(index, 'title', e.target.value)}
-                          placeholder="Enter deliverable title"
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              '&:hover fieldset': {
-                                borderColor: '#8b6cbc',
-                              },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#8b6cbc',
-                              },
-                            },
-                            '& .MuiInputLabel-root.Mui-focused': {
-                              color: '#8b6cbc',
-                            },
-                          }}
-                        />
-                        
-                        {/* Type and Due Date - Side by Side */}
-                        <Box sx={{ 
-                          display: 'grid', 
-                          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                          gap: 2 
-                        }}>
-                          <Box>
-                            <InputLabel 
-                              id={`deliverable-type-label-${index}`} 
-                              sx={{ 
-                                color: '#666',
-                                fontSize: '0.875rem',
-                                fontWeight: 500,
-                                mb: 0.5,
-                                '&.Mui-focused': {
-                                  color: '#8b6cbc',
-                                }
-                              }}
-                            >
-                              Type *
-                            </InputLabel>
-                            <Select
-                              labelId={`deliverable-type-label-${index}`}
-                              fullWidth
-                              value={deliverable.type}
-                              displayEmpty
-                              sx={{
-                                '& .MuiOutlinedInput-notchedOutline': {
-                                  borderColor: 'rgba(0, 0, 0, 0.23)',
-                                },
-                                '&:hover .MuiOutlinedInput-notchedOutline': {
-                                  borderColor: '#8b6cbc',
-                                },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                  borderColor: '#8b6cbc',
-                                },
-                                '& .MuiSelect-select': {
-                                  py: 1.5,
-                                }
-                              }}
-                              onChange={(e) => handleDeliverableChange(index, 'type', e.target.value)}
-                            >
-                              <MenuItem value="" disabled>
-                                <em>Select deliverable type</em>
-                              </MenuItem>
-                              {DELIVERABLE_TYPES.map((type) => (
-                                <MenuItem key={type} value={type}>
-                                  {type}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </Box>
-                          
-                          <Box>
-                            <InputLabel 
-                              sx={{ 
-                                color: '#666',
-                                fontSize: '0.875rem',
-                                fontWeight: 500,
-                                mb: 0.5
-                              }}
-                            >
-                              Due Date
-                            </InputLabel>
-                            <TextField
-                              fullWidth
-                              type="date"
-                              value={deliverable.dueDate}
-                              onChange={(e) => handleDeliverableChange(index, 'dueDate', e.target.value)}
-                              InputProps={{
-                                sx: {
-                                  '& input': {
-                                    py: 1.5,
-                                  }
-                                }
-                              }}
-                              sx={{
-                                '& .MuiOutlinedInput-root': {
-                                  '&:hover fieldset': {
-                                    borderColor: '#8b6cbc',
-                                  },
-                                  '&.Mui-focused fieldset': {
-                                    borderColor: '#8b6cbc',
-                                  },
-                                },
-                              }}
-                            />
-                          </Box>
-                        </Box>
-                        
-                        {/* Description - Full Width */}
-                        <Box>
-                          <InputLabel 
-                            sx={{ 
-                              color: '#666',
-                              fontSize: '0.875rem',
-                              fontWeight: 500,
-                              mb: 0.5
-                            }}
-                          >
-                            Description
-                          </InputLabel>
+                <Stack spacing={1.5}>
+                  {formData.deliverables.map((deliverable, index) => {
+                    const linkedMilestone = formData.milestones.find((item) => item.id && item.id === deliverable.milestoneId);
+                    const linkedIndex = formData.milestones.findIndex((item) => item.id && item.id === deliverable.milestoneId);
+                    const dueMax = linkedMilestone?.targetDate || formData.endDate || undefined;
+                    return (
+                      <Paper key={deliverable.id || index} variant="outlined" sx={{ p: 1.75, borderColor: 'divider', boxShadow: 'none' }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.25 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                            {deliverable.title?.trim() || `Deliverable ${index + 1}`}
+                          </Typography>
+                          <Tooltip title="Remove">
+                            <IconButton size="small" onClick={() => handleRemoveDeliverable(index)} sx={{ color: '#b91c1c' }}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                        <Stack spacing={1.25}>
                           <TextField
                             fullWidth
-                            multiline
-                            rows={3}
-                            value={deliverable.description}
-                            onChange={(e) => handleDeliverableChange(index, 'description', e.target.value)}
-                            placeholder="Describe the deliverable, its specifications, and expected outcomes..."
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '&:hover fieldset': {
-                                  borderColor: '#8b6cbc',
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#8b6cbc',
-                                },
-                              },
-                            }}
+                            size="small"
+                            label="Title"
+                            value={deliverable.title}
+                            onChange={(e) => handleDeliverableChange(index, 'title', e.target.value)}
+                            placeholder="Deliverable title"
+                            sx={fieldFocusSx}
                           />
-                        </Box>
-                      </Box>
-                    </Paper>
-                  ))}
-                </Box>
+                          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25}>
+                            <TextField
+                              select
+                              fullWidth
+                              size="small"
+                              label="Type"
+                              value={deliverable.type || ''}
+                              onChange={(e) => handleDeliverableChange(index, 'type', e.target.value)}
+                              SelectProps={{ displayEmpty: true, MenuProps: selectMenuProps }}
+                              sx={fieldFocusSx}
+                            >
+                              <MenuItem value="">Select type</MenuItem>
+                              {DELIVERABLE_TYPES.map((type) => (
+                                <MenuItem key={type} value={type}>{type}</MenuItem>
+                              ))}
+                            </TextField>
+                            <TextField
+                              fullWidth
+                              size="small"
+                              label="Due date"
+                              type="date"
+                              value={deliverable.dueDate || ''}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (dueMax && value && value > dueMax) return;
+                                if (formData.startDate && value && value < formData.startDate) return;
+                                handleDeliverableChange(index, 'dueDate', value);
+                              }}
+                              InputLabelProps={{ shrink: true }}
+                              slotProps={{
+                                htmlInput: {
+                                  min: formData.startDate || undefined,
+                                  max: dueMax,
+                                },
+                              }}
+                              sx={fieldFocusSx}
+                            />
+                            <TextField
+                              select
+                              fullWidth
+                              size="small"
+                              label="Output of milestone"
+                              value={deliverable.milestoneId || ''}
+                              onChange={(e) => handleDeliverableMilestoneChange(index, e.target.value)}
+                              SelectProps={{ displayEmpty: true, MenuProps: selectMenuProps }}
+                              helperText={formData.milestones.length === 0 ? 'Add a milestone first' : ' '}
+                              sx={fieldFocusSx}
+                            >
+                              <MenuItem value="">Not linked</MenuItem>
+                              {formData.milestones.map((milestone, milestoneIndex) => (
+                                <MenuItem key={milestone.id || milestoneIndex} value={milestone.id || ''}>
+                                  {milestoneLabel(milestone, milestoneIndex)}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          </Stack>
+                          <Box>
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', display: 'block', mb: 0.5 }}>
+                              Description
+                            </Typography>
+                            <TipTapEditor
+                              value={deliverable.description || ''}
+                              onChange={(value) => handleDeliverableChange(index, 'description', value)}
+                              placeholder="Specifications and expected outcomes"
+                              minHeight="100px"
+                            />
+                          </Box>
+                          {linkedMilestone ? (
+                            <Typography variant="caption" sx={{ color: PURPLE, fontWeight: 700 }}>
+                              Output of {milestoneLabel(linkedMilestone, linkedIndex)}
+                              {linkedMilestone.targetDate ? ` (${formatProposalDate(linkedMilestone.targetDate)})` : ''}
+                            </Typography>
+                          ) : null}
+                        </Stack>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
               )}
             </Paper>
 
@@ -2573,301 +2393,170 @@ const CreateProposalPage = () => {
       case 3: // Funding and Grants
         return (
           <Box>
-            {/* Step Header */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              mb: 3,
-              p: 2,
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, rgba(139, 108, 188, 0.1) 0%, rgba(139, 108, 188, 0.05) 100%)',
-              border: '1px solid rgba(139, 108, 188, 0.2)'
-            }}>
-              <BudgetIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 28 }} />
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.25, fontSize: '1.3rem' }}>
-                  Funding & Budget
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#8b6cbc', fontWeight: 500, fontSize: '0.85rem' }}>
-                  Specify the funding source, grant details, and budget breakdown.
-                </Typography>
-              </Box>
-            </Box>
+            <StepIntro index={4} title="Funding and budget" hint="Source, currency, and proposed budget" />
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             
             {/* Funding Source Card */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                Funding Source
-              </Typography>
-              
-              <Box>
+            <Paper sx={sectionCardSx}>
+              <Box sx={{ mb: 1.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
+                  Funding Source
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Required. Select a source or type a new one.
+                </Typography>
+              </Box>
+              <Autocomplete
+                fullWidth
+                freeSolo
+                options={FUNDING_SOURCES}
+                value={formData.fundingSource}
+                onChange={(event, newValue) => {
+                  handleInputChange('fundingSource', newValue || '');
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Search or enter a funding source"
+                    sx={fieldFocusSx}
+                  />
+                )}
+                sx={{
+                  '& .MuiAutocomplete-popupIndicator': { color: PURPLE },
+                  '& .MuiAutocomplete-clearIndicator': { color: PURPLE },
+                }}
+              />
+            </Paper>
+
+            {/* Proposed Budget Information Card */}
+            <Paper sx={sectionCardSx}>
+              <Box sx={{ mb: 1.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
+                  Proposed Budget Information
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Set the currency and total amount, then upload a detailed budget breakdown.
+                </Typography>
+              </Box>
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 2 }}>
                 <Autocomplete
                   fullWidth
                   freeSolo
-                  options={FUNDING_SOURCES}
-                  value={formData.fundingSource}
+                  options={CURRENCIES}
+                  value={CURRENCIES.find((item) => item.code === formData.budgetCurrency) || formData.budgetCurrency || null}
+                  getOptionLabel={(option) =>
+                    typeof option === 'string' ? option : option.name
+                  }
+                  isOptionEqualToValue={(option, value) =>
+                    (option?.code || option) === (value?.code || value)
+                  }
                   onChange={(event, newValue) => {
-                    handleInputChange('fundingSource', newValue || '');
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Funding Source *"
-                      placeholder="Select or enter a funding source"
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                        },
-                        '& .MuiInputLabel-root.Mui-focused': {
-                          color: '#8b6cbc',
-                        },
-                      }}
-                    />
-                  )}
-                  renderOption={(props, option) => {
-                    const { key, ...otherProps } = props;
-                    return (
-                      <Box component="li" key={key} {...otherProps}>
-                        {option}
-                      </Box>
+                    if (!newValue) {
+                      handleInputChange('budgetCurrency', '');
+                      return;
+                    }
+                    handleInputChange(
+                      'budgetCurrency',
+                      typeof newValue === 'string' ? newValue.trim().toUpperCase() : newValue.code
                     );
                   }}
+                  renderInput={(params) => (
+                    <TextField {...params} label="Currency" placeholder="Select or type a currency" sx={fieldFocusSx} />
+                  )}
                   sx={{
-                    '& .MuiAutocomplete-popupIndicator': {
-                      color: '#8b6cbc',
-                    },
-                    '& .MuiAutocomplete-clearIndicator': {
-                      color: '#8b6cbc',
-                    },
+                    '& .MuiAutocomplete-popupIndicator': { color: PURPLE },
+                    '& .MuiAutocomplete-clearIndicator': { color: PURPLE },
                   }}
                 />
-              </Box>
-            </Paper>
-
-            {/* Grant Details Card */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <Typography variant="h6" sx={{ mb: 2.5, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                Grant Details
-              </Typography>
-              
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                {/* Grant Number and Funding Institution - Side by Side */}
-                <Box sx={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                  gap: 2 
-                }}>
-                  <TextField
-                    fullWidth
-                    label="Grant Number"
-                    value={formData.grantNumber}
-                    onChange={(e) => handleInputChange('grantNumber', e.target.value)}
-                    placeholder="Enter the unique identifier for the grant"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        '&:hover fieldset': {
-                          borderColor: '#8b6cbc',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#8b6cbc',
-                        },
-                      },
-                      '& .MuiInputLabel-root.Mui-focused': {
-                        color: '#8b6cbc',
-                      },
-                    }}
-                  />
-                  
-                  <TextField
-                    fullWidth
-                    label="Funding Institution"
-                    value={formData.fundingInstitution}
-                    onChange={(e) => handleInputChange('fundingInstitution', e.target.value)}
-                    placeholder="Enter the name of the funding institution"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        '&:hover fieldset': {
-                          borderColor: '#8b6cbc',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#8b6cbc',
-                        },
-                      },
-                      '& .MuiInputLabel-root.Mui-focused': {
-                        color: '#8b6cbc',
-                      },
-                    }}
-                  />
-                </Box>
-
-                {/* Grant Start Date and End Date - Side by Side */}
-                <Box sx={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                  gap: 2 
-                }}>
-                  <Box>
-                    <InputLabel 
-                      sx={{ 
-                        color: '#666',
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                        mb: 0.5
-                      }}
-                    >
-                      Grant Start Date *
-                    </InputLabel>
-                    <TextField
-                      fullWidth
-                      type="date"
-                      value={formData.grantStartDate}
-                      onChange={(e) => handleInputChange('grantStartDate', e.target.value)}
-                      InputProps={{
-                        sx: {
-                          '& input': {
-                            py: 1.5,
-                          }
-                        }
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                        },
-                      }}
-                    />
-                  </Box>
-                  
-                  <Box>
-                    <InputLabel 
-                      sx={{ 
-                        color: '#666',
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                        mb: 0.5
-                      }}
-                    >
-                      Grant End Date *
-                    </InputLabel>
-                    <TextField
-                      fullWidth
-                      type="date"
-                      value={formData.grantEndDate}
-                      onChange={(e) => handleInputChange('grantEndDate', e.target.value)}
-                      InputProps={{
-                        sx: {
-                          '& input': {
-                            py: 1.5,
-                          }
-                        }
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                        },
-                      }}
-                    />
-                  </Box>
-                </Box>
-              </Box>
-            </Paper>
-
-            {/* Budget Information Card */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2.5 }}>
-                <BudgetIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 20 }} />
-                <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                  Budget Information
-                </Typography>
-              </Box>
-              <Typography variant="body2" sx={{ mb: 2, color: '#666', fontSize: '0.85rem' }}>
-                Specify the total budget amount for this research proposal
-              </Typography>
-              
-              <Box>
-                <InputLabel 
-                  sx={{ 
-                    color: '#666',
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    mb: 0.5
-                  }}
-                >
-                  Total Budget Amount *
-                </InputLabel>
                 <TextField
                   fullWidth
                   type="number"
+                  label="Total proposed amount"
                   value={formData.totalBudgetAmount}
                   onChange={(e) => handleInputChange('totalBudgetAmount', e.target.value)}
-                  placeholder="Enter the total budget amount for the entire research project"
+                  placeholder="0.00"
                   InputProps={{
                     startAdornment: (
-                      <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        mr: 1,
-                        color: '#8b6cbc',
-                        fontWeight: 600,
-                        fontSize: '1.1rem'
-                      }}>
-                        $
+                      <Box sx={{ mr: 1, color: PURPLE, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                        {currencySymbol(formData.budgetCurrency)}
                       </Box>
                     ),
-                    sx: {
-                      '& input': {
-                        py: 1.5,
-                      }
-                    }
                   }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&:hover fieldset': {
-                        borderColor: '#8b6cbc',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#8b6cbc',
-                      },
-                    },
-                  }}
+                  sx={fieldFocusSx}
                 />
+              </Stack>
+
+              <Box
+                sx={{
+                  border: '1px dashed',
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  p: 2,
+                }}
+              >
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1} flexWrap="wrap" useFlexGap>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                      Detailed budget document
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Upload a spreadsheet or PDF with line-item breakdowns. PDF, Excel, Word, or CSV.
+                    </Typography>
+                  </Box>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.csv"
+                    onChange={handleBudgetDocumentUpload}
+                    style={{ display: 'none' }}
+                    id="budget-document-upload"
+                  />
+                  <label htmlFor="budget-document-upload">
+                    <Button
+                      component="span"
+                      variant="outlined"
+                      size="small"
+                      startIcon={<UploadIcon />}
+                      sx={{ borderColor: PURPLE, color: PURPLE, textTransform: 'none', fontWeight: 700 }}
+                    >
+                      Upload breakdown
+                    </Button>
+                  </label>
+                </Stack>
+
+                {(formData.budgetDocuments || []).length > 0 ? (
+                  <Stack spacing={1} sx={{ mt: 1.5 }}>
+                    {formData.budgetDocuments.map((file, index) => (
+                      <Stack
+                        key={`${fileDisplayName(file)}-${index}`}
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        sx={{ px: 1.25, py: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}
+                      >
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                            {fileDisplayName(file)}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {fileDisplaySize(file) || 'Saved document'}
+                          </Typography>
+                        </Box>
+                        <Tooltip title="Remove">
+                          <IconButton size="small" onClick={() => removeBudgetDocument(index)} sx={{ color: '#b91c1c' }}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.25 }}>
+                    No budget breakdown uploaded yet.
+                  </Typography>
+                )}
               </Box>
             </Paper>
 
@@ -2878,556 +2567,128 @@ const CreateProposalPage = () => {
       case 4: // Ethical Considerations & Data Management
         return (
           <Box>
-            {/* Step Header */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              mb: 3,
-              p: 2,
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, rgba(139, 108, 188, 0.1) 0%, rgba(139, 108, 188, 0.05) 100%)',
-              border: '1px solid rgba(139, 108, 188, 0.2)'
-            }}>
-              <EthicsIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 28 }} />
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.25, fontSize: '1.3rem' }}>
-                  Ethical Considerations
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#8b6cbc', fontWeight: 500, fontSize: '0.85rem' }}>
-                  Detail any ethical considerations, consent procedures, and data security measures.
-                </Typography>
-              </Box>
-            </Box>
+            <StepIntro index={5} title="Ethical considerations" hint="Link an application or upload a certificate" />
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             
-            {/* Ethics Linking Option */}
-            <Paper sx={{ 
-              p: 3, 
-              borderRadius: 2, 
-              border: '2px solid rgba(139, 108, 188, 0.2)',
-              background: 'rgba(139, 108, 188, 0.02)',
-              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.08)',
-              width: '100%'
-            }}>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', display: 'flex', alignItems: 'center', gap: 1 }}>
-                <AssignmentIcon sx={{ color: '#8b6cbc' }} />
-                Ethics Application
-              </Typography>
+            {/* Ethics approval */}
+            <Paper sx={sectionCardSx}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
+                    Ethics approval
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Link an existing application or certificate, or upload a clearance certificate. Uploaded certificates are added to Ethics Applications.
+                  </Typography>
+                </Box>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<SearchIcon />}
+                    onClick={() => setEthicsSearchModalOpen(true)}
+                    sx={{ borderColor: PURPLE, color: PURPLE, textTransform: 'none', fontWeight: 700 }}
+                  >
+                    Search and link
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<UploadIcon />}
+                    onClick={() => setEthicsCertUploadOpen(true)}
+                    sx={{ borderColor: PURPLE, color: PURPLE, textTransform: 'none', fontWeight: 700 }}
+                  >
+                    Upload certificate
+                  </Button>
+                </Stack>
+              </Stack>
               
-              <RadioGroup value={ethicsLinkOption} onChange={(e) => setEthicsLinkOption(e.target.value)} sx={{ mb: 2 }}>
-                <FormControlLabel 
-                  value="manual" 
-                  control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />}
-                  label={
+              {selectedEthicsApplication || formData.linkedEthicsApplicationId ? (
+                <Paper variant="outlined" sx={{ p: 1.75, borderColor: 'divider', boxShadow: 'none', mb: 1.5 }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
                     <Box>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>Enter Ethics Details Manually</Typography>
-                      <Typography variant="caption" sx={{ color: '#666' }}>Provide ethics information directly in this form</Typography>
-                    </Box>
-                  }
-                />
-                <FormControlLabel 
-                  value="existing" 
-                  control={<Radio sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }} />}
-                  label={
-                    <Box>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>Link Existing Ethics Application</Typography>
-                      <Typography variant="caption" sx={{ color: '#666' }}>Connect this proposal to an approved ethics application</Typography>
-                    </Box>
-                  }
-                />
-              </RadioGroup>
-
-              {ethicsLinkOption === 'existing' && (
-                <Box sx={{ mt: 2 }}>
-                  {loadingEthicsApps ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                      <CircularProgress sx={{ color: '#8b6cbc' }} />
-                    </Box>
-                  ) : existingEthicsApplications.length > 0 ? (
-                    <Box>
-                      <Typography variant="body2" sx={{ mb: 2, color: '#666', fontWeight: 500 }}>
-                        Select an ethics application to link:
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                        {selectedEthicsApplication?.title || 'Linked ethics record'}
                       </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        {existingEthicsApplications.map((app) => (
-                          <Card 
-                            key={app.id}
-                            sx={{ 
-                              cursor: 'pointer',
-                              border: selectedEthicsApplication?.id === app.id ? '2px solid #8b6cbc' : '1px solid #e2e8f0',
-                              bgcolor: selectedEthicsApplication?.id === app.id ? 'rgba(139, 108, 188, 0.05)' : 'white',
-                              transition: 'all 0.2s',
-                              '&:hover': {
-                                borderColor: '#8b6cbc',
-                                boxShadow: '0 2px 8px rgba(139, 108, 188, 0.15)'
-                              }
-                            }}
-                            onClick={() => handleEthicsApplicationSelect(app)}
-                          >
-                            <CardContent sx={{ p: 2 }}>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#2D3748', flex: 1 }}>
-                                  {app.title}
-                                </Typography>
-                                <Chip 
-                                  label={app.status} 
-                                  size="small"
-                                  sx={{ 
-                                    bgcolor: app.status === 'APPROVED' ? '#10b981' : '#8b6cbc',
-                                    color: 'white',
-                                    fontWeight: 600,
-                                    fontSize: '0.7rem'
-                                  }}
-                                />
-                              </Box>
-                              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                                {app.referenceNumber && (
-                                  <Typography variant="caption" sx={{ color: '#666' }}>
-                                    <strong>Ref:</strong> {app.referenceNumber}
-                                  </Typography>
-                                )}
-                                {app.committeeName && (
-                                  <Typography variant="caption" sx={{ color: '#666' }}>
-                                    <strong>Committee:</strong> {app.committeeName}
-                                  </Typography>
-                                )}
-                                {app.approvalDate && (
-                                  <Typography variant="caption" sx={{ color: '#666' }}>
-                                    <strong>Approved:</strong> {new Date(app.approvalDate).toLocaleDateString()}
-                                  </Typography>
-                                )}
-                              </Box>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </Box>
-                      {selectedEthicsApplication && (
-                        <Alert severity="success" sx={{ mt: 2 }}>
-                          Ethics application linked successfully. Details have been auto-filled below.
-                        </Alert>
-                      )}
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        {[
+                          formData.ethicsApprovalReference ? `Ref ${formData.ethicsApprovalReference}` : null,
+                          formData.ethicsCommittee,
+                          formData.ethicsApprovalStatus,
+                          formData.approvalDate ? formatProposalDate(formData.approvalDate) : null,
+                        ].filter(Boolean).join(' · ') || 'Linked from Hospitium'}
+                      </Typography>
                     </Box>
-                  ) : (
-                    <Alert severity="info" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <InfoIcon />
+                    <Button size="small" onClick={handleUnlinkEthicsApplication} sx={{ textTransform: 'none', fontWeight: 700, color: '#b91c1c' }}>
+                      Unlink
+                    </Button>
+                  </Stack>
+                </Paper>
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                  No ethics record linked yet.
+                </Typography>
+              )}
+
+              {(formData.linkedEthicsDocuments?.length > 0 || formData.ethicsDocuments.length > 0) ? (
+                <Stack spacing={1}>
+                  {(formData.linkedEthicsDocuments || []).map((doc, index) => (
+                    <Stack
+                      key={`linked-${index}`}
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      sx={{ px: 1.25, py: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}
+                    >
                       <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>No approved ethics applications found</Typography>
-                        <Typography variant="caption">
-                          You need to create and submit an ethics application first. Switch to manual entry or{' '}
-                          <a href="/researcher/ethics/applications/create" target="_blank" style={{ color: '#8b6cbc', fontWeight: 600 }}>
-                            create a new ethics application
-                          </a>.
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                          {doc.filename || doc.name || 'Linked document'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          From linked ethics record
                         </Typography>
                       </Box>
-                    </Alert>
-                  )}
-                </Box>
-              )}
-            </Paper>
-            
-            {/* Ethical Considerations Overview */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="Ethical Considerations Overview"
-                value={formData.ethicalConsiderationsOverview}
-                onChange={(e) => handleInputChange('ethicalConsiderationsOverview', e.target.value)}
-                placeholder="Provide a comprehensive overview of ethical considerations for your research"
-                disabled={ethicsLinkOption === 'existing' && selectedEthicsApplication}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#8b6cbc',
-                  },
-                }}
-              />
-            </Paper>
-
-            {/* Consent Procedures */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="Consent Procedures"
-                value={formData.consentProcedures}
-                onChange={(e) => handleInputChange('consentProcedures', e.target.value)}
-                placeholder="Explain your informed consent process"
-                disabled={ethicsLinkOption === 'existing' && selectedEthicsApplication}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#8b6cbc',
-                  },
-                }}
-              />
-            </Paper>
-
-            {/* Data Security and Privacy Measures */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="Data Security and Privacy Measures"
-                value={formData.dataSecurityMeasures}
-                onChange={(e) => handleInputChange('dataSecurityMeasures', e.target.value)}
-                placeholder="Detail your data protection and security measures"
-                disabled={ethicsLinkOption === 'existing' && selectedEthicsApplication}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#8b6cbc',
-                  },
-                }}
-              />
-            </Paper>
-
-            {/* Ethics Approval Details */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <Typography variant="h6" sx={{ mb: 2.5, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                Ethics Approval Information
-              </Typography>
-              
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                {/* Ethics Approval Status and Reference Number - Side by Side */}
-                <Box sx={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                  gap: 2 
-                }}>
-                  <Box>
-                    <InputLabel 
-                      sx={{ 
-                        color: '#666',
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                        mb: 0.5
-                      }}
+                    </Stack>
+                  ))}
+                  {formData.ethicsDocuments.map((file, index) => (
+                    <Stack
+                      key={`upload-${index}`}
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      sx={{ px: 1.25, py: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}
                     >
-                      Ethics Approval Status
-                    </InputLabel>
-                    <Select
-                      fullWidth
-                      value={formData.ethicsApprovalStatus}
-                      displayEmpty
-                      onChange={(e) => handleInputChange('ethicsApprovalStatus', e.target.value)}
-                      sx={{
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: 'rgba(0, 0, 0, 0.23)',
-                        },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#8b6cbc',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#8b6cbc',
-                        },
-                        '& .MuiSelect-select': {
-                          py: 1.5,
-                        }
-                      }}
-                    >
-                      <MenuItem value="" disabled>
-                        <em>Select approval status</em>
-                      </MenuItem>
-                      {ETHICS_APPROVAL_STATUS.map((status) => (
-                        <MenuItem key={status} value={status}>
-                          {status}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-                  
-                  <TextField
-                    fullWidth
-                    label="Ethics Approval Reference Number"
-                    value={formData.ethicsApprovalReference}
-                    onChange={(e) => handleInputChange('ethicsApprovalReference', e.target.value)}
-                    placeholder="Enter the reference number if approval has been obtained"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        '&:hover fieldset': {
-                          borderColor: '#8b6cbc',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#8b6cbc',
-                        },
-                      },
-                      '& .MuiInputLabel-root.Mui-focused': {
-                        color: '#8b6cbc',
-                      },
-                    }}
-                  />
-                </Box>
-
-                {/* Ethics Committee and Approval Date - Side by Side */}
-                <Box sx={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                  gap: 2 
-                }}>
-                  <TextField
-                    fullWidth
-                    label="Ethics Committee/IRB"
-                    value={formData.ethicsCommittee}
-                    onChange={(e) => handleInputChange('ethicsCommittee', e.target.value)}
-                    placeholder="Specify which ethics committee will review/has reviewed this research"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        '&:hover fieldset': {
-                          borderColor: '#8b6cbc',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#8b6cbc',
-                        },
-                      },
-                      '& .MuiInputLabel-root.Mui-focused': {
-                        color: '#8b6cbc',
-                      },
-                    }}
-                  />
-                  
-                  <Box>
-                    <InputLabel 
-                      sx={{ 
-                        color: '#666',
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                        mb: 0.5
-                      }}
-                    >
-                      Approval Date
-                    </InputLabel>
-                    <TextField
-                      fullWidth
-                      type="date"
-                      value={formData.approvalDate}
-                      onChange={(e) => handleInputChange('approvalDate', e.target.value)}
-                      helperText="Date of ethics approval (if obtained)"
-                      InputProps={{
-                        sx: {
-                          '& input': {
-                            py: 1.5,
-                          }
-                        }
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                        },
-                      }}
-                    />
-                  </Box>
-                </Box>
-              </Box>
-            </Paper>
-
-            {/* Ethics Documentation Upload */}
-            <Paper sx={{ 
-              p: 3, 
-              borderRadius: 2, 
-              border: '2px dashed #8b6cbc',
-              background: 'rgba(139, 108, 188, 0.02)',
-              width: '100%'
-            }}>
-              <Box sx={{ textAlign: 'center', mb: (formData.ethicsDocuments?.length > 0 || formData.linkedEthicsDocuments?.length > 0) ? 2 : 0 }}>
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, color: '#2D3748' }}>
-                  Ethics Documentation
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 2, color: '#666' }}>
-                  Upload supporting documents such as ethics approval letters, consent forms, participant information sheets, or protocols.
-                </Typography>
-                <input
-                  type="file"
-                  multiple
-                  accept=".pdf,.doc,.docx,.txt"
-                  onChange={handleEthicsDocumentUpload}
-                  style={{ display: 'none' }}
-                  id="ethics-documents-upload"
-                />
-                <label htmlFor="ethics-documents-upload">
-                  <Button
-                    component="span"
-                    variant="outlined"
-                    startIcon={<UploadIcon />}
-                    sx={{
-                      borderColor: '#8b6cbc',
-                      color: '#8b6cbc',
-                      '&:hover': {
-                        borderColor: '#7a5aa8',
-                        backgroundColor: 'rgba(139, 108, 188, 0.04)'
-                      }
-                    }}
-                  >
-                    Upload Ethics Documents
-                  </Button>
-                </label>
-              </Box>
-
-              {/* Display linked documents from ethics application */}
-              {formData.linkedEthicsDocuments?.length > 0 && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#2D3748', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CheckIcon sx={{ color: '#4caf50', fontSize: 18 }} />
-                    Linked from Ethics Application ({formData.linkedEthicsDocuments.length})
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {formData.linkedEthicsDocuments.map((doc, index) => (
-                      <Box
-                        key={`linked-${index}`}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          p: 1.5,
-                          backgroundColor: 'rgba(76, 175, 80, 0.05)',
-                          borderRadius: 1,
-                          border: '1px solid rgba(76, 175, 80, 0.3)'
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <FilesIcon sx={{ mr: 1, color: '#4caf50', fontSize: 20 }} />
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {doc.filename || doc.name || 'Document'}
-                          </Typography>
-                          {doc.size && (
-                            <Typography variant="caption" sx={{ ml: 1, color: '#666' }}>
-                              ({(doc.size / 1024).toFixed(1)} KB)
-                            </Typography>
-                          )}
-                          <Chip 
-                            label="From Ethics App" 
-                            size="small" 
-                            sx={{ 
-                              ml: 1, 
-                              height: 20, 
-                              fontSize: '0.7rem',
-                              backgroundColor: '#4caf50',
-                              color: 'white'
-                            }} 
-                          />
-                        </Box>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                          {fileDisplayName(file)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {fileDisplaySize(file) || 'Uploaded certificate'}
+                        </Typography>
                       </Box>
-                    ))}
-                  </Box>
-                </Box>
-              )}
-
-              {/* Display uploaded files */}
-              {formData.ethicsDocuments.length > 0 && (
-                <Box>
-                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#2D3748' }}>
-                    Newly Uploaded Files ({formData.ethicsDocuments.length})
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {formData.ethicsDocuments.map((file, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          p: 1.5,
-                          backgroundColor: 'white',
-                          borderRadius: 1,
-                          border: '1px solid rgba(139, 108, 188, 0.2)'
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <FilesIcon sx={{ mr: 1, color: '#8b6cbc', fontSize: 20 }} />
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {file.name}
-                          </Typography>
-                          <Typography variant="caption" sx={{ ml: 1, color: '#666' }}>
-                            ({(file.size / 1024).toFixed(1)} KB)
-                          </Typography>
-                        </Box>
-                        <IconButton
-                          size="small"
-                          onClick={() => removeEthicsDocument(index)}
-                          sx={{ color: '#f44336' }}
-                        >
+                      <Tooltip title="Remove">
+                        <IconButton size="small" onClick={() => removeEthicsDocument(index)} sx={{ color: '#b91c1c' }}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-              )}
+                      </Tooltip>
+                    </Stack>
+                  ))}
+                </Stack>
+              ) : null}
             </Paper>
-
+            
             {/* Data Management Plan Upload */}
-            <Paper sx={{ 
-              p: 3, 
-              borderRadius: 2, 
-              border: '2px dashed #4caf50',
-              background: 'rgba(76, 175, 80, 0.02)',
-              width: '100%'
-            }}>
-              <Box sx={{ textAlign: 'center', mb: formData.dataManagementPlan.length > 0 ? 2 : 0 }}>
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, color: '#2D3748' }}>
-                  Data Management Plan
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 2, color: '#666' }}>
-                  Upload your Data Management Plan (DMP) document outlining how research data will be collected, stored, managed, and shared throughout the project lifecycle.
-                </Typography>
+            <Paper sx={sectionCardSx}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
+                    Data Management Plan
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Optional. Upload how data will be collected, stored, and shared.
+                  </Typography>
+                </Box>
                 <input
                   type="file"
                   multiple
@@ -3440,61 +2701,44 @@ const CreateProposalPage = () => {
                   <Button
                     component="span"
                     variant="outlined"
+                    size="small"
                     startIcon={<UploadIcon />}
-                    sx={{
-                      borderColor: '#4caf50',
-                      color: '#4caf50',
-                      '&:hover': {
-                        borderColor: '#45a049',
-                        backgroundColor: 'rgba(76, 175, 80, 0.04)'
-                      }
-                    }}
+                    sx={{ borderColor: PURPLE, color: PURPLE, textTransform: 'none', fontWeight: 700 }}
                   >
-                    Upload Data Management Plan
+                    Upload DMP
                   </Button>
                 </label>
-              </Box>
-
-              {/* Display uploaded files */}
-              {formData.dataManagementPlan.length > 0 && (
-                <Box>
-                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#2D3748' }}>
-                    Uploaded Files ({formData.dataManagementPlan.length})
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {formData.dataManagementPlan.map((file, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          p: 1.5,
-                          backgroundColor: 'white',
-                          borderRadius: 1,
-                          border: '1px solid rgba(76, 175, 80, 0.2)'
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <FilesIcon sx={{ mr: 1, color: '#4caf50', fontSize: 20 }} />
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {file.name}
-                          </Typography>
-                          <Typography variant="caption" sx={{ ml: 1, color: '#666' }}>
-                            ({(file.size / 1024).toFixed(1)} KB)
-                          </Typography>
-                        </Box>
-                        <IconButton
-                          size="small"
-                          onClick={() => removeDataManagementPlan(index)}
-                          sx={{ color: '#f44336' }}
-                        >
+              </Stack>
+              {formData.dataManagementPlan.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No data management plan uploaded yet.
+                </Typography>
+              ) : (
+                <Stack spacing={1}>
+                  {formData.dataManagementPlan.map((file, index) => (
+                    <Stack
+                      key={index}
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      sx={{ px: 1.25, py: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}
+                    >
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                          {fileDisplayName(file)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {fileDisplaySize(file) || 'Uploaded file'}
+                        </Typography>
+                      </Box>
+                      <Tooltip title="Remove">
+                        <IconButton size="small" onClick={() => removeDataManagementPlan(index)} sx={{ color: '#b91c1c' }}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
+                      </Tooltip>
+                    </Stack>
+                  ))}
+                </Stack>
               )}
             </Paper>
 
@@ -3502,273 +2746,27 @@ const CreateProposalPage = () => {
           </Box>
         );
 
-      case 5: // Related Publications & Files
+      case 5: // Supporting Files
         return (
           <Box>
-            {/* Step Header */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              mb: 3,
-              p: 2,
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, rgba(139, 108, 188, 0.1) 0%, rgba(139, 108, 188, 0.05) 100%)',
-              border: '1px solid rgba(139, 108, 188, 0.2)'
-            }}>
-              <FilesIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 28 }} />
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.25, fontSize: '1.3rem' }}>
-                  Related Publications & Files
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#8b6cbc', fontWeight: 500, fontSize: '0.85rem' }}>
-                  Link existing publications from your library and upload other related files for this research proposal.
-                </Typography>
-              </Box>
-            </Box>
+            <StepIntro index={6} title="Supporting files" hint="Upload documents and note their relevance" />
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            
-            {/* Available Publications Section */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                Available Publications
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2.5, color: '#666', fontSize: '0.85rem' }}>
-                Select publications from the database that are relevant to this research proposal. These could be preliminary studies, related work, or publications that inform this research. All publications imported into the system are available for selection.
-              </Typography>
-              
-              {/* Dropdown for Selecting Publications */}
-              <Box sx={{ mb: 2.5 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
-                  Select Publications
-                </Typography>
-                <Autocomplete
-                  fullWidth
-                  options={availablePublications}
-                  getOptionLabel={(option) => option.title || ''}
-                  loading={publicationsLoading}
-                  onInputChange={(event, newInputValue) => {
-                    setPublicationSearch(newInputValue);
-                  }}
-                  onChange={(event, newValue) => {
-                    if (newValue) {
-                      handlePublicationSelect(newValue);
-                      setPublicationSearch('');
-                    }
-                  }}
-                  value={null}
-                  inputValue={publicationSearch}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      placeholder="Search and select publications by title, author, journal, or keywords..."
-                      InputProps={{
-                        ...params.InputProps,
-                        startAdornment: (
-                          <>
-                            <Box sx={{ ml: 1, mr: 0.5, display: 'flex', alignItems: 'center' }}>
-                              <SearchIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
-                            </Box>
-                            {params.InputProps.startAdornment}
-                          </>
-                        ),
-                        endAdornment: (
-                          <>
-                            {publicationsLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                            {params.InputProps.endAdornment}
-                          </>
-                        ),
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#8b6cbc',
-                          },
-                        },
-                      }}
-                    />
-                  )}
-                  renderOption={(props, option) => (
-                    <li {...props} key={option.id}>
-                      <Box sx={{ width: '100%' }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.25 }}>
-                          {option.title}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#666', fontSize: '0.875rem', mb: 0.25 }}>
-                          {option.authors} {option.year && `(${option.year})`}
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-                          {option.journal && (
-                            <Typography variant="caption" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
-                              {option.journal}
-                            </Typography>
-                          )}
-                          {option.publicationType && (
-                            <Typography variant="caption" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
-                              {option.publicationType}
-                            </Typography>
-                          )}
-                          {option.doi && (
-                            <Typography variant="caption" sx={{ color: '#666' }}>
-                              DOI: {option.doi}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </li>
-                  )}
-                  noOptionsText={
-                    publicationsError ? (
-                      <Box sx={{ py: 1 }}>
-                        <Typography variant="body2" color="error" sx={{ mb: 1 }}>
-                          {publicationsError}
-                        </Typography>
-                        <Button 
-                          size="small" 
-                          onClick={() => fetchPublications(publicationSearch)}
-                          sx={{ color: '#8b6cbc' }}
-                        >
-                          Retry
-                        </Button>
-                      </Box>
-                    ) : publicationSearch ? (
-                      'No publications found matching your search.'
-                    ) : (
-                      'No publications available. Start typing to search.'
-                    )
-                  }
-                  sx={{
-                    '& .MuiAutocomplete-listbox': {
-                      maxHeight: '400px',
-                    },
-                  }}
-                />
-                {availablePublications.length === 50 && publicationSearch && (
-                  <Typography variant="caption" sx={{ color: '#8b6cbc', fontStyle: 'italic', mt: 0.5, display: 'block' }}>
-                    Showing first 50 results. Refine your search for more specific results.
-                  </Typography>
-                )}
-              </Box>
-
-              {/* Selected Publications Display */}
-              {formData.selectedPublications.length === 0 ? (
-                <Box sx={{ 
-                  textAlign: 'center', 
-                  py: 4, 
-                  border: '2px dashed #e0e0e0', 
-                  borderRadius: 2,
-                  backgroundColor: '#fafafa'
-                }}>
-                  <FilesIcon sx={{ fontSize: 48, color: '#ccc', mb: 1 }} />
-                  <Typography variant="body2" sx={{ color: '#666' }}>
-                    No publications selected yet
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#999' }}>
-                    Use the search field above to find and select relevant publications from your library
-                  </Typography>
-                </Box>
-              ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Paper sx={sectionCardSx}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
                 <Box>
-                  <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: '#2D3748' }}>
-                    Selected Publications ({formData.selectedPublications.length})
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
+                      Supporting files
+                    </Typography>
+                    {formData.otherRelatedFiles.length > 0 ? (
+                      <Chip size="small" label={formData.otherRelatedFiles.length} sx={{ height: 20, fontWeight: 700, bgcolor: alpha(PURPLE, 0.12), color: PURPLE }} />
+                    ) : null}
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    Optional. Preliminary data, references, or other supporting documents.
                   </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    {formData.selectedPublications.map((publication) => (
-                      <Box
-                        key={publication.id}
-                        sx={{
-                          p: 2,
-                          backgroundColor: 'rgba(139, 108, 188, 0.04)',
-                          border: '1px solid rgba(139, 108, 188, 0.2)',
-                          borderRadius: 2,
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start'
-                        }}
-                      >
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.5 }}>
-                            {publication.title}
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>
-                            {publication.authors} ({publication.year})
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
-                            {publication.journal} • {publication.type}
-                          </Typography>
-                        </Box>
-                        <IconButton
-                          size="small"
-                          onClick={() => removeSelectedPublication(publication.id)}
-                          sx={{ color: '#f44336', ml: 2 }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    ))}
-                  </Box>
                 </Box>
-              )}
-            </Paper>
-
-            {/* Publication Relevance */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="How are these publications and files related to your proposal?"
-                value={formData.publicationRelevance}
-                onChange={(e) => handleInputChange('publicationRelevance', e.target.value)}
-                placeholder="Explain the relevance of the linked publications and files to this research proposal"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8b6cbc',
-                    },
-                  },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#8b6cbc',
-                  },
-                }}
-              />
-            </Paper>
-
-            {/* Other Related Files Upload */}
-            <Paper sx={{ 
-              p: 3, 
-              borderRadius: 2, 
-              border: '2px dashed #ff9800',
-              background: 'rgba(255, 152, 0, 0.02)',
-              width: '100%'
-            }}>
-              <Box sx={{ textAlign: 'center', mb: formData.otherRelatedFiles.length > 0 ? 2 : 0 }}>
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, color: '#2D3748' }}>
-                  Other Related Files
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 2, color: '#666' }}>
-                  Upload other files related to this research proposal such as preliminary data, additional references, supplementary materials, or supporting documents.
-                </Typography>
                 <input
                   type="file"
                   multiple
@@ -3781,62 +2779,57 @@ const CreateProposalPage = () => {
                   <Button
                     component="span"
                     variant="outlined"
+                    size="small"
                     startIcon={<UploadIcon />}
-                    sx={{
-                      borderColor: '#ff9800',
-                      color: '#ff9800',
-                      '&:hover': {
-                        borderColor: '#f57c00',
-                        backgroundColor: 'rgba(255, 152, 0, 0.04)'
-                      }
-                    }}
+                    sx={{ borderColor: PURPLE, color: PURPLE, textTransform: 'none', fontWeight: 700 }}
                   >
-                    Upload Related Files
+                    Upload files
                   </Button>
                 </label>
-              </Box>
+              </Stack>
 
-              {/* Display uploaded files */}
-              {formData.otherRelatedFiles.length > 0 && (
-                <Box>
-                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: '#2D3748' }}>
-                    Uploaded Files ({formData.otherRelatedFiles.length})
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {formData.otherRelatedFiles.map((file, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          p: 1.5,
-                          backgroundColor: 'white',
-                          borderRadius: 1,
-                          border: '1px solid rgba(255, 152, 0, 0.2)'
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <FilesIcon sx={{ mr: 1, color: '#ff9800', fontSize: 20 }} />
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {file.name}
-                          </Typography>
-                          <Typography variant="caption" sx={{ ml: 1, color: '#666' }}>
-                            ({(file.size / 1024).toFixed(1)} KB)
-                          </Typography>
-                        </Box>
-                        <IconButton
-                          size="small"
-                          onClick={() => removeRelatedFile(index)}
-                          sx={{ color: '#f44336' }}
-                        >
+              {formData.otherRelatedFiles.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No supporting files uploaded yet.
+                </Typography>
+              ) : (
+                <Stack spacing={1}>
+                  {formData.otherRelatedFiles.map((file, index) => (
+                    <Stack
+                      key={index}
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      sx={{ px: 1.25, py: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}
+                    >
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                          {fileDisplayName(file)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {fileDisplaySize(file) || 'Uploaded file'}
+                        </Typography>
+                      </Box>
+                      <Tooltip title="Remove">
+                        <IconButton size="small" onClick={() => removeRelatedFile(index)} sx={{ color: '#b91c1c' }}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
+                      </Tooltip>
+                    </Stack>
+                  ))}
+                </Stack>
               )}
+
+              <TextField
+                fullWidth
+                multiline
+                minRows={2}
+                label="Relevance"
+                value={formData.publicationRelevance}
+                onChange={(e) => handleInputChange('publicationRelevance', e.target.value)}
+                placeholder="How do these supporting documents relate to this proposal?"
+                sx={{ ...fieldFocusSx, mt: 2 }}
+              />
             </Paper>
 
             </Box>
@@ -3846,404 +2839,200 @@ const CreateProposalPage = () => {
       case 6: // Proposal Summary
         return (
           <Box>
-            {/* Step Header */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              mb: 3,
-              p: 2,
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, rgba(139, 108, 188, 0.1) 0%, rgba(139, 108, 188, 0.05) 100%)',
-              border: '1px solid rgba(139, 108, 188, 0.2)'
-            }}>
-              <CheckIcon sx={{ mr: 1.5, color: '#8b6cbc', fontSize: 28 }} />
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.25, fontSize: '1.3rem' }}>
-                  Proposal Summary
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#8b6cbc', fontWeight: 500, fontSize: '0.85rem' }}>
-                  Review all attached files and link with collaborative proposals to complete your research proposal.
-                </Typography>
-              </Box>
-            </Box>
+            <StepIntro index={7} title="Proposal summary" hint="Check details, then submit" />
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            
-            {/* Link with Collaborative Proposals */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(139, 108, 188, 0.12)',
-              background: 'white',
-              boxShadow: '0 1px 4px rgba(139, 108, 188, 0.06)',
-              width: '100%'
-            }}>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                Link with Collaborative Proposals
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2.5, color: '#666', fontSize: '0.85rem' }}>
-                Choose from existing collaborative proposals that have been created in the system. This includes both completed collaborative proposals and those currently being written collaboratively.
-              </Typography>
-              
-              {/* Search Field */}
-              <Box sx={{ mb: 2.5 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500, color: '#666', fontSize: '0.875rem' }}>
-                  Search Collaborative Proposals
-                </Typography>
-                <TextField
-                  fullWidth
-                  placeholder="Type to search for collaborative proposals by title or author..."
-                  value={collaborativeProposalSearch}
-                  onChange={(e) => setCollaborativeProposalSearch(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                        <FilesIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
-                      </Box>
-                    ),
-                    endAdornment: (
-                      <IconButton sx={{ color: '#8b6cbc' }}>
-                        <ExpandMoreIcon />
-                      </IconButton>
-                    )
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&:hover fieldset': {
-                        borderColor: '#8b6cbc',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#8b6cbc',
-                      },
-                    },
-                  }}
-                />
-              </Box>
-
-              {/* Collaborative Proposal Search Results */}
-              {(collaborativeProposalSearch || availableCollaborativeProposals.length > 0) && (
-                <Box sx={{ mb: 2.5 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: '#2D3748' }}>
-                    {collaborativeProposalSearch ? 'Search Results' : 'Available Collaborative Proposals'}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {[
+              {
+                step: 0,
+                title: 'Core Information',
+                rows: [
+                  ['Title', formData.title],
+                  ['Principal investigator', selectedPi.name],
+                  ['ORCID', selectedPi.orcidId],
+                  ['Departments', (formData.departments || []).join(', ')],
+                  ['Timeline', [formatProposalDate(formData.startDate) || 'Start not set', formatProposalDate(formData.endDate) || 'End not set'].join(' - ')],
+                  ['Co-investigators', formData.coInvestigators.length ? formData.coInvestigators.map((person) => person.name).filter(Boolean).join(', ') : 'None'],
+                ],
+              },
+              {
+                step: 1,
+                title: 'Research details',
+                rows: [
+                  ['Research areas', (formData.fields || []).join(', ')],
+                  ['Objectives', truncateText(formData.researchObjectives)],
+                  ['Methods', truncateText(formData.methodology)],
+                  ['Abstract', truncateText(formData.abstract)],
+                ],
+              },
+              {
+                step: 2,
+                title: 'Project Management',
+                rows: [
+                  ['Milestones', formData.milestones.length ? `${formData.milestones.length} added` : 'None'],
+                  ['Deliverables', formData.deliverables.length ? `${formData.deliverables.length} added` : 'None'],
+                ],
+              },
+              {
+                step: 3,
+                title: 'Funding and budget',
+                rows: [
+                  ['Funding source', formData.fundingSource],
+                  ['Proposed amount', formData.totalBudgetAmount ? `${currencySymbol(formData.budgetCurrency)} ${formData.totalBudgetAmount}` : ''],
+                  ['Currency', formData.budgetCurrency],
+                  ['Budget documents', (formData.budgetDocuments || []).length ? `${formData.budgetDocuments.length} uploaded` : 'None'],
+                ],
+              },
+              {
+                step: 4,
+                title: 'Ethical considerations',
+                rows: [
+                  ['Linked record', selectedEthicsApplication?.title || (formData.linkedEthicsApplicationId ? 'Linked ethics record' : '')],
+                  ['Reference', formData.ethicsApprovalReference],
+                  ['Committee', formData.ethicsCommittee],
+                  ['Certificates', (formData.ethicsDocuments.length + (formData.linkedEthicsDocuments?.length || 0)) ? `${formData.ethicsDocuments.length + (formData.linkedEthicsDocuments?.length || 0)} file(s)` : 'None'],
+                  ['Data management plan', formData.dataManagementPlan.length ? `${formData.dataManagementPlan.length} file(s)` : 'None'],
+                ],
+              },
+              {
+                step: 5,
+                title: 'Supporting files',
+                rows: [
+                  ['Supporting documents', formData.otherRelatedFiles.length ? `${formData.otherRelatedFiles.length} uploaded` : 'None'],
+                  ['Relevance', truncateText(formData.publicationRelevance, 140)],
+                ],
+              },
+            ].map((section) => (
+              <Paper key={section.title} sx={sectionCardSx}>
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1} sx={{ mb: 1.25 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
+                    {section.title}
                   </Typography>
-                  
-                  {collaborativeProposalsLoading ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 3 }}>
-                      <CircularProgress size={24} sx={{ color: '#8b6cbc', mr: 2 }} />
-                      <Typography variant="body2" sx={{ color: '#666' }}>
-                        Loading collaborative proposals...
+                  <Button
+                    size="small"
+                    onClick={() => setActiveStep(section.step)}
+                    sx={{ textTransform: 'none', fontWeight: 700, color: PURPLE }}
+                  >
+                    Edit
+                  </Button>
+                </Stack>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.25 }}>
+                  {section.rows.map(([label, value]) => (
+                    <Box key={label}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b' }}>
+                        {label}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: value ? '#1e293b' : '#94a3b8' }}>
+                        {value || 'Not set'}
                       </Typography>
                     </Box>
-                  ) : collaborativeProposalsError ? (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                      {collaborativeProposalsError}
-                      <Button 
-                        size="small" 
-                        onClick={() => fetchCollaborativeProposals(collaborativeProposalSearch)}
-                        sx={{ ml: 1, color: '#f44336' }}
-                      >
-                        Retry
-                      </Button>
-                    </Alert>
-                  ) : availableCollaborativeProposals.length > 0 ? (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {availableCollaborativeProposals.map((proposal) => (
-                        <Box
-                          key={proposal.id}
-                          sx={{
-                            p: 2,
-                            border: '1px solid #e0e0e0',
-                            borderRadius: 2,
-                            cursor: 'pointer',
-                            '&:hover': {
-                              backgroundColor: 'rgba(139, 108, 188, 0.04)',
-                              borderColor: '#8b6cbc'
-                            }
-                          }}
-                          onClick={() => handleCollaborativeProposalSelect(proposal)}
-                        >
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.5 }}>
-                            {proposal.title}
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>
-                            {proposal.authors} • {proposal.collaboratorCount} collaborator(s)
-                          </Typography>
-                          <Box sx={{ display: 'flex', gap: 2 }}>
-                            <Typography variant="caption" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
-                              Status: {proposal.status}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
-                              Type: {proposal.type}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: '#666' }}>
-                              Updated: {proposal.lastUpdated}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      ))}
-                      {availableCollaborativeProposals.length === 20 && (
-                        <Typography variant="caption" sx={{ color: '#8b6cbc', fontStyle: 'italic', textAlign: 'center', mt: 1 }}>
-                          Showing first 20 results. Use search to narrow down results.
-                        </Typography>
-                      )}
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" sx={{ color: '#666', fontStyle: 'italic' }}>
-                      {collaborativeProposalSearch ? 'No collaborative proposals found matching your search.' : 'No collaborative proposals available in the system.'}
-                    </Typography>
-                  )}
+                  ))}
                 </Box>
-              )}
+              </Paper>
+            ))}
 
-              {/* Selected Collaborative Proposals */}
+            <Paper sx={sectionCardSx}>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
+                  Collaborative proposals
+                </Typography>
+                {formData.linkedCollaborativeProposals.length > 0 ? (
+                  <Chip size="small" label={formData.linkedCollaborativeProposals.length} sx={{ height: 20, fontWeight: 700, bgcolor: alpha(PURPLE, 0.12), color: PURPLE }} />
+                ) : null}
+              </Stack>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                Optional. Link related collaborative writing work.
+              </Typography>
+              <Autocomplete
+                fullWidth
+                options={availableCollaborativeProposals.filter(
+                  (item) => !formData.linkedCollaborativeProposals.some((linked) => linked.id === item.id)
+                )}
+                getOptionLabel={(option) => option.title || ''}
+                loading={collaborativeProposalsLoading}
+                onInputChange={(event, newInputValue) => setCollaborativeProposalSearch(newInputValue)}
+                onChange={(event, newValue) => {
+                  if (newValue) {
+                    handleCollaborativeProposalSelect(newValue);
+                    setCollaborativeProposalSearch('');
+                  }
+                }}
+                value={null}
+                inputValue={collaborativeProposalSearch}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Search by title or author"
+                    InputProps={{
+                      ...params.InputProps,
+                      startAdornment: (
+                        <>
+                          <SearchIcon sx={{ color: PURPLE, fontSize: 20, ml: 0.5, mr: 0.5 }} />
+                          {params.InputProps.startAdornment}
+                        </>
+                      ),
+                      endAdornment: (
+                        <>
+                          {collaborativeProposalsLoading ? <CircularProgress color="inherit" size={18} /> : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      ),
+                    }}
+                    sx={fieldFocusSx}
+                  />
+                )}
+                renderOption={(props, option) => (
+                  <li {...props} key={option.id}>
+                    <Box sx={{ width: '100%', py: 0.5 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                        {option.title}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {[option.authors, option.status, option.type].filter(Boolean).join(' · ')}
+                      </Typography>
+                    </Box>
+                  </li>
+                )}
+                noOptionsText={
+                  collaborativeProposalsError
+                    ? collaborativeProposalsError
+                    : collaborativeProposalSearch
+                      ? 'No collaborative proposals match this search'
+                      : 'Start typing to search'
+                }
+              />
               {formData.linkedCollaborativeProposals.length === 0 ? (
-                <Box sx={{ 
-                  textAlign: 'center', 
-                  py: 3, 
-                  border: '2px dashed #e0e0e0', 
-                  borderRadius: 2,
-                  backgroundColor: '#fafafa'
-                }}>
-                  <FilesIcon sx={{ fontSize: 48, color: '#ccc', mb: 1 }} />
-                  <Typography variant="body2" sx={{ color: '#666' }}>
-                    No collaborative proposals linked yet
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#999' }}>
-                    Use the search field above to find and link collaborative proposals
-                  </Typography>
-                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+                  No collaborative proposals linked yet.
+                </Typography>
               ) : (
-                <Box>
-                  <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: '#2D3748' }}>
-                    Linked Collaborative Proposals ({formData.linkedCollaborativeProposals.length})
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    {formData.linkedCollaborativeProposals.map((proposal) => (
-                      <Box
-                        key={proposal.id}
-                        sx={{
-                          p: 2,
-                          backgroundColor: 'rgba(139, 108, 188, 0.04)',
-                          border: '1px solid rgba(139, 108, 188, 0.2)',
-                          borderRadius: 2,
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start'
-                        }}
-                      >
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2D3748', mb: 0.5 }}>
-                            {proposal.title}
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>
-                            {proposal.authors}
-                          </Typography>
-                          <Box sx={{ display: 'flex', gap: 2 }}>
-                            <Typography variant="caption" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
-                              Status: {proposal.status}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: '#8b6cbc', fontWeight: 500 }}>
-                              Type: {proposal.type}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <IconButton
-                          size="small"
-                          onClick={() => removeCollaborativeProposal(proposal.id)}
-                          sx={{ color: '#f44336', ml: 2 }}
-                        >
+                <Stack spacing={1} sx={{ mt: 1.5 }}>
+                  {formData.linkedCollaborativeProposals.map((proposal) => (
+                    <Stack
+                      key={proposal.id}
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      sx={{ px: 1.25, py: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}
+                    >
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                          {proposal.title || 'Untitled proposal'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {[proposal.authors, proposal.status, proposal.type].filter(Boolean).join(' · ') || 'Linked record'}
+                        </Typography>
+                      </Box>
+                      <Tooltip title="Remove">
+                        <IconButton size="small" onClick={() => removeCollaborativeProposal(proposal.id)} sx={{ color: '#b91c1c' }}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
+                      </Tooltip>
+                    </Stack>
+                  ))}
+                </Stack>
               )}
             </Paper>
-
-            {/* Attached Files Summary */}
-            <Paper sx={{ 
-              p: 2.5, 
-              borderRadius: 2, 
-              border: '1px solid rgba(76, 175, 80, 0.2)',
-              background: 'rgba(76, 175, 80, 0.02)',
-              width: '100%'
-            }}>
-              <Typography variant="h6" sx={{ mb: 2.5, fontWeight: 600, color: '#2D3748', fontSize: '1.1rem' }}>
-                Attached Files Summary
-              </Typography>
-              
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mb: 3 }}>
-                {/* Ethics Documents */}
-                <Paper sx={{ 
-                  p: 2, 
-                  borderRadius: 2, 
-                  border: '1px solid rgba(139, 108, 188, 0.2)',
-                  background: 'white'
-                }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8b6cbc', mb: 1 }}>
-                    Ethics Documents
-                  </Typography>
-                  {formData.ethicsDocuments.length > 0 ? (
-                    <Box>
-                      <Typography variant="body2" sx={{ color: '#2D3748', mb: 1 }}>
-                        {formData.ethicsDocuments.length} file(s) uploaded
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        {formData.ethicsDocuments.slice(0, 3).map((file, index) => (
-                          <Typography key={index} variant="caption" sx={{ color: '#666' }}>
-                            • {file.name}
-                          </Typography>
-                        ))}
-                        {formData.ethicsDocuments.length > 3 && (
-                          <Typography variant="caption" sx={{ color: '#8b6cbc', fontStyle: 'italic' }}>
-                            +{formData.ethicsDocuments.length - 3} more files
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" sx={{ color: '#666', fontStyle: 'italic' }}>
-                      No ethics documents uploaded
-                    </Typography>
-                  )}
-                </Paper>
-
-                {/* Data Management Plan */}
-                <Paper sx={{ 
-                  p: 2, 
-                  borderRadius: 2, 
-                  border: '1px solid rgba(76, 175, 80, 0.2)',
-                  background: 'white'
-                }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#4caf50', mb: 1 }}>
-                    Data Management Plan
-                  </Typography>
-                  {formData.dataManagementPlan.length > 0 ? (
-                    <Box>
-                      <Typography variant="body2" sx={{ color: '#2D3748', mb: 1 }}>
-                        {formData.dataManagementPlan.length} file(s) uploaded
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        {formData.dataManagementPlan.slice(0, 3).map((file, index) => (
-                          <Typography key={index} variant="caption" sx={{ color: '#666' }}>
-                            • {file.name}
-                          </Typography>
-                        ))}
-                        {formData.dataManagementPlan.length > 3 && (
-                          <Typography variant="caption" sx={{ color: '#4caf50', fontStyle: 'italic' }}>
-                            +{formData.dataManagementPlan.length - 3} more files
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" sx={{ color: '#666', fontStyle: 'italic' }}>
-                      No data management plan uploaded
-                    </Typography>
-                  )}
-                </Paper>
-              </Box>
-
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-                {/* Other Related Files */}
-                <Paper sx={{ 
-                  p: 2, 
-                  borderRadius: 2, 
-                  border: '1px solid rgba(255, 152, 0, 0.2)',
-                  background: 'white'
-                }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#ff9800', mb: 1 }}>
-                    Other Related Files
-                  </Typography>
-                  {formData.otherRelatedFiles.length > 0 ? (
-                    <Box>
-                      <Typography variant="body2" sx={{ color: '#2D3748', mb: 1 }}>
-                        {formData.otherRelatedFiles.length} file(s) uploaded
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        {formData.otherRelatedFiles.slice(0, 3).map((file, index) => (
-                          <Typography key={index} variant="caption" sx={{ color: '#666' }}>
-                            • {file.name}
-                          </Typography>
-                        ))}
-                        {formData.otherRelatedFiles.length > 3 && (
-                          <Typography variant="caption" sx={{ color: '#ff9800', fontStyle: 'italic' }}>
-                            +{formData.otherRelatedFiles.length - 3} more files
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" sx={{ color: '#666', fontStyle: 'italic' }}>
-                      No related files uploaded
-                    </Typography>
-                  )}
-                </Paper>
-
-                {/* Linked Publications */}
-                <Paper sx={{ 
-                  p: 2, 
-                  borderRadius: 2, 
-                  border: '1px solid rgba(33, 150, 243, 0.2)',
-                  background: 'white'
-                }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#2196f3', mb: 1 }}>
-                    Linked Publications
-                  </Typography>
-                  {formData.selectedPublications.length > 0 ? (
-                    <Box>
-                      <Typography variant="body2" sx={{ color: '#2D3748', mb: 1 }}>
-                        {formData.selectedPublications.length} publication(s) linked
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        {formData.selectedPublications.slice(0, 2).map((pub, index) => (
-                          <Typography key={index} variant="caption" sx={{ color: '#666' }}>
-                            • {pub.title}
-                          </Typography>
-                        ))}
-                        {formData.selectedPublications.length > 2 && (
-                          <Typography variant="caption" sx={{ color: '#2196f3', fontStyle: 'italic' }}>
-                            +{formData.selectedPublications.length - 2} more publications
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" sx={{ color: '#666', fontStyle: 'italic' }}>
-                      No publications linked
-                    </Typography>
-                  )}
-                </Paper>
-              </Box>
-
-              {/* Summary Statistics */}
-              <Box sx={{ mt: 3, p: 2, backgroundColor: 'rgba(76, 175, 80, 0.1)', borderRadius: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#2D3748', mb: 1 }}>
-                  Summary
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                  <Typography variant="body2" sx={{ color: '#666' }}>
-                    <strong>Ethics Documents:</strong> {formData.ethicsDocuments.length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#666' }}>
-                    <strong>Data Management Plans:</strong> {formData.dataManagementPlan.length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#666' }}>
-                    <strong>Related Files:</strong> {formData.otherRelatedFiles.length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#666' }}>
-                    <strong>Linked Publications:</strong> {formData.selectedPublications.length}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#666' }}>
-                    <strong>Collaborative Proposals:</strong> {formData.linkedCollaborativeProposals.length}
-                  </Typography>
-                </Box>
-              </Box>
-            </Paper>
-
-
-
             </Box>
           </Box>
         );
@@ -4279,7 +3068,7 @@ const CreateProposalPage = () => {
       case 2: // Project Management
         return true; // Optional step - can be left blank and populated later
       case 3: // Funding and Grants
-        return formData.fundingSource && formData.totalBudgetAmount;
+        return formData.fundingSource && formData.totalBudgetAmount && formData.budgetCurrency;
       case 4: // Ethical Considerations
         return true; // Optional step - can be completed as needed
       case 5: // Publications & Files
@@ -4293,321 +3082,202 @@ const CreateProposalPage = () => {
 
   return (
     <>
-      <Box>
-        <PageHeader
-        title={t("researcher.create_proposal")}
-        description={t("researcher.create_proposal_desc")}
+      <PageHeader
+        title={proposalId ? 'Continue proposal' : t('researcher.create_proposal')}
+        description={t(
+          'researcher.create_proposal_desc',
+          'Drafts save automatically when you pause, click Save draft, or leave this page.'
+        )}
         icon={<ProposalIcon sx={{ fontSize: 32 }} />}
+        breadcrumbs={[
+          { label: t('researcher.portal_title', 'Researcher Portal'), path: '/researcher' },
+          { label: t('researcher.proposals', 'Proposals'), path: '/researcher/projects/proposals/list' },
+        ]}
         actionButton={
-          <Stack direction="row" spacing={2} alignItems="center">
-            {autoSaving && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'rgba(255,255,255,0.8)' }}>
-                <CircularProgress size={16} sx={{ color: 'rgba(255,255,255,0.8)' }} />
-                <Typography variant="caption">Auto-saving...</Typography>
-              </Box>
-            )}
-            {hasUnsavedChanges && !autoSaving && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'rgba(255,255,255,0.6)' }}>
-                <Typography variant="caption">Unsaved changes</Typography>
-              </Box>
-            )}
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            {autoSaving ? (
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={14} sx={{ color: 'white' }} />
+                Saving...
+              </Typography>
+            ) : hasUnsavedChanges ? (
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.75)' }}>
+                Unsaved changes
+              </Typography>
+            ) : proposalId ? (
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                Draft saved
+              </Typography>
+            ) : null}
             <Button
-              variant="outlined"
+              variant="contained"
               startIcon={<ArrowBackIcon />}
               onClick={() => handleNavigation(() => router.push('/researcher/projects/proposals/list'))}
-              sx={{
-                borderColor: 'rgba(255,255,255,0.3)',
-                color: 'white',
-                '&:hover': {
-                  borderColor: 'rgba(255,255,255,0.5)',
-                  backgroundColor: 'rgba(255,255,255,0.1)'
-                }
-              }}
+              sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}
             >
-              Back to List
+              Back to list
             </Button>
           </Stack>
         }
       />
-      </Box>
 
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 4, 
-              borderRadius: 3,
-              border: '1px solid rgba(244, 67, 54, 0.2)',
-              background: 'linear-gradient(135deg, rgba(244, 67, 54, 0.05) 0%, rgba(244, 67, 54, 0.02) 100%)'
-            }}
-          >
+      <Container maxWidth={false} sx={{ py: 3, maxWidth: '1600px', mx: 'auto' }}>
+        {error ? (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>
             {error}
           </Alert>
-        )}
+        ) : null}
 
-        {/* Enhanced Stepper */}
-        <Paper sx={{ 
-          p: 4, 
-          mb: 4, 
-          borderRadius: 4,
-          boxShadow: '0 4px 20px rgba(139, 108, 188, 0.08)',
-          border: '1px solid rgba(139, 108, 188, 0.12)',
-          background: 'linear-gradient(135deg, #ffffff 0%, #fafbfd 100%)'
-        }}>
-          {/* Progress Header */}
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h5" sx={{ 
-              fontWeight: 600, 
-              color: '#2D3748', 
-              mb: 1,
-              textAlign: 'center'
-            }}>
-              Create Research Proposal
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            mb: 2,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }} flexWrap="wrap" gap={1}>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+              Step {activeStep + 1} of {steps.length}: {STEP_META[activeStep].title}
             </Typography>
-            <Typography variant="body2" sx={{ 
-              color: '#8b6cbc', 
-              textAlign: 'center',
-              fontWeight: 500
-            }}>
-              Step {activeStep + 1} of {steps.length}: {steps[activeStep]}
+            <Typography variant="caption" sx={{ fontWeight: 700, color: PURPLE }}>
+              {Math.round(((activeStep + 1) / steps.length) * 100)}% complete
             </Typography>
+          </Stack>
+          <Box sx={{ height: 6, borderRadius: 3, bgcolor: alpha(PURPLE, 0.12), mb: 1.75, overflow: 'hidden' }}>
+            <Box
+              sx={{
+                height: '100%',
+                width: `${((activeStep + 1) / steps.length) * 100}%`,
+                bgcolor: PURPLE,
+                transition: 'width 0.25s ease',
+              }}
+            />
           </Box>
-
-          {/* Custom Horizontal Progress Stepper */}
-          <Box sx={{ mb: 4 }}>
-            {/* Progress Line */}
-            <Box sx={{ 
-              position: 'relative', 
-              mb: 3,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Box sx={{ 
-                position: 'absolute',
-                top: '50%',
-                left: '5%',
-                right: '5%',
-                height: 4,
-                backgroundColor: '#e0e0e0',
-                borderRadius: 2,
-                zIndex: 1
-              }} />
-              
-              {/* Progress Fill */}
-              <Box sx={{ 
-                position: 'absolute',
-                top: '50%',
-                left: '5%',
-                width: `${(activeStep / (steps.length - 1)) * 90}%`,
-                height: 4,
-                background: 'linear-gradient(90deg, #4caf50 0%, #8b6cbc 100%)',
-                borderRadius: 2,
-                zIndex: 2,
-                transition: 'width 0.3s ease'
-              }} />
-              
-              {/* Step Circles */}
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'space-between',
-                width: '90%',
-                mx: 'auto',
-                position: 'relative',
-                zIndex: 3
-              }}>
-                {steps.map((label, index) => {
-                  const isCompleted = index < activeStep;
-                  const isActive = index === activeStep;
-                  const isClickable = true; // Allow clicking on any step
-                  
-                  return (
-                    <Box
-                      key={index}
-                      onClick={() => isClickable && setActiveStep(index)}
-                      sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        cursor: isClickable ? 'pointer' : 'default',
-                        transition: 'all 0.2s ease',
-                        '&:hover': isClickable ? {
-                          transform: 'translateY(-2px)'
-                        } : {}
-                      }}
-                    >
-                      {/* Circle */}
-                      <Box
-                        sx={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: isCompleted ? '#4caf50' : isActive ? '#8b6cbc' : '#9e9e9e',
-                          color: 'white',
-                          fontSize: '1rem',
-                          fontWeight: 600,
-                          boxShadow: isCompleted || isActive ? '0 4px 12px rgba(139, 108, 188, 0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
-                          transition: 'all 0.3s ease',
-                          border: '3px solid white'
-                        }}
-                      >
-                        {isCompleted ? <CheckIcon fontSize="small" /> : index + 1}
-                      </Box>
-                      
-                      {/* Label */}
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          mt: 1,
-                          fontSize: '0.75rem',
-                          fontWeight: isActive ? 600 : 500,
-                          color: isCompleted || isActive ? '#2D3748' : '#666',
-                          textAlign: 'center',
-                          maxWidth: '120px',
-                          lineHeight: 1.2
-                        }}
-                      >
-                        {label}
-                      </Typography>
-                    </Box>
-                  );
-                })}
-              </Box>
-            </Box>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {STEP_META.map((item, index) => {
+              const isCompleted = index < activeStep;
+              const isActive = index === activeStep;
+              return (
+                <Box
+                  key={item.label}
+                  component="button"
+                  type="button"
+                  onClick={() => setActiveStep(index)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.75,
+                    px: 1.25,
+                    py: 0.7,
+                    borderRadius: 2,
+                    cursor: 'pointer',
+                    border: '1px solid',
+                    borderColor: isActive ? PURPLE : isCompleted ? alpha(PURPLE, 0.35) : 'divider',
+                    bgcolor: isActive ? PURPLE : isCompleted ? alpha(PURPLE, 0.08) : 'white',
+                    color: isActive ? 'white' : '#334155',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      bgcolor: isActive ? 'rgba(255,255,255,0.2)' : isCompleted ? PURPLE : alpha(PURPLE, 0.12),
+                      color: isActive || isCompleted ? 'white' : PURPLE,
+                    }}
+                  >
+                    {isCompleted ? <CheckIcon sx={{ fontSize: 13 }} /> : index + 1}
+                  </Box>
+                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                    {item.label}
+                  </Typography>
+                </Box>
+              );
+            })}
           </Box>
+        </Paper>
 
-          {/* Enhanced Step Content */}
-          <Box sx={{ 
-            minHeight: '500px',
-            backgroundColor: 'rgba(139, 108, 188, 0.02)',
-            borderRadius: 3,
-            p: 4,
-            border: '1px solid rgba(139, 108, 188, 0.08)'
-          }}>
-            {renderStepContent(activeStep)}
-          </Box>
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 2, md: 3 },
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            minHeight: 480,
+          }}
+        >
+          {renderStepContent(activeStep)}
+        </Paper>
 
-          {/* Enhanced Navigation Buttons */}
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
+        <Paper
+          elevation={0}
+          sx={{
+            mt: 2,
+            p: 2,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
-            mt: 4, 
-            pt: 3, 
-            borderTop: '2px solid rgba(139, 108, 188, 0.1)'
-          }}>
+            gap: 1.5,
+            flexWrap: 'wrap',
+          }}
+        >
+          <Button
+            onClick={handleBack}
+            disabled={activeStep === 0}
+            startIcon={<ArrowBackIcon />}
+            sx={{ color: PURPLE, textTransform: 'none', fontWeight: 600 }}
+          >
+            Previous
+          </Button>
+          <Stack direction="row" spacing={1.25} flexWrap="wrap" useFlexGap>
             <Button
-              onClick={handleBack}
-              disabled={activeStep === 0}
-              startIcon={<ArrowBackIcon />}
-              sx={{ 
-                color: '#8b6cbc',
-                fontWeight: 500,
-                '&:hover': {
-                  backgroundColor: 'rgba(139, 108, 188, 0.08)'
-                },
-                '&:disabled': {
-                  color: 'rgba(139, 108, 188, 0.3)'
-                }
+              variant="outlined"
+              startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+              onClick={handleSaveDraft}
+              disabled={loading}
+              sx={{
+                borderColor: PURPLE,
+                color: PURPLE,
+                textTransform: 'none',
+                fontWeight: 700,
+                '&:hover': { borderColor: PURPLE, bgcolor: alpha(PURPLE, 0.06) },
               }}
             >
-              Previous Step
+              {loading ? 'Saving...' : 'Save draft'}
             </Button>
-
-            {/* Step Progress Indicator */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1,
-              px: 3,
-              py: 1,
-              borderRadius: 2,
-              backgroundColor: 'rgba(139, 108, 188, 0.1)',
-              border: '1px solid rgba(139, 108, 188, 0.2)'
-            }}>
-              <Typography variant="body2" sx={{ color: '#8b6cbc', fontWeight: 600 }}>
-                Progress: {Math.round(((activeStep + 1) / steps.length) * 100)}%
-              </Typography>
-            </Box>
-
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            {activeStep === steps.length - 1 ? (
               <Button
-                variant="outlined"
-                startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-                onClick={handleSaveDraft}
+                variant="contained"
+                startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <SubmitIcon />}
+                onClick={handleSubmit}
                 disabled={loading}
-                sx={{
-                  borderColor: '#8b6cbc',
-                  color: '#8b6cbc',
-                  fontWeight: 500,
-                  borderRadius: 2,
-                  px: 3,
-                  '&:hover': {
-                    borderColor: '#8b6cbc',
-                    backgroundColor: 'rgba(139, 108, 188, 0.08)'
-                  }
-                }}
+                sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#7a5aad' } }}
               >
-                {loading ? 'Saving...' : 'Save Draft'}
+                {loading ? 'Submitting...' : 'Submit proposal'}
               </Button>
-
-              {activeStep === steps.length - 1 ? (
-                <Button
-                  variant="contained"
-                  startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SubmitIcon />}
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  sx={{
-                    background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)',
-                    fontWeight: 600,
-                    borderRadius: 2,
-                    px: 4,
-                    py: 1.5,
-                    boxShadow: '0 4px 16px rgba(139, 108, 188, 0.3)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #7b5ca7 0%, #8b6cbc 100%)',
-                      boxShadow: '0 6px 20px rgba(139, 108, 188, 0.4)',
-                      transform: 'translateY(-1px)'
-                    },
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  {loading ? 'Submitting...' : 'Submit Proposal'}
-                </Button>
-              ) : (
-                <Button
-                  variant="contained"
-                  onClick={handleNext}
-                  disabled={false}
-                  endIcon={<ArrowForwardIcon />}
-                  sx={{
-                    background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)',
-                    fontWeight: 600,
-                    borderRadius: 2,
-                    px: 3,
-                    py: 1.5,
-                    boxShadow: '0 4px 16px rgba(139, 108, 188, 0.3)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #7b5ca7 0%, #8b6cbc 100%)',
-                      boxShadow: '0 6px 20px rgba(139, 108, 188, 0.4)',
-                      transform: 'translateY(-1px)'
-                    },
-                    '&:disabled': {
-                      background: 'rgba(139, 108, 188, 0.3)',
-                      boxShadow: 'none'
-                    },
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  Next Step
-                </Button>
-              )}
-            </Box>
-          </Box>
+            ) : (
+              <Button
+                variant="contained"
+                onClick={handleNext}
+                endIcon={<ArrowForwardIcon />}
+                sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#7a5aad' } }}
+              >
+                Next
+              </Button>
+            )}
+          </Stack>
         </Paper>
       </Container>
 
@@ -4616,17 +3286,113 @@ const CreateProposalPage = () => {
         open={piSearchModalOpen}
         onClose={() => setPiSearchModalOpen(false)}
         onSelect={handlePrincipalInvestigatorSelect}
-        title="Search for Principal Investigator"
-        subtitle="Find and select the principal investigator using ORCID database"
+        title="Search for principal investigator"
+        subtitle="Find a researcher, then add an invite email if they are not you."
+        requireInvite
+        roleLabel="principal investigator"
+        currentOrcid={user?.orcidId || ''}
       />
 
       <OrcidSearchModal
         open={coInvSearchModalOpen}
         onClose={() => setCoInvSearchModalOpen(false)}
         onSelect={handleCoInvestigatorSelect}
-        title="Search for Co-Investigator"
-        subtitle="Find and add co-investigators using ORCID database"
+        title="Search for co-investigators"
+        subtitle="Add one person, then search again. Click Done when you are finished."
+        requireInvite
+        allowMultiple
+        roleLabel="co-investigator"
+        currentOrcid={user?.orcidId || ''}
+        excludeOrcidIds={formData.coInvestigators.map((person) => person.orcidId).filter(Boolean)}
       />
+
+      <EthicsLinkModal
+        open={ethicsSearchModalOpen}
+        onClose={() => setEthicsSearchModalOpen(false)}
+        onSelect={handleEthicsApplicationSelect}
+        applications={existingEthicsApplications}
+        loading={loadingEthicsApps}
+      />
+
+      <UploadCertificateDialog
+        open={ethicsCertUploadOpen}
+        onClose={() => setEthicsCertUploadOpen(false)}
+        onUploaded={handleEthicsCertificateUploaded}
+        user={user}
+        defaults={{
+          title: formData.title || '',
+          principalInvestigator: formData.piOption === 'useProfile'
+            ? `${user?.givenName || ''} ${user?.familyName || ''}`.trim()
+            : (formData.principalInvestigator || ''),
+          department: formData.departments?.[0] || '',
+          committeeName: formData.ethicsCommittee || '',
+          referenceNumber: formData.ethicsApprovalReference || '',
+          approvalDate: formData.approvalDate || '',
+        }}
+      />
+
+      <Dialog
+        open={Boolean(viewingInvestigator)}
+        onClose={() => setViewingInvestigator(null)}
+        maxWidth="sm"
+        fullWidth
+        disableScrollLock
+        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+      >
+        <DialogTitle
+          sx={{
+            background: 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            py: 1.75,
+            px: 2.5,
+          }}
+        >
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'white' }}>
+              {viewingInvestigator?.title || 'Investigator details'}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.88)' }}>
+              {viewingInvestigator?.name || 'Researcher'}
+            </Typography>
+          </Box>
+          <IconButton
+            size="small"
+            onClick={() => setViewingInvestigator(null)}
+            sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.16)', '&:hover': { bgcolor: 'rgba(255,255,255,0.28)' } }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ px: 3, pt: '24px !important' }}>
+          <Stack spacing={1.5}>
+            {[
+              ['Name', viewingInvestigator?.name],
+              ['ORCID', viewingInvestigator?.orcidId],
+              ['Institution', viewingInvestigator?.institution],
+              ['Department', viewingInvestigator?.department],
+              ['Invite email', viewingInvestigator?.email],
+              ['Role', viewingInvestigator?.role],
+            ].map(([label, value]) => (
+              <Box key={label}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b' }}>
+                  {label}
+                </Typography>
+                <Typography variant="body2" sx={{ color: value ? '#1e293b' : '#94a3b8' }}>
+                  {value || 'Not set'}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2, bgcolor: '#faf8fc' }}>
+          <Button onClick={() => setViewingInvestigator(null)} sx={{ textTransform: 'none', fontWeight: 700, color: PURPLE }}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar for notifications */}
       <Snackbar
@@ -4648,82 +3414,6 @@ const CreateProposalPage = () => {
         </Alert>
       </Snackbar>
 
-      {/* Unsaved Changes Modal */}
-      <Dialog
-        open={showUnsavedModal}
-        onClose={handleUnsavedModalCancel}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 2,
-          pb: 1,
-          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-          color: 'white'
-        }}>
-          <WarningIcon />
-          Unsaved Changes
-          <Box sx={{ flexGrow: 1 }} />
-          <IconButton 
-            onClick={handleUnsavedModalCancel}
-            sx={{ color: 'white' }}
-            size="small"
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3, pb: 2 }}>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            You have unsaved changes to your proposal. What would you like to do?
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            • <strong>Save Draft:</strong> Save your current progress and continue navigation
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            • <strong>Discard:</strong> Lose all unsaved changes and continue navigation
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            • <strong>Cancel:</strong> Stay on this page and continue editing
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 1, gap: 1 }}>
-          <Button
-            onClick={handleUnsavedModalCancel}
-            variant="outlined"
-            sx={{ borderColor: '#6b7280', color: '#6b7280' }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleUnsavedModalDiscard}
-            variant="outlined"
-            sx={{ borderColor: '#dc2626', color: '#dc2626' }}
-          >
-            Discard Changes
-          </Button>
-          <Button
-            onClick={handleUnsavedModalSave}
-            variant="contained"
-            startIcon={<SaveIcon />}
-            sx={{
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #9575d1 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)'
-              }
-            }}
-          >
-            Save Draft
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 };

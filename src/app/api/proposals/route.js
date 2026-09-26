@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { logApiActivity, logDatabaseActivity, getRequestMetadata } from '../../../utils/activityLogger.js';
 import { getUserId, requireAuth } from '../../../lib/auth-server.js';
 import { saveProposalDocument } from '../../../lib/proposal-files.js';
+import { collectBudgetDocuments, persistProposalBudgetFields } from '../../../lib/proposal-budget.js';
 
 const prisma = new PrismaClient();
 
@@ -128,31 +129,7 @@ export async function POST(request) {
             }
         }
 
-        const uploadedFiles = {
-            ethicsDocuments: [],
-            dataManagementPlan: [],
-            otherRelatedFiles: []
-        };
-
-        const fileGroups = [
-            { key: 'ethicsDocuments', formField: 'ethicsDocuments', prefix: 'ethics' },
-            { key: 'dataManagementPlan', formField: 'dataManagementPlan', prefix: 'dmp' },
-            { key: 'otherRelatedFiles', formField: 'otherRelatedFiles', prefix: 'other' },
-        ];
-
-        for (const { key, formField, prefix } of fileGroups) {
-            for (const file of formData.getAll(formField)) {
-                if (!file || !file.size) continue;
-                try {
-                    uploadedFiles[key].push(await saveProposalDocument(prefix, file));
-                } catch (err) {
-                    return NextResponse.json({ error: err.message || 'Invalid file' }, { status: 400 });
-                }
-            }
-        }
-
-        // Create the proposal in the database
-        const proposal = await prisma.proposal.create({
+        let proposal = await prisma.proposal.create({
             data: {
                 // Core Information
                 title: proposalData.title,
@@ -193,18 +170,86 @@ export async function POST(request) {
                 // Related Publications & Files
                 publicationRelevance: proposalData.publicationRelevance,
 
-                // File uploads
-                ethicsDocuments: uploadedFiles.ethicsDocuments,
-                dataManagementPlan: uploadedFiles.dataManagementPlan,
-                otherRelatedFiles: uploadedFiles.otherRelatedFiles,
+                ethicsDocuments: [],
+                dataManagementPlan: [],
+                otherRelatedFiles: [],
 
-                // Status
                 status: proposalData.status || 'DRAFT',
-
-                // TODO: Add userId when authentication is implemented
-                // userId: session.user.id
             }
         });
+
+        const entityTenantId = user.secondaryInstitutionId || null;
+        const uploadedFiles = {
+            ethicsDocuments: [],
+            dataManagementPlan: [],
+            otherRelatedFiles: [],
+            budgetDocuments: []
+        };
+
+        const fileGroups = [
+            { key: 'ethicsDocuments', formField: 'ethicsDocuments', prefix: 'ethics' },
+            { key: 'dataManagementPlan', formField: 'dataManagementPlan', prefix: 'dmp' },
+            { key: 'otherRelatedFiles', formField: 'otherRelatedFiles', prefix: 'other' },
+            { key: 'budgetDocuments', formField: 'budgetDocuments', prefix: 'budget' },
+        ];
+
+        try {
+            for (const { key, formField, prefix } of fileGroups) {
+                for (const file of formData.getAll(formField)) {
+                    if (!file || !file.size) continue;
+                    uploadedFiles[key].push(await saveProposalDocument(prefix, file, {
+                        user,
+                        proposalId: proposal.id,
+                        entityTenantId,
+                    }));
+                }
+            }
+
+            const prismaFileData = {
+                ...(uploadedFiles.ethicsDocuments.length ? { ethicsDocuments: uploadedFiles.ethicsDocuments } : {}),
+                ...(uploadedFiles.dataManagementPlan.length ? { dataManagementPlan: uploadedFiles.dataManagementPlan } : {}),
+                ...(uploadedFiles.otherRelatedFiles.length ? { otherRelatedFiles: uploadedFiles.otherRelatedFiles } : {}),
+            };
+            if (Object.keys(prismaFileData).length) {
+                proposal = await prisma.proposal.update({
+                    where: { id: proposal.id },
+                    data: prismaFileData,
+                });
+            }
+        } catch (err) {
+            await prisma.proposal.delete({ where: { id: proposal.id } }).catch(() => {});
+            return NextResponse.json({ error: err.message || 'Invalid file' }, { status: 400 });
+        }
+
+        try {
+            await persistProposalBudgetFields(prisma, proposal.id, {
+                budgetCurrency: proposalData.budgetCurrency || null,
+                budgetDocuments: collectBudgetDocuments(proposalData, uploadedFiles.budgetDocuments),
+            });
+        } catch (err) {
+            console.error('Failed to persist proposal budget fields:', err);
+        }
+
+        if (proposalData.linkedEthicsApplicationId) {
+            try {
+                await prisma.proposalEthicsLink.upsert({
+                    where: {
+                        proposalId_ethicsApplicationId: {
+                            proposalId: proposal.id,
+                            ethicsApplicationId: proposalData.linkedEthicsApplicationId,
+                        },
+                    },
+                    create: {
+                        proposalId: proposal.id,
+                        ethicsApplicationId: proposalData.linkedEthicsApplicationId,
+                        linkedBy: user.id,
+                    },
+                    update: {},
+                });
+            } catch (err) {
+                console.error('Failed to link ethics application to proposal:', err);
+            }
+        }
 
         // Create relations to publications
         if (proposalData.selectedPublications && proposalData.selectedPublications.length > 0) {

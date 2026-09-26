@@ -1,9 +1,11 @@
-import { describe, it } from 'node:test';
+import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   validateProposalDocument,
   buildProposalFileMeta,
   canAccessProposal,
+  useProposalStorage,
+  proposalDocumentDisplayUrl,
 } from '../src/lib/proposal-files.js';
 
 describe('validateProposalDocument', () => {
@@ -29,6 +31,29 @@ describe('buildProposalFileMeta', () => {
     assert.ok(!meta.filePath);
     assert.ok(meta.url.startsWith('/uploads/proposals/'));
     assert.ok(!meta.fileName.includes('..'));
+  });
+});
+
+describe('useProposalStorage', () => {
+  const orig = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...orig };
+  });
+
+  it('enables when R2 driver set', () => {
+    process.env.STORAGE_DRIVER = 'r2';
+    assert.equal(useProposalStorage(), true);
+  });
+});
+
+describe('proposalDocumentDisplayUrl', () => {
+  it('prefers stored url', () => {
+    assert.equal(proposalDocumentDisplayUrl({ url: '/api/files/abc' }), '/api/files/abc');
+  });
+
+  it('falls back to fileId', () => {
+    assert.equal(proposalDocumentDisplayUrl({ fileId: 'abc' }), '/api/files/abc');
   });
 });
 

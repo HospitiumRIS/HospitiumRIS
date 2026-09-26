@@ -4,13 +4,13 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box, Container, Paper, Typography, Button, TextField, MenuItem, FormControl, FormLabel,
-  RadioGroup, FormControlLabel, Radio, Checkbox, Stepper, Step, StepLabel, Alert, Chip,
-  Divider, CircularProgress, Card, CardContent,
+  RadioGroup, FormControlLabel, Radio, Checkbox, Alert, Chip,
+  Divider, CircularProgress, Card, CardContent, Stack, alpha,
 } from '@mui/material';
 import {
   Shield as EthicsIcon, ArrowBack as BackIcon, Save as SaveIcon, Send as SubmitIcon,
-  Add as AddIcon, Home as HomeIcon, Person as PersonIcon, Science as ScienceIcon,
-  Groups as GroupsIcon, Security as SecurityIcon, Assessment as RiskIcon,
+  Add as AddIcon, Person as PersonIcon,
+  Groups as GroupsIcon,
   Description as DocIcon, CheckCircle as CheckIcon, Search as SearchIcon,
 } from '@mui/icons-material';
 import PageHeader from '../../../../../components/common/PageHeader';
@@ -21,15 +21,65 @@ import { useAuth } from '../../../../../components/AuthProvider';
 import { useTranslation } from 'react-i18next';
 
 const steps = [
-  { label: 'Project Overview', icon: <EthicsIcon /> },
-  { label: 'Research Team', icon: <PersonIcon /> },
-  { label: 'Research Design', icon: <ScienceIcon /> },
-  { label: 'Participants', icon: <GroupsIcon /> },
-  { label: 'Ethics & Data', icon: <SecurityIcon /> },
-  { label: 'Risk & Benefits', icon: <RiskIcon /> },
-  { label: 'Documentation', icon: <DocIcon /> },
-  { label: 'Review', icon: <CheckIcon /> }
+  { label: 'Overview', title: 'Project overview', hint: 'Title, lay summary, aims, and significance' },
+  { label: 'Team', title: 'Research team', hint: 'Principal investigator and co-investigators' },
+  { label: 'Design', title: 'Research design', hint: 'Type, procedures, analysis, and timeline' },
+  { label: 'Participants', title: 'Participants', hint: 'Population, criteria, recruitment, and vulnerable groups' },
+  { label: 'Ethics', title: 'Consent and data', hint: 'Informed consent and how data will be protected' },
+  { label: 'Risks', title: 'Risks and benefits', hint: 'Identify risks, mitigation, and expected benefit' },
+  { label: 'Files', title: 'Documentation', hint: 'Upload required supporting documents' },
+  { label: 'Review', title: 'Review and submit', hint: 'Check the summary, then save or submit' },
 ];
+
+const PURPLE = '#8b6cbc';
+const fieldFocusSx = {
+  '& .MuiOutlinedInput-root:hover fieldset': { borderColor: PURPLE },
+  '& .MuiOutlinedInput-root.Mui-focused fieldset': { borderColor: PURPLE },
+  '& .MuiInputLabel-root.Mui-focused': { color: PURPLE },
+};
+const sectionCardSx = {
+  p: 2.5,
+  borderRadius: 2,
+  border: '1px solid',
+  borderColor: 'divider',
+  background: 'white',
+  boxShadow: 'none',
+};
+
+function StepIntro({ index, title, hint }) {
+  return (
+    <Box sx={{ mb: 2.5, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+      <Stack direction="row" spacing={1.5} alignItems="flex-start">
+        <Box
+          sx={{
+            width: 28,
+            height: 28,
+            borderRadius: '50%',
+            bgcolor: alpha(PURPLE, 0.12),
+            color: PURPLE,
+            fontWeight: 800,
+            fontSize: 13,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            mt: 0.15,
+          }}
+        >
+          {index}
+        </Box>
+        <Box>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1e293b', lineHeight: 1.25 }}>
+            {title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+            {hint}
+          </Typography>
+        </Box>
+      </Stack>
+    </Box>
+  );
+}
 
 const researchTypes = [
   'Clinical Trial', 'Observational Study', 'Survey Research', 'Interview Study',
@@ -210,12 +260,9 @@ export default function CreateEthicsApplicationPage() {
       case 0:
         return (
           <Box>
-            <Alert severity="info" sx={{ mb: 4, borderRadius: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Project Summary Guidelines</Typography>
-              <Typography variant="body2">Provide a brief overview in plain language for non-expert audiences. Avoid jargon and technical terms.</Typography>
-            </Alert>
+            <StepIntro index={1} title="Project overview" hint="Write a plain-language summary. Avoid jargon." />
             <TextField label="Study Title" fullWidth required value={formData.title} onChange={handleChange('title')}
-              placeholder="Enter the full title of your research study" sx={{ mb: 3 }} InputLabelProps={{ sx: { fontWeight: 600 } }} />
+              placeholder="Enter the full title of your research study" sx={{ mb: 3, ...fieldFocusSx }} InputLabelProps={{ sx: { fontWeight: 600 } }} />
             <RichTextEditor label="Lay Summary (Plain Language)" value={formData.laySummary} onChange={handleChange('laySummary')}
               placeholder="Explain your research in simple terms that anyone can understand. Avoid jargon and technical language."
               helperText="Write for a general audience without specialized knowledge" required minRows={5} />
@@ -231,11 +278,8 @@ export default function CreateEthicsApplicationPage() {
       case 1:
         return (
           <Box>
-            <Alert severity="info" sx={{ mb: 4, borderRadius: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Research Team Qualifications</Typography>
-              <Typography variant="body2">Evidence of research team qualifications and experience must be provided. CVs will be uploaded in the Documentation step.</Typography>
-            </Alert>
-            <Card sx={{ mb: 4, border: '1px solid #e2e8f0', boxShadow: 'none' }}>
+            <StepIntro index={2} title="Research team" hint="CVs are uploaded in the Documentation step." />
+            <Card sx={{ mb: 2, ...sectionCardSx }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" sx={{ color: '#2D3748', fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
                   <PersonIcon sx={{ color: '#8b6cbc' }} />
@@ -298,7 +342,7 @@ export default function CreateEthicsApplicationPage() {
                 </Box>
               </CardContent>
             </Card>
-            <Card sx={{ border: '1px solid #e2e8f0', boxShadow: 'none' }}>
+            <Card sx={sectionCardSx}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" sx={{ color: '#2D3748', fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                   <GroupsIcon sx={{ color: '#8b6cbc' }} />
@@ -324,10 +368,7 @@ export default function CreateEthicsApplicationPage() {
       case 2:
         return (
           <Box>
-            <Alert severity="info" sx={{ mb: 4, borderRadius: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Scientific Validity</Typography>
-              <Typography variant="body2">Demonstrate that your study design can answer the research question.</Typography>
-            </Alert>
+            <StepIntro index={3} title="Research design" hint="Show how the study can answer the research question." />
             <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
               <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '250px' }}>
                 <TextField select label="Research Type" fullWidth required value={formData.researchType} onChange={handleChange('researchType')}
@@ -388,10 +429,7 @@ export default function CreateEthicsApplicationPage() {
       case 3:
         return (
           <Box>
-            <Alert severity="warning" sx={{ mb: 4, borderRadius: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Participant Selection Criteria</Typography>
-              <Typography variant="body2">Clearly define who can participate and justify inclusion of vulnerable groups.</Typography>
-            </Alert>
+            <StepIntro index={4} title="Participants" hint="Define who can take part and justify any vulnerable groups." />
             <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 3 }}>
               <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px' }}>
                 <RichTextEditor label="Study Population" value={formData.studyPopulation} onChange={handleChange('studyPopulation')}
@@ -413,7 +451,7 @@ export default function CreateEthicsApplicationPage() {
             <RichTextEditor label="Recruitment Strategy" value={formData.recruitmentStrategy} onChange={handleChange('recruitmentStrategy')}
               placeholder="How will participants be identified and approached? (e.g., flyers, social media, database screening, direct contact)"
               helperText="Describe all recruitment methods in detail. Recruitment materials will be uploaded in the Documentation step." required minRows={4} />
-            <Card sx={{ p: 3, bgcolor: 'rgba(255, 193, 7, 0.05)', border: '1px solid rgba(255, 193, 7, 0.3)', mb: 3 }}>
+            <Card sx={{ ...sectionCardSx, mb: 3 }}>
               <FormControl component="fieldset">
                 <FormLabel component="legend" sx={{ color: '#2D3748', fontWeight: 600, mb: 2 }}>Vulnerable Populations Involved *</FormLabel>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -443,10 +481,7 @@ export default function CreateEthicsApplicationPage() {
       case 4:
         return (
           <Box>
-            <Alert severity="info" sx={{ mb: 4, borderRadius: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Informed Consent & Data Protection</Typography>
-              <Typography variant="body2">Demonstrate that participants can make a truly voluntary and informed decision, and that their data will be protected.</Typography>
-            </Alert>
+            <StepIntro index={5} title="Consent and data" hint="Show how consent is obtained and how data is protected." />
             <Typography variant="h6" sx={{ color: '#2D3748', fontWeight: 600, mb: 2, mt: 3 }}>Informed Consent Process</Typography>
             <RichTextEditor label="Consent Process" value={formData.informedConsentProcess} onChange={handleChange('informedConsentProcess')}
               placeholder="Describe HOW and WHEN consent will be sought. Ensure participants have adequate time to decide."
@@ -492,10 +527,7 @@ export default function CreateEthicsApplicationPage() {
       case 5:
         return (
           <Box>
-            <Alert severity="warning" sx={{ mb: 4, borderRadius: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Risk-Benefit Analysis</Typography>
-              <Typography variant="body2">Demonstrate that benefits outweigh risks and that all risks are minimized.</Typography>
-            </Alert>
+            <StepIntro index={6} title="Risks and benefits" hint="Identify risks, how you will reduce them, and why the study should proceed." />
             <Typography variant="h6" sx={{ color: '#2D3748', fontWeight: 600, mb: 2 }}>Risk Identification</Typography>
             <RichTextEditor label="Physical Risks" value={formData.physicalRisks} onChange={handleChange('physicalRisks')}
               placeholder="Identify any potential physical risks to participants (discomfort, injury, health impacts). State 'None' if no physical risks." required minRows={3} />
@@ -519,7 +551,7 @@ export default function CreateEthicsApplicationPage() {
               placeholder="Explain why the benefits outweigh the risks. Justify why this research should proceed despite the risks."
               helperText="Provide a balanced assessment" required minRows={5} />
             <Divider sx={{ my: 4 }} />
-            <Card sx={{ p: 3, bgcolor: 'rgba(139, 108, 188, 0.05)', border: '1px solid rgba(139, 108, 188, 0.2)' }}>
+            <Card sx={sectionCardSx}>
               <FormControl component="fieldset" sx={{ mb: 3 }}>
                 <FormLabel component="legend" sx={{ color: '#2D3748', fontWeight: 600, mb: 1 }}>Conflict of Interest Disclosure *</FormLabel>
                 <RadioGroup value={formData.conflictOfInterest.toString()}
@@ -554,10 +586,7 @@ export default function CreateEthicsApplicationPage() {
       case 6:
         return (
           <Box>
-            <Alert severity="warning" sx={{ mb: 4, borderRadius: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Mandatory Documentation</Typography>
-              <Typography variant="body2">All required documents must be uploaded. Ensure consistency across all documents (participant numbers, study title, procedures).</Typography>
-            </Alert>
+            <StepIntro index={7} title="Documentation" hint="Upload the required files. Keep title, sample size, and procedures consistent across documents." />
             <FileUploadZone label="Participant Information Sheet (PIS)"
               description="Explains the study in lay terms; includes contact details for PI and Ethics Committee"
               files={formData.participantInfoSheet} onChange={(files) => setFormData(prev => ({ ...prev, participantInfoSheet: files }))}
@@ -589,22 +618,19 @@ export default function CreateEthicsApplicationPage() {
             <Divider sx={{ my: 4 }} />
             <RichTextEditor label="Additional Comments" value={formData.additionalComments} onChange={handleChange('additionalComments')}
               placeholder="Any additional information or clarifications you would like to provide" minRows={4} />
-            <Alert severity="success" sx={{ mt: 3 }}>
-              <Typography variant="body2"><strong>Consistency Check:</strong> Ensure the number of participants, study title, and procedures match across ALL submitted documents.</Typography>
-            </Alert>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              Consistency check: title, participant numbers, and procedures should match across all documents.
+            </Typography>
           </Box>
         );
 
       case 7:
         return (
           <Box>
-            <Typography variant="h6" sx={{ color: '#2D3748', fontWeight: 600, mb: 3 }}>Review Your Application</Typography>
-            <Alert severity="info" sx={{ mb: 4, borderRadius: 2 }}>
-              Please review all information carefully before submitting. You can save as draft and return later if needed.
-            </Alert>
+            <StepIntro index={8} title="Review and submit" hint="Check this summary, save a draft, or submit for review." />
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
               <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px' }}>
-                <Card sx={{ height: '100%', border: '1px solid rgba(139, 108, 188, 0.2)', boxShadow: 'none' }}>
+                <Card sx={{ height: '100%', ...sectionCardSx }}>
                   <CardContent sx={{ p: 3 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8b6cbc', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                       <EthicsIcon fontSize="small" />Project Overview
@@ -623,7 +649,7 @@ export default function CreateEthicsApplicationPage() {
                 </Card>
               </Box>
               <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px' }}>
-                <Card sx={{ height: '100%', border: '1px solid rgba(139, 108, 188, 0.2)', boxShadow: 'none' }}>
+                <Card sx={{ height: '100%', ...sectionCardSx }}>
                   <CardContent sx={{ p: 3 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8b6cbc', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                       <PersonIcon fontSize="small" />Research Team
@@ -646,7 +672,7 @@ export default function CreateEthicsApplicationPage() {
                 </Card>
               </Box>
               <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px' }}>
-                <Card sx={{ height: '100%', border: '1px solid rgba(139, 108, 188, 0.2)', boxShadow: 'none' }}>
+                <Card sx={{ height: '100%', ...sectionCardSx }}>
                   <CardContent sx={{ p: 3 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8b6cbc', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                       <GroupsIcon fontSize="small" />Participants & Ethics
@@ -665,7 +691,7 @@ export default function CreateEthicsApplicationPage() {
                 </Card>
               </Box>
               <Box sx={{ flex: '1 1 calc(50% - 12px)', minWidth: '300px' }}>
-                <Card sx={{ height: '100%', border: '1px solid rgba(139, 108, 188, 0.2)', boxShadow: 'none' }}>
+                <Card sx={{ height: '100%', ...sectionCardSx }}>
                   <CardContent sx={{ p: 3 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#8b6cbc', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                       <DocIcon fontSize="small" />Documentation
@@ -700,9 +726,9 @@ export default function CreateEthicsApplicationPage() {
                 </Card>
               </Box>
             </Box>
-            <Alert severity="warning" sx={{ mt: 4 }}>
-              <Typography variant="body2"><strong>Before submitting:</strong> Ensure all participant-facing documents use clear, everyday language without jargon. Verify consistency across all documents.</Typography>
-            </Alert>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 3 }}>
+              Before submitting, use clear everyday language on participant-facing documents and check they match each other.
+            </Typography>
           </Box>
         );
 
@@ -712,58 +738,170 @@ export default function CreateEthicsApplicationPage() {
   };
 
   return (
-    <Box sx={{ bgcolor: '#f7fafc', minHeight: '100vh', pb: 6 }}>
-      <PageHeader title="Create Ethics Application" description="Submit a comprehensive research ethics application for review"
+    <Box>
+      <PageHeader
+        title="Create Ethics Application"
+        description="Complete each section, save a draft at any time, then submit for review."
         icon={<EthicsIcon sx={{ fontSize: 32 }} />}
         breadcrumbs={[
-          { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/researcher' },
-          { label: 'Ethics', path: '/researcher/ethics/applications' },
-          { label: 'Create Application' }
-        ]} />
-      <Container maxWidth="xl" sx={{ mt: 4 }}>
-        <Paper sx={{ p: 4, borderRadius: 3, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)', border: '1px solid #e2e8f0' }}>
-          <Stepper activeStep={activeStep} sx={{ mb: 5, '& .MuiStepLabel-root .Mui-completed': { color: '#10b981' }, '& .MuiStepLabel-root .Mui-active': { color: '#8b6cbc' } }}>
-            {steps.map((step, index) => (
-              <Step key={step.label}>
-                <StepLabel StepIconComponent={() => (
-                  <Box sx={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    bgcolor: index === activeStep ? '#8b6cbc' : index < activeStep ? '#10b981' : '#e2e8f0',
-                    color: index <= activeStep ? '#fff' : '#a0aec0', transition: 'all 0.3s ease' }}>
-                    {React.cloneElement(step.icon, { sx: { fontSize: 20 } })}
-                  </Box>
-                )}>{step.label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-          {error && (<Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert>)}
-          <Box sx={{ minHeight: 400 }}>{renderStepContent(activeStep)}</Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 5, pt: 3, borderTop: '2px solid #e2e8f0' }}>
-            <Button startIcon={<BackIcon />} onClick={() => router.push('/researcher/ethics/applications')}
-              sx={{ color: '#718096', '&:hover': { bgcolor: 'rgba(113, 128, 150, 0.08)' } }}>Cancel</Button>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              {activeStep > 0 && (<Button onClick={handleBack} sx={{ color: '#8b6cbc', '&:hover': { bgcolor: 'rgba(139, 108, 188, 0.08)' } }}>Back</Button>)}
-              {activeStep < steps.length - 1 ? (
-                <>
-                  <Button variant="outlined" startIcon={<SaveIcon />} onClick={handleSaveDraft} disabled={loading}
-                    sx={{ borderColor: '#8b6cbc', color: '#8b6cbc', '&:hover': { borderColor: '#7a5caa', bgcolor: 'rgba(139, 108, 188, 0.04)' } }}>Save Draft</Button>
-                  <Button variant="contained" onClick={handleNext}
-                    sx={{ background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)', boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)',
-                      '&:hover': { background: 'linear-gradient(135deg, #7a5caa 0%, #6a4c9a 100%)', boxShadow: '0 6px 16px rgba(139, 108, 188, 0.4)' } }}>Next</Button>
-                </>
-              ) : (
-                <>
-                  <Button variant="outlined" startIcon={<SaveIcon />} onClick={handleSaveDraft} disabled={loading}
-                    sx={{ borderColor: '#8b6cbc', color: '#8b6cbc', '&:hover': { borderColor: '#7a5caa', bgcolor: 'rgba(139, 108, 188, 0.04)' } }}>Save Draft</Button>
-                  <Button variant="contained" startIcon={loading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : <SubmitIcon />}
-                    onClick={handleSubmit} disabled={loading}
-                    sx={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                      '&:hover': { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', boxShadow: '0 6px 16px rgba(16, 185, 129, 0.4)' } }}>
-                    {loading ? 'Submitting...' : 'Submit for Review'}
-                  </Button>
-                </>
-              )}
-            </Box>
+          { label: t('researcher.portal_title', 'Researcher Portal'), path: '/researcher' },
+          { label: t('researcher.ethics_applications', 'My Applications'), path: '/researcher/ethics/applications' },
+        ]}
+        actionButton={
+          <Button
+            variant="contained"
+            startIcon={<BackIcon />}
+            onClick={() => router.push('/researcher/ethics/applications')}
+            sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}
+          >
+            Back to list
+          </Button>
+        }
+      />
+      <Container maxWidth={false} sx={{ py: 3, maxWidth: '1600px', mx: 'auto' }}>
+        {error ? (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>
+            {error}
+          </Alert>
+        ) : null}
+
+        <Paper
+          elevation={0}
+          sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}
+        >
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }} flexWrap="wrap" gap={1}>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+              Step {activeStep + 1} of {steps.length}: {steps[activeStep].title}
+            </Typography>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: PURPLE }}>
+              {Math.round(((activeStep + 1) / steps.length) * 100)}% complete
+            </Typography>
+          </Stack>
+          <Box sx={{ height: 6, borderRadius: 3, bgcolor: alpha(PURPLE, 0.12), mb: 1.75, overflow: 'hidden' }}>
+            <Box
+              sx={{
+                height: '100%',
+                width: `${((activeStep + 1) / steps.length) * 100}%`,
+                bgcolor: PURPLE,
+                transition: 'width 0.25s ease',
+              }}
+            />
           </Box>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {steps.map((item, index) => {
+              const isCompleted = index < activeStep;
+              const isActive = index === activeStep;
+              return (
+                <Box
+                  key={item.label}
+                  component="button"
+                  type="button"
+                  onClick={() => setActiveStep(index)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.75,
+                    px: 1.25,
+                    py: 0.7,
+                    borderRadius: 2,
+                    cursor: 'pointer',
+                    border: '1px solid',
+                    borderColor: isActive ? PURPLE : isCompleted ? alpha(PURPLE, 0.35) : 'divider',
+                    bgcolor: isActive ? PURPLE : isCompleted ? alpha(PURPLE, 0.08) : 'white',
+                    color: isActive ? 'white' : '#334155',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      bgcolor: isActive ? 'rgba(255,255,255,0.2)' : isCompleted ? PURPLE : alpha(PURPLE, 0.12),
+                      color: isActive || isCompleted ? 'white' : PURPLE,
+                    }}
+                  >
+                    {isCompleted ? <CheckIcon sx={{ fontSize: 13 }} /> : index + 1}
+                  </Box>
+                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                    {item.label}
+                  </Typography>
+                </Box>
+              );
+            })}
+          </Box>
+        </Paper>
+
+        <Paper
+          elevation={0}
+          sx={{ p: { xs: 2, md: 3 }, borderRadius: 2, border: '1px solid', borderColor: 'divider', minHeight: 480 }}
+        >
+          {renderStepContent(activeStep)}
+        </Paper>
+
+        <Paper
+          elevation={0}
+          sx={{
+            mt: 2,
+            p: 2,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 1.5,
+            flexWrap: 'wrap',
+          }}
+        >
+          <Button
+            onClick={handleBack}
+            disabled={activeStep === 0}
+            startIcon={<BackIcon />}
+            sx={{ color: PURPLE, textTransform: 'none', fontWeight: 600 }}
+          >
+            Previous
+          </Button>
+          <Stack direction="row" spacing={1.25} flexWrap="wrap" useFlexGap>
+            <Button
+              variant="outlined"
+              startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+              onClick={handleSaveDraft}
+              disabled={loading}
+              sx={{
+                borderColor: PURPLE,
+                color: PURPLE,
+                textTransform: 'none',
+                fontWeight: 700,
+                '&:hover': { borderColor: PURPLE, bgcolor: alpha(PURPLE, 0.06) },
+              }}
+            >
+              {loading ? 'Saving...' : 'Save draft'}
+            </Button>
+            {activeStep === steps.length - 1 ? (
+              <Button
+                variant="contained"
+                startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <SubmitIcon />}
+                onClick={handleSubmit}
+                disabled={loading}
+                sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#7a5aad' } }}
+              >
+                {loading ? 'Submitting...' : 'Submit for review'}
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                onClick={handleNext}
+                sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#7a5aad' } }}
+              >
+                Next
+              </Button>
+            )}
+          </Stack>
         </Paper>
       </Container>
       <OrcidSearchModal open={piSearchModalOpen} onClose={() => setPiSearchModalOpen(false)}

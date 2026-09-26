@@ -9,6 +9,7 @@ import { getModulePolicy, validateUploadRequest, isAllowedMimeType } from './pol
 import { sniffMimeType } from './sniff.js';
 import { canReadStoredFile, canInitiateForTenant } from './access.js';
 import { canAccessTrainingStoredFile } from '../training-access.js';
+import { canAccessProposalStoredFile } from '../proposal-access.js';
 
 const PRESIGN_PUT_TTL = parseInt(process.env.STORAGE_PRESIGN_PUT_TTL || '600', 10);
 const PRESIGN_GET_TTL = parseInt(process.env.STORAGE_PRESIGN_GET_TTL || '120', 10);
@@ -164,6 +165,9 @@ export async function getDownloadRedirect({ user, fileId, download = false }) {
     throw new StorageError('Not found', 404);
   }
   if (!(await canAccessTrainingStoredFile(user, row))) {
+    throw new StorageError('Not found', 404);
+  }
+  if (!(await canAccessProposalStoredFile(user, row))) {
     throw new StorageError('Not found', 404);
   }
 

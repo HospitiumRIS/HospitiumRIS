@@ -1,32 +1,27 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 import prisma from '../../../../../lib/prisma.js';
-import { getUserId } from '../../../../../lib/auth-server.js';
+import { requireAuth } from '../../../../../lib/auth-server.js';
+import {
+  canAccessProposal,
+  saveProposalDocument,
+  resolveProposalTenantId,
+} from '../../../../../lib/proposal-files.js';
 
-const uploadsDir = () => join(process.cwd(), 'uploads', 'proposals', 'milestones');
-
-async function saveMilestoneDocuments(files) {
-  await mkdir(uploadsDir(), { recursive: true });
+async function saveMilestoneDocuments(files, options) {
   const saved = [];
 
   for (const file of files) {
     if (!file || typeof file === 'string' || !file.size) continue;
 
-    const safeName = file.name.replace(/[^\w.\-() ]+/g, '_');
-    const fileName = `milestone_${Date.now()}_${safeName}`;
-    const filePath = join(uploadsDir(), fileName);
-    const bytes = await file.arrayBuffer();
-
-    await writeFile(filePath, Buffer.from(bytes));
-
+    const meta = await saveProposalDocument('milestone', file, options);
     saved.push({
       id: `doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      originalName: file.name,
-      fileName,
-      size: file.size,
-      mimeType: file.type || 'application/octet-stream',
-      url: `/uploads/proposals/milestones/${fileName}`,
+      originalName: meta.originalName,
+      fileName: meta.fileName,
+      fileId: meta.fileId || null,
+      size: meta.size,
+      mimeType: meta.mimeType,
+      url: meta.url,
       uploadedAt: new Date().toISOString(),
     });
   }
@@ -34,14 +29,38 @@ async function saveMilestoneDocuments(files) {
   return saved;
 }
 
+async function authorizeProposal(request, proposalId) {
+  const auth = await requireAuth(request);
+  if (auth.error) {
+    return { error: NextResponse.json({ error: 'Authentication required' }, { status: 401 }) };
+  }
+
+  const proposal = await prisma.proposal.findUnique({ where: { id: proposalId } });
+  if (!proposal) {
+    return { error: NextResponse.json({ error: 'Proposal not found' }, { status: 404 }) };
+  }
+  if (!canAccessProposal(auth.user, proposal)) {
+    return { error: NextResponse.json({ error: 'Not found' }, { status: 404 }) };
+  }
+
+  const entityTenantId = await resolveProposalTenantId(proposal);
+  return {
+    user: auth.user,
+    proposal,
+    uploadOptions: {
+      user: auth.user,
+      proposalId,
+      entityTenantId,
+    },
+  };
+}
+
 export async function POST(request, { params }) {
   try {
-    const userId = await getUserId(request);
-    if (!userId) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
     const { id } = await params;
+    const authResult = await authorizeProposal(request, id);
+    if (authResult.error) return authResult.error;
+
     const body = await request.json();
     const milestoneData = body.milestoneData || {};
 
@@ -49,12 +68,9 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Milestone title is required' }, { status: 400 });
     }
 
-    const proposal = await prisma.proposal.findUnique({ where: { id } });
-    if (!proposal) {
-      return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
-    }
-
-    const milestones = Array.isArray(proposal.milestones) ? [...proposal.milestones] : [];
+    const milestones = Array.isArray(authResult.proposal.milestones)
+      ? [...authResult.proposal.milestones]
+      : [];
     const newMilestone = {
       title: milestoneData.title.trim(),
       description: milestoneData.description || '',
@@ -95,20 +111,9 @@ export async function POST(request, { params }) {
 
 export async function PATCH(request, { params }) {
   try {
-    const userId = await getUserId(request);
-    if (!userId) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
     const { id } = await params;
-    if (!id) {
-      return NextResponse.json({ error: 'Proposal ID is required' }, { status: 400 });
-    }
-
-    const proposal = await prisma.proposal.findUnique({ where: { id } });
-    if (!proposal) {
-      return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
-    }
+    const authResult = await authorizeProposal(request, id);
+    if (authResult.error) return authResult.error;
 
     const contentType = request.headers.get('content-type') || '';
     let milestoneIndex;
@@ -130,13 +135,15 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Valid milestone index is required' }, { status: 400 });
     }
 
-    const milestones = Array.isArray(proposal.milestones) ? [...proposal.milestones] : [];
+    const milestones = Array.isArray(authResult.proposal.milestones)
+      ? [...authResult.proposal.milestones]
+      : [];
     if (milestoneIndex >= milestones.length) {
       return NextResponse.json({ error: 'Milestone not found' }, { status: 404 });
     }
 
     const existing = milestones[milestoneIndex] || {};
-    const uploadedDocuments = await saveMilestoneDocuments(uploadFiles);
+    const uploadedDocuments = await saveMilestoneDocuments(uploadFiles, authResult.uploadOptions);
     const removedIds = new Set(milestoneData.removedDocumentIds || []);
     const retainedDocuments = (milestoneData.documents || existing.documents || []).filter(
       (doc) => doc?.id && !removedIds.has(doc.id)

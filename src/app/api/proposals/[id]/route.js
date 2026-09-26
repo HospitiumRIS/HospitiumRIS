@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { logApiActivity, logDatabaseActivity, getRequestMetadata } from '../../../../utils/activityLogger.js';
 import { requireAuth } from '../../../../lib/auth-server.js';
-import { canAccessProposal, saveProposalDocument } from '../../../../lib/proposal-files.js';
+import {
+    canAccessProposal,
+    saveProposalDocument,
+    proposalDocumentDisplayUrl,
+    resolveProposalTenantId,
+} from '../../../../lib/proposal-files.js';
+import { collectBudgetDocuments, persistProposalBudgetFields, readProposalBudgetFields } from '../../../../lib/proposal-budget.js';
 
 const prisma = new PrismaClient();
 
@@ -44,6 +50,25 @@ export async function GET(request, { params }) {
                             }
                         }
                     }
+                },
+                ethicsLinks: {
+                    include: {
+                        ethicsApplication: {
+                            select: {
+                                id: true,
+                                title: true,
+                                status: true,
+                                referenceNumber: true,
+                                committeeName: true,
+                                approvalDate: true,
+                                documents: true,
+                                researchSummary: true,
+                                consentProcess: true,
+                                dataSecurityMeasures: true,
+                            }
+                        }
+                    },
+                    orderBy: { linkedDate: 'desc' }
                 }
             }
         });
@@ -67,7 +92,7 @@ export async function GET(request, { params }) {
                     fileName: doc.fileName || doc.originalName,
                     type: doc.mimeType || 'application/pdf',
                     size: doc.size,
-                    url: `/uploads/proposals/${doc.fileName}`,
+                    url: proposalDocumentDisplayUrl(doc),
                     uploadedAt: proposal.createdAt
                 });
             });
@@ -82,7 +107,7 @@ export async function GET(request, { params }) {
                     fileName: doc.fileName || doc.originalName,
                     type: doc.mimeType || 'application/pdf',
                     size: doc.size,
-                    url: `/uploads/proposals/${doc.fileName}`,
+                    url: proposalDocumentDisplayUrl(doc),
                     uploadedAt: proposal.createdAt
                 });
             });
@@ -97,13 +122,34 @@ export async function GET(request, { params }) {
                     fileName: doc.fileName || doc.originalName,
                     type: doc.mimeType || 'application/pdf',
                     size: doc.size,
-                    url: `/uploads/proposals/${doc.fileName}`,
+                    url: proposalDocumentDisplayUrl(doc),
+                    uploadedAt: proposal.createdAt
+                });
+            });
+        }
+
+        const budgetFields = await readProposalBudgetFields(prisma, proposal.id);
+        proposal.budgetCurrency = proposal.budgetCurrency || budgetFields.budgetCurrency;
+        proposal.budgetDocuments = Array.isArray(proposal.budgetDocuments) && proposal.budgetDocuments.length
+            ? proposal.budgetDocuments
+            : budgetFields.budgetDocuments;
+
+        if (proposal.budgetDocuments && Array.isArray(proposal.budgetDocuments)) {
+            proposal.budgetDocuments.forEach(doc => {
+                allDocuments.push({
+                    ...doc,
+                    category: 'Budget Documents',
+                    fileName: doc.fileName || doc.originalName,
+                    type: doc.mimeType || 'application/pdf',
+                    size: doc.size,
+                    url: proposalDocumentDisplayUrl(doc),
                     uploadedAt: proposal.createdAt
                 });
             });
         }
 
         // Transform dates to ISO strings for frontend
+        const linkedEthics = proposal.ethicsLinks?.[0]?.ethicsApplication || null;
         const transformedProposal = {
             ...proposal,
             startDate: proposal.startDate?.toISOString(),
@@ -113,7 +159,9 @@ export async function GET(request, { params }) {
             approvalDate: proposal.approvalDate?.toISOString(),
             createdAt: proposal.createdAt.toISOString(),
             updatedAt: proposal.updatedAt.toISOString(),
-            documents: allDocuments
+            documents: allDocuments,
+            linkedEthicsApplicationId: linkedEthics?.id || proposal.ethicsLinks?.[0]?.ethicsApplicationId || null,
+            linkedEthicsDocuments: linkedEthics?.documents || [],
         };
 
         return NextResponse.json({
@@ -182,20 +230,28 @@ export async function PUT(request, { params }) {
         const uploadedFiles = {
             ethicsDocuments: [],
             dataManagementPlan: [],
-            otherRelatedFiles: []
+            otherRelatedFiles: [],
+            budgetDocuments: []
         };
 
         const fileGroups = [
             { key: 'ethicsDocuments', formField: 'ethicsDocuments', prefix: 'ethics' },
             { key: 'dataManagementPlan', formField: 'dataManagementPlan', prefix: 'dmp' },
             { key: 'otherRelatedFiles', formField: 'otherRelatedFiles', prefix: 'other' },
+            { key: 'budgetDocuments', formField: 'budgetDocuments', prefix: 'budget' },
         ];
+
+        const entityTenantId = await resolveProposalTenantId(existingProposal);
 
         for (const { key, formField, prefix } of fileGroups) {
             for (const file of formData.getAll(formField)) {
                 if (!file || !file.size) continue;
                 try {
-                    uploadedFiles[key].push(await saveProposalDocument(prefix, file));
+                    uploadedFiles[key].push(await saveProposalDocument(prefix, file, {
+                        user: auth.user,
+                        proposalId: id,
+                        entityTenantId,
+                    }));
                 } catch (err) {
                     return NextResponse.json({ error: err.message || 'Invalid file' }, { status: 400 });
                 }
@@ -255,6 +311,40 @@ export async function PUT(request, { params }) {
             where: { id },
             data: updateData
         });
+
+        try {
+            await persistProposalBudgetFields(prisma, id, {
+                budgetCurrency: proposalData.budgetCurrency || null,
+                budgetDocuments: collectBudgetDocuments(
+                    proposalData,
+                    uploadedFiles.budgetDocuments,
+                    existingProposal.budgetDocuments || []
+                ),
+            });
+        } catch (err) {
+            console.error('Failed to persist proposal budget fields:', err);
+        }
+
+        if (proposalData.linkedEthicsApplicationId) {
+            try {
+                await prisma.proposalEthicsLink.upsert({
+                    where: {
+                        proposalId_ethicsApplicationId: {
+                            proposalId: id,
+                            ethicsApplicationId: proposalData.linkedEthicsApplicationId,
+                        },
+                    },
+                    create: {
+                        proposalId: id,
+                        ethicsApplicationId: proposalData.linkedEthicsApplicationId,
+                        linkedBy: auth.user.id,
+                    },
+                    update: {},
+                });
+            } catch (err) {
+                console.error('Failed to link ethics application to proposal:', err);
+            }
+        }
 
         await logDatabaseActivity('UPDATE', 'Proposal', { success: true, count: 1 }, {
             ...requestMetadata,

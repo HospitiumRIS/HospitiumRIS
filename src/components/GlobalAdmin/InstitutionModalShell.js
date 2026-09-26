@@ -81,6 +81,7 @@ export function InstitutionModal({
       onClose={disableClose ? undefined : onClose}
       maxWidth={maxWidth}
       fullWidth={fullWidth}
+      disableScrollLock
       PaperProps={{ sx: institutionDialogPaperSx }}
     >
       {children}

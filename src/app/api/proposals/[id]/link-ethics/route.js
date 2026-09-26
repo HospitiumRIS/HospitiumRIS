@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 // POST - Link ethics application to proposal
 export async function POST(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { ethicsApplicationId, linkedBy } = await request.json();
 
     // Verify proposal exists
@@ -79,7 +79,7 @@ export async function POST(request, { params }) {
 // GET - Get linked ethics applications for a proposal
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const links = await prisma.proposalEthicsLink.findMany({
       where: { proposalId: id },

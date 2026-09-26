@@ -1,32 +1,27 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 import prisma from '../../../../../lib/prisma.js';
-import { getUserId } from '../../../../../lib/auth-server.js';
+import { requireAuth } from '../../../../../lib/auth-server.js';
+import {
+  canAccessProposal,
+  saveProposalDocument,
+  resolveProposalTenantId,
+} from '../../../../../lib/proposal-files.js';
 
-const uploadsDir = () => join(process.cwd(), 'uploads', 'proposals', 'deliverables');
-
-async function saveDeliverableDocuments(files) {
-  await mkdir(uploadsDir(), { recursive: true });
+async function saveDeliverableDocuments(files, options) {
   const saved = [];
 
   for (const file of files) {
     if (!file || typeof file === 'string' || !file.size) continue;
 
-    const safeName = file.name.replace(/[^\w.\-() ]+/g, '_');
-    const fileName = `deliverable_${Date.now()}_${safeName}`;
-    const filePath = join(uploadsDir(), fileName);
-    const bytes = await file.arrayBuffer();
-
-    await writeFile(filePath, Buffer.from(bytes));
-
+    const meta = await saveProposalDocument('deliverable', file, options);
     saved.push({
       id: `doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      originalName: file.name,
-      fileName,
-      size: file.size,
-      mimeType: file.type || 'application/octet-stream',
-      url: `/uploads/proposals/deliverables/${fileName}`,
+      originalName: meta.originalName,
+      fileName: meta.fileName,
+      fileId: meta.fileId || null,
+      size: meta.size,
+      mimeType: meta.mimeType,
+      url: meta.url,
       uploadedAt: new Date().toISOString(),
     });
   }
@@ -60,14 +55,38 @@ function buildDeliverablePayload(existing, deliverableData, uploadedDocuments) {
   };
 }
 
+async function authorizeProposal(request, proposalId) {
+  const auth = await requireAuth(request);
+  if (auth.error) {
+    return { error: NextResponse.json({ error: 'Authentication required' }, { status: 401 }) };
+  }
+
+  const proposal = await prisma.proposal.findUnique({ where: { id: proposalId } });
+  if (!proposal) {
+    return { error: NextResponse.json({ error: 'Proposal not found' }, { status: 404 }) };
+  }
+  if (!canAccessProposal(auth.user, proposal)) {
+    return { error: NextResponse.json({ error: 'Not found' }, { status: 404 }) };
+  }
+
+  const entityTenantId = await resolveProposalTenantId(proposal);
+  return {
+    user: auth.user,
+    proposal,
+    uploadOptions: {
+      user: auth.user,
+      proposalId,
+      entityTenantId,
+    },
+  };
+}
+
 export async function POST(request, { params }) {
   try {
-    const userId = await getUserId(request);
-    if (!userId) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
     const { id } = await params;
+    const authResult = await authorizeProposal(request, id);
+    if (authResult.error) return authResult.error;
+
     const contentType = request.headers.get('content-type') || '';
     let deliverableData = {};
     let uploadFiles = [];
@@ -85,13 +104,10 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Deliverable title is required' }, { status: 400 });
     }
 
-    const proposal = await prisma.proposal.findUnique({ where: { id } });
-    if (!proposal) {
-      return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
-    }
-
-    const uploadedDocuments = await saveDeliverableDocuments(uploadFiles);
-    const deliverables = Array.isArray(proposal.deliverables) ? [...proposal.deliverables] : [];
+    const uploadedDocuments = await saveDeliverableDocuments(uploadFiles, authResult.uploadOptions);
+    const deliverables = Array.isArray(authResult.proposal.deliverables)
+      ? [...authResult.proposal.deliverables]
+      : [];
     const newDeliverable = buildDeliverablePayload({}, deliverableData, uploadedDocuments);
 
     deliverables.push(newDeliverable);
@@ -117,12 +133,10 @@ export async function POST(request, { params }) {
 
 export async function PATCH(request, { params }) {
   try {
-    const userId = await getUserId(request);
-    if (!userId) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
     const { id } = await params;
+    const authResult = await authorizeProposal(request, id);
+    if (authResult.error) return authResult.error;
+
     const contentType = request.headers.get('content-type') || '';
     let deliverableIndex;
     let deliverableData = {};
@@ -143,17 +157,14 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Valid deliverable index is required' }, { status: 400 });
     }
 
-    const proposal = await prisma.proposal.findUnique({ where: { id } });
-    if (!proposal) {
-      return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
-    }
-
-    const deliverables = Array.isArray(proposal.deliverables) ? [...proposal.deliverables] : [];
+    const deliverables = Array.isArray(authResult.proposal.deliverables)
+      ? [...authResult.proposal.deliverables]
+      : [];
     if (deliverableIndex >= deliverables.length) {
       return NextResponse.json({ error: 'Deliverable not found' }, { status: 404 });
     }
 
-    const uploadedDocuments = await saveDeliverableDocuments(uploadFiles);
+    const uploadedDocuments = await saveDeliverableDocuments(uploadFiles, authResult.uploadOptions);
     deliverables[deliverableIndex] = buildDeliverablePayload(
       deliverables[deliverableIndex] || {},
       deliverableData,

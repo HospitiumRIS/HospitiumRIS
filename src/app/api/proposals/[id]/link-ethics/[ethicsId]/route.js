@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 // DELETE - Unlink ethics application from proposal
 export async function DELETE(request, { params }) {
   try {
-    const { id, ethicsId } = params;
+    const { id, ethicsId } = await params;
 
     const link = await prisma.proposalEthicsLink.findUnique({
       where: {

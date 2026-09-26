@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
 import prisma from '../../../../../../lib/prisma';
 import { requireAuth } from '../../../../../../lib/auth-server';
-import { canAccessProposal, resolveProposalFilePath } from '../../../../../../lib/proposal-files';
+import {
+  canAccessProposal,
+  readProposalDocument,
+} from '../../../../../../lib/proposal-files';
 import { sanitizeFileName } from '../../../../../../lib/sanitize-file-name';
 
 export async function GET(request, { params }) {
@@ -35,27 +37,30 @@ export async function GET(request, { params }) {
             return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
 
-        const filePath = resolveProposalFilePath(fileInfo);
-        if (!filePath) {
+        if (fileInfo.fileId) {
+            const target = new URL(`/api/files/${fileInfo.fileId}`, request.url);
+            if (request.nextUrl.searchParams.get('download') === '1') {
+                target.searchParams.set('download', '1');
+            }
+            return NextResponse.redirect(target, {
+                status: 302,
+                headers: { 'Cache-Control': 'private, no-store' },
+            });
+        }
+
+        const file = await readProposalDocument(fileInfo, auth.user);
+        if (!file) {
             return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
 
-        try {
-            await fs.access(filePath);
-        } catch {
-            return NextResponse.json({ error: 'Not found' }, { status: 404 });
-        }
-
-        const fileBuffer = await fs.readFile(filePath);
         const safeOriginalName = String(fileInfo.originalName || fileName).replace(/"/g, '');
-
         const headers = new Headers();
-        headers.set('Content-Type', fileInfo.mimeType || 'application/octet-stream');
+        headers.set('Content-Type', file.mimeType || fileInfo.mimeType || 'application/octet-stream');
         headers.set('Content-Disposition', `attachment; filename="${safeOriginalName}"`);
-        headers.set('Content-Length', String(fileBuffer.length));
+        headers.set('Content-Length', String(file.buffer.length));
         headers.set('Cache-Control', 'private, no-store');
 
-        return new NextResponse(fileBuffer, { status: 200, headers });
+        return new NextResponse(file.buffer, { status: 200, headers });
     } catch (error) {
         console.error('Error downloading file:', error);
         return NextResponse.json({ error: 'Failed to download file' }, { status: 500 });
