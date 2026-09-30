@@ -1,9 +1,20 @@
 import { NextResponse } from 'next/server';
 import prisma, { ensurePrismaConnected } from '@/lib/prisma';
+import {
+  requireInstitutionPortalAccess,
+  getInstitutionProposalScopeWhere,
+  withDateFilter,
+} from '@/lib/institution-scope';
 
 export async function GET(request) {
   try {
     await ensurePrismaConnected();
+
+    const access = await requireInstitutionPortalAccess();
+    if (access.error) return access.error;
+
+    const { institution, memberIds } = access;
+    const proposalScopeWhere = await getInstitutionProposalScopeWhere(institution, memberIds);
 
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
@@ -17,6 +28,9 @@ export async function GET(request) {
       };
     }
 
+    const scopedWhere = (extra = {}) =>
+      withDateFilter({ ...proposalScopeWhere, ...extra }, dateFilter);
+
     const [
       proposals,
       grantors,
@@ -25,12 +39,7 @@ export async function GET(request) {
       totalProposals
     ] = await Promise.all([
       prisma.proposal.findMany({
-        where: {
-          totalBudgetAmount: {
-            not: null
-          },
-          ...dateFilter
-        },
+        where: scopedWhere({ totalBudgetAmount: { not: null } }),
         select: {
           id: true,
           title: true,
@@ -92,13 +101,7 @@ export async function GET(request) {
       }),
 
       prisma.proposal.findMany({
-        where: {
-          status: 'APPROVED',
-          totalBudgetAmount: {
-            not: null
-          },
-          ...dateFilter
-        },
+        where: scopedWhere({ status: 'APPROVED', totalBudgetAmount: { not: null } }),
         select: {
           totalBudgetAmount: true,
           fundingSource: true,
@@ -108,12 +111,7 @@ export async function GET(request) {
       }),
 
       prisma.proposal.count({
-        where: {
-          totalBudgetAmount: {
-            not: null
-          },
-          ...dateFilter
-        }
+        where: scopedWhere({ totalBudgetAmount: { not: null } }),
       })
     ]);
 
@@ -181,15 +179,10 @@ export async function GET(request) {
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
     const monthlyFundingData = await prisma.proposal.findMany({
-      where: {
-        status: 'APPROVED',
-        totalBudgetAmount: {
-          not: null
-        },
-        createdAt: {
-          gte: sixMonthsAgo
-        }
-      },
+      where: withDateFilter(
+        { ...proposalScopeWhere, status: 'APPROVED', totalBudgetAmount: { not: null } },
+        { createdAt: { gte: sixMonthsAgo } }
+      ),
       select: {
         totalBudgetAmount: true,
         createdAt: true
@@ -265,6 +258,7 @@ export async function GET(request) {
       : 0;
 
     const analyticsData = {
+      institution: { id: institution.id, name: institution.name },
       overview: {
         totalFundingRequested,
         totalFundingApproved,

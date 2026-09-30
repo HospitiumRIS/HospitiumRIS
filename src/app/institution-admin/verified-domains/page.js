@@ -1,127 +1,264 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Alert,
   Box,
-  Paper,
-  Typography,
   Button,
+  Chip,
+  CircularProgress,
+  FormControl,
+  FormControlLabel,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Skeleton,
+  Snackbar,
+  Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
-  FormControlLabel,
-  Switch,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Alert,
   Tooltip,
-  Avatar,
-  Card,
-  CardContent,
-  Grid
+  Typography,
+  alpha,
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
-  Verified as VerifiedIcon,
-  Domain as DomainIcon,
-  Security as SecurityIcon,
-  People as PeopleIcon,
   Block as BlockIcon,
-  Info as InfoIcon
+  CheckCircle as CheckCircleIcon,
+  Delete as DeleteIcon,
+  Domain as DomainIcon,
+  Edit as EditIcon,
+  Info as InfoIcon,
+  Refresh as RefreshIcon,
+  Verified as VerifiedIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../../components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import InstitutionAdminLayout from '../../../components/InstitutionAdmin/InstitutionAdminLayout';
+import {
+  InstitutionModal,
+  InstitutionModalBody,
+  InstitutionModalFooter,
+  InstitutionModalHeader,
+  InstitutionModalSection,
+} from '../../../components/GlobalAdmin/InstitutionModalShell';
+
+const PURPLE = '#8b6cbc';
+const PURPLE_DARK = '#7a5caa';
+
+const STATUS_TONE = {
+  VERIFIED: { bg: alpha(PURPLE, 0.12), color: PURPLE_DARK, label: 'Verified', icon: CheckCircleIcon },
+  PENDING: { bg: '#fef3c7', color: '#b45309', label: 'Pending', icon: InfoIcon },
+  SUSPENDED: { bg: '#fee2e2', color: '#b91c1c', label: 'Suspended', icon: BlockIcon },
+};
+
+const ALLOWED_ACCOUNT_TYPES = [
+  { value: 'RESEARCHER', label: 'Researcher' },
+  { value: 'RESEARCH_ADMIN', label: 'Research Admin' },
+  { value: 'INSTITUTION_ADMIN', label: 'Institution Admin' },
+];
+
+const VERIFICATION_METHODS = ['MANUAL', 'DNS', 'EMAIL'];
+
+const emptyForm = {
+  domain: '',
+  status: 'PENDING',
+  autoApproveUsers: false,
+  allowedAccountTypes: [],
+  verificationMethod: 'MANUAL',
+  notes: '',
+};
+
+const fieldSx = { '& .MuiInputBase-root': { borderRadius: 1.5 } };
+
+function PageHeading({ title, subtitle, action }) {
+  return (
+    <Box
+      sx={{
+        mb: 3,
+        p: { xs: 2, md: 2.5 },
+        borderRadius: 2,
+        border: `1px solid ${alpha(PURPLE, 0.12)}`,
+        bgcolor: 'background.paper',
+      }}
+    >
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2}>
+        <Box>
+          <Typography variant="overline" sx={{ color: alpha(PURPLE, 0.75), fontWeight: 700, letterSpacing: '0.08em' }}>
+            Institution Admin
+          </Typography>
+          <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mt: 0.25 }}>
+            {title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            {subtitle}
+          </Typography>
+        </Box>
+        {action}
+      </Stack>
+    </Box>
+  );
+}
+
+function StatCard({ label, value, caption, icon: Icon, active = false, onClick }) {
+  return (
+    <Paper
+      elevation={0}
+      onClick={onClick}
+      sx={{
+        px: 2,
+        py: 1.25,
+        borderRadius: 2,
+        cursor: onClick ? 'pointer' : 'default',
+        border: `1px solid ${alpha(PURPLE, active ? 0.28 : 0.12)}`,
+        bgcolor: active ? alpha(PURPLE, 0.08) : 'background.paper',
+        transition: 'border-color 0.2s ease, background-color 0.2s ease',
+        '&:hover': onClick ? { bgcolor: alpha(PURPLE, 0.06), borderColor: alpha(PURPLE, 0.22) } : {},
+      }}
+    >
+      <Stack direction="row" alignItems="center" spacing={1.5}>
+        <Box
+          sx={{
+            width: 34,
+            height: 34,
+            borderRadius: 1.25,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: alpha(PURPLE, 0.12),
+            color: PURPLE,
+            flexShrink: 0,
+          }}
+        >
+          <Icon sx={{ fontSize: 18 }} />
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Stack direction="row" alignItems="baseline" justifyContent="space-between" spacing={1}>
+            <Typography variant="caption" noWrap sx={{ color: alpha(PURPLE, 0.7), fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {label}
+            </Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: PURPLE_DARK, lineHeight: 1 }}>
+              {value}
+            </Typography>
+          </Stack>
+          {caption ? (
+            <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mt: 0.25 }}>
+              {caption}
+            </Typography>
+          ) : null}
+        </Box>
+      </Stack>
+    </Paper>
+  );
+}
+
+function StatusChip({ status }) {
+  const tone = STATUS_TONE[status] || STATUS_TONE.PENDING;
+  const Icon = tone.icon;
+  return (
+    <Chip
+      icon={<Icon sx={{ fontSize: '14px !important' }} />}
+      label={tone.label}
+      size="small"
+      sx={{ bgcolor: tone.bg, color: tone.color, fontWeight: 700, height: 24, '& .MuiChip-icon': { color: 'inherit' } }}
+    />
+  );
+}
+
+function normalizeDomain(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/.*$/, '');
+}
 
 const VerifiedDomainsPage = () => {
   const { t } = useTranslation();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+
   const [domains, setDomains] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [openDialog, setOpenDialog] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingDomain, setEditingDomain] = useState(null);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [stats, setStats] = useState({
-    total: 0,
-    verified: 0,
-    pending: 0,
-    suspended: 0
-  });
-
-  const [formData, setFormData] = useState({
-    domain: '',
-    status: 'PENDING',
-    autoApproveUsers: false,
-    allowedAccountTypes: [],
-    verificationMethod: 'MANUAL',
-    notes: ''
-  });
-
-  const accountTypes = ['RESEARCHER', 'INSTITUTION', 'FOUNDATION', 'INSTITUTION_ADMIN'];
-  const verificationMethods = ['MANUAL', 'DNS', 'EMAIL'];
+  const [selectedDomain, setSelectedDomain] = useState(null);
+  const [formData, setFormData] = useState(emptyForm);
+  const [formError, setFormError] = useState('');
+  const [notice, setNotice] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
     if (authLoading) return;
-    
     if (!user) {
       router.push('/login');
       return;
     }
-    
     if (user.accountType !== 'INSTITUTION_ADMIN') {
       router.push('/dashboard');
-      return;
     }
-
-    fetchDomains();
   }, [user, router, authLoading]);
+
+  useEffect(() => {
+    if (user?.accountType === 'INSTITUTION_ADMIN') {
+      fetchDomains();
+    }
+  }, [user]);
+
+  const showNotice = (message, severity = 'success') => {
+    setNotice({ open: true, message, severity });
+  };
 
   const fetchDomains = async () => {
     try {
-      const response = await fetch('/api/institution-admin/verified-domains');
-      if (response.ok) {
-        const data = await response.json();
-        setDomains(data.domains || []);
-        calculateStats(data.domains || []);
-      } else {
-        setError('Failed to fetch domains');
+      setLoading(true);
+      const response = await fetch('/api/institution-admin/verified-domains', { credentials: 'include' });
+      const data = await response.json();
+      if (!response.ok) {
+        showNotice(data.error || 'Failed to fetch domains', 'error');
+        return;
       }
+      setDomains(data.domains || []);
     } catch (error) {
       console.error('Error fetching domains:', error);
-      setError('Error loading domains');
+      showNotice('Failed to load domains', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const calculateStats = (domainsList) => {
-    const stats = {
-      total: domainsList.length,
-      verified: domainsList.filter(d => d.status === 'VERIFIED').length,
-      pending: domainsList.filter(d => d.status === 'PENDING').length,
-      suspended: domainsList.filter(d => d.status === 'SUSPENDED').length
-    };
-    setStats(stats);
-  };
+  const stats = useMemo(() => ({
+    total: domains.length,
+    verified: domains.filter((d) => d.status === 'VERIFIED').length,
+    pending: domains.filter((d) => d.status === 'PENDING').length,
+    suspended: domains.filter((d) => d.status === 'SUSPENDED').length,
+  }), [domains]);
+
+  const filteredDomains = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return domains.filter((domain) => {
+      if (statusFilter && domain.status !== statusFilter) return false;
+      if (!query) return true;
+      return (
+        domain.domain?.toLowerCase().includes(query)
+        || domain.notes?.toLowerCase().includes(query)
+        || domain.verificationMethod?.toLowerCase().includes(query)
+      );
+    });
+  }, [domains, search, statusFilter]);
 
   const handleOpenDialog = (domain = null) => {
     if (domain) {
@@ -132,133 +269,105 @@ const VerifiedDomainsPage = () => {
         autoApproveUsers: domain.autoApproveUsers,
         allowedAccountTypes: domain.allowedAccountTypes || [],
         verificationMethod: domain.verificationMethod || 'MANUAL',
-        notes: domain.notes || ''
+        notes: domain.notes || '',
       });
     } else {
       setEditingDomain(null);
-      setFormData({
-        domain: '',
-        status: 'PENDING',
-        autoApproveUsers: false,
-        allowedAccountTypes: [],
-        verificationMethod: 'MANUAL',
-        notes: ''
-      });
+      setFormData(emptyForm);
     }
-    setOpenDialog(true);
-    setError('');
-    setSuccess('');
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setEditingDomain(null);
-    setError('');
+    setFormError('');
+    setDialogOpen(true);
   };
 
   const handleSubmit = async () => {
-    try {
-      setError('');
-      
-      if (!formData.domain.trim()) {
-        setError('Domain is required');
-        return;
-      }
+    const normalizedDomain = normalizeDomain(formData.domain);
+    if (!normalizedDomain) {
+      setFormError('Domain is required');
+      return;
+    }
 
-      const url = editingDomain 
+    setSaving(true);
+    setFormError('');
+    try {
+      const url = editingDomain
         ? `/api/institution-admin/verified-domains/${editingDomain.id}`
         : '/api/institution-admin/verified-domains';
-      
       const method = editingDomain ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method,
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({ ...formData, domain: normalizedDomain }),
       });
-
       const data = await response.json();
 
-      if (response.ok) {
-        setSuccess(editingDomain ? 'Domain updated successfully' : 'Domain added successfully');
-        handleCloseDialog();
-        fetchDomains();
-        setTimeout(() => setSuccess(''), 3000);
-      } else {
-        setError(data.error || 'Failed to save domain');
+      if (!response.ok) {
+        setFormError(data.error || 'Failed to save domain');
+        return;
       }
+
+      showNotice(editingDomain ? 'Domain updated' : 'Domain added');
+      setDialogOpen(false);
+      fetchDomains();
     } catch (error) {
       console.error('Error saving domain:', error);
-      setError('Error saving domain');
+      setFormError('Failed to save domain');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (domainId) => {
-    if (!confirm('Are you sure you want to delete this domain?')) return;
+  const handleDeleteOpen = (domain) => {
+    setSelectedDomain(domain);
+    setDeleteDialogOpen(true);
+  };
 
+  const handleDelete = async () => {
+    if (!selectedDomain) return;
+    setSaving(true);
     try {
-      const response = await fetch(`/api/institution-admin/verified-domains/${domainId}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/institution-admin/verified-domains/${selectedDomain.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
       });
-
-      if (response.ok) {
-        setSuccess('Domain deleted successfully');
-        fetchDomains();
-        setTimeout(() => setSuccess(''), 3000);
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Failed to delete domain');
+      const data = await response.json();
+      if (!response.ok) {
+        showNotice(data.error || 'Failed to delete domain', 'error');
+        return;
       }
+      showNotice('Domain deleted');
+      setDeleteDialogOpen(false);
+      fetchDomains();
     } catch (error) {
       console.error('Error deleting domain:', error);
-      setError('Error deleting domain');
+      showNotice('Failed to delete domain', 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleVerify = async (domainId) => {
     try {
       const response = await fetch(`/api/institution-admin/verified-domains/${domainId}/verify`, {
-        method: 'POST'
+        method: 'POST',
+        credentials: 'include',
       });
-
-      if (response.ok) {
-        setSuccess('Domain verified successfully');
-        fetchDomains();
-        setTimeout(() => setSuccess(''), 3000);
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Failed to verify domain');
+      const data = await response.json();
+      if (!response.ok) {
+        showNotice(data.error || 'Failed to verify domain', 'error');
+        return;
       }
+      showNotice('Domain verified');
+      fetchDomains();
     } catch (error) {
       console.error('Error verifying domain:', error);
-      setError('Error verifying domain');
+      showNotice('Failed to verify domain', 'error');
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'VERIFIED':
-        return 'success';
-      case 'PENDING':
-        return 'warning';
-      case 'SUSPENDED':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'VERIFIED':
-        return <CheckCircleIcon fontSize="small" />;
-      case 'PENDING':
-        return <InfoIcon fontSize="small" />;
-      case 'SUSPENDED':
-        return <BlockIcon fontSize="small" />;
-      default:
-        return null;
-    }
+  const applyStatusFilter = (status) => {
+    setStatusFilter((current) => (current === status ? '' : status));
   };
 
   if (!user || user.accountType !== 'INSTITUTION_ADMIN') {
@@ -267,397 +376,349 @@ const VerifiedDomainsPage = () => {
 
   return (
     <InstitutionAdminLayout>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: 'background.default', minHeight: '100vh' }}>
-        {/* Header */}
-        <Box sx={{ 
-          mb: 4,
-          pb: 3,
-          borderBottom: '2px solid',
-          borderColor: 'divider'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-            <Box>
-              <Typography 
-                variant="h4" 
-                sx={{ 
-                  fontWeight: 700, 
-                  mb: 1,
-                  background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  letterSpacing: '-0.02em'
+      <Box sx={{ p: { xs: 2, sm: 3 }, width: '100%' }}>
+        <PageHeading
+          title={t('institution_admin.verified_domains', { defaultValue: 'Verified Domains' })}
+          subtitle="Control which email domains can be linked to your institution."
+          action={(
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={fetchDomains}
+                disabled={loading}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderColor: alpha(PURPLE, 0.35),
+                  color: PURPLE_DARK,
+                  '&:hover': { borderColor: PURPLE, bgcolor: alpha(PURPLE, 0.06) },
                 }}
               >
-                Verified Domains
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                Manage email domains linked to your institution
-              </Typography>
-            </Box>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenDialog()}
-              sx={{
-                background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
-                boxShadow: 2,
-                '&:hover': {
-                  boxShadow: 4
-                }
-              }}
-            >
-              Add Domain
-            </Button>
-          </Box>
+                Refresh
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenDialog()}
+                sx={{
+                  bgcolor: PURPLE,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  '&:hover': { bgcolor: PURPLE_DARK },
+                }}
+              >
+                Add domain
+              </Button>
+            </Stack>
+          )}
+        />
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 1.5, mb: 3 }}>
+          {loading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} variant="rounded" height={68} sx={{ borderRadius: 2 }} />
+            ))
+          ) : (
+            <>
+              <StatCard label="Total domains" value={stats.total} caption="Registered for your institution" icon={DomainIcon} active={!statusFilter} onClick={() => setStatusFilter('')} />
+              <StatCard label="Verified" value={stats.verified} caption="Ready for user matching" icon={VerifiedIcon} active={statusFilter === 'VERIFIED'} onClick={() => applyStatusFilter('VERIFIED')} />
+              <StatCard label="Pending" value={stats.pending} caption="Awaiting verification" icon={InfoIcon} active={statusFilter === 'PENDING'} onClick={() => applyStatusFilter('PENDING')} />
+              <StatCard label="Suspended" value={stats.suspended} caption="Blocked from use" icon={BlockIcon} active={statusFilter === 'SUSPENDED'} onClick={() => applyStatusFilter('SUSPENDED')} />
+            </>
+          )}
         </Box>
 
-        {/* Alerts */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
-            {error}
-          </Alert>
-        )}
-        {success && (
-          <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
-            {success}
-          </Alert>
-        )}
+        <Paper elevation={0} sx={{ borderRadius: 2, border: `1px solid ${alpha(PURPLE, 0.12)}`, overflow: 'hidden' }}>
+          <Box sx={{ p: 2, borderBottom: `1px solid ${alpha(PURPLE, 0.1)}` }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Search domains..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              sx={fieldSx}
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.25 }}>
+              {loading ? 'Loading...' : `${filteredDomains.length} domain${filteredDomains.length === 1 ? '' : 's'} shown`}
+            </Typography>
+          </Box>
 
-        {/* Stats Cards */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
-              color: 'white'
-            }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>{stats.total}</Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>Total Domains</Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48 }}>
-                    <DomainIcon />
-                  </Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
-              color: 'white'
-            }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>{stats.verified}</Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>Verified</Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48 }}>
-                    <VerifiedIcon />
-                  </Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
-              color: 'white'
-            }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>{stats.pending}</Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>Pending</Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48 }}>
-                    <InfoIcon />
-                  </Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
-              color: 'white'
-            }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>{stats.suspended}</Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>Suspended</Typography>
-                  </Box>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 48, height: 48 }}>
-                    <BlockIcon />
-                  </Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Domains Table */}
-        <Paper 
-          elevation={0}
-          sx={{ 
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden'
-          }}
-        >
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: 'grey.50' }}>
-                  <TableCell sx={{ fontWeight: 700 }}>Domain</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Auto-Approve</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Allowed Types</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Verification</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Created</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700 }}>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} align="center">
-                      <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                        Loading domains...
-                      </Typography>
-                    </TableCell>
+          {loading ? (
+            <Box sx={{ p: 2 }}>
+              {Array.from({ length: 4 }).map((_, index) => (
+                <Skeleton key={index} variant="rounded" height={52} sx={{ mb: 1, borderRadius: 1.5 }} />
+              ))}
+            </Box>
+          ) : (
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ bgcolor: alpha(PURPLE, 0.04) }}>
+                    <TableCell sx={{ fontWeight: 700 }}>Domain</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Auto-approve</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Allowed types</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Verification</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Created</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700 }}>Actions</TableCell>
                   </TableRow>
-                ) : domains.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} align="center">
-                      <Box sx={{ py: 4 }}>
-                        <DomainIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-                        <Typography variant="body1" color="text.secondary">
-                          No verified domains yet
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Add your first domain to get started
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  domains.map((domain) => (
-                    <TableRow 
-                      key={domain.id}
-                      sx={{ 
-                        '&:hover': { bgcolor: 'action.hover' },
-                        transition: 'background-color 0.2s'
-                      }}
-                    >
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <DomainIcon sx={{ color: 'primary.main' }} />
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {domain.domain}
+                </TableHead>
+                <TableBody>
+                  {filteredDomains.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
+                        <Stack spacing={1.5} alignItems="center">
+                          <DomainIcon sx={{ fontSize: 40, color: alpha(PURPLE, 0.45) }} />
+                          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                            {search || statusFilter ? 'No matching domains' : 'No verified domains yet'}
                           </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          icon={getStatusIcon(domain.status)}
-                          label={domain.status}
-                          color={getStatusColor(domain.status)}
-                          size="small"
-                          sx={{ fontWeight: 600 }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={domain.autoApproveUsers ? 'Yes' : 'No'}
-                          color={domain.autoApproveUsers ? 'success' : 'default'}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                          {domain.allowedAccountTypes?.length > 0 ? (
-                            domain.allowedAccountTypes.map((type) => (
-                              <Chip
-                                key={type}
-                                label={type}
-                                size="small"
-                                variant="outlined"
-                                sx={{ fontSize: '0.7rem' }}
-                              />
-                            ))
-                          ) : (
-                            <Typography variant="caption" color="text.secondary">
-                              None
-                            </Typography>
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {domain.verificationMethod || 'N/A'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {new Date(domain.createdAt).toLocaleDateString()}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                          {domain.status === 'PENDING' && (
-                            <Tooltip title="Verify domain">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleVerify(domain.id)}
-                                sx={{ color: 'success.main' }}
-                              >
-                                <CheckCircleIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          <Tooltip title="Edit">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenDialog(domain)}
-                              sx={{ color: 'primary.main' }}
+                          <Typography variant="body2" color="text.secondary">
+                            {search || statusFilter ? 'Try adjusting your search or filters.' : 'Add an email domain to link users to your institution.'}
+                          </Typography>
+                          {!search && !statusFilter ? (
+                            <Button
+                              variant="contained"
+                              startIcon={<AddIcon />}
+                              onClick={() => handleOpenDialog()}
+                              sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 600, '&:hover': { bgcolor: PURPLE_DARK } }}
                             >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDelete(domain.id)}
-                              sx={{ color: 'error.main' }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
+                              Add domain
+                            </Button>
+                          ) : null}
+                        </Stack>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  ) : (
+                    filteredDomains.map((domain) => (
+                      <TableRow key={domain.id} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
+                        <TableCell>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <DomainIcon sx={{ color: PURPLE, fontSize: 18 }} />
+                            <Typography variant="body2" sx={{ fontWeight: 700 }}>{domain.domain}</Typography>
+                          </Stack>
+                        </TableCell>
+                        <TableCell><StatusChip status={domain.status} /></TableCell>
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            label={domain.autoApproveUsers ? 'Yes' : 'No'}
+                            sx={{
+                              fontWeight: 600,
+                              bgcolor: domain.autoApproveUsers ? alpha(PURPLE, 0.12) : '#f1f5f9',
+                              color: domain.autoApproveUsers ? PURPLE_DARK : '#475569',
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap">
+                            {(domain.allowedAccountTypes || []).length > 0 ? (
+                              domain.allowedAccountTypes.map((type) => (
+                                <Chip key={type} label={type.replaceAll('_', ' ')} size="small" variant="outlined" sx={{ fontSize: '0.7rem', height: 22 }} />
+                              ))
+                            ) : (
+                              <Typography variant="caption" color="text.secondary">All types</Typography>
+                            )}
+                          </Stack>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">{domain.verificationMethod || 'MANUAL'}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {new Date(domain.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                            {domain.status === 'PENDING' ? (
+                              <Tooltip title="Verify domain">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleVerify(domain.id)}
+                                  sx={{ color: PURPLE, bgcolor: alpha(PURPLE, 0.1), '&:hover': { bgcolor: alpha(PURPLE, 0.16) } }}
+                                >
+                                  <CheckCircleIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            ) : null}
+                            <Tooltip title="Edit">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleOpenDialog(domain)}
+                                sx={{ color: PURPLE_DARK, bgcolor: alpha(PURPLE, 0.08), '&:hover': { bgcolor: alpha(PURPLE, 0.14) } }}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteOpen(domain)}
+                                sx={{ color: '#b91c1c', bgcolor: alpha('#b91c1c', 0.08), '&:hover': { bgcolor: alpha('#b91c1c', 0.14) } }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
         </Paper>
+      </Box>
 
-        {/* Add/Edit Dialog */}
-        <Dialog 
-          open={openDialog} 
-          onClose={handleCloseDialog}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>
-            {editingDomain ? 'Edit Domain' : 'Add New Domain'}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+      <InstitutionModal open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} disableClose={saving} maxWidth="sm">
+        <InstitutionModalHeader
+          icon={editingDomain ? EditIcon : AddIcon}
+          title={editingDomain ? 'Edit domain' : 'Add domain'}
+          subtitle={editingDomain ? editingDomain.domain : 'Register an email domain for your institution'}
+          onClose={() => setDialogOpen(false)}
+          disableClose={saving}
+        />
+        <InstitutionModalBody>
+          {formError ? <Alert severity="error" sx={{ borderRadius: 1.5 }}>{formError}</Alert> : null}
+          <InstitutionModalSection title="Domain details">
+            <Stack spacing={2}>
               <TextField
+                fullWidth
+                size="small"
                 label="Domain"
                 value={formData.domain}
                 onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                placeholder="example.edu"
-                fullWidth
-                disabled={!!editingDomain}
-                helperText="Enter the email domain (e.g., university.edu)"
+                placeholder="university.edu"
+                disabled={Boolean(editingDomain)}
+                helperText={editingDomain ? 'Domain name cannot be changed after creation' : 'Enter the email domain without @ (e.g. university.edu)'}
+                sx={fieldSx}
               />
-
-              <FormControl fullWidth>
+              <FormControl fullWidth size="small" sx={fieldSx}>
                 <InputLabel>Status</InputLabel>
-                <Select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  label="Status"
-                >
+                <Select value={formData.status} label="Status" onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
                   <MenuItem value="PENDING">Pending</MenuItem>
                   <MenuItem value="VERIFIED">Verified</MenuItem>
                   <MenuItem value="SUSPENDED">Suspended</MenuItem>
                 </Select>
               </FormControl>
-
-              <FormControl fullWidth>
-                <InputLabel>Verification Method</InputLabel>
+              <FormControl fullWidth size="small" sx={fieldSx}>
+                <InputLabel>Verification method</InputLabel>
                 <Select
                   value={formData.verificationMethod}
+                  label="Verification method"
                   onChange={(e) => setFormData({ ...formData, verificationMethod: e.target.value })}
-                  label="Verification Method"
                 >
-                  {verificationMethods.map((method) => (
+                  {VERIFICATION_METHODS.map((method) => (
                     <MenuItem key={method} value={method}>{method}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
-
-              <FormControl fullWidth>
-                <InputLabel>Allowed Account Types</InputLabel>
+            </Stack>
+          </InstitutionModalSection>
+          <InstitutionModalSection title="Access rules">
+            <Stack spacing={2}>
+              <FormControl fullWidth size="small" sx={fieldSx}>
+                <InputLabel>Allowed account types</InputLabel>
                 <Select
                   multiple
                   value={formData.allowedAccountTypes}
+                  label="Allowed account types"
                   onChange={(e) => setFormData({ ...formData, allowedAccountTypes: e.target.value })}
-                  label="Allowed Account Types"
                   renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap">
                       {selected.map((value) => (
-                        <Chip key={value} label={value} size="small" />
+                        <Chip key={value} label={value.replaceAll('_', ' ')} size="small" />
                       ))}
-                    </Box>
+                    </Stack>
                   )}
                 >
-                  {accountTypes.map((type) => (
-                    <MenuItem key={type} value={type}>{type}</MenuItem>
+                  {ALLOWED_ACCOUNT_TYPES.map((type) => (
+                    <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
-
               <FormControlLabel
-                control={
+                control={(
                   <Switch
                     checked={formData.autoApproveUsers}
                     onChange={(e) => setFormData({ ...formData, autoApproveUsers: e.target.checked })}
+                    sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: PURPLE }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: PURPLE } }}
                   />
-                }
+                )}
                 label="Auto-approve users with this domain"
               />
-
               <TextField
+                fullWidth
+                size="small"
                 label="Notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 multiline
-                rows={3}
-                fullWidth
+                minRows={3}
                 placeholder="Optional notes about this domain"
+                sx={fieldSx}
               />
+            </Stack>
+          </InstitutionModalSection>
+        </InstitutionModalBody>
+        <InstitutionModalFooter>
+          <Button onClick={() => setDialogOpen(false)} disabled={saving} color="inherit">Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={saving}
+            startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
+            sx={{ bgcolor: PURPLE, '&:hover': { bgcolor: PURPLE_DARK } }}
+          >
+            {saving ? 'Saving...' : editingDomain ? 'Save changes' : 'Add domain'}
+          </Button>
+        </InstitutionModalFooter>
+      </InstitutionModal>
 
-              {error && (
-                <Alert severity="error">{error}</Alert>
-              )}
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button 
-              onClick={handleSubmit} 
-              variant="contained"
-              sx={{
-                background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)'
-              }}
-            >
-              {editingDomain ? 'Update' : 'Add'}
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
+      <InstitutionModal open={deleteDialogOpen} onClose={() => !saving && setDeleteDialogOpen(false)} disableClose={saving}>
+        <InstitutionModalHeader
+          icon={DeleteIcon}
+          title="Delete domain"
+          subtitle="This action cannot be undone"
+          tone="danger"
+          onClose={() => setDeleteDialogOpen(false)}
+          disableClose={saving}
+        />
+        <InstitutionModalBody>
+          <Alert severity="warning" sx={{ borderRadius: 1.5 }}>
+            Remove <strong>{selectedDomain?.domain}</strong> from your institution?
+          </Alert>
+        </InstitutionModalBody>
+        <InstitutionModalFooter>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={saving} color="inherit">Cancel</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDelete}
+            disabled={saving}
+            startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
+          >
+            {saving ? 'Deleting...' : 'Delete domain'}
+          </Button>
+        </InstitutionModalFooter>
+      </InstitutionModal>
+
+      <Snackbar
+        open={notice.open}
+        autoHideDuration={5000}
+        onClose={() => setNotice((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={notice.severity}
+          onClose={() => setNotice((prev) => ({ ...prev, open: false }))}
+          sx={{ borderRadius: 2, width: '100%' }}
+        >
+          {notice.message}
+        </Alert>
+      </Snackbar>
     </InstitutionAdminLayout>
   );
 };

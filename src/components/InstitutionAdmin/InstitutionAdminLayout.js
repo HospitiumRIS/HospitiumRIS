@@ -19,7 +19,8 @@ import {
   Chip,
   Tooltip,
   useMediaQuery,
-  useTheme
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -31,12 +32,95 @@ import {
   ListAlt as LogsIcon,
   Verified as VerifiedIcon,
   Business as InstitutionIcon,
+  AdminPanelSettings as AccountTypesIcon,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../AuthProvider';
 import { InstitutionAdminProvider, useInstitutionAdmin } from './InstitutionAdminContext';
 
 const drawerWidth = 260;
+const PURPLE = '#8b6cbc';
+const PURPLE_DARK = '#7a5caa';
+
+const NAV_SECTIONS = [
+  {
+    labelKey: 'institution_admin.nav_overview',
+    labelDefault: 'Overview',
+    items: [
+      {
+        textKey: 'institution_admin.dashboard',
+        textDefault: 'Dashboard',
+        icon: DashboardIcon,
+        path: '/institution-admin',
+      },
+    ],
+  },
+  {
+    labelKey: 'institution_admin.nav_institution',
+    labelDefault: 'Institution',
+    items: [
+      {
+        textKey: 'institution_admin.institution_profile',
+        textDefault: 'Institution Profile',
+        icon: InstitutionIcon,
+        path: '/institution-admin/profile',
+      },
+      {
+        textKey: 'institution_admin.user_management',
+        textDefault: 'User Management',
+        icon: UsersIcon,
+        path: '/institution-admin/users',
+      },
+      {
+        textKey: 'institution_admin.account_types',
+        textDefault: 'Account Types',
+        icon: AccountTypesIcon,
+        path: '/institution-admin/account-types',
+      },
+      {
+        textKey: 'institution_admin.verified_domains',
+        textDefault: 'Verified Domains',
+        icon: VerifiedIcon,
+        path: '/institution-admin/verified-domains',
+      },
+    ],
+  },
+  {
+    labelKey: 'institution_admin.nav_system',
+    labelDefault: 'System',
+    items: [
+      {
+        textKey: 'institution_admin.database',
+        textDefault: 'Database',
+        icon: DatabaseIcon,
+        path: '/institution-admin/database',
+      },
+      {
+        textKey: 'institution_admin.logs',
+        textDefault: 'Logs',
+        icon: LogsIcon,
+        path: '/institution-admin/logs',
+      },
+      {
+        textKey: 'global_admin.security',
+        textDefault: 'Security',
+        icon: SecurityIcon,
+        path: '/institution-admin/security',
+      },
+      {
+        textKey: 'global_admin.settings',
+        textDefault: 'System Settings',
+        icon: SettingsIcon,
+        path: '/institution-admin/settings',
+      },
+    ],
+  },
+];
+
+function isNavActive(pathname, path) {
+  if (path === '/institution-admin') return pathname === path;
+  return pathname === path || pathname?.startsWith(`${path}/`);
+}
 
 function InstitutionAdminDrawer({ children }) {
   const { t } = useTranslation();
@@ -48,63 +132,6 @@ function InstitutionAdminDrawer({ children }) {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const institutionName = institution?.name || user?.primaryInstitution || t('institution_admin.panel_title');
-
-  const menuItems = [
-    {
-      text: t('institution_admin.dashboard', { defaultValue: 'Dashboard' }),
-      icon: <DashboardIcon />,
-      path: '/institution-admin',
-      color: 'primary'
-    },
-    {
-      text: t('institution_admin.institution_profile', { defaultValue: 'Institution Profile' }),
-      icon: <InstitutionIcon />,
-      path: '/institution-admin/profile',
-      color: 'secondary'
-    },
-    {
-      text: t('institution_admin.user_management', { defaultValue: 'User Management' }),
-      icon: <UsersIcon />,
-      path: '/institution-admin/users',
-      color: 'info'
-    },
-    {
-      text: t('institution_admin.account_types'),
-      icon: <SecurityIcon />,
-      path: '/institution-admin/account-types',
-      color: 'secondary'
-    },
-    {
-      text: t('institution_admin.verified_domains'),
-      icon: <VerifiedIcon />,
-      path: '/institution-admin/verified-domains',
-      color: 'success'
-    },
-    {
-      text: t('institution_admin.database'),
-      icon: <DatabaseIcon />,
-      path: '/institution-admin/database',
-      color: 'warning'
-    },
-    {
-      text: t('institution_admin.logs'),
-      icon: <LogsIcon />,
-      path: '/institution-admin/logs',
-      color: 'primary'
-    },
-    {
-      text: t('global_admin.security'),
-      icon: <SecurityIcon />,
-      path: '/institution-admin/security',
-      color: 'error'
-    },
-    {
-      text: t('global_admin.settings'),
-      icon: <SettingsIcon />,
-      path: '/institution-admin/settings',
-      color: 'warning'
-    }
-  ];
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -118,15 +145,23 @@ function InstitutionAdminDrawer({ children }) {
   };
 
   const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: alpha(PURPLE, 0.02),
+      }}
+    >
       {/* Sidebar Header */}
       <Box
         sx={{
-          p: 2,
+          px: 2,
+          py: 2.25,
           display: 'flex',
           alignItems: 'center',
           gap: 1.5,
-          bgcolor: 'primary.main',
+          background: `linear-gradient(135deg, ${PURPLE} 0%, ${PURPLE_DARK} 100%)`,
           color: 'white',
         }}
       >
@@ -137,16 +172,16 @@ function InstitutionAdminDrawer({ children }) {
           imgProps={{ style: { objectFit: 'contain' } }}
           sx={{
             bgcolor: 'white',
-            color: 'primary.main',
+            color: PURPLE,
             width: 44,
             height: 44,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
             p: logoSrc ? 0.5 : 0,
           }}
         >
           <InstitutionIcon />
         </Avatar>
-        <Box sx={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Tooltip title={institutionName}>
             <Typography
               variant="subtitle1"
@@ -156,46 +191,51 @@ function InstitutionAdminDrawer({ children }) {
               {institutionName}
             </Typography>
           </Tooltip>
-          <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 500 }}>
+          <Typography variant="caption" sx={{ opacity: 0.88, fontWeight: 500 }}>
             {t('institution_admin.panel_title')}
           </Typography>
         </Box>
       </Box>
 
-      <Divider />
-
       {/* User Info */}
       {user && (
-        <Box sx={{ 
-          p: 2.5, 
-          bgcolor: 'background.default',
-          borderBottom: '1px solid',
-          borderColor: 'divider'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ 
-              width: 40, 
-              height: 40, 
-              bgcolor: 'secondary.main',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              fontWeight: 600
-            }}>
+        <Box
+          sx={{
+            px: 2,
+            py: 1.75,
+            borderBottom: '1px solid',
+            borderColor: alpha(PURPLE, 0.1),
+            bgcolor: 'background.paper',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <Avatar
+              sx={{
+                width: 36,
+                height: 36,
+                bgcolor: alpha(PURPLE, 0.14),
+                color: PURPLE,
+                fontWeight: 700,
+                fontSize: '0.85rem',
+              }}
+            >
               {user.givenName?.[0]}{user.familyName?.[0]}
             </Avatar>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, noWrap: true, mb: 0.5 }}>
+              <Typography variant="body2" noWrap sx={{ fontWeight: 600, lineHeight: 1.3 }}>
                 {user.givenName} {user.familyName}
               </Typography>
               <Chip
-                label="Institution Admin"
+                label={t('institution_admin.panel_title')}
                 size="small"
-                sx={{ 
-                  height: 22, 
-                  fontSize: '0.7rem',
+                sx={{
+                  mt: 0.5,
+                  height: 20,
+                  fontSize: '0.65rem',
                   fontWeight: 600,
-                  background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
-                  color: 'white',
-                  border: 'none'
+                  bgcolor: alpha(PURPLE, 0.1),
+                  color: PURPLE_DARK,
+                  border: `1px solid ${alpha(PURPLE, 0.18)}`,
                 }}
               />
             </Box>
@@ -203,79 +243,106 @@ function InstitutionAdminDrawer({ children }) {
         </Box>
       )}
 
-      <Divider />
-
       {/* Navigation Menu */}
-      <List sx={{ flex: 1, py: 2, px: 1.5 }}>
-        {menuItems.map((item) => {
-          const isActive = item.path === '/institution-admin'
-            ? pathname === item.path
-            : pathname === item.path || pathname?.startsWith(`${item.path}/`);
-          return (
-            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                onClick={() => handleNavigation(item.path)}
-                sx={{
-                  borderRadius: 2,
-                  py: 1.5,
-                  px: 2,
-                  bgcolor: isActive ? `${item.color}.main` : 'transparent',
-                  color: isActive ? 'white' : 'text.primary',
-                  boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
-                  '&:hover': {
-                    bgcolor: isActive ? `${item.color}.dark` : 'action.hover',
-                    transform: 'translateX(4px)',
-                    boxShadow: isActive ? '0 6px 16px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.08)'
-                  },
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    color: isActive ? 'white' : `${item.color}.main`,
-                    minWidth: 44
-                  }}
-                >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.text}
-                  primaryTypographyProps={{
-                    fontSize: '0.95rem',
-                    fontWeight: isActive ? 700 : 500,
-                    letterSpacing: '-0.01em'
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
+      <Box sx={{ flex: 1, overflowY: 'auto', py: 1.5, px: 1.25 }}>
+        {NAV_SECTIONS.map((section, sectionIndex) => (
+          <Box key={section.labelKey} sx={{ mb: sectionIndex < NAV_SECTIONS.length - 1 ? 1.5 : 0 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                display: 'block',
+                px: 1.5,
+                py: 0.75,
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: alpha(PURPLE, 0.55),
+                fontSize: '0.65rem',
+              }}
+            >
+              {t(section.labelKey, { defaultValue: section.labelDefault })}
+            </Typography>
+            <List disablePadding>
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                const text = t(item.textKey, { defaultValue: item.textDefault });
+                const isActive = isNavActive(pathname, item.path);
 
-      <Divider />
+                return (
+                  <ListItem key={item.path} disablePadding sx={{ mb: 0.25 }}>
+                    <ListItemButton
+                      onClick={() => handleNavigation(item.path)}
+                      sx={{
+                        borderRadius: 1.5,
+                        py: 1,
+                        px: 1.5,
+                        minHeight: 40,
+                        position: 'relative',
+                        bgcolor: isActive ? alpha(PURPLE, 0.12) : 'transparent',
+                        color: isActive ? PURPLE_DARK : 'text.secondary',
+                        '&::before': isActive
+                          ? {
+                              content: '""',
+                              position: 'absolute',
+                              left: 0,
+                              top: '20%',
+                              bottom: '20%',
+                              width: 3,
+                              borderRadius: '0 2px 2px 0',
+                              bgcolor: PURPLE,
+                            }
+                          : {},
+                        '&:hover': {
+                          bgcolor: isActive ? alpha(PURPLE, 0.16) : alpha(PURPLE, 0.06),
+                          color: isActive ? PURPLE_DARK : 'text.primary',
+                        },
+                        transition: 'background-color 0.2s ease, color 0.2s ease',
+                      }}
+                    >
+                      <ListItemIcon
+                        sx={{
+                          minWidth: 36,
+                          color: isActive ? PURPLE : alpha(PURPLE, 0.45),
+                          '& .MuiSvgIcon-root': { fontSize: 20 },
+                        }}
+                      >
+                        <Icon />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={text}
+                        primaryTypographyProps={{
+                          fontSize: '0.875rem',
+                          fontWeight: isActive ? 600 : 500,
+                          letterSpacing: '-0.01em',
+                          color: 'inherit',
+                        }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                );
+              })}
+            </List>
+          </Box>
+        ))}
+      </Box>
+
+      <Divider sx={{ borderColor: alpha(PURPLE, 0.1) }} />
 
       {/* Footer */}
-      <Box sx={{ 
-        p: 2.5, 
-        bgcolor: 'background.default',
-        borderTop: '1px solid',
-        borderColor: 'divider'
-      }}>
-        <Typography 
-          variant="caption" 
-          color="text.secondary" 
-          align="center" 
+      <Box sx={{ px: 2, py: 1.75, bgcolor: 'background.paper' }}>
+        <Typography
+          variant="caption"
+          align="center"
           display="block"
-          sx={{ fontWeight: 500 }}
+          sx={{ fontWeight: 600, color: alpha(PURPLE, 0.7) }}
         >
           HospitiumRIS v1.0
         </Typography>
-        <Typography 
-          variant="caption" 
-          color="text.secondary" 
-          align="center" 
+        <Typography
+          variant="caption"
+          align="center"
           display="block"
-          sx={{ fontSize: '0.65rem', mt: 0.5, opacity: 0.7 }}
+          sx={{ fontSize: '0.65rem', mt: 0.25, color: 'text.disabled' }}
         >
           © 2026 All rights reserved
         </Typography>
@@ -285,31 +352,26 @@ function InstitutionAdminDrawer({ children }) {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* AppBar for mobile */}
       {isMobile && (
         <AppBar
           position="fixed"
+          elevation={0}
           sx={{
             width: '100%',
             bgcolor: 'background.paper',
             color: 'text.primary',
-            boxShadow: 1
+            borderBottom: `1px solid ${alpha(PURPLE, 0.12)}`,
           }}
         >
           <Toolbar>
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
-            >
+            <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 1.5 }}>
               <MenuIcon />
             </IconButton>
             <Avatar
               src={logoSrc}
               variant="rounded"
               alt={institutionName}
-              sx={{ width: 32, height: 32, mr: 1.5, bgcolor: 'primary.main' }}
+              sx={{ width: 32, height: 32, mr: 1.25, bgcolor: PURPLE }}
             >
               <InstitutionIcon fontSize="small" />
             </Avatar>
@@ -320,24 +382,19 @@ function InstitutionAdminDrawer({ children }) {
         </AppBar>
       )}
 
-      {/* Sidebar Drawer */}
-      <Box
-        component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
-      >
+      <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
         {isMobile ? (
           <Drawer
             variant="temporary"
             open={mobileOpen}
             onClose={handleDrawerToggle}
-            ModalProps={{
-              keepMounted: true
-            }}
+            ModalProps={{ keepMounted: true }}
             sx={{
               '& .MuiDrawer-paper': {
                 boxSizing: 'border-box',
-                width: drawerWidth
-              }
+                width: drawerWidth,
+                borderRight: `1px solid ${alpha(PURPLE, 0.12)}`,
+              },
             }}
           >
             {drawer}
@@ -349,8 +406,8 @@ function InstitutionAdminDrawer({ children }) {
               '& .MuiDrawer-paper': {
                 boxSizing: 'border-box',
                 width: drawerWidth,
-                borderRight: `1px solid ${theme.palette.divider}`
-              }
+                borderRight: `1px solid ${alpha(PURPLE, 0.12)}`,
+              },
             }}
             open
           >
@@ -359,7 +416,6 @@ function InstitutionAdminDrawer({ children }) {
         )}
       </Box>
 
-      {/* Main Content */}
       <Box
         component="main"
         sx={{
@@ -367,20 +423,18 @@ function InstitutionAdminDrawer({ children }) {
           width: { md: `calc(100% - ${drawerWidth}px)` },
           minHeight: '100vh',
           bgcolor: 'background.default',
-          mt: { xs: 7, md: 0 }
+          mt: { xs: 7, md: 0 },
         }}
       >
         {children}
       </Box>
     </Box>
   );
-};
+}
 
 const InstitutionAdminLayout = ({ children }) => (
   <InstitutionAdminProvider>
-    <InstitutionAdminDrawer>
-      {children}
-    </InstitutionAdminDrawer>
+    <InstitutionAdminDrawer>{children}</InstitutionAdminDrawer>
   </InstitutionAdminProvider>
 );
 

@@ -27,13 +27,13 @@ export async function GET(request) {
   try {
     const auth = await requireInstitutionImageIntegrityAccess(request);
     if (auth.errorResponse) return auth.errorResponse;
-    const { institution } = auth;
+    const { institution, verifiedDomains } = auth;
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const search = searchParams.get('search');
 
-    const where = { ...institutionCasesWhere(institution) };
+    const where = { ...institutionCasesWhere(institution, verifiedDomains) };
     if (status && status !== 'ALL') {
       where.status = status;
     }

@@ -1,44 +1,55 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
+import {
+  requireInstitutionPortalAccess,
+  getInstitutionProposalScopeWhere,
+  withDateFilter,
+} from '@/lib/institution-scope';
 
-const prisma = new PrismaClient();
-
-export async function GET(request) {
+export async function GET() {
   try {
-    // Fetch all proposals that are approved (these become projects)
+    const access = await requireInstitutionPortalAccess();
+    if (access.error) return access.error;
+
+    const { institution, memberIds } = access;
+    const proposalScopeWhere = await getInstitutionProposalScopeWhere(institution, memberIds);
+
     const proposals = await prisma.proposal.findMany({
-      where: {
-        status: {
-          in: ['APPROVED', 'UNDER_REVIEW', 'SUBMITTED']
-        }
-      },
+      where: withDateFilter(
+        {
+          ...proposalScopeWhere,
+          status: {
+            in: ['APPROVED', 'UNDER_REVIEW', 'SUBMITTED'],
+          },
+        },
+        {}
+      ),
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     });
 
-    // Transform proposals into project format with progress tracking
-    const projects = proposals.map(proposal => {
-      // Determine project status based on proposal status and dates
+    const projects = proposals.map((proposal) => {
       let projectStatus = 'ONGOING';
-      
+
       if (proposal.status === 'APPROVED') {
         const now = new Date();
         const endDate = proposal.endDate ? new Date(proposal.endDate) : null;
         const startDate = proposal.startDate ? new Date(proposal.startDate) : null;
-        
+
         if (endDate && now > endDate) {
           projectStatus = 'COMPLETED';
         } else if (endDate) {
           const daysUntilEnd = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
-          const totalDays = startDate && endDate ? Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) : 365;
-          const percentComplete = startDate ? Math.min(100, Math.max(0, ((now - startDate) / (endDate - startDate)) * 100)) : 0;
-          
-          // Mark as delayed if we're past 80% of timeline but less than 80% complete on milestones
-          const milestoneProgress = proposal.milestones && proposal.milestones.length > 0
-            ? (proposal.milestones.filter(m => m.completed).length / proposal.milestones.length) * 100
-            : 0;
-          
+          const milestoneProgress =
+            proposal.milestones && proposal.milestones.length > 0
+              ? (proposal.milestones.filter((m) => m.completed).length / proposal.milestones.length) * 100
+              : 0;
+          const percentComplete =
+            startDate && endDate
+              ? Math.min(100, Math.max(0, ((now - startDate) / (endDate - startDate)) * 100))
+              : 0;
+
           if (percentComplete > 80 && milestoneProgress < 60) {
             projectStatus = 'DELAYED';
           } else if (daysUntilEnd < 30 && milestoneProgress < 70) {
@@ -53,7 +64,7 @@ export async function GET(request) {
         id: proposal.id,
         title: proposal.title,
         principalInvestigator: proposal.principalInvestigator,
-        department: proposal.departments?.[0] || 'Unknown',
+        department: proposal.departments?.[0] || institution.name,
         status: projectStatus,
         proposalStatus: proposal.status,
         startDate: proposal.startDate,
@@ -68,27 +79,25 @@ export async function GET(request) {
         fundingInstitution: proposal.fundingInstitution,
         grantNumber: proposal.grantNumber,
         createdAt: proposal.createdAt,
-        updatedAt: proposal.updatedAt
+        updatedAt: proposal.updatedAt,
       };
     });
 
     return NextResponse.json({
       success: true,
+      institution: { id: institution.id, name: institution.name },
       projects,
-      count: projects.length
+      count: projects.length,
     });
-
   } catch (error) {
     console.error('Error fetching projects:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Failed to fetch projects',
-        message: error.message 
+        message: error.message,
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

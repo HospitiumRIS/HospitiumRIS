@@ -4,6 +4,8 @@ import { getUserId } from '../../../../lib/auth-server.js';
 
 const prisma = new PrismaClient();
 
+const INSTITUTION_HIDDEN_ACCOUNT_TYPES = ['GLOBAL_ADMIN'];
+
 // GET - Fetch all account types
 export async function GET(request) {
   try {
@@ -30,6 +32,9 @@ export async function GET(request) {
     }
 
     const accountTypes = await prisma.accountType.findMany({
+      where: {
+        name: { notIn: INSTITUTION_HIDDEN_ACCOUNT_TYPES },
+      },
       orderBy: [
         { isSystem: 'desc' },
         { displayName: 'asc' }
@@ -94,9 +99,17 @@ export async function POST(request) {
       );
     }
 
+    const normalizedName = name.toUpperCase().replace(/\s+/g, '_');
+    if (INSTITUTION_HIDDEN_ACCOUNT_TYPES.includes(normalizedName)) {
+      return NextResponse.json(
+        { success: false, error: 'This account type cannot be managed here' },
+        { status: 403 }
+      );
+    }
+
     // Check if account type already exists
     const existing = await prisma.accountType.findUnique({
-      where: { name }
+      where: { name: normalizedName }
     });
 
     if (existing) {
@@ -109,7 +122,7 @@ export async function POST(request) {
     // Create new account type
     const accountType = await prisma.accountType.create({
       data: {
-        name: name.toUpperCase().replace(/\s+/g, '_'),
+        name: normalizedName,
         displayName,
         description: description || null,
         permissions: JSON.stringify(permissions || []),

@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import { requireInstitutionPipeline } from '@/lib/institution-scope';
 
 export async function POST(request, { params }) {
   try {
-    const { pipelineId, stageId } = params;
+    const { pipelineId, stageId } = await params;
+    const access = await requireInstitutionPipeline(pipelineId);
+    if (access.error) return access.error;
+
     const body = await request.json();
     const { direction } = body;
 
@@ -16,20 +18,16 @@ export async function POST(request, { params }) {
       );
     }
 
-    const currentStage = await prisma.proposalReviewStage.findUnique({
-      where: { id: stageId },
+    const currentStage = await prisma.proposalReviewStage.findFirst({
+      where: { id: stageId, pipelineId },
     });
 
     if (!currentStage) {
-      return NextResponse.json(
-        { error: 'Stage not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Stage not found' }, { status: 404 });
     }
 
     const targetOrder = direction === 'up' ? currentStage.order - 1 : currentStage.order + 1;
 
-    // Find the stage to swap with
     const targetStage = await prisma.proposalReviewStage.findFirst({
       where: {
         pipelineId,
@@ -44,7 +42,6 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Swap the orders
     await prisma.$transaction([
       prisma.proposalReviewStage.update({
         where: { id: currentStage.id },
@@ -59,9 +56,6 @@ export async function POST(request, { params }) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error moving stage:', error);
-    return NextResponse.json(
-      { error: 'Failed to move stage' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to move stage' }, { status: 500 });
   }
 }

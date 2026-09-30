@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-server';
 import { uniqueInstitutionSlug } from '@/lib/institution-slug';
 import { defaultEnabledModules } from '@/lib/institution-modules';
+import { resolveUserInstitution } from '@/lib/institution-scope';
 
 const ALLOWED_ACCOUNT_TYPES = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
 
@@ -14,7 +15,7 @@ function forbidden() {
   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 }
 
-function buildProfileResponse(userProfile) {
+function buildProfileResponse(userProfile, institution) {
   return {
     id: userProfile.id,
     email: userProfile.email,
@@ -29,15 +30,15 @@ function buildProfileResponse(userProfile) {
     emailVerified: userProfile.emailVerified,
     createdAt: userProfile.createdAt,
     updatedAt: userProfile.updatedAt,
-    institution: userProfile.institution
+    institution: institution
       ? {
-          id: userProfile.institution.id,
-          name: userProfile.institution.name,
-          type: userProfile.institution.type,
-          country: userProfile.institution.country,
-          website: userProfile.institution.website,
-          createdAt: userProfile.institution.createdAt,
-          updatedAt: userProfile.institution.updatedAt,
+          id: institution.id,
+          name: institution.name,
+          type: institution.type,
+          country: institution.country,
+          website: institution.website,
+          createdAt: institution.createdAt,
+          updatedAt: institution.updatedAt,
         }
       : null,
   };
@@ -51,16 +52,17 @@ export async function GET(request) {
 
     const userProfile = await prisma.user.findUnique({
       where: { id: user.id },
-      include: { institution: true },
     });
 
     if (!userProfile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
+    const institution = await resolveUserInstitution(user);
+
     return NextResponse.json({
       success: true,
-      profile: buildProfileResponse(userProfile),
+      profile: buildProfileResponse(userProfile, institution),
     });
   } catch (error) {
     console.error('Error fetching institution profile:', error);
@@ -85,17 +87,19 @@ export async function PUT(request) {
       },
     });
 
-    if (body.institution && user.institution) {
+    const existingInstitution = await resolveUserInstitution(user);
+
+    if (body.institution && existingInstitution) {
       await prisma.institution.update({
-        where: { id: user.institution.id },
+        where: { id: existingInstitution.id },
         data: {
-          name: body.institution.name?.trim() || user.institution.name,
-          type: body.institution.type?.trim() || user.institution.type,
-          country: body.institution.country?.trim() || user.institution.country,
+          name: body.institution.name?.trim() || existingInstitution.name,
+          type: body.institution.type?.trim() || existingInstitution.type,
+          country: body.institution.country?.trim() || existingInstitution.country,
           website: body.institution.website?.trim() || null,
         },
       });
-    } else if (body.institution && !user.institution && body.institution.name) {
+    } else if (body.institution && !existingInstitution && body.institution.name) {
       await prisma.institution.create({
         data: {
           userId: user.id,
@@ -112,13 +116,13 @@ export async function PUT(request) {
 
     const updated = await prisma.user.findUnique({
       where: { id: user.id },
-      include: { institution: true },
     });
+    const institution = await resolveUserInstitution(user);
 
     return NextResponse.json({
       success: true,
       message: 'Profile updated successfully',
-      profile: buildProfileResponse(updated),
+      profile: buildProfileResponse(updated, institution),
     });
   } catch (error) {
     console.error('Error updating institution profile:', error);

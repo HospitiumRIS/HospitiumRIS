@@ -16,7 +16,7 @@ export async function POST(request) {
   try {
     const auth = await requireInstitutionImageIntegrityAccess(request);
     if (auth.errorResponse) return auth.errorResponse;
-    const { institution } = auth;
+    const { institution, verifiedDomains } = auth;
 
     if (!isImaChekConfigured()) {
       return NextResponse.json({ error: 'ImaChek is not configured yet.' }, { status: 400 });
@@ -39,7 +39,7 @@ export async function POST(request) {
     const records = await prisma.imageIntegrityCase.findMany({
       where: {
         id: { in: caseIds },
-        ...institutionCasesWhere(institution),
+        ...institutionCasesWhere(institution, verifiedDomains),
       },
     });
 

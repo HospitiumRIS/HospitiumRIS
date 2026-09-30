@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-server';
-import { getOwnedInstitution } from '@/lib/institution-admin';
+import {
+  getOwnedInstitution,
+  institutionMemberWhere,
+  resolveInstitutionMemberScope,
+} from '@/lib/institution-admin';
 
 const INSTITUTION_ROLES = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
 
 /**
  * Resolve which Institution row scopes researcher submissions for an admin.
- * Prefer secondaryInstitution (domain-verified tenant link) over the owned
- * Institution row — researchers are always linked via secondaryInstitutionId,
- * and admins can have both rows when they own one org record but were also
- * domain-linked to the canonical verified institution.
  */
 export function resolveInstitutionScope(user) {
   return user?.secondaryInstitution || user?.institution || null;
@@ -17,7 +17,6 @@ export function resolveInstitutionScope(user) {
 
 /**
  * Resolve authenticated institution admin access for Image Integrity routes.
- * Returns { user, institution } or { errorResponse }.
  */
 export async function requireInstitutionImageIntegrityAccess(request) {
   const user = await getAuthenticatedUser(request);
@@ -47,21 +46,16 @@ export async function requireInstitutionImageIntegrityAccess(request) {
     };
   }
 
-  return { user, institution };
+  const { verifiedDomains, memberWhere } = await resolveInstitutionMemberScope(institution);
+
+  return { user, institution, verifiedDomains, memberWhere };
 }
 
 /**
- * Prisma where clause limiting cases to the admin's institution.
+ * Prisma where clause limiting cases to institution members (incl. verified domains).
  */
-export function institutionCasesWhere(institution) {
-  const submitterConditions = [{ secondaryInstitutionId: institution.id }];
-  if (institution.userId) {
-    submitterConditions.push({ id: institution.userId });
-  }
-
+export function institutionCasesWhere(institution, verifiedDomains = []) {
   return {
-    submittedBy: {
-      OR: submitterConditions,
-    },
+    submittedBy: institutionMemberWhere(institution, verifiedDomains),
   };
 }

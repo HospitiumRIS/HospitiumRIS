@@ -4,6 +4,8 @@ import { getUserId } from '../../../../../lib/auth-server.js';
 
 const prisma = new PrismaClient();
 
+const INSTITUTION_HIDDEN_ACCOUNT_TYPES = ['GLOBAL_ADMIN'];
+
 // PATCH - Update account type
 export async function PATCH(request, { params }) {
   try {
@@ -42,6 +44,13 @@ export async function PATCH(request, { params }) {
       return NextResponse.json(
         { success: false, error: 'Account type not found' },
         { status: 404 }
+      );
+    }
+
+    if (INSTITUTION_HIDDEN_ACCOUNT_TYPES.includes(accountType.name)) {
+      return NextResponse.json(
+        { success: false, error: 'This account type cannot be managed here' },
+        { status: 403 }
       );
     }
 
@@ -122,6 +131,13 @@ export async function DELETE(request, { params }) {
       return NextResponse.json(
         { success: false, error: 'Account type not found' },
         { status: 404 }
+      );
+    }
+
+    if (INSTITUTION_HIDDEN_ACCOUNT_TYPES.includes(accountType.name)) {
+      return NextResponse.json(
+        { success: false, error: 'This account type cannot be managed here' },
+        { status: 403 }
       );
     }
 

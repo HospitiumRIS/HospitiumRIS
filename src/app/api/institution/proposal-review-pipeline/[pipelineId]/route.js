@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import { requireInstitutionPipeline } from '@/lib/institution-scope';
 
 export async function GET(request, { params }) {
   try {
-    const { pipelineId } = params;
+    const { pipelineId } = await params;
+    const access = await requireInstitutionPipeline(pipelineId);
+    if (access.error) return access.error;
 
     const pipeline = await prisma.proposalReviewPipeline.findUnique({
       where: { id: pipelineId },
@@ -18,40 +19,31 @@ export async function GET(request, { params }) {
       },
     });
 
-    if (!pipeline) {
-      return NextResponse.json(
-        { error: 'Pipeline not found' },
-        { status: 404 }
-      );
-    }
-
     return NextResponse.json({ pipeline });
   } catch (error) {
     console.error('Error fetching pipeline:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch pipeline' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch pipeline' }, { status: 500 });
   }
 }
 
 export async function PUT(request, { params }) {
   try {
-    const { pipelineId } = params;
+    const { pipelineId } = await params;
+    const access = await requireInstitutionPipeline(pipelineId);
+    if (access.error) return access.error;
+
+    const { institution } = access;
     const body = await request.json();
     const { name, description, isActive, isDefault } = body;
 
     if (!name) {
-      return NextResponse.json(
-        { error: 'Pipeline name is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Pipeline name is required' }, { status: 400 });
     }
 
-    // If setting as default, unset other defaults
     if (isDefault) {
       await prisma.proposalReviewPipeline.updateMany({
-        where: { 
+        where: {
+          institutionId: institution.id,
           isDefault: true,
           id: { not: pipelineId },
         },
@@ -79,18 +71,16 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ pipeline });
   } catch (error) {
     console.error('Error updating pipeline:', error);
-    return NextResponse.json(
-      { error: 'Failed to update pipeline' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update pipeline' }, { status: 500 });
   }
 }
 
 export async function DELETE(request, { params }) {
   try {
-    const { pipelineId } = params;
+    const { pipelineId } = await params;
+    const access = await requireInstitutionPipeline(pipelineId);
+    if (access.error) return access.error;
 
-    // Check if pipeline is being used
     const trackingCount = await prisma.proposalReviewTracking.count({
       where: { pipelineId },
     });
@@ -109,9 +99,6 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting pipeline:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete pipeline' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete pipeline' }, { status: 500 });
   }
 }

@@ -15,7 +15,7 @@ export async function GET(request) {
   try {
     const auth = await requireInstitutionImageIntegrityAccess(request);
     if (auth.errorResponse) return auth.errorResponse;
-    const { institution } = auth;
+    const { institution, verifiedDomains } = auth;
 
     const { searchParams } = new URL(request.url);
     const view = searchParams.get('view') === 'detail' ? 'detail' : 'summary';
@@ -31,7 +31,7 @@ export async function GET(request) {
     }
 
     const cases = await prisma.imageIntegrityCase.findMany({
-      where: institutionCasesWhere(institution),
+      where: institutionCasesWhere(institution, verifiedDomains),
       include: {
         submittedBy: {
           select: {

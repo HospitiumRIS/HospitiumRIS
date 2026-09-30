@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import { requireInstitutionPipeline } from '@/lib/institution-scope';
 
 export async function PUT(request, { params }) {
   try {
-    const { pipelineId, stageId } = params;
+    const { pipelineId, stageId } = await params;
+    const access = await requireInstitutionPipeline(pipelineId);
+    if (access.error) return access.error;
+
     const body = await request.json();
     const {
       name,
@@ -21,10 +23,14 @@ export async function PUT(request, { params }) {
     } = body;
 
     if (!name || !stageType) {
-      return NextResponse.json(
-        { error: 'Stage name and type are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Stage name and type are required' }, { status: 400 });
+    }
+
+    const existing = await prisma.proposalReviewStage.findFirst({
+      where: { id: stageId, pipelineId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: 'Stage not found' }, { status: 404 });
     }
 
     const stage = await prisma.proposalReviewStage.update({
@@ -35,7 +41,7 @@ export async function PUT(request, { params }) {
         stageType,
         isRequired,
         autoApprove,
-        daysToComplete: daysToComplete ? parseInt(daysToComplete) : null,
+        daysToComplete: daysToComplete ? parseInt(daysToComplete, 10) : null,
         reviewerRoles: reviewerRoles || [],
         reviewerEmails: reviewerEmails || [],
         requiresAllReviewers,
@@ -46,35 +52,28 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ stage });
   } catch (error) {
     console.error('Error updating stage:', error);
-    return NextResponse.json(
-      { error: 'Failed to update stage' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update stage' }, { status: 500 });
   }
 }
 
 export async function DELETE(request, { params }) {
   try {
-    const { pipelineId, stageId } = params;
+    const { pipelineId, stageId } = await params;
+    const access = await requireInstitutionPipeline(pipelineId);
+    if (access.error) return access.error;
 
-    // Get the stage to delete
-    const stageToDelete = await prisma.proposalReviewStage.findUnique({
-      where: { id: stageId },
+    const stageToDelete = await prisma.proposalReviewStage.findFirst({
+      where: { id: stageId, pipelineId },
     });
 
     if (!stageToDelete) {
-      return NextResponse.json(
-        { error: 'Stage not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Stage not found' }, { status: 404 });
     }
 
-    // Delete the stage
     await prisma.proposalReviewStage.delete({
       where: { id: stageId },
     });
 
-    // Reorder remaining stages
     await prisma.$transaction(async (tx) => {
       const remainingStages = await tx.proposalReviewStage.findMany({
         where: {
@@ -95,9 +94,6 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting stage:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete stage' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete stage' }, { status: 500 });
   }
 }

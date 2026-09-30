@@ -1,20 +1,16 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireInstitutionAdmin, getOwnedInstitution } from '@/lib/institution-admin';
+import {
+  requireInstitutionAdmin,
+  getOwnedInstitution,
+  resolveInstitutionMemberScope,
+} from '@/lib/institution-admin';
 import { hashPassword, validateEmail } from '@/lib/auth';
 import { normalizeOrcid } from '@/lib/orcid';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MANAGEABLE_ACCOUNT_TYPES = ['RESEARCHER', 'RESEARCH_ADMIN'];
 const LIST_ACCOUNT_TYPES = ['RESEARCHER', 'RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
-
-function institutionUserWhere(institution) {
-  const clauses = [{ secondaryInstitutionId: institution.id }];
-  if (institution.userId) {
-    clauses.push({ id: institution.userId });
-  }
-  return { OR: clauses };
-}
 
 function serializeUser(user) {
   return {
@@ -54,11 +50,10 @@ export async function GET(request) {
       : 'createdAt';
     const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc';
 
+    const { memberWhere } = await resolveInstitutionMemberScope(institution);
+
     const where = {
-      AND: [
-        institutionUserWhere(institution),
-        { accountType: { not: 'GLOBAL_ADMIN' } },
-      ],
+      AND: [memberWhere],
     };
 
     if (search) {
@@ -79,13 +74,6 @@ export async function GET(request) {
     if (accountType && LIST_ACCOUNT_TYPES.includes(accountType)) {
       where.AND.push({ accountType });
     }
-
-    const memberWhere = {
-      AND: [
-        institutionUserWhere(institution),
-        { accountType: { not: 'GLOBAL_ADMIN' } },
-      ],
-    };
 
     const [total, users, statusGroups, typeGroups] = await Promise.all([
       prisma.user.count({ where }),

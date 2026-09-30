@@ -184,21 +184,43 @@ const InstitutionDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Load analytics data
+  const PORTAL_ROLES = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
+
+  // Load analytics after auth is resolved
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if (!PORTAL_ROLES.includes(user.accountType)) {
+      router.push('/');
+      return;
+    }
     loadAnalyticsData();
-  }, []);
+  }, [user, authLoading, router]);
 
   const loadAnalyticsData = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await fetch('/api/institution/analytics');
+
+      const response = await fetch('/api/institution/analytics', {
+        credentials: 'include',
+      });
+
+      if (response.status === 401) {
+        router.push('/login');
+        return;
+      }
+      if (response.status === 403) {
+        setError(t('institution_dashboard.error_forbidden', 'You do not have access to this institution portal.'));
+        return;
+      }
       if (!response.ok) {
         throw new Error('Failed to fetch analytics data');
       }
-      
+
       const data = await response.json();
       setAnalyticsData(data);
     } catch (error) {
@@ -377,7 +399,7 @@ const InstitutionDashboard = () => {
     }
   };
 
-  if (loading || !analyticsData) {
+  if (authLoading || loading || !analyticsData) {
     return (
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
@@ -455,7 +477,7 @@ const InstitutionDashboard = () => {
         {/* Dashboard Header */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, color: '#8b6cbc', mb: 1 }}>
-            {t('institution_dashboard.heading')}
+            {analyticsData.institution?.name || t('institution_dashboard.heading')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
             {t('institution_dashboard.heading_desc')}

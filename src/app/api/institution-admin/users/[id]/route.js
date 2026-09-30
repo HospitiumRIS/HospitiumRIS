@@ -1,19 +1,15 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireInstitutionAdmin, getOwnedInstitution } from '@/lib/institution-admin';
+import {
+  requireInstitutionAdmin,
+  getOwnedInstitution,
+  resolveInstitutionMemberScope,
+} from '@/lib/institution-admin';
 import { hashPassword, validateEmail } from '@/lib/auth';
 import { normalizeOrcid } from '@/lib/orcid';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MANAGEABLE_ACCOUNT_TYPES = ['RESEARCHER', 'RESEARCH_ADMIN'];
-
-function institutionUserWhere(institution) {
-  const clauses = [{ secondaryInstitutionId: institution.id }];
-  if (institution.userId) {
-    clauses.push({ id: institution.userId });
-  }
-  return { OR: clauses };
-}
 
 function serializeUser(user) {
   return {
@@ -33,10 +29,10 @@ function serializeUser(user) {
 }
 
 async function loadManagedUser(institution, userId) {
+  const { memberWhere } = await resolveInstitutionMemberScope(institution);
   return prisma.user.findFirst({
     where: {
-      id: userId,
-      AND: [institutionUserWhere(institution)],
+      AND: [{ id: userId }, memberWhere],
     },
   });
 }

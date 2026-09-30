@@ -21,6 +21,8 @@ export default function InstitutionAdminEmailField({
   institution,
   suggestedDomains = [],
   onErrorClear,
+  helperText: helperTextProp,
+  onBlur: onBlurProp,
   ...textFieldProps
 }) {
   const [showDomainPicker, setShowDomainPicker] = useState(false);
@@ -31,7 +33,8 @@ export default function InstitutionAdminEmailField({
   );
 
   const matchingDomains = useMemo(() => {
-    const { domainPart } = splitEmail(value);
+    const { localPart, domainPart } = splitEmail(value);
+    if (!localPart) return [];
     if (domainPart == null) return institutionDomains;
     const query = domainPart.toLowerCase();
     return institutionDomains.filter((domain) => domain.startsWith(query));
@@ -50,7 +53,14 @@ export default function InstitutionAdminEmailField({
     onErrorClear?.();
 
     const { localPart, domainPart } = splitEmail(nextValue);
-    if (!localPart || domainPart == null) {
+
+    if (!nextValue.includes('@')) {
+      onChange(nextValue);
+      setShowDomainPicker(Boolean(localPart?.trim()) && institutionDomains.length > 0);
+      return;
+    }
+
+    if (!localPart) {
       onChange(nextValue);
       setShowDomainPicker(false);
       return;
@@ -75,9 +85,21 @@ export default function InstitutionAdminEmailField({
     }
   };
 
-  const helperText = institutionDomains.length
-    ? `Institution domains: ${institutionDomains.join(', ')}`
+  const handleBlur = (event) => {
+    const { localPart } = splitEmail(value);
+    if (localPart?.trim() && !value.includes('@') && institutionDomains.length === 1) {
+      applyDomain(institutionDomains[0], value);
+    }
+    onBlurProp?.(event);
+  };
+
+  const defaultHelperText = institutionDomains.length
+    ? institutionDomains.length === 1
+      ? `Domain will autocomplete to @${institutionDomains[0]}`
+      : `Select a domain: ${institutionDomains.join(', ')}`
     : 'Add verified domains to enable domain suggestions';
+
+  const helperText = helperTextProp ?? defaultHelperText;
 
   return (
     <Box>
@@ -86,29 +108,39 @@ export default function InstitutionAdminEmailField({
         required
         type="email"
         label="Admin email"
-        name="email"
+        name="institution-admin-email"
         autoComplete="off"
         value={value}
         onChange={handleChange}
+        onBlur={handleBlur}
         helperText={helperText}
         {...textFieldProps}
       />
       {showDomainPicker && matchingDomains.length > 0 && (
         <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
           <Typography variant="caption" color="text.secondary">
-            Select domain:
+            {value.includes('@') ? 'Select domain:' : 'Complete email:'}
           </Typography>
-          {matchingDomains.map((domain) => (
-            <Chip
-              key={domain}
-              label={domain}
-              size="small"
-              color="primary"
-              variant="outlined"
-              clickable
-              onClick={() => applyDomain(domain)}
-            />
-          ))}
+          {matchingDomains.map((domain) => {
+            const { localPart } = splitEmail(value);
+            const preview = localPart ? `${localPart}@${domain}` : domain;
+            return (
+              <Chip
+                key={domain}
+                label={preview}
+                size="small"
+                variant="outlined"
+                clickable
+                onClick={() => applyDomain(domain)}
+                sx={{
+                  fontWeight: 600,
+                  borderColor: 'rgba(139, 108, 188, 0.45)',
+                  color: '#7a5caa',
+                  '&:hover': { bgcolor: 'rgba(139, 108, 188, 0.08)' },
+                }}
+              />
+            );
+          })}
         </Stack>
       )}
     </Box>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -27,10 +27,9 @@ import {
   CircularProgress,
   Tooltip,
   Snackbar,
-  Grid,
+  Skeleton,
   alpha,
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 import {
   People as UsersIcon,
   Search as SearchIcon,
@@ -49,17 +48,27 @@ import {
   Clear as ClearIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../../components/AuthProvider';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import InstitutionAdminLayout from '../../../components/InstitutionAdmin/InstitutionAdminLayout';
 import { PasswordFields } from '../../../components/GlobalAdmin/InstitutionManageDialogs';
+import InstitutionAdminEmailField from '../../../components/GlobalAdmin/InstitutionAdminEmailField';
 import {
   InstitutionModal,
   InstitutionModalBody,
   InstitutionModalFooter,
   InstitutionModalHeader,
   InstitutionModalSection,
-  StatCard,
 } from '../../../components/GlobalAdmin/InstitutionModalShell';
+
+const PURPLE = '#8b6cbc';
+const PURPLE_DARK = '#7a5caa';
+
+const STATUS_TONE = {
+  ACTIVE: { bg: alpha(PURPLE, 0.12), color: PURPLE_DARK, label: 'Active', icon: CheckIcon },
+  PENDING: { bg: '#fef3c7', color: '#b45309', label: 'Pending', icon: PendingIcon },
+  INACTIVE: { bg: '#f1f5f9', color: '#475569', label: 'Inactive', icon: CancelIcon },
+  SUSPENDED: { bg: '#fee2e2', color: '#b91c1c', label: 'Suspended', icon: BlockIcon },
+};
 
 const MANAGEABLE_ACCOUNT_TYPES = [
   { name: 'RESEARCHER', displayName: 'Researcher' },
@@ -83,6 +92,87 @@ function DetailField({ label, value }) {
   );
 }
 
+function PageHeading({ title, subtitle, action }) {
+  return (
+    <Box
+      sx={{
+        mb: 3,
+        p: { xs: 2, md: 2.5 },
+        borderRadius: 2,
+        border: `1px solid ${alpha(PURPLE, 0.12)}`,
+        bgcolor: 'background.paper',
+      }}
+    >
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2}>
+        <Box>
+          <Typography variant="overline" sx={{ color: alpha(PURPLE, 0.75), fontWeight: 700, letterSpacing: '0.08em' }}>
+            Institution Admin
+          </Typography>
+          <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mt: 0.25 }}>
+            {title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            {subtitle}
+          </Typography>
+        </Box>
+        {action}
+      </Stack>
+    </Box>
+  );
+}
+
+function StatCard({ label, value, caption, icon: Icon, active = false, onClick }) {
+  return (
+    <Paper
+      elevation={0}
+      onClick={onClick}
+      sx={{
+        px: 2,
+        py: 1.25,
+        borderRadius: 2,
+        cursor: onClick ? 'pointer' : 'default',
+        border: `1px solid ${alpha(PURPLE, active ? 0.28 : 0.12)}`,
+        bgcolor: active ? alpha(PURPLE, 0.08) : 'background.paper',
+        transition: 'border-color 0.2s ease, background-color 0.2s ease',
+        '&:hover': onClick ? { bgcolor: alpha(PURPLE, 0.06), borderColor: alpha(PURPLE, 0.22) } : {},
+      }}
+    >
+      <Stack direction="row" alignItems="center" spacing={1.5}>
+        <Box
+          sx={{
+            width: 34,
+            height: 34,
+            borderRadius: 1.25,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: alpha(PURPLE, 0.12),
+            color: PURPLE,
+            flexShrink: 0,
+          }}
+        >
+          <Icon sx={{ fontSize: 18 }} />
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Stack direction="row" alignItems="baseline" justifyContent="space-between" spacing={1}>
+            <Typography variant="caption" noWrap sx={{ color: alpha(PURPLE, 0.7), fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {label}
+            </Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: PURPLE_DARK, lineHeight: 1 }}>
+              {value}
+            </Typography>
+          </Stack>
+          {caption ? (
+            <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mt: 0.25 }}>
+              {caption}
+            </Typography>
+          ) : null}
+        </Box>
+      </Stack>
+    </Paper>
+  );
+}
+
 const emptyCreateForm = {
   givenName: '',
   familyName: '',
@@ -94,11 +184,10 @@ const emptyCreateForm = {
 };
 
 const UserManagementPage = () => {
-  const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  
-  // State management
+  const searchParams = useSearchParams();
+
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({});
@@ -110,8 +199,8 @@ const UserManagementPage = () => {
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchInput, setSearchInput] = useState('');
-  const [searchReady, setSearchReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deepLinkHandled, setDeepLinkHandled] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [accountTypeFilter, setAccountTypeFilter] = useState('');
   const [page, setPage] = useState(0);
@@ -131,6 +220,8 @@ const UserManagementPage = () => {
   });
   const [createForm, setCreateForm] = useState(emptyCreateForm);
   const [passwordForm, setPasswordForm] = useState({ password: '', confirmPassword: '' });
+  const [institutionProfile, setInstitutionProfile] = useState(null);
+  const [createError, setCreateError] = useState('');
 
   // Check Super Admin access
   useEffect(() => {
@@ -148,17 +239,49 @@ const UserManagementPage = () => {
     }
   }, [user, router, authLoading]);
 
+  useEffect(() => {
+    if (user?.accountType !== 'INSTITUTION_ADMIN') return;
+
+    fetch('/api/institution-admin/profile', { credentials: 'include' })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success && data.institution) {
+          setInstitutionProfile(data.institution);
+        }
+      })
+      .catch((err) => console.error('Error loading institution profile:', err));
+  }, [user]);
+
+  const institutionForEmail = useMemo(() => {
+    if (!institutionProfile) return null;
+    return {
+      contactEmail: institutionProfile.contactEmail,
+      website: institutionProfile.website,
+      domains: (institutionProfile.domains || []).filter((entry) => entry.status !== 'SUSPENDED'),
+    };
+  }, [institutionProfile]);
+
+  const institutionTotal = useMemo(() => {
+    const byStatus = stats.byStatus || {};
+    return (byStatus.active || 0) + (byStatus.pending || 0) + (byStatus.inactive || 0) + (byStatus.suspended || 0);
+  }, [stats.byStatus]);
+
   // Fetch users
-  const fetchUsers = async () => {
+  const fetchUsers = async (overrides = {}) => {
     try {
       setLoading(true);
-      
+
+      const effectiveSearch = overrides.search !== undefined ? overrides.search : searchQuery;
+      const effectiveStatus = overrides.status !== undefined ? overrides.status : statusFilter;
+      const effectiveAccountType = overrides.accountType !== undefined ? overrides.accountType : accountTypeFilter;
+      const effectivePage = overrides.page !== undefined ? overrides.page : page;
+
       const params = new URLSearchParams({
-        page: (page + 1).toString(),
+        page: (effectivePage + 1).toString(),
         limit: rowsPerPage.toString(),
-        ...(searchQuery && { search: searchQuery }),
-        ...(statusFilter && { status: statusFilter }),
-        ...(accountTypeFilter && { accountType: accountTypeFilter })
+        ...(effectiveSearch && { search: effectiveSearch }),
+        ...(effectiveStatus && { status: effectiveStatus }),
+        ...(effectiveAccountType && { accountType: effectiveAccountType }),
       });
 
       const response = await fetch(`/api/institution-admin/users?${params}`);
@@ -197,7 +320,6 @@ const UserManagementPage = () => {
   // Alert helper
   const showAlert = (message, severity = 'info') => {
     setAlert({ show: true, message, severity });
-    setTimeout(() => setAlert({ show: false, message: '', severity: 'info' }), 5000);
   };
 
   // Handle view user details
@@ -205,6 +327,16 @@ const UserManagementPage = () => {
     setSelectedUser(userData);
     setDialogOpen(true);
   };
+
+  useEffect(() => {
+    const userId = searchParams.get('id');
+    if (!userId || deepLinkHandled || loading || users.length === 0) return;
+    const match = users.find((entry) => entry.id === userId);
+    if (match) {
+      handleViewUser(match);
+      setDeepLinkHandled(true);
+    }
+  }, [searchParams, users, loading, deepLinkHandled]);
 
   // Handle edit user
   const handleEditUser = (userData) => {
@@ -302,53 +434,75 @@ const UserManagementPage = () => {
   };
 
   const handleSubmitCreate = async () => {
+    setCreateError('');
     const isResearchAdmin = createForm.accountType === 'RESEARCH_ADMIN';
     if (!createForm.givenName.trim()) {
-      showAlert(isResearchAdmin ? 'Name is required' : 'First and last name are required', 'error');
+      const message = isResearchAdmin ? 'Name is required' : 'First and last name are required';
+      setCreateError(message);
+      showAlert(message, 'error');
       return;
     }
     if (!isResearchAdmin && !createForm.familyName.trim()) {
-      showAlert('First and last name are required', 'error');
+      const message = 'First and last name are required';
+      setCreateError(message);
+      showAlert(message, 'error');
       return;
     }
     if (!createForm.email.trim()) {
-      showAlert('Email is required', 'error');
+      const message = 'Email is required';
+      setCreateError(message);
+      showAlert(message, 'error');
       return;
     }
     if (!createForm.password || createForm.password.length < 8) {
-      showAlert('Password must be at least 8 characters', 'error');
+      const message = 'Password must be at least 8 characters';
+      setCreateError(message);
+      showAlert(message, 'error');
       return;
     }
     if (createForm.password !== createForm.confirmPassword) {
-      showAlert('Passwords do not match', 'error');
+      const message = 'Passwords do not match';
+      setCreateError(message);
+      showAlert(message, 'error');
       return;
     }
     setSaving(true);
     try {
       const response = await fetch('/api/institution-admin/users', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           givenName: createForm.givenName.trim(),
           familyName: isResearchAdmin ? '' : createForm.familyName.trim(),
-          email: createForm.email.trim(),
+          email: createForm.email.trim().toLowerCase(),
           accountType: createForm.accountType,
           password: createForm.password,
-          orcidId: createForm.accountType === 'RESEARCHER' ? createForm.orcidId : undefined,
+          orcidId: createForm.accountType === 'RESEARCHER' ? createForm.orcidId.trim() || undefined : undefined,
         }),
       });
-      const data = await response.json();
-      if (data.success) {
-        showAlert('User created', 'success');
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.success) {
+        showAlert(data.message || 'User created', 'success');
         setCreateDialogOpen(false);
         setCreateForm(emptyCreateForm);
-        fetchUsers();
+        setCreateError('');
+        setSearchInput('');
+        setSearchQuery('');
+        setStatusFilter('');
+        setAccountTypeFilter('');
+        setPage(0);
+        fetchUsers({ search: '', status: '', accountType: '', page: 0 });
       } else {
-        showAlert(data.message || 'Failed to create user', 'error');
+        const message = data.message || data.error || 'Failed to create user';
+        setCreateError(message);
+        showAlert(message, 'error');
       }
     } catch (error) {
       console.error('Error creating user:', error);
-      showAlert('Failed to create user', 'error');
+      const message = 'Failed to create user';
+      setCreateError(message);
+      showAlert(message, 'error');
     } finally {
       setSaving(false);
     }
@@ -386,52 +540,41 @@ const UserManagementPage = () => {
     }
   };
 
-  // Get status chip
   const getStatusChip = (status) => {
-    const statusConfig = {
-      ACTIVE: { color: 'success', icon: <CheckIcon />, label: 'Active' },
-      PENDING: { color: 'warning', icon: <PendingIcon />, label: 'Pending' },
-      INACTIVE: { color: 'default', icon: <CancelIcon />, label: 'Inactive' },
-      SUSPENDED: { color: 'error', icon: <BlockIcon />, label: 'Suspended' }
-    };
-
-    const config = statusConfig[status] || statusConfig.PENDING;
+    const tone = STATUS_TONE[status] || STATUS_TONE.PENDING;
+    const Icon = tone.icon;
     return (
       <Chip
-        icon={config.icon}
-        label={config.label}
-        color={config.color}
+        icon={<Icon sx={{ fontSize: '14px !important' }} />}
+        label={tone.label}
         size="small"
+        sx={{ bgcolor: tone.bg, color: tone.color, fontWeight: 700, height: 24, '& .MuiChip-icon': { color: 'inherit' } }}
       />
     );
   };
 
-  // Get account type chip
   const getAccountTypeChip = (accountType) => {
     const iconMap = {
-      RESEARCHER: <ResearcherIcon />,
-      RESEARCH_ADMIN: <AdminIcon />,
-      INSTITUTION_ADMIN: <AdminIcon />,
+      RESEARCHER: ResearcherIcon,
+      RESEARCH_ADMIN: AdminIcon,
+      INSTITUTION_ADMIN: AdminIcon,
     };
-
-    const colorMap = {
-      RESEARCHER: 'primary',
-      RESEARCH_ADMIN: 'info',
-      INSTITUTION_ADMIN: 'secondary',
-    };
-
+    const Icon = iconMap[accountType] || ResearcherIcon;
     const type = MANAGEABLE_ACCOUNT_TYPES.find((item) => item.name === accountType);
     const label = type?.displayName || accountType.replace(/_/g, ' ');
-    const icon = iconMap[accountType] || <ResearcherIcon />;
-    const color = colorMap[accountType] || 'default';
 
     return (
       <Chip
-        icon={icon}
+        icon={<Icon sx={{ fontSize: '14px !important' }} />}
         label={label}
-        color={color}
         size="small"
         variant="outlined"
+        sx={{
+          fontWeight: 600,
+          borderColor: alpha(PURPLE, 0.25),
+          color: PURPLE_DARK,
+          '& .MuiChip-icon': { color: PURPLE },
+        }}
       />
     );
   };
@@ -445,138 +588,102 @@ const UserManagementPage = () => {
     return null;
   }
 
-  const tablePaperSx = {
-    borderRadius: 3,
-    overflow: 'hidden',
-    border: '1px solid',
-    borderColor: 'divider',
-    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)',
-  };
-
   const headCellSx = {
     fontWeight: 700,
     fontSize: '0.75rem',
     letterSpacing: '0.06em',
     textTransform: 'uppercase',
-    color: 'text.secondary',
-    bgcolor: alpha(theme.palette.primary.main, 0.04),
-    borderBottom: '1px solid',
-    borderColor: 'divider',
-    py: 1.75,
+    color: alpha(PURPLE, 0.7),
+    bgcolor: alpha(PURPLE, 0.04),
+    borderBottom: `1px solid ${alpha(PURPLE, 0.1)}`,
+    py: 1.5,
   };
 
   const hasFilters = Boolean(searchInput || statusFilter || accountTypeFilter);
 
+  const clearFilters = () => {
+    setSearchInput('');
+    setSearchQuery('');
+    setStatusFilter('');
+    setAccountTypeFilter('');
+    setPage(0);
+  };
+
+  const applyStatusFilter = (status) => {
+    setStatusFilter((current) => (current === status ? '' : status));
+    setPage(0);
+  };
+
   return (
     <InstitutionAdminLayout>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: 'background.default', minHeight: '100vh' }}>
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 3,
-            p: { xs: 2.5, md: 3 },
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
-          }}
-        >
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            justifyContent="space-between"
-            alignItems={{ xs: 'flex-start', md: 'center' }}
-            spacing={2}
-          >
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Box
-                sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  bgcolor: alpha(theme.palette.primary.main, 0.16),
-                  color: 'primary.main',
-                  boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.16)}`,
-                }}
-              >
-                <UsersIcon fontSize="small" />
-              </Box>
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.25 }}>
-                  User Management
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  Manage user accounts, permissions, and settings
-                </Typography>
-              </Box>
-            </Stack>
+      <Box sx={{ p: { xs: 2, sm: 3 }, width: '100%' }}>
+        <PageHeading
+          title="User Management"
+          subtitle="Manage accounts, roles, and access for your institution."
+          action={(
             <Button
               variant="contained"
               startIcon={<PersonAddIcon />}
               onClick={() => {
                 setCreateForm(emptyCreateForm);
+                setCreateError('');
                 setCreateDialogOpen(true);
               }}
               sx={{
-                borderRadius: 2,
+                bgcolor: PURPLE,
+                textTransform: 'none',
+                fontWeight: 600,
                 px: 2.5,
-                boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.28)}`,
+                '&:hover': { bgcolor: PURPLE_DARK },
               }}
             >
               Create user
             </Button>
-          </Stack>
-        </Paper>
+          )}
+        />
 
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={alert.show}
-        autoHideDuration={4000}
-        onClose={() => setAlert({ ...alert, show: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert 
-          onClose={() => setAlert({ ...alert, show: false })} 
-          severity={alert.severity}
-          sx={{ width: '100%' }}
-          variant="filled"
-        >
-          {alert.message}
-        </Alert>
-      </Snackbar>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 1.5, mb: 3 }}>
+          <StatCard
+            label="Total users"
+            value={institutionTotal}
+            caption="All institution accounts"
+            icon={UsersIcon}
+            active={!statusFilter && !hasFilters}
+            onClick={clearFilters}
+          />
+          <StatCard
+            label="Active"
+            value={stats.byStatus?.active || 0}
+            caption="Can sign in now"
+            icon={CheckIcon}
+            active={statusFilter === 'ACTIVE'}
+            onClick={() => applyStatusFilter('ACTIVE')}
+          />
+          <StatCard
+            label="Pending"
+            value={stats.byStatus?.pending || 0}
+            caption="Awaiting approval"
+            icon={PendingIcon}
+            active={statusFilter === 'PENDING'}
+            onClick={() => applyStatusFilter('PENDING')}
+          />
+          <StatCard
+            label="Suspended"
+            value={stats.byStatus?.suspended || 0}
+            caption="Access blocked"
+            icon={BlockIcon}
+            active={statusFilter === 'SUSPENDED'}
+            onClick={() => applyStatusFilter('SUSPENDED')}
+          />
+        </Box>
 
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard icon={CheckIcon} label="Active users" value={stats.byStatus?.active || 0} />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard icon={PendingIcon} label="Pending users" value={stats.byStatus?.pending || 0} />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard icon={BlockIcon} label="Suspended" value={stats.byStatus?.suspended || 0} />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard icon={UsersIcon} label="Total users" value={totalUsers} />
-          </Grid>
-        </Grid>
-
-        <Paper elevation={0} sx={tablePaperSx}>
-          <Box
-            sx={{
-              px: { xs: 2, md: 2.5 },
-              py: 2,
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-              bgcolor: alpha(theme.palette.background.default, 0.6),
-            }}
-          >
+        <Paper elevation={0} sx={{ borderRadius: 2, overflow: 'hidden', border: `1px solid ${alpha(PURPLE, 0.12)}` }}>
+          <Box sx={{ px: { xs: 2, md: 2.5 }, py: 2, borderBottom: `1px solid ${alpha(PURPLE, 0.1)}` }}>
             <Box
               sx={{
                 display: 'grid',
                 gridTemplateColumns: { xs: '1fr', md: '2fr 1fr 1fr auto' },
-                gap: 2,
+                gap: 1.5,
                 alignItems: 'center',
               }}
             >
@@ -585,13 +692,19 @@ const UserManagementPage = () => {
                 size="small"
                 placeholder="Search by name, email, or ORCID..."
                 value={searchInput}
-                onFocus={() => setSearchReady(true)}
                 onChange={(e) => setSearchInput(e.target.value)}
-                inputProps={{ readOnly: !searchReady }}
+                name="institution-user-search"
+                type="search"
+                autoComplete="off"
+                inputProps={{
+                  autoComplete: 'off',
+                  'data-1p-ignore': 'true',
+                  'data-lpignore': 'true',
+                }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon fontSize="small" color="action" />
+                      <SearchIcon fontSize="small" sx={{ color: alpha(PURPLE, 0.5) }} />
                     </InputAdornment>
                   ),
                   endAdornment: searchInput ? (
@@ -601,10 +714,10 @@ const UserManagementPage = () => {
                       </IconButton>
                     </InputAdornment>
                   ) : null,
-                  sx: { borderRadius: 2, bgcolor: 'background.paper' },
+                  sx: { borderRadius: 1.5, bgcolor: 'background.paper' },
                 }}
               />
-              <FormControl fullWidth size="small">
+              <FormControl fullWidth size="small" sx={{ '& .MuiInputBase-root': { borderRadius: 1.5 } }}>
                 <InputLabel>Status</InputLabel>
                 <Select
                   value={statusFilter}
@@ -621,7 +734,7 @@ const UserManagementPage = () => {
                   <MenuItem value="SUSPENDED">Suspended</MenuItem>
                 </Select>
               </FormControl>
-              <FormControl fullWidth size="small">
+              <FormControl fullWidth size="small" sx={{ '& .MuiInputBase-root': { borderRadius: 1.5 } }}>
                 <InputLabel>Account type</InputLabel>
                 <Select
                   value={accountTypeFilter}
@@ -641,29 +754,40 @@ const UserManagementPage = () => {
                 variant="outlined"
                 startIcon={<FilterIcon />}
                 disabled={!hasFilters}
-                onClick={() => {
-                  setSearchInput('');
-                  setSearchQuery('');
-                  setStatusFilter('');
-                  setAccountTypeFilter('');
-                  setPage(0);
+                onClick={clearFilters}
+                sx={{
+                  borderRadius: 1.5,
+                  whiteSpace: 'nowrap',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderColor: alpha(PURPLE, 0.35),
+                  color: PURPLE_DARK,
+                  '&:hover': { borderColor: PURPLE, bgcolor: alpha(PURPLE, 0.06) },
                 }}
-                sx={{ borderRadius: 2, whiteSpace: 'nowrap' }}
               >
                 Clear
               </Button>
             </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-              {loading ? 'Loading...' : `${totalUsers} user${totalUsers === 1 ? '' : 's'} total`}
-            </Typography>
+            <Stack direction="row" spacing={1} sx={{ mt: 1.5, flexWrap: 'wrap', gap: 0.75 }} alignItems="center">
+              <Typography variant="body2" color="text.secondary">
+                {loading ? 'Loading...' : `${totalUsers} result${totalUsers === 1 ? '' : 's'}`}
+              </Typography>
+              {hasFilters ? (
+                <Chip
+                  size="small"
+                  label="Filters applied"
+                  onDelete={clearFilters}
+                  sx={{ bgcolor: alpha(PURPLE, 0.1), color: PURPLE_DARK, fontWeight: 600 }}
+                />
+              ) : null}
+            </Stack>
           </Box>
 
           {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-              <Stack spacing={2} alignItems="center">
-                <CircularProgress size={36} />
-                <Typography variant="body2" color="text.secondary">Loading users...</Typography>
-              </Stack>
+            <Box sx={{ p: 2 }}>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Skeleton key={index} variant="rounded" height={52} sx={{ mb: 1, borderRadius: 1.5 }} />
+              ))}
             </Box>
           ) : (
             <>
@@ -693,8 +817,8 @@ const UserManagementPage = () => {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                color: 'primary.main',
+                                bgcolor: alpha(PURPLE, 0.1),
+                                color: PURPLE,
                               }}
                             >
                               <UsersIcon sx={{ fontSize: 32 }} />
@@ -727,6 +851,7 @@ const UserManagementPage = () => {
                                 startIcon={<PersonAddIcon />}
                                 onClick={() => {
                                   setCreateForm(emptyCreateForm);
+                                  setCreateError('');
                                   setCreateDialogOpen(true);
                                 }}
                                 sx={{ borderRadius: 2 }}
@@ -744,13 +869,13 @@ const UserManagementPage = () => {
                         sx={{
                           cursor: 'pointer',
                           '&:last-child td': { borderBottom: 0 },
-                          '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.03) },
+                          '&:hover': { bgcolor: alpha(PURPLE, 0.04) },
                         }}
                         onClick={() => handleViewUser(userData)}
                       >
                         <TableCell sx={{ py: 2 }}>
                           <Stack direction="row" spacing={1.5} alignItems="center">
-                            <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: 13, fontWeight: 600 }}>
+                            <Avatar sx={{ width: 36, height: 36, bgcolor: alpha(PURPLE, 0.14), color: PURPLE, fontSize: 13, fontWeight: 700 }}>
                               {getInitials(userData.givenName, userData.familyName)}
                             </Avatar>
                             <Box sx={{ minWidth: 0 }}>
@@ -774,9 +899,14 @@ const UserManagementPage = () => {
                         <TableCell>{getStatusChip(userData.status)}</TableCell>
                         <TableCell>
                           {userData.emailVerified ? (
-                            <Chip icon={<CheckIcon />} label="Verified" color="success" size="small" variant="filled" />
+                            <Chip
+                              icon={<CheckIcon sx={{ fontSize: '14px !important' }} />}
+                              label="Verified"
+                              size="small"
+                              sx={{ bgcolor: alpha(PURPLE, 0.12), color: PURPLE_DARK, fontWeight: 700, height: 24 }}
+                            />
                           ) : (
-                            <Chip icon={<CancelIcon />} label="Unverified" size="small" variant="outlined" />
+                            <Chip icon={<CancelIcon sx={{ fontSize: '14px !important' }} />} label="Unverified" size="small" variant="outlined" sx={{ fontWeight: 600 }} />
                           )}
                         </TableCell>
                         <TableCell>
@@ -785,40 +915,46 @@ const UserManagementPage = () => {
                           </Typography>
                         </TableCell>
                         <TableCell align="right" onClick={(event) => event.stopPropagation()} sx={{ whiteSpace: 'nowrap' }}>
-                          <Box
-                            sx={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              borderRadius: 2,
-                              border: '1px solid',
-                              borderColor: 'divider',
-                              bgcolor: 'background.paper',
-                              px: 0.5,
-                            }}
-                          >
+                          <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                             <Tooltip title="View details">
-                              <IconButton size="small" onClick={() => handleViewUser(userData)}>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleViewUser(userData)}
+                                sx={{ color: PURPLE, bgcolor: alpha(PURPLE, 0.08), '&:hover': { bgcolor: alpha(PURPLE, 0.14) } }}
+                              >
                                 <ViewIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Edit user">
-                              <IconButton size="small" onClick={() => handleEditUser(userData)}>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleEditUser(userData)}
+                                sx={{ color: PURPLE_DARK, bgcolor: alpha(PURPLE, 0.06), '&:hover': { bgcolor: alpha(PURPLE, 0.12) } }}
+                              >
                                 <EditIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Set password">
-                              <IconButton size="small" onClick={() => handlePasswordUser(userData)}>
+                              <IconButton
+                                size="small"
+                                onClick={() => handlePasswordUser(userData)}
+                                sx={{ color: PURPLE_DARK, bgcolor: alpha(PURPLE, 0.06), '&:hover': { bgcolor: alpha(PURPLE, 0.12) } }}
+                              >
                                 <LockResetIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                             {userData.accountType !== 'INSTITUTION_ADMIN' && userData.id !== user.id && (
                               <Tooltip title="Delete user">
-                                <IconButton size="small" color="error" onClick={() => handleDeleteUser(userData)}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteUser(userData)}
+                                  sx={{ color: '#b91c1c', bgcolor: alpha('#b91c1c', 0.08), '&:hover': { bgcolor: alpha('#b91c1c', 0.14) } }}
+                                >
                                   <DeleteIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
                             )}
-                          </Box>
+                          </Stack>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -984,12 +1120,11 @@ const UserManagementPage = () => {
                   />
                 </>
               )}
-              <TextField
-                fullWidth
-                type="email"
+              <InstitutionAdminEmailField
                 label="Email"
                 value={editForm.email}
-                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                institution={institutionForEmail}
+                onChange={(email) => setEditForm((prev) => ({ ...prev, email }))}
               />
               {editForm.accountType === 'RESEARCHER' && (
                 <TextField
@@ -1122,14 +1257,13 @@ const UserManagementPage = () => {
                   />
                 </>
               )}
-              <TextField
-                fullWidth
-                required
-                type="email"
+              <InstitutionAdminEmailField
                 label="Email"
+                name="create-user-email"
                 autoComplete="off"
                 value={createForm.email}
-                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                institution={institutionForEmail}
+                onChange={(email) => setCreateForm((prev) => ({ ...prev, email }))}
               />
               {createForm.accountType === 'RESEARCHER' && (
                 <TextField
@@ -1154,11 +1288,23 @@ const UserManagementPage = () => {
             />
           </InstitutionModalSection>
         </InstitutionModalBody>
+        {createError ? (
+          <Box sx={{ px: 3, pb: 1 }}>
+            <Alert severity="error" onClose={() => setCreateError('')} sx={{ borderRadius: 2 }}>
+              {createError}
+            </Alert>
+          </Box>
+        ) : null}
         <InstitutionModalFooter>
           <Button onClick={() => setCreateDialogOpen(false)} disabled={saving} color="inherit">
             Cancel
           </Button>
-          <Button variant="contained" onClick={handleSubmitCreate} disabled={saving}>
+          <Button
+            variant="contained"
+            onClick={handleSubmitCreate}
+            disabled={saving}
+            sx={{ bgcolor: PURPLE, '&:hover': { bgcolor: PURPLE_DARK } }}
+          >
             {saving ? 'Creating...' : 'Create user'}
           </Button>
         </InstitutionModalFooter>
@@ -1225,6 +1371,21 @@ const UserManagementPage = () => {
           </Button>
         </InstitutionModalFooter>
       </InstitutionModal>
+
+      <Snackbar
+        open={alert.show}
+        autoHideDuration={6000}
+        onClose={() => setAlert((prev) => ({ ...prev, show: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={alert.severity}
+          onClose={() => setAlert((prev) => ({ ...prev, show: false }))}
+          sx={{ borderRadius: 2, width: '100%' }}
+        >
+          {alert.message}
+        </Alert>
+      </Snackbar>
       </Box>
     </InstitutionAdminLayout>
   );

@@ -1,26 +1,17 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getAuthenticatedUser } from '@/lib/auth-server';
+import prisma from '@/lib/prisma';
+import { requireInstitutionPortalAccess } from '@/lib/institution-scope';
 
-const prisma = new PrismaClient();
-
-export async function GET(request) {
+export async function GET() {
   try {
-    const user = await getAuthenticatedUser(request);
-    
-    if (!user || user.accountType !== 'INSTITUTION_ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized. Institution Admin access required.' },
-        { status: 403 }
-      );
-    }
+    const access = await requireInstitutionPortalAccess();
+    if (access.error) return access.error;
 
-    // Get all ethics applications for the institution
+    const { institution, memberWhere } = access;
+
     const applications = await prisma.ethicsApplication.findMany({
       where: {
-        user: {
-          institutionId: user.institutionId
-        }
+        user: memberWhere,
       },
       include: {
         user: {
@@ -28,17 +19,16 @@ export async function GET(request) {
             id: true,
             givenName: true,
             familyName: true,
-            email: true
-          }
-        }
+            email: true,
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     });
 
-    // Format the applications
-    const formattedApplications = applications.map(app => ({
+    const formattedApplications = applications.map((app) => ({
       id: app.id,
       applicationNumber: app.applicationNumber,
       title: app.title,
@@ -46,21 +36,17 @@ export async function GET(request) {
       status: app.status,
       submittedDate: app.submittedDate,
       createdAt: app.createdAt,
-      updatedAt: app.updatedAt
+      updatedAt: app.updatedAt,
     }));
 
     return NextResponse.json({
       success: true,
-      applications: formattedApplications
+      institution: { id: institution.id, name: institution.name },
+      applications: formattedApplications,
+      count: formattedApplications.length,
     });
-
   } catch (error) {
     console.error('Error fetching ethics applications:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch ethics applications' },
-      { status: 500 }
-    );
-  } finally {
-    await prisma.$disconnect();
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

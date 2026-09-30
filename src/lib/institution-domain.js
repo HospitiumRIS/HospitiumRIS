@@ -176,6 +176,37 @@ export async function linkInstitutionIfNeeded(db, user) {
  * @param {import('@prisma/client').PrismaClient | import('@prisma/client').Prisma.TransactionClient} db
  * @param {{ institutionId: string, email: string, verifiedByUserId: string }} params
  */
+/**
+ * Verified email domains configured for an institution.
+ * PENDING and VERIFIED domains count; SUSPENDED domains are excluded.
+ *
+ * @param {import('@prisma/client').PrismaClient | import('@prisma/client').Prisma.TransactionClient} db
+ * @param {string} institutionId
+ * @returns {Promise<string[]>}
+ */
+export async function getInstitutionVerifiedDomains(
+  db,
+  institutionId,
+  { statuses = ['VERIFIED', 'PENDING'] } = {}
+) {
+  const rows = await db.verifiedDomain.findMany({
+    where: {
+      institutionId,
+      status: { in: statuses },
+    },
+    select: { domain: true },
+    orderBy: { domain: 'asc' },
+  });
+
+  return [
+    ...new Set(
+      rows
+        .map((row) => row.domain?.toLowerCase().trim())
+        .filter(Boolean)
+    ),
+  ];
+}
+
 export async function seedDomainForInstitution(db, { institutionId, email, verifiedByUserId }) {
   const domain = extractDomain(email);
   if (!domain) return null;

@@ -14,13 +14,13 @@ export async function GET(request, { params }) {
   try {
     const auth = await requireInstitutionImageIntegrityAccess(request);
     if (auth.errorResponse) return auth.errorResponse;
-    const { institution } = auth;
+    const { institution, verifiedDomains } = auth;
 
     const { id } = await params;
     const record = await prisma.imageIntegrityCase.findFirst({
       where: {
         id,
-        ...institutionCasesWhere(institution),
+        ...institutionCasesWhere(institution, verifiedDomains),
       },
     });
 

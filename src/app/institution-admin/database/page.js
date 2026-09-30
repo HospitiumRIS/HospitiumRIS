@@ -1,177 +1,213 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Box,
-  Container,
-  Paper,
-  Typography,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
   Alert,
+  Box,
+  Button,
   Chip,
-  Stack,
-  Avatar,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   CircularProgress,
-  LinearProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Skeleton,
+  Snackbar,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow,
+  TextField,
+  Tooltip,
+  Typography,
+  alpha,
 } from '@mui/material';
 import {
-  Storage as DatabaseIcon,
-  Backup as BackupIcon,
-  Restore as RestoreIcon,
-  Download as DownloadIcon,
-  Upload as UploadIcon,
-  Delete as DeleteIcon,
-  Refresh as RefreshIcon,
-  Schedule as ScheduleIcon,
-  Assessment as AnalyticsIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckIcon,
-  Error as ErrorIcon,
-  Info as InfoIcon,
-  Security as SecurityIcon,
-  CleaningServices as CleanupIcon,
-  Build as MigrateIcon,
-  People as UsersIcon,
   Article as ManuscriptsIcon,
-  School as PublicationsIcon,
-  Business as ProposalsIcon,
-  ExpandMore as ExpandMoreIcon,
-  Visibility as ViewIcon,
+  Backup as BackupIcon,
+  CheckCircle as CheckIcon,
+  CleaningServices as CleanupIcon,
+  CloudDownload as CloudDownloadIcon,
+  Error as ErrorIcon,
   GetApp as ExportIcon,
-  CloudDownload as CloudDownloadIcon
+  Info as InfoIcon,
+  People as UsersIcon,
+  Refresh as RefreshIcon,
+  School as PublicationsIcon,
+  Storage as DatabaseIcon,
+  Business as ProposalsIcon,
 } from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../../components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import InstitutionAdminLayout from '../../../components/InstitutionAdmin/InstitutionAdminLayout';
+import {
+  InstitutionModal,
+  InstitutionModalBody,
+  InstitutionModalFooter,
+  InstitutionModalHeader,
+  InstitutionModalSection,
+} from '../../../components/GlobalAdmin/InstitutionModalShell';
+
+const PURPLE = '#8b6cbc';
+const PURPLE_DARK = '#7a5caa';
+
+const fieldSx = { '& .MuiInputBase-root': { borderRadius: 1.5 } };
+
+function PageHeading({ title, subtitle, action }) {
+  return (
+    <Box sx={{ mb: 3, p: { xs: 2, md: 2.5 }, borderRadius: 2, border: `1px solid ${alpha(PURPLE, 0.12)}`, bgcolor: 'background.paper' }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2}>
+        <Box>
+          <Typography variant="overline" sx={{ color: alpha(PURPLE, 0.75), fontWeight: 700, letterSpacing: '0.08em' }}>
+            Institution Admin
+          </Typography>
+          <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mt: 0.25 }}>{title}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{subtitle}</Typography>
+        </Box>
+        {action}
+      </Stack>
+    </Box>
+  );
+}
+
+function StatCard({ label, value, caption, icon: Icon }) {
+  return (
+    <Paper elevation={0} sx={{ px: 2, py: 1.25, borderRadius: 2, border: `1px solid ${alpha(PURPLE, 0.12)}`, bgcolor: 'background.paper' }}>
+      <Stack direction="row" alignItems="center" spacing={1.5}>
+        <Box sx={{ width: 34, height: 34, borderRadius: 1.25, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: alpha(PURPLE, 0.12), color: PURPLE, flexShrink: 0 }}>
+          <Icon sx={{ fontSize: 18 }} />
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Stack direction="row" alignItems="baseline" justifyContent="space-between" spacing={1}>
+            <Typography variant="caption" noWrap sx={{ color: alpha(PURPLE, 0.7), fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: PURPLE_DARK, lineHeight: 1 }}>{value}</Typography>
+          </Stack>
+          {caption ? <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mt: 0.25 }}>{caption}</Typography> : null}
+        </Box>
+      </Stack>
+    </Paper>
+  );
+}
+
+function OperationCard({ title, description, icon: Icon, onClick, disabled = false }) {
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        height: '100%',
+        borderRadius: 2,
+        border: `1px solid ${alpha(PURPLE, 0.12)}`,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1.5,
+      }}
+    >
+      <Stack direction="row" spacing={1.25} alignItems="flex-start">
+        <Box sx={{ width: 36, height: 36, borderRadius: 1.25, bgcolor: alpha(PURPLE, 0.12), color: PURPLE, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Icon sx={{ fontSize: 18 }} />
+        </Box>
+        <Box>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{title}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>{description}</Typography>
+        </Box>
+      </Stack>
+      <Button
+        variant="outlined"
+        onClick={onClick}
+        disabled={disabled}
+        sx={{
+          mt: 'auto',
+          textTransform: 'none',
+          fontWeight: 600,
+          borderColor: alpha(PURPLE, 0.35),
+          color: PURPLE_DARK,
+          '&:hover': { borderColor: PURPLE, bgcolor: alpha(PURPLE, 0.06) },
+        }}
+      >
+        Run
+      </Button>
+    </Paper>
+  );
+}
+
+const TABLE_ICONS = {
+  users: UsersIcon,
+  manuscripts: ManuscriptsIcon,
+  publications: PublicationsIcon,
+  proposals: ProposalsIcon,
+};
 
 const DatabaseManagementPage = () => {
   const { t } = useTranslation();
-  const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+  const [working, setWorking] = useState(false);
   const [dbStats, setDbStats] = useState({});
   const [backupHistory, setBackupHistory] = useState([]);
   const [selectedOperation, setSelectedOperation] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [operationData, setOperationData] = useState({});
+  const [notice, setNotice] = useState({ open: false, message: '', severity: 'success' });
+  const [lastRefreshed, setLastRefreshed] = useState(null);
 
-  // Check Super Admin access
   useEffect(() => {
-    // Wait for auth to finish loading before checking
     if (authLoading) return;
-    
     if (!user) {
       router.push('/login');
       return;
     }
-    
     if (user.accountType !== 'INSTITUTION_ADMIN') {
       router.push('/dashboard');
-      return;
     }
   }, [user, router, authLoading]);
 
-  // Fetch database statistics
-  useEffect(() => {
-    const fetchDbStats = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch database statistics
-        const response = await fetch('/api/institution-admin/database/stats');
-        const statsData = await response.json();
-        
-        if (statsData.success) {
-          setDbStats({
-            totalUsers: statsData.stats.totalUsers || 0,
-            activeUsers: statsData.stats.activeUsers || 0,
-            totalManuscripts: statsData.stats.totalManuscripts || 0,
-            totalPublications: statsData.stats.totalPublications || 0,
-            totalProposals: statsData.stats.totalProposals || 0,
-            totalDonations: statsData.stats.totalDonations || 0,
-            totalCampaigns: statsData.stats.totalCampaigns || 0,
-            dbSize: statsData.stats.dbSize || 'N/A',
-            lastBackup: statsData.stats.lastBackup || 'N/A',
-            backupSize: statsData.stats.backupSize || 'N/A',
-            uptime: statsData.stats.uptime || 'N/A',
-            connections: statsData.stats.connections || 0,
-            maxConnections: statsData.stats.maxConnections || 100,
-            slowQueries: statsData.stats.slowQueries || 0,
-            recentLogs: statsData.stats.recentLogs || 0,
-            health: statsData.stats.health || 'healthy'
-          });
-        }
-        
-        // Fetch backup history
-        const backupResponse = await fetch('/api/institution-admin/database/backup');
-        const backupData = await backupResponse.json();
-        
-        if (backupData.success) {
-          setBackupHistory(backupData.backups || []);
-        } else {
-          // Fallback data if API fails
-          setBackupHistory([
-            { id: 1, date: '2024-10-22 08:30:00', size: '1.8 GB', type: 'Automatic', status: 'Completed' },
-            { id: 2, date: '2024-10-21 08:30:00', size: '1.7 GB', type: 'Automatic', status: 'Completed' }
-          ]);
-        }
-        
-      } catch (error) {
-        console.error('Error fetching database stats:', error);
-        // Fallback to hardcoded data on error
-        setDbStats({
-          totalUsers: 4,
-          activeUsers: 3,
-          totalManuscripts: 25,
-          totalPublications: 150,
-          totalProposals: 12,
-          totalDonations: 89,
-          dbSize: '2.3 GB',
-          lastBackup: '2024-10-22 08:30:00',
-          backupSize: '1.8 GB',
-          uptime: '15 days, 6 hours',
-          connections: 12,
-          slowQueries: 3
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const showNotice = (message, severity = 'success') => {
+    setNotice({ open: true, message, severity });
+  };
 
-    if (user?.accountType === 'INSTITUTION_ADMIN') {
-      fetchDbStats();
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [statsRes, backupRes] = await Promise.all([
+        fetch('/api/institution-admin/database/stats', { credentials: 'include' }),
+        fetch('/api/institution-admin/database/backup', { credentials: 'include' }),
+      ]);
+
+      const statsData = await statsRes.json();
+      const backupData = await backupRes.json();
+
+      if (statsData.success) {
+        setDbStats(statsData.stats || {});
+      } else {
+        showNotice(statsData.message || 'Failed to load database stats', 'error');
+      }
+
+      if (backupData.success) {
+        setBackupHistory(backupData.backups || []);
+      }
+      setLastRefreshed(new Date());
+    } catch (error) {
+      console.error('Error loading database page:', error);
+      showNotice('Failed to load database information', 'error');
+    } finally {
+      setLoading(false);
     }
-  }, [user]);
+  }, []);
+
+  useEffect(() => {
+    if (user?.accountType === 'INSTITUTION_ADMIN') {
+      loadData();
+    }
+  }, [user, loadData]);
 
   const handleOperation = (operation) => {
     setSelectedOperation(operation);
@@ -179,924 +215,387 @@ const DatabaseManagementPage = () => {
     setDialogOpen(true);
   };
 
+  const downloadBackup = async (filename) => {
+    try {
+      const response = await fetch(
+        `/api/institution-admin/database/backup/download?file=${encodeURIComponent(filename)}`,
+        { credentials: 'include' }
+      );
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.message || 'Download failed');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      showNotice('Backup downloaded');
+    } catch (error) {
+      console.error('Error downloading backup:', error);
+      showNotice(error.message || 'Download failed', 'error');
+    }
+  };
+
   const executeOperation = async () => {
-    setLoading(true);
+    setWorking(true);
     try {
       let response;
-      
-      switch (selectedOperation) {
-        case 'backup':
-          response = await fetch('/api/institution-admin/database/backup', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              backupType: operationData.backupType || 'full',
-              description: operationData.description || '',
-              compression: operationData.compression || 'gzip'
-            })
-          });
-          break;
-          
-        case 'cleanup':
-        case 'migrate':
-        case 'reindex':
-        case 'analyze':
-        case 'vacuum':
-        case 'statistics':
-          response = await fetch('/api/institution-admin/database/maintenance', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              operation: selectedOperation,
-              options: operationData
-            })
-          });
-          break;
-          
-        default:
-          throw new Error(`Unknown operation: ${selectedOperation}`);
-      }
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+
+      if (selectedOperation === 'backup') {
+        response = await fetch('/api/institution-admin/database/backup', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            backupType: operationData.backupType || 'full',
+            description: operationData.description || '',
+          }),
+        });
+      } else if (selectedOperation === 'export') {
+        response = await fetch('/api/institution-admin/database/export', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            format: operationData.format || 'json',
+            scope: operationData.scope || 'all',
+          }),
+        });
+      } else {
+        response = await fetch('/api/institution-admin/database/maintenance', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            operation: selectedOperation,
+            options: operationData,
+          }),
+        });
       }
 
       const result = await response.json();
-      
-      if (result.success) {
-        alert(`${selectedOperation} operation completed successfully!`);
-        
-        // Refresh data after successful operation
-        window.location.reload();
-      } else {
-        throw new Error(result.message || 'Operation failed');
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || result.error || 'Operation failed');
       }
-      
+
+      if (selectedOperation === 'backup' && result.backup?.filename) {
+        showNotice(`${result.message} (${result.backup.size})`);
+      } else if (selectedOperation === 'export' && result.export) {
+        showNotice(`${result.message} — ${result.export.recordCount} records, ${result.export.size}`);
+      } else {
+        showNotice(result.message || `${selectedOperation} completed successfully`);
+      }
+
       setDialogOpen(false);
+      await loadData();
     } catch (error) {
       console.error(`Error executing ${selectedOperation}:`, error);
-      
-      // Show more helpful error message
-      let errorMessage = error.message;
-      if (selectedOperation === 'backup') {
-        errorMessage = `Database backup failed: ${error.message}\n\nNote: This operation requires pg_dump to be installed and DATABASE_URL to be configured.`;
-      }
-      
-      alert(`Error: ${errorMessage}`);
+      showNotice(error.message || 'Operation failed', 'error');
     } finally {
-      setLoading(false);
+      setWorking(false);
     }
   };
 
-  const dbOperations = [
-    {
-      title: 'Database Backup',
-      description: 'Create a full database backup with compression',
-      icon: <BackupIcon />,
-      color: 'primary',
-      action: () => handleOperation('backup'),
-      urgent: false
-    },
-    {
-      title: 'Schedule Backup',
-      description: 'Configure automatic backup scheduling',
-      icon: <ScheduleIcon />,
-      color: 'info',
-      action: () => handleOperation('schedule'),
-      urgent: false
-    },
-    {
-      title: 'Restore Database',
-      description: 'Restore database from backup file',
-      icon: <RestoreIcon />,
-      color: 'warning',
-      action: () => handleOperation('restore'),
-      urgent: true
-    },
-    {
-      title: 'Export Data',
-      description: 'Export specific data tables or collections',
-      icon: <ExportIcon />,
-      color: 'success',
-      action: () => handleOperation('export'),
-      urgent: false
-    },
-    {
-      title: 'Data Cleanup',
-      description: 'Clean up orphaned records and temporary data',
-      icon: <CleanupIcon />,
-      color: 'secondary',
-      action: () => handleOperation('cleanup'),
-      urgent: false
-    },
-    {
-      title: 'Run Migration',
-      description: 'Execute pending database migrations',
-      icon: <MigrateIcon />,
-      color: 'error',
-      action: () => handleOperation('migrate'),
-      urgent: true
-    }
-  ];
+  const dataStats = useMemo(() => {
+    const tables = dbStats.tableStats || [];
+    return tables.map((table) => ({
+      ...table,
+      icon: TABLE_ICONS[table.name] || DatabaseIcon,
+    }));
+  }, [dbStats.tableStats]);
 
-  const dataStats = [
-    { label: 'Users', count: dbStats.totalUsers, icon: <UsersIcon />, table: 'users' },
-    { label: 'Manuscripts', count: dbStats.totalManuscripts, icon: <ManuscriptsIcon />, table: 'manuscripts' },
-    { label: 'Publications', count: dbStats.totalPublications, icon: <PublicationsIcon />, table: 'publications' },
-    { label: 'Proposals', count: dbStats.totalProposals, icon: <ProposalsIcon />, table: 'proposals' },
-  ];
-
-  const maintenanceActions = [
-    { label: 'Reindex Database', action: () => handleOperation('reindex'), icon: <RefreshIcon /> },
-    { label: 'Analyze Tables', action: () => handleOperation('analyze'), icon: <AnalyticsIcon /> },
-    { label: 'Vacuum Database', action: () => handleOperation('vacuum'), icon: <CleanupIcon /> },
-    { label: 'Update Statistics', action: () => handleOperation('statistics'), icon: <AnalyticsIcon /> }
-  ];
-
-  const renderOperationDialog = () => {
-    const dialogConfigs = {
+  const dialogConfig = useMemo(() => {
+    const configs = {
       backup: {
-        title: 'Create Database Backup',
+        title: 'Create backup',
+        subtitle: 'Export institution data to a backup file',
         content: (
-          <Stack spacing={3}>
-            <FormControl fullWidth>
-              <InputLabel>Backup Type</InputLabel>
-              <Select
-                value={operationData.backupType || ''}
-                onChange={(e) => setOperationData({...operationData, backupType: e.target.value})}
-              >
-                <MenuItem value="full">Full Backup</MenuItem>
-                <MenuItem value="incremental">Incremental Backup</MenuItem>
-                <MenuItem value="schema">Schema Only</MenuItem>
-                <MenuItem value="data">Data Only</MenuItem>
+          <Stack spacing={2}>
+            <FormControl fullWidth size="small" sx={fieldSx}>
+              <InputLabel>Backup type</InputLabel>
+              <Select value={operationData.backupType || 'full'} label="Backup type" onChange={(e) => setOperationData({ ...operationData, backupType: e.target.value })}>
+                <MenuItem value="full">Full backup</MenuItem>
+                <MenuItem value="data">Data only</MenuItem>
+                <MenuItem value="schema">Schema only</MenuItem>
               </Select>
             </FormControl>
-            <TextField
-              fullWidth
-              label="Backup Description"
-              value={operationData.description || ''}
-              onChange={(e) => setOperationData({...operationData, description: e.target.value})}
-              placeholder="Optional description for this backup"
-            />
-            <FormControl fullWidth>
-              <InputLabel>Compression</InputLabel>
-              <Select
-                value={operationData.compression || 'gzip'}
-                onChange={(e) => setOperationData({...operationData, compression: e.target.value})}
-              >
-                <MenuItem value="none">No Compression</MenuItem>
-                <MenuItem value="gzip">GZIP</MenuItem>
-                <MenuItem value="bzip2">BZIP2</MenuItem>
-              </Select>
-            </FormControl>
+            <TextField fullWidth size="small" label="Description" value={operationData.description || ''} onChange={(e) => setOperationData({ ...operationData, description: e.target.value })} placeholder="Optional note for this backup" sx={fieldSx} />
           </Stack>
-        )
-      },
-      schedule: {
-        title: 'Schedule Automatic Backups',
-        content: (
-          <Stack spacing={3}>
-            <FormControl fullWidth>
-              <InputLabel>Frequency</InputLabel>
-              <Select
-                value={operationData.frequency || ''}
-                onChange={(e) => setOperationData({...operationData, frequency: e.target.value})}
-              >
-                <MenuItem value="daily">Daily</MenuItem>
-                <MenuItem value="weekly">Weekly</MenuItem>
-                <MenuItem value="monthly">Monthly</MenuItem>
-                <MenuItem value="custom">Custom</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              fullWidth
-              label="Schedule Time"
-              type="time"
-              value={operationData.time || '02:00'}
-              onChange={(e) => setOperationData({...operationData, time: e.target.value})}
-            />
-            <TextField
-              fullWidth
-              label="Retention Period (days)"
-              type="number"
-              value={operationData.retention || 30}
-              onChange={(e) => setOperationData({...operationData, retention: e.target.value})}
-            />
-          </Stack>
-        )
+        ),
       },
       export: {
-        title: 'Export Database Data',
+        title: 'Export data',
+        subtitle: 'Download a scoped export of your institution data',
         content: (
-          <Stack spacing={3}>
-            <FormControl fullWidth>
-              <InputLabel>Export Format</InputLabel>
-              <Select
-                value={operationData.format || ''}
-                onChange={(e) => setOperationData({...operationData, format: e.target.value})}
-              >
-                <MenuItem value="sql">SQL</MenuItem>
-                <MenuItem value="csv">CSV</MenuItem>
+          <Stack spacing={2}>
+            <FormControl fullWidth size="small" sx={fieldSx}>
+              <InputLabel>Format</InputLabel>
+              <Select value={operationData.format || 'json'} label="Format" onChange={(e) => setOperationData({ ...operationData, format: e.target.value })}>
                 <MenuItem value="json">JSON</MenuItem>
-                <MenuItem value="xlsx">Excel</MenuItem>
+                <MenuItem value="csv">CSV</MenuItem>
               </Select>
             </FormControl>
-            <FormControl fullWidth>
-              <InputLabel>Data Scope</InputLabel>
-              <Select
-                value={operationData.scope || ''}
-                onChange={(e) => setOperationData({...operationData, scope: e.target.value})}
-              >
-                <MenuItem value="all">All Data</MenuItem>
-                <MenuItem value="users">Users Only</MenuItem>
-                <MenuItem value="publications">Publications Only</MenuItem>
-                <MenuItem value="manuscripts">Manuscripts Only</MenuItem>
-                <MenuItem value="custom">Custom Selection</MenuItem>
+            <FormControl fullWidth size="small" sx={fieldSx}>
+              <InputLabel>Data scope</InputLabel>
+              <Select value={operationData.scope || 'all'} label="Data scope" onChange={(e) => setOperationData({ ...operationData, scope: e.target.value })}>
+                <MenuItem value="all">All data</MenuItem>
+                <MenuItem value="users">Users</MenuItem>
+                <MenuItem value="manuscripts">Manuscripts</MenuItem>
+                <MenuItem value="publications">Publications</MenuItem>
+                <MenuItem value="proposals">Proposals</MenuItem>
               </Select>
             </FormControl>
           </Stack>
-        )
-      }
+        ),
+      },
+      cleanup: {
+        title: 'Data cleanup',
+        subtitle: 'Remove expired invitations for your institution',
+        content: (
+          <Alert severity="info" sx={{ borderRadius: 1.5 }}>
+            Cleans expired manuscript invitations linked to your institution members. Platform-wide maintenance is handled separately.
+          </Alert>
+        ),
+      },
     };
 
-    const config = dialogConfigs[selectedOperation] || { title: 'Operation', content: null };
-
-    return (
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{config.title}</DialogTitle>
-        <DialogContent>
-          {config.content}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={executeOperation} 
-            variant="contained" 
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : null}
-          >
-            {loading ? 'Processing...' : 'Execute'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    );
-  };
+    return configs[selectedOperation] || { title: 'Operation', subtitle: '', content: null };
+  }, [selectedOperation, operationData]);
 
   if (!user || user.accountType !== 'INSTITUTION_ADMIN') {
     return null;
   }
 
-  if (loading && Object.keys(dbStats).length === 0) {
-    return (
-      <InstitutionAdminLayout>
-        <Box sx={{ 
-          minHeight: '100vh', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          background: `linear-gradient(135deg, ${theme.palette.primary.main}05 0%, ${theme.palette.secondary.main}05 100%)`
-        }}>
-          <Box sx={{ textAlign: 'center' }}>
-            <CircularProgress size={60} sx={{ mb: 3 }} />
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-              Loading Database Management
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Fetching real-time statistics...
-            </Typography>
-          </Box>
-        </Box>
-      </InstitutionAdminLayout>
-    );
-  }
-
   return (
     <InstitutionAdminLayout>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: 'background.default', minHeight: '100vh' }}>
-        {/* Professional Header */}
-        <Box sx={{ 
-          mb: 4,
-          pb: 3,
-          borderBottom: '2px solid',
-          borderColor: 'divider'
-        }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: '#8b6cbc', width: 56, height: 56, boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)' }}>
-                <DatabaseIcon fontSize="large" />
-              </Avatar>
-              <Box>
-                <Typography 
-                  variant="h3" 
-                  sx={{ 
-                    fontWeight: 700,
-                    mb: 0.5,
-                    letterSpacing: '-0.02em'
-                  }}
-                >
-                  Database Management
-                </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                  Backup, restore & maintenance operations
-                </Typography>
-              </Box>
-            </Box>
-            
+      <Box sx={{ p: { xs: 2, sm: 3 }, width: '100%' }}>
+        <PageHeading
+          title={t('institution_admin.database', { defaultValue: 'Database' })}
+          subtitle={
+            dbStats.institutionName
+              ? `Manage data, backups, and exports for ${dbStats.institutionName}.`
+              : 'Monitor institution data, create backups, and run maintenance tasks.'
+          }
+          action={(
             <Button
-              variant="contained"
+              variant="outlined"
               startIcon={<RefreshIcon />}
-              onClick={() => window.location.reload()}
-              sx={{
-                bgcolor: '#8b6cbc',
-                '&:hover': {
-                  bgcolor: '#7a5caa'
-                },
-                boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)'
-              }}
+              onClick={loadData}
+              disabled={loading}
+              sx={{ textTransform: 'none', fontWeight: 600, borderColor: alpha(PURPLE, 0.35), color: PURPLE_DARK, '&:hover': { borderColor: PURPLE, bgcolor: alpha(PURPLE, 0.06) } }}
             >
-              Refresh Data
+              Refresh
+            </Button>
+          )}
+        />
+
+        {lastRefreshed ? (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+            Last refreshed {lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Typography>
+        ) : null}
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 1.5, mb: 3 }}>
+          {loading ? (
+            Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} variant="rounded" height={68} sx={{ borderRadius: 2 }} />)
+          ) : (
+            <>
+              <StatCard label="Institution users" value={dbStats.totalUsers || 0} caption={`${dbStats.activeUsers || 0} active · ${dbStats.pendingUsers || 0} pending`} icon={UsersIcon} />
+              <StatCard label="Manuscripts" value={dbStats.totalManuscripts || 0} caption="Created by your members" icon={ManuscriptsIcon} />
+              <StatCard label="Publications" value={dbStats.totalPublications || 0} caption="Authored by your researchers" icon={PublicationsIcon} />
+              <StatCard label="Proposals" value={dbStats.totalProposals || 0} caption="In institution review pipeline" icon={ProposalsIcon} />
+            </>
+          )}
+        </Box>
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.2fr 0.8fr' }, gap: 2.5, mb: 3 }}>
+          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, border: `1px solid ${alpha(PURPLE, 0.12)}` }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>Data overview</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Record counts for your institution</Typography>
+            {loading ? (
+              <Stack spacing={1}>{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="rounded" height={44} />)}</Stack>
+            ) : (
+              <Stack spacing={1}>
+                {dataStats.map((stat) => {
+                  const Icon = stat.icon;
+                  return (
+                    <Stack key={stat.name} direction="row" justifyContent="space-between" alignItems="center" sx={{ p: 1.25, borderRadius: 1.5, border: `1px solid ${alpha(PURPLE, 0.1)}` }}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Icon sx={{ fontSize: 18, color: PURPLE }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{stat.label}</Typography>
+                      </Stack>
+                      <Chip size="small" label={stat.count} sx={{ bgcolor: alpha(PURPLE, 0.12), color: PURPLE_DARK, fontWeight: 700 }} />
+                    </Stack>
+                  );
+                })}
+              </Stack>
+            )}
+          </Paper>
+
+          <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, border: `1px solid ${alpha(PURPLE, 0.12)}` }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Platform health</Typography>
+              {!loading && dbStats.health ? (
+                <Chip
+                  size="small"
+                  icon={<CheckIcon sx={{ fontSize: '14px !important' }} />}
+                  label={dbStats.health}
+                  sx={{
+                    textTransform: 'capitalize',
+                    fontWeight: 700,
+                    bgcolor: alpha(PURPLE, 0.12),
+                    color: PURPLE_DARK,
+                  }}
+                />
+              ) : null}
+            </Stack>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Shared environment — read-only for institution admins</Typography>
+            {loading ? (
+              <Stack spacing={1}>{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} variant="rounded" height={36} />)}</Stack>
+            ) : (
+              <Stack spacing={1.25}>
+                {[
+                  { label: 'Database size', value: dbStats.dbSize || 'N/A' },
+                  { label: 'Connections', value: `${dbStats.connections || 0} / ${dbStats.maxConnections || 100}` },
+                  { label: 'Server uptime', value: dbStats.uptime || 'N/A' },
+                ].map((item) => (
+                  <Stack key={item.label} direction="row" justifyContent="space-between" spacing={2}>
+                    <Typography variant="body2" color="text.secondary">{item.label}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.value}</Typography>
+                  </Stack>
+                ))}
+                <Alert severity="info" icon={<InfoIcon fontSize="inherit" />} sx={{ mt: 1, borderRadius: 1.5, py: 0.5 }}>
+                  Vacuum, migration, and schema changes are managed by platform administrators.
+                </Alert>
+              </Stack>
+            )}
+          </Paper>
+        </Box>
+
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>Operations</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Backup, export, and maintenance tools</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 1.5 }}>
+            <OperationCard title="Create backup" description="Save a JSON snapshot scoped to your institution" icon={BackupIcon} onClick={() => handleOperation('backup')} />
+            <OperationCard title="Export data" description="Export users, manuscripts, publications, or proposals" icon={ExportIcon} onClick={() => handleOperation('export')} />
+            <OperationCard title="Data cleanup" description="Remove expired invitations for your members" icon={CleanupIcon} onClick={() => handleOperation('cleanup')} />
+          </Box>
+        </Box>
+
+        <Paper elevation={0} sx={{ borderRadius: 2, border: `1px solid ${alpha(PURPLE, 0.12)}`, overflow: 'hidden' }}>
+          <Box sx={{ p: 2.5, borderBottom: `1px solid ${alpha(PURPLE, 0.1)}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Backup history</Typography>
+              <Typography variant="body2" color="text.secondary">{backupHistory.length} backup{backupHistory.length === 1 ? '' : 's'} available</Typography>
+            </Box>
+            <Button variant="contained" startIcon={<BackupIcon />} onClick={() => handleOperation('backup')} sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 600, '&:hover': { bgcolor: PURPLE_DARK } }}>
+              Create backup
             </Button>
           </Box>
-        </Box>
 
-        {/* Database Health Overview - Compact Stats */}
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ mb: 2.5 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
-              Database Health & Performance
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Real-time monitoring and system metrics
-            </Typography>
-          </Box>
-          
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-            {[
-              { 
-                value: dbStats.dbSize, 
-                label: 'Database Size', 
-                icon: <DatabaseIcon />, 
-                color: '#8b6cbc'
-              },
-              { 
-                value: dbStats.backupSize, 
-                label: 'Latest Backup', 
-                icon: <BackupIcon />, 
-                color: '#0ea5e9'
-              },
-              { 
-                value: dbStats.connections, 
-                label: 'Active Connections', 
-                icon: <SecurityIcon />, 
-                color: '#f59e0b'
-              },
-              { 
-                value: dbStats.slowQueries, 
-                label: 'Slow Queries', 
-                icon: <AnalyticsIcon />, 
-                color: dbStats.slowQueries > 0 ? '#ef4444' : '#10b981'
-              },
-              { 
-                value: dbStats.uptime || 'N/A', 
-                label: 'System Uptime', 
-                icon: <CheckIcon />, 
-                color: '#10b981'
-              },
-              { 
-                value: dbStats.lastBackup || 'N/A', 
-                label: 'Last Backup', 
-                icon: <ScheduleIcon />, 
-                color: '#6366f1'
-              }
-            ].map((stat, index) => (
-              <Box key={index} sx={{ flex: '1 1 calc(16.666% - 14px)', minWidth: '150px' }}>
-                <Paper sx={{ 
-                  p: 2,
-                  borderRadius: 2,
-                  border: '1px solid #e5e7eb',
-                  boxShadow: 'none',
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                    transform: 'translateY(-2px)'
-                  }
-                }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                    <Box sx={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 1.5,
-                      bgcolor: `${stat.color}15`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: stat.color
-                    }}>
-                      {React.cloneElement(stat.icon, { fontSize: 'small' })}
-                    </Box>
-                    <Typography variant="caption" sx={{ 
-                      color: '#6b7280',
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      fontSize: '0.65rem',
-                      lineHeight: 1.2
-                    }}>
-                      {stat.label}
-                    </Typography>
-                  </Box>
-                  <Typography variant="h6" sx={{ 
-                    fontWeight: 700, 
-                    color: '#2c3e50',
-                    fontSize: '1.25rem'
-                  }}>
-                    {stat.value}
-                  </Typography>
-                </Paper>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-
-        {/* Data Statistics - Compact */}
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ mb: 2.5 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
-              Data Overview
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Real-time statistics from your database tables
-            </Typography>
-          </Box>
-          
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-            {dataStats.map((stat, index) => (
-              <Box key={index} sx={{ flex: '1 1 calc(25% - 12px)', minWidth: '180px' }}>
-                <Paper sx={{ 
-                  p: 2.5,
-                  borderRadius: 2,
-                  border: '1px solid #e5e7eb',
-                  boxShadow: 'none',
-                  transition: 'all 0.2s',
-                  '&:hover': { 
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                    transform: 'translateY(-2px)',
-                    borderColor: '#8b6cbc'
-                  }
-                }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                    <Box sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 1.5,
-                      bgcolor: '#f3e8ff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#8b6cbc'
-                    }}>
-                      {React.cloneElement(stat.icon, { fontSize: 'small' })}
-                    </Box>
-                    <Typography variant="h5" sx={{ 
-                      fontWeight: 700, 
-                      color: '#8b6cbc'
-                    }}>
-                      {stat.count}
-                    </Typography>
-                  </Box>
-                  
-                  <Typography variant="body2" sx={{ 
-                    fontWeight: 600,
-                    color: '#2c3e50',
-                    mb: 0.5
-                  }}>
-                    {stat.label}
-                  </Typography>
-                  
-                  <Typography variant="caption" sx={{ 
-                    color: '#6b7280',
-                    fontSize: '0.7rem'
-                  }}>
-                    Table: {stat.table}
-                  </Typography>
-                </Paper>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-
-        {/* Professional Database Operations */}
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
-              Database Operations
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Execute critical database maintenance and management tasks
-            </Typography>
-          </Box>
-          
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-            {dbOperations.map((operation, index) => (
-              <Box key={index} sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: '280px' }}>
-                <Card sx={{ 
-                  height: '100%',
-                  borderRadius: 3,
-                  border: `2px solid ${theme.palette[operation.color].main}15`,
-                  background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette[operation.color].main}05 100%)`,
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&:hover': { 
-                    transform: 'translateY(-6px)',
-                    boxShadow: `0 20px 60px ${theme.palette[operation.color].main}25`,
-                    border: `2px solid ${theme.palette[operation.color].main}30`
-                  },
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '4px',
-                    background: `linear-gradient(90deg, ${theme.palette[operation.color].main}, ${theme.palette[operation.color].light})`,
-                    borderRadius: '3px 3px 0 0'
-                  }
-                }}>
-                  <CardContent sx={{ p: 3, pb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
-                      <Avatar sx={{ 
-                        bgcolor: `${operation.color}.main`, 
-                        width: 48, 
-                        height: 48,
-                        boxShadow: `0 8px 24px ${theme.palette[operation.color].main}40`
-                      }}>
-                        {React.cloneElement(operation.icon, { fontSize: 'medium' })}
-                      </Avatar>
-                      
-                      <Box sx={{ flex: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-                          <Typography variant="h6" sx={{ 
-                            fontWeight: 700,
-                            color: 'text.primary',
-                            lineHeight: 1.2
-                          }}>
-                            {operation.title}
-                          </Typography>
-                          {operation.urgent && (
-                            <Chip 
-                              label="Critical" 
-                              color="error" 
-                              size="small" 
-                              sx={{ 
-                                fontWeight: 600, 
-                                fontSize: '0.7rem',
-                                height: '20px'
-                              }}
-                            />
-                          )}
-                        </Box>
-                        
-                        <Typography variant="body2" sx={{ 
-                          color: 'text.secondary',
-                          lineHeight: 1.5,
-                          fontWeight: 400
-                        }}>
-                          {operation.description}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    
-                    {/* Operation Status Indicator */}
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: 1,
-                      p: 1.5,
-                      bgcolor: `${operation.color}.main`,
-                      color: 'white',
-                      borderRadius: 2,
-                      mb: 2,
-                      opacity: 0.9
-                    }}>
-                      <CheckIcon fontSize="small" />
-                      <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
-                        Ready to Execute
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                  
-                  <CardActions sx={{ px: 3, pb: 3, pt: 0 }}>
-                    <Button 
-                      variant="contained" 
-                      color={operation.color}
-                      onClick={operation.action}
-                      fullWidth
-                      size="large"
-                      sx={{
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontWeight: 700,
-                        py: 1.2,
-                        fontSize: '0.9rem',
-                        boxShadow: `0 4px 16px ${theme.palette[operation.color].main}40`,
-                        '&:hover': {
-                          boxShadow: `0 6px 24px ${theme.palette[operation.color].main}50`
-                        }
-                      }}
-                    >
-                      Execute Operation
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-
-        {/* Backup History & Maintenance */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-          <Box sx={{ flex: '1 1 calc(66% - 8px)', minWidth: '300px' }}>
-            <Paper sx={{ 
-              borderRadius: 3,
-              background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-              border: `1px solid ${theme.palette.divider}`,
-              overflow: 'hidden'
-            }}>
-              {/* Header */}
-              <Box sx={{ 
-                p: 3, 
-                background: `linear-gradient(135deg, ${theme.palette.primary.main}10 0%, ${theme.palette.secondary.main}10 100%)`,
-                borderBottom: `1px solid ${theme.palette.divider}`
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
-                      <BackupIcon />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                        Backup History
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {backupHistory.length} backups available
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Button
-                    variant="contained"
-                    startIcon={<BackupIcon />}
-                    onClick={() => handleOperation('backup')}
-                    sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
-                  >
-                    Create Backup
-                  </Button>
-                </Box>
-              </Box>
-              
-              {/* Table */}
-              <TableContainer>
-                <Table>
-                  <TableHead sx={{ bgcolor: 'background.default' }}>
+          {loading ? (
+            <Box sx={{ p: 2 }}>{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} variant="rounded" height={48} sx={{ mb: 1, borderRadius: 1.5 }} />)}</Box>
+          ) : (
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ bgcolor: alpha(PURPLE, 0.04) }}>
+                    <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Type</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Size</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>File</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {backupHistory.length === 0 ? (
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 700, color: 'text.primary' }}>Date & Time</TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: 'text.primary' }}>Type</TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: 'text.primary' }}>Size</TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: 'text.primary' }}>Status</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary' }}>Actions</TableCell>
+                      <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
+                        <Stack spacing={1} alignItems="center">
+                          <BackupIcon sx={{ color: alpha(PURPLE, 0.45), fontSize: 40 }} />
+                          <Typography variant="body2" color="text.secondary">No backups yet</Typography>
+                          <Button size="small" onClick={() => handleOperation('backup')} sx={{ textTransform: 'none', color: PURPLE_DARK, fontWeight: 600 }}>Create your first backup</Button>
+                        </Stack>
+                      </TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {backupHistory.slice(0, 5).map((backup, index) => (
-                      <TableRow 
-                        key={backup.id}
-                        sx={{ 
-                          '&:hover': { bgcolor: 'action.hover' },
-                          borderBottom: `1px solid ${theme.palette.divider}`
-                        }}
-                      >
+                  ) : (
+                    backupHistory.slice(0, 10).map((backup) => (
+                      <TableRow key={backup.id} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
                         <TableCell>
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {backup.date.split(' ')[0]}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {backup.date.split(' ')[1]}
-                            </Typography>
-                          </Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{backup.date?.split(' ')[0] || '—'}</Typography>
+                          <Typography variant="caption" color="text.secondary">{backup.date?.split(' ')[1] || ''}</Typography>
                         </TableCell>
+                        <TableCell><Chip size="small" label={backup.type} sx={{ fontWeight: 600 }} /></TableCell>
+                        <TableCell><Typography variant="body2">{backup.size}</Typography></TableCell>
                         <TableCell>
-                          <Chip 
-                            label={backup.type} 
-                            size="small" 
-                            color={backup.type === 'Manual' ? 'primary' : 'secondary'}
-                            sx={{ fontWeight: 600, minWidth: '80px' }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {backup.size}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={backup.status}
+                          <Chip
                             size="small"
-                            color={backup.status === 'Completed' ? 'success' : 'error'}
-                            icon={backup.status === 'Completed' ? <CheckIcon /> : <ErrorIcon />}
-                            sx={{ fontWeight: 600, minWidth: '100px' }}
+                            icon={backup.status === 'Completed' ? <CheckIcon sx={{ fontSize: '14px !important' }} /> : <ErrorIcon sx={{ fontSize: '14px !important' }} />}
+                            label={backup.status}
+                            sx={{
+                              fontWeight: 700,
+                              bgcolor: backup.status === 'Completed' ? alpha(PURPLE, 0.12) : '#fee2e2',
+                              color: backup.status === 'Completed' ? PURPLE_DARK : '#b91c1c',
+                            }}
                           />
                         </TableCell>
-                        <TableCell align="right">
-                          <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleOperation('download')}
-                              sx={{ 
-                                bgcolor: 'primary.main', 
-                                color: 'white',
-                                '&:hover': { bgcolor: 'primary.dark' }
-                              }}
-                            >
-                              <CloudDownloadIcon fontSize="small" />
-                            </IconButton>
-                            {backup.status === 'Completed' && (
-                              <IconButton 
-                                size="small" 
-                                onClick={() => handleOperation('restore')}
-                                sx={{ 
-                                  bgcolor: 'warning.main', 
-                                  color: 'white',
-                                  '&:hover': { bgcolor: 'warning.dark' }
-                                }}
-                              >
-                                <RestoreIcon fontSize="small" />
+                        <TableCell>
+                          <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 180 }}>{backup.filename}</Typography>
+                            <Tooltip title="Download backup">
+                              <IconButton size="small" sx={{ color: PURPLE }} onClick={() => downloadBackup(backup.filename)}>
+                                <CloudDownloadIcon fontSize="small" />
                               </IconButton>
-                            )}
+                            </Tooltip>
                           </Stack>
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              
-              {backupHistory.length === 0 && (
-                <Box sx={{ p: 4, textAlign: 'center' }}>
-                  <BackupIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-                  <Typography variant="body1" color="text.secondary">
-                    No backups available
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Create your first backup to see it here
-                  </Typography>
-                </Box>
-              )}
-            </Paper>
-          </Box>
-          
-          <Box sx={{ flex: '1 1 calc(34% - 8px)', minWidth: '300px' }}>
-            <Stack spacing={3}>
-              {/* Quick Maintenance */}
-              <Paper sx={{ 
-                p: 3,
-                borderRadius: 3,
-                background: `linear-gradient(145deg, ${theme.palette.success.main}08 0%, ${theme.palette.success.main}03 100%)`,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-                border: `1px solid ${theme.palette.success.main}20`
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                  <Avatar sx={{ bgcolor: 'success.main', width: 40, height: 40 }}>
-                    <RefreshIcon />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      Quick Maintenance
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Routine operations
-                    </Typography>
-                  </Box>
-                </Box>
-                
-                <Stack spacing={2}>
-                  {maintenanceActions.map((action, index) => (
-                    <Button
-                      key={index}
-                      variant="outlined"
-                      startIcon={action.icon}
-                      onClick={action.action}
-                      fullWidth
-                      sx={{ 
-                        justifyContent: 'flex-start',
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        py: 1.5,
-                        borderColor: 'success.main',
-                        color: 'success.main',
-                        '&:hover': {
-                          bgcolor: 'success.main',
-                          color: 'white',
-                          borderColor: 'success.main'
-                        }
-                      }}
-                    >
-                      {action.label}
-                    </Button>
-                  ))}
-                </Stack>
-              </Paper>
-              
-              {/* Emergency Actions */}
-              <Paper sx={{ 
-                p: 3,
-                borderRadius: 3,
-                background: `linear-gradient(145deg, ${theme.palette.error.main}08 0%, ${theme.palette.error.main}03 100%)`,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-                border: `1px solid ${theme.palette.error.main}20`
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                  <Avatar sx={{ bgcolor: 'error.main', width: 40, height: 40 }}>
-                    <WarningIcon />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: 'error.main' }}>
-                      Emergency Actions
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Critical operations
-                    </Typography>
-                  </Box>
-                </Box>
-                
-                <Stack spacing={2}>
-                  <Button
-                    variant="contained"
-                    color="error"
-                    startIcon={<WarningIcon />}
-                    onClick={() => handleOperation('emergency')}
-                    fullWidth
-                    sx={{
-                      borderRadius: 2,
-                      textTransform: 'none',
-                      fontWeight: 700,
-                      py: 1.5
-                    }}
-                  >
-                    Emergency Backup
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="warning"
-                    startIcon={<SecurityIcon />}
-                    onClick={() => handleOperation('maintenance')}
-                    fullWidth
-                    sx={{
-                      borderRadius: 2,
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      py: 1.5
-                    }}
-                  >
-                    Maintenance Mode
-                  </Button>
-                </Stack>
-                
-                <Alert 
-                  severity="warning" 
-                  sx={{ 
-                    mt: 2, 
-                    borderRadius: 2,
-                    '& .MuiAlert-message': { fontSize: '0.8rem' }
-                  }}
-                >
-                  Use emergency actions only when necessary. Always backup first.
-                </Alert>
-              </Paper>
-            </Stack>
-          </Box>
-        </Box>
-
-        {/* Operation Dialog */}
-        {renderOperationDialog()}
-        
-        {/* Footer */}
-        <Box sx={{ 
-          mt: 6, 
-          p: 3,
-          textAlign: 'center',
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          bgcolor: 'background.paper',
-          borderRadius: 3
-        }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-            Database Management System • Last refreshed: {new Date().toLocaleString()} • All operations logged
-          </Typography>
-        </Box>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Paper>
       </Box>
+
+      <InstitutionModal open={dialogOpen} onClose={() => !working && setDialogOpen(false)} disableClose={working} maxWidth="sm">
+        <InstitutionModalHeader
+          icon={BackupIcon}
+          title={dialogConfig.title}
+          subtitle={dialogConfig.subtitle}
+          onClose={() => setDialogOpen(false)}
+          disableClose={working}
+        />
+        <InstitutionModalBody>
+          <InstitutionModalSection title="Configuration">
+            {dialogConfig.content}
+          </InstitutionModalSection>
+        </InstitutionModalBody>
+        <InstitutionModalFooter>
+          <Button onClick={() => setDialogOpen(false)} disabled={working} color="inherit">Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={executeOperation}
+            disabled={working}
+            startIcon={working ? <CircularProgress size={16} color="inherit" /> : null}
+            sx={{ bgcolor: PURPLE, '&:hover': { bgcolor: PURPLE_DARK } }}
+          >
+            {working ? 'Running...' : 'Execute'}
+          </Button>
+        </InstitutionModalFooter>
+      </InstitutionModal>
+
+      <Snackbar open={notice.open} autoHideDuration={6000} onClose={() => setNotice((prev) => ({ ...prev, open: false }))} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert severity={notice.severity} onClose={() => setNotice((prev) => ({ ...prev, open: false }))} sx={{ borderRadius: 2, width: '100%' }}>
+          {notice.message}
+        </Alert>
+      </Snackbar>
     </InstitutionAdminLayout>
   );
 };

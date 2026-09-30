@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import { requireInstitutionPipeline } from '@/lib/institution-scope';
 
 export async function POST(request, { params }) {
   try {
-    const { pipelineId } = params;
+    const { pipelineId } = await params;
+    const access = await requireInstitutionPipeline(pipelineId);
+    if (access.error) return access.error;
+
     const body = await request.json();
     const {
       name,
@@ -21,13 +23,9 @@ export async function POST(request, { params }) {
     } = body;
 
     if (!name || !stageType) {
-      return NextResponse.json(
-        { error: 'Stage name and type are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Stage name and type are required' }, { status: 400 });
     }
 
-    // Get the next order number
     const lastStage = await prisma.proposalReviewStage.findFirst({
       where: { pipelineId },
       orderBy: { order: 'desc' },
@@ -44,7 +42,7 @@ export async function POST(request, { params }) {
         order: nextOrder,
         isRequired: isRequired ?? true,
         autoApprove: autoApprove ?? false,
-        daysToComplete: daysToComplete ? parseInt(daysToComplete) : null,
+        daysToComplete: daysToComplete ? parseInt(daysToComplete, 10) : null,
         reviewerRoles: reviewerRoles || [],
         reviewerEmails: reviewerEmails || [],
         requiresAllReviewers: requiresAllReviewers ?? false,
@@ -55,9 +53,6 @@ export async function POST(request, { params }) {
     return NextResponse.json({ stage }, { status: 201 });
   } catch (error) {
     console.error('Error creating stage:', error);
-    return NextResponse.json(
-      { error: 'Failed to create stage' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create stage' }, { status: 500 });
   }
 }

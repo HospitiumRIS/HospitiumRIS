@@ -76,7 +76,9 @@ const InstitutionAnalytics = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/institution/analytics');
+      const response = await fetch('/api/institution/analytics', {
+        credentials: 'include',
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch analytics data');
       }

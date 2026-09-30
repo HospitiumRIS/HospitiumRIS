@@ -1,9 +1,20 @@
 import { NextResponse } from 'next/server';
 import prisma, { ensurePrismaConnected } from '@/lib/prisma';
+import {
+  requireInstitutionPortalAccess,
+  getInstitutionProposalScopeWhere,
+  withDateFilter,
+} from '@/lib/institution-scope';
 
 export async function GET(request) {
   try {
     await ensurePrismaConnected();
+
+    const access = await requireInstitutionPortalAccess();
+    if (access.error) return access.error;
+
+    const { institution, memberIds } = access;
+    const proposalScopeWhere = await getInstitutionProposalScopeWhere(institution, memberIds);
 
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
@@ -17,6 +28,8 @@ export async function GET(request) {
       };
     }
 
+    const scopedWhere = (extra = {}) => withDateFilter({ ...proposalScopeWhere, ...extra }, dateFilter);
+
     const [
       allProposals,
       proposalsWithEthics,
@@ -27,16 +40,15 @@ export async function GET(request) {
       proposalsWithConsent
     ] = await Promise.all([
       prisma.proposal.count({
-        where: dateFilter
+        where: scopedWhere()
       }),
 
       prisma.proposal.findMany({
-        where: {
+        where: scopedWhere({
           ethicsApprovalStatus: {
             not: null
           },
-          ...dateFilter
-        },
+        }),
         select: {
           id: true,
           title: true,
@@ -61,42 +73,23 @@ export async function GET(request) {
       }),
 
       prisma.proposal.count({
-        where: {
-          ethicsApprovalStatus: 'Approved',
-          ...dateFilter
-        }
+        where: scopedWhere({ ethicsApprovalStatus: 'Approved' }),
       }),
 
       prisma.proposal.count({
-        where: {
-          ethicsApprovalStatus: 'Pending',
-          ...dateFilter
-        }
+        where: scopedWhere({ ethicsApprovalStatus: 'Pending' }),
       }),
 
       prisma.proposal.count({
-        where: {
-          ethicsApprovalStatus: 'Rejected',
-          ...dateFilter
-        }
+        where: scopedWhere({ ethicsApprovalStatus: 'Rejected' }),
       }),
 
       prisma.proposal.count({
-        where: {
-          dataManagementPlan: {
-            isEmpty: false
-          },
-          ...dateFilter
-        }
+        where: scopedWhere({ dataManagementPlan: { isEmpty: false } }),
       }),
 
       prisma.proposal.count({
-        where: {
-          consentProcedures: {
-            not: null
-          },
-          ...dateFilter
-        }
+        where: scopedWhere({ consentProcedures: { not: null } }),
       })
     ]);
 
@@ -149,14 +142,10 @@ export async function GET(request) {
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
     const monthlyEthicsData = await prisma.proposal.findMany({
-      where: {
-        ethicsApprovalStatus: {
-          not: null
-        },
-        createdAt: {
-          gte: sixMonthsAgo
-        }
-      },
+      where: withDateFilter(
+        { ...proposalScopeWhere, ethicsApprovalStatus: { not: null } },
+        { createdAt: { gte: sixMonthsAgo } }
+      ),
       select: {
         ethicsApprovalStatus: true,
         createdAt: true
@@ -262,6 +251,7 @@ export async function GET(request) {
     ).length;
 
     const analyticsData = {
+      institution: { id: institution.id, name: institution.name },
       overview: {
         totalProposals: allProposals,
         proposalsWithEthics: proposalsWithEthics.length,
