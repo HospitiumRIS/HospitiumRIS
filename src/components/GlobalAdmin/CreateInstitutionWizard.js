@@ -24,6 +24,7 @@ import {
   Person as PersonIcon,
 } from '@mui/icons-material';
 import { PasswordFields } from './InstitutionManageDialogs';
+import InstitutionAdminEmailField from './InstitutionAdminEmailField';
 import {
   InstitutionModal,
   InstitutionModalBody,
@@ -383,15 +384,11 @@ const CreateInstitutionWizard = ({ open, onClose, onComplete }) => {
                 value={admin.name}
                 onChange={(event) => setAdmin((prev) => ({ ...prev, name: event.target.value }))}
               />
-              <TextField
-                fullWidth
-                required
-                type="email"
-                label="Admin email"
-                name="admin-email"
-                autoComplete="off"
+              <InstitutionAdminEmailField
                 value={admin.email}
-                onChange={(event) => setAdmin((prev) => ({ ...prev, email: event.target.value }))}
+                onChange={(email) => setAdmin((prev) => ({ ...prev, email }))}
+                suggestedDomains={domains}
+                onErrorClear={() => setError('')}
               />
               <PasswordFields
                 password={admin.password}

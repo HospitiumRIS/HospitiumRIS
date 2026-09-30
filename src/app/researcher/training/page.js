@@ -1,598 +1,596 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  Alert,
   Box,
-  Container,
-  Typography,
-  Card,
-  CardContent,
-  CardActions,
   Button,
   Chip,
   CircularProgress,
-  Alert,
+  Container,
   Dialog,
-  DialogTitle,
-  DialogContent,
   DialogActions,
-  LinearProgress,
-  Divider,
+  DialogContent,
+  DialogTitle,
   IconButton,
-  Tooltip,
+  InputAdornment,
+  LinearProgress,
+  Paper,
+  Snackbar,
   Stack,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
+  alpha,
 } from '@mui/material';
 import {
-  School as TrainingIcon,
   CalendarToday as CalendarIcon,
-  LocationOn as LocationIcon,
-  People as PeopleIcon,
-  CheckCircle as CompletedIcon,
-  Schedule as ScheduleIcon,
+  Close as CloseIcon,
   Description as MaterialsIcon,
   EmojiEvents as CertificateIcon,
-  Close as CloseIcon,
-  Info as InfoIcon,
+  Home as HomeIcon,
+  LocationOn as LocationIcon,
+  People as PeopleIcon,
+  Refresh as RefreshIcon,
+  School as TrainingIcon,
+  Search as SearchIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
 import PageHeader from '@/components/common/PageHeader';
-import { Home as HomeIcon } from '@mui/icons-material';
-import { useTranslation } from 'react-i18next';
+
+const PURPLE = '#8b6cbc';
+const dialogLock = { disableScrollLock: true };
+
+const STATUS_TONE = {
+  REGISTERED: { bg: alpha(PURPLE, 0.12), color: PURPLE, label: 'Registered' },
+  COMPLETED: { bg: '#dcfce7', color: '#166534', label: 'Completed' },
+  CANCELLED: { bg: '#fee2e2', color: '#b91c1c', label: 'Cancelled' },
+};
+
+const formatDate = (value) => {
+  if (!value) return 'Not set';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Not set';
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
+const formatRange = (start, end) => `${formatDate(start)} - ${formatDate(end)}`;
+
+const daysUntil = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return Math.ceil((date.getTime() - Date.now()) / 86400000);
+};
+
+const asList = (value) => {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === 'string' && value.trim()) return [value];
+  return [];
+};
+
+const locationDisplay = (location) => {
+  if (!location) return { label: 'Location to be announced', href: null };
+  const trimmed = String(location).trim();
+  try {
+    const url = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
+    if (url.hostname.includes('.')) {
+      return { label: url.hostname.replace(/^www\./, ''), href: url.href };
+    }
+  } catch {
+    // not a URL
+  }
+  return { label: trimmed, href: trimmed.startsWith('http') ? trimmed : null };
+};
+
+function StatusChip({ status }) {
+  const tone = STATUS_TONE[status] || { bg: '#f1f5f9', color: '#475569', label: String(status || '').replaceAll('_', ' ') };
+  return <Chip size="small" label={tone.label} sx={{ bgcolor: tone.bg, color: tone.color, fontWeight: 700, height: 24 }} />;
+}
+
+function StatCard({ label, value, caption }) {
+  return (
+    <Paper sx={{ flex: 1, minWidth: 160, p: 2, borderRadius: 2, bgcolor: PURPLE, color: 'white' }}>
+      <Typography variant="caption" sx={{ opacity: 0.85, fontWeight: 700 }}>{label}</Typography>
+      <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5 }}>{value}</Typography>
+      {caption ? <Typography variant="caption" sx={{ opacity: 0.75 }}>{caption}</Typography> : null}
+    </Paper>
+  );
+}
+
+function MetaRow({ icon, children }) {
+  return (
+    <Stack direction="row" spacing={1} alignItems="flex-start">
+      <Box sx={{ color: PURPLE, mt: '1px' }}>{icon}</Box>
+      <Typography variant="body2" color="text.secondary">{children}</Typography>
+    </Stack>
+  );
+}
+
+function DeadlineLabel({ startDate, endDate }) {
+  const untilEnd = daysUntil(endDate);
+  const untilStart = daysUntil(startDate);
+  if (untilEnd == null) return null;
+  if (untilEnd < 0) return <Chip size="small" label="Ended" sx={{ bgcolor: '#f1f5f9', color: '#64748b', fontWeight: 700 }} />;
+  if (untilStart > 0) return <Chip size="small" label={`Starts in ${untilStart} day${untilStart === 1 ? '' : 's'}`} sx={{ bgcolor: '#dbeafe', color: '#1d4ed8', fontWeight: 700 }} />;
+  return <Chip size="small" label={`${untilEnd} day${untilEnd === 1 ? '' : 's'} left`} sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} />;
+}
 
 export default function TrainingPage() {
-  const { t } = useTranslation();
-  const theme = useTheme();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [myTrainings, setMyTrainings] = useState([]);
   const [availableTrainings, setAvailableTrainings] = useState([]);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [selectedTraining, setSelectedTraining] = useState(null);
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [registering, setRegistering] = useState(false);
+  const [search, setSearch] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [tab, setTab] = useState(0);
 
-  useEffect(() => {
-    fetchTrainings();
-  }, []);
-
-  const fetchTrainings = async () => {
+  const loadTrainings = async () => {
     try {
       setLoading(true);
-      
-      // Fetch my trainings
-      const myResponse = await fetch('/api/training/my');
+      setError('');
+      const [myResponse, allResponse] = await Promise.all([
+        fetch('/api/training/my'),
+        fetch('/api/training'),
+      ]);
       const myData = await myResponse.json();
-      
-      // Fetch all available trainings
-      const allResponse = await fetch('/api/training');
       const allData = await allResponse.json();
-      
-      if (myData.success) {
-        setMyTrainings(myData.registrations || []);
-      }
-      
+
+      const registrations = myData.success ? (myData.registrations || []) : [];
+      setMyTrainings(registrations);
+
       if (allData.success) {
-        // Filter out trainings user is already registered for
-        const registeredIds = new Set(myData.registrations?.map(r => r.training.id) || []);
-        const available = allData.trainings.filter(t => !registeredIds.has(t.id));
-        setAvailableTrainings(available);
+        const registeredIds = new Set(registrations.map((item) => item.training.id));
+        setAvailableTrainings((allData.trainings || []).filter((item) => !registeredIds.has(item.id)));
       }
-      
-      setError(null);
     } catch (err) {
-      console.error('Error fetching trainings:', err);
-      setError('Failed to load trainings');
+      setError(err.message || 'Failed to load trainings');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleViewDetails = async (trainingId) => {
+  useEffect(() => {
+    loadTrainings();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.hash === '#available') {
+      setTab(1);
+      requestAnimationFrame(() => {
+        document.getElementById('available')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }, [loading]);
+
+  const departments = useMemo(() => {
+    const values = [...myTrainings.map((item) => item.training.department), ...availableTrainings.map((item) => item.department)];
+    return [...new Set(values.filter(Boolean))].sort();
+  }, [myTrainings, availableTrainings]);
+
+  const matchesSearch = (training) => {
+    const haystack = `${training.title} ${training.description || ''} ${training.department || ''} ${asList(training.targetGroup).join(' ')}`.toLowerCase();
+    return !search || haystack.includes(search.toLowerCase());
+  };
+
+  const filteredMine = myTrainings.filter((item) => {
+    const training = item.training;
+    const matchesDept = departmentFilter === 'all' || training.department === departmentFilter;
+    return matchesSearch(training) && matchesDept;
+  });
+
+  const filteredAvailable = availableTrainings.filter((training) => {
+    const matchesDept = departmentFilter === 'all' || training.department === departmentFilter;
+    return matchesSearch(training) && matchesDept;
+  });
+
+  const stats = {
+    mine: myTrainings.length,
+    available: availableTrainings.length,
+    inProgress: myTrainings.filter((item) => item.status === 'REGISTERED').length,
+    completed: myTrainings.filter((item) => item.status === 'COMPLETED' || item.hasCertificate).length,
+  };
+
+  const openDetails = async (trainingId) => {
     try {
       const response = await fetch(`/api/training/${trainingId}`);
       const data = await response.json();
-      
-      if (data.success) {
-        setSelectedTraining(data.training);
-        setDetailsDialogOpen(true);
-      }
+      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to load training');
+      setSelectedTraining(data.training);
+      setDetailsOpen(true);
     } catch (err) {
-      console.error('Error fetching training details:', err);
+      setError(err.message || 'Failed to load training details');
     }
   };
 
   const handleRegister = async () => {
     if (!selectedTraining) return;
-    
     try {
       setRegistering(true);
-      const response = await fetch(`/api/training/${selectedTraining.id}/register`, {
-        method: 'POST',
-      });
-      
+      const response = await fetch(`/api/training/${selectedTraining.id}/register`, { method: 'POST' });
       const data = await response.json();
-      
-      if (data.success) {
-        setDetailsDialogOpen(false);
-        setSelectedTraining(null);
-        fetchTrainings(); // Refresh the lists
-      } else {
-        alert(data.error || 'Failed to register for training');
-      }
+      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to register');
+      setDetailsOpen(false);
+      setSelectedTraining(null);
+      setNotice('You are registered. This training now appears under My trainings.');
+      setTab(0);
+      await loadTrainings();
     } catch (err) {
-      console.error('Error registering:', err);
-      alert('Failed to register for training');
+      setError(err.message || 'Failed to register for training');
     } finally {
       setRegistering(false);
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'REGISTERED': return 'primary';
-      case 'COMPLETED': return 'success';
-      case 'CANCELLED': return 'error';
-      default: return 'default';
+  const renderLocation = (location) => {
+    const meta = locationDisplay(location);
+    if (meta.href) {
+      return (
+        <Box
+          component="a"
+          href={meta.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(event) => event.stopPropagation()}
+          sx={{ color: PURPLE, fontWeight: 600, textDecoration: 'none' }}
+        >
+          {meta.label}
+        </Box>
+      );
     }
+    return meta.label;
   };
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  if (loading) {
+  const renderCard = ({ key, training, registration, onOpen }) => {
+    const groups = asList(training.targetGroup);
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <CircularProgress />
-      </Box>
+      <Paper
+        key={key}
+        elevation={0}
+        onClick={onOpen}
+        sx={{
+          p: 2.25,
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          cursor: 'pointer',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 240,
+          '&:hover': { borderColor: alpha(PURPLE, 0.45), boxShadow: `0 8px 24px ${alpha(PURPLE, 0.12)}` },
+        }}
+      >
+        <Stack direction="row" justifyContent="space-between" spacing={1} sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1e293b' }}>{training.title}</Typography>
+          {registration ? <StatusChip status={registration.status} /> : <DeadlineLabel startDate={training.startDate} endDate={training.endDate} />}
+        </Stack>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {training.description || 'No description provided.'}
+        </Typography>
+        <Stack spacing={0.75} sx={{ mb: 1.5 }}>
+          <MetaRow icon={<CalendarIcon sx={{ fontSize: 16 }} />}>{formatRange(training.startDate, training.endDate)}</MetaRow>
+          <MetaRow icon={<LocationIcon sx={{ fontSize: 16 }} />}>{renderLocation(training.location)}</MetaRow>
+          <MetaRow icon={<PeopleIcon sx={{ fontSize: 16 }} />}>
+            {[training.department, ...groups].filter(Boolean).join(' · ') || 'Audience not specified'}
+          </MetaRow>
+        </Stack>
+        {registration && registration.totalModules > 0 ? (
+          <Box sx={{ mt: 'auto' }}>
+            <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+              <Typography variant="caption" color="text.secondary">Progress</Typography>
+              <Typography variant="caption" sx={{ color: PURPLE, fontWeight: 700 }}>
+                {registration.completedModules}/{registration.totalModules} modules
+              </Typography>
+            </Stack>
+            <LinearProgress
+              variant="determinate"
+              value={registration.progressPercentage || 0}
+              sx={{ height: 6, borderRadius: 3, bgcolor: alpha(PURPLE, 0.12), '& .MuiLinearProgress-bar': { bgcolor: PURPLE } }}
+            />
+            {registration.hasCertificate ? (
+              <Chip icon={<CertificateIcon sx={{ fontSize: 16 }} />} label="Certificate ready" size="small" sx={{ mt: 1.25, bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} />
+            ) : null}
+          </Box>
+        ) : (
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 'auto' }}>
+            <Chip size="small" label={`${training.moduleCount ?? training.modules?.length ?? 0} modules`} sx={{ bgcolor: alpha(PURPLE, 0.08), color: PURPLE, fontWeight: 700 }} />
+            <Typography variant="caption" sx={{ fontWeight: 700, color: (training.remainingSlots ?? 0) > 0 ? '#166534' : '#b91c1c' }}>
+              {(training.remainingSlots ?? 0) > 0 ? `${training.remainingSlots} seats left` : 'Full'}
+            </Typography>
+          </Stack>
+        )}
+        <Button
+          size="small"
+          startIcon={registration ? <MaterialsIcon /> : <ScheduleIcon />}
+          sx={{ mt: 1.5, color: PURPLE, textTransform: 'none', fontWeight: 700, alignSelf: 'flex-start', px: 0 }}
+        >
+          {registration ? (registration.hasCertificate ? 'View materials and certificate' : 'View materials') : 'View details and register'}
+        </Button>
+      </Paper>
     );
-  }
+  };
+
+  const fieldSx = {
+    '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: PURPLE },
+    '& .MuiInputLabel-root.Mui-focused': { color: PURPLE },
+  };
 
   return (
-    <>
+    <Box>
       <PageHeader
-        title={t('researcher.training')}
-        description={t('researcher.training_browse_desc')}
-        icon={<TrainingIcon sx={{ fontSize: 40 }} />}
+        title="Training"
+        description="Browse published sessions, register, and track module progress."
+        icon={<TrainingIcon sx={{ fontSize: 32 }} />}
         breadcrumbs={[
-          { label: 'Home', path: '/researcher', icon: <HomeIcon /> },
-          { label: 'Training' }
+          { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/researcher' },
+          { label: 'Training' },
         ]}
+        actionButton={
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="contained"
+              onClick={() => router.push('/researcher/training/certificates')}
+              sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}
+            >
+              Certificates
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<RefreshIcon />}
+              onClick={loadTrainings}
+              sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}
+            >
+              Refresh
+            </Button>
+          </Stack>
+        }
       />
-      <Container maxWidth="xl" sx={{ py: 4 }}>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
+      <Container maxWidth={false} sx={{ py: 3, maxWidth: '1600px', mx: 'auto' }}>
+        {error ? <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert> : null}
 
-      {/* My Trainings Section */}
-      <Box sx={{ mb: 6 }}>
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <TrainingIcon sx={{ color: '#8b6cbc' }} />
-          My Trainings
-        </Typography>
-
-        {myTrainings.length === 0 ? (
-          <Alert severity="info">
-            You haven't registered for any trainings yet. Browse available trainings below to get started.
-          </Alert>
+        {loading ? (
+          <Box sx={{ py: 10, display: 'flex', justifyContent: 'center' }}>
+            <CircularProgress sx={{ color: PURPLE }} />
+          </Box>
         ) : (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-            {myTrainings.map((registration) => (
-              <Card
-                key={registration.id}
+          <>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2.5 }}>
+              <StatCard label="My trainings" value={stats.mine} caption="Sessions you have joined" />
+              <StatCard label="Available" value={stats.available} caption="Open for registration" />
+              <StatCard label="In progress" value={stats.inProgress} caption="Registered and underway" />
+              <StatCard label="Completed" value={stats.completed} caption="Finished or certified" />
+            </Stack>
+
+            <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Search by title, department, or audience"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+                  sx={fieldSx}
+                />
+                <TextField
+                  select
+                  size="small"
+                  label="Department"
+                  value={departmentFilter}
+                  onChange={(event) => setDepartmentFilter(event.target.value)}
+                  SelectProps={{ native: true }}
+                  sx={{ minWidth: 220, ...fieldSx }}
+                >
+                  <option value="all">All departments</option>
+                  {departments.map((department) => (
+                    <option key={department} value={department}>{department}</option>
+                  ))}
+                </TextField>
+              </Stack>
+            </Paper>
+
+            <Paper id="available" sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', scrollMarginTop: 96 }}>
+              <Tabs
+                value={tab}
+                onChange={(_, value) => {
+                  setTab(value);
+                  if (typeof window !== 'undefined') {
+                    window.history.replaceState(null, '', value === 1 ? '#available' : '/researcher/training');
+                  }
+                }}
                 sx={{
-                  width: 'calc(33.333% - 16px)',
-                  minWidth: '320px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  '&:hover': {
-                    boxShadow: theme.shadows[8],
-                    transform: 'translateY(-4px)',
-                  },
-                  transition: 'all 0.3s ease',
+                  '& .MuiTab-root': { textTransform: 'none', fontWeight: 700, minHeight: 52, color: '#64748b' },
+                  '& .Mui-selected': { color: `${PURPLE} !important` },
+                  '& .MuiTabs-indicator': { backgroundColor: PURPLE, height: 3 },
                 }}
               >
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
-                      {registration.training.title}
-                    </Typography>
-                    <Chip
-                      label={registration.status}
-                      color={getStatusColor(registration.status)}
-                      size="small"
-                    />
-                  </Box>
+                <Tab icon={<TrainingIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`My trainings (${filteredMine.length})`} />
+                <Tab icon={<ScheduleIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Available (${filteredAvailable.length})`} />
+              </Tabs>
+            </Paper>
 
+            {tab === 0 && (
+              filteredMine.length ? (
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(3, 1fr)' }, gap: 2 }}>
+                  {filteredMine.map((registration) => renderCard({
+                    key: registration.id,
+                    training: registration.training,
+                    registration,
+                    onOpen: () => openDetails(registration.training.id),
+                  }))}
+                </Box>
+              ) : (
+                <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 2, border: '1px dashed', borderColor: alpha(PURPLE, 0.3) }}>
+                  <TrainingIcon sx={{ fontSize: 42, color: '#cbd5e1', mb: 1 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>No registered trainings</Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    {registration.training.description?.substring(0, 100)}
-                    {registration.training.description?.length > 100 && '...'}
+                    Browse available sessions and register to start tracking progress.
                   </Typography>
-
-                  <Stack spacing={1} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CalendarIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDate(registration.training.startDate)} - {formatDate(registration.training.endDate)}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LocationIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">
-                        {registration.training.location || 'TBD'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <PeopleIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">
-                        {registration.training.department} • {registration.training.targetGroup}
-                      </Typography>
-                    </Box>
-                  </Stack>
-
-                  {/* Progress */}
-                  {registration.totalModules > 0 && (
-                    <Box sx={{ mt: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          Progress
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {registration.completedModules}/{registration.totalModules} modules
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={registration.progressPercentage}
-                        sx={{
-                          height: 8,
-                          borderRadius: 4,
-                          backgroundColor: theme.palette.grey[200],
-                          '& .MuiLinearProgress-bar': {
-                            backgroundColor: '#8b6cbc',
-                          },
-                        }}
-                      />
-                    </Box>
-                  )}
-
-                  {registration.hasCertificate && (
-                    <Chip
-                      icon={<CertificateIcon />}
-                      label="Certificate Available"
-                      color="success"
-                      size="small"
-                      sx={{ mt: 2 }}
-                    />
-                  )}
-                </CardContent>
-
-                <CardActions sx={{ p: 2, pt: 0 }}>
-                  <Button
-                    size="small"
-                    startIcon={<MaterialsIcon />}
-                    onClick={() => handleViewDetails(registration.training.id)}
-                  >
-                    View Materials
+                  <Button variant="contained" onClick={() => setTab(1)} sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 }}>
+                    View available trainings
                   </Button>
-                  {registration.hasCertificate && (
-                    <Button
-                      size="small"
-                      startIcon={<CertificateIcon />}
-                      onClick={() => window.open(registration.certificate.certificateUrl, '_blank')}
-                    >
-                      Download Certificate
-                    </Button>
-                  )}
-                </CardActions>
-              </Card>
-            ))}
-          </Box>
+                </Paper>
+              )
+            )}
+
+            {tab === 1 && (
+              filteredAvailable.length ? (
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(3, 1fr)' }, gap: 2 }}>
+                  {filteredAvailable.map((training) => renderCard({
+                    key: training.id,
+                    training,
+                    onOpen: () => openDetails(training.id),
+                  }))}
+                </Box>
+              ) : (
+                <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 2, border: '1px dashed', borderColor: alpha(PURPLE, 0.3) }}>
+                  <ScheduleIcon sx={{ fontSize: 42, color: '#cbd5e1', mb: 1 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>No available trainings</Typography>
+                  <Typography variant="body2" color="text.secondary">Nothing is open for registration right now, or your filters hid the current list.</Typography>
+                </Paper>
+              )
+            )}
+          </>
         )}
-      </Box>
+      </Container>
 
-      <Divider sx={{ my: 4 }} />
-
-      {/* Available Trainings Section */}
-      <Box id="available" sx={{ scrollMarginTop: '96px' }}>
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <ScheduleIcon sx={{ color: '#8b6cbc' }} />
-          Available Trainings
-        </Typography>
-
-        {availableTrainings.length === 0 ? (
-          <Alert severity="info">
-            No trainings available at the moment. Check back later for new opportunities.
-          </Alert>
-        ) : (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-            {availableTrainings.map((training) => (
-              <Card
-                key={training.id}
-                sx={{
-                  width: 'calc(33.333% - 16px)',
-                  minWidth: '320px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    boxShadow: theme.shadows[8],
-                    transform: 'translateY(-4px)',
-                  },
-                  transition: 'all 0.3s ease',
-                }}
-                onClick={() => handleViewDetails(training.id)}
-              >
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                    {training.title}
-                  </Typography>
-
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    {training.description?.substring(0, 100)}
-                    {training.description?.length > 100 && '...'}
-                  </Typography>
-
-                  <Stack spacing={1} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CalendarIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDate(training.startDate)} - {formatDate(training.endDate)}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LocationIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">
-                        {training.location || 'TBD'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <PeopleIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      <Typography variant="caption" color="text.secondary">
-                        {training.department} • {training.targetGroup}
-                      </Typography>
-                    </Box>
-                  </Stack>
-
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-                    <Chip
-                      label={`${training.moduleCount} modules`}
-                      size="small"
-                      variant="outlined"
-                    />
-                    <Typography variant="caption" color={training.remainingSlots > 0 ? 'success.main' : 'error.main'}>
-                      {training.remainingSlots > 0 
-                        ? `${training.remainingSlots} slots left`
-                        : 'Full'}
-                    </Typography>
-                  </Box>
-                </CardContent>
-
-                <CardActions sx={{ p: 2, pt: 0 }}>
-                  <Button
-                    size="small"
-                    startIcon={<InfoIcon />}
-                    fullWidth
-                  >
-                    View Details & Register
-                  </Button>
-                </CardActions>
-              </Card>
-            ))}
-          </Box>
-        )}
-      </Box>
-
-      {/* Training Details Dialog */}
       <Dialog
-        open={detailsDialogOpen}
-        onClose={() => setDetailsDialogOpen(false)}
+        open={detailsOpen}
+        onClose={() => !registering && setDetailsOpen(false)}
         maxWidth="md"
         fullWidth
+        {...dialogLock}
+        PaperProps={{ sx: { borderRadius: 2 } }}
       >
-        {selectedTraining && (
+        {selectedTraining ? (
           <>
-            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box component="span" sx={{ fontWeight: 600 }}>
-                {selectedTraining.title}
-              </Box>
-              <IconButton onClick={() => setDetailsDialogOpen(false)} size="small">
-                <CloseIcon />
-              </IconButton>
+            <DialogTitle sx={{ bgcolor: PURPLE, color: 'white', fontWeight: 800, pr: 1 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                <Box>
+                  {selectedTraining.title}
+                  <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                    {selectedTraining.department || 'Department not set'}
+                  </Typography>
+                </Box>
+                <IconButton size="small" onClick={() => setDetailsOpen(false)} sx={{ color: 'white' }}>
+                  <CloseIcon />
+                </IconButton>
+              </Stack>
             </DialogTitle>
-            <DialogContent dividers>
-              <Stack spacing={3}>
-                {/* Basic Info */}
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Description
-                  </Typography>
-                  <Typography variant="body2">
-                    {selectedTraining.description || 'No description available'}
-                  </Typography>
-                </Box>
+            <DialogContent sx={{ pt: 3 }}>
+              <Stack spacing={2.5} sx={{ mt: 1 }}>
+                <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.7 }}>
+                  {selectedTraining.description || 'No description available.'}
+                </Typography>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderRadius: 2 }}>
+                    <Typography variant="caption" color="text.secondary">Schedule</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{formatRange(selectedTraining.startDate, selectedTraining.endDate)}</Typography>
+                  </Paper>
+                  <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderRadius: 2 }}>
+                    <Typography variant="caption" color="text.secondary">Location</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{renderLocation(selectedTraining.location)}</Typography>
+                  </Paper>
+                  <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderRadius: 2 }}>
+                    <Typography variant="caption" color="text.secondary">Capacity</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {selectedTraining.remainingSlots} of {selectedTraining.maxParticipants} seats left
+                    </Typography>
+                  </Paper>
+                </Stack>
+                {asList(selectedTraining.targetGroup).length ? (
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {asList(selectedTraining.targetGroup).map((group) => (
+                      <Chip key={group} size="small" label={group} sx={{ bgcolor: alpha(PURPLE, 0.08), color: PURPLE, fontWeight: 700 }} />
+                    ))}
+                  </Stack>
+                ) : null}
 
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                  <Box sx={{ flex: '1 1 45%' }}>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Department
-                    </Typography>
-                    <Typography variant="body2">{selectedTraining.department}</Typography>
-                  </Box>
-                  <Box sx={{ flex: '1 1 45%' }}>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Target Group
-                    </Typography>
-                    <Typography variant="body2">{selectedTraining.targetGroup}</Typography>
-                  </Box>
-                  <Box sx={{ flex: '1 1 45%' }}>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Location
-                    </Typography>
-                    <Typography variant="body2">{selectedTraining.location || 'TBD'}</Typography>
-                  </Box>
-                  <Box sx={{ flex: '1 1 45%' }}>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Duration
-                    </Typography>
-                    <Typography variant="body2">
-                      {formatDate(selectedTraining.startDate)} - {formatDate(selectedTraining.endDate)}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ flex: '1 1 45%' }}>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Capacity
-                    </Typography>
-                    <Typography variant="body2">
-                      {selectedTraining.maxParticipants} participants ({selectedTraining.remainingSlots} slots remaining)
-                    </Typography>
-                  </Box>
-                </Box>
-
-                {/* Modules */}
                 <Box>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Training Modules
-                  </Typography>
-                  {selectedTraining.modules && selectedTraining.modules.length > 0 ? (
-                    <Stack spacing={1} sx={{ mt: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Modules</Typography>
+                  {(selectedTraining.modules || []).length ? (
+                    <Stack spacing={1}>
                       {selectedTraining.modules.map((module, index) => {
-                        const moduleMaterials = (selectedTraining.materials || []).filter(
-                          (m) => m.moduleId === module.id
-                        );
+                        const moduleMaterials = (selectedTraining.materials || []).filter((item) => item.moduleId === module.id);
                         return (
-                          <Card key={module.id} variant="outlined" sx={{ p: 2 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                              Module {index + 1}: {module.title}
-                            </Typography>
-                            {module.description && (
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                component="div"
-                                sx={{ mb: moduleMaterials.length > 0 ? 1 : 0 }}
-                              >
-                                {module.description}
-                              </Typography>
-                            )}
-                            {moduleMaterials.length > 0 && (
-                              <Stack spacing={0.5} sx={{ mt: 1 }}>
-                                {moduleMaterials.map((material) => (
-                                  <Box
-                                    key={material.id}
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'space-between',
-                                      p: 1,
-                                      border: `1px solid ${theme.palette.divider}`,
-                                      borderRadius: 1,
-                                    }}
-                                  >
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                      <MaterialsIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                                      <Typography variant="body2">{material.name}</Typography>
-                                    </Box>
-                                    <Button
-                                      size="small"
-                                      onClick={() => window.open(material.fileUrl, '_blank')}
-                                    >
-                                      Download
-                                    </Button>
-                                  </Box>
-                                ))}
+                          <Paper key={module.id} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 700 }}>Module {index + 1}: {module.title}</Typography>
+                            {module.description ? <Typography variant="caption" color="text.secondary">{module.description}</Typography> : null}
+                            {moduleMaterials.map((material) => (
+                              <Stack key={material.id} direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1 }}>
+                                <Typography variant="body2">{material.name}</Typography>
+                                {material.fileUrl ? (
+                                  <Button size="small" onClick={() => window.open(material.fileUrl, '_blank', 'noopener')} sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
+                                    Open
+                                  </Button>
+                                ) : null}
                               </Stack>
-                            )}
-                          </Card>
+                            ))}
+                          </Paper>
                         );
                       })}
                     </Stack>
                   ) : (
-                    <Alert severity="info" sx={{ mt: 1 }}>
-                      No modules have been added to this training yet.
-                    </Alert>
+                    <Typography variant="body2" color="text.secondary">No modules have been published yet.</Typography>
                   )}
                 </Box>
 
-                {/* General Materials (not tied to a specific module) */}
-                {(() => {
-                  const allMaterials = selectedTraining.materials || [];
-                  const generalMaterials = allMaterials.filter((m) => !m.moduleId);
-                  const totalMaterialsCount = selectedTraining._count?.materials ?? allMaterials.length;
-                  const hiddenCount = totalMaterialsCount - allMaterials.length;
-
-                  if (generalMaterials.length === 0 && hiddenCount <= 0) return null;
-
-                  return (
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        General Materials
-                      </Typography>
-                      {generalMaterials.length > 0 && (
-                        <Stack spacing={1} sx={{ mt: 1 }}>
-                          {generalMaterials.map((material) => (
-                            <Box
-                              key={material.id}
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                p: 1,
-                                border: `1px solid ${theme.palette.divider}`,
-                                borderRadius: 1,
-                              }}
-                            >
-                              <Typography variant="body2">{material.name}</Typography>
-                              <Button
-                                size="small"
-                                onClick={() => window.open(material.fileUrl, '_blank')}
-                              >
-                                Download
-                              </Button>
-                            </Box>
-                          ))}
+                {(selectedTraining.materials || []).filter((item) => !item.moduleId).length ? (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>General materials</Typography>
+                    <Stack spacing={1}>
+                      {(selectedTraining.materials || []).filter((item) => !item.moduleId).map((material) => (
+                        <Stack key={material.id} direction="row" justifyContent="space-between" sx={{ p: 1.25, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
+                          <Typography variant="body2">{material.name}</Typography>
+                          {material.fileUrl ? (
+                            <Button size="small" onClick={() => window.open(material.fileUrl, '_blank', 'noopener')} sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
+                              Open
+                            </Button>
+                          ) : null}
                         </Stack>
-                      )}
-                      {hiddenCount > 0 && (
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                          {hiddenCount} additional material{hiddenCount > 1 ? 's' : ''} will be available after you register.
-                        </Typography>
-                      )}
-                    </Box>
-                  );
-                })()}
+                      ))}
+                    </Stack>
+                  </Box>
+                ) : null}
               </Stack>
             </DialogContent>
-            <DialogActions sx={{ p: 2 }}>
-              <Button onClick={() => setDetailsDialogOpen(false)}>
-                Cancel
-              </Button>
-              {!selectedTraining.isRegistered && (
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+              <Button onClick={() => setDetailsOpen(false)} disabled={registering} sx={{ textTransform: 'none' }}>Close</Button>
+              {!selectedTraining.isRegistered ? (
                 <Button
                   variant="contained"
                   onClick={handleRegister}
                   disabled={registering || selectedTraining.remainingSlots <= 0}
-                  sx={{
-                    backgroundColor: '#8b6cbc',
-                    '&:hover': { backgroundColor: '#7a5caa' },
-                  }}
+                  sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 }}
                 >
-                  {registering ? 'Registering...' : 'Register for Training'}
+                  {registering ? 'Registering...' : selectedTraining.remainingSlots <= 0 ? 'Session is full' : 'Register'}
                 </Button>
-              )}
+              ) : selectedTraining.userRegistration?.certificate?.certificateUrl ? (
+                <Button
+                  variant="contained"
+                  startIcon={<CertificateIcon />}
+                  onClick={() => window.open(selectedTraining.userRegistration.certificate.certificateUrl, '_blank', 'noopener')}
+                  sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 }}
+                >
+                  Download certificate
+                </Button>
+              ) : null}
             </DialogActions>
           </>
-        )}
+        ) : null}
       </Dialog>
-    </Container>
-    </>
+
+      <Snackbar open={Boolean(notice)} autoHideDuration={4000} onClose={() => setNotice('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert onClose={() => setNotice('')} severity="success" sx={{ width: '100%' }}>{notice}</Alert>
+      </Snackbar>
+    </Box>
   );
 }

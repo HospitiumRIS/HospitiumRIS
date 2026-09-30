@@ -41,6 +41,7 @@ import {
   InstitutionModalHeader,
   InstitutionModalSection,
 } from './InstitutionModalShell';
+import InstitutionAdminEmailField from './InstitutionAdminEmailField';
 
 function formatAdminName(admin) {
   return [admin?.givenName, admin?.familyName].filter(Boolean).join(' ');
@@ -527,15 +528,11 @@ export function ReassignAdminDialog({ open, institution, onClose, onSaved }) {
               value={form.name}
               onChange={handleChange}
             />
-            <TextField
-              fullWidth
-              required
-              type="email"
-              label="Admin email"
-              name="email"
-              autoComplete="off"
+            <InstitutionAdminEmailField
               value={form.email}
-              onChange={handleChange}
+              onChange={(email) => setForm((prev) => ({ ...prev, email }))}
+              institution={institution}
+              onErrorClear={() => setError('')}
             />
             <PasswordFields
               password={form.password}

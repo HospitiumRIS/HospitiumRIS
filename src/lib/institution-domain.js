@@ -28,6 +28,51 @@ export function extractDomain(email) {
 }
 
 /**
+ * Normalize a website URL or bare hostname into a lowercase domain.
+ * @param {string} value
+ * @returns {string|null}
+ */
+export function normalizeWebsiteDomain(value) {
+  if (!value || typeof value !== 'string') return null;
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/.*$/, '')
+    .replace(/[^\w.-].*$/, '');
+  return normalized || null;
+}
+
+/**
+ * Collect unique email domains associated with an institution record.
+ * @param {{ domains?: Array<{ domain?: string }>, contactEmail?: string, website?: string }|null|undefined} institution
+ * @param {string[]} [extraDomains]
+ * @returns {string[]}
+ */
+export function collectInstitutionEmailDomains(institution, extraDomains = []) {
+  const domains = new Set();
+
+  for (const entry of institution?.domains || []) {
+    const domain = entry?.domain?.trim().toLowerCase();
+    if (domain) domains.add(domain);
+  }
+
+  const contactDomain = extractDomain(institution?.contactEmail || '');
+  if (contactDomain) domains.add(contactDomain);
+
+  const websiteDomain = normalizeWebsiteDomain(institution?.website || '');
+  if (websiteDomain) domains.add(websiteDomain);
+
+  for (const domain of extraDomains) {
+    const normalized = normalizeWebsiteDomain(domain) || domain?.trim().toLowerCase();
+    if (normalized) domains.add(normalized);
+  }
+
+  return [...domains].sort();
+}
+
+/**
  * Find the Institution whose VerifiedDomain matches this email's domain.
  * PENDING and VERIFIED domains both count as a match (the domain can only
  * ever be added by that institution's own admin, so it's inherently

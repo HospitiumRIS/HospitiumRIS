@@ -315,7 +315,7 @@ export default function ProposalViewPage() {
     return (
       <Box sx={{ minHeight: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <CircularProgress sx={{ color: PURPLE }} />
-      </Box>
+        </Box>
     );
   }
 
@@ -332,7 +332,7 @@ export default function ProposalViewPage() {
     );
   }
 
-  return (
+    return (
     <>
       <PageHeader
         title={proposal.title}
@@ -346,9 +346,9 @@ export default function ProposalViewPage() {
         actionButton={
           <Stack direction="row" spacing={1.25} alignItems="center">
             {statusChip(proposal.status)}
-            <Button
+        <Button
               variant="contained"
-              startIcon={<ArrowBackIcon />}
+          startIcon={<ArrowBackIcon />}
               onClick={() => router.push('/researcher/projects/proposals/list')}
               sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}
             >
@@ -356,21 +356,21 @@ export default function ProposalViewPage() {
             </Button>
             <Tooltip title={canEdit ? 'Edit proposal' : 'Submitted proposals cannot be edited'}>
               <span>
-                <Button
+            <Button
                   variant="outlined"
                   startIcon={<EditIcon />}
                   disabled={!canEdit}
                   onClick={() => router.push(`/researcher/projects/proposals/edit/${params.id}`)}
-                  sx={{
+              sx={{
                     borderColor: 'white',
-                    color: 'white',
-                    textTransform: 'none',
+                color: 'white',
+                textTransform: 'none',
                     fontWeight: 700,
                     '&.Mui-disabled': { borderColor: 'rgba(255,255,255,0.35)', color: 'rgba(255,255,255,0.55)' },
                   }}
                 >
                   Edit
-                </Button>
+            </Button>
               </span>
             </Tooltip>
           </Stack>
@@ -391,18 +391,18 @@ export default function ProposalViewPage() {
                 {typeof value === 'string' ? (
                   <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
                     {value}
-                  </Typography>
+              </Typography>
                 ) : (
                   value
                 )}
-              </Box>
+            </Box>
             ))}
           </Stack>
         </Paper>
 
         <Paper elevation={0} sx={{ ...sectionCardSx, mb: 2, p: 0, overflow: 'hidden' }}>
-          <Tabs
-            value={activeTab}
+          <Tabs 
+            value={activeTab} 
             onChange={(_, value) => setActiveTab(value)}
             variant="scrollable"
             scrollButtons="auto"
@@ -428,18 +428,18 @@ export default function ProposalViewPage() {
             <Paper sx={sectionCardSx}>
               <SectionTitle>Investigators</SectionTitle>
               <Stack spacing={2}>
-                <Box>
+              <Box>
                   <FieldLabel>Principal investigator</FieldLabel>
                   <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
                     {proposal.principalInvestigator || 'Not set'}
-                  </Typography>
+                        </Typography>
                   {proposal.principalInvestigatorOrcid ? (
                     <Typography variant="caption" color="text.secondary">
                       ORCID {proposal.principalInvestigatorOrcid}
-                    </Typography>
+                          </Typography>
                   ) : null}
-                </Box>
-                <Box>
+                        </Box>
+                        <Box>
                   <FieldLabel>Departments</FieldLabel>
                   {(proposal.departments || []).length ? (
                     <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -450,8 +450,8 @@ export default function ProposalViewPage() {
                   ) : (
                     <Typography variant="body2" color="text.secondary">None listed</Typography>
                   )}
-                </Box>
-                <Box>
+                          </Box>
+                        <Box>
                   <FieldLabel>Co-investigators</FieldLabel>
                   {(proposal.coInvestigators || []).length ? (
                     <Table size="small">
@@ -477,7 +477,7 @@ export default function ProposalViewPage() {
                   ) : (
                     <Typography variant="body2" color="text.secondary">None added</Typography>
                   )}
-                </Box>
+                        </Box>
               </Stack>
             </Paper>
           </Stack>
@@ -521,10 +521,10 @@ export default function ProposalViewPage() {
                   (proposal.deliverables || []).length ? `${proposal.deliverables.length} deliverable${proposal.deliverables.length === 1 ? '' : 's'}` : null]
                   .filter(Boolean)
                   .join(' · ') || 'No items'}
-              </Typography>
+                          </Typography>
             </Stack>
             {projectTimeline.length ? (
-              <Box>
+                        <Box>
                 {projectTimeline.map((item, index) => {
                   const isLast = index === projectTimeline.length - 1;
                   const tone = {
@@ -537,7 +537,7 @@ export default function ProposalViewPage() {
                     <Box key={item.id} sx={{ display: 'flex', gap: 2 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 32, flexShrink: 0 }}>
                         <Box
-                          sx={{
+                              sx={{
                             width: 32,
                             height: 32,
                             borderRadius: '50%',
@@ -551,11 +551,11 @@ export default function ProposalViewPage() {
                           }}
                         >
                           {tone.icon}
-                        </Box>
+                          </Box>
                         {!isLast ? (
                           <Box sx={{ width: 2, flex: 1, minHeight: 28, bgcolor: alpha(PURPLE, 0.18), my: 0.5 }} />
                         ) : null}
-                      </Box>
+                        </Box>
                       <Box
                         sx={{
                           flex: 1,
@@ -568,41 +568,41 @@ export default function ProposalViewPage() {
                         }}
                       >
                         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2} flexWrap="wrap" useFlexGap>
-                          <Box>
+                        <Box>
                             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
                               <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b' }}>
                                 {item.title}
-                              </Typography>
-                              <Chip
+                          </Typography>
+                        <Chip 
                                 label={item.kind === 'start' || item.kind === 'end' ? 'Project' : item.kind === 'milestone' ? 'Milestone' : 'Deliverable'}
-                                size="small"
+                          size="small"
                                 sx={{ height: 20, fontWeight: 700, fontSize: '0.68rem', bgcolor: tone.bg, color: tone.color }}
                               />
                             </Stack>
                             {item.kind === 'deliverable' ? (
                               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                                 {[item.type, item.milestoneTitle ? `Output of ${item.milestoneTitle}` : null].filter(Boolean).join(' · ') || 'Deliverable'}
-                              </Typography>
+                        </Typography>
                             ) : null}
-                          </Box>
+                      </Box>
                           <Typography variant="caption" sx={{ fontWeight: 700, color: tone.color, whiteSpace: 'nowrap' }}>
                             {formatDate(item.date)}
-                          </Typography>
+                            </Typography>
                         </Stack>
                         {item.description ? (
                           <Box sx={{ mt: 1 }}>
                             <HtmlContent value={item.description} empty="" />
-                          </Box>
-                        ) : null}
                       </Box>
+                        ) : null}
                     </Box>
+              </Box>
                   );
                 })}
-              </Box>
+                    </Box>
             ) : (
               <Typography variant="body2" color="text.secondary">
                 No timeline items yet. Add a project start date, milestones, or deliverables.
-              </Typography>
+                    </Typography>
             )}
           </Paper>
         )}
@@ -615,20 +615,20 @@ export default function ProposalViewPage() {
                 <FieldLabel>Funding source</FieldLabel>
                 <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
                   {proposal.fundingSource || 'Not set'}
-                </Typography>
-              </Box>
+                        </Typography>
+                      </Box>
               <Box>
                 <FieldLabel>Proposed amount</FieldLabel>
                 <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
                   {formatCurrency(proposal.totalBudgetAmount, proposal.budgetCurrency)}
-                </Typography>
-              </Box>
+                      </Typography>
+                    </Box>
               <Box>
                 <FieldLabel>Currency</FieldLabel>
                 <Typography variant="body2" sx={{ color: '#1e293b' }}>
                   {proposal.budgetCurrency || 'USD'}
-                </Typography>
-              </Box>
+                        </Typography>
+                      </Box>
             </Stack>
           </Paper>
         )}
@@ -636,41 +636,41 @@ export default function ProposalViewPage() {
         {activeTab === 4 && (
           <Paper sx={sectionCardSx}>
             <SectionTitle>Ethics approval</SectionTitle>
-            <Stack spacing={2}>
+                    <Stack spacing={2}>
               <Box>
                 <FieldLabel>Status</FieldLabel>
                 <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
                   {proposal.ethicsApprovalStatus || 'Not set'}
-                </Typography>
-              </Box>
+                                </Typography>
+                              </Box>
               <Box>
                 <FieldLabel>Reference</FieldLabel>
                 <Typography variant="body2" sx={{ color: '#1e293b' }}>
                   {proposal.ethicsApprovalReference || 'Not set'}
-                </Typography>
-              </Box>
+                              </Typography>
+                            </Box>
               <Box>
                 <FieldLabel>Committee</FieldLabel>
                 <Typography variant="body2" sx={{ color: '#1e293b' }}>
                   {proposal.ethicsCommittee || linkedEthics?.committeeName || 'Not set'}
-                </Typography>
-              </Box>
+                                </Typography>
+                              </Box>
               <Box>
                 <FieldLabel>Approval date</FieldLabel>
                 <Typography variant="body2" sx={{ color: '#1e293b' }}>
                   {formatDate(proposal.approvalDate || linkedEthics?.approvalDate)}
-                </Typography>
-              </Box>
+                              </Typography>
+                            </Box>
               {linkedEthics ? (
                 <Box>
                   <FieldLabel>Linked record</FieldLabel>
-                  <Button
+                            <Button
                     onClick={() => router.push(`/researcher/ethics/applications/view/${linkedEthics.id}`)}
                     sx={{ p: 0, minWidth: 0, textTransform: 'none', fontWeight: 700, color: PURPLE, justifyContent: 'flex-start' }}
                   >
                     {linkedEthics.title}
-                  </Button>
-                </Box>
+                            </Button>
+                          </Box>
               ) : null}
               <Box>
                 <FieldLabel>Documents</FieldLabel>
@@ -688,28 +688,28 @@ export default function ProposalViewPage() {
                         <Box sx={{ minWidth: 0 }}>
                           <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }} noWrap>
                             {fileName(file)}
-                          </Typography>
+                                </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {[file.category || file.type || 'Ethics document', formatBytes(file.size)].filter(Boolean).join(' · ')}
-                          </Typography>
-                        </Box>
-                        <Button
+                              </Typography>
+                            </Box>
+                            <Button
                           size="small"
-                          startIcon={<ViewIcon />}
+                              startIcon={<ViewIcon />}
                           onClick={() => openFile(file)}
                           disabled={!fileHref(file, linkedEthics?.id)}
                           sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}
                         >
                           Open
-                        </Button>
+                            </Button>
                       </Stack>
                     ))}
                   </Stack>
                 ) : (
                   <Typography variant="body2" color="text.secondary">
                     No ethics documents linked yet.
-                  </Typography>
-                )}
+                          </Typography>
+                      )}
               </Box>
             </Stack>
           </Paper>
@@ -723,8 +723,8 @@ export default function ProposalViewPage() {
                 <FieldLabel>Relevance</FieldLabel>
                 <Typography variant="body2" sx={{ color: '#334155', whiteSpace: 'pre-wrap' }}>
                   {proposal.publicationRelevance}
-                </Typography>
-              </Box>
+                      </Typography>
+                    </Box>
             ) : null}
             {documents.length ? (
               <Stack spacing={1}>
@@ -747,9 +747,9 @@ export default function ProposalViewPage() {
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           {[file.category, formatBytes(file.size)].filter(Boolean).join(' · ')}
-                        </Typography>
-                      </Box>
-                    </Stack>
+                                </Typography>
+                              </Box>
+                            </Stack>
                     <Button
                       size="small"
                       startIcon={<ViewIcon />}
@@ -760,8 +760,8 @@ export default function ProposalViewPage() {
                       Open
                     </Button>
                   </Stack>
-                ))}
-              </Stack>
+                        ))}
+                      </Stack>
             ) : (
               <Typography variant="body2" color="text.secondary">No supporting files uploaded</Typography>
             )}
@@ -775,9 +775,9 @@ export default function ProposalViewPage() {
               {tracking ? (
                 <ProposalReviewStatus tracking={tracking} />
               ) : (
-                <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" color="text.secondary">
                   {proposal.status === 'DRAFT' ? 'This proposal has not been submitted for review.' : 'No review pipeline assigned yet.'}
-                </Typography>
+                          </Typography>
               )}
             </Paper>
             <Paper sx={sectionCardSx}>
@@ -793,20 +793,20 @@ export default function ProposalViewPage() {
                       {entry.reviewer ? (
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
                           Reviewed by {entry.reviewer}
-                        </Typography>
+                          </Typography>
                       ) : null}
                       {entry.comment ? (
                         <Typography variant="body2" sx={{ mt: 1, color: '#334155' }}>
                           {entry.comment}
-                        </Typography>
+                              </Typography>
                       ) : null}
-                    </Box>
-                  ))}
-                </Stack>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
+                        </Box>
+              ))}
+            </Stack>
+          ) : (
+              <Typography variant="body2" color="text.secondary">
                   Review comments will appear here after reviewers take action.
-                </Typography>
+              </Typography>
               )}
             </Paper>
           </Stack>

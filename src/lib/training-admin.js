@@ -45,9 +45,71 @@ export function splitDateTime(value) {
   if (Number.isNaN(parsed.getTime())) {
     return { date: '', time: '' };
   }
-  const date = parsed.toISOString().split('T')[0];
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getDate()).padStart(2, '0');
+  const date = `${year}-${month}-${day}`;
   const time = parsed.toTimeString().slice(0, 5);
   return { date, time };
+}
+
+export function hydrateTrainingForm(initialTraining) {
+  if (!initialTraining) return null;
+
+  const start = splitDateTime(initialTraining.startDate);
+  const end = splitDateTime(initialTraining.endDate);
+  const locationFields = parseLocationFields(initialTraining.location);
+  const hasEndDate = Boolean(end.date);
+  const sameDay = hasEndDate && start.date === end.date;
+  const scheduleType = hasEndDate && !sameDay ? 'multi' : 'single';
+  const departmentSource = initialTraining.department
+    ?? (Array.isArray(initialTraining.departments) ? initialTraining.departments.join(', ') : '');
+
+  return {
+    title: initialTraining.title || '',
+    description: initialTraining.description || '',
+    departments: String(departmentSource)
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
+    targetGroups: normalizeTargetGroups(
+      initialTraining.targetGroups ?? initialTraining.targetGroup ?? []
+    ),
+    scheduleType,
+    startDate: start.date,
+    startTime: start.time,
+    endDate: scheduleType === 'multi' ? end.date : '',
+    endTime: end.time,
+    locationType: locationFields.locationType,
+    locationAddress: locationFields.locationAddress,
+    onlineLink: locationFields.onlineLink,
+    maxParticipants: Number(initialTraining.maxParticipants) > 0
+      ? Number(initialTraining.maxParticipants)
+      : 30,
+    status: initialTraining.status || 'PUBLISHED',
+  };
+}
+
+export function getTrainingDetailsValidationErrors(form) {
+  const errors = [];
+  if (!form.title.trim()) errors.push('Training title is required');
+  if (form.departments.length === 0) errors.push('Add at least one department');
+  if (form.targetGroups.length === 0) errors.push('Add at least one target group (press Enter after typing)');
+  if (!form.startDate) errors.push('Start date is required');
+  if (form.scheduleType === 'multi' && !form.endDate) errors.push('End date is required for multi-day events');
+  if (form.locationType === 'in_person' && !form.locationAddress.trim()) {
+    errors.push('Venue / address is required for in-person training');
+  }
+  if (form.locationType === 'online' && !form.onlineLink.trim()) {
+    errors.push('Online meeting link is required');
+  }
+  if (form.locationType === 'hybrid' && !form.locationAddress.trim() && !form.onlineLink.trim()) {
+    errors.push('Provide a venue address and/or online link for hybrid training');
+  }
+  if (!Number(form.maxParticipants) || Number(form.maxParticipants) < 1) {
+    errors.push('Max participants must be at least 1');
+  }
+  return errors;
 }
 
 export function buildSchedulePayload({ scheduleType, startDate, startTime, endDate, endTime }) {

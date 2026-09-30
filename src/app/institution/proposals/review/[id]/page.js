@@ -222,22 +222,22 @@ export default function InstitutionProposalReviewDetailPage() {
   };
 
   if (loading) {
-    return (
+        return (
       <Box sx={{ minHeight: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <CircularProgress sx={{ color: PURPLE }} />
-      </Box>
-    );
+          </Box>
+        );
   }
 
   if (!proposal) {
-    return (
+        return (
       <Container maxWidth={false} sx={{ py: 4, maxWidth: '1600px' }}>
         <Alert severity="error">{error || 'Proposal not found'}</Alert>
-      </Container>
+        </Container>
     );
   }
 
-  return (
+    return (
     <>
       <PageHeader
         title={proposal.title}
@@ -278,17 +278,17 @@ export default function InstitutionProposalReviewDetailPage() {
               <Box key={label} sx={{ flex: 1 }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</Typography>
                 <Box sx={{ mt: 0.75 }}>{typeof value === 'string' ? <Typography variant="body2" sx={{ fontWeight: 700 }}>{value}</Typography> : value}</Box>
-              </Box>
+                </Box>
             ))}
           </Stack>
         </Paper>
 
         <Paper sx={{ ...sectionCardSx, p: 0, mb: 2, overflow: 'hidden' }}>
-          <Tabs
-            value={activeTab}
+          <Tabs 
+            value={activeTab} 
             onChange={(_, value) => setActiveTab(value)}
             variant="scrollable"
-            sx={{
+            sx={{ 
               '& .MuiTab-root': { textTransform: 'none', fontWeight: 700, minHeight: 52, color: '#64748b' },
               '& .Mui-selected': { color: `${PURPLE} !important` },
               '& .MuiTabs-indicator': { backgroundColor: PURPLE, height: 3 },
@@ -308,7 +308,7 @@ export default function InstitutionProposalReviewDetailPage() {
               <Typography variant="body2" sx={{ mb: 1 }}>
                 <strong>Principal investigator:</strong> {proposal.principalInvestigator || 'Not set'}
                 {proposal.principalInvestigatorOrcid ? ` (${proposal.principalInvestigatorOrcid})` : ''}
-              </Typography>
+                </Typography>
               {(proposal.coInvestigators || []).length ? (
                 <Stack spacing={0.75}>
                   {proposal.coInvestigators.map((person, index) => (
@@ -316,7 +316,7 @@ export default function InstitutionProposalReviewDetailPage() {
                       {person.name || [person.givenName, person.familyName].filter(Boolean).join(' ') || 'Co-investigator'}
                       {person.role ? ` · ${person.role}` : ''}
                       {person.affiliation || person.institution ? ` · ${person.affiliation || person.institution}` : ''}
-                    </Typography>
+                </Typography>
                   ))}
                 </Stack>
               ) : (
@@ -356,9 +356,9 @@ export default function InstitutionProposalReviewDetailPage() {
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 28 }}>
                   <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: alpha(PURPLE, 0.12), color: PURPLE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {item.kind === 'deliverable' ? <DeliverableIcon sx={{ fontSize: 16 }} /> : <MilestoneIcon sx={{ fontSize: 16 }} />}
-                  </Box>
+              </Box>
                   {index < timeline.length - 1 ? <Box sx={{ width: 2, flex: 1, minHeight: 24, bgcolor: alpha(PURPLE, 0.18), my: 0.5 }} /> : null}
-                </Box>
+            </Box>
                 <Box sx={{ flex: 1, mb: 2, p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
                   <Stack direction="row" justifyContent="space-between">
                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{item.title}</Typography>
@@ -366,7 +366,7 @@ export default function InstitutionProposalReviewDetailPage() {
                   </Stack>
                   {item.meta ? <Typography variant="caption" color="text.secondary">{item.meta}</Typography> : null}
                   {item.description ? <Box sx={{ mt: 1 }}><HtmlContent value={item.description} empty="" /></Box> : null}
-                </Box>
+          </Box>
               </Box>
             ))}
           </Paper>
@@ -404,18 +404,18 @@ export default function InstitutionProposalReviewDetailPage() {
                         <Typography variant="body2" sx={{ fontWeight: 700 }}>{file.originalName || file.fileName || 'Document'}</Typography>
                         <Typography variant="caption" color="text.secondary">{file.category || 'File'}</Typography>
                       </Box>
-                      <Button
-                        size="small"
+                          <Button
+                            size="small"
                         startIcon={<ViewIcon />}
                         disabled={!file.url}
                         onClick={() => file.url && window.open(file.url, '_blank', 'noopener')}
                         sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}
                       >
                         Open
-                      </Button>
-                    </Stack>
+                          </Button>
+                        </Stack>
                   ))}
-                </Stack>
+                      </Stack>
               ) : (
                 <Typography variant="body2" color="text.secondary">No documents linked</Typography>
               )}
@@ -434,36 +434,36 @@ export default function InstitutionProposalReviewDetailPage() {
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Invite reviewers</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Send an email invitation with a link to this review. The researcher is notified that reviewers have been assigned.
-              </Typography>
+                      </Typography>
               {reviewers.length ? (
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
                   {reviewers.map((email) => (
                     <Chip key={email} label={email} size="small" sx={{ bgcolor: alpha(PURPLE, 0.1), color: PURPLE, fontWeight: 700 }} />
                   ))}
-                </Stack>
+                      </Stack>
               ) : (
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>No reviewers invited yet.</Typography>
               )}
-              <TextField
-                fullWidth
-                size="small"
+                      <TextField
+                        fullWidth
+                        size="small"
                 label="Reviewer emails"
                 placeholder="reviewer@university.edu, colleague@hospital.org"
                 value={inviteEmails}
                 onChange={(event) => setInviteEmails(event.target.value)}
                 sx={{ mb: 1.5 }}
               />
-              <TextField
-                fullWidth
+                      <TextField
+                        fullWidth
                 size="small"
-                multiline
-                minRows={2}
+                        multiline
+                        minRows={2}
                 label="Optional message"
                 value={inviteMessage}
                 onChange={(event) => setInviteMessage(event.target.value)}
                 sx={{ mb: 1.5 }}
               />
-              <Button
+                        <Button
                 variant="contained"
                 startIcon={<AssignIcon />}
                 disabled={inviting || !inviteEmails.trim()}
@@ -471,18 +471,18 @@ export default function InstitutionProposalReviewDetailPage() {
                 sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 }}
               >
                 {inviting ? 'Sending...' : 'Send invitations'}
-              </Button>
+                        </Button>
             </Paper>
 
             <Paper sx={sectionCardSx}>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Record a decision</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 The researcher receives an in-app notification and email when this decision is saved.
-              </Typography>
-              <TextField
+                      </Typography>
+                      <TextField
                 select
-                fullWidth
-                size="small"
+                        fullWidth
+                        size="small"
                 label="Decision"
                 value={decision}
                 onChange={(event) => setDecision(event.target.value)}
@@ -492,18 +492,18 @@ export default function InstitutionProposalReviewDetailPage() {
                 <MenuItem value="requires_revision">Request revision</MenuItem>
                 <MenuItem value="rejected">Reject</MenuItem>
               </TextField>
-              <TextField
-                fullWidth
-                multiline
-                minRows={4}
+                <TextField
+                  fullWidth
+                      multiline
+                      minRows={4}
                 label="Comments"
                 value={comments}
                 onChange={(event) => setComments(event.target.value)}
                 sx={{ mb: 1.5 }}
               />
               {decision === 'rejected' || decision === 'requires_revision' ? (
-                <TextField
-                  fullWidth
+                    <TextField
+                      fullWidth
                   multiline
                   minRows={3}
                   label={decision === 'rejected' ? 'Rejection reason' : 'Revision requirements'}
@@ -512,14 +512,14 @@ export default function InstitutionProposalReviewDetailPage() {
                   sx={{ mb: 1.5 }}
                 />
               ) : null}
-              <Button
-                variant="contained"
+          <Button 
+            variant="contained" 
                 disabled={submitting}
                 onClick={submitDecision}
                 sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 }}
               >
                 {submitting ? 'Saving...' : 'Save decision and notify researcher'}
-              </Button>
+          </Button>
             </Paper>
 
             <Paper sx={sectionCardSx}>
@@ -534,7 +534,7 @@ export default function InstitutionProposalReviewDetailPage() {
                       </Stack>
                       <Typography variant="caption" sx={{ color: PURPLE, fontWeight: 700 }}>{String(review.decision || '').replaceAll('_', ' ')}</Typography>
                       <Typography variant="body2" sx={{ mt: 1 }}>{review.overallComments}</Typography>
-                    </Box>
+    </Box>
                   ))}
                 </Stack>
               ) : (

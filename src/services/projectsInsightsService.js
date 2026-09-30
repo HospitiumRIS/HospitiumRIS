@@ -12,30 +12,36 @@ function buildFallbackInsights(metrics) {
   const recommendations = [];
 
   if (overview.totalProposals === 0) {
-    recommendations.push('No proposals are linked to your profile yet — add your ORCID iD if you have submitted proposals elsewhere in the system.');
+    recommendations.push('No proposals are linked to your profile yet. Add your ORCID iD or submit a proposal to start tracking.');
+  } else if (overview.inReview > 0) {
+    recommendations.push(`${overview.inReview} proposal${overview.inReview === 1 ? ' is' : 's are'} currently under review. Check reviewer comments as soon as a decision is recorded.`);
   } else if (overview.approvalRate !== null && overview.approvalRate < 50) {
-    recommendations.push('Your proposal approval rate is below 50% — consider requesting reviewer feedback earlier in the drafting process.');
+    recommendations.push('Your proposal approval rate is below 50%. Review earlier feedback before the next submission.');
   } else if (overview.approvalRate !== null) {
-    recommendations.push('Your proposal approval rate is healthy — keep using the same review and drafting process for future submissions.');
+    recommendations.push('Your proposal approval rate is healthy. Keep the same review and drafting process for future submissions.');
+  }
+
+  if (overview.revisionRequested > 0) {
+    recommendations.push(`${overview.revisionRequested} proposal${overview.revisionRequested === 1 ? ' needs' : 's need'} revision. Update the draft and resubmit to keep the pipeline moving.`);
   }
 
   if (milestoneBreakdown.overdue > 0) {
-    recommendations.push(`You have ${milestoneBreakdown.overdue} overdue milestone(s) — resolving these first will protect your on-time completion rate.`);
+    recommendations.push(`You have ${milestoneBreakdown.overdue} overdue milestone${milestoneBreakdown.overdue === 1 ? '' : 's'}. Resolve these first to protect on-time completion.`);
   }
 
   if (overview.conversionRate !== null && overview.conversionRate < 25 && overview.totalGrantApplications > 0) {
-    recommendations.push('Grant conversion rate is on the low side — consider targeting funders whose priorities closely match your research areas.');
+    recommendations.push('Grant conversion is on the low side. Update grant tracker status after each application so the pipeline stays current.');
   }
 
   if (recommendations.length === 0) {
-    recommendations.push('No immediate action items — your proposals, milestones, and grants are all tracking normally.');
+    recommendations.push('No immediate action items. Proposals, milestones, and grant tracking are current.');
   }
 
   const nextMilestone = upcomingMilestones?.[0];
 
   return {
     narrativeSummary: overview.totalProposals > 0 || overview.totalGrantApplications > 0
-      ? `You have ${overview.totalProposals} proposal(s) on record and ${overview.totalGrantApplications} grant application(s), with ${formatMoney(overview.totalAwarded)} awarded so far.`
+      ? `You have ${overview.totalProposals} proposal${overview.totalProposals === 1 ? '' : 's'} on record, ${overview.activeProjects || 0} active project${(overview.activeProjects || 0) === 1 ? '' : 's'}, and ${overview.totalGrantApplications} grant record${overview.totalGrantApplications === 1 ? '' : 's'}, with ${formatMoney(overview.totalAwarded)} awarded so far.`
       : 'No proposal or grant application data is on file yet for your account.',
     recommendations: recommendations.slice(0, 4),
     priorityCallout: nextMilestone
