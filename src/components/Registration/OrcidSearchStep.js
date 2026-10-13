@@ -9,16 +9,16 @@ import {
   Button,
   Alert,
   CircularProgress,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
   IconButton,
+  Link,
 } from '@mui/material';
 import {
   Search as SearchIcon,
-  Delete as DeleteIcon,
+  CheckCircle as CheckCircleIcon,
+  RadioButtonUnchecked as UncheckedIcon,
+  OpenInNew as OpenInNewIcon,
 } from '@mui/icons-material';
+import { StepHeader, SectionLabel, Field } from './FormKit';
 import { useTheme, alpha } from '@mui/material/styles';
 
 const OrcidSearchStep = ({ onOrcidSelect, onSkipOrcid, selectedOrcidProfile, errors }) => {
@@ -121,186 +121,220 @@ const OrcidSearchStep = ({ onOrcidSelect, onSkipOrcid, selectedOrcidProfile, err
     setOrcidError(null);
   };
 
+  const OrcidBadge = ({ size = 20 }) => (
+    <Box
+      sx={{
+        width: size, height: size, borderRadius: '50%', flexShrink: 0,
+        bgcolor: '#A6CE39', color: '#fff',
+        display: 'grid', placeItems: 'center',
+        fontSize: size * 0.45, fontWeight: 700, lineHeight: 1,
+      }}
+    >
+      iD
+    </Box>
+  );
+
+  const selectedId = selectedOrcidProfile?.['orcid-id'];
+
   return (
     <Box>
-      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, textAlign: 'center' }}>
-        {t('auth.orcid_search_title')}
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
-        {t('auth.orcid_search_subtitle')}
-      </Typography>
+      <StepHeader title={t('auth.orcid_search_title')} subtitle={t('auth.orcid_search_subtitle')} />
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-        <TextField
-          label={t('auth.orcid_given_names')}
-          name="givenNames"
-          value={orcidSearchData.givenNames}
-          onChange={handleOrcidInputChange}
-          fullWidth
-          size="small"
-        />
-        <TextField
-          label={t('auth.orcid_family_name')}
-          name="familyName"
-          value={orcidSearchData.familyName}
-          onChange={handleOrcidInputChange}
-          fullWidth
-          size="small"
-        />
+      {/* Why ORCID */}
+      <Box
+        sx={{
+          display: 'flex', gap: 1.5, alignItems: 'flex-start',
+          p: 1.5, mb: 2.5, borderRadius: 1.5,
+          bgcolor: alpha('#A6CE39', theme.palette.mode === 'dark' ? 0.08 : 0.08),
+          border: `1px solid ${alpha('#A6CE39', 0.35)}`,
+        }}
+      >
+        <OrcidBadge size={24} />
+        <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+          {t('auth.orcid_why', 'Linking your ORCID iD verifies your identity as a researcher and lets us import your publications automatically.')}
+        </Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', mb: 3 }}>
+      {/* Search form */}
+      <Box
+        component="form"
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!orcidLoading && orcidSearchData.givenNames && orcidSearchData.familyName) handleOrcidSearch();
+        }}
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr auto' },
+          gap: 2,
+          alignItems: 'end',
+          mb: 2.5,
+        }}
+      >
+        <Field label={t('auth.orcid_given_names')} htmlFor="orcid-given">
+          <TextField
+            id="orcid-given"
+            name="givenNames"
+            value={orcidSearchData.givenNames}
+            onChange={handleOrcidInputChange}
+            fullWidth
+            autoComplete="given-name"
+            placeholder={t('auth.given_name_placeholder', 'John')}
+          />
+        </Field>
+        <Field label={t('auth.orcid_family_name')} htmlFor="orcid-family">
+          <TextField
+            id="orcid-family"
+            name="familyName"
+            value={orcidSearchData.familyName}
+            onChange={handleOrcidInputChange}
+            fullWidth
+            autoComplete="family-name"
+            placeholder={t('auth.family_name_placeholder', 'Doe')}
+          />
+        </Field>
         <Button
-          variant="contained"
-          onClick={handleOrcidSearch}
+          type="submit"
+          variant="outlined"
           disabled={orcidLoading || !orcidSearchData.givenNames || !orcidSearchData.familyName}
-          startIcon={orcidLoading ? <CircularProgress size={20} color="inherit" /> : <SearchIcon />}
-          fullWidth
-          sx={{
-            py: 1.5,
-            fontSize: '1rem',
-            fontWeight: 600,
-          }}
+          startIcon={orcidLoading ? <CircularProgress size={16} color="inherit" /> : <SearchIcon />}
+          sx={{ height: 38, px: 2.5, fontWeight: 600, borderRadius: 1.25, whiteSpace: 'nowrap' }}
         >
           {t('common.search')}
         </Button>
       </Box>
 
-
-      {selectedOrcidProfile && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          {t('auth.orcid_selected', {
-            givenNames: selectedOrcidProfile['given-names'],
-            familyNames: selectedOrcidProfile['family-names'],
-            orcidId: selectedOrcidProfile['orcid-id']
-          })}
-        </Alert>
-      )}
-
       {orcidError && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setOrcidError(null)}>
+        <Alert severity="warning" variant="outlined" sx={{ mb: 2, borderRadius: 1.5 }} onClose={() => setOrcidError(null)}>
           {orcidError}
         </Alert>
       )}
 
+      {/* Results */}
       {orcidResults.length > 0 && (
-        <Paper 
-          variant="outlined" 
-          sx={{ 
-            position: 'relative',
-            pt: 1.5,
-            maxHeight: '300px',
-            overflow: 'auto',
-            mb: 2
-          }}
-        >
-          <IconButton
-            onClick={handleClearOrcidResults}
-            aria-label={t('auth.orcid_clear_results')}
-            size="small"
-            sx={{
-              position: 'absolute',
-              right: 8,
-              top: 8,
-              color: theme.palette.error.main,
-              '&:hover': {
-                backgroundColor: alpha(theme.palette.error.main, 0.1),
-              },
-              zIndex: 1
-            }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-          <List dense>
-            {orcidResults.map((result) => (
-              <ListItem
-                key={result['orcid-id']}
-                divider
-                component="div"
-                onClick={() => handleOrcidProfileSelect(result)}
-                sx={{
-                  cursor: 'pointer',
-                  '&:hover': {
-                    backgroundColor: 'action.hover'
-                  }
-                }}
-              >
-                <ListItemText
-                  primary={`${result['given-names']} ${result['family-names']}`}
-                  secondary={
-                    <Box component="span">
-                      <Typography
-                        component="span"
-                        variant="body2"
-                        color="text.primary"
-                        display="block"
-                      >
-                        ORCID: {result['orcid-id']}
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+            <SectionLabel sx={{ mb: 0, flex: 1, mr: 2 }}>
+              {t('auth.orcid_matches', '{{count}} matching profiles', { count: orcidResults.length })}
+            </SectionLabel>
+            <Button size="small" onClick={handleClearOrcidResults} sx={{ color: 'text.secondary', fontWeight: 500 }}>
+              {t('auth.orcid_clear_results')}
+            </Button>
+          </Box>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }} role="radiogroup">
+            {orcidResults.map((result) => {
+              const selected = selectedId === result['orcid-id'];
+              const affiliations = result['institution-name'];
+              return (
+                <Box
+                  key={result['orcid-id']}
+                  role="radio"
+                  aria-checked={selected}
+                  tabIndex={0}
+                  onClick={() => handleOrcidProfileSelect(result)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleOrcidProfileSelect(result);
+                    }
+                  }}
+                  sx={{
+                    display: 'flex', alignItems: 'flex-start', gap: 1.5,
+                    p: 1.5, px: 1.75, borderRadius: 1.5, cursor: 'pointer',
+                    border: '1px solid',
+                    borderColor: selected ? 'primary.main' : 'divider',
+                    bgcolor: selected ? alpha(theme.palette.primary.main, 0.05) : 'background.paper',
+                    boxShadow: selected ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.12)}` : 'none',
+                    transition: 'border-color 0.15s, background-color 0.15s, box-shadow 0.15s',
+                    '&:hover': { borderColor: selected ? 'primary.main' : 'text.disabled' },
+                    '&:focus-visible': { outline: 'none', boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.25)}` },
+                  }}
+                >
+                  {selected ? (
+                    <CheckCircleIcon sx={{ color: 'primary.main', fontSize: 20, mt: 0.25 }} />
+                  ) : (
+                    <UncheckedIcon sx={{ color: 'text.disabled', fontSize: 20, mt: 0.25 }} />
+                  )}
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
+                      {result['given-names']} {result['family-names']}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.5 }}>
+                      <OrcidBadge size={16} />
+                      <Typography sx={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.8125rem', color: 'text.secondary' }}>
+                        {result['orcid-id']}
                       </Typography>
-                      {result['institution-name'].length > 0 && (
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          color="text.secondary"
-                          display="block"
-                          sx={{ mt: 0.25 }}
-                        >
-                          {t('auth.orcid_affiliations')} {result['institution-name'].join(', ')}
-                        </Typography>
-                      )}
                     </Box>
-                  }
-                />
-              </ListItem>
-            ))}
-          </List>
-        </Paper>
+                    {affiliations.length > 0 && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 0.75, fontSize: '0.8125rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
+                      >
+                        {affiliations.join(' · ')}
+                      </Typography>
+                    )}
+                  </Box>
+                  <IconButton
+                    size="small"
+                    component="a"
+                    href={`https://orcid.org/${result['orcid-id']}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={t('auth.orcid_view_profile', 'View ORCID profile')}
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    <OpenInNewIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
       )}
 
-      {orcidResults.length === 0 && hasSearchedOrcid && !orcidLoading && orcidSearchData.givenNames && orcidSearchData.familyName && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          {t('auth.orcid_no_results_info')}
-        </Alert>
-      )}
-
-      <Box 
-        sx={{ 
-          pt: 2, 
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 2,
-        }}
-      >
-        <Typography variant="body2" color="text.secondary">
-          {t('auth.orcid_dont_have')}
-        </Typography>
-        <Button
-          variant="outlined"
-          href="https://orcid.org/register"
-          target="_blank"
-          rel="noopener noreferrer"
-          size="small"
+      {/* Selected (when results were cleared or came back from a later step) */}
+      {selectedOrcidProfile && orcidResults.length === 0 && (
+        <Box
           sx={{
-            borderColor: '#A6CE39',
-            color: '#A6CE39',
-            '&:hover': {
-              borderColor: '#96bc34',
-              backgroundColor: alpha('#A6CE39', 0.1),
-            },
+            display: 'flex', alignItems: 'center', gap: 1.5, p: 2, mb: 3, borderRadius: 1.5,
+            border: '1px solid', borderColor: 'success.main',
+            bgcolor: alpha(theme.palette.success.main, 0.06),
           }}
         >
-          {t('auth.orcid_register')}
-        </Button>
-      </Box>
+          <CheckCircleIcon sx={{ color: 'success.main' }} />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
+              {selectedOrcidProfile['given-names']} {selectedOrcidProfile['family-names']}
+            </Typography>
+            <Typography sx={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.8125rem', color: 'text.secondary' }}>
+              {selectedOrcidProfile['orcid-id']}
+            </Typography>
+          </Box>
+        </Box>
+      )}
 
-      {errors?.orcidSearch && (
-        <Alert severity="error" sx={{ mt: 2 }}>
+      {errors?.orcidSearch && !selectedOrcidProfile && (
+        <Alert severity="error" variant="outlined" sx={{ mb: 2, borderRadius: 1.5 }}>
           {errors.orcidSearch}
         </Alert>
       )}
+
+      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+        {t('auth.orcid_dont_have')}{' '}
+        <Link
+          href="https://orcid.org/register"
+          target="_blank"
+          rel="noopener noreferrer"
+          underline="hover"
+          sx={{ fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
+        >
+          {t('auth.orcid_register')}
+          <OpenInNewIcon sx={{ fontSize: 14 }} />
+        </Link>
+      </Typography>
     </Box>
   );
 };

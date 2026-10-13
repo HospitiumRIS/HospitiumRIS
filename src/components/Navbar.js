@@ -144,6 +144,7 @@ const Navbar = () => {
           position="fixed"
           sx={{
             top: TOPBAR_HEIGHT,
+            borderRadius: 0,
             backgroundColor: theme.palette.background.paper,
             boxShadow: theme.palette.mode === 'dark' ? '0 2px 10px rgba(0,0,0,0.5)' : '0 2px 10px rgba(0,0,0,0.1)',
             zIndex: theme.zIndex.appBar,
@@ -248,6 +249,7 @@ const Navbar = () => {
         position="fixed"
         sx={{
           top: TOPBAR_HEIGHT,
+          borderRadius: 0,
           backgroundColor: theme.palette.background.paper,
           boxShadow: theme.palette.mode === 'dark' ? '0 2px 10px rgba(0,0,0,0.5)' : '0 2px 10px rgba(0,0,0,0.1)',
           zIndex: theme.zIndex.appBar,

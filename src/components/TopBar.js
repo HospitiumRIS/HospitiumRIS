@@ -87,7 +87,7 @@ const LANGUAGES = LANGUAGE_GROUPS.flatMap(group =>
   group.languages ? group.languages : group.subgroups.flatMap(sub => sub.languages)
 );
 
-const TopBar = () => {
+const TopBar = ({ inline = false }) => {
   const theme = useTheme();
   const { isDarkMode, toggleTheme } = useThemeMode();
   const { t } = useTranslation();
@@ -124,9 +124,8 @@ const TopBar = () => {
 
   const isDark = theme.palette.mode === 'dark';
 
-  const barBg = isDark
-    ? 'rgba(255,255,255,0.04)'
-    : 'rgba(139,108,188,0.06)';
+  // Solid (not translucent) so page content never shows through the fixed bar
+  const barBg = isDark ? '#1b1b1f' : '#f8f6fb';
 
   const controlSx = {
     height: 24,
@@ -149,7 +148,18 @@ const TopBar = () => {
     <>
       <Box
         component="div"
-        sx={{
+        sx={inline ? {
+          // Compact pill for full-screen pages without the main navbar
+          display: 'inline-flex',
+          alignItems: 'center',
+          height: 34,
+          px: 0.75,
+          gap: 0.25,
+          borderRadius: 999,
+          border: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.paper,
+          boxShadow: isDark ? 'none' : '0 1px 2px rgba(16,24,40,0.05)',
+        } : {
           position: 'fixed',
           top: 0,
           left: 0,
@@ -158,7 +168,6 @@ const TopBar = () => {
           zIndex: (t) => t.zIndex.appBar + 1,
           backgroundColor: barBg,
           borderBottom: `1px solid ${theme.palette.divider}`,
-          backdropFilter: 'blur(8px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'flex-end',

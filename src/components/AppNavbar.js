@@ -14,8 +14,12 @@ const AppNavbar = () => {
   const hiddenRoutes = ['/activate', '/resend-activation'];
   // The manuscript editor is a full-screen workspace with its own document chrome
   const isDocumentEditor = pathname.includes('/publications/collaborate/edit/');
+  // Full-screen auth pages that bring their own chrome
+  const fullScreenRoutes = ['/register', '/login'];
   const shouldHideNavbar =
-    isDocumentEditor || hiddenRoutes.some(route => pathname.startsWith(route));
+    isDocumentEditor ||
+    fullScreenRoutes.includes(pathname) ||
+    hiddenRoutes.some(route => pathname.startsWith(route));
   
   // Don't render anything while auth is loading
   if (isLoading) {

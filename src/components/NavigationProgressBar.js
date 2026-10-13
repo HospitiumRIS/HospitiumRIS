@@ -73,7 +73,9 @@ const NavigationProgressBar = () => {
     return () => clearTimeout(timer);
   }, [pathname]);
 
-  if (!isLoading) return null;
+  // Full-screen auth pages have no navbar to sit under, so skip the bar there
+  const isFullScreenAuth = ['/login', '/register'].includes(pathname);
+  if (!isLoading || isFullScreenAuth) return null;
 
   return (
     <Box

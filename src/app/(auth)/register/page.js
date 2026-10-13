@@ -7,45 +7,50 @@ import {
   Paper,
   Typography,
   Button,
-  Stepper,
-  Step,
-  StepLabel,
   Card,
   CardContent,
   Alert,
   CircularProgress,
   Fade,
+  LinearProgress,
+  Link as MuiLink,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
   ArrowForward as ArrowForwardIcon,
   ArrowBack as ArrowBackIcon,
+  Link as LinkIcon,
+  Groups as GroupsIcon,
+  Insights as InsightsIcon,
+  Check as CheckIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
+import NextLink from 'next/link';
 import Image from 'next/image';
-import { useThemeMode } from '../../components/ThemeProvider';
+import { useThemeMode } from '@/components/ThemeProvider';
 import dynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
+import { formFieldsSx } from '@/components/Registration/FormKit';
 
 // Dynamic imports for step components with loading fallbacks
-const AccountTypeStep = dynamic(() => import('../../components/Registration/AccountTypeStep'), {
+const AccountTypeStep = dynamic(() => import('@/components/Registration/AccountTypeStep'), {
   loading: () => <RegistrationStepSkeleton />
 });
 
-const OrcidSearchStep = dynamic(() => import('../../components/Registration/OrcidSearchStep'), {
+const OrcidSearchStep = dynamic(() => import('@/components/Registration/OrcidSearchStep'), {
   loading: () => <RegistrationStepSkeleton />
 });
 
-const AccountDetailsStep = dynamic(() => import('../../components/Registration/AccountDetailsStep'), {
+const AccountDetailsStep = dynamic(() => import('@/components/Registration/AccountDetailsStep'), {
   loading: () => <RegistrationStepSkeleton />
 });
 
-const PasswordStep = dynamic(() => import('../../components/Registration/PasswordStep'), {
+const PasswordStep = dynamic(() => import('@/components/Registration/PasswordStep'), {
   loading: () => <RegistrationStepSkeleton />
 });
 
-const FoundationAdminStep = dynamic(() => import('../../components/Registration/FoundationAdminStep'), {
+const FoundationAdminStep = dynamic(() => import('@/components/Registration/FoundationAdminStep'), {
   loading: () => <RegistrationStepSkeleton />
 });
 
@@ -105,6 +110,7 @@ const NoSSR = ({ children, fallback = null }) => {
 };
 
 const RESEARCH_ADMIN_ACCOUNT_NAME = 'Research Administrator';
+
 
 const RegisterPage = () => {
   const theme = useTheme();
@@ -588,9 +594,8 @@ const RegisterPage = () => {
         return (
           <AccountTypeStep 
             accountType={formData.accountType}
-            onAccountTypeChange={handleAccountTypeChange}
+            onAccountTypeChange={handleAccountTypePick}
             errors={errors}
-            onNext={handleNext}
           />
         );
 
@@ -664,149 +669,101 @@ const RegisterPage = () => {
     }
   };
 
+  const isLastStep = activeStep === steps.length - 1;
+  const progress = accountType ? ((activeStep + 1) / steps.length) * 100 : 0;
+
+  // Selecting an account type moves straight to the next step
+  const handleAccountTypePick = (event, newAccountType) => {
+    if (!newAccountType) return;
+    handleAccountTypeChange(event, newAccountType);
+    setFormError('');
+    setActiveStep(1);
+  };
+
+
+  const showProgress = !!accountType;
+
   return (
-    <Box
-      sx={{
-        minHeight: 'calc(100vh - 7.5rem)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.palette.background.default,
-        py: { xs: 3, sm: 4 },
-      }}
-    >
-      <Container maxWidth="lg">
-        <Paper
-          elevation={0}
+    <>
+      {/* Progress */}
+      {showProgress && (
+        <Box sx={{ mb: 3 }}>
+          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: 'primary.main', mb: 1 }}>
+            {t('auth.register_step_of', 'Step {{current}} of {{total}}', { current: activeStep + 1, total: steps.length })}
+            <Box component="span" sx={{ color: 'text.secondary', fontWeight: 400 }}> · {steps[activeStep]}</Box>
+          </Typography>
+          <LinearProgress variant="determinate" value={progress} sx={{ height: 4, borderRadius: 2 }} />
+        </Box>
+      )}
+
+      {formError && (
+        <Alert severity="error" variant="outlined" sx={{ mb: 2.5, borderRadius: 1.5 }} onClose={() => setFormError('')}>
+          {formError}
+        </Alert>
+      )}
+
+      {inviteDetails && !inviteDetails.expired && (
+        <Alert severity="info" variant="outlined" sx={{ mb: 2.5, borderRadius: 1.5 }}>
+          {inviteDetails.inviterName} invited you to collaborate on &ldquo;{inviteDetails.manuscriptTitle}&rdquo;.
+          Create an account with {inviteDetails.email} to accept the invitation after you log in.
+        </Alert>
+      )}
+
+      <Fade in={true} key={activeStep}>
+        <Box sx={{ ...formFieldsSx(theme) }}>
+          {renderStepContent(activeStep)}
+        </Box>
+      </Fade>
+
+      {/* Actions */}
+      <Box sx={{ display: 'flex', gap: 1.5, mt: 3.5 }}>
+        {activeStep > 0 && (
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={handleBack}
+            startIcon={<ArrowBackIcon />}
+            sx={{
+              height: 44, px: 2.5, borderRadius: 1.25, fontWeight: 500,
+              color: 'text.secondary', borderColor: 'divider', bgcolor: 'background.paper',
+            }}
+          >
+            {t('common.back')}
+          </Button>
+        )}
+        <Button
+          variant="contained"
+          disableElevation
+          fullWidth
+          onClick={isLastStep && accountType ? handleSubmit : handleNext}
+          disabled={isLoading}
+          endIcon={
+            isLoading ? <CircularProgress size={16} color="inherit" />
+            : isLastStep && accountType ? <CheckCircleIcon />
+            : <ArrowForwardIcon />
+          }
           sx={{
-            p: { xs: 2, sm: 3 },
-            backgroundColor: theme.palette.background.paper,
-            border: `1px solid ${theme.palette.mode === 'dark' ? '#404040' : 'rgba(0,0,0,0.1)'}`,
-            maxWidth: 1000,
-            mx: 'auto',
+            height: 44, borderRadius: 1.25, fontWeight: 600, fontSize: '0.9375rem',
+            boxShadow: `0 6px 16px -6px ${theme.palette.primary.main}`,
+            '&:hover': { boxShadow: `0 8px 20px -6px ${theme.palette.primary.main}` },
           }}
         >
-          {/* Logo and Title */}
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <Image
-              src="/hospitium-logo.png"
-              alt="Hospitium RIS"
-              width={140}
-              height={32}
-              style={{ marginBottom: '12px' }}
-              priority
-            />
-            <Typography
-              variant="h4"
-              component="h1"
-              sx={{
-                fontWeight: 600,
-                color: theme.palette.text.primary,
-                mb: 0.5,
-                fontSize: { xs: '1.75rem', sm: '2rem' },
-              }}
-            >
-              {t('auth.register_title')}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: '0.875rem' }}
-            >
-              {t('auth.register_subtitle')}
-            </Typography>
-          </Box>
+          {isLoading
+            ? t('auth.creating_account', 'Creating account…')
+            : isLastStep && accountType
+              ? t('auth.create_account_btn', 'Create account')
+              : t('auth.continue', 'Continue')}
+        </Button>
+      </Box>
 
-          {/* Stepper */}
-          <Box sx={{ mb: 3 }}>
-            <Stepper activeStep={activeStep} alternativeLabel>
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel 
-                    sx={{
-                      '& .MuiStepLabel-label': {
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                      },
-                    }}
-                  >
-                    {label}
-                  </StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-          </Box>
-
-          {/* Error Alert */}
-          {formError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {formError}
-            </Alert>
-          )}
-
-          {inviteDetails && !inviteDetails.expired && (
-            <Alert severity="info" sx={{ mb: 2 }}>
-              {inviteDetails.inviterName} invited you to collaborate on &ldquo;{inviteDetails.manuscriptTitle}&rdquo;.
-              Create an account with {inviteDetails.email} to accept the invitation after you log in.
-            </Alert>
-          )}
-
-          {/* Form Content */}
-          <Card elevation={0} sx={{ mb: 3, border: `1px solid ${theme.palette.divider}` }}>
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <Fade in={true} key={activeStep}>
-                <Box sx={{ minHeight: 200 }}>
-                  {renderStepContent(activeStep)}
-                </Box>
-              </Fade>
-            </CardContent>
-          </Card>
-
-          {/* Navigation Buttons */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mb: 2 }}>
-            <Button
-              onClick={handleBack}
-              disabled={activeStep === 0}
-              startIcon={<ArrowBackIcon />}
-              sx={{ visibility: activeStep === 0 ? 'hidden' : 'visible' }}
-            >
-              {t('common.back')}
-            </Button>
-
-            <Button
-              variant="contained"
-              onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
-              disabled={isLoading}
-              endIcon={
-                isLoading ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : activeStep === steps.length - 1 ? (
-                  <CheckCircleIcon />
-                ) : (
-                  <ArrowForwardIcon />
-                )
-              }
-            >
-              {isLoading ? t('common.loading') : activeStep === steps.length - 1 ? t('common.create') : t('common.next')}
-            </Button>
-          </Box>
-
-          {/* Sign In Link */}
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-              {t('auth.have_account')}{' '}
-              <Button
-                variant="text"
-                onClick={() => router.push('/login')}
-                sx={{ textTransform: 'none', p: 0, minWidth: 'auto', fontSize: '0.875rem' }}
-              >
-                {t('auth.sign_in')}
-              </Button>
-            </Typography>
-          </Box>
-        </Paper>
-      </Container>
-    </Box>
+      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 3, fontSize: '0.875rem' }}>
+        {t('auth.have_account')}{' '}
+        <MuiLink component={NextLink} href="/login" underline="hover" sx={{ fontWeight: 600 }}>
+          {t('auth.sign_in')}
+        </MuiLink>
+      </Typography>
+    </>
   );
 };
 
-export default RegisterPage; 
+export default RegisterPage;

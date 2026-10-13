@@ -8,25 +8,23 @@ import {
   TextField,
   Grid,
   FormControl,
-  InputLabel,
+  FormHelperText,
   Select,
   MenuItem,
-  Divider,
   Chip,
   Alert,
   InputAdornment,
   CircularProgress,
 } from '@mui/material';
 import {
-  Person as PersonIcon,
-  Email as EmailIcon,
-  Business as BusinessIcon,
-  CalendarToday as CalendarIcon,
-  Badge as BadgeIcon,
+  MailOutline as EmailIcon,
+  ApartmentOutlined as BusinessIcon,
+  BadgeOutlined as BadgeIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { useTheme, alpha } from '@mui/material/styles';
+import { StepHeader, SectionLabel, Field, FieldRow } from './FormKit';
 
 const RESEARCH_ADMIN_ACCOUNT_NAME = 'Research Administrator';
 
@@ -84,549 +82,264 @@ const AccountDetailsStep = ({
     }
   };
 
-  const fieldStyle = {
-    '& .MuiOutlinedInput-root': {
-      borderRadius: 2,
-      backgroundColor: theme.palette.mode === 'dark' 
-        ? alpha(theme.palette.background.paper, 0.7)
-        : alpha(theme.palette.primary.main, 0.02),
-      border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      '&:hover': {
-        backgroundColor: theme.palette.mode === 'dark' 
-          ? alpha(theme.palette.background.paper, 0.9)
-          : alpha(theme.palette.primary.main, 0.04),
-        borderColor: alpha(theme.palette.primary.main, 0.3),
-        transform: 'translateY(-1px)',
-        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.15)}`,
-      },
-      '&.Mui-focused': {
-        backgroundColor: theme.palette.background.paper,
-        borderColor: theme.palette.primary.main,
-        borderWidth: '2px',
-        boxShadow: `0 0 0 4px ${alpha(theme.palette.primary.main, 0.12)}`,
-        transform: 'translateY(-2px)',
-      },
-      '&.Mui-error': {
-        borderColor: theme.palette.error.main,
-        '&:hover': {
-          borderColor: theme.palette.error.dark,
-        },
-      },
-    },
-    '& .MuiInputLabel-root': {
-      fontWeight: 500,
-      color: theme.palette.text.secondary,
-      '&.Mui-focused': {
-        color: theme.palette.primary.main,
-        fontWeight: 600,
-      },
-    },
-  };
+  const iconStart = (Icon) => (
+    <InputAdornment position="start">
+      <Icon fontSize="small" sx={{ color: 'text.disabled' }} />
+    </InputAdornment>
+  );
 
-  const orcidFieldStyle = {
-    '& .MuiOutlinedInput-root': {
-      borderRadius: 2,
-      backgroundColor: formData.orcidId 
-        ? (theme.palette.mode === 'dark' 
-          ? alpha(theme.palette.success.main, 0.15)
-          : alpha(theme.palette.success.main, 0.08))
-        : (theme.palette.mode === 'dark' 
-          ? alpha(theme.palette.background.paper, 0.7)
-          : alpha(theme.palette.primary.main, 0.02)),
-      border: formData.orcidId 
-        ? `2px solid ${alpha(theme.palette.success.main, 0.4)}`
-        : `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      '&:hover': {
-        backgroundColor: formData.orcidId 
-          ? (theme.palette.mode === 'dark' 
-            ? alpha(theme.palette.success.main, 0.2)
-            : alpha(theme.palette.success.main, 0.12))
-          : (theme.palette.mode === 'dark' 
-            ? alpha(theme.palette.background.paper, 0.9)
-            : alpha(theme.palette.primary.main, 0.04)),
-        borderColor: formData.orcidId 
-          ? alpha(theme.palette.success.main, 0.6)
-          : alpha(theme.palette.primary.main, 0.3),
-        transform: 'translateY(-1px)',
-        boxShadow: formData.orcidId
-          ? `0 4px 12px ${alpha(theme.palette.success.main, 0.25)}`
-          : `0 4px 12px ${alpha(theme.palette.primary.main, 0.15)}`,
-      },
-      '&.Mui-focused': {
-        backgroundColor: theme.palette.background.paper,
-        borderColor: formData.orcidId 
-          ? theme.palette.success.main
-          : theme.palette.primary.main,
-        borderWidth: '2px',
-        boxShadow: formData.orcidId 
-          ? `0 0 0 4px ${alpha(theme.palette.success.main, 0.12)}`
-          : `0 0 0 4px ${alpha(theme.palette.primary.main, 0.12)}`,
-        transform: 'translateY(-2px)',
-      },
-    },
-    '& .MuiInputBase-input': {
-      fontWeight: formData.orcidId ? 600 : 400,
-      fontFamily: formData.orcidId ? 'monospace' : 'inherit',
-    },
-    '& .MuiInputLabel-root': {
-      fontWeight: 500,
-      color: formData.orcidId 
-        ? theme.palette.success.main
-        : theme.palette.text.secondary,
-      '&.Mui-focused': {
-        color: formData.orcidId 
-          ? theme.palette.success.main
-          : theme.palette.primary.main,
-        fontWeight: 600,
-      },
-    },
-  };
+  const monoSx = { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '0.8125rem' };
 
-  const SectionHeader = ({ icon, title, subtitle }) => (
-    <Box sx={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      gap: 1.5,
-      mb: 2,
-      p: 2,
-      borderRadius: 2,
-      backgroundColor: alpha(theme.palette.primary.main, 0.04),
-      border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-    }}>
-      <Box sx={{ 
-        p: 1,
-        borderRadius: 1.5,
-        backgroundColor: alpha(theme.palette.primary.main, 0.1),
-        color: theme.palette.primary.main,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        {icon}
-      </Box>
-      <Box>
-        <Typography variant="h6" sx={{ 
-          fontSize: '1.1rem', 
-          fontWeight: 600,
-          color: theme.palette.text.primary,
-          mb: 0.5,
-        }}>
-          {title}
-        </Typography>
-        <Typography variant="body2" sx={{ 
-          fontSize: '0.85rem',
-          color: theme.palette.text.secondary,
-          fontWeight: 400,
-        }}>
-          {subtitle}
-        </Typography>
-      </Box>
-    </Box>
+  const selectPlaceholder = (text) => (
+    <Box component="span" sx={{ color: 'text.secondary', opacity: 0.7 }}>{text}</Box>
   );
 
   if (accountType === 'RESEARCH_ADMIN') {
+    const statusAdornment =
+      domainStatus === 'checking' ? <CircularProgress size={16} />
+      : domainStatus === 'valid' ? <CheckCircleIcon color="success" fontSize="small" />
+      : domainStatus === 'invalid' ? <CancelIcon color="error" fontSize="small" />
+      : null;
+
     return (
-      <Box sx={{ width: '100%', mt: 1 }}>
-        <SectionHeader
-          icon={<BusinessIcon />}
+      <Box>
+        <StepHeader
           title={t('auth.research_admin_account_details_title', 'Institutional Account Details')}
           subtitle={t('auth.research_admin_account_details_subtitle', 'Provide your institutional account name and verified email address.')}
         />
 
-        <Alert severity="info" sx={{ mt: 2 }}>
+        <Alert severity="info" variant="outlined" sx={{ mb: 2.5, borderRadius: 1.5, py: 0.25, fontSize: '0.8125rem' }}>
           {t('auth.research_admin_email_alert', 'Use your institutional email address. Your institution will be detected automatically from your email domain.')}
         </Alert>
 
-        <Grid container spacing={3} sx={{ mt: 2, flexDirection: 'column' }}>
-          <Grid size={12}>
-            <Box sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              mb: 2,
-            }}>
-              <BusinessIcon sx={{
-                color: theme.palette.primary.main,
-                fontSize: 20,
-              }} />
-              <Typography variant="subtitle1" sx={{
-                fontWeight: 600,
-                color: theme.palette.text.primary,
-              }}>
-                {t('auth.institutional_account_information', 'Institutional Account Information')}
-              </Typography>
-            </Box>
-          </Grid>
+        <Box sx={{ maxWidth: 560 }}>
+          <SectionLabel>{t('auth.institutional_account_information', 'Institutional Account Information')}</SectionLabel>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Field label={t('auth.account_name', 'Account Name')} htmlFor="reg-account-name">
+              <TextField
+                id="reg-account-name"
+                fullWidth
+                name="accountName"
+                value={researchAdminAccountName}
+                disabled
+                error={!!errors.accountName}
+                helperText={errors.accountName || t('auth.account_name_helper', 'The display name for this institutional administrator account')}
+                InputProps={{ readOnly: true, startAdornment: iconStart(BadgeIcon) }}
+              />
+            </Field>
 
-          <Grid size={12}>
-            <TextField
-              fullWidth
-              label={t('auth.account_name', 'Account Name')}
-              name="accountName"
-              value={researchAdminAccountName}
-              disabled
-              error={!!errors.accountName}
-              helperText={errors.accountName || t('auth.account_name_helper', 'The display name for this institutional administrator account')}
-              size="small"
-              sx={fieldStyle}
-              InputProps={{
-                readOnly: true,
-                startAdornment: (
-                  <BadgeIcon sx={{
-                    color: alpha(theme.palette.text.secondary, 0.6),
-                    fontSize: 18,
-                    mr: 1,
-                  }} />
-                ),
-              }}
-            />
-          </Grid>
-
-          <Grid size={12}>
-            <TextField
-              fullWidth
-              label={t('auth.institutional_email')}
-              name="email"
-              type="email"
-              value={formData.email || ''}
-              onChange={(e) => {
-                if (domainStatus !== 'idle') {
-                  setDomainStatus('idle');
-                  setDomainMessage('');
-                  onInstitutionMatched?.(null);
+            <Field label={t('auth.institutional_email')} htmlFor="reg-email" required>
+              <TextField
+                id="reg-email"
+                fullWidth
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={formData.email || ''}
+                onChange={(e) => {
+                  if (domainStatus !== 'idle') {
+                    setDomainStatus('idle');
+                    setDomainMessage('');
+                    onInstitutionMatched?.(null);
+                  }
+                  onInputChange(e);
+                }}
+                onBlur={(e) => verifyEmailDomain(e.target.value)}
+                error={(!!errors.email && domainStatus !== 'valid') || domainStatus === 'invalid'}
+                helperText={
+                  (domainStatus === 'valid' && domainMessage) ||
+                  (domainStatus !== 'valid' && errors.email) ||
+                  domainMessage ||
+                  t('auth.institutional_email_helper')
                 }
-                onInputChange(e);
-              }}
-              onBlur={(e) => verifyEmailDomain(e.target.value)}
-              error={(!!errors.email && domainStatus !== 'valid') || domainStatus === 'invalid'}
-              helperText={
-                (domainStatus === 'valid' && domainMessage) ||
-                (domainStatus !== 'valid' && errors.email) ||
-                domainMessage ||
-                t('auth.institutional_email_helper')
-              }
-              size="small"
-              placeholder={t('auth.institutional_email_placeholder')}
-              sx={fieldStyle}
-              InputProps={{
-                readOnly: emailLocked,
-                startAdornment: (
-                  <EmailIcon sx={{
-                    color: alpha(theme.palette.text.secondary, 0.6),
-                    fontSize: 18,
-                    mr: 1,
-                  }} />
-                ),
-                endAdornment: domainStatus === 'checking' ? (
-                  <InputAdornment position="end">
-                    <CircularProgress size={18} />
-                  </InputAdornment>
-                ) : domainStatus === 'valid' ? (
-                  <InputAdornment position="end">
-                    <CheckCircleIcon color="success" fontSize="small" />
-                  </InputAdornment>
-                ) : domainStatus === 'invalid' ? (
-                  <InputAdornment position="end">
-                    <CancelIcon color="error" fontSize="small" />
-                  </InputAdornment>
-                ) : null,
-              }}
-            />
-          </Grid>
+                placeholder={t('auth.institutional_email_placeholder')}
+                InputProps={{
+                  readOnly: emailLocked,
+                  startAdornment: iconStart(EmailIcon),
+                  endAdornment: statusAdornment ? <InputAdornment position="end">{statusAdornment}</InputAdornment> : null,
+                }}
+              />
+            </Field>
 
-          {domainStatus === 'valid' && (formData.primaryInstitution || domainMessage) && (
-            <Grid size={12}>
-              <Alert severity="success" icon={<BusinessIcon fontSize="inherit" />}>
-                {formData.primaryInstitution
-                  ? t('auth.institution_detected', {
-                      name: formData.primaryInstitution,
-                      defaultValue: `Institution: ${formData.primaryInstitution}`,
-                    })
-                  : domainMessage}
-              </Alert>
-            </Grid>
-          )}
-        </Grid>
+            {domainStatus === 'valid' && (formData.primaryInstitution || domainMessage) && (
+              <Box
+                sx={{
+                  display: 'flex', alignItems: 'center', gap: 1.5, p: 2, borderRadius: 1.5,
+                  border: '1px solid', borderColor: 'success.main',
+                  bgcolor: alpha(theme.palette.success.main, 0.06),
+                }}
+              >
+                <BusinessIcon sx={{ color: 'success.main' }} />
+                <Box>
+                  <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t('auth.institution_detected_label', 'Institution detected')}
+                  </Typography>
+                  <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem' }}>
+                    {formData.primaryInstitution || domainMessage}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+          </Box>
+        </Box>
       </Box>
     );
   }
 
   if (accountType === 'RESEARCHER') {
     return (
-      <Box sx={{ width: '100%', mt: 1 }}>
-        <SectionHeader 
-          icon={<PersonIcon />}
-          title={t('auth.account_details_title')}
-          subtitle={t('auth.account_details_subtitle')}
-        />
-        
-        <Grid container spacing={3} sx={{ mt: 2, flexDirection: 'column' }}>
-          {/* Personal Information Section */}
-          <Grid size={12}>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1,
-              mb: 2,
-            }}>
-              <PersonIcon sx={{ 
-                color: theme.palette.primary.main, 
-                fontSize: 20 
-              }} />
-              <Typography variant="subtitle1" sx={{ 
-                fontWeight: 600,
-                color: theme.palette.text.primary,
-              }}>
-                {t('auth.personal_information')}
-              </Typography>
+      <Box>
+        <StepHeader title={t('auth.account_details_title')} subtitle={t('auth.account_details_subtitle')} />
+
+        {formData.orcidId && (
+          <Box
+            sx={{
+              display: 'flex', alignItems: 'center', gap: 1.5, p: 1.25, px: 1.75, mb: 3, borderRadius: 1.5,
+              border: `1px solid ${alpha('#A6CE39', 0.5)}`,
+              bgcolor: alpha('#A6CE39', 0.07),
+            }}
+          >
+            <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#A6CE39', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+              iD
             </Box>
-          </Grid>
-
-          {/* Given Name and Family Name - Same Row 50% Each */}
-        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
-
-        <Box sx={{ width: '50%' }}>
-            <TextField
-              fullWidth
-              label={t('auth.given_name')}
-              name="givenName"
-              value={formData.givenName || ''}
-              onChange={onInputChange}
-              error={!!errors.givenName}
-              helperText={errors.givenName}
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600 }}>
+                {t('auth.orcid_linked', 'ORCID iD linked')}
+              </Typography>
+              <Typography sx={{ ...monoSx, fontWeight: 600, color: 'text.primary' }}>{formData.orcidId}</Typography>
+            </Box>
+            <Chip
+              icon={<CheckCircleIcon />}
+              label={t('auth.verified')}
               size="small"
-              sx={fieldStyle}
-              InputProps={{
-                startAdornment: (
-                  <PersonIcon sx={{ 
-                    color: alpha(theme.palette.text.secondary, 0.6),
-                    fontSize: 18,
-                    mr: 1,
-                  }} />
-                ),
-              }}
+              color="success"
+              variant="outlined"
+              sx={{ fontWeight: 600 }}
             />
           </Box>
-          <Box sx={{ width: '50%' }}>
+        )}
+
+        <SectionLabel>{t('auth.personal_information')}</SectionLabel>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
+          <FieldRow>
+            <Field label={t('auth.given_name')} htmlFor="reg-given" required>
+              <TextField
+                id="reg-given"
+                fullWidth
+                name="givenName"
+                autoComplete="given-name"
+                value={formData.givenName || ''}
+                onChange={onInputChange}
+                error={!!errors.givenName}
+                helperText={errors.givenName}
+              />
+            </Field>
+            <Field label={t('auth.family_name')} htmlFor="reg-family" required>
+              <TextField
+                id="reg-family"
+                fullWidth
+                name="familyName"
+                autoComplete="family-name"
+                value={formData.familyName || ''}
+                onChange={onInputChange}
+                error={!!errors.familyName}
+                helperText={errors.familyName}
+              />
+            </Field>
+          </FieldRow>
+
+          <Field label={t('auth.email_address')} htmlFor="reg-email" required>
             <TextField
+              id="reg-email"
               fullWidth
-              label={t('auth.family_name')}
-              name="familyName"
-              value={formData.familyName || ''}
-              onChange={onInputChange}
-              error={!!errors.familyName}
-              helperText={errors.familyName}
-              size="small"
-              sx={fieldStyle}
-              InputProps={{
-                startAdornment: (
-                  <PersonIcon sx={{ 
-                    color: alpha(theme.palette.text.secondary, 0.6),
-                    fontSize: 18,
-                    mr: 1,
-                  }} />
-                ),
-              }}
-            />
-          </Box>
-        </Box>
-
-
-
-          {/* Email - Full Width */}
-          <Grid size={12}>
-            <TextField
-              fullWidth
-              label={t('auth.email_address')}
               name="email"
               type="email"
+              autoComplete="email"
               value={formData.email || ''}
               onChange={onInputChange}
               error={!!errors.email}
+              placeholder={t('auth.email_placeholder', 'name@institution.org')}
               helperText={
                 errors.email ||
-                (emailLocked ? t('manuscript_invite.register_email_locked', 'This email is set from your collaboration invitation.') : undefined)
+                (emailLocked
+                  ? t('manuscript_invite.register_email_locked', 'This email is set from your collaboration invitation.')
+                  : t('auth.email_helper', 'We’ll send an activation link to this address.'))
               }
-              size="small"
-              sx={fieldStyle}
-              InputProps={{
-                readOnly: emailLocked,
-                startAdornment: (
-                  <EmailIcon sx={{ 
-                    color: alpha(theme.palette.text.secondary, 0.6),
-                    fontSize: 18,
-                    mr: 1,
-                  }} />
-                ),
-              }}
+              InputProps={{ readOnly: emailLocked, startAdornment: iconStart(EmailIcon) }}
             />
-          </Grid>
+          </Field>
 
-          {/* ORCID ID - Full Width */}
-          <Grid size={12}>
-            <Box sx={{ position: 'relative' }}>
+          {!formData.orcidId && (
+            <Field label={t('auth.orcid_id')} htmlFor="reg-orcid">
               <TextField
+                id="reg-orcid"
                 fullWidth
-                label={t('auth.orcid_id')}
                 name="orcidId"
                 value={formData.orcidId || ''}
                 onChange={onInputChange}
-                size="small"
-                InputProps={{
-                  readOnly: !!formData.orcidId,
-                  startAdornment: (
-                    <BadgeIcon sx={{ 
-                      color: formData.orcidId 
-                        ? theme.palette.success.main
-                        : alpha(theme.palette.text.secondary, 0.6),
-                      fontSize: 18,
-                      mr: 1,
-                    }} />
-                  ),
-                }}
-                sx={orcidFieldStyle}
+                placeholder="0000-0000-0000-0000"
+                InputProps={{ startAdornment: iconStart(BadgeIcon), sx: monoSx }}
               />
-              {formData.orcidId && (
-                <Chip
-                  label={t('auth.verified')}
-                  size="small"
-                  color="success"
-                  sx={{
-                    position: 'absolute',
-                    right: 8,
-                    top: -8,
-                    fontSize: '0.7rem',
-                    height: 20,
-                    fontWeight: 600,
-                  }}
-                />
-              )}
-            </Box>
-          </Grid>
+            </Field>
+          )}
+        </Box>
 
-          <>
-              {/* Divider */}
-              <Grid size={12}>
-                <Divider sx={{ 
-                  my: 1,
-                  borderColor: alpha(theme.palette.primary.main, 0.1),
-                }} />
-              </Grid>
+        <SectionLabel>{t('auth.primary_affiliation')}</SectionLabel>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Field label={t('auth.primary_institution')} htmlFor="reg-institution" required>
+            <TextField
+              id="reg-institution"
+              fullWidth
+              name="primaryInstitution"
+              autoComplete="organization"
+              value={formData.primaryInstitution || ''}
+              onChange={onInputChange}
+              error={!!errors.primaryInstitution}
+              helperText={errors.primaryInstitution}
+              placeholder={t('auth.institution_placeholder', 'e.g. University of Nairobi')}
+              InputProps={{ startAdornment: iconStart(BusinessIcon) }}
+            />
+          </Field>
 
-              {/* Primary Affiliation Section */}
-              <Grid size={12}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 1,
-                  mb: 2,
-                }}>
-                  <BusinessIcon sx={{ 
-                    color: theme.palette.primary.main, 
-                    fontSize: 20 
-                  }} />
-                  <Typography variant="subtitle1" sx={{ 
-                    fontWeight: 600,
-                    color: theme.palette.text.primary,
-                  }}>
-                    {t('auth.primary_affiliation')}
-                  </Typography>
-                </Box>
-              </Grid>
-
-              {/* Primary Institution - Full Width */}
-              <Box sx={{ width: '100%' }}>
-                <TextField
-                  fullWidth
-                  label={t('auth.primary_institution')}
-                  name="primaryInstitution"
-                  value={formData.primaryInstitution || ''}
+          <FieldRow>
+            <Field label={t('auth.start_month')} htmlFor="reg-start-month" required>
+              <FormControl fullWidth error={!!errors.startMonth}>
+                <Select
+                  id="reg-start-month"
+                  name="startMonth"
+                  value={formData.startMonth || ''}
                   onChange={onInputChange}
-                  error={!!errors.primaryInstitution}
-                  helperText={errors.primaryInstitution}
-                  size="small"
-                  sx={fieldStyle}
-                  InputProps={{
-                    startAdornment: (
-                      <BusinessIcon sx={{ 
-                        color: alpha(theme.palette.text.secondary, 0.6),
-                        fontSize: 18,
-                        mr: 1,
-                      }} />
-                    ),
-                  }}
-                />
-              </Box>
-
-              {/* Start Month and Start Year - Same Row 50% Each */}
-              <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
-                <Box sx={{ width: '50%' }}>
-                  <FormControl 
-                    fullWidth 
-                    error={!!errors.startMonth} 
-                    size="small"
-                    sx={fieldStyle}
-                  >
-                    <InputLabel>{t('auth.start_month')}</InputLabel>
-                    <Select
-                      name="startMonth"
-                      value={formData.startMonth || ''}
-                      onChange={onInputChange}
-                      label={t('auth.start_month')}
-                      MenuProps={{
-                        PaperProps: { style: { maxHeight: 200, marginTop: 4 } },
-                        disableScrollLock: true,
-                      }}
-                    >
-                      {monthOptions.map((month) => (
-                        <MenuItem key={month.value} value={month.value}>
-                          {month.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.startMonth && (
-                      <Typography variant="caption" color="error" sx={{ ml: 2, mt: 0.5, display: 'block' }}>
-                        {errors.startMonth}
-                      </Typography>
-                    )}
-                  </FormControl>
-                </Box>
-                <Box sx={{ width: '50%' }}>
-                  <FormControl 
-                    fullWidth 
-                    error={!!errors.startYear} 
-                    size="small"
-                    sx={fieldStyle}
-                  >
-                    <InputLabel>{t('auth.start_year')}</InputLabel>
-                    <Select
-                      name="startYear"
-                      value={formData.startYear || ''}
-                      onChange={onInputChange}
-                      label={t('auth.start_year')}
-                      MenuProps={{
-                        PaperProps: { style: { maxHeight: 200, marginTop: 4 } },
-                        disableScrollLock: true,
-                      }}
-                    >
-                      {yearOptions.map((year) => (
-                        <MenuItem key={year.value} value={year.value}>
-                          {year.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.startYear && (
-                      <Typography variant="caption" color="error" sx={{ ml: 2, mt: 0.5, display: 'block' }}>
-                        {errors.startYear}
-                      </Typography>
-                    )}
-                  </FormControl>
-                </Box>
-              </Box>
-            </>
-        </Grid>
+                  displayEmpty
+                  renderValue={(v) => (v ? monthOptions.find((m) => m.value === v)?.label : selectPlaceholder(t('auth.select_month', 'Select month')))}
+                  MenuProps={{ PaperProps: { style: { maxHeight: 280 } }, disableScrollLock: true }}
+                >
+                  {monthOptions.map((month) => (
+                    <MenuItem key={month.value} value={month.value}>{month.label}</MenuItem>
+                  ))}
+                </Select>
+                {errors.startMonth && <FormHelperText sx={{ mx: 0 }}>{errors.startMonth}</FormHelperText>}
+              </FormControl>
+            </Field>
+            <Field label={t('auth.start_year')} htmlFor="reg-start-year" required>
+              <FormControl fullWidth error={!!errors.startYear}>
+                <Select
+                  id="reg-start-year"
+                  name="startYear"
+                  value={formData.startYear || ''}
+                  onChange={onInputChange}
+                  displayEmpty
+                  renderValue={(v) => (v ? v : selectPlaceholder(t('auth.select_year', 'Select year')))}
+                  MenuProps={{ PaperProps: { style: { maxHeight: 280 } }, disableScrollLock: true }}
+                >
+                  {yearOptions.map((year) => (
+                    <MenuItem key={year.value} value={year.value}>{year.label}</MenuItem>
+                  ))}
+                </Select>
+                {errors.startYear && <FormHelperText sx={{ mx: 0 }}>{errors.startYear}</FormHelperText>}
+              </FormControl>
+            </Field>
+          </FieldRow>
+        </Box>
       </Box>
     );
   }

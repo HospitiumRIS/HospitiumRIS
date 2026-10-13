@@ -24,14 +24,18 @@ import {
   Visibility,
   VisibilityOff,
   Google as GoogleIcon,
-  AccountCircle as OrcidIcon,
+  MailOutline as MailIcon,
+  LockOutlined as LockIcon,
+  ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
+import NextLink from 'next/link';
 import Image from 'next/image';
-import { useThemeMode } from '../../components/ThemeProvider';
-import { useAuth } from '../../components/AuthProvider';
+import { useThemeMode } from '@/components/ThemeProvider';
+import { useAuth } from '@/components/AuthProvider';
 import { useTranslation } from 'react-i18next';
+import { StepHeader, Field } from '@/components/Registration/FormKit';
 
 // Client-side activity logging helper
 const logClientActivity = (action, data = {}) => {
@@ -423,248 +427,169 @@ const NoSSR = ({ children, fallback = null }) => {
     }
   }, []);
 
+  const socialBtnSx = {
+    height: 44,
+    borderRadius: 1.25,
+    fontWeight: 500,
+    fontSize: '0.875rem',
+    color: 'text.primary',
+    borderColor: 'divider',
+    bgcolor: 'background.paper',
+    '&:hover': { borderColor: 'text.disabled', bgcolor: 'background.paper' },
+  };
+
   return (
-    <NoSSR fallback={<Box sx={{ minHeight: 'calc(100vh - 7.5rem)', display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>}>
-      <Box
-        sx={{
-          minHeight: 'calc(100vh - 7.5rem)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: theme.palette.background.default,
-          py: { xs: 3, sm: 4 },
-        }}
-      >
-        <Container maxWidth="sm">
-          <Paper
-            elevation={0}
+    <NoSSR fallback={null}>
+      <Box sx={{ maxWidth: 440, mx: 'auto' }}>
+        <StepHeader title={t('auth.login_title')} subtitle={t('auth.login_subtitle')} />
+
+        <Box component="form" onSubmit={handleSubmit} noValidate>
+          {generalError && (
+            <Alert severity="error" variant="outlined" sx={{ mb: 2.5, borderRadius: 1.5 }} onClose={() => setGeneralError('')}>
+              {generalError}
+            </Alert>
+          )}
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Field label={t('auth.email')} htmlFor="login-email">
+              <TextField
+                id="login-email"
+                fullWidth
+                name="email"
+                type="email"
+                autoComplete="email"
+                autoFocus
+                value={formData.email}
+                onChange={handleInputChange}
+                error={!!errors.email}
+                helperText={errors.email}
+                placeholder={t('auth.email_placeholder', 'name@institution.org')}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <MailIcon fontSize="small" sx={{ color: 'text.disabled' }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Field>
+
+            <Field label={t('auth.password')} htmlFor="login-password">
+              <TextField
+                id="login-password"
+                fullWidth
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                value={formData.password}
+                onChange={handleInputChange}
+                error={!!errors.password}
+                helperText={errors.password}
+                placeholder="••••••••"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockIcon fontSize="small" sx={{ color: 'text.disabled' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                        size="small"
+                        aria-label={showPassword ? t('auth.hide_password', 'Hide password') : t('auth.show_password', 'Show password')}
+                      >
+                        {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Field>
+          </Box>
+
+          {/* Remember me */}
+          <Tooltip title={t('auth.remember_tooltip')} arrow placement="top-start">
+            <FormControlLabel
+              sx={{ mt: 1.5, mb: 2.5, ml: -0.75, '& .MuiFormControlLabel-label': { fontSize: '0.875rem' } }}
+              control={
+                <Checkbox
+                  name="rememberMe"
+                  size="small"
+                  checked={formData.rememberMe}
+                  onChange={handleInputChange}
+                  color="primary"
+                />
+              }
+              label={
+                <Box component="span">
+                  {t('auth.remember_me')}
+                  <Box component="span" sx={{ color: 'text.secondary', fontSize: '0.78rem', ml: 0.75 }}>
+                    · {formData.rememberMe ? t('auth.stay_30_days') : t('auth.sign_out_on_close')}
+                  </Box>
+                </Box>
+              }
+            />
+          </Tooltip>
+
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            disableElevation
+            disabled={isLoading}
+            endIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <ArrowForwardIcon />}
             sx={{
-              p: { xs: 3, sm: 4 },
-              backgroundColor: theme.palette.background.paper,
-              border: `1px solid ${theme.palette.mode === 'dark' ? '#404040' : 'rgba(0,0,0,0.1)'}`,
+              height: 44, borderRadius: 1.25, fontWeight: 600, fontSize: '0.9375rem',
+              boxShadow: `0 6px 16px -6px ${theme.palette.primary.main}`,
+              '&:hover': { boxShadow: `0 8px 20px -6px ${theme.palette.primary.main}` },
             }}
           >
-            {/* Logo and Title */}
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <Image
-                src={isDarkMode ? "/hospitium-logo-dark.png" : "/hospitium-logo.png"}
-                alt="Hospitium RIS"
-                width={160}
-                height={36}
-                style={{ marginBottom: '16px' }}
-                priority
-              />
-            <Typography
-              variant="h4"
-              component="h1"
-              sx={{
-                fontWeight: 600,
-                color: theme.palette.text.primary,
-                mb: 1,
-              }}
-            >
-              {t('auth.login_title')}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-            >
-              {t('auth.login_subtitle')}
-            </Typography>
-          </Box>
+            {isLoading ? t('common.loading') : t('auth.login_btn')}
+          </Button>
 
-          {/* Login Form */}
-          <Box component="form" onSubmit={handleSubmit}>
-            {/* General Error Alert */}
-            {generalError && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {generalError}
-              </Alert>
-            )}
-            
-            <TextField
-              fullWidth
-              label={t('auth.email')}
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              error={!!errors.email}
-              helperText={errors.email}
-              sx={{ mb: 3 }}
-            />
+          <Divider sx={{ my: 3, color: 'text.secondary', fontSize: '0.8125rem', '&::before, &::after': { borderColor: 'divider' } }}>
+            {t('auth.or_continue')}
+          </Divider>
 
-            <TextField
-              fullWidth
-              label={t('auth.password')}
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              value={formData.password}
-              onChange={handleInputChange}
-              error={!!errors.password}
-              helperText={errors.password}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ mb: 3 }}
-            />
-
-            {/* Remember Me and Forgot Password */}
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                mb: 3,
-              }}
-            >
-              <Box>
-                <Tooltip
-                  title={t('auth.remember_tooltip')}
-                  arrow
-                  placement="top"
-                >
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        name="rememberMe"
-                        checked={formData.rememberMe}
-                        onChange={handleInputChange}
-                        color="primary"
-                      />
-                    }
-                    label={t('auth.remember_me')}
-                  />
-                </Tooltip>
-                <FormHelperText sx={{ ml: 4, mt: 0 }}>
-                  {formData.rememberMe
-                    ? t('auth.stay_30_days')
-                    : t('auth.sign_out_on_close')
-                  }
-                </FormHelperText>
-              </Box>
-             {/* <Link
-                href="/forgot-password"
-                variant="body2"
-                sx={{
-                  color: theme.palette.primary.main,
-                  textDecoration: 'none',
-                  mt: 1,
-                  '&:hover': {
-                    textDecoration: 'underline',
-                  },
-                }}
-              >
-                Forgot password?
-              </Link>*/}
-            </Box>
-
-            {/* Login Button */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
             <Button
-              type="submit"
               fullWidth
-              variant="contained"
-              size="large"
+              variant="outlined"
+              onClick={() => handleSocialLogin('ORCID')}
               disabled={isLoading}
-              sx={{
-                py: 1.5,
-                mb: 3,
-                fontSize: '1rem',
-                fontWeight: 600,
-              }}
+              startIcon={
+                <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: '#A6CE39', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 8.5, fontWeight: 700 }}>
+                  iD
+                </Box>
+              }
+              sx={socialBtnSx}
             >
-              {isLoading ? t('common.loading') : t('auth.login_btn')}
+              {t('auth.orcid')}
             </Button>
-
-            {/* Divider */}
-            <Divider sx={{ mb: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                {t('auth.or_continue')}
-              </Typography>
-            </Divider>
-
-            {/* Social Login Buttons */}
-            <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<GoogleIcon />}
-                onClick={() => handleSocialLogin('Google')}
-                sx={{ py: 1.5 }}
-              >
-                {t('auth.google')}
-              </Button>
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<OrcidIcon />}
-                onClick={() => handleSocialLogin('ORCID')}
-                disabled={isLoading}
-                sx={{
-                  py: 1.5,
-                  '& .MuiButton-startIcon': {
-                    color: '#A6CE39', // ORCID brand color
-                  },
-                }}
-              >
-                {isLoading ? t('common.loading') : t('auth.orcid')}
-              </Button>
-            </Stack>
-
-            {/* Sign Up Link */}
-            <Box sx={{ textAlign: 'center', mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                {t('auth.no_account')}{' '}
-                <Link
-                  href="/register"
-                  sx={{
-                    color: theme.palette.primary.main,
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    '&:hover': {
-                      textDecoration: 'underline',
-                    },
-                  }}
-                >
-                  {t('auth.sign_up')}
-                </Link>
-              </Typography>
-            </Box>
-
-            {/* Resend Activation Link 
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                Need to activate your account?{' '}
-                <Link
-                  href="/resend-activation"
-                  sx={{
-                    color: theme.palette.primary.main,
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    '&:hover': {
-                      textDecoration: 'underline',
-                    },
-                  }}
-                >
-                  Resend activation email
-                </Link>
-              </Typography>
-            </Box>*/}
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => handleSocialLogin('Google')}
+              startIcon={<GoogleIcon sx={{ color: '#4285F4' }} />}
+              sx={socialBtnSx}
+            >
+              {t('auth.google')}
+            </Button>
           </Box>
-        </Paper>
-      </Container>
-    </Box>
+
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 3.5, fontSize: '0.875rem' }}>
+            {t('auth.no_account')}{' '}
+            <Link component={NextLink} href="/register" underline="hover" sx={{ fontWeight: 600 }}>
+              {t('auth.sign_up')}
+            </Link>
+          </Typography>
+        </Box>
+      </Box>
     </NoSSR>
   );
 };
+
 
 export default LoginPage; 
