@@ -863,3 +863,68 @@ export async function sendProposalStatusEmail({
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Security notice sent after a user changes their password from their profile.
+ * @param {{ email: string, givenName?: string }} user
+ * @param {{ ip?: string|null, userAgent?: string|null }} [context]
+ */
+export async function sendPasswordChangedEmail(user, context = {}) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const when = new Date().toUTCString();
+  const name = user.givenName || 'there';
+  const escape = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const details = [
+    `<strong>When:</strong> ${escape(when)}`,
+    context.ip ? `<strong>IP address:</strong> ${escape(context.ip)}` : null,
+    context.userAgent ? `<strong>Device:</strong> ${escape(String(context.userAgent).slice(0, 160))}` : null,
+  ].filter(Boolean).join('<br/>');
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Your HospitiumRIS password was changed</title></head>
+<body style="margin:0;padding:0;font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f8f9fa;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+        <tr><td align="center" style="padding:0 0 32px 0;"><img src="${baseUrl}/hospitium-logo.png" alt="HospitiumRIS" style="max-width:160px;height:auto;" /></td></tr>
+        <tr><td style="background:#ffffff;border-radius:8px;border:1px solid #e5e7eb;padding:40px;">
+          <h1 style="color:#111827;font-size:22px;font-weight:600;margin:0 0 16px 0;">Your password was changed</h1>
+          <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px 0;">Hi ${escape(name)},</p>
+          <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px 0;">The password for your HospitiumRIS account (${escape(user.email)}) was just changed.</p>
+          <p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0 0 24px 0;background:#f9fafb;border-radius:6px;padding:12px 16px;">${details}</p>
+          <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 8px 0;"><strong>Was this you?</strong> You don't need to do anything.</p>
+          <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px 0;"><strong>Not you?</strong> Contact your institution administrator immediately so they can secure your account and set a new password.</p>
+          <a href="${baseUrl}/login" style="display:inline-block;background:#8b6cbc;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:600;font-size:14px;">Go to HospitiumRIS</a>
+        </td></tr>
+        <tr><td align="center" style="padding:24px 0 0 0;color:#9ca3af;font-size:12px;">This is an automated security notice from HospitiumRIS.</td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  const textContent = `Hi ${name},
+
+The password for your HospitiumRIS account (${user.email}) was just changed.
+When: ${when}${context.ip ? `\nIP address: ${context.ip}` : ''}
+
+Was this you? You don't need to do anything.
+Not you? Contact your institution administrator immediately so they can secure your account and set a new password.`;
+
+  try {
+    const transporter = createTransporter();
+    const result = await transporter.sendMail({
+      from: process.env.FROM_EMAIL || 'HospitiumRIS <noreply@hospitiumris.com>',
+      to: user.email,
+      subject: 'HospitiumRIS - Your password was changed',
+      html: htmlContent,
+      text: textContent,
+    });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Password changed email error:', error);
+    return { success: false, error: error.message };
+  }
+}

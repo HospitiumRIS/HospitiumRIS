@@ -75,6 +75,7 @@ export async function GET(request) {
         orcidId: user.orcidId,
         orcidGivenNames: user.orcidGivenNames,
         orcidFamilyName: user.orcidFamilyName,
+        avatarUrl: user.avatarUrl || null,
         primaryInstitution: user.primaryInstitution,
         accountType: user.accountType,
         role: user.accountType, // For compatibility

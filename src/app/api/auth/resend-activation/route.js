@@ -27,8 +27,8 @@ export async function POST(request) {
       where: { email: email.toLowerCase() }
     });
 
-    if (!user) {
-      // Don't reveal if email exists or not for security
+    if (!user || user.status === 'DELETED') {
+      // Don't reveal if email exists or not for security (deleted accounts behave as non-existent)
       return NextResponse.json(
         { 
           success: true, 

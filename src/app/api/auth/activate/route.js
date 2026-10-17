@@ -47,7 +47,8 @@ export async function GET(request) {
       }
     });
 
-    if (!user) {
+    // Deleted accounts can never be re-activated via an old token
+    if (!user || user.status === 'DELETED') {
       return NextResponse.json(
         {
           success: false,

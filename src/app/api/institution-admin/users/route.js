@@ -7,6 +7,7 @@ import {
 } from '@/lib/institution-admin';
 import { hashPassword, validateEmail } from '@/lib/auth';
 import { normalizeOrcid } from '@/lib/orcid';
+import { anonymizeExpiredDeletedUsers } from '@/lib/user-lifecycle';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MANAGEABLE_ACCOUNT_TYPES = ['RESEARCHER', 'RESEARCH_ADMIN'];
@@ -42,6 +43,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search')?.trim() || '';
     const status = searchParams.get('status') || '';
+    const includeDeleted = searchParams.get('includeDeleted') === 'true';
     const accountType = searchParams.get('accountType') || '';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
     const limit = Math.min(100, Math.max(10, parseInt(searchParams.get('limit') || '25', 10) || 25));
@@ -51,6 +53,14 @@ export async function GET(request) {
     const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc';
 
     const { memberWhere } = await resolveInstitutionMemberScope(institution);
+
+    // Housekeeping: anonymise this institution's deleted users past the grace period.
+    // (A daily cron at /api/cron/anonymize-deleted-users also does this globally.)
+    try {
+      await anonymizeExpiredDeletedUsers({ where: memberWhere });
+    } catch (err) {
+      console.error('Anonymisation sweep failed:', err);
+    }
 
     const where = {
       AND: [memberWhere],
@@ -69,6 +79,8 @@ export async function GET(request) {
 
     if (status) {
       where.AND.push({ status });
+    } else if (!includeDeleted) {
+      where.AND.push({ status: { not: 'DELETED' } });
     }
 
     if (accountType && LIST_ACCOUNT_TYPES.includes(accountType)) {
@@ -86,6 +98,8 @@ export async function GET(request) {
           email: true,
           accountType: true,
           status: true,
+          deletedAt: true,
+          anonymizedAt: true,
           emailVerified: true,
           orcidId: true,
           primaryInstitution: true,
@@ -104,14 +118,14 @@ export async function GET(request) {
       }),
       prisma.user.groupBy({
         by: ['accountType'],
-        where: memberWhere,
+        where: { AND: [memberWhere, { status: { not: 'DELETED' } }] },
         _count: true,
       }),
     ]);
 
     const countOf = (row) => (typeof row._count === 'number' ? row._count : row._count?._all || 0);
 
-    const byStatus = { active: 0, pending: 0, inactive: 0, suspended: 0 };
+    const byStatus = { active: 0, pending: 0, inactive: 0, suspended: 0, deleted: 0 };
     for (const row of statusGroups) {
       const key = String(row.status).toLowerCase();
       if (key in byStatus) byStatus[key] = countOf(row);

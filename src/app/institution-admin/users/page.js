@@ -46,6 +46,9 @@ import {
   AdminPanelSettings as AdminIcon,
   LockReset as LockResetIcon,
   Clear as ClearIcon,
+  RestoreFromTrash as RestoreIcon,
+  DeleteForever as DeleteForeverIcon,
+  PersonOff as DeletedIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../../components/AuthProvider';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -68,7 +71,18 @@ const STATUS_TONE = {
   PENDING: { bg: '#fef3c7', color: '#b45309', label: 'Pending', icon: PendingIcon },
   INACTIVE: { bg: '#f1f5f9', color: '#475569', label: 'Inactive', icon: CancelIcon },
   SUSPENDED: { bg: '#fee2e2', color: '#b91c1c', label: 'Suspended', icon: BlockIcon },
+  DELETED: { bg: '#f3f4f6', color: '#6b7280', label: 'Deleted', icon: DeletedIcon },
 };
+
+// Must match ANONYMIZE_AFTER_DAYS in src/lib/user-lifecycle.js
+const RESTORE_WINDOW_DAYS = 30;
+
+function restorableUntil(userData) {
+  if (!userData?.deletedAt || userData.anonymizedAt) return null;
+  const until = new Date(userData.deletedAt);
+  until.setDate(until.getDate() + RESTORE_WINDOW_DAYS);
+  return until;
+}
 
 const MANAGEABLE_ACCOUNT_TYPES = [
   { name: 'RESEARCHER', displayName: 'Researcher' },
@@ -197,6 +211,8 @@ const UserManagementPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [permanentDialogOpen, setPermanentDialogOpen] = useState(false);
+  const [permanentConfirm, setPermanentConfirm] = useState('');
   const [saving, setSaving] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -358,6 +374,60 @@ const UserManagementPage = () => {
     setDeleteDialogOpen(true);
   };
 
+  const handleRestoreUser = async (userData) => {
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/institution-admin/users/${userData.id}/restore`, { method: 'POST' });
+      const data = await response.json();
+      if (data.success) {
+        showAlert(`${formatUserName(userData)} has been restored`, 'success');
+        fetchUsers();
+      } else {
+        showAlert(data.message || 'Failed to restore user', 'error');
+      }
+    } catch (error) {
+      console.error('Error restoring user:', error);
+      showAlert('Failed to restore user', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePermanentDeleteUser = (userData) => {
+    setSelectedUser(userData);
+    setPermanentConfirm('');
+    setPermanentDialogOpen(true);
+  };
+
+  const handleSubmitPermanentDelete = async () => {
+    if (!selectedUser || permanentConfirm !== 'DELETE') return;
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/institution-admin/users/${selectedUser.id}/permanent`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: 'DELETE' }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        const s = data.summary || {};
+        const transferred = s.manuscriptsTransferred
+          ? ` ${s.manuscriptsTransferred} shared manuscript(s) transferred to co-authors.`
+          : '';
+        showAlert(`User permanently deleted.${transferred}`, 'success');
+        setPermanentDialogOpen(false);
+        fetchUsers();
+      } else {
+        showAlert(data.message || 'Failed to permanently delete user', 'error');
+      }
+    } catch (error) {
+      console.error('Error permanently deleting user:', error);
+      showAlert('Failed to permanently delete user', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handlePasswordUser = (userData) => {
     setSelectedUser(userData);
     setPasswordForm({ password: '', confirmPassword: '' });
@@ -419,7 +489,7 @@ const UserManagementPage = () => {
       const data = await response.json();
 
       if (data.success) {
-        showAlert('User deleted successfully', 'success');
+        showAlert(data.message || 'User deleted', 'success');
         setDeleteDialogOpen(false);
         fetchUsers();
       } else {
@@ -732,6 +802,7 @@ const UserManagementPage = () => {
                   <MenuItem value="PENDING">Pending</MenuItem>
                   <MenuItem value="INACTIVE">Inactive</MenuItem>
                   <MenuItem value="SUSPENDED">Suspended</MenuItem>
+                  <MenuItem value="DELETED">Deleted users ({stats.byStatus?.deleted || 0})</MenuItem>
                 </Select>
               </FormControl>
               <FormControl fullWidth size="small" sx={{ '& .MuiInputBase-root': { borderRadius: 1.5 } }}>
@@ -896,7 +967,16 @@ const UserManagementPage = () => {
                           </Typography>
                         </TableCell>
                         <TableCell>{getAccountTypeChip(userData.accountType)}</TableCell>
-                        <TableCell>{getStatusChip(userData.status)}</TableCell>
+                        <TableCell>
+                          {getStatusChip(userData.status)}
+                          {userData.status === 'DELETED' && (
+                            <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
+                              {restorableUntil(userData)
+                                ? `Restorable until ${restorableUntil(userData).toLocaleDateString()}`
+                                : 'Anonymised'}
+                            </Typography>
+                          )}
+                        </TableCell>
                         <TableCell>
                           {userData.emailVerified ? (
                             <Chip
@@ -925,6 +1005,34 @@ const UserManagementPage = () => {
                                 <ViewIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
+                            {userData.status === 'DELETED' ? (
+                              <>
+                                {restorableUntil(userData) && (
+                                  <Tooltip title="Restore user">
+                                    <span>
+                                      <IconButton
+                                        size="small"
+                                        disabled={saving}
+                                        onClick={() => handleRestoreUser(userData)}
+                                        sx={{ color: PURPLE_DARK, bgcolor: alpha(PURPLE, 0.06), '&:hover': { bgcolor: alpha(PURPLE, 0.12) } }}
+                                      >
+                                        <RestoreIcon fontSize="small" />
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
+                                )}
+                                <Tooltip title="Delete permanently">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handlePermanentDeleteUser(userData)}
+                                    sx={{ color: '#b91c1c', bgcolor: alpha('#b91c1c', 0.08), '&:hover': { bgcolor: alpha('#b91c1c', 0.14) } }}
+                                  >
+                                    <DeleteForeverIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </>
+                            ) : (
+                            <>
                             <Tooltip title="Edit user">
                               <IconButton
                                 size="small"
@@ -953,6 +1061,8 @@ const UserManagementPage = () => {
                                   <DeleteIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
+                            )}
+                            </>
                             )}
                           </Stack>
                         </TableCell>
@@ -1046,7 +1156,7 @@ const UserManagementPage = () => {
                         textAlign: 'center',
                         p: 2,
                         borderRadius: 2,
-                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                        bgcolor: alpha(PURPLE, 0.08),
                       }}
                     >
                       <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', mb: 0.5 }}>
@@ -1344,15 +1454,17 @@ const UserManagementPage = () => {
         <InstitutionModalHeader
           icon={DeleteIcon}
           title="Delete user"
-          subtitle="This action cannot be undone"
+          subtitle={`Restorable for ${RESTORE_WINDOW_DAYS} days`}
           tone="danger"
           onClose={() => setDeleteDialogOpen(false)}
           disableClose={saving}
         />
         <InstitutionModalBody>
           <Alert severity="warning" sx={{ borderRadius: 2 }}>
-            This permanently deletes all user data and related records for{' '}
-            <strong>{selectedUser ? formatUserName(selectedUser) : 'this user'}</strong>.
+            <strong>{selectedUser ? formatUserName(selectedUser) : 'This user'}</strong> will be signed out and
+            blocked from logging in. Their publications, manuscripts, proposals, reviews and other research
+            records are kept. You can restore the account for {RESTORE_WINDOW_DAYS} days. After that, their
+            personal details (name, email, ORCID, profile) are anonymised automatically.
           </Alert>
           <InstitutionModalSection title="Confirm deletion">
             <Typography variant="body2" color="text.secondary">
@@ -1368,6 +1480,66 @@ const UserManagementPage = () => {
           </Button>
           <Button variant="contained" color="error" onClick={handleSubmitDelete} disabled={saving}>
             {saving ? 'Deleting...' : 'Delete user'}
+          </Button>
+        </InstitutionModalFooter>
+      </InstitutionModal>
+
+      <InstitutionModal
+        open={permanentDialogOpen}
+        onClose={() => !saving && setPermanentDialogOpen(false)}
+        disableClose={saving}
+      >
+        <InstitutionModalHeader
+          icon={DeleteForeverIcon}
+          title="Delete user permanently"
+          subtitle="This action cannot be undone"
+          tone="danger"
+          onClose={() => setPermanentDialogOpen(false)}
+          disableClose={saving}
+        />
+        <InstitutionModalBody>
+          <Alert severity="error" sx={{ borderRadius: 2 }}>
+            The account for <strong>{selectedUser ? formatUserName(selectedUser) : 'this user'}</strong> will be
+            erased. Use this for data-erasure requests.
+          </Alert>
+          <InstitutionModalSection title="What happens to their records">
+            <Typography component="div" variant="body2" color="text.secondary">
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                <li>Manuscripts shared with co-authors are transferred to a co-author.</li>
+                <li>
+                  Reviews, ethics and grant applications, image-integrity cases, comments and version history
+                  are kept and shown as &ldquo;Deleted user&rdquo;.
+                </li>
+                <li>Their profile, settings, notifications, library folders and solo manuscripts are deleted.</li>
+              </ul>
+            </Typography>
+          </InstitutionModalSection>
+          <InstitutionModalSection title="Confirm">
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+              Type <strong>DELETE</strong> to confirm.
+            </Typography>
+            <TextField
+              fullWidth
+              size="small"
+              autoComplete="off"
+              value={permanentConfirm}
+              onChange={(e) => setPermanentConfirm(e.target.value)}
+              placeholder="DELETE"
+              disabled={saving}
+            />
+          </InstitutionModalSection>
+        </InstitutionModalBody>
+        <InstitutionModalFooter>
+          <Button onClick={() => setPermanentDialogOpen(false)} disabled={saving} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleSubmitPermanentDelete}
+            disabled={saving || permanentConfirm !== 'DELETE'}
+          >
+            {saving ? 'Deleting...' : 'Delete permanently'}
           </Button>
         </InstitutionModalFooter>
       </InstitutionModal>

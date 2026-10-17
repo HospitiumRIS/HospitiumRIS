@@ -76,6 +76,7 @@ const UserDropdown = () => {
       {/* User Avatar */}
       <Tooltip title={`${user?.givenName || user?.firstName || user?.email}`}>
         <Avatar
+          src={user?.avatarUrl || undefined}
           sx={{
             width: 36,
             height: 36,
@@ -150,6 +151,7 @@ const UserDropdown = () => {
           {/* Avatar and Basic Info */}
           <Box sx={{ display: 'flex', alignItems: 'center', mb: isSmallScreen ? 2 : 3, position: 'relative', zIndex: 1 }}>
             <Avatar
+              src={user?.avatarUrl || undefined}
               sx={{
                 width: isSmallScreen ? 40 : 48,
                 height: isSmallScreen ? 40 : 48,

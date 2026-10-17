@@ -78,7 +78,11 @@ export function InstitutionModal({
   return (
     <Dialog
       open={open}
-      onClose={disableClose ? undefined : onClose}
+      onClose={(event, reason) => {
+        // Never close on outside (backdrop) clicks; Escape and explicit buttons still work.
+        if (reason === 'backdropClick' || disableClose) return;
+        onClose?.(event, reason);
+      }}
       maxWidth={maxWidth}
       fullWidth={fullWidth}
       disableScrollLock

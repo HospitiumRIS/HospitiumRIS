@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readResearcherIds } from '@/lib/researcher-ids';
 import prisma from '../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../lib/auth-server';
 
@@ -42,6 +43,7 @@ export async function GET(request) {
       orcidId: userProfile.orcidId,
       orcidGivenNames: userProfile.orcidGivenNames,
       orcidFamilyName: userProfile.orcidFamilyName,
+      avatarUrl: userProfile.avatarUrl || null,
       primaryInstitution: userProfile.primaryInstitution,
       researchProfile: userProfile.researchProfile ? {
         id: userProfile.researchProfile.id,
@@ -58,6 +60,7 @@ export async function GET(request) {
         linkedin: userProfile.researchProfile.linkedin,
         twitter: userProfile.researchProfile.twitter,
         googleScholar: userProfile.researchProfile.googleScholar,
+        researcherIds: readResearcherIds(userProfile.researchProfile),
       } : null,
     };
 
@@ -81,26 +84,40 @@ export async function GET(request) {
           // Extract biography
           const biography = orcidRawData.person?.biography?.content || null;
           
-          // Extract employments
-          const employments = orcidRawData.activities?.employments?.['employment-summary'] || [];
-          const educations = orcidRawData.activities?.educations?.['education-summary'] || [];
-          
+          // ORCID v3 nests affiliations as activities-summary.<type>['affiliation-group'][].summaries[].<type>-summary
+          // (older responses used activities.<type>['<type>-summary']). Support both.
+          const affiliations = (section, key) => {
+            const container =
+              orcidRawData['activities-summary']?.[section] || orcidRawData.activities?.[section] || {};
+            const grouped = (container['affiliation-group'] || []).flatMap((g) =>
+              (g.summaries || []).map((s) => s[key]).filter(Boolean)
+            );
+            return grouped.length ? grouped : container[key] || [];
+          };
+          const dateKey = (d) =>
+            d ? `${d.year?.value || '0000'}-${String(d.month?.value || '00').padStart(2, '0')}` : '0000-00';
+          const toItem = (a, titleField, fallbackTitle) => ({
+            [titleField]: a['role-title'] || fallbackTitle,
+            organization: a.organization?.name || 'Organization not specified',
+            department: a['department-name'] || null,
+            location: [a.organization?.address?.city, a.organization?.address?.country].filter(Boolean).join(', ') || null,
+            startDate: a['start-date'] || null,
+            endDate: a['end-date'] || null,
+          });
+          const byNewest = (a, b) =>
+            (b.endDate ? dateKey(b.endDate) : '9999') .localeCompare(a.endDate ? dateKey(a.endDate) : '9999') ||
+            dateKey(b.startDate).localeCompare(dateKey(a.startDate));
+
           orcidData = {
             biography,
-            employments: employments.map(emp => ({
-              role: emp['role-title'] || 'Role not specified',
-              organization: emp.organization?.name || 'Organization not specified',
-              department: emp['department-name'] || null,
-              startDate: emp['start-date'] || null,
-              endDate: emp['end-date'] || null,
-            })).slice(0, 5),
-            educations: educations.map(edu => ({
-              degree: edu['role-title'] || 'Degree not specified',
-              organization: edu.organization?.name || 'Organization not specified',
-              department: edu['department-name'] || null,
-              startDate: edu['start-date'] || null,
-              endDate: edu['end-date'] || null,
-            })).slice(0, 5),
+            employments: affiliations('employments', 'employment-summary')
+              .map((a) => toItem(a, 'role', 'Role not specified'))
+              .sort(byNewest)
+              .slice(0, 15),
+            educations: affiliations('educations', 'education-summary')
+              .map((a) => toItem(a, 'degree', 'Degree not specified'))
+              .sort(byNewest)
+              .slice(0, 15),
           };
         }
       } catch (orcidError) {
@@ -172,7 +189,9 @@ export async function PUT(request) {
       website: body.researchProfile?.website || null,
       linkedin: body.researchProfile?.linkedin || null,
       twitter: body.researchProfile?.twitter || null,
-      googleScholar: body.researchProfile?.googleScholar || null,
+      ...(body.researchProfile && 'googleScholar' in body.researchProfile
+        ? { googleScholar: body.researchProfile.googleScholar || null }
+        : {}),
     };
 
     if (existingResearchProfile) {
@@ -207,6 +226,7 @@ export async function PUT(request) {
       orcidId: updatedUser.orcidId,
       orcidGivenNames: updatedUser.orcidGivenNames,
       orcidFamilyName: updatedUser.orcidFamilyName,
+      avatarUrl: updatedUser.avatarUrl || null,
       primaryInstitution: updatedUser.primaryInstitution,
       researchProfile: updatedUser.researchProfile ? {
         id: updatedUser.researchProfile.id,
@@ -223,6 +243,7 @@ export async function PUT(request) {
         linkedin: updatedUser.researchProfile.linkedin,
         twitter: updatedUser.researchProfile.twitter,
         googleScholar: updatedUser.researchProfile.googleScholar,
+        researcherIds: readResearcherIds(updatedUser.researchProfile),
       } : null,
     };
 

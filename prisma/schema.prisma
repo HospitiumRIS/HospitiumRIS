@@ -16,6 +16,7 @@ enum UserStatus {
   ACTIVE
   INACTIVE
   SUSPENDED
+  DELETED // Soft-deleted by an institution admin; restorable until anonymizedAt is set
 }
 
 model AccountType {
@@ -61,6 +62,8 @@ model User {
   orcidId         String?
   orcidGivenNames String?
   orcidFamilyName String?
+  // Profile photo: "/api/files/<StoredFile id>" (PROFILE_PHOTO module, stored in R2)
+  avatarUrl String?
 
   // Research Information (for RESEARCHER and RESEARCH_ADMIN)
   primaryInstitution String?
@@ -71,6 +74,12 @@ model User {
   secondaryInstitutionId        String?
   institutionVerifiedAt         DateTime?
   institutionVerificationMethod String? // EMAIL_DOMAIN, MANUAL
+
+  // Soft delete / anonymisation lifecycle
+  deletedAt          DateTime?
+  deletedById        String? // Institution admin who deleted the account
+  statusBeforeDelete UserStatus? // Restored on undo
+  anonymizedAt       DateTime? // PII scrubbed; account can no longer be restored
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -117,6 +126,7 @@ model User {
   // Notification Preferences
   notificationPreferences NotificationPreference?
 
+  @@index([status, deletedAt])
   @@map("users")
 }
 
@@ -353,7 +363,10 @@ model ResearchProfile {
   website       String?
   linkedin      String?
   twitter       String?
-  googleScholar String?
+  googleScholar String? // legacy; kept in sync with the GOOGLE_SCHOLAR entry in researcherIds
+
+  // External researcher identifiers: [{ type, value, label? }] — see src/lib/researcher-ids.js
+  researcherIds Json?
 
   // Research Metrics
   hIndex        Int?
@@ -2616,6 +2629,7 @@ enum StoredFileModule {
   TRAINING_MATERIAL
   TRAINING_CERTIFICATE
   INSTITUTION_LOGO
+  PROFILE_PHOTO
 }
 
 enum FileVisibility {

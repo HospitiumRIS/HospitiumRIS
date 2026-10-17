@@ -79,6 +79,13 @@ const commonThemeSettings = {
       defaultProps: {
         disableScrollLock: true,
       },
+      styleOverrides: {
+        backdrop: {
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          backgroundColor: 'rgba(15, 10, 30, 0.35)',
+        },
+      },
     },
     MuiModal: {
       defaultProps: {
@@ -263,6 +270,11 @@ const darkTheme = createTheme({
         disableScrollLock: true,
       },
       styleOverrides: {
+        backdrop: {
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        },
         paper: {
           borderRadius: 6,
           backgroundColor: '#2a2a2a',

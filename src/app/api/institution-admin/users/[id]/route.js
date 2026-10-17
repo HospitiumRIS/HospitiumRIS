@@ -7,6 +7,8 @@ import {
 } from '@/lib/institution-admin';
 import { hashPassword, validateEmail } from '@/lib/auth';
 import { normalizeOrcid } from '@/lib/orcid';
+import { softDeleteUser, ANONYMIZE_AFTER_DAYS } from '@/lib/user-lifecycle';
+import { logInfo } from '@/utils/activityLogger';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MANAGEABLE_ACCOUNT_TYPES = ['RESEARCHER', 'RESEARCH_ADMIN'];
@@ -19,6 +21,8 @@ function serializeUser(user) {
     email: user.email,
     accountType: user.accountType,
     status: user.status,
+    deletedAt: user.deletedAt || null,
+    anonymizedAt: user.anonymizedAt || null,
     emailVerified: user.emailVerified,
     orcidId: user.orcidId || null,
     primaryInstitution: user.primaryInstitution || null,
@@ -80,6 +84,13 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ success: false, message: 'Cannot modify this account' }, { status: 403 });
     }
 
+    if (existingUser.status === 'DELETED') {
+      return NextResponse.json(
+        { success: false, message: 'This user has been deleted. Restore the account before editing it.' },
+        { status: 409 }
+      );
+    }
+
     const body = await request.json();
     const data = {};
 
@@ -113,6 +124,12 @@ export async function PATCH(request, { params }) {
     }
 
     if (typeof body.status === 'string' && body.status.trim()) {
+      if (body.status === 'DELETED') {
+        return NextResponse.json(
+          { success: false, message: 'Use the Delete action to delete a user' },
+          { status: 400 }
+        );
+      }
       if (existingUser.accountType === 'INSTITUTION_ADMIN' && body.status === 'SUSPENDED') {
         return NextResponse.json(
           { success: false, message: 'Cannot suspend institution admin accounts' },
@@ -218,9 +235,24 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    await prisma.user.delete({ where: { id: existingUser.id } });
+    if (existingUser.status === 'DELETED') {
+      return NextResponse.json({ success: false, message: 'User is already deleted' }, { status: 409 });
+    }
 
-    return NextResponse.json({ success: true, message: 'User deleted successfully' });
+    // Soft delete: login blocked, research records kept, restorable until anonymised.
+    await softDeleteUser({ target: existingUser, actor: user, institution });
+
+    await logInfo('User soft-deleted by institution admin', {
+      action: 'USER_SOFT_DELETE',
+      targetUserId: existingUser.id,
+      actorUserId: user.id,
+      institutionId: institution.id,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `User deleted. They can be restored for ${ANONYMIZE_AFTER_DAYS} days, after which their personal data is anonymised.`,
+    });
   } catch (err) {
     console.error('Error deleting user:', err);
     return NextResponse.json({ success: false, message: 'Failed to delete user' }, { status: 500 });
