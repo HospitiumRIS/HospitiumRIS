@@ -41,6 +41,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../components/AuthProvider';
 import PageHeader from '../../components/common/PageHeader';
 import ResearchNetworkWidget from '../../components/ResearchNetwork';
+import WelcomeTour from '../../components/Researcher/Onboarding/WelcomeTour';
+import ProfileChecklistCard from '../../components/Researcher/Onboarding/ProfileChecklistCard';
 import {
   LineChart, Line, BarChart as RechartsBarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Area, AreaChart,
@@ -93,6 +95,58 @@ const ResearcherDashboard = () => {
   const [widgetOrder, setWidgetOrder] = useState(DEFAULT_ORDER);
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
+  const [onboarding, setOnboarding] = useState(null); // { showTour, showChecklist, completeness }
+  const [tourOpen, setTourOpen] = useState(false);
+
+  // ---- Onboarding: first-login tour + "complete your profile" checklist
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/researcher/onboarding', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled || !data.success) return;
+        setOnboarding(data);
+        const replay = new URLSearchParams(window.location.search).get('tour') === '1';
+        if (data.showTour || replay) setTourOpen(true);
+      } catch (err) {
+        console.error('Failed to load onboarding state:', err);
+      }
+    })();
+    const openTour = () => setTourOpen(true);
+    window.addEventListener('hospitium:open-tour', openTour); // fired by "Take the tour" in the user menu
+    return () => {
+      cancelled = true;
+      window.removeEventListener('hospitium:open-tour', openTour);
+    };
+  }, [user?.id]);
+
+  const finishTour = (reason) => {
+    setTourOpen(false);
+    setOnboarding((prev) => (prev ? { ...prev, showTour: false } : prev));
+    fetch('/api/researcher/onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ action: 'complete-tour' }),
+    }).catch(() => {});
+    if (window.location.search.includes('tour=1')) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    if (reason === 'setup-profile') router.push('/researcher/profile');
+  };
+
+  const dismissChecklist = () => {
+    setOnboarding((prev) => (prev ? { ...prev, showChecklist: false } : prev));
+    fetch('/api/researcher/onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ action: 'dismiss-checklist' }),
+    }).catch(() => {});
+  };
 
   useEffect(() => {
     try {
@@ -650,6 +704,10 @@ const ResearcherDashboard = () => {
       </Box>
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
+        {onboarding?.showChecklist && (
+          <ProfileChecklistCard completeness={onboarding.completeness} onDismiss={dismissChecklist} />
+        )}
+        <WelcomeTour open={tourOpen} userName={user?.givenName} onFinish={finishTour} />
         {dataLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh', flexDirection: 'column', gap: 2 }}>
             <CircularProgress size={48} sx={{ color: PURPLE }} />

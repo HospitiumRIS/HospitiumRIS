@@ -16,6 +16,7 @@ import {
   Dashboard as DashboardIcon,
   AccountCircle as AccountCircleIcon,
   Settings as SettingsIcon,
+  Explore as TourIcon,
   Login as LoginIcon,
   ListAlt as LogsIcon,
   SwapHoriz as SwitchIcon,
@@ -24,13 +25,14 @@ import {
   AccountBalance as FoundationIcon,
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../AuthProvider';
 import { useTranslation } from 'react-i18next';
 
 const UserDropdown = () => {
   const theme = useTheme();
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout, getDashboardRoute, getUserRole } = useAuth();
   const { t } = useTranslation();
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
@@ -53,7 +55,11 @@ const UserDropdown = () => {
       event.stopPropagation();
     }
     setUserMenuAnchor(null);
-    if (action === 'logout') {
+    if (action === 'tour') {
+      // Replay the researcher welcome tour (handled by the /researcher dashboard)
+      if (pathname === '/researcher') window.dispatchEvent(new Event('hospitium:open-tour'));
+      else router.push('/researcher?tour=1');
+    } else if (action === 'logout') {
       handleLogout();
     } else if (path) {
       router.push(path);
@@ -367,6 +373,22 @@ const UserDropdown = () => {
             </ListItemIcon>
             <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>{t('nav.settings')}</Typography>
           </MenuItem>
+
+          {['RESEARCHER', 'RESEARCH_ADMIN'].includes(user?.accountType) && (
+            <MenuItem
+              onClick={(event) => handleUserMenuItemClick(event, 'tour')}
+              sx={{
+                borderRadius: 1,
+                mx: 1,
+                '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.08)' }
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                <TourIcon sx={{ fontSize: 18, color: '#8b6cbc' }} />
+              </ListItemIcon>
+              <Typography variant="body2" sx={{ fontSize: isSmallScreen ? '0.8rem' : '0.9rem' }}>Take the tour</Typography>
+            </MenuItem>
+          )}
 
           {/* Admin-only Logs menu item */}
           {(user?.accountType === 'RESEARCH_ADMIN' || user?.accountType === 'FOUNDATION_ADMIN' || user?.accountType === 'INSTITUTION_ADMIN' || user?.accountType === 'GLOBAL_ADMIN') && (

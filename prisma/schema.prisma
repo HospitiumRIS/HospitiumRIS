@@ -81,6 +81,10 @@ model User {
   statusBeforeDelete UserStatus? // Restored on undo
   anonymizedAt       DateTime? // PII scrubbed; account can no longer be restored
 
+  // Onboarding (researcher welcome tour + profile checklist)
+  onboardingCompletedAt       DateTime? // set when the welcome tour is finished or skipped
+  profileChecklistDismissedAt DateTime? // "complete your profile" card hidden by the user
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

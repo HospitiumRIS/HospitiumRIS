@@ -318,6 +318,22 @@ const ResearcherProfilePage = () => {
     return () => clearTimeout(t);
   }, [success]);
 
+  // Deep links from the dashboard "Complete your profile" checklist: ?tab=ids, ?edit=1
+  const [deepLinkApplied, setDeepLinkApplied] = useState(false);
+  useEffect(() => {
+    if (loading || !profile || deepLinkApplied) return;
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (TABS.some((t) => t.key === tab)) setActiveTab(tab);
+    if (params.get('edit') === '1') {
+      setEditedProfile(profile);
+      setEditing(true);
+      setActiveTab('overview');
+    }
+    if (params.toString()) window.history.replaceState(null, '', window.location.pathname);
+    setDeepLinkApplied(true);
+  }, [loading, profile, deepLinkApplied]);
+
   // ---- helpers
   const rp = profile?.researchProfile || {};
   const erp = editedProfile?.researchProfile || {};
