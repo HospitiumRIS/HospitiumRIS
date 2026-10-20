@@ -1501,7 +1501,7 @@ const CreateProposalPage = () => {
     setFormData(prev => ({
       ...prev,
       principalInvestigator: researcher.creditName || `${researcher.givenNames || ''} ${researcher.familyName || ''}`.trim(),
-      principalInvestigatorOrcid: researcher.orcidId,
+      principalInvestigatorOrcid: researcher.orcidId || '',
       principalInvestigatorEmail: researcher.email || '',
       principalInvestigatorInstitution: researcher.institution || researcher.affiliations?.[0] || '',
       principalInvestigatorDepartment: researcher.department || '',
@@ -1516,12 +1516,20 @@ const CreateProposalPage = () => {
       role: researcher.employmentSummary || '',
       institution: researcher.institution || researcher.affiliations?.[0] || '',
       department: researcher.department || '',
-      orcidId: researcher.orcidId,
+      orcidId: researcher.orcidId || '',
+      userId: researcher.userId || null,
+      registeredOnHospitium: Boolean(researcher.registeredOnHospitium),
       affiliations: researcher.affiliations || []
     };
 
     setFormData((prev) => {
-      if (researcher.orcidId && prev.coInvestigators.some((person) => person.orcidId === researcher.orcidId)) {
+      const email = (newCoInvestigator.email || '').toLowerCase();
+      const duplicate = prev.coInvestigators.some((person) =>
+        (newCoInvestigator.orcidId && person.orcidId === newCoInvestigator.orcidId)
+        || (newCoInvestigator.userId && person.userId === newCoInvestigator.userId)
+        || (email && (person.email || '').toLowerCase() === email)
+      );
+      if (duplicate) {
         return prev;
       }
       return { ...prev, coInvestigators: [...prev.coInvestigators, newCoInvestigator] };
@@ -3314,6 +3322,7 @@ const CreateProposalPage = () => {
         roleLabel="co-investigator"
         currentOrcid={user?.orcidId || ''}
         excludeOrcidIds={formData.coInvestigators.map((person) => person.orcidId).filter(Boolean)}
+        excludeEmails={formData.coInvestigators.map((person) => person.email).filter(Boolean)}
       />
 
       <EthicsLinkModal
