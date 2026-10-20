@@ -167,8 +167,42 @@ export async function GET(request, { params }) {
                 });
             });
         }
+        // Resolve Hospitium accounts for the PI and co-investigators by ORCID so the
+        // view page can link to internal profiles (falls back to orcid.org client-side).
+        const bareOrcid = (value) => {
+            const match = String(value || '').match(/\d{4}-\d{4}-\d{4}-\d{3}[\dX]/i);
+            return match ? match[0].toUpperCase() : null;
+        };
+        const coInvestigatorList = Array.isArray(proposal.coInvestigators) ? proposal.coInvestigators : [];
+        const orcidsToResolve = [
+            bareOrcid(proposal.principalInvestigatorOrcid),
+            ...coInvestigatorList.filter((person) => !person?.userId).map((person) => bareOrcid(person?.orcidId)),
+        ].filter(Boolean);
+        const userIdByOrcid = new Map();
+        if (orcidsToResolve.length) {
+            try {
+                const variants = orcidsToResolve.flatMap((orcid) => [orcid, `https://orcid.org/${orcid}`]);
+                const matchedUsers = await prisma.user.findMany({
+                    where: { orcidId: { in: variants } },
+                    select: { id: true, orcidId: true },
+                });
+                matchedUsers.forEach((user) => {
+                    const key = bareOrcid(user.orcidId);
+                    if (key && !userIdByOrcid.has(key)) userIdByOrcid.set(key, user.id);
+                });
+            } catch (lookupError) {
+                console.error('Failed to resolve investigator profiles:', lookupError);
+            }
+        }
+        const principalInvestigatorUserId = userIdByOrcid.get(bareOrcid(proposal.principalInvestigatorOrcid)) || null;
+        const coInvestigatorsWithProfiles = coInvestigatorList.map((person) => (
+            person?.userId ? person : { ...person, userId: userIdByOrcid.get(bareOrcid(person?.orcidId)) || null }
+        ));
+
         const transformedProposal = {
             ...proposal,
+            coInvestigators: coInvestigatorsWithProfiles,
+            principalInvestigatorUserId,
             startDate: proposal.startDate?.toISOString(),
             endDate: proposal.endDate?.toISOString(),
             grantStartDate: proposal.grantStartDate?.toISOString(),
