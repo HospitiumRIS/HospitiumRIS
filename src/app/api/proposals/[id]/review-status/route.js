@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { ensureProposalInReviewPipeline, isProposalInReview } from '../../../../../lib/proposal-review-pipeline.js';
+import { ensureProposalInReviewPipeline, isProposalInReview, syncReviewPipelineWithDecision } from '../../../../../lib/proposal-review-pipeline.js';
 
 const prisma = new PrismaClient();
 
@@ -54,10 +54,33 @@ export async function GET(request, { params }) {
       }
     }
 
-    const tracking = await prisma.proposalReviewTracking.findUnique({
+    let tracking = await prisma.proposalReviewTracking.findUnique({
       where: { proposalId: id },
       include: trackingInclude,
     });
+
+    // Self-heal: a final decision was recorded but the pipeline was never closed
+    // (proposals decided before decisions were synced to the pipeline).
+    const expectedOverall = { APPROVED: 'COMPLETED', REJECTED: 'REJECTED' }[proposal?.status];
+    if (tracking && expectedOverall && tracking.overallStatus !== expectedOverall) {
+      try {
+        const latestReview = await prisma.proposalReview.findFirst({
+          where: { proposalId: id },
+          orderBy: { reviewDate: 'desc' },
+          select: { overallComments: true, rejectionReason: true },
+        });
+        await syncReviewPipelineWithDecision(prisma, id, proposal.status, {
+          comments: latestReview?.overallComments || '',
+          reason: latestReview?.rejectionReason || '',
+        });
+        tracking = await prisma.proposalReviewTracking.findUnique({
+          where: { proposalId: id },
+          include: trackingInclude,
+        });
+      } catch (err) {
+        console.error('Failed to sync review pipeline with proposal decision:', err);
+      }
+    }
 
     if (!tracking) {
       return NextResponse.json(

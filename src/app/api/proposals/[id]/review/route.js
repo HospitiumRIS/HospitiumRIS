@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { logApiActivity, getRequestMetadata } from '../../../../../utils/activityLogger.js';
 import { notifyProposalOwner } from '../../../../../lib/proposal-review-comms.js';
+import { syncReviewPipelineWithDecision } from '../../../../../lib/proposal-review-pipeline.js';
 
 const prisma = new PrismaClient();
 
@@ -103,6 +104,16 @@ export async function POST(request, { params }) {
                 updatedAt: new Date()
             }
         });
+
+        // Keep the stage-by-stage pipeline in step with the final decision
+        try {
+            await syncReviewPipelineWithDecision(prisma, id, decision, {
+                comments: overallComments,
+                reason: decision === 'rejected' ? rejectionReason : revisionRequirements,
+            });
+        } catch (pipelineError) {
+            console.error('Failed to sync review pipeline with decision:', pipelineError);
+        }
 
         const templateByStatus = {
             APPROVED: 'PROPOSAL_APPROVED',

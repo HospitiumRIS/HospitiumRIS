@@ -42,7 +42,7 @@ import { useAuth } from '../../../../../components/AuthProvider';
 const REVIEW_TAB = 6;
 const DECIDED_STATUSES = new Set(['APPROVED', 'REJECTED']);
 
-const decisionMeta = (value) => DECISIONS.find((item) => item.value === value) || null;
+const decisionMeta = (value) => DECISIONS.find((item) => item.value === String(value || '').toLowerCase()) || null;
 
 export default function InstitutionProposalReviewDetailPage() {
   const { user } = useAuth();

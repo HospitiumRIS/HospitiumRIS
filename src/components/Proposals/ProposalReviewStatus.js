@@ -91,10 +91,10 @@ export default function ProposalReviewStatus({ tracking, compact = false }) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Chip
-          label={overallStatus === 'COMPLETED' ? 'Review Complete' : currentStage?.name || 'Not Started'}
+          label={overallStatus === 'COMPLETED' ? 'Review Complete' : overallStatus === 'REJECTED' ? 'Not Approved' : currentStage?.name || 'Not Started'}
           size="small"
           sx={{
-            backgroundColor: overallStatus === 'COMPLETED' ? '#4caf50' : '#2196f3',
+            backgroundColor: overallStatus === 'COMPLETED' ? '#4caf50' : overallStatus === 'REJECTED' ? '#d32f2f' : '#2196f3',
             color: 'white',
             fontWeight: 600,
           }}
@@ -126,8 +126,8 @@ export default function ProposalReviewStatus({ tracking, compact = false }) {
           Review Progress
         </Typography>
         <Chip
-          label={overallStatus === 'COMPLETED' ? 'All Stages Complete' : `Stage ${currentStageOrder} of ${stages.length}`}
-          color={overallStatus === 'COMPLETED' ? 'success' : 'primary'}
+          label={overallStatus === 'COMPLETED' ? 'All Stages Complete' : overallStatus === 'REJECTED' ? 'Review Closed: Not Approved' : `Stage ${currentStageOrder} of ${stages.length}`}
+          color={overallStatus === 'COMPLETED' ? 'success' : overallStatus === 'REJECTED' ? 'error' : 'primary'}
         />
       </Box>
 
