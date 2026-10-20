@@ -171,7 +171,9 @@ export default function ProposalDocumentPreviewModal({ open, file, onClose, titl
         } else {
           const url = documentUrl(file);
           if (!url) throw new Error('This document has no stored location.');
-          const response = await fetch(url, { credentials: 'include' });
+          // /api/files/:id redirects to R2 by default; ask for same-origin bytes instead
+          const fetchUrl = url.startsWith('/api/files/') ? `${url}${url.includes('?') ? '&' : '?'}stream=1` : url;
+          const response = await fetch(fetchUrl, { credentials: 'include' });
           if (!response.ok) throw new Error(`Could not load the document (${response.status}).`);
           blob = await response.blob();
         }
