@@ -6,6 +6,7 @@ import {
   Autocomplete,
   Box,
   Button,
+  Checkbox,
   Chip,
   LinearProgress,
   MenuItem,
@@ -24,6 +25,7 @@ import {
 } from '@mui/material';
 import {
   Business as InstitutionIcon,
+  ChevronRight as ChevronRightIcon,
   PersonSearch as PersonSearchIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
@@ -72,6 +74,13 @@ export default function InstitutionDirectoryModal({
   roleLabel = 'investigator',
   institutionName = '',
   initialQuery = '',
+  selectable = false,
+  isSelectable = () => false,
+  isSelected = () => false,
+  onToggle = () => {},
+  onToggleMany = () => {},
+  selectedCount = 0,
+  onContinueBatch = () => {},
 }) {
   const [query, setQuery] = useState('');
   const [department, setDepartment] = useState(null);
@@ -138,6 +147,11 @@ export default function InstitutionDirectoryModal({
   useEffect(() => () => requestRef.current?.abort(), []);
 
   const filtered = Boolean(query.trim() || department);
+  const pageSelectable = rows.filter(isSelectable);
+  const pageSelectedCount = pageSelectable.filter(isSelected).length;
+  const allPageSelected = pageSelectable.length > 0 && pageSelectedCount === pageSelectable.length;
+  const checkboxSx = { color: alpha(PURPLE, 0.6), '&.Mui-checked, &.MuiCheckbox-indeterminate': { color: PURPLE } };
+  const columnCount = selectable ? 6 : 5;
   const name = institutionName || 'Institution';
 
   return (
@@ -212,6 +226,19 @@ export default function InstitutionDirectoryModal({
             <Table stickyHeader size="small">
               <TableHead>
                 <TableRow>
+                  {selectable ? (
+                    <TableCell padding="checkbox" sx={headCellSx}>
+                      <Checkbox
+                        size="small"
+                        checked={allPageSelected}
+                        indeterminate={pageSelectedCount > 0 && !allPageSelected}
+                        disabled={!pageSelectable.length}
+                        onChange={() => onToggleMany(pageSelectable, !allPageSelected)}
+                        inputProps={{ 'aria-label': 'Select all on this page' }}
+                        sx={checkboxSx}
+                      />
+                    </TableCell>
+                  ) : null}
                   <TableCell sx={headCellSx}>Researcher</TableCell>
                   <TableCell sx={{ ...headCellSx, display: { xs: 'none', sm: 'table-cell' } }}>Department</TableCell>
                   <TableCell sx={{ ...headCellSx, display: { xs: 'none', md: 'table-cell' } }}>ORCID iD</TableCell>
@@ -222,7 +249,7 @@ export default function InstitutionDirectoryModal({
               <TableBody sx={{ opacity: loading ? 0.6 : 1, transition: 'opacity 120ms' }}>
                 {!loading && rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} sx={{ py: 6, textAlign: 'center', borderBottom: 0 }}>
+                    <TableCell colSpan={columnCount} sx={{ py: 6, textAlign: 'center', borderBottom: 0 }}>
                       <PersonSearchIcon sx={{ fontSize: 40, color: '#cbd5e1', mb: 1 }} />
                       <Typography variant="body2" sx={{ fontWeight: 700, color: '#334155' }}>
                         {filtered ? 'No researchers match your filters' : 'No other researchers registered yet'}
@@ -235,8 +262,21 @@ export default function InstitutionDirectoryModal({
                 ) : null}
                 {rows.map((researcher) => {
                   const taken = isTaken(researcher);
+                  const checked = isSelected(researcher);
                   return (
-                    <TableRow key={researcher.userId} hover>
+                    <TableRow key={researcher.userId} hover selected={checked}>
+                      {selectable ? (
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            size="small"
+                            checked={checked}
+                            disabled={!isSelectable(researcher)}
+                            onChange={() => onToggle(researcher)}
+                            inputProps={{ 'aria-label': `Select ${displayName(researcher)}` }}
+                            sx={checkboxSx}
+                          />
+                        </TableCell>
+                      ) : null}
                       <TableCell sx={{ py: 1.1 }}>
                         <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0 }}>
                           <ResearcherAvatar researcher={researcher} size={34} />
@@ -304,11 +344,24 @@ export default function InstitutionDirectoryModal({
       </InstitutionModalBody>
       <InstitutionModalFooter>
         <Typography variant="caption" color="text.secondary" sx={{ mr: 'auto' }}>
-          {filtered ? `${total.toLocaleString()} matching` : ''}
+          {selectable && selectedCount > 0
+            ? `${selectedCount} selected${filtered ? ` · ${total.toLocaleString()} matching` : ''}`
+            : filtered ? `${total.toLocaleString()} matching` : ''}
         </Typography>
         <Button onClick={onClose} sx={{ textTransform: 'none' }}>
-          Close
+          {selectable && selectedCount > 0 ? 'Back' : 'Close'}
         </Button>
+        {selectable ? (
+          <Button
+            variant="contained"
+            endIcon={<ChevronRightIcon />}
+            disabled={selectedCount === 0}
+            onClick={onContinueBatch}
+            sx={primaryButtonSx}
+          >
+            {selectedCount > 0 ? `Continue with ${selectedCount} selected` : 'Select researchers to continue'}
+          </Button>
+        ) : null}
       </InstitutionModalFooter>
     </InstitutionModal>
   );

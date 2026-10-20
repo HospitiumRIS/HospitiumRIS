@@ -6,6 +6,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
@@ -26,7 +27,9 @@ import {
   Business as InstitutionIcon,
   ChevronRight as ChevronRightIcon,
   Close as CloseIcon,
+  DeleteOutline as RemoveIcon,
   Email as EmailIcon,
+  GroupAdd as GroupAddIcon,
   Person as PersonIcon,
   Search as SearchIcon,
   Verified as VerifiedIcon,
@@ -112,20 +115,32 @@ function ResearcherSummary({ researcher }) {
   );
 }
 
-function ResultRow({ researcher, actionLabel, disabled, onPick, onView }) {
+function ResultRow({ researcher, actionLabel, disabled, onPick, onView, selectable = false, checked = false, onToggle }) {
   return (
     <Box
       sx={{
         p: 1.5,
+        pl: onToggle ? 0.5 : 1.5,
         borderRadius: 2,
         border: '1px solid',
-        borderColor: 'divider',
+        borderColor: checked ? PURPLE : 'divider',
+        bgcolor: checked ? alpha(PURPLE, 0.05) : 'transparent',
         display: 'flex',
         alignItems: 'flex-start',
         gap: 1.25,
         '&:hover': { borderColor: PURPLE, bgcolor: alpha(PURPLE, 0.04) },
       }}
     >
+      {onToggle ? (
+        <Checkbox
+          size="small"
+          checked={checked}
+          disabled={!selectable}
+          onChange={() => onToggle(researcher)}
+          inputProps={{ 'aria-label': `Select ${displayName(researcher)}` }}
+          sx={{ mt: 0.25, mr: -0.75, color: alpha(PURPLE, 0.6), '&.Mui-checked': { color: PURPLE } }}
+        />
+      ) : null}
       <ResearcherAvatar researcher={researcher} />
       <ResearcherDetails researcher={researcher} />
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ flexShrink: 0 }}>
@@ -206,6 +221,10 @@ export default function OrcidSearchModal({
   const [department, setDepartment] = useState('');
   const [emailTouched, setEmailTouched] = useState(false);
 
+  // Batch selection (co-investigators): researchers ticked across tabs/pages
+  const [batch, setBatch] = useState([]);
+  const [batchRows, setBatchRows] = useState([]); // [{ key, researcher, email, department, touched }]
+
   const [error, setError] = useState('');
   const [addedPeople, setAddedPeople] = useState([]);
 
@@ -221,6 +240,8 @@ export default function OrcidSearchModal({
     ? ''
     : getInstitutionalEmailError(inviteEmail);
   const isInviteStep = step === 'invite' && selected;
+  const isBatchStep = step === 'batch' && batchRows.length > 0;
+  const batchEnabled = Boolean(allowMultiple && requireInvite);
 
   const takenOrcids = new Set([
     ...excludeOrcidIds.filter(Boolean).map(orcidKey),
@@ -236,6 +257,59 @@ export default function OrcidSearchModal({
     const knownEmail = normalizeEmail(researcher.hospitium?.sameInstitution ? researcher.hospitium.email : '');
     return Boolean(knownEmail && takenEmails.has(knownEmail));
   };
+
+  const isCurrentUserResearcher = (researcher) => Boolean(
+    (currentOrcid && orcidKey(researcher.orcidId) === orcidKey(currentOrcid)) || researcher.hospitium?.isCurrentUser,
+  );
+  const selectionKey = (researcher) => (
+    researcher.hospitium?.userId || researcher.userId || (researcher.orcidId ? `orcid:${orcidKey(researcher.orcidId)}` : '')
+  );
+  const batchKeys = new Set(batch.map(selectionKey));
+  const isSelected = (researcher) => batchKeys.has(selectionKey(researcher));
+  const isSelectable = (researcher) => (
+    batchEnabled && Boolean(selectionKey(researcher)) && !isTaken(researcher) && !isCurrentUserResearcher(researcher)
+  );
+  const toggleSelected = (researcher) => {
+    const key = selectionKey(researcher);
+    if (!key) return;
+    setBatch((prev) => (
+      prev.some((item) => selectionKey(item) === key)
+        ? prev.filter((item) => selectionKey(item) !== key)
+        : isSelectable(researcher) ? [...prev, researcher] : prev
+    ));
+  };
+  const setManySelected = (researchers, checked) => {
+    setBatch((prev) => {
+      const keys = new Set(prev.map(selectionKey));
+      if (checked) {
+        const additions = researchers.filter((r) => isSelectable(r) && !keys.has(selectionKey(r)));
+        return [...prev, ...additions];
+      }
+      const removeKeys = new Set(researchers.map(selectionKey));
+      return prev.filter((item) => !removeKeys.has(selectionKey(item)));
+    });
+  };
+
+  const batchRowError = (row) => {
+    const registered = row.researcher.hospitium?.sameInstitution ? normalizeEmail(row.researcher.hospitium.email || '') : '';
+    const email = normalizeEmail(row.email);
+    if (registered && email === registered) return '';
+    return getInstitutionalEmailError(row.email);
+  };
+  const batchDuplicateEmails = (() => {
+    const seen = new Map();
+    batchRows.forEach((row) => {
+      const email = normalizeEmail(row.email);
+      if (email) seen.set(email, (seen.get(email) || 0) + 1);
+    });
+    return new Set([...seen.entries()].filter(([email, count]) => count > 1 || takenEmails.has(email)).map(([email]) => email));
+  })();
+  const rowError = (row) => {
+    const base = batchRowError(row);
+    if (base) return base;
+    return batchDuplicateEmails.has(normalizeEmail(row.email)) ? 'This email is already used by another investigator.' : '';
+  };
+  const batchHasErrors = batchRows.some((row) => Boolean(rowError(row)));
 
   // ---- Institution directory loading -------------------------------------------------
   const loadDirectory = useCallback(async (query) => {
@@ -305,6 +379,8 @@ export default function OrcidSearchModal({
     setDirectoryError('');
     setBrowseOpen(false);
     setProfileUserId(null);
+    setBatch([]);
+    setBatchRows([]);
     setMode(MODE_ORCID);
   };
 
@@ -319,21 +395,26 @@ export default function OrcidSearchModal({
   };
 
   // ---- Selection ---------------------------------------------------------------------
+  const buildSelection = (researcher, email, departmentValue) => {
+    const colleague = researcher.hospitium?.sameInstitution ? researcher.hospitium : null;
+    return {
+      ...researcher,
+      userId: colleague?.userId || researcher.userId || null,
+      institution: colleague?.institution || researcher.institution || '',
+      registeredOnHospitium: Boolean(researcher.hospitium?.registered),
+      email: email || null,
+      department: (departmentValue || '').trim(),
+    };
+  };
+
   const finishSelect = (researcher, email = '') => {
     if (isTaken(researcher) || (email && takenEmails.has(normalizeEmail(email)))) {
       setError('This researcher is already added.');
       setStep('search');
       return;
     }
-    const colleague = researcher.hospitium?.sameInstitution ? researcher.hospitium : null;
-    onSelect({
-      ...researcher,
-      userId: colleague?.userId || researcher.userId || null,
-      institution: colleague?.institution || researcher.institution || '',
-      registeredOnHospitium: Boolean(researcher.hospitium?.registered),
-      email: email || null,
-      department: department.trim(),
-    });
+    onSelect(buildSelection(researcher, email, department));
+    setBatch((prev) => prev.filter((item) => selectionKey(item) !== selectionKey(researcher)));
     if (!allowMultiple) {
       handleClose();
       return;
@@ -377,6 +458,52 @@ export default function OrcidSearchModal({
     setProfileUserId(null);
     setBrowseOpen(false);
     handlePickResearcher(researcher);
+  };
+
+  const handleStartBatch = () => {
+    const rows = batch
+      .filter((researcher) => !isTaken(researcher))
+      .map((researcher) => {
+        const colleague = researcher.hospitium?.sameInstitution ? researcher.hospitium : null;
+        return {
+          key: selectionKey(researcher),
+          researcher,
+          email: colleague?.email || '',
+          department: colleague?.department || '',
+          touched: Boolean(colleague?.email),
+        };
+      });
+    if (!rows.length) return;
+    setProfileUserId(null);
+    setBrowseOpen(false);
+    setBatchRows(rows);
+    setError('');
+    setStep('batch');
+  };
+
+  const updateBatchRow = (key, patch) => {
+    setBatchRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
+  };
+
+  const removeBatchRow = (key) => {
+    const next = batchRows.filter((row) => row.key !== key);
+    setBatchRows(next);
+    if (!next.length) setStep('search');
+    setBatch((prev) => prev.filter((item) => selectionKey(item) !== key));
+  };
+
+  const handleConfirmBatch = () => {
+    setBatchRows((prev) => prev.map((row) => ({ ...row, touched: true })));
+    if (batchHasErrors || !batchRows.length) return;
+    const added = batchRows.map((row) => {
+      const email = normalizeEmail(row.email);
+      onSelect(buildSelection(row.researcher, email, row.department));
+      return { name: displayName(row.researcher), orcidId: row.researcher.orcidId, email };
+    });
+    setAddedPeople((prev) => [...prev, ...added]);
+    setBatch([]);
+    setBatchRows([]);
+    resetSearchFields();
   };
 
   const handleConfirmInvite = () => {
@@ -443,6 +570,7 @@ export default function OrcidSearchModal({
     if (event.key === 'Enter') {
       event.preventDefault();
       if (isInviteStep) handleConfirmInvite();
+      else if (isBatchStep) return;
       else if (mode === MODE_ORCID) handleSearch();
     }
   };
@@ -512,6 +640,79 @@ export default function OrcidSearchModal({
       </Stack>
     );
   };
+
+  const renderBatchStep = () => (
+    <Stack spacing={1.5}>
+      <Typography variant="body2" color="text.secondary">
+        Colleagues registered at your institution are filled in from their Hospitium profiles. Add an institution
+        email for anyone else. Invitations are sent when you submit the proposal.
+      </Typography>
+      {batchRows.map((row) => {
+        const message = row.touched ? rowError(row) : '';
+        const registered = row.researcher.hospitium?.sameInstitution
+          && normalizeEmail(row.email) === normalizeEmail(row.researcher.hospitium.email || '');
+        return (
+          <Box
+            key={row.key}
+            sx={{ p: 1.5, borderRadius: 2, border: '1px solid', borderColor: message ? 'error.light' : 'divider' }}
+          >
+            <Stack direction="row" spacing={1.25} alignItems="flex-start" sx={{ mb: 1.5 }}>
+              <ResearcherAvatar researcher={row.researcher} />
+              <ResearcherDetails researcher={row.researcher} showAffiliations={false} />
+              <IconButton
+                size="small"
+                aria-label={`Remove ${displayName(row.researcher)}`}
+                onClick={() => removeBatchRow(row.key)}
+                sx={{ color: '#b91c1c' }}
+              >
+                <RemoveIcon fontSize="small" />
+              </IconButton>
+            </Stack>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1.4fr' }, gap: 1.5 }}>
+              <TextField
+                size="small"
+                label="Department (optional)"
+                placeholder="e.g. Cardiology"
+                value={row.department}
+                onChange={(e) => updateBatchRow(row.key, { department: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                sx={fieldFocusSx}
+              />
+              <TextField
+                size="small"
+                required
+                type="email"
+                autoComplete="off"
+                name={`batch-invite-email-${row.key}`}
+                label="Institution email"
+                placeholder="name@university.edu"
+                value={row.email}
+                onChange={(e) => updateBatchRow(row.key, { email: e.target.value })}
+                onBlur={() => updateBatchRow(row.key, { touched: true })}
+                error={Boolean(message)}
+                helperText={message || (registered ? 'Hospitium account email' : ' ')}
+                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailIcon sx={{ color: PURPLE, fontSize: 18 }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={fieldFocusSx}
+              />
+            </Box>
+          </Box>
+        );
+      })}
+    </Stack>
+  );
+
+  const selectionProps = (researcher) => (batchEnabled ? {
+    selectable: isSelectable(researcher),
+    checked: isSelected(researcher),
+    onToggle: toggleSelected,
+  } : {});
 
   const renderDirectory = () => {
     if (directoryMeta && !directoryMeta.linked) {
@@ -617,6 +818,7 @@ export default function OrcidSearchModal({
                     disabled={isTaken(researcher)}
                     onPick={handlePickResearcher}
                     onView={handleViewProfile}
+                    {...selectionProps(researcher)}
                   />
                 ))}
                 {directoryTotal > directoryResults.length ? (
@@ -718,6 +920,7 @@ export default function OrcidSearchModal({
                   disabled={isTaken(researcher)}
                   onPick={handlePickResearcher}
                   onView={handleViewProfile}
+                  {...selectionProps(researcher)}
                 />
               ))}
             </Stack>
@@ -732,6 +935,7 @@ export default function OrcidSearchModal({
       open={open}
       onClose={(_event, reason) => {
         if (reason === 'backdropClick' || browseOpen || profileUserId) return;
+        if (isBatchStep && reason === 'escapeKeyDown') { setStep('search'); return; }
         handleClose();
       }}
       maxWidth="md"
@@ -753,12 +957,18 @@ export default function OrcidSearchModal({
       >
         <Box>
           <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'white', lineHeight: 1.25 }}>
-            {isInviteStep ? `Invite ${roleLabel}` : title}
+            {isInviteStep
+              ? `Invite ${roleLabel}`
+              : isBatchStep
+                ? `Invite ${batchRows.length} ${roleLabel}${batchRows.length === 1 ? '' : 's'}`
+                : title}
           </Typography>
           <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.88)' }}>
-            {isInviteStep
-              ? 'Confirm their department and institution email so they can be invited when you submit.'
-              : allowMultiple
+            {isInviteStep || isBatchStep
+              ? 'Confirm department and institution email so they can be invited when you submit.'
+              : batchEnabled
+                ? 'Tick several people and continue, or add them one at a time. Click Done when you are finished.'
+                : allowMultiple
                 ? 'Add one person, then search again. Click Done when you are finished.'
                 : subtitle}
           </Typography>
@@ -772,7 +982,7 @@ export default function OrcidSearchModal({
         </IconButton>
       </DialogTitle>
 
-      {!isInviteStep ? (
+      {!isInviteStep && !isBatchStep ? (
         <Box sx={{ px: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
           <Tabs
             value={mode}
@@ -810,6 +1020,8 @@ export default function OrcidSearchModal({
       <DialogContent sx={{ px: 3, pt: '20px !important', pb: 1 }}>
         {isInviteStep ? (
           renderInviteStep()
+        ) : isBatchStep ? (
+          renderBatchStep()
         ) : (
           <Stack spacing={2}>
             {addedPeople.length > 0 ? (
@@ -834,8 +1046,8 @@ export default function OrcidSearchModal({
         )}
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, py: 2, bgcolor: '#faf8fc', justifyContent: 'space-between' }}>
-        {isInviteStep ? (
+      <DialogActions sx={{ px: 3, py: 2, bgcolor: '#faf8fc', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+        {isInviteStep || isBatchStep ? (
           <Button
             startIcon={<BackIcon />}
             onClick={() => setStep('search')}
@@ -860,20 +1072,51 @@ export default function OrcidSearchModal({
           >
             {allowMultiple ? 'Add and search again' : 'Add and invite'}
           </Button>
-        ) : mode === MODE_ORCID ? (
+        ) : isBatchStep ? (
           <Button
             variant="contained"
-            startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <SearchIcon />}
-            onClick={handleSearch}
-            disabled={loading || !canSearch}
+            startIcon={<GroupAddIcon />}
+            onClick={handleConfirmBatch}
+            disabled={batchHasErrors}
             sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: PURPLE_DARK } }}
           >
-            {loading ? 'Searching...' : 'Search ORCID'}
+            {`Add ${batchRows.length} ${roleLabel}${batchRows.length === 1 ? '' : 's'}`}
           </Button>
         ) : (
-          <Typography variant="caption" color="text.secondary">
-            Results update as you type
-          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 'auto' }}>
+            {batch.length > 0 ? (
+              <Button size="small" onClick={() => setBatch([])} sx={{ textTransform: 'none', color: '#64748b' }}>
+                Clear
+              </Button>
+            ) : null}
+            {mode === MODE_ORCID ? (
+              <Button
+                variant={batch.length > 0 ? 'outlined' : 'contained'}
+                startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <SearchIcon />}
+                onClick={handleSearch}
+                disabled={loading || !canSearch}
+                sx={batch.length > 0
+                  ? outlinedButtonSx
+                  : { bgcolor: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: PURPLE_DARK } }}
+              >
+                {loading ? 'Searching...' : 'Search ORCID'}
+              </Button>
+            ) : batch.length === 0 ? (
+              <Typography variant="caption" color="text.secondary">
+                {batchEnabled ? 'Tick researchers to invite several at once' : 'Results update as you type'}
+              </Typography>
+            ) : null}
+            {batch.length > 0 ? (
+              <Button
+                variant="contained"
+                endIcon={<ChevronRightIcon />}
+                onClick={handleStartBatch}
+                sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: PURPLE_DARK } }}
+              >
+                {`Continue with ${batch.length} selected`}
+              </Button>
+            ) : null}
+          </Stack>
         )}
       </DialogActions>
 
@@ -886,6 +1129,13 @@ export default function OrcidSearchModal({
         roleLabel={roleLabel}
         institutionName={institutionName}
         initialQuery={directoryQuery}
+        selectable={batchEnabled}
+        isSelectable={isSelectable}
+        isSelected={isSelected}
+        onToggle={toggleSelected}
+        onToggleMany={setManySelected}
+        selectedCount={batch.length}
+        onContinueBatch={handleStartBatch}
       />
 
       <ResearcherProfileModal
@@ -895,6 +1145,10 @@ export default function OrcidSearchModal({
         onAdd={handleAddFromLayer}
         isTaken={isTaken}
         roleLabel={roleLabel}
+        selectable={batchEnabled}
+        isSelectable={isSelectable}
+        isSelected={isSelected}
+        onToggle={toggleSelected}
       />
     </Dialog>
   );

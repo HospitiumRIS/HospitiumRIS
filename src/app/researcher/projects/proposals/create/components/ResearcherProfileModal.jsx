@@ -16,6 +16,8 @@ import {
   alpha,
 } from '@mui/material';
 import {
+  CheckBox as CheckedIcon,
+  CheckBoxOutlineBlank as UncheckedIcon,
   Close as CloseIcon,
   Email as EmailIcon,
   OpenInNew as OpenInNewIcon,
@@ -117,6 +119,10 @@ export default function ResearcherProfileModal({
   onAdd,
   roleLabel = 'investigator',
   isTaken = () => false,
+  selectable = false,
+  isSelectable = () => false,
+  isSelected = () => false,
+  onToggle = () => {},
 }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -151,6 +157,8 @@ export default function ResearcherProfileModal({
   const researcher = data?.researcher;
   const profile = data?.profile;
   const taken = researcher ? isTaken(researcher) : false;
+  const selected = researcher ? isSelected(researcher) : false;
+  const canSelect = Boolean(selectable && researcher && (selected || isSelectable(researcher)));
   const bio = profile?.biography || '';
   const bioTruncated = bio.length > BIO_PREVIEW_CHARS && !showFullBio;
 
@@ -338,9 +346,19 @@ export default function ResearcherProfileModal({
       </InstitutionModalBody>
 
       <InstitutionModalFooter>
-        <Button variant="outlined" onClick={onClose} sx={outlinedButtonSx}>
+        <Button onClick={onClose} sx={{ textTransform: 'none', color: '#64748b', mr: 'auto' }}>
           Dismiss
         </Button>
+        {canSelect ? (
+          <Button
+            variant="outlined"
+            startIcon={selected ? <CheckedIcon /> : <UncheckedIcon />}
+            onClick={() => { onToggle(researcher); onClose(); }}
+            sx={outlinedButtonSx}
+          >
+            {selected ? 'Remove from selection' : 'Add to selection'}
+          </Button>
+        ) : null}
         <Button
           variant="contained"
           startIcon={<PersonAddIcon />}
