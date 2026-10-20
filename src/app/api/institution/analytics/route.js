@@ -47,7 +47,7 @@ export async function GET(request) {
     if (startDate && endDate) {
       dateFilter.createdAt = {
         gte: new Date(startDate),
-        lte: new Date(endDate),
+        lte: new Date(`${endDate}T23:59:59.999`),
       };
     }
 
@@ -67,7 +67,7 @@ export async function GET(request) {
       recentActivity,
       departmentStats,
     ] = await Promise.all([
-      prisma.user.count({ where: withDateFilter(researcherWhere, dateFilter) }),
+      prisma.user.count({ where: researcherWhere }),
       prisma.manuscript.count({ where: manuscriptWhere(dateFilter) }),
       prisma.proposal.count({ where: proposalWhere(dateFilter) }),
       prisma.proposal.count({ where: withDateFilter({ ...proposalScopeWhere, status: 'DRAFT' }, dateFilter) }),
@@ -156,16 +156,13 @@ export async function GET(request) {
       ]),
       prisma.user.groupBy({
         by: ['primaryInstitution'],
-        where: withDateFilter(
-          {
-            AND: [
-              memberWhere,
-              { accountType: 'RESEARCHER' },
-              { primaryInstitution: { not: null } },
-            ],
-          },
-          dateFilter
-        ),
+        where: {
+          AND: [
+            memberWhere,
+            { accountType: 'RESEARCHER' },
+            { primaryInstitution: { not: null } },
+          ],
+        },
         _count: { id: true },
       }),
     ]);
@@ -237,10 +234,7 @@ export async function GET(request) {
       totalProposals > 0 ? ((approvedProposals / totalProposals) * 100).toFixed(1) : 0;
 
     const researcherOutput = await prisma.user.findMany({
-      where: withDateFilter(
-        { AND: [memberWhere, { accountType: 'RESEARCHER' }] },
-        dateFilter
-      ),
+      where: { AND: [memberWhere, { accountType: 'RESEARCHER' }] },
       select: {
         id: true,
         givenName: true,

@@ -1,132 +1,112 @@
-export async function generateComplianceReportPdf(reportId, reportTitle, analyticsData = null) {
-  const { jsPDF } = await import('jspdf');
-  const {
-    complianceRiskAlerts,
-    regulatoryFrameworks,
-    auditTrailTrend,
-  } = await import('@/data/complianceReportsMockData');
+/**
+ * Compliance summary PDF built from the live /api/institution/analytics/compliance payload.
+ */
+const fmtPct = (v) => (v === null || v === undefined ? 'n/a' : `${v}%`);
+const fmtDate = (v) => (v ? new Date(v).toLocaleDateString('en-US', { dateStyle: 'medium' }) : 'n/a');
 
+export async function generateComplianceReportPdf(reportId, reportTitle, data) {
+  if (!data) throw new Error('Compliance data is not loaded yet');
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 18;
   const maxWidth = pageWidth - margin * 2;
   let y = 20;
 
-  const addHeader = (title) => {
-    doc.setFillColor(139, 108, 188);
-    doc.rect(0, 0, pageWidth, 36, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(16);
-    doc.setFont(undefined, 'bold');
-    doc.text('HospitiumRIS — Compliance Analytics', margin, 16);
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'normal');
-    doc.text(title, margin, 28);
-    doc.setTextColor(0, 0, 0);
-    y = 48;
-  };
-
-  const addLine = (label, value) => {
-    if (y > 270) {
-      doc.addPage();
-      y = 20;
-    }
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text(`${label}:`, margin, y);
-    doc.setFont(undefined, 'normal');
-    const lines = doc.splitTextToSize(String(value), maxWidth - 55);
-    doc.text(lines, margin + 50, y);
-    y += Math.max(7, lines.length * 6) + 2;
-  };
-
-  const addSection = (title) => {
-    if (y > 250) {
-      doc.addPage();
-      y = 20;
-    }
+  const ensure = (needed = 10) => { if (y + needed > 278) { doc.addPage(); y = 20; } };
+  const section = (title) => {
+    ensure(20);
+    y += 2;
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
-    doc.setTextColor(139, 108, 188);
+    doc.setTextColor(109, 84, 153);
     doc.text(title, margin, y);
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, y + 2, pageWidth - margin, y + 2);
     doc.setTextColor(0, 0, 0);
-    y += 10;
+    y += 9;
+  };
+  const line = (label, value) => {
+    const lines = doc.splitTextToSize(String(value), maxWidth - 66);
+    const labelLines = doc.splitTextToSize(String(label), 62);
+    const h = Math.max(lines.length, labelLines.length) * 5 + 3;
+    ensure(h);
+    doc.setFontSize(9.5);
+    doc.setFont(undefined, 'bold');
+    doc.text(labelLines, margin, y);
+    doc.setFont(undefined, 'normal');
+    doc.text(lines, margin + 66, y);
+    y += h;
+  };
+  const para = (text) => {
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    const lines = doc.splitTextToSize(text, maxWidth);
+    ensure(lines.length * 5 + 3);
+    doc.text(lines, margin, y);
+    y += lines.length * 5 + 3;
   };
 
-  addHeader(reportTitle);
-  doc.setFontSize(9);
-  doc.text(`Generated: ${new Date().toLocaleString()}`, margin, y);
-  y += 10;
+  doc.setFillColor(139, 108, 188);
+  doc.rect(0, 0, pageWidth, 34, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(15);
+  doc.setFont(undefined, 'bold');
+  doc.text(`${data.institution?.name || 'Institution'}: compliance report`, margin, 15);
+  doc.setFontSize(10);
+  doc.setFont(undefined, 'normal');
+  doc.text(reportTitle || 'Compliance summary', margin, 26);
+  doc.setTextColor(0, 0, 0);
+  y = 44;
+  para(`Reporting period ${fmtDate(data.range.start)} to ${fmtDate(data.range.end)}. Generated ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}.`);
 
-  const overview = analyticsData?.overview;
-  const requirements = analyticsData?.complianceRequirements;
-  const review = analyticsData?.reviewMetrics;
+  const o = data.overview;
+  section('Summary');
+  line('Compliance health score', o.healthScore === null ? 'n/a' : `${o.healthScore} / 100`);
+  line('Active portfolio', `${o.portfolio} proposals (${o.fullyCompliant} fully compliant)`);
+  line('Ethics clearance', `${fmtPct(o.clearanceRate)} (${o.cleared} cleared)`);
+  line('Awaiting ethics decision', `${o.pending} (${o.overdueReviews} past the ${data.thresholds.reviewSlaDays}-day target)`);
+  line('Clearances expired / expiring', `${o.expired} expired, ${o.expiringSoon} within ${data.thresholds.expiryWarningDays} days`);
+  line('Overdue funder obligations', o.overdueGrantItems);
+  line('Ethics review time', o.medianReviewDays === null ? 'n/a' : `median ${o.medianReviewDays} days, average ${o.averageReviewDays} days`);
 
-  if (overview) {
-    addSection('Overview');
-    addLine('Total proposals', overview.totalProposals);
-    addLine('Ethics approved', overview.approvedEthics);
-    addLine('Pending ethics', overview.pendingEthics);
-    addLine('Compliance rate', `${overview.complianceRate}%`);
-    addLine('Approval rate', `${overview.approvalRate}%`);
-    y += 4;
+  section('Action required');
+  if (data.actions.length) {
+    data.actions.forEach((a) => {
+      line(`[${a.severity.toUpperCase()}] ${a.title}`, `${a.detail} Next step: ${a.action}.`);
+      (a.items || []).slice(0, 8).forEach((item) => line('', `• ${item.title} (${item.principalInvestigator || 'PI not set'})`));
+    });
+  } else {
+    para('No open compliance issues for this period.');
   }
 
-  switch (reportId) {
-    case 'ethics-pipeline':
-      addSection('Monthly Trends');
-      (analyticsData?.monthlyTrends || []).forEach((t) => {
-        addLine(t.month, `Approved: ${t.approved}, Pending: ${t.pending}, Rejected: ${t.rejected}`);
-      });
-      break;
+  section('Requirement coverage');
+  data.requirements.forEach((r) => line(r.label, r.applicable ? `${fmtPct(r.rate)} (${r.met} of ${r.applicable})` : 'Not applicable'));
 
-    case 'department-compliance':
-      addSection('Department Compliance');
-      (analyticsData?.complianceByDepartment || []).slice(0, 10).forEach((d) => {
-        addLine(d.department, `${d.complianceRate}% (${d.totalProposals} proposals)`);
-      });
-      break;
+  section('Ethics status');
+  data.ethicsBreakdown.forEach((e) => line(e.label, e.count));
 
-    case 'committee-performance':
-      addSection('Ethics Committees');
-      (analyticsData?.ethicsCommittees || []).forEach((c) => {
-        addLine(c.committee, `Total: ${c.totalProposals}, Approved: ${c.approved}, Pending: ${c.pending}`);
-      });
-      break;
-
-    case 'requirement-scorecard':
-      if (requirements) {
-        addSection('Requirements');
-        addLine('Ethics approval', `${requirements.ethicsApproval}%`);
-        addLine('Data management', `${requirements.dataManagement}%`);
-        addLine('Informed consent', `${requirements.informedConsent}%`);
-        addLine('Documentation', `${requirements.documentation}%`);
-      }
-      break;
-
-    case 'risk-regulatory':
-      if (review) {
-        addSection('Review Metrics');
-        addLine('Average review time', `${review.averageReviewTime} days`);
-        addLine('Fastest review', `${review.fastestReview} days`);
-        addLine('Overdue reviews', review.overdueReviews);
-      }
-      addSection('Risk Alerts');
-      complianceRiskAlerts.forEach((r) => addLine(r.title, `${r.severity.toUpperCase()} — ${r.detail}`));
-      addSection('Regulatory Frameworks');
-      regulatoryFrameworks.forEach((f) => addLine(f.framework, `${f.compliance}% (target ${f.target}%)`));
-      addSection('Audit Trail');
-      auditTrailTrend.forEach((a) => addLine(a.month, `${a.audits} audits, ${a.findings} findings, ${a.resolved} resolved`));
-      break;
-
-    default:
-      addLine('Note', 'Report data not available.');
+  if (data.committees.length) {
+    section('Committees');
+    data.committees.forEach((c) => line(c.committee, `${c.total} applications, ${c.approved} approved, ${c.pending} pending, ${c.rejected} rejected; median review ${c.medianReviewDays ?? 'n/a'} days`));
   }
 
-  doc.setFontSize(8);
-  doc.setTextColor(120, 120, 120);
-  doc.text('Institutional compliance report — review with legal/ethics office before external distribution.', margin, 285);
+  if (data.departments.length) {
+    section('Departments');
+    data.departments.forEach((d) => line(d.department, `score ${d.score}; ${d.proposals} proposals; ethics ${fmtPct(d.clearanceRate)}; DMP ${fmtPct(d.dmpRate)}`));
+  }
 
-  const filename = reportTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  doc.save(`${filename}-compliance-report.pdf`);
+  if (data.grantObligations.length) {
+    section('Funder obligations');
+    data.grantObligations.slice(0, 30).forEach((ob) => line(ob.item, `${ob.grant} (${ob.grantor}): ${ob.dueDate ? `due ${fmtDate(ob.dueDate)}` : 'action needed'}${ob.overdue ? ', OVERDUE' : ''}`));
+  }
+
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i += 1) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text(`HospitiumRIS · live institutional data · page ${i} of ${pages}`, margin, 290);
+  }
+  doc.save(`compliance-report-${data.range.start.slice(0, 10)}-to-${data.range.end.slice(0, 10)}.pdf`);
 }

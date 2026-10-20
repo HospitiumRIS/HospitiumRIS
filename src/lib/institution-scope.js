@@ -28,7 +28,17 @@ export function withDateFilter(where, dateFilter) {
 export async function getInstitutionProposalScope(institution, memberIds = null) {
   const ids = memberIds ?? (await getInstitutionMemberIds(institution));
 
-  const [tracking, byDepartment, byMemberActivity] = await Promise.all([
+  const memberOrcids = ids.length
+    ? (await prisma.user.findMany({
+        where: { id: { in: ids }, orcidId: { not: null } },
+        select: { orcidId: true },
+      }))
+        .map((entry) => String(entry.orcidId).replace(/^https?:\/\/orcid\.org\//i, '').trim())
+        .filter(Boolean)
+    : [];
+  const orcidVariants = memberOrcids.flatMap((orcid) => [orcid, `https://orcid.org/${orcid}`]);
+
+  const [tracking, byDepartment, byMemberActivity, byMemberPi] = await Promise.all([
     prisma.proposalReviewTracking.findMany({
       where: { pipeline: { institutionId: institution.id } },
       select: { proposalId: true },
@@ -50,6 +60,12 @@ export async function getInstitutionProposalScope(institution, memberIds = null)
           select: { id: true },
         })
       : Promise.resolve([]),
+    orcidVariants.length
+      ? prisma.proposal.findMany({
+          where: { principalInvestigatorOrcid: { in: orcidVariants } },
+          select: { id: true },
+        })
+      : Promise.resolve([]),
   ]);
 
   return [
@@ -57,6 +73,7 @@ export async function getInstitutionProposalScope(institution, memberIds = null)
       ...tracking.map((entry) => entry.proposalId),
       ...byDepartment.map((entry) => entry.id),
       ...byMemberActivity.map((entry) => entry.id),
+      ...byMemberPi.map((entry) => entry.id),
     ]),
   ];
 }
