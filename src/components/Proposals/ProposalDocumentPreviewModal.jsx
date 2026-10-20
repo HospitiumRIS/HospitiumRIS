@@ -43,7 +43,7 @@ const MIME_BY_EXT = {
 };
 
 export function documentName(file) {
-  return file?.name || file?.originalName || file?.fileName || 'Document';
+  return file?.name || file?.originalName || file?.filename || file?.fileName || 'Document';
 }
 
 export function documentSize(file) {

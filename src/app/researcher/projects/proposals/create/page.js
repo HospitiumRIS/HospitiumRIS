@@ -2563,8 +2563,8 @@ const CreateProposalPage = () => {
                             variant="body2"
                             role="button"
                             tabIndex={0}
-                            onClick={() => setPreviewDocument(file)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') setPreviewDocument(file); }}
+                            onClick={() => setPreviewDocument({ document: file, title: 'Budget breakdown' })}
+                            onKeyDown={(e) => { if (e.key === 'Enter') setPreviewDocument({ document: file, title: 'Budget breakdown' }); }}
                             sx={{ fontWeight: 700, color: '#1e293b', cursor: 'pointer', wordBreak: 'break-word', '&:hover': { color: PURPLE, textDecoration: 'underline' } }}
                           >
                             {fileDisplayName(file)}
@@ -2577,7 +2577,7 @@ const CreateProposalPage = () => {
                           <Button
                             size="small"
                             startIcon={<PreviewIcon fontSize="small" />}
-                            onClick={() => setPreviewDocument(file)}
+                            onClick={() => setPreviewDocument({ document: file, title: 'Budget breakdown' })}
                             sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}
                           >
                             Preview
@@ -2663,6 +2663,49 @@ const CreateProposalPage = () => {
                       Unlink
                     </Button>
                   </Stack>
+                  {(formData.linkedEthicsDocuments || []).length > 0 ? (
+                    <Box sx={{ mt: 1.5, pt: 1.25, borderTop: '1px dashed', borderColor: 'divider' }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748b', display: 'block', mb: 0.75 }}>
+                        Documents on this record ({formData.linkedEthicsDocuments.length})
+                      </Typography>
+                      <Stack spacing={0.75}>
+                        {formData.linkedEthicsDocuments.map((doc, index) => (
+                          <Stack
+                            key={doc.fileId || doc.url || `linked-${index}`}
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            spacing={1}
+                            sx={{ px: 1.25, py: 0.75, borderRadius: 1.5, bgcolor: '#f8f6fb' }}
+                          >
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography
+                                variant="body2"
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => setPreviewDocument({ document: doc, title: 'Ethics document' })}
+                                onKeyDown={(e) => { if (e.key === 'Enter') setPreviewDocument({ document: doc, title: 'Ethics document' }); }}
+                                sx={{ fontWeight: 700, color: '#1e293b', cursor: 'pointer', wordBreak: 'break-word', '&:hover': { color: PURPLE, textDecoration: 'underline' } }}
+                              >
+                                {doc.filename || doc.originalName || doc.name || 'Linked document'}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {[doc.type, fileDisplaySize(doc)].filter(Boolean).join(' · ') || 'From linked ethics record'}
+                              </Typography>
+                            </Box>
+                            <Button
+                              size="small"
+                              startIcon={<PreviewIcon fontSize="small" />}
+                              onClick={() => setPreviewDocument({ document: doc, title: 'Ethics document' })}
+                              sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700, flexShrink: 0 }}
+                            >
+                              Preview
+                            </Button>
+                          </Stack>
+                        ))}
+                      </Stack>
+                    </Box>
+                  ) : null}
                 </Paper>
               ) : (
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
@@ -2670,26 +2713,8 @@ const CreateProposalPage = () => {
                 </Typography>
               )}
 
-              {(formData.linkedEthicsDocuments?.length > 0 || formData.ethicsDocuments.length > 0) ? (
+              {formData.ethicsDocuments.length > 0 ? (
                 <Stack spacing={1}>
-                  {(formData.linkedEthicsDocuments || []).map((doc, index) => (
-                    <Stack
-                      key={`linked-${index}`}
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                      sx={{ px: 1.25, py: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}
-                    >
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                          {doc.filename || doc.name || 'Linked document'}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          From linked ethics record
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  ))}
                   {formData.ethicsDocuments.map((file, index) => (
                     <Stack
                       key={`upload-${index}`}
@@ -2706,11 +2731,21 @@ const CreateProposalPage = () => {
                           {fileDisplaySize(file) || 'Uploaded certificate'}
                         </Typography>
                       </Box>
-                      <Tooltip title="Remove">
-                        <IconButton size="small" onClick={() => removeEthicsDocument(index)} sx={{ color: '#b91c1c' }}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                      <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
+                        <Button
+                          size="small"
+                          startIcon={<PreviewIcon fontSize="small" />}
+                          onClick={() => setPreviewDocument({ document: file, title: 'Ethics certificate' })}
+                          sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}
+                        >
+                          Preview
+                        </Button>
+                        <Tooltip title="Remove">
+                          <IconButton size="small" onClick={() => removeEthicsDocument(index)} sx={{ color: '#b91c1c' }}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
                     </Stack>
                   ))}
                 </Stack>
@@ -3348,9 +3383,9 @@ const CreateProposalPage = () => {
 
       <ProposalDocumentPreviewModal
         open={Boolean(previewDocument)}
-        file={previewDocument}
+        file={previewDocument?.document}
         onClose={() => setPreviewDocument(null)}
-        title="Budget breakdown"
+        title={previewDocument?.title || 'Document preview'}
       />
 
       <EthicsLinkModal
