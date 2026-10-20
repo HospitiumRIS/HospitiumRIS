@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import OrcidSearchModal from './components/OrcidSearchModal';
 import EthicsLinkModal from './components/EthicsLinkModal';
+import ProposalDocumentPreviewModal from '../../../../../components/Proposals/ProposalDocumentPreviewModal';
 import UploadCertificateDialog from '../../../../../components/Ethics/UploadCertificateDialog';
 import {
   Box,
@@ -70,6 +71,7 @@ import {
   Security as SecurityIcon,
   Add as AddIcon,
   Delete as DeleteIcon,
+  Visibility as PreviewIcon,
   CloudUpload as UploadIcon,
   ExpandMore as ExpandMoreIcon,
   Group as TeamIcon,
@@ -1095,6 +1097,8 @@ const CreateProposalPage = () => {
     }));
     event.target.value = '';
   };
+
+  const [previewDocument, setPreviewDocument] = useState(null);
 
   const removeBudgetDocument = (index) => {
     setFormData((prev) => ({
@@ -2554,19 +2558,36 @@ const CreateProposalPage = () => {
                         alignItems="center"
                         sx={{ px: 1.25, py: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}
                       >
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            variant="body2"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setPreviewDocument(file)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') setPreviewDocument(file); }}
+                            sx={{ fontWeight: 700, color: '#1e293b', cursor: 'pointer', wordBreak: 'break-word', '&:hover': { color: PURPLE, textDecoration: 'underline' } }}
+                          >
                             {fileDisplayName(file)}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {fileDisplaySize(file) || 'Saved document'}
                           </Typography>
                         </Box>
-                        <Tooltip title="Remove">
-                          <IconButton size="small" onClick={() => removeBudgetDocument(index)} sx={{ color: '#b91c1c' }}>
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                        <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
+                          <Button
+                            size="small"
+                            startIcon={<PreviewIcon fontSize="small" />}
+                            onClick={() => setPreviewDocument(file)}
+                            sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}
+                          >
+                            Preview
+                          </Button>
+                          <Tooltip title="Remove">
+                            <IconButton size="small" onClick={() => removeBudgetDocument(index)} sx={{ color: '#b91c1c' }}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
                       </Stack>
                     ))}
                   </Stack>
@@ -3323,6 +3344,13 @@ const CreateProposalPage = () => {
         currentOrcid={user?.orcidId || ''}
         excludeOrcidIds={formData.coInvestigators.map((person) => person.orcidId).filter(Boolean)}
         excludeEmails={formData.coInvestigators.map((person) => person.email).filter(Boolean)}
+      />
+
+      <ProposalDocumentPreviewModal
+        open={Boolean(previewDocument)}
+        file={previewDocument}
+        onClose={() => setPreviewDocument(null)}
+        title="Budget breakdown"
       />
 
       <EthicsLinkModal

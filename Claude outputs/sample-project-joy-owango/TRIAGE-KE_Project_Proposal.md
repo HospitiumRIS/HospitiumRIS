@@ -12,9 +12,9 @@
 | **PI ORCID** | 0000-0000-0000-0000 *(placeholder; replace with test ORCID)* |
 | **Lead institution** | Hospitium Institute of Health Sciences (Demo), Nairobi, Kenya |
 | **Departments** | Health Informatics; Emergency Medicine; Biostatistics & Epidemiology; Nursing |
-| **Start date** | 1 October 2025 |
-| **End date** | 31 March 2027 (18 months) |
-| **Status** | Approved · Active |
+| **Start date** | 25 October 2026 |
+| **End date** | 24 April 2028 (18 months) |
+| **Status** | Approved · Starting 25 Oct 2026 |
 
 ### Co-Investigators
 
@@ -50,10 +50,10 @@ Emergency departments (EDs) in Kenyan county referral hospitals manage high pati
 - **Design:** Multi-site, mixed-methods, pre–post implementation study with interrupted time-series (ITS) analysis.
 - **Setting:** Emergency departments of three county referral hospitals in Kisumu, Nakuru and Machakos counties.
 - **Phases:**
-  - *Phase 0 — Preparation (Oct–Nov 2025):* local calibration of the model on 12 months of retrospective de-identified triage records; DPIA; staff training.
-  - *Phase 1 — Baseline (Nov 2025–Jan 2026):* standard SATS triage; prospective data collection.
-  - *Phase 2 — Implementation (Feb–Jul 2026):* the tool runs on tablets at triage desks; nurses see a suggested category with key contributing features.
-  - *Phase 3 — Analysis & dissemination (Aug 2026–Mar 2027).*
+  - *Phase 0 — Preparation (25 Oct–Nov 2026):* local calibration of the model on 12 months of retrospective de-identified triage records; DPIA; staff training.
+  - *Phase 1 — Baseline (Dec 2026–Feb 2027):* standard SATS triage; prospective data collection.
+  - *Phase 2 — Implementation (Mar–Aug 2027):* the tool runs on tablets at triage desks; nurses see a suggested category with key contributing features.
+  - *Phase 3 — Analysis & dissemination (Sep 2027–Apr 2028).*
 - **Population and sample:** All patients aged ≥ 12 years presenting to the ED during study hours. A systematic random sample of ~600 encounters per site per phase (target ≈ 3,600 encounters) gives 90% power to detect a 6-percentage-point reduction in under-triage (from 18% to 12%) at α = 0.05, allowing for clustering by site.
 - **Reference standard:** Independent, blinded re-triage by a panel of two emergency physicians using full chart information, with a third to adjudicate disagreements.
 - **Outcomes:**
@@ -68,25 +68,25 @@ Emergency departments (EDs) in Kenyan county referral hospitals manage high pati
 
 | # | Milestone | Target date | Status |
 |---|---|---|---|
-| M1 | Ethics approval and county research authorisations obtained | 30 Sep 2025 | Completed |
-| M2 | Model locally calibrated; DPIA signed off | 15 Nov 2025 | Completed |
-| M3 | Staff trained at all three sites | 20 Nov 2025 | Completed |
-| M4 | Baseline data collection complete | 31 Jan 2026 | Completed |
-| M5 | Implementation data collection complete | 31 Jul 2026 | Completed |
-| M6 | Primary analysis complete; manuscript submitted | 31 Oct 2026 | In progress |
-| M7 | County dissemination workshops held | 28 Feb 2027 | Not started |
-| M8 | Final report submitted to funder | 31 Mar 2027 | Not started |
+| M1 | Ethics approval and county research authorisations obtained | 6 Oct 2026 | Completed |
+| M2 | Model locally calibrated; DPIA signed off | 27 Nov 2026 | Not started |
+| M3 | Staff trained at all three sites | 30 Nov 2026 | Not started |
+| M4 | Baseline data collection complete | 28 Feb 2027 | Not started |
+| M5 | Implementation data collection complete | 31 Aug 2027 | Not started |
+| M6 | Primary analysis complete; manuscript submitted | 30 Nov 2027 | Not started |
+| M7 | County dissemination workshops held | 31 Mar 2028 | Not started |
+| M8 | Final report submitted to funder | 24 Apr 2028 | Not started |
 
 ### Deliverables
 
 | # | Deliverable | Due | Type |
 |---|---|---|---|
-| D1 | Locally calibrated triage model and model card | Nov 2025 | Software / Documentation |
-| D2 | Data Management Plan and DPIA | Nov 2025 | Report |
-| D3 | Peer-reviewed manuscript: primary effectiveness results | Oct 2026 | Publication |
-| D4 | Peer-reviewed manuscript: implementation and acceptability (CFIR) | Feb 2027 | Publication |
-| D5 | Policy brief for county health departments and the MoH Digital Health directorate | Mar 2027 | Policy brief |
-| D6 | Final technical and financial report | Mar 2027 | Report |
+| D1 | Locally calibrated triage model and model card | Nov 2026 | Software / Documentation |
+| D2 | Data Management Plan and DPIA | Nov 2026 | Report |
+| D3 | Peer-reviewed manuscript: primary effectiveness results | Nov 2027 | Publication |
+| D4 | Peer-reviewed manuscript: implementation and acceptability (CFIR) | Mar 2028 | Publication |
+| D5 | Policy brief for county health departments and the MoH Digital Health directorate | Apr 2028 | Policy brief |
+| D6 | Final technical and financial report | Apr 2028 | Report |
 
 ## 4. Funding and Grants
 
@@ -94,8 +94,8 @@ Emergency departments (EDs) in Kenyan county referral hospitals manage high pati
 |---|---|
 | **Funding source** | External grant |
 | **Funding institution** | Hospitium Digital Health Innovation Fund (Demo) |
-| **Grant number** | HDHIF/2025/017 |
-| **Grant start / end** | 1 October 2025 – 31 March 2027 |
+| **Grant number** | HDHIF/2026/017 |
+| **Grant start / end** | 25 October 2026 – 24 April 2028 |
 | **Total budget** | KES 26,991,180 (≈ USD 209,234 at KES 129/USD) |
 | **Currency** | KES |
 | **Budget document** | `TRIAGE-KE_Budget.xlsx` |
@@ -143,9 +143,9 @@ The study is classed as **low risk**. The AI tool is advisory only: the triage n
 |---|---|
 | **Ethics approval status** | Approved |
 | **Ethics committee** | National Research Ethics & Innovation Board (Demo) — NREIB |
-| **Approval reference** | NREIB/ERC/2025/0417 |
-| **Approval date** | 22 September 2025 |
-| **Valid until** | 21 September 2027 (subject to annual continuing review) |
+| **Approval reference** | NREIB/ERC/2026/0417 |
+| **Approval date** | 6 October 2026 |
+| **Valid until** | 5 October 2028 (subject to annual continuing review) |
 | **Risk level** | Low |
 | **Certificate** | `TRIAGE-KE_Ethics_Approval_Certificate.pdf` |
 
@@ -155,7 +155,7 @@ The study is classed as **low risk**. The AI tool is advisory only: the triage n
 
 | Output | Status | File |
 |---|---|---|
-| Owango J, Wekesa A, Chebet F, Kamau GN, Mbugua DO. *Effect of an AI-assisted triage decision-support tool on under-triage in Kenyan county referral hospital emergency departments: an interrupted time-series study.* | Manuscript — submitted Oct 2026 | `TRIAGE-KE_Manuscript.docx` |
+| Owango J, Wekesa A, Chebet F, Kamau GN, Mbugua DO. *Effect of an AI-assisted triage decision-support tool on under-triage in Kenyan county referral hospital emergency departments: an interrupted time-series study.* | Planned output — submission target Nov 2027 (draft uses synthetic results) | `TRIAGE-KE_Manuscript.docx` |
 
 ## 7. Summary Information
 
@@ -166,7 +166,7 @@ If effective, TRIAGE-KE will offer county governments an affordable, offline-cap
 ### Dissemination Plan
 
 1. Two open-access peer-reviewed publications (effectiveness; implementation).
-2. Presentations at a regional emergency medicine conference and a digital health conference (2027).
+2. Presentations at a regional emergency medicine conference and a digital health conference (2028).
 3. Dissemination workshops with the county health management teams in Kisumu, Nakuru and Machakos.
 4. A policy brief for the Ministry of Health Digital Health directorate.
 5. The model card, analysis code and de-identified data dictionary will be deposited in an open repository with a DOI.

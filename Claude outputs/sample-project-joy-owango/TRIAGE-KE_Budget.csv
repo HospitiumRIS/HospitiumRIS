@@ -1,0 +1,38 @@
+﻿code,category,line_item,unit,quantity,unit_cost_kes,effort_pct,months_or_frequency,total_kes,year1_share_pct,year1_kes,year2_kes,justification,currency
+A1,A. Personnel,Principal Investigator (Joy Owango),person-month,1,450000,20,18,1620000,67,1085400,534600,"Overall leadership, stakeholder engagement, reporting",KES
+A2,A. Personnel,Co-I Emergency Medicine (Dr Amani Wekesa),person-month,1,400000,15,18,1080000,67,723600,356400,"Clinical lead, reference-standard triage panel",KES
+A3,A. Personnel,Co-I Health Informatics (Dr Faith Chebet),person-month,1,380000,20,18,1368000,67,916560,451440,"Tool integration, data pipelines, model monitoring",KES
+A4,A. Personnel,Co-I Biostatistics (Prof Daniel Mbugua),person-month,1,420000,10,18,756000,50,378000,378000,"Study design, ITS analysis",KES
+A5,A. Personnel,Co-I Nursing (Ms Grace Kamau),person-month,1,250000,15,18,675000,67,452250,222750,Triage nurse training and fidelity checks,KES
+A6,A. Personnel,Project Coordinator,person-month,1,180000,100,18,3240000,67,2170800,1069200,Day-to-day management across 3 sites,KES
+A7,A. Personnel,Research Assistants (2 per site),person-month,6,70000,100,9,3780000,100,3780000,0,"Data abstraction & observation, Dec 2026 – Aug 2027",KES
+A8,A. Personnel,Data Manager,person-month,1,200000,50,18,1800000,67,1206000,594000,"REDCap build, QA, de-identification",KES
+A9,A. Personnel,ML Engineer,person-month,1,300000,50,12,1800000,75,1350000,450000,"Model calibration, drift monitoring",KES
+B1,B. Equipment & Software,Ruggedised tablets for triage desks,unit,9,45000,100,1,405000,100,405000,0,3 per site; run triage app offline-first,KES
+B2,B. Equipment & Software,Automated vital-signs monitors,unit,3,180000,100,1,540000,100,540000,0,1 per site; standardised inputs to model,KES
+B3,B. Equipment & Software,Encrypted analysis laptops,unit,2,120000,100,1,240000,100,240000,0,Data manager & ML engineer,KES
+B4,B. Equipment & Software,Cloud hosting (in-country region) & backups,month,1,60000,100,18,1080000,67,723600,356400,Kenya Data Protection Act compliant hosting,KES
+B5,B. Equipment & Software,REDCap / survey licences & support,year,1,90000,100,2,180000,50,90000,90000,Annual support fee,KES
+C1,C. Travel & Subsistence,Site supervision trips,trip,3,18000,100,12,648000,75,486000,162000,Monthly visit to each site,KES
+C2,C. Travel & Subsistence,Per diem — supervision,night,3,7000,200,12,504000,75,378000,126000,2 nights per trip,KES
+C3,C. Travel & Subsistence,Research assistant local transport,month,6,6000,100,9,324000,100,324000,0,Commuting to EDs,KES
+D1,D. Training & Capacity Building,Clinician training workshop (initial),workshop,3,250000,100,1,750000,100,750000,0,"1 per site, ~25 staff each",KES
+D2,D. Training & Capacity Building,Refresher training,workshop,3,90000,100,1,270000,100,270000,0,Month 4 of implementation,KES
+D3,D. Training & Capacity Building,Good Clinical Practice & data-protection certification,person,12,8000,100,1,96000,100,96000,0,Study staff,KES
+E1,E. Participant-related Costs,Interview participant refreshments & transport,participant,30,1500,100,1,45000,100,45000,0,Key-informant interviews,KES
+E2,E. Participant-related Costs,Survey participant token,participant,60,1000,100,1,60000,100,60000,0,Clinician acceptability survey,KES
+E3,E. Participant-related Costs,Interview transcription & translation,interview,30,6000,100,1,180000,100,180000,0,Kiswahili/English,KES
+F1,"F. Ethics, Regulatory & Data Protection",Ethics review fee (NREIB — Demo),application,1,50000,100,1,50000,100,50000,0,Initial review,KES
+F2,"F. Ethics, Regulatory & Data Protection",Annual ethics renewal fee,renewal,1,25000,100,1,25000,0,0,25000,Year 2 continuing review,KES
+F3,"F. Ethics, Regulatory & Data Protection",Data Protection Impact Assessment,lump sum,1,150000,100,1,150000,100,150000,0,External DPIA consultant,KES
+G1,G. Dissemination,Open-access article processing charges,article,2,350000,100,1,700000,50,350000,350000,Two manuscripts,KES
+G2,G. Dissemination,Conference attendance (regional),person,2,300000,100,1,600000,0,0,600000,"Abstract presentation, 2028",KES
+G3,G. Dissemination,County stakeholder dissemination workshop,workshop,3,120000,100,1,360000,0,0,360000,Results to county health teams,KES
+G4,G. Dissemination,Policy brief design & printing,lump sum,1,80000,100,1,80000,0,0,80000,For MoH Digital Health directorate,KES
+H1,H. Other Direct Costs,Communications & internet,month,1,15000,100,18,270000,67,180900,89100,Coordination & secure VPN,KES
+H2,H. Other Direct Costs,"Stationery & printing (consent forms, CRFs)",lump sum,1,60000,100,1,60000,100,60000,0,,KES
+H3,H. Other Direct Costs,Audit fees,year,1,75000,100,2,150000,50,75000,75000,Annual financial audit,KES
+DIRECT,Summary,Total Direct Costs,,,,,,23886000,,17516110,6369890,,KES
+CONT,Summary,Contingency,,,,,,716580,,525483,191097,,KES
+INDIRECT,Summary,Indirect costs (institutional overhead),,,,,,2388600,,1751611,636989,,KES
+TOTAL,Summary,GRAND TOTAL,,,,,,26991180,,19793204,7197976,,KES

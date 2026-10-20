@@ -91,8 +91,17 @@ export function isAllowedMimeType(module, mimeType) {
     jpeg: ['image/jpeg'],
     webp: ['image/webp'],
     gif: ['image/gif'],
-    doc: ['application/msword'],
+    // Legacy Office files are OLE containers: magic-byte sniffing reports application/x-cfb
+    doc: ['application/msword', 'application/x-cfb'],
     docx: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+    xls: ['application/vnd.ms-excel', 'application/x-cfb'],
+    xlsx: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+    ppt: ['application/vnd.ms-powerpoint', 'application/x-cfb'],
+    pptx: ['application/vnd.openxmlformats-officedocument.presentationml.presentation'],
+    // Plain-text formats have no magic bytes, so the browser-declared type is used.
+    // Windows browsers commonly declare .csv as application/vnd.ms-excel.
+    csv: ['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel'],
+    txt: ['text/plain'],
     zip: ['application/zip', 'application/x-zip-compressed'],
   };
 
