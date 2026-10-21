@@ -116,6 +116,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/common/PageHeader';
+import RevealDonorContact, { useDonorReveal } from '@/components/Foundation/RevealDonorContact';
 
 // Lazy load dialogs for better performance
 const LazyDialogs = lazy(() => import('./components/DonationDialogs'));
@@ -233,6 +234,7 @@ export default function DonationManagement() {
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const donorReveal = useDonorReveal();
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -352,8 +354,8 @@ export default function DonationManagement() {
     // Get unique donors
     const uniqueDonors = new Set();
     donationsArray.forEach(donation => {
-      if (!donation.isAnonymous && donation.donorEmail) {
-        uniqueDonors.add(donation.donorEmail);
+      if (!donation.isAnonymous && donation.donorKey) {
+        uniqueDonors.add(donation.donorKey);
       } else if (!donation.isAnonymous && donation.donorName) {
         uniqueDonors.add(donation.donorName);
       } else if (donation.isAnonymous) {
@@ -914,8 +916,8 @@ export default function DonationManagement() {
                   const totalRaised = campaignDonations.filter(d => d.status === 'COMPLETED').reduce((sum, d) => sum + (d.amount || 0), 0);
                   const uniqueDonorsForCampaign = new Set();
                   campaignDonations.forEach(donation => {
-                    if (!donation.isAnonymous && donation.donorEmail) {
-                      uniqueDonorsForCampaign.add(donation.donorEmail);
+                    if (!donation.isAnonymous && donation.donorKey) {
+                      uniqueDonorsForCampaign.add(donation.donorKey);
                     } else if (!donation.isAnonymous && donation.donorName) {
                       uniqueDonorsForCampaign.add(donation.donorName);
                     } else if (donation.isAnonymous) {
@@ -1351,14 +1353,25 @@ export default function DonationManagement() {
                                               color: '#1a1a1a',
                                               lineHeight: 1.3
                                             }}>
-                                              {donation.isAnonymous ? 'Anonymous Donor' : (donation.donorName || 'Unknown Donor')}
+                                              {donation.isAnonymous ? 'Anonymous Donor' : (donorReveal.revealed[donation.id]?.donorName || donation.donorName || 'Unknown Donor')}
                                             </Typography>
-                                            <Typography variant="body2" sx={{
-                                              color: 'text.secondary',
-                                              fontSize: '0.85rem'
-                                            }}>
-                                              {donation.donorEmail || 'No email'}
-                                            </Typography>
+                                            {donation.isAnonymous ? (
+                                              <Typography variant="body2" sx={{ color: 'text.disabled', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                                                Contact hidden
+                                              </Typography>
+                                            ) : (
+                                              <RevealDonorContact
+                                                donationId={donation.id}
+                                                email={donation.donorEmail}
+                                                phone={donation.donorPhone}
+                                                revealed={donorReveal.revealed[donation.id] || null}
+                                                loading={donorReveal.loadingId === donation.id}
+                                                onReveal={donorReveal.reveal}
+                                                onHide={donorReveal.hide}
+                                                dense={false}
+                                                emptyLabel="No contact details"
+                                              />
+                                            )}
                                           </Box>
                                         </Box>
                                       </TableCell>

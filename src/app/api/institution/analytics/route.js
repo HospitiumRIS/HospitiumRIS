@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma, { ensurePrismaConnected } from '@/lib/prisma';
+import { computeResearcherOutputs } from '@/lib/researcher-output';
 import {
   requireInstitutionPortalAccess,
   withDateFilter,
@@ -240,33 +241,43 @@ export async function GET(request) {
         givenName: true,
         familyName: true,
         email: true,
+        orcidId: true,
+        avatarUrl: true,
         primaryInstitution: true,
-        manuscripts: { select: { id: true } },
-        publications: { select: { id: true } },
+        researchProfile: { select: { department: true, academicTitle: true, hIndex: true, citationCount: true } },
       },
     });
 
-    const proposalCountsByInvestigator = proposalsWithDetails.reduce((acc, proposal) => {
-      const key = (proposal.principalInvestigator || '').trim().toLowerCase();
-      if (key) acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {});
+    // Lead + collaborative output (co-authorship, manuscript collaboration, co-investigation).
+    const outputsByResearcher = await computeResearcherOutputs(researcherOutput);
 
     const topResearchers = researcherOutput
       .map((researcher) => {
-        const fullName = `${researcher.givenName} ${researcher.familyName}`.trim();
+        const fullName = `${researcher.givenName || ''} ${researcher.familyName || ''}`.trim() || researcher.email;
+        const output = outputsByResearcher.get(researcher.id);
         return {
-          ...researcher,
+          id: researcher.id,
+          email: researcher.email,
+          givenName: researcher.givenName,
+          familyName: researcher.familyName,
+          orcidId: researcher.orcidId,
+          avatarUrl: researcher.avatarUrl || null,
           name: fullName,
-          department: researcher.primaryInstitution || institution.name,
-          totalOutput: researcher.manuscripts.length + researcher.publications.length,
-          manuscriptCount: researcher.manuscripts.length,
-          proposalCount: proposalCountsByInvestigator[fullName.toLowerCase()] || 0,
-          publicationCount: researcher.publications.length,
+          displayName: [researcher.researchProfile?.academicTitle, researcher.givenName, researcher.familyName].filter(Boolean).join(' ') || fullName,
+          department: researcher.researchProfile?.department || null,
+          institution: researcher.primaryInstitution || institution.name,
+          hIndex: researcher.researchProfile?.hIndex || 0,
+          citations: researcher.researchProfile?.citationCount || 0,
+          output,
+          totalOutput: output.totals.all,
+          leadOutput: output.totals.lead,
+          collaborativeOutput: output.totals.collaborative,
+          manuscriptCount: output.manuscripts.total,
+          proposalCount: output.proposals.total,
+          publicationCount: output.publications.total,
         };
       })
-      .sort((a, b) => b.totalOutput - a.totalOutput)
-      .slice(0, 10);
+      .sort((a, b) => b.totalOutput - a.totalOutput || a.name.localeCompare(b.name));
 
     let enhancedDepartmentStats = [];
     try {

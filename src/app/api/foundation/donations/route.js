@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
+import { maskDonor } from '@/lib/donor-privacy';
 
 export async function GET(request) {
   try {
     // Development bypass for authentication
     let currentUser = null;
-    
+
     if (process.env.NODE_ENV === 'development') {
       console.log('🔧 Development mode: Bypassing authentication for donations API');
       // Create a mock user for development
@@ -20,7 +21,7 @@ export async function GET(request) {
       // Production authentication
       const cookieStore = await cookies();
       const sessionCookie = cookieStore.get('hospitium_session');
-      
+
       if (!sessionCookie?.value) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }
@@ -62,7 +63,7 @@ export async function GET(request) {
     if (donorEmail) whereClause.donorEmail = { contains: donorEmail, mode: 'insensitive' };
     if (status) whereClause.status = status;
     if (paymentMethod) whereClause.paymentMethod = paymentMethod;
-    
+
     // Date range filtering
     if (startDate || endDate) {
       whereClause.donationDate = {};
@@ -91,26 +92,26 @@ export async function GET(request) {
       ] = await Promise.all([
         // Total donations count
         prisma.donation.count({ where: whereClause }),
-        
+
         // Total amount
         prisma.donation.aggregate({
           where: whereClause,
           _sum: { amount: true }
         }),
-        
+
         // Average amount
         prisma.donation.aggregate({
           where: whereClause,
           _avg: { amount: true }
         }),
-        
+
         // Unique donor count
         prisma.donation.groupBy({
           by: ['donorEmail'],
           where: whereClause,
           _count: { _all: true }
         }),
-        
+
         // Payment method breakdown
         prisma.donation.groupBy({
           by: ['paymentMethod'],
@@ -118,7 +119,7 @@ export async function GET(request) {
           _count: { _all: true },
           _sum: { amount: true }
         }),
-        
+
         // Status breakdown
         prisma.donation.groupBy({
           by: ['status'],
@@ -126,24 +127,24 @@ export async function GET(request) {
           _count: { _all: true },
           _sum: { amount: true }
         }),
-        
+
         // Monthly stats for the last 12 months
         prisma.$queryRaw`
-          SELECT 
+          SELECT
             DATE_TRUNC('month', "donationDate") as month,
             COUNT(*)::int as count,
             SUM("amount")::float as total
-          FROM "donations" 
+          FROM "donations"
           WHERE "donationDate" >= NOW() - INTERVAL '12 months'
           ${campaignId ? `AND "campaignId" = ${campaignId}` : ''}
           GROUP BY DATE_TRUNC('month', "donationDate")
           ORDER BY month DESC
         `,
-        
+
         // Amount range statistics
         prisma.$queryRaw`
-          SELECT 
-            CASE 
+          SELECT
+            CASE
               WHEN "amount" < 100 THEN 'under_100'
               WHEN "amount" >= 100 AND "amount" < 500 THEN '100_to_500'
               WHEN "amount" >= 500 AND "amount" < 1000 THEN '500_to_1000'
@@ -215,7 +216,7 @@ export async function GET(request) {
     });
 
     // Process donations with additional computed fields
-    const processedDonations = donations.map(donation => ({
+    const processedDonations = donations.map(donation => maskDonor({
       ...donation,
       // Convert Decimal to number for JSON serialization
       amount: Number(donation.amount),
@@ -232,6 +233,7 @@ export async function GET(request) {
       // Donor anonymity
       displayName: donation.isAnonymous ? 'Anonymous Donor' : donation.donorName
     }));
+    // Note: donor name/email/phone above are masked by maskDonor; full details via /api/foundation/donors/reveal.
 
     return NextResponse.json({
       success: true,
@@ -260,7 +262,7 @@ export async function POST(request) {
     // Check authentication
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('hospitium_session');
-    
+
     if (!sessionCookie?.value) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
@@ -281,7 +283,7 @@ export async function POST(request) {
 
     // Parse request body
     const body = await request.json();
-    const { 
+    const {
       campaignId,
       donorName,
       donorEmail,
@@ -402,7 +404,7 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      data: {
+      data: maskDonor({
         ...result,
         amount: Number(result.amount),
         campaignName: result.campaign?.name || null,
@@ -414,7 +416,7 @@ export async function POST(request) {
           currency: 'USD'
         }).format(Number(result.amount)),
         displayName: result.isAnonymous ? 'Anonymous Donor' : result.donorName
-      },
+      }),
       message: 'Donation created successfully'
     }, { status: 201 });
 

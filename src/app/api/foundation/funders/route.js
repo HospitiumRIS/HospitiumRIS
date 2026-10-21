@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireFoundationAdmin } from '@/lib/foundation-auth';
+import { maskDonor, donorKey } from '@/lib/donor-privacy';
 
 export async function GET() {
   try {
+    const auth = await requireFoundationAdmin();
+    if (auth.error) return auth.error;
+
     const donations = await prisma.donation.findMany({
       include: {
         campaign: {
@@ -21,7 +26,8 @@ export async function GET() {
 
       if (!donorMap.has(key)) {
         donorMap.set(key, {
-          id: key,
+          id: donorKey(donation),
+          revealDonationId: null,
           donorName: donation.donorName,
           donorEmail: donation.donorEmail,
           donorPhone: donation.donorPhone,
@@ -39,6 +45,8 @@ export async function GET() {
       }
 
       const donor = donorMap.get(key);
+      // Most recent non-anonymous donation is used to fetch full contact details on request.
+      if (!donation.isAnonymous && !donor.revealDonationId) donor.revealDonationId = donation.id;
       const amount = Number(donation.amount);
       const isCompleted = !donation.status || donation.status === 'COMPLETED' || donation.status === 'Completed';
 
@@ -95,8 +103,9 @@ export async function GET() {
         d.totalGiven >= 5000 ? 'major' :
         d.totalGiven >= 1000 ? 'mid' : 'general';
 
-      return {
+      return maskDonor({
         id: d.id,
+        revealDonationId: d.revealDonationId,
         donorName: d.donorName,
         donorEmail: d.donorEmail,
         donorPhone: d.donorPhone,
@@ -114,7 +123,7 @@ export async function GET() {
         donations: d.donations.sort((a, b) => new Date(b.date) - new Date(a.date)),
         status,
         tier,
-      };
+      });
     });
 
     const stats = {

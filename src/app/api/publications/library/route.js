@@ -171,7 +171,8 @@ export async function POST(request) {
           },
           create: {
             folderId,
-            publicationId
+            publicationId,
+            addedById: user.id
           },
           update: {} // No update needed, just ensuring it exists
         });
@@ -244,7 +245,7 @@ export async function POST(request) {
 
         if (ownedIds.length > 0) {
           await prisma.libraryFolderPublication.createMany({
-            data: ownedIds.map((publicationId) => ({ folderId, publicationId })),
+            data: ownedIds.map((publicationId) => ({ folderId, publicationId, addedById: user.id })),
             skipDuplicates: true,
           });
         }
@@ -314,7 +315,7 @@ export async function POST(request) {
             where: { folderId: sourceFolderId, publicationId: { in: uniqueIds } }
           }),
           prisma.libraryFolderPublication.createMany({
-            data: uniqueIds.map((publicationId) => ({ folderId: targetFolderId, publicationId })),
+            data: uniqueIds.map((publicationId) => ({ folderId: targetFolderId, publicationId, addedById: user.id })),
             skipDuplicates: true,
           }),
         ]);
@@ -359,7 +360,7 @@ export async function POST(request) {
                 publicationId
               }
             },
-            create: { folderId: targetFolderId, publicationId },
+            create: { folderId: targetFolderId, publicationId, addedById: user.id },
             update: {}
           })
         ]);

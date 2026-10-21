@@ -223,14 +223,14 @@ function initials(name) {
     .join('');
 }
 
-function coauthorHref(c) {
-  if (c.hospitiumUserId) return { href: `/researcher/profile/${c.hospitiumUserId}`, external: false };
+function coauthorHref(c, profileBasePath = '/researcher/profile') {
+  if (c.hospitiumUserId) return { href: `${profileBasePath}/${c.hospitiumUserId}`, external: false };
   if (c.orcid) return { href: `https://orcid.org/${c.orcid}`, external: true };
   if (c.openAlexId) return { href: c.openAlexId.replace('https://openalex.org/', 'https://openalex.org/authors/'), external: true };
   return { href: null, external: false };
 }
 
-export function CoauthorsCard({ metrics, initialCount = 8 }) {
+export function CoauthorsCard({ metrics, initialCount = 8, profileBasePath = '/researcher/profile' }) {
   const [showAll, setShowAll] = useState(false);
   const coauthors = metrics?.coauthors || [];
   if (!coauthors.length) return null;
@@ -256,7 +256,7 @@ export function CoauthorsCard({ metrics, initialCount = 8 }) {
         </SectionTitle>
         <Box sx={{ borderTop: `1px solid ${LINE}` }}>
           {shown.map((c) => {
-            const { href, external } = coauthorHref(c);
+            const { href, external } = coauthorHref(c, profileBasePath);
             return (
               <Box
                 key={c.openAlexId}

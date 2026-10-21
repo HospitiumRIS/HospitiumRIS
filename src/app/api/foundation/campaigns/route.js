@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
+import { maskDonor } from '@/lib/donor-privacy';
 
 export async function GET(request) {
   try {
     // Development bypass for authentication
     let currentUser = null;
-    
+
     if (process.env.NODE_ENV === 'development') {
       console.log('🔧 Development mode: Bypassing authentication for campaigns API');
       currentUser = {
@@ -19,7 +20,7 @@ export async function GET(request) {
       // Production authentication
       const cookieStore = await cookies();
       const sessionCookie = cookieStore.get('hospitium_session');
-      
+
       if (!sessionCookie?.value) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }
@@ -91,7 +92,7 @@ export async function GET(request) {
     // Process campaigns with calculated fields
     const processedCampaigns = campaigns.map(campaign => {
       // Calculate actual raised amount from donations
-      const actualRaisedAmount = campaign.donations.reduce((sum, donation) => 
+      const actualRaisedAmount = campaign.donations.reduce((sum, donation) =>
         sum + Number(donation.amount), 0
       );
 
@@ -102,6 +103,7 @@ export async function GET(request) {
 
       return {
         ...campaign,
+        donations: campaign.donations.map(maskDonor),
         raisedAmount: actualRaisedAmount, // Use calculated amount
         donorCount: uniqueDonors,
         donationCount: campaign._count.donations,
@@ -110,11 +112,11 @@ export async function GET(request) {
         postActivities: campaign.activities.filter(a => a.phase === 'Post-Campaign').length,
         completedActivities: campaign.activities.filter(a => a.status === 'Completed').length,
         // Calculate progress percentage
-        progressPercentage: campaign.targetAmount && Number(campaign.targetAmount) > 0 
-          ? Math.round((actualRaisedAmount / Number(campaign.targetAmount)) * 100) 
+        progressPercentage: campaign.targetAmount && Number(campaign.targetAmount) > 0
+          ? Math.round((actualRaisedAmount / Number(campaign.targetAmount)) * 100)
           : 0,
         // Recent donations (limit to 5 for performance)
-        recentDonations: campaign.donations.slice(0, 5)
+        recentDonations: campaign.donations.slice(0, 5).map(maskDonor)
       };
     });
 
@@ -145,7 +147,7 @@ export async function POST(request) {
     // Check authentication
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('hospitium_session');
-    
+
     if (!sessionCookie?.value) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
@@ -166,14 +168,14 @@ export async function POST(request) {
 
     // Parse request body
     const body = await request.json();
-    const { 
-      categoryId, 
-      name, 
-      description, 
-      targetAmount, 
-      startDate, 
-      endDate, 
-      status 
+    const {
+      categoryId,
+      name,
+      description,
+      targetAmount,
+      startDate,
+      endDate,
+      status
     } = body;
 
     // Validate required fields

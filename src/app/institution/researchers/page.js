@@ -1,701 +1,381 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Box,
-  Container,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  CircularProgress,
-  TextField,
-  InputAdornment,
-  IconButton,
+  Alert,
+  Autocomplete,
   Avatar,
-  Stack,
+  Box,
   Button,
   Card,
-  CardContent,
-  alpha,
-  Tooltip,
-  Menu,
+  Chip,
+  Container,
+  IconButton,
+  InputAdornment,
   MenuItem,
-  ListItemIcon,
-  ListItemText,
+  Paper,
+  Skeleton,
+  Stack,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
+  Typography,
+  alpha,
 } from '@mui/material';
 import {
-  Search as SearchIcon,
-  Person as PersonIcon,
+  Apps as GridIcon,
+  ChevronRight as OpenIcon,
   Email as EmailIcon,
-  School as SchoolIcon,
-  Science as ScienceIcon,
-  Article as ArticleIcon,
-  Description as ManuscriptIcon,
-  FormatQuote as CitationIcon,
-  MoreVert as MoreVertIcon,
-  Visibility as ViewIcon,
-  Edit as EditIcon,
-  Verified as VerifiedIcon,
-  FilterList as FilterIcon,
-  FileDownload as ExportIcon,
-  Group as GroupIcon,
+  Groups as ResearchersIcon,
+  Refresh as RefreshIcon,
+  Search as SearchIcon,
+  ViewList as ListIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
-import { useTranslation } from 'react-i18next';
 
-const ManageResearchers = () => {
-  const { t } = useTranslation();
+const PURPLE = '#8b6cbc';
+const PURPLE_DARK = '#6d5499';
+const COLLAB = '#0284c7';
+const INK = '#0f172a';
+const MUTED = '#64748b';
+const LINE = '#e2e8f0';
+const SURFACE = '#f6f7fb';
+
+const SORTS = [
+  { key: 'name', label: 'Name (A–Z)' },
+  { key: 'output', label: 'Most output' },
+  { key: 'collaborative', label: 'Most collaborative' },
+  { key: 'citations', label: 'Most cited' },
+  { key: 'hIndex', label: 'Highest h-index' },
+  { key: 'recent', label: 'Recently joined' },
+];
+
+const initials = (r) => `${r.givenName?.[0] || ''}${r.familyName?.[0] || ''}`.toUpperCase() || (r.email?.[0] || '?').toUpperCase();
+
+function OutputStat({ label, total, lead, collab, leadLabel, collabLabel }) {
+  return (
+    <Tooltip title={`${lead} ${leadLabel} · ${collab} ${collabLabel}`} arrow>
+      <Box sx={{ flex: 1, minWidth: 0, textAlign: 'center', py: 0.75 }}>
+        <Typography sx={{ fontWeight: 800, color: total ? INK : '#cbd5e1', fontSize: '1.05rem', lineHeight: 1.2 }}>{total}</Typography>
+        <Typography variant="caption" sx={{ color: MUTED, fontWeight: 600, display: 'block', lineHeight: 1.2 }}>{label}</Typography>
+        {collab ? <Typography variant="caption" sx={{ color: COLLAB, fontSize: '0.66rem', fontWeight: 600 }}>{collab} {collabLabel}</Typography> : <Typography variant="caption" sx={{ fontSize: '0.66rem', visibility: 'hidden' }}>.</Typography>}
+      </Box>
+    </Tooltip>
+  );
+}
+
+function OrcidChip({ orcidId }) {
+  if (!orcidId) return null;
+  return (
+    <Chip
+      component="a"
+      href={`https://orcid.org/${orcidId}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      clickable
+      onClick={(e) => e.stopPropagation()}
+      size="small"
+      label={`iD ${orcidId}`}
+      sx={{ height: 20, fontSize: '0.66rem', fontWeight: 600, bgcolor: 'rgba(166,206,57,0.16)', color: '#4d6b0f', border: '1px solid rgba(166,206,57,0.35)' }}
+    />
+  );
+}
+
+function ResearcherCard({ r, onOpen }) {
+  const o = r.output;
+  return (
+    <Card
+      onClick={onOpen}
+      sx={{
+        cursor: 'pointer',
+        borderRadius: 2.5,
+        border: `1px solid ${LINE}`,
+        boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'border-color 120ms, box-shadow 120ms, transform 120ms',
+        '&:hover': { borderColor: alpha(PURPLE, 0.6), boxShadow: `0 6px 20px ${alpha(PURPLE, 0.12)}`, transform: 'translateY(-2px)' },
+      }}
+    >
+      <Box sx={{ height: 44, background: `linear-gradient(120deg, ${PURPLE_DARK} 0%, ${PURPLE} 60%, #b9a3db 100%)` }} />
+      <Box sx={{ px: 2.25, pb: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Stack direction="row" alignItems="flex-end" justifyContent="space-between" sx={{ mt: -3 }}>
+          <Avatar src={r.avatarUrl || undefined} sx={{ width: 60, height: 60, border: '3px solid white', bgcolor: alpha(PURPLE, 0.18), color: PURPLE_DARK, fontWeight: 800, boxShadow: '0 1px 4px rgba(15,23,42,0.12)' }}>
+            {initials(r)}
+          </Avatar>
+          {r.email ? (
+            <Tooltip title={`Email ${r.fullName}`}>
+              <IconButton size="small" component="a" href={`mailto:${r.email}`} onClick={(e) => e.stopPropagation()} sx={{ color: MUTED, mb: 0.25 }}>
+                <EmailIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          ) : null}
+        </Stack>
+        <Typography sx={{ fontWeight: 800, color: INK, fontSize: '1rem', mt: 1, lineHeight: 1.3 }} noWrap title={r.displayName}>{r.displayName}</Typography>
+        <Typography variant="body2" sx={{ color: MUTED, fontSize: '0.82rem' }} noWrap>{r.department || r.primaryInstitution}</Typography>
+        <Box sx={{ mt: 0.75, minHeight: 22 }}><OrcidChip orcidId={r.orcidId} /></Box>
+
+        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1.25, minHeight: 48, alignContent: 'flex-start' }}>
+          {r.expertise.slice(0, 3).map((k) => (
+            <Chip key={k} label={k} size="small" sx={{ height: 22, fontSize: '0.7rem', bgcolor: alpha(PURPLE, 0.08), color: PURPLE_DARK, fontWeight: 600 }} />
+          ))}
+          {r.expertise.length > 3 ? <Chip label={`+${r.expertise.length - 3}`} size="small" sx={{ height: 22, fontSize: '0.7rem' }} /> : null}
+          {!r.expertise.length ? <Typography variant="caption" sx={{ color: '#cbd5e1' }}>No expertise listed</Typography> : null}
+        </Stack>
+
+        <Box sx={{ mt: 'auto', pt: 1.5 }}>
+          <Stack direction="row" sx={{ borderTop: `1px solid ${LINE}`, borderBottom: `1px solid ${LINE}` }}>
+            <OutputStat label="Publications" total={o.publications.total} lead={o.publications.lead} collab={o.publications.coauthor} leadLabel="lead" collabLabel="co-author" />
+            <OutputStat label="Manuscripts" total={o.manuscripts.total} lead={o.manuscripts.lead} collab={o.manuscripts.collaborator} leadLabel="lead" collabLabel="collab." />
+            <OutputStat label="Proposals" total={o.proposals.total} lead={o.proposals.pi} collab={o.proposals.coInvestigator} leadLabel="PI" collabLabel="co-I" />
+          </Stack>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1.25 }}>
+            <Typography variant="caption" sx={{ color: MUTED }}>
+              h-index <Box component="span" sx={{ fontWeight: 800, color: INK }}>{r.hIndex || '—'}</Box>
+              {'  ·  '}
+              Citations <Box component="span" sx={{ fontWeight: 800, color: INK }}>{r.citations ? r.citations.toLocaleString() : '—'}</Box>
+            </Typography>
+            <Typography variant="caption" sx={{ color: PURPLE_DARK, fontWeight: 700, display: 'flex', alignItems: 'center' }}>
+              View profile <OpenIcon sx={{ fontSize: 16 }} />
+            </Typography>
+          </Stack>
+        </Box>
+      </Box>
+    </Card>
+  );
+}
+
+function ResearcherRow({ r, onOpen }) {
+  const o = r.output;
+  return (
+    <Paper
+      elevation={0}
+      onClick={onOpen}
+      sx={{
+        px: 2,
+        py: 1.5,
+        borderRadius: 2,
+        border: `1px solid ${LINE}`,
+        cursor: 'pointer',
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr auto', md: 'minmax(240px, 2fr) minmax(160px, 1.4fr) repeat(3, 110px) 90px 24px' },
+        gap: 2,
+        alignItems: 'center',
+        '&:hover': { borderColor: alpha(PURPLE, 0.6), bgcolor: alpha(PURPLE, 0.02) },
+      }}
+    >
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
+        <Avatar src={r.avatarUrl || undefined} sx={{ width: 40, height: 40, bgcolor: alpha(PURPLE, 0.14), color: PURPLE_DARK, fontWeight: 700, fontSize: '0.85rem' }}>{initials(r)}</Avatar>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontWeight: 700, color: INK, fontSize: '0.9rem' }} noWrap>{r.displayName}</Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="caption" sx={{ color: MUTED }} noWrap>{r.department || r.primaryInstitution}</Typography>
+            <OrcidChip orcidId={r.orcidId} />
+          </Stack>
+        </Box>
+      </Stack>
+      <Stack direction="row" spacing={0.5} sx={{ display: { xs: 'none', md: 'flex' }, minWidth: 0, overflow: 'hidden' }}>
+        {r.expertise.slice(0, 2).map((k) => <Chip key={k} label={k} size="small" sx={{ height: 22, fontSize: '0.7rem', bgcolor: alpha(PURPLE, 0.08), color: PURPLE_DARK, maxWidth: 140 }} />)}
+      </Stack>
+      {[
+        ['Pubs', o.publications.total, o.publications.coauthor, 'co-author'],
+        ['Manuscripts', o.manuscripts.total, o.manuscripts.collaborator, 'collab.'],
+        ['Proposals', o.proposals.total, o.proposals.coInvestigator, 'co-I'],
+      ].map(([label, total, collab, collabLabel]) => (
+        <Box key={label} sx={{ display: { xs: 'none', md: 'block' } }}>
+          <Typography sx={{ fontWeight: 800, color: total ? INK : '#cbd5e1', lineHeight: 1.2 }}>{total}</Typography>
+          <Typography variant="caption" sx={{ color: collab ? COLLAB : MUTED }}>{collab ? `${collab} ${collabLabel}` : label}</Typography>
+        </Box>
+      ))}
+      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+        <Typography sx={{ fontWeight: 800, color: INK, lineHeight: 1.2 }}>{r.hIndex || '—'}</Typography>
+        <Typography variant="caption" sx={{ color: MUTED }}>h-index</Typography>
+      </Box>
+      <OpenIcon sx={{ color: '#cbd5e1' }} />
+    </Paper>
+  );
+}
+
+export default function ResearchersDirectory() {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [researchers, setResearchers] = useState([]);
-  const [filteredResearchers, setFilteredResearchers] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [error, setError] = useState(null);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedResearcher, setSelectedResearcher] = useState(null);
-  const [departmentFilter, setDepartmentFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('name');
-  const [sortOrder, setSortOrder] = useState('asc');
-  const [filterMenuAnchor, setFilterMenuAnchor] = useState(null);
+  const [error, setError] = useState('');
+  const [view, setView] = useState('grid');
+  const [search, setSearch] = useState('');
+  const [department, setDepartment] = useState('all');
+  const [expertise, setExpertise] = useState([]);
+  const [orcidOnly, setOrcidOnly] = useState(false);
+  const [sort, setSort] = useState('name');
 
-  useEffect(() => {
-    setMounted(true);
-    fetchResearchers();
-  }, []);
-
-  useEffect(() => {
-    filterResearchers();
-  }, [searchTerm, researchers, departmentFilter, sortBy, sortOrder]);
-
-  const fetchResearchers = async () => {
+  const load = async () => {
     try {
       setLoading(true);
-      setError(null);
-
-      const response = await fetch('/api/institution/researchers');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch researchers');
-      }
-
-      const data = await response.json();
-      setResearchers(data.researchers || []);
-      setFilteredResearchers(data.researchers || []);
+      setError('');
+      const res = await fetch('/api/institution/researchers', { credentials: 'include' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load researchers');
+      setData(json);
     } catch (err) {
-      console.error('Error fetching researchers:', err);
-      setError(err.message);
+      setError(err.message || 'Failed to load researchers');
     } finally {
       setLoading(false);
     }
   };
 
-  const filterResearchers = () => {
-    let filtered = [...researchers];
+  useEffect(() => {
+    load();
+    try {
+      const saved = window.localStorage.getItem('hospitium.researcherDirectory.view');
+      if (saved === 'grid' || saved === 'list') setView(saved);
+    } catch { /* storage unavailable */ }
+  }, []);
 
-    // Apply search filter
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(researcher => {
-        const fullName = `${researcher.givenName || ''} ${researcher.familyName || ''}`.toLowerCase();
-        const email = (researcher.email || '').toLowerCase();
-        const department = (researcher.researchProfile?.department || '').toLowerCase();
-        const institution = (researcher.primaryInstitution || '').toLowerCase();
-        
-        return fullName.includes(term) || 
-               email.includes(term) || 
-               department.includes(term) ||
-               institution.includes(term);
-      });
-    }
+  const changeView = (v) => {
+    if (!v) return;
+    setView(v);
+    try { window.localStorage.setItem('hospitium.researcherDirectory.view', v); } catch { /* storage unavailable */ }
+  };
 
-    // Apply department filter
-    if (departmentFilter !== 'all') {
-      filtered = filtered.filter(researcher => 
-        (researcher.researchProfile?.department || researcher.primaryInstitution) === departmentFilter
-      );
-    }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      let aValue, bValue;
-      
-      switch (sortBy) {
-        case 'name':
-          aValue = `${a.givenName || ''} ${a.familyName || ''}`.toLowerCase();
-          bValue = `${b.givenName || ''} ${b.familyName || ''}`.toLowerCase();
-          break;
-        case 'publications':
-          aValue = a.stats?.totalPublications || 0;
-          bValue = b.stats?.totalPublications || 0;
-          break;
-        case 'citations':
-          aValue = a.stats?.totalCitations || 0;
-          bValue = b.stats?.totalCitations || 0;
-          break;
-        case 'hindex':
-          aValue = a.stats?.hIndex || 0;
-          bValue = b.stats?.hIndex || 0;
-          break;
-        default:
-          aValue = 0;
-          bValue = 0;
-      }
-
-      if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
+  const researchers = data?.researchers || [];
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = researchers.filter((r) => {
+      if (department !== 'all' && r.department !== department) return false;
+      if (orcidOnly && !r.orcidId) return false;
+      if (expertise.length && !expertise.every((k) => r.expertise.some((e) => e.toLowerCase() === k.toLowerCase()))) return false;
+      if (!q) return true;
+      return [r.fullName, r.displayName, r.email, r.department, r.orcidId, r.researchInterests, ...r.expertise]
+        .some((v) => String(v || '').toLowerCase().includes(q));
     });
+    const by = {
+      name: (a, b) => String(a.familyName || a.fullName).localeCompare(String(b.familyName || b.fullName)) || String(a.givenName || '').localeCompare(String(b.givenName || '')),
+      output: (a, b) => b.output.totals.all - a.output.totals.all,
+      collaborative: (a, b) => b.output.totals.collaborative - a.output.totals.collaborative,
+      citations: (a, b) => (b.citations || 0) - (a.citations || 0),
+      hIndex: (a, b) => (b.hIndex || 0) - (a.hIndex || 0),
+      recent: (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+    }[sort];
+    return [...list].sort((a, b) => by(a, b) || String(a.fullName).localeCompare(String(b.fullName)));
+  }, [researchers, search, department, expertise, orcidOnly, sort]);
 
-    setFilteredResearchers(filtered);
-  };
-
-  const handleMenuOpen = (event, researcher) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedResearcher(researcher);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedResearcher(null);
-  };
-
-  const handleViewProfile = (researcherId) => {
-    handleMenuClose();
-    router.push(`/institution/researcher/${researcherId}`);
-  };
-
-  const getInitials = (researcher) => {
-    const first = researcher.givenName?.[0] || '';
-    const last = researcher.familyName?.[0] || '';
-    return `${first}${last}`.toUpperCase() || 'U';
-  };
-
-  const getFullName = (researcher) => {
-    const title = researcher.researchProfile?.academicTitle;
-    const name = `${researcher.givenName || ''} ${researcher.familyName || ''}`.trim();
-    return title ? `${title} ${name}` : name;
-  };
-
-  const getDepartments = () => {
-    const depts = new Set();
-    researchers.forEach(r => {
-      const dept = r.researchProfile?.department || r.primaryInstitution;
-      if (dept) depts.add(dept);
-    });
-    return Array.from(depts).sort();
-  };
-
-  const handleSortChange = (field) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('desc');
-    }
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  if (!mounted || loading) {
-    return (
-      <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
-        <PageHeader
-          title={t('institution.manage_researchers')}
-          description={t('institution.manage_researchers_desc')}
-          icon={<GroupIcon sx={{ fontSize: 32 }} />}
-          breadcrumbs={[
-            { label: 'Institution', path: '/institution' },
-            { label: 'Administration', path: '/institution' },
-            { label: 'Manage Researchers' }
-          ]}
-          gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
-        />
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-            <CircularProgress size={60} sx={{ color: '#8b6cbc' }} />
-          </Box>
-        </Container>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
-        <PageHeader
-          title={t('institution.manage_researchers')}
-          description={t('institution.manage_researchers_desc')}
-          icon={<GroupIcon sx={{ fontSize: 32 }} />}
-          breadcrumbs={[
-            { label: 'Institution', path: '/institution' },
-            { label: 'Administration', path: '/institution' },
-            { label: 'Manage Researchers' }
-          ]}
-          gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
-        />
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Paper sx={{ p: 4, textAlign: 'center' }}>
-            <Typography variant="h6" color="error" gutterBottom>
-              Error Loading Researchers
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              {error}
-            </Typography>
-            <Button
-              variant="contained"
-              onClick={fetchResearchers}
-              sx={{
-                bgcolor: '#8b6cbc',
-                '&:hover': { bgcolor: '#7a5caa' }
-              }}
-            >
-              Retry
-            </Button>
-          </Paper>
-        </Container>
-      </Box>
-    );
-  }
+  const activeFilters = (department !== 'all') + expertise.length + (orcidOnly ? 1 : 0) + (search ? 1 : 0);
+  const open = (id) => router.push(`/institution/researcher/${id}`);
+  const s = data?.summary;
 
   return (
-    <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
-      <PageHeader
-        title="Manage Researchers"
-        description="Add, edit, and manage researchers"
-        icon={<GroupIcon sx={{ fontSize: 32 }} />}
-        breadcrumbs={[
-          { label: 'Institution', path: '/institution' },
-          { label: 'Administration', path: '/institution' },
-          { label: 'Manage Researchers' }
-        ]}
-        gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
-      />
+    <Box sx={{ bgcolor: SURFACE, minHeight: '100vh', pb: 6 }}>
+      <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+        <PageHeader
+          title="Researcher Directory"
+          description={data?.institution?.name ? `Researchers at ${data.institution.name} and their research output` : 'Researchers at your institution and their research output'}
+          icon={<ResearchersIcon sx={{ fontSize: 32 }} />}
+          breadcrumbs={[{ label: 'Institution', path: '/institution' }, { label: 'Researchers' }]}
+          gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
+          actionButton={(
+            <Tooltip title="Refresh">
+              <span>
+                <IconButton onClick={load} disabled={loading} sx={{ color: 'white', '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' } }}><RefreshIcon /></IconButton>
+              </span>
+            </Tooltip>
+          )}
+        />
+      </Box>
 
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Stats Cards */}
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 2.5, 
-          mb: 4, 
-          flexWrap: 'wrap',
-          '& > *': {
-            flex: '1 1 calc(25% - 19px)',
-            minWidth: '200px'
-          }
-        }}>
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: '#8b6cbc',
-            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Total Researchers
-              </Typography>
-              <GroupIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {researchers.length}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Active researchers
-            </Typography>
-          </Paper>
+      <Container maxWidth="xl" sx={{ pt: 3 }}>
+        {error ? <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} action={<Button color="inherit" size="small" onClick={load}>Retry</Button>}>{error}</Alert> : null}
 
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: '#8b6cbc',
-            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Total Manuscripts
-              </Typography>
-              <ManuscriptIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {researchers.reduce((sum, r) => sum + (r.stats?.totalManuscripts || 0), 0)}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Collaborative works
-            </Typography>
-          </Paper>
-
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: '#8b6cbc',
-            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Total Publications
-              </Typography>
-              <ArticleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {researchers.reduce((sum, r) => sum + (r.stats?.totalPublications || 0), 0)}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Published research
-            </Typography>
-          </Paper>
-
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: '#8b6cbc',
-            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Total Citations
-              </Typography>
-              <CitationIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {researchers.reduce((sum, r) => sum + (r.stats?.totalCitations || 0), 0)}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Citation impact
-            </Typography>
-          </Paper>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(6, 1fr)' }, gap: 1.5, mb: 3 }}>
+          {[
+            ['Researchers', s?.researchers],
+            ['With ORCID iD', s ? `${s.withOrcid}` : null],
+            ['Publications', s?.publications],
+            ['Manuscripts', s?.manuscripts],
+            ['Proposals', s?.proposals],
+            ['Collaborative items', s?.collaborative],
+          ].map(([label, value]) => (
+            <Paper key={label} elevation={0} sx={{ p: 2, borderRadius: 2, border: `1px solid ${LINE}`, bgcolor: 'white' }}>
+              <Typography variant="caption" sx={{ color: MUTED, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.66rem' }}>{label}</Typography>
+              {loading && !data ? <Skeleton width="50%" height={34} /> : <Typography sx={{ fontWeight: 800, color: INK, fontSize: '1.5rem', lineHeight: 1.3 }}>{value ?? '—'}</Typography>}
+            </Paper>
+          ))}
         </Box>
 
-        {/* Search and Actions */}
-        <Paper sx={{ p: 3, mb: 3, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-          <Stack spacing={2}>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-              <TextField
-                placeholder="Search researchers by name, email, or department..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                sx={{ flex: 1, minWidth: 300 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: '#9ca3af' }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <Button
-                variant="outlined"
-                startIcon={<ExportIcon />}
-                sx={{
-                  borderColor: '#e5e7eb',
-                  color: '#6b7280',
-                  '&:hover': {
-                    borderColor: '#8b6cbc',
-                    backgroundColor: alpha('#8b6cbc', 0.05)
-                  }
-                }}
-              >
-                {t('common.export')}
-              </Button>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-              <TextField
-                select
-                label="Department"
-                value={departmentFilter}
-                onChange={(e) => setDepartmentFilter(e.target.value)}
-                sx={{ minWidth: 200 }}
-                size="small"
-              >
-                <MenuItem value="all">All Departments</MenuItem>
-                {getDepartments().map((dept) => (
-                  <MenuItem key={dept} value={dept}>{dept}</MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                select
-                label="Sort By"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                sx={{ minWidth: 180 }}
-                size="small"
-              >
-                <MenuItem value="name">Name</MenuItem>
-                <MenuItem value="publications">Publications</MenuItem>
-                <MenuItem value="citations">Citations</MenuItem>
-                <MenuItem value="hindex">H-Index</MenuItem>
-              </TextField>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                sx={{
-                  borderColor: '#e5e7eb',
-                  color: '#6b7280',
-                  minWidth: 100,
-                  '&:hover': {
-                    borderColor: '#8b6cbc',
-                    backgroundColor: alpha('#8b6cbc', 0.05)
-                  }
-                }}
-              >
-                {sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}
-              </Button>
-              {(searchTerm || departmentFilter !== 'all') && (
-                <Chip
-                  label="Clear Filters"
-                  onDelete={() => {
-                    setSearchTerm('');
-                    setDepartmentFilter('all');
-                  }}
-                  sx={{ ml: 'auto' }}
-                />
-              )}
-            </Box>
+        <Paper elevation={0} sx={{ p: 2, mb: 2.5, borderRadius: 2, border: `1px solid ${LINE}`, bgcolor: 'white', position: 'sticky', top: 72, zIndex: 4 }}>
+          <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} alignItems={{ lg: 'center' }}>
+            <TextField
+              size="small"
+              placeholder="Search by name, department, ORCID iD or expertise"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: '#94a3b8' }} /></InputAdornment> }}
+              sx={{ flex: 1.4, minWidth: 240 }}
+            />
+            <TextField select size="small" value={department} onChange={(e) => setDepartment(e.target.value)} sx={{ minWidth: 200 }}>
+              <MenuItem value="all">All departments</MenuItem>
+              {(data?.departments || []).map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+            </TextField>
+            <Autocomplete
+              multiple
+              size="small"
+              options={(data?.expertise || []).map((e) => e.label)}
+              value={expertise}
+              onChange={(_, v) => setExpertise(v)}
+              renderInput={(params) => <TextField {...params} placeholder={expertise.length ? '' : 'Expertise'} />}
+              sx={{ flex: 1, minWidth: 220 }}
+              limitTags={2}
+            />
+            <TextField select size="small" value={sort} onChange={(e) => setSort(e.target.value)} sx={{ minWidth: 170 }}>
+              {SORTS.map((o) => <MenuItem key={o.key} value={o.key}>{o.label}</MenuItem>)}
+            </TextField>
+            <Chip
+              label="Has ORCID iD"
+              onClick={() => setOrcidOnly((v) => !v)}
+              sx={{ fontWeight: 600, bgcolor: orcidOnly ? PURPLE : alpha(PURPLE, 0.08), color: orcidOnly ? 'white' : PURPLE_DARK, '&:hover': { bgcolor: orcidOnly ? PURPLE_DARK : alpha(PURPLE, 0.15) } }}
+            />
+            <ToggleButtonGroup size="small" exclusive value={view} onChange={(_, v) => changeView(v)}>
+              <ToggleButton value="grid" aria-label="Card view"><GridIcon fontSize="small" /></ToggleButton>
+              <ToggleButton value="list" aria-label="List view"><ListIcon fontSize="small" /></ToggleButton>
+            </ToggleButtonGroup>
           </Stack>
         </Paper>
 
-        {/* Researchers Table */}
-        <Paper sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-          {filteredResearchers.length === 0 ? (
-            <Box sx={{ p: 8, textAlign: 'center' }}>
-              <GroupIcon sx={{ fontSize: 64, color: '#e5e7eb', mb: 2 }} />
-              <Typography variant="h6" sx={{ color: '#6b7280', mb: 1 }}>
-                {searchTerm ? t('common.no_results') : 'No researchers yet'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {searchTerm 
-                  ? 'Try adjusting your search criteria'
-                  : 'Researchers will appear here once they register'
-                }
-              </Typography>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+          <Typography variant="body2" sx={{ color: MUTED }}>
+            {loading && !data ? 'Loading researchers…' : `${filtered.length} of ${researchers.length} researchers`}
+          </Typography>
+          {activeFilters ? (
+            <Button size="small" onClick={() => { setSearch(''); setDepartment('all'); setExpertise([]); setOrcidOnly(false); }} sx={{ textTransform: 'none', color: PURPLE_DARK, fontWeight: 600 }}>
+              Clear filters
+            </Button>
+          ) : null}
+        </Stack>
+
+        {loading && !data ? (
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' }, gap: 2 }}>
+            {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} variant="rounded" height={320} sx={{ borderRadius: 2.5 }} />)}
+          </Box>
+        ) : filtered.length ? (
+          view === 'grid' ? (
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', xl: 'repeat(4, 1fr)' }, gap: 2 }}>
+              {filtered.map((r) => <ResearcherCard key={r.id} r={r} onOpen={() => open(r.id)} />)}
             </Box>
           ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, fontSize: '0.875rem' }}>
-                      Researcher
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, fontSize: '0.875rem' }}>
-                      Department
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, textAlign: 'center', fontSize: '0.875rem' }}>
-                      Manuscripts
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, textAlign: 'center', fontSize: '0.875rem' }}>
-                      Publications
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, textAlign: 'center', fontSize: '0.875rem' }}>
-                      Citations
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, textAlign: 'center', fontSize: '0.875rem' }}>
-                      H-Index
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#1f2937', py: 2.5, textAlign: 'center', fontSize: '0.875rem' }}>
-                      Actions
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredResearchers.map((researcher) => (
-                    <TableRow
-                      key={researcher.id}
-                      sx={{
-                        '&:hover': { 
-                          backgroundColor: '#f5f3f7',
-                          '& .researcher-avatar': {
-                            transform: 'scale(1.1)',
-                            boxShadow: '0 4px 12px rgba(139,108,188,0.3)'
-                          }
-                        },
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        '& td': { borderBottom: '1px solid #f3f4f6' }
-                      }}
-                      onClick={() => handleViewProfile(researcher.id)}
-                    >
-                      <TableCell sx={{ py: 2.5 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar
-                            className="researcher-avatar"
-                            sx={{
-                              width: 44,
-                              height: 44,
-                              bgcolor: '#8b6cbc',
-                              fontSize: '0.875rem',
-                              fontWeight: 700,
-                              transition: 'all 0.2s ease',
-                              boxShadow: '0 2px 8px rgba(139,108,188,0.2)'
-                            }}
-                          >
-                            {getInitials(researcher)}
-                          </Avatar>
-                          <Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827', fontSize: '0.9rem' }}>
-                                {getFullName(researcher)}
-                              </Typography>
-                              {researcher.orcidId && (
-                                <Tooltip title="ORCID Verified" arrow>
-                                  <VerifiedIcon sx={{ fontSize: 18, color: '#a6ce39' }} />
-                                </Tooltip>
-                              )}
-                            </Box>
-                            <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.8rem' }}>
-                              {researcher.email}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ py: 2.5 }}>
-                        <Chip
-                          label={researcher.researchProfile?.department || researcher.primaryInstitution || 'N/A'}
-                          size="small"
-                          sx={{
-                            bgcolor: 'rgba(139, 108, 188, 0.08)',
-                            color: '#8b6cbc',
-                            fontWeight: 600,
-                            fontSize: '0.75rem'
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ py: 2.5, textAlign: 'center' }}>
-                        <Chip
-                          label={researcher.stats?.totalManuscripts || 0}
-                          size="small"
-                          sx={{
-                            backgroundColor: alpha('#2d8659', 0.12),
-                            color: '#2d8659',
-                            fontWeight: 700,
-                            minWidth: 45,
-                            fontSize: '0.8rem'
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ py: 2.5, textAlign: 'center' }}>
-                        <Chip
-                          label={researcher.stats?.totalPublications || 0}
-                          size="small"
-                          sx={{
-                            backgroundColor: alpha('#d97706', 0.12),
-                            color: '#d97706',
-                            fontWeight: 700,
-                            minWidth: 45,
-                            fontSize: '0.8rem'
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ py: 2.5, textAlign: 'center' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#2563eb', fontSize: '0.9rem' }}>
-                          {researcher.stats?.totalCitations || 0}
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ py: 2.5, textAlign: 'center' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#7c3aed', fontSize: '0.9rem' }}>
-                          {researcher.stats?.hIndex || 0}
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ py: 2.5, textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                        <Tooltip title="View Profile" arrow>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleViewProfile(researcher.id)}
-                            sx={{ 
-                              color: '#8b6cbc',
-                              '&:hover': {
-                                bgcolor: 'rgba(139, 108, 188, 0.1)',
-                                transform: 'scale(1.1)'
-                              },
-                              transition: 'all 0.2s ease'
-                            }}
-                          >
-                            <ViewIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </Paper>
-
-        {/* Results Count */}
-        {filteredResearchers.length > 0 && (
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              Showing {filteredResearchers.length} of {researchers.length} researchers
+            <Stack spacing={1}>
+              {filtered.map((r) => <ResearcherRow key={r.id} r={r} onOpen={() => open(r.id)} />)}
+            </Stack>
+          )
+        ) : (
+          <Paper elevation={0} sx={{ py: 8, textAlign: 'center', borderRadius: 2, border: `1px dashed ${LINE}` }}>
+            <ResearchersIcon sx={{ fontSize: 44, color: '#cbd5e1' }} />
+            <Typography sx={{ color: MUTED, mt: 1 }}>
+              {researchers.length ? 'No researchers match these filters.' : 'No researchers have registered with your institution yet.'}
             </Typography>
-          </Box>
+          </Paper>
         )}
       </Container>
-
-      {/* Action Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-      >
-        <MenuItem onClick={() => selectedResearcher && handleViewProfile(selectedResearcher.id)}>
-          <ListItemIcon>
-            <ViewIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>View Profile</ListItemText>
-        </MenuItem>
-      </Menu>
     </Box>
   );
-};
-
-export default ManageResearchers;
+}

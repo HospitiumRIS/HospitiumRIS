@@ -68,6 +68,7 @@ import {
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import PageHeader from '@/components/common/PageHeader';
+import InstitutionResearchersSection from '@/components/Institution/InstitutionResearchersSection';
 import { useAuth } from '@/components/AuthProvider';
 
 const InstitutionDashboard = () => {
@@ -83,27 +84,27 @@ const InstitutionDashboard = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('overview');
-  
+
   // Recent Activity state
   const [activityFilter, setActivityFilter] = useState('all');
   const [activitySearchTerm, setActivitySearchTerm] = useState('');
   const [showAllActivities, setShowAllActivities] = useState(false);
   const [hoveredActivityId, setHoveredActivityId] = useState(null);
-  
+
   // Top Researchers state
   const [researcherSearchTerm, setResearcherSearchTerm] = useState('');
   const [showAllResearchers, setShowAllResearchers] = useState(false);
   const [sortBy, setSortBy] = useState('totalOutput'); // totalOutput, manuscripts, proposals, publications
   const [sortOrder, setSortOrder] = useState('desc');
-  
+
   // Research Output Trends state
   const [trendsTimeRange, setTrendsTimeRange] = useState('6months'); // '3months', '6months', '12months'
   const [trendsOutputType, setTrendsOutputType] = useState('all'); // 'all', 'manuscripts', 'proposals'
-  
+
   // Proposal Status state
   const [proposalViewType, setProposalViewType] = useState('all'); // 'all', 'active', 'completed'
   const [selectedStatus, setSelectedStatus] = useState(null); // null or specific status
-  
+
   // Manuscripts state
   const [manuscriptStatusFilter, setManuscriptStatusFilter] = useState('all'); // 'all', 'draft', 'under_review', 'published'
   const [manuscriptSearchTerm, setManuscriptSearchTerm] = useState('');
@@ -169,11 +170,11 @@ const InstitutionDashboard = () => {
     setMounted(true);
     const updateDateTime = () => {
       const now = new Date();
-      const options = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      const options = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       };
       setCurrentDate(now.toLocaleDateString('en-US', options));
       setGreeting(getTimeBasedGreeting());
@@ -288,29 +289,29 @@ const InstitutionDashboard = () => {
   // Filter and search activities
   const filteredActivities = useMemo(() => {
     if (!analyticsData?.recentActivity) return [];
-    
+
     let activities = [...analyticsData.recentActivity];
-    
+
     // Filter by type
     if (activityFilter !== 'all') {
       activities = activities.filter(a => a.type === activityFilter);
     }
-    
+
     // Filter by search term
     if (activitySearchTerm.trim()) {
       const searchLower = activitySearchTerm.toLowerCase();
-      activities = activities.filter(a => 
+      activities = activities.filter(a =>
         a.title?.toLowerCase().includes(searchLower) ||
         a.author?.toLowerCase().includes(searchLower)
       );
     }
-    
+
     return activities;
   }, [analyticsData?.recentActivity, activityFilter, activitySearchTerm]);
 
   // Get display activities (limited or all)
-  const displayActivities = showAllActivities 
-    ? filteredActivities 
+  const displayActivities = showAllActivities
+    ? filteredActivities
     : filteredActivities.slice(0, 5);
 
   // Get activity type configuration
@@ -345,19 +346,19 @@ const InstitutionDashboard = () => {
   // Filter and sort researchers
   const filteredResearchers = useMemo(() => {
     if (!analyticsData?.topResearchers) return [];
-    
+
     let researchers = [...analyticsData.topResearchers];
-    
+
     // Filter by search term
     if (researcherSearchTerm.trim()) {
       const searchLower = researcherSearchTerm.toLowerCase();
-      researchers = researchers.filter(r => 
+      researchers = researchers.filter(r =>
         r.name?.toLowerCase().includes(searchLower) ||
         r.department?.toLowerCase().includes(searchLower) ||
         r.email?.toLowerCase().includes(searchLower)
       );
     }
-    
+
     // Sort researchers
     researchers.sort((a, b) => {
       let valueA, valueB;
@@ -380,13 +381,13 @@ const InstitutionDashboard = () => {
       }
       return sortOrder === 'desc' ? valueB - valueA : valueA - valueB;
     });
-    
+
     return researchers;
   }, [analyticsData?.topResearchers, researcherSearchTerm, sortBy, sortOrder]);
 
   // Get display researchers (limited or all)
-  const displayResearchers = showAllResearchers 
-    ? filteredResearchers 
+  const displayResearchers = showAllResearchers
+    ? filteredResearchers
     : filteredResearchers.slice(0, 5);
 
   // Handle sort change
@@ -437,9 +438,9 @@ const InstitutionDashboard = () => {
         <Container maxWidth="xl" sx={{ py: 4 }}>
           <Alert severity="error" sx={{ mb: 4 }}>
             {error}
-            <Button 
-              variant="outlined" 
-              onClick={handleRefresh} 
+            <Button
+              variant="outlined"
+              onClick={handleRefresh}
               sx={{ ml: 2 }}
             >
               {t('common.try_again')}
@@ -461,7 +462,7 @@ const InstitutionDashboard = () => {
               <span style={{ fontSize: '0.95rem', fontWeight: 400, opacity: 0.9 }}>
                 {t('institution_dashboard.logged_in_as')} <span style={{ fontWeight: 700, color: '#fff' }}>{getAccountTypeDisplay()}</span>
               </span>
-            
+
               <br />
               <span style={{ fontSize: '0.875rem', opacity: 0.8 }}>
                 {mounted ? currentDate : t('common.loading')}
@@ -486,9 +487,9 @@ const InstitutionDashboard = () => {
 
         {/* Key Metrics Cards */}
         <Box sx={{ mb: 4 }}>
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 2.5, 
+          <Box sx={{
+            display: 'flex',
+            gap: 2.5,
             flexWrap: { xs: 'wrap', sm: 'nowrap' },
             '& > *': {
               flex: {
@@ -498,8 +499,8 @@ const InstitutionDashboard = () => {
               minWidth: 0
             }
           }}>
-            <Paper sx={{ 
-              p: 2, 
+            <Paper sx={{
+              p: 2,
               borderRadius: 2,
               bgcolor: '#8b6cbc',
               boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
@@ -526,8 +527,8 @@ const InstitutionDashboard = () => {
               </Typography>
             </Paper>
 
-            <Paper sx={{ 
-              p: 2, 
+            <Paper sx={{
+              p: 2,
               borderRadius: 2,
               bgcolor: '#8b6cbc',
               boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
@@ -554,8 +555,8 @@ const InstitutionDashboard = () => {
               </Typography>
             </Paper>
 
-            <Paper sx={{ 
-              p: 2, 
+            <Paper sx={{
+              p: 2,
               borderRadius: 2,
               bgcolor: '#8b6cbc',
               boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
@@ -582,8 +583,8 @@ const InstitutionDashboard = () => {
               </Typography>
             </Paper>
 
-            <Paper sx={{ 
-              p: 2, 
+            <Paper sx={{
+              p: 2,
               borderRadius: 2,
               bgcolor: '#8b6cbc',
               boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
@@ -613,10 +614,10 @@ const InstitutionDashboard = () => {
         </Box>
 
         {/* Charts Section */}
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 4, 
-          mb: 4, 
+        <Box sx={{
+          display: 'flex',
+          gap: 4,
+          mb: 4,
           flexWrap: 'wrap',
           '& > *:first-of-type': {
             flex: {
@@ -641,7 +642,7 @@ const InstitutionDashboard = () => {
                     {t('institution_dashboard.trends_title')}
                   </Typography>
                 </Stack>
-                
+
                 {/* Interactive Controls */}
                 <Stack direction="row" spacing={2} alignItems="center">
                   {/* Time Range Filter */}
@@ -727,7 +728,7 @@ const InstitutionDashboard = () => {
                 <Tab label={t('institution_dashboard.tab_manuscripts_only')} value="manuscripts" />
                 <Tab label={t('institution_dashboard.tab_proposals_only')} value="proposals" />
               </Tabs>
-              
+
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                 {trendsOutputType === 'all'
                   ? t('institution_dashboard.trends_desc_all')
@@ -735,12 +736,12 @@ const InstitutionDashboard = () => {
                   ? t('institution_dashboard.trends_desc_manuscripts')
                   : t('institution_dashboard.trends_desc_proposals')}
               </Typography>
-              
+
               {/* Interactive Chart */}
-              <Box sx={{ 
-                height: 300, 
-                display: 'flex', 
-                alignItems: 'center', 
+              <Box sx={{
+                height: 300,
+                display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'center',
                 background: alpha('#8b6cbc', 0.05),
                 borderRadius: 2,
@@ -750,17 +751,17 @@ const InstitutionDashboard = () => {
                   {analyticsData.monthlyTrends
                     .slice(trendsTimeRange === '3months' ? -3 : trendsTimeRange === '6months' ? -6 : -12)
                     .map((trend, index) => {
-                      const value = trendsOutputType === 'all' 
-                        ? trend.total 
+                      const value = trendsOutputType === 'all'
+                        ? trend.total
                         : trendsOutputType === 'manuscripts'
                         ? trend.manuscripts || Math.floor(trend.total * 0.6)
                         : trend.proposals || Math.floor(trend.total * 0.4);
-                      
+
                       const maxValue = Math.max(
                         ...analyticsData.monthlyTrends
                           .slice(trendsTimeRange === '3months' ? -3 : trendsTimeRange === '6months' ? -6 : -12)
-                          .map(t => trendsOutputType === 'all' 
-                            ? t.total 
+                          .map(t => trendsOutputType === 'all'
+                            ? t.total
                             : trendsOutputType === 'manuscripts'
                             ? t.manuscripts || Math.floor(t.total * 0.6)
                             : t.proposals || Math.floor(t.total * 0.4)
@@ -769,10 +770,10 @@ const InstitutionDashboard = () => {
                       );
 
                       return (
-                        <Stack 
-                          key={trend.month} 
-                          direction="row" 
-                          alignItems="center" 
+                        <Stack
+                          key={trend.month}
+                          direction="row"
+                          alignItems="center"
                           spacing={2}
                           sx={{
                             transition: 'all 0.2s ease',
@@ -797,7 +798,7 @@ const InstitutionDashboard = () => {
                                 backgroundColor: alpha('#8b6cbc', 0.1),
                                 transition: 'height 0.2s ease',
                                 '& .MuiLinearProgress-bar': {
-                                  backgroundColor: trendsOutputType === 'manuscripts' 
+                                  backgroundColor: trendsOutputType === 'manuscripts'
                                     ? '#4CAF50'
                                     : trendsOutputType === 'proposals'
                                     ? '#FF9800'
@@ -808,12 +809,12 @@ const InstitutionDashboard = () => {
                               }}
                             />
                           </Box>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              minWidth: 40, 
-                              fontWeight: 600, 
-                              color: trendsOutputType === 'manuscripts' 
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              minWidth: 40,
+                              fontWeight: 600,
+                              color: trendsOutputType === 'manuscripts'
                                 ? '#4CAF50'
                                 : trendsOutputType === 'proposals'
                                 ? '#FF9800'
@@ -841,7 +842,7 @@ const InstitutionDashboard = () => {
                     {t('institution_dashboard.proposal_status_title')}
                   </Typography>
                 </Stack>
-                
+
                 {/* View Type Filter */}
                 <ButtonGroup size="small" sx={{ boxShadow: 'none' }}>
                   <Button
@@ -905,11 +906,11 @@ const InstitutionDashboard = () => {
                   ? t('institution_dashboard.proposal_status_desc_active')
                   : t('institution_dashboard.proposal_status_desc_completed')}
               </Typography>
-              
+
               {/* Interactive Status Bars */}
-              <Box sx={{ 
-                height: 300, 
-                display: 'flex', 
+              <Box sx={{
+                height: 300,
+                display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
                 background: alpha('#8b6cbc', 0.05),
@@ -927,7 +928,7 @@ const InstitutionDashboard = () => {
                       { label: t('common.revision_requested'), count: analyticsData.overview.revisionRequestedProposals || 0, color: '#ff5722', type: 'active' }
                     ];
 
-                    const filteredStatuses = proposalViewType === 'all' 
+                    const filteredStatuses = proposalViewType === 'all'
                       ? statuses
                       : proposalViewType === 'active'
                       ? statuses.filter(s => s.type === 'active')
@@ -936,10 +937,10 @@ const InstitutionDashboard = () => {
                     const maxCount = Math.max(...filteredStatuses.map(s => s.count), 1);
 
                     return filteredStatuses.map((status) => (
-                      <Box 
+                      <Box
                         key={status.label}
                         onClick={() => setSelectedStatus(selectedStatus === status.label ? null : status.label)}
-                        sx={{ 
+                        sx={{
                           cursor: 'pointer',
                           transition: 'all 0.2s ease',
                           '&:hover': {
@@ -948,17 +949,17 @@ const InstitutionDashboard = () => {
                         }}
                       >
                         <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 0.5 }}>
-                          <Box sx={{ 
-                            width: 14, 
-                            height: 14, 
-                            borderRadius: '50%', 
+                          <Box sx={{
+                            width: 14,
+                            height: 14,
+                            borderRadius: '50%',
                             backgroundColor: status.color,
                             transition: 'transform 0.2s ease',
                             transform: selectedStatus === status.label ? 'scale(1.3)' : 'scale(1)'
                           }} />
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
+                          <Typography
+                            variant="body2"
+                            sx={{
                               minWidth: 140,
                               fontWeight: selectedStatus === status.label ? 600 : 500,
                               color: selectedStatus === status.label ? status.color : 'text.primary',
@@ -984,9 +985,9 @@ const InstitutionDashboard = () => {
                               }}
                             />
                           </Box>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
+                          <Typography
+                            variant="body2"
+                            sx={{
                               minWidth: 50,
                               fontWeight: 700,
                               color: status.color,
@@ -996,9 +997,9 @@ const InstitutionDashboard = () => {
                           >
                             {status.count}
                           </Typography>
-                          <Typography 
-                            variant="caption" 
-                            sx={{ 
+                          <Typography
+                            variant="caption"
+                            sx={{
                               minWidth: 50,
                               color: 'text.secondary',
                               opacity: selectedStatus === status.label ? 1 : 0.7,
@@ -1018,9 +1019,9 @@ const InstitutionDashboard = () => {
         </Box>
 
         {/* Data Tables Section */}
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 4, 
+        <Box sx={{
+          display: 'flex',
+          gap: 4,
           flexWrap: 'wrap',
           '& > *': {
             flex: {
@@ -1134,8 +1135,8 @@ const InstitutionDashboard = () => {
           </Card>
 
           {/* Manuscripts Widget - Interactive */}
-          <Card sx={{ 
-            borderRadius: 3, 
+          <Card sx={{
+            borderRadius: 3,
             boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
             overflow: 'hidden',
             border: '1px solid',
@@ -1143,8 +1144,8 @@ const InstitutionDashboard = () => {
           }}>
             <CardContent sx={{ p: 0 }}>
               {/* Header */}
-              <Box sx={{ 
-                p: 3, 
+              <Box sx={{
+                p: 3,
                 pb: 2,
                 background: `linear-gradient(135deg, ${alpha('#8b6cbc', 0.03)} 0%, ${alpha('#a084d1', 0.05)} 100%)`,
                 borderBottom: '1px solid',
@@ -1162,7 +1163,7 @@ const InstitutionDashboard = () => {
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Chip
                       label={t('institution_dashboard.manuscripts_total_chip', { count: analyticsData.overview.totalManuscripts })}
-                      sx={{ 
+                      sx={{
                         backgroundColor: alpha('#8b6cbc', 0.1),
                         color: '#8b6cbc',
                         fontWeight: 600
@@ -1186,7 +1187,7 @@ const InstitutionDashboard = () => {
                         </InputAdornment>
                       ),
                     }}
-                    sx={{ 
+                    sx={{
                       flex: 1,
                       minWidth: { xs: '100%', sm: 200 },
                       '& .MuiOutlinedInput-root': {
@@ -1278,10 +1279,10 @@ const InstitutionDashboard = () => {
                 <Table stickyHeader size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell 
+                      <TableCell
                         onClick={() => setManuscriptSortBy('title')}
-                        sx={{ 
-                          fontWeight: 600, 
+                        sx={{
+                          fontWeight: 600,
                           backgroundColor: '#fafafa',
                           borderBottom: '2px solid',
                           borderColor: 'divider',
@@ -1297,10 +1298,10 @@ const InstitutionDashboard = () => {
                           {manuscriptSortBy === 'title' && <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>↓</span>}
                         </Stack>
                       </TableCell>
-                      <TableCell 
+                      <TableCell
                         onClick={() => setManuscriptSortBy('author')}
-                        sx={{ 
-                          fontWeight: 600, 
+                        sx={{
+                          fontWeight: 600,
                           backgroundColor: '#fafafa',
                           borderBottom: '2px solid',
                           borderColor: 'divider',
@@ -1315,9 +1316,9 @@ const InstitutionDashboard = () => {
                           {manuscriptSortBy === 'author' && <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>↓</span>}
                         </Stack>
                       </TableCell>
-                      <TableCell 
-                        sx={{ 
-                          fontWeight: 600, 
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
                           backgroundColor: '#fafafa',
                           borderBottom: '2px solid',
                           borderColor: 'divider',
@@ -1326,10 +1327,10 @@ const InstitutionDashboard = () => {
                       >
                         {t('common.status')}
                       </TableCell>
-                      <TableCell 
+                      <TableCell
                         onClick={() => setManuscriptSortBy('updated')}
-                        sx={{ 
-                          fontWeight: 600, 
+                        sx={{
+                          fontWeight: 600,
                           backgroundColor: '#fafafa',
                           borderBottom: '2px solid',
                           borderColor: 'divider',
@@ -1398,20 +1399,20 @@ const InstitutionDashboard = () => {
                       });
 
                       return filtered.map((manuscript, index) => (
-                        <TableRow 
+                        <TableRow
                           key={manuscript.id || index}
-                          sx={{ 
+                          sx={{
                             cursor: 'pointer',
                             transition: 'background-color 0.15s ease',
-                            '&:hover': { 
+                            '&:hover': {
                               backgroundColor: alpha('#8b6cbc', 0.04)
                             }
                           }}
                         >
                           <TableCell sx={{ py: 2 }}>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
+                            <Typography
+                              variant="body2"
+                              sx={{
                                 fontWeight: 600,
                                 color: '#2d3748',
                                 '&:hover': { color: '#8b6cbc' },
@@ -1431,7 +1432,7 @@ const InstitutionDashboard = () => {
                               label={manuscript.status || t('common.draft')}
                               size="small"
                               sx={{
-                                backgroundColor: manuscript.status === 'PUBLISHED' 
+                                backgroundColor: manuscript.status === 'PUBLISHED'
                                   ? alpha('#4CAF50', 0.1)
                                   : manuscript.status === 'UNDER_REVIEW'
                                   ? alpha('#FF9800', 0.1)
@@ -1460,294 +1461,14 @@ const InstitutionDashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Enhanced Top Researchers */}
-          <Card sx={{ 
-            borderRadius: 3, 
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            overflow: 'hidden',
-            border: '1px solid',
-            borderColor: alpha('#8b6cbc', 0.1)
-          }}>
-            <CardContent sx={{ p: 0 }}>
-              {/* Header */}
-              <Box sx={{ 
-                p: 3, 
-                pb: 2,
-                background: `linear-gradient(135deg, ${alpha('#8b6cbc', 0.03)} 0%, ${alpha('#a084d1', 0.05)} 100%)`,
-                borderBottom: '1px solid',
-                borderColor: 'divider'
-              }}>
-                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2}>
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#2d3748' }}>
-                      {t('institution_dashboard.researchers_title')}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {t('institution_dashboard.researchers_desc')}
-                    </Typography>
-                  </Box>
-                  <TextField
-                    size="small"
-                    placeholder={t('institution_dashboard.search_placeholder_researchers')}
-                    value={researcherSearchTerm}
-                    onChange={(e) => setResearcherSearchTerm(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{ 
-                      width: { xs: '100%', sm: 240 },
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        backgroundColor: 'white',
-                        fontSize: '0.875rem',
-                        '&:hover fieldset': { borderColor: '#8b6cbc' },
-                        '&.Mui-focused fieldset': { borderColor: '#8b6cbc' }
-                      }
-                    }}
-                  />
-                </Stack>
-              </Box>
-
-              {/* Table */}
-              <TableContainer sx={{ maxHeight: showAllResearchers ? 600 : 380 }}>
-                <Table stickyHeader size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell 
-                        sx={{ 
-                          fontWeight: 600, 
-                          backgroundColor: '#fafafa',
-                          borderBottom: '2px solid',
-                          borderColor: 'divider',
-                          py: 1.5,
-                          width: '35%'
-                        }}
-                      >
-                        {t('common.researcher')}
-                      </TableCell>
-                      <TableCell 
-                        onClick={() => handleSortChange('totalOutput')}
-                        sx={{ 
-                          fontWeight: 600, 
-                          backgroundColor: '#fafafa',
-                          borderBottom: '2px solid',
-                          borderColor: 'divider',
-                          py: 1.5,
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                          '&:hover': { backgroundColor: alpha('#8b6cbc', 0.05) },
-                          transition: 'background-color 0.2s ease'
-                        }}
-                      >
-                        <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <span>{t('common.total')}</span>
-                          {sortBy === 'totalOutput' && (
-                            <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>
-                              {sortOrder === 'desc' ? '↓' : '↑'}
-                            </span>
-                          )}
-                        </Stack>
-                      </TableCell>
-                      <TableCell 
-                        onClick={() => handleSortChange('manuscriptCount')}
-                        sx={{ 
-                          fontWeight: 600, 
-                          backgroundColor: '#fafafa',
-                          borderBottom: '2px solid',
-                          borderColor: 'divider',
-                          py: 1.5,
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                          '&:hover': { backgroundColor: alpha('#8b6cbc', 0.05) },
-                          transition: 'background-color 0.2s ease'
-                        }}
-                      >
-                        <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <span>{t('common.manuscripts')}</span>
-                          {sortBy === 'manuscriptCount' && (
-                            <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>
-                              {sortOrder === 'desc' ? '↓' : '↑'}
-                            </span>
-                          )}
-                        </Stack>
-                      </TableCell>
-                      <TableCell 
-                        onClick={() => handleSortChange('proposalCount')}
-                        sx={{ 
-                          fontWeight: 600, 
-                          backgroundColor: '#fafafa',
-                          borderBottom: '2px solid',
-                          borderColor: 'divider',
-                          py: 1.5,
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                          '&:hover': { backgroundColor: alpha('#8b6cbc', 0.05) },
-                          transition: 'background-color 0.2s ease'
-                        }}
-                      >
-                        <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <span>{t('common.proposals')}</span>
-                          {sortBy === 'proposalCount' && (
-                            <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>
-                              {sortOrder === 'desc' ? '↓' : '↑'}
-                            </span>
-                          )}
-                        </Stack>
-                      </TableCell>
-                      <TableCell 
-                        onClick={() => handleSortChange('publicationCount')}
-                        sx={{ 
-                          fontWeight: 600, 
-                          backgroundColor: '#fafafa',
-                          borderBottom: '2px solid',
-                          borderColor: 'divider',
-                          py: 1.5,
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                          '&:hover': { backgroundColor: alpha('#8b6cbc', 0.05) },
-                          transition: 'background-color 0.2s ease'
-                        }}
-                      >
-                        <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <span>{t('institution_dashboard.table_header_publications')}</span>
-                          {sortBy === 'publicationCount' && (
-                            <span style={{ fontSize: '0.75rem', color: '#8b6cbc' }}>
-                              {sortOrder === 'desc' ? '↓' : '↑'}
-                            </span>
-                          )}
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredResearchers.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} sx={{ py: 6, textAlign: 'center' }}>
-                          <Typography variant="body2" color="text.secondary">
-                            {researcherSearchTerm
-                              ? t('institution_dashboard.no_researchers_match', { term: researcherSearchTerm })
-                              : t('institution_dashboard.no_researchers_display')
-                            }
-                          </Typography>
-                          {researcherSearchTerm && (
-                            <Button 
-                              variant="text" 
-                              size="small"
-                              onClick={() => setResearcherSearchTerm('')}
-                              sx={{ mt: 1, color: '#8b6cbc', textTransform: 'none' }}
-                            >
-                              {t('common.clear')}
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      displayResearchers.map((researcher, index) => (
-                        <TableRow 
-                          key={researcher.id}
-                          sx={{ 
-                            transition: 'all 0.15s ease',
-                            '&:hover': { 
-                              backgroundColor: alpha('#8b6cbc', 0.04)
-                            },
-                            '& td': {
-                              borderBottom: index === displayResearchers.length - 1 && !showAllResearchers && filteredResearchers.length > 5 
-                                ? 'none' 
-                                : undefined
-                            }
-                          }}
-                        >
-                          <TableCell sx={{ py: 2 }}>
-                            <Box>
-                              <Typography 
-                                variant="body2" 
-                                sx={{ 
-                                  fontWeight: 600,
-                                  color: '#2d3748'
-                                }}
-                              >
-                                {researcher.name || t('common.unknown')}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {researcher.department || t('common.no_department')}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell sx={{ py: 2 }}>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                fontWeight: 700, 
-                                color: '#8b6cbc',
-                                fontSize: '1rem'
-                              }}
-                            >
-                              {researcher.totalOutput}
-                            </Typography>
-                          </TableCell>
-                          <TableCell sx={{ py: 2 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 500, color: '#4a5568' }}>
-                              {researcher.manuscriptCount}
-                            </Typography>
-                          </TableCell>
-                          <TableCell sx={{ py: 2 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 500, color: '#4a5568' }}>
-                              {researcher.proposalCount}
-                            </Typography>
-                          </TableCell>
-                          <TableCell sx={{ py: 2 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 500, color: '#4a5568' }}>
-                              {researcher.publicationCount}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              {/* View More / View Less */}
-              {filteredResearchers.length > 5 && (
-                <Box sx={{ 
-                  p: 2, 
-                  textAlign: 'center',
-                  borderTop: '1px dashed',
-                  borderColor: 'divider',
-                  backgroundColor: alpha('#8b6cbc', 0.02)
-                }}>
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={() => setShowAllResearchers(!showAllResearchers)}
-                    sx={{
-                      color: '#8b6cbc',
-                      fontWeight: 600,
-                      textTransform: 'none',
-                      '&:hover': {
-                        backgroundColor: alpha('#8b6cbc', 0.08)
-                      }
-                    }}
-                  >
-                    {showAllResearchers
-                      ? t('common.show_less')
-                      : t('institution_dashboard.view_all_researchers', { count: filteredResearchers.length })
-                    }
-                  </Button>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
+          {/* Researchers by output (lead + collaborative) */}
+          <InstitutionResearchersSection researchers={analyticsData?.topResearchers || []} />
         </Box>
 
         {/* Enhanced Recent Activity Section */}
-        <Card sx={{ 
-          borderRadius: 3, 
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)', 
+        <Card sx={{
+          borderRadius: 3,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
           mt: 4,
           overflow: 'hidden',
           border: '1px solid',
@@ -1755,8 +1476,8 @@ const InstitutionDashboard = () => {
         }}>
           <CardContent sx={{ p: 0 }}>
             {/* Header Section */}
-            <Box sx={{ 
-              p: 3, 
+            <Box sx={{
+              p: 3,
               pb: 2,
               background: `linear-gradient(135deg, ${alpha('#8b6cbc', 0.03)} 0%, ${alpha('#a084d1', 0.05)} 100%)`,
               borderBottom: '1px solid',
@@ -1787,7 +1508,7 @@ const InstitutionDashboard = () => {
                     </Box>
                   </Stack>
                 </Box>
-                
+
                 {/* Search and Filter Controls */}
                 <Stack direction="row" spacing={2} alignItems="center">
                   <TextField
@@ -1802,7 +1523,7 @@ const InstitutionDashboard = () => {
                         </InputAdornment>
                       ),
                     }}
-                    sx={{ 
+                    sx={{
                       width: { xs: '100%', sm: 220 },
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
@@ -1818,11 +1539,11 @@ const InstitutionDashboard = () => {
                   />
                 </Stack>
               </Stack>
-              
+
               {/* Filter Tabs */}
               <Box sx={{ mt: 2 }}>
-                <ButtonGroup 
-                  variant="outlined" 
+                <ButtonGroup
+                  variant="outlined"
                   size="small"
                   sx={{
                     '& .MuiButton-root': {
@@ -1855,14 +1576,14 @@ const InstitutionDashboard = () => {
                     {t('common.all')}
                     <Chip
                       label={getActivityCounts().all}
-                      size="small" 
-                      sx={{ 
-                        ml: 1, 
-                        height: 20, 
+                      size="small"
+                      sx={{
+                        ml: 1,
+                        height: 20,
                         fontSize: '0.7rem',
                         backgroundColor: activityFilter === 'all' ? 'rgba(255,255,255,0.2)' : alpha('#8b6cbc', 0.1),
                         color: activityFilter === 'all' ? 'white' : '#8b6cbc'
-                      }} 
+                      }}
                     />
                   </Button>
                   <Button
@@ -1883,14 +1604,14 @@ const InstitutionDashboard = () => {
                     {t('common.manuscripts')}
                     <Chip
                       label={getActivityCounts().manuscript}
-                      size="small" 
-                      sx={{ 
-                        ml: 1, 
-                        height: 20, 
+                      size="small"
+                      sx={{
+                        ml: 1,
+                        height: 20,
                         fontSize: '0.7rem',
                         backgroundColor: activityFilter === 'manuscript' ? 'rgba(255,255,255,0.2)' : alpha('#8b6cbc', 0.1),
                         color: activityFilter === 'manuscript' ? 'white' : '#8b6cbc'
-                      }} 
+                      }}
                     />
                   </Button>
                   <Button
@@ -1911,14 +1632,14 @@ const InstitutionDashboard = () => {
                     {t('common.proposals')}
                     <Chip
                       label={getActivityCounts().proposal}
-                      size="small" 
-                      sx={{ 
-                        ml: 1, 
-                        height: 20, 
+                      size="small"
+                      sx={{
+                        ml: 1,
+                        height: 20,
                         fontSize: '0.7rem',
                         backgroundColor: activityFilter === 'proposal' ? 'rgba(255,255,255,0.2)' : alpha('#e67e22', 0.1),
                         color: activityFilter === 'proposal' ? 'white' : '#e67e22'
-                      }} 
+                      }}
                     />
                   </Button>
                 </ButtonGroup>
@@ -1928,8 +1649,8 @@ const InstitutionDashboard = () => {
             {/* Activity List */}
             <Box sx={{ p: 3 }}>
               {filteredActivities.length === 0 ? (
-            <Box sx={{ 
-                  textAlign: 'center', 
+            <Box sx={{
+                  textAlign: 'center',
                   py: 6,
                   px: 3,
                   backgroundColor: alpha('#8b6cbc', 0.02),
@@ -1940,7 +1661,7 @@ const InstitutionDashboard = () => {
                     height: 64,
                     borderRadius: '50%',
                     backgroundColor: alpha('#8b6cbc', 0.1),
-              display: 'flex', 
+              display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     mx: 'auto',
@@ -1960,8 +1681,8 @@ const InstitutionDashboard = () => {
                     }
                   </Typography>
                   {activitySearchTerm && (
-                    <Button 
-                      variant="text" 
+                    <Button
+                      variant="text"
                       onClick={() => setActivitySearchTerm('')}
                       sx={{ mt: 2, color: '#8b6cbc' }}
                     >
@@ -1974,15 +1695,15 @@ const InstitutionDashboard = () => {
                   {displayActivities.map((activity, index) => {
                     const typeConfig = getActivityTypeConfig(activity.type);
                     const isHovered = hoveredActivityId === `${activity.type}-${activity.id}`;
-                    
+
                     return (
                       <Fade in={true} timeout={300 + index * 100} key={`${activity.type}-${activity.id}`}>
-                        <Paper 
+                        <Paper
                           onMouseEnter={() => setHoveredActivityId(`${activity.type}-${activity.id}`)}
                           onMouseLeave={() => setHoveredActivityId(null)}
-                          sx={{ 
-                            p: 2.5, 
-                            borderRadius: 2.5, 
+                          sx={{
+                            p: 2.5,
+                            borderRadius: 2.5,
                             border: '1px solid',
                             borderColor: isHovered ? alpha(typeConfig.color, 0.3) : 'divider',
                             transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -1995,7 +1716,7 @@ const InstitutionDashboard = () => {
                             <Box sx={{
                               position: 'relative'
                             }}>
-                    <Avatar sx={{ 
+                    <Avatar sx={{
                                 bgcolor: typeConfig.bgColor,
                                 color: typeConfig.color,
                                 width: 48,
@@ -2026,13 +1747,13 @@ const InstitutionDashboard = () => {
                                 )}
                               </Box>
                             </Box>
-                            
+
                             {/* Activity Content */}
                             <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
-                                <Typography 
-                                  variant="subtitle1" 
-                                  sx={{ 
+                                <Typography
+                                  variant="subtitle1"
+                                  sx={{
                                     fontWeight: 600,
                                     color: '#2d3748',
                                     overflow: 'hidden',
@@ -2063,7 +1784,7 @@ const InstitutionDashboard = () => {
                       </Typography>
                               </Stack>
                     </Box>
-                            
+
                             {/* Right Section: Status & Time */}
                             <Stack alignItems="flex-end" spacing={1} sx={{ flexShrink: 0 }}>
                       <Chip
@@ -2082,9 +1803,9 @@ const InstitutionDashboard = () => {
                 </Typography>
                               </Stack>
                             </Stack>
-                            
+
                             {/* Action Buttons */}
-                            <Stack direction="row" spacing={0.5} sx={{ 
+                            <Stack direction="row" spacing={0.5} sx={{
                               opacity: isHovered ? 1 : 0,
                               transition: 'opacity 0.2s ease',
                               ml: 1
@@ -2097,11 +1818,11 @@ const InstitutionDashboard = () => {
                   })}
                 </Box>
               )}
-              
+
               {/* View More / View Less Button */}
               {filteredActivities.length > 5 && (
-                <Box sx={{ 
-                  mt: 3, 
+                <Box sx={{
+                  mt: 3,
                   textAlign: 'center',
                   pt: 2,
                   borderTop: '1px dashed',
@@ -2110,7 +1831,7 @@ const InstitutionDashboard = () => {
                   <Button
                     variant="text"
                     onClick={() => setShowAllActivities(!showAllActivities)}
-                    endIcon={<ArrowForwardIcon sx={{ 
+                    endIcon={<ArrowForwardIcon sx={{
                       transform: showAllActivities ? 'rotate(-90deg)' : 'rotate(90deg)',
                       transition: 'transform 0.2s ease'
                     }} />}

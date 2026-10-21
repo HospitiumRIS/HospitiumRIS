@@ -27,6 +27,7 @@ import {
   FilterList as FilterIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import RevealDonorContact, { useDonorReveal } from '@/components/Foundation/RevealDonorContact';
 
 const PURPLE = '#8b6cbc';
 const fmt = (n) =>
@@ -52,6 +53,7 @@ export default function FundersCRM() {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
 
+  const donorReveal = useDonorReveal();
   const [funders, setFunders]     = useState([]);
   const [stats, setStats]         = useState(null);
   const [categories, setCategories] = useState([]);
@@ -439,27 +441,17 @@ export default function FundersCRM() {
                             {funder.isAnonymous ? (
                               <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>{t('funders_crm.hidden')}</Typography>
                             ) : (
-                              <Stack spacing={0.4}>
-                                {funder.donorEmail && (
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                                    <EmailIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
-                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.74rem' }}>
-                                      {funder.donorEmail}
-                                    </Typography>
-                                  </Box>
-                                )}
-                                {funder.donorPhone && (
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                                    <PhoneIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
-                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.74rem' }}>
-                                      {funder.donorPhone}
-                                    </Typography>
-                                  </Box>
-                                )}
-                                {!funder.donorEmail && !funder.donorPhone && (
-                                  <Typography variant="caption" color="text.disabled">—</Typography>
-                                )}
-                              </Stack>
+                              <RevealDonorContact
+                                donationId={funder.revealDonationId}
+                                email={funder.donorEmail}
+                                phone={funder.donorPhone}
+                                name={funder.donorName}
+                                showName={Boolean(donorReveal.revealed[funder.revealDonationId])}
+                                revealed={donorReveal.revealed[funder.revealDonationId] || null}
+                                loading={donorReveal.loadingId === funder.revealDonationId}
+                                onReveal={donorReveal.reveal}
+                                onHide={donorReveal.hide}
+                              />
                             )}
                           </TableCell>
 
@@ -585,12 +577,12 @@ export default function FundersCRM() {
                                     <TableHead>
                                       <TableRow sx={{ bgcolor: alpha(PURPLE, 0.07) }}>
                                         {[
-                                          t('funders_crm.date'), 
-                                          t('funders_crm.campaign'), 
-                                          t('funders_crm.category'), 
-                                          t('funders_crm.amount'), 
-                                          t('funders_crm.method'), 
-                                          t('funders_crm.tx_id'), 
+                                          t('funders_crm.date'),
+                                          t('funders_crm.campaign'),
+                                          t('funders_crm.category'),
+                                          t('funders_crm.amount'),
+                                          t('funders_crm.method'),
+                                          t('funders_crm.tx_id'),
                                           t('funders_crm.status')
                                         ].map(h => (
                                           <TableCell key={h} sx={{ fontWeight: 700, fontSize: '0.72rem', py: 1, color: '#374151' }}>

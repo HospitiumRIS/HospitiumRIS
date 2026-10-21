@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import prisma from './prisma';
+import { computeResearcherOutputs } from './researcher-output';
 
 export const ESTIMATED_FIELDS = ['avgTurnaroundDays'];
 
@@ -155,10 +156,17 @@ async function loadGrantTrackingByIds(ids) {
 export async function getProjectsMetrics(userId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, orcidId: true },
+    select: { id: true, orcidId: true, email: true },
   });
 
-  const proposalIds = user ? await resolveProposalIds(user) : [];
+  const linkedIds = user ? await resolveProposalIds(user) : [];
+  // Include proposals where the researcher is PI or co-investigator (matched on account, ORCID or email).
+  const roleById = new Map();
+  if (user) {
+    const outputs = await computeResearcherOutputs([user], { withItems: true });
+    (outputs.get(user.id)?.items?.proposals || []).forEach((item) => roleById.set(item.id, item.role));
+  }
+  const proposalIds = [...new Set([...linkedIds, ...roleById.keys()])];
   let proposals = [];
 
   if (proposalIds.length) {
@@ -366,9 +374,12 @@ export async function getProjectsMetrics(userId) {
     const currentStage = proposal.reviewTracking?.pipeline?.stages?.find(
       (stage) => stage.order === proposal.reviewTracking?.currentStageOrder
     ) || proposal.reviewTracking?.stageProgress?.find((item) => item.status === 'IN_PROGRESS')?.stage;
+    const role = roleById.get(proposal.id);
     return {
       id: proposal.id,
       title: proposal.title,
+      role: role === 'pi' ? 'Principal investigator' : role === 'coInvestigator' ? 'Co-investigator' : 'Linked',
+      roleKey: role || 'linked',
       status: proposal.status,
       statusLabel: labelStatus(proposal.status),
       executionStatus: proposal.executionStatus,
@@ -377,6 +388,9 @@ export async function getProjectsMetrics(userId) {
       completedMilestones: completed,
       nextMilestone: next?.title || (milestones.length ? 'All milestones completed' : 'No milestones defined'),
       nextDue: next?.dueDate || proposal.endDate,
+      startDate: proposal.startDate,
+      endDate: proposal.endDate,
+      overdueMilestones: milestones.filter((item) => !isComplete(item.status) && parseDate(item.dueDate) && parseDate(item.dueDate) < now).length,
       grantTrackingStatus: proposal.grantTrackingStatus,
       budget: Number(proposal.totalBudgetAmount || 0),
       departments: proposal.departments || [],
@@ -393,6 +407,8 @@ export async function getProjectsMetrics(userId) {
   return {
     overview: {
       totalProposals,
+      asPrincipalInvestigator: [...roleById.values()].filter((r) => r === 'pi').length,
+      asCoInvestigator: [...roleById.values()].filter((r) => r === 'coInvestigator').length,
       activeProposals: inReview + revisionRequested,
       inReview,
       revisionRequested,

@@ -36,6 +36,10 @@ import {
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import RevealDonorContact, { useDonorReveal } from '@/components/Foundation/RevealDonorContact';
+
+const MASKED_HINT = 'Hidden for privacy. Leave as is to keep the saved value, or replace it entirely to change it.';
+const isMaskedValue = (v) => typeof v === 'string' && v.includes('*');
 
 const DonationDialogs = ({
   donationDialog,
@@ -63,6 +67,7 @@ const DonationDialogs = ({
   handleSaveDonation,
   generateReportData
 }) => {
+  const donorReveal = useDonorReveal();
   const { t } = useTranslation();
   return (
     <>
@@ -73,7 +78,7 @@ const DonationDialogs = ({
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle sx={{ 
+        <DialogTitle sx={{
           background: 'linear-gradient(135deg, #8b6cbc 0%, #a389cc 100%)',
           color: 'white',
           m: 0,
@@ -86,9 +91,9 @@ const DonationDialogs = ({
                 {selectedDonation ? 'Edit Donation' : 'Record New Donation'}
               </Typography>
             </Box>
-            <IconButton 
+            <IconButton
               onClick={() => setDonationDialog(false)}
-              sx={{ 
+              sx={{
                 color: 'white',
                 '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
               }}
@@ -109,10 +114,12 @@ const DonationDialogs = ({
                     placeholder="Donor Name *"
                     value={donationForm.donorName || ''}
                     onChange={(e) => setDonationForm(prev => ({ ...prev, donorName: e.target.value }))}
+                    onFocus={(e) => { if (isMaskedValue(donationForm.donorName)) e.target.select(); }}
+                    helperText={isMaskedValue(donationForm.donorName) ? MASKED_HINT : undefined}
                     required
                     disabled={donationForm.isAnonymous}
-                    sx={{ 
-                      '& .MuiOutlinedInput-root': { 
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
                         backgroundColor: '#f8f9fa',
                         border: '1px solid #e9ecef',
@@ -124,7 +131,7 @@ const DonationDialogs = ({
                           backgroundColor: 'white'
                         }
                       },
-                      '& .MuiInputLabel-root': { 
+                      '& .MuiInputLabel-root': {
                         color: '#6c757d',
                         '&.Mui-focused': {
                           color: '#8b6cbc'
@@ -143,8 +150,8 @@ const DonationDialogs = ({
                     InputProps={{
                       startAdornment: <InputAdornment position="start">$</InputAdornment>,
                     }}
-                    sx={{ 
-                      '& .MuiOutlinedInput-root': { 
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
                         backgroundColor: '#f8f9fa',
                         border: '1px solid #e9ecef',
@@ -156,7 +163,7 @@ const DonationDialogs = ({
                           backgroundColor: 'white'
                         }
                       },
-                      '& .MuiInputLabel-root': { 
+                      '& .MuiInputLabel-root': {
                         color: '#6c757d',
                         '&.Mui-focused': {
                           color: '#8b6cbc'
@@ -174,9 +181,11 @@ const DonationDialogs = ({
                     placeholder="Email"
                     value={donationForm.donorEmail || ''}
                     onChange={(e) => setDonationForm(prev => ({ ...prev, donorEmail: e.target.value }))}
+                    onFocus={(e) => { if (isMaskedValue(donationForm.donorEmail)) e.target.select(); }}
+                    helperText={isMaskedValue(donationForm.donorEmail) ? MASKED_HINT : undefined}
                     disabled={donationForm.isAnonymous}
-                    sx={{ 
-                      '& .MuiOutlinedInput-root': { 
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
                         backgroundColor: '#f8f9fa',
                         border: '1px solid #e9ecef',
@@ -188,7 +197,7 @@ const DonationDialogs = ({
                           backgroundColor: 'white'
                         }
                       },
-                      '& .MuiInputLabel-root': { 
+                      '& .MuiInputLabel-root': {
                         color: '#6c757d',
                         '&.Mui-focused': {
                           color: '#8b6cbc'
@@ -197,7 +206,7 @@ const DonationDialogs = ({
                     }}
                   />
                   <FormControl fullWidth>
-                    <InputLabel sx={{ 
+                    <InputLabel sx={{
                       color: '#6c757d',
                       '&.Mui-focused': {
                         color: '#8b6cbc'
@@ -209,7 +218,7 @@ const DonationDialogs = ({
                       value={donationForm.donorType || 'INDIVIDUAL'}
                       label="Donor Type *"
                       onChange={(e) => setDonationForm(prev => ({ ...prev, donorType: e.target.value }))}
-                      sx={{ 
+                      sx={{
                         borderRadius: '8px',
                         backgroundColor: '#f8f9fa',
                         border: '1px solid #e9ecef',
@@ -235,7 +244,7 @@ const DonationDialogs = ({
                 {/* Row 3: Donation Type and Payment Method */}
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <FormControl fullWidth>
-                    <InputLabel sx={{ 
+                    <InputLabel sx={{
                       color: '#6c757d',
                       '&.Mui-focused': {
                         color: '#8b6cbc'
@@ -247,7 +256,7 @@ const DonationDialogs = ({
                       value={donationForm.donationType || 'ONE_TIME'}
                       label="Donation Type"
                       onChange={(e) => setDonationForm(prev => ({ ...prev, donationType: e.target.value }))}
-                      sx={{ 
+                      sx={{
                         borderRadius: '8px',
                         backgroundColor: '#f8f9fa',
                         border: '1px solid #e9ecef',
@@ -268,7 +277,7 @@ const DonationDialogs = ({
                     </Select>
                   </FormControl>
                   <FormControl fullWidth>
-                    <InputLabel sx={{ 
+                    <InputLabel sx={{
                       color: '#6c757d',
                       '&.Mui-focused': {
                         color: '#8b6cbc'
@@ -280,7 +289,7 @@ const DonationDialogs = ({
                       value={donationForm.paymentMethod || 'CREDIT_CARD'}
                       label="Payment Method"
                       onChange={(e) => setDonationForm(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                      sx={{ 
+                      sx={{
                         borderRadius: '8px',
                         backgroundColor: '#f8f9fa',
                         border: '1px solid #e9ecef',
@@ -314,8 +323,8 @@ const DonationDialogs = ({
                     value={donationForm.transactionId || ''}
                     onChange={(e) => setDonationForm(prev => ({ ...prev, transactionId: e.target.value }))}
                     helperText="Required for electronic payments and checks"
-                    sx={{ 
-                      '& .MuiOutlinedInput-root': { 
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
                         borderRadius: '8px',
                         backgroundColor: '#f8f9fa',
                         border: '1px solid #e9ecef',
@@ -327,7 +336,7 @@ const DonationDialogs = ({
                           backgroundColor: 'white'
                         }
                       },
-                      '& .MuiInputLabel-root': { 
+                      '& .MuiInputLabel-root': {
                         color: '#6c757d',
                         '&.Mui-focused': {
                           color: '#8b6cbc'
@@ -340,7 +349,7 @@ const DonationDialogs = ({
                     }}
                   />
                   <FormControl fullWidth>
-                    <InputLabel sx={{ 
+                    <InputLabel sx={{
                       color: '#6c757d',
                       '&.Mui-focused': {
                         color: '#8b6cbc'
@@ -352,7 +361,7 @@ const DonationDialogs = ({
                       value={donationForm.campaignId || ''}
                       label="Initiative"
                       onChange={(e) => setDonationForm(prev => ({ ...prev, campaignId: e.target.value }))}
-                      sx={{ 
+                      sx={{
                         borderRadius: '8px',
                         backgroundColor: '#f8f9fa',
                         border: '1px solid #e9ecef',
@@ -382,7 +391,7 @@ const DonationDialogs = ({
                 {/* Row 5: Status and Donation Date */}
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <FormControl fullWidth>
-                    <InputLabel sx={{ 
+                    <InputLabel sx={{
                       color: '#6c757d',
                       '&.Mui-focused': {
                         color: '#8b6cbc'
@@ -394,7 +403,7 @@ const DonationDialogs = ({
                       value={donationForm.status || 'PENDING'}
                       label="Status"
                       onChange={(e) => setDonationForm(prev => ({ ...prev, status: e.target.value }))}
-                      sx={{ 
+                      sx={{
                         borderRadius: '8px',
                         backgroundColor: '#f8f9fa',
                         border: '1px solid #e9ecef',
@@ -418,15 +427,15 @@ const DonationDialogs = ({
                   <DatePicker
                     label="Donation Date"
                     value={donationForm.donationDate ? dayjs(donationForm.donationDate) : dayjs()}
-                    onChange={(newValue) => setDonationForm(prev => ({ 
-                      ...prev, 
+                    onChange={(newValue) => setDonationForm(prev => ({
+                      ...prev,
                       donationDate: newValue ? newValue.format('YYYY-MM-DD') : new Date().toISOString().split('T')[0]
                     }))}
-                    slotProps={{ 
-                      textField: { 
+                    slotProps={{
+                      textField: {
                         fullWidth: true,
-                        sx: { 
-                          '& .MuiOutlinedInput-root': { 
+                        sx: {
+                          '& .MuiOutlinedInput-root': {
                             borderRadius: '8px',
                             backgroundColor: '#f8f9fa',
                             border: '1px solid #e9ecef',
@@ -438,14 +447,14 @@ const DonationDialogs = ({
                               backgroundColor: 'white'
                             }
                           },
-                          '& .MuiInputLabel-root': { 
+                          '& .MuiInputLabel-root': {
                             color: '#6c757d',
                             '&.Mui-focused': {
                               color: '#8b6cbc'
                             }
                           }
                         }
-                      } 
+                      }
                     }}
                   />
                 </Box>
@@ -459,8 +468,8 @@ const DonationDialogs = ({
                   rows={3}
                   value={donationForm.notes || ''}
                   onChange={(e) => setDonationForm(prev => ({ ...prev, notes: e.target.value }))}
-                  sx={{ 
-                    '& .MuiOutlinedInput-root': { 
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
                       backgroundColor: '#f8f9fa',
                       border: '1px solid #e9ecef',
@@ -472,7 +481,7 @@ const DonationDialogs = ({
                         backgroundColor: 'white'
                       }
                     },
-                    '& .MuiInputLabel-root': { 
+                    '& .MuiInputLabel-root': {
                       color: '#6c757d',
                       '&.Mui-focused': {
                         color: '#8b6cbc'
@@ -487,8 +496,8 @@ const DonationDialogs = ({
                     control={
                       <Switch
                         checked={donationForm.isAnonymous || false}
-                        onChange={(e) => setDonationForm(prev => ({ 
-                          ...prev, 
+                        onChange={(e) => setDonationForm(prev => ({
+                          ...prev,
                           isAnonymous: e.target.checked,
                           donorName: e.target.checked ? 'Anonymous Donor' : '',
                           donorEmail: e.target.checked ? '' : prev.donorEmail
@@ -516,17 +525,17 @@ const DonationDialogs = ({
             </LocalizationProvider>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ 
-          p: 3, 
+        <DialogActions sx={{
+          p: 3,
           gap: 2,
           justifyContent: 'flex-end',
           borderTop: '1px solid #f0f0f0'
         }}>
-          <Button 
+          <Button
             onClick={() => setDonationDialog(false)}
             variant="outlined"
             size="large"
-            sx={{ 
+            sx={{
               borderColor: '#d1d5db',
               color: '#6b7280',
               borderRadius: '8px',
@@ -542,8 +551,8 @@ const DonationDialogs = ({
           >
             Cancel
           </Button>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             onClick={handleSaveDonation}
             disabled={loading}
             size="large"
@@ -588,8 +597,24 @@ const DonationDialogs = ({
           {selectedDonation && (
             <Box sx={{ py: 2 }}>
               <Typography variant="h6" gutterBottom>
-                {selectedDonation.isAnonymous ? 'Anonymous Donor' : selectedDonation.donorName}
+                {selectedDonation.isAnonymous ? 'Anonymous Donor' : (donorReveal.revealed[selectedDonation.id]?.donorName || selectedDonation.donorName)}
               </Typography>
+              {!selectedDonation.isAnonymous ? (
+                <Box sx={{ mb: 1.5 }}>
+                  <RevealDonorContact
+                    donationId={selectedDonation.id}
+                    email={selectedDonation.donorEmail}
+                    phone={selectedDonation.donorPhone}
+                    revealed={donorReveal.revealed[selectedDonation.id] || null}
+                    loading={donorReveal.loadingId === selectedDonation.id}
+                    onReveal={donorReveal.reveal}
+                    onHide={donorReveal.hide}
+                    dense={false}
+                    emptyLabel="No contact details on record"
+                  />
+                  {donorReveal.error ? <Typography variant="caption" color="error">{donorReveal.error}</Typography> : null}
+                </Box>
+              ) : null}
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 Amount: {formatCurrency(selectedDonation.amount, selectedDonation.currency)}
               </Typography>

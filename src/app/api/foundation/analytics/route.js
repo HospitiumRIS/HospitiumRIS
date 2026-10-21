@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { maskName, maskEmail } from '@/lib/donor-privacy';
 
 const prisma = new PrismaClient();
 
@@ -108,8 +109,8 @@ export async function GET(request) {
 
     const uniqueDonors = new Set(donations.map(d => d.donorEmail || d.donorName)).size;
 
-    const averageDonation = totalDonations > 0 
-      ? totalRaisedFromDonations / totalDonations 
+    const averageDonation = totalDonations > 0
+      ? totalRaisedFromDonations / totalDonations
       : 0;
 
     const activeCampaigns = campaigns.filter(c => c.status === 'Active').length;
@@ -153,7 +154,7 @@ export async function GET(request) {
       const date = new Date();
       date.setMonth(date.getMonth() - i);
       const monthStr = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-      
+
       const monthDonations = recentDonations.filter(d => {
         const dDate = new Date(d.donationDate);
         return dDate.getMonth() === date.getMonth() && dDate.getFullYear() === date.getFullYear();
@@ -190,8 +191,8 @@ export async function GET(request) {
       const donor = d.donorEmail || d.donorName;
       if (!acc[donor]) {
         acc[donor] = {
-          name: d.donorName,
-          email: d.donorEmail,
+          name: d.isAnonymous ? 'Anonymous Donor' : maskName(d.donorName, d.donorType),
+          email: d.isAnonymous ? null : maskEmail(d.donorEmail),
           type: d.donorType || 'Individual',
           totalDonated: 0,
           donations: 0,
@@ -258,7 +259,7 @@ export async function GET(request) {
       })),
       recentDonations: donations.slice(0, 20).map(d => ({
         id: d.id,
-        donorName: d.donorName,
+        donorName: d.isAnonymous ? 'Anonymous Donor' : maskName(d.donorName, d.donorType),
         amount: parseFloat(d.amount),
         donationDate: d.donationDate,
         campaign: d.campaign?.name || 'General Fund',

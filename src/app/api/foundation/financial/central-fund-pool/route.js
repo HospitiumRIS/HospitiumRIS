@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
+import { maskName } from '@/lib/donor-privacy';
 
 export async function GET(request) {
   try {
     console.log('Central Fund Pool API called');
-    
+
     // Check authentication
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('hospitium_session');
-    
+
     if (!sessionCookie?.value) {
       console.log('No session cookie found');
       return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
@@ -34,7 +35,7 @@ export async function GET(request) {
     }
 
     console.log('Fetching campaigns from database...');
-    
+
     // Fetch all campaigns with their categories
     const campaigns = await prisma.campaign.findMany({
       include: {
@@ -45,12 +46,12 @@ export async function GET(request) {
         createdAt: 'desc'
       }
     });
-    
+
     console.log(`Found ${campaigns.length} campaigns`);
 
     // Calculate actual raised amount from donations for each campaign
     const campaignsWithCalculatedAmounts = campaigns.map(campaign => {
-      const actualRaised = campaign.donations.reduce((sum, donation) => 
+      const actualRaised = campaign.donations.reduce((sum, donation) =>
         sum + Number(donation.amount), 0
       );
       return {
@@ -60,7 +61,7 @@ export async function GET(request) {
     });
 
     // Calculate fund pool data using actual donation amounts
-    const totalRaised = campaignsWithCalculatedAmounts.reduce((sum, campaign) => 
+    const totalRaised = campaignsWithCalculatedAmounts.reduce((sum, campaign) =>
       sum + campaign.calculatedRaisedAmount, 0
     );
 
@@ -90,14 +91,14 @@ export async function GET(request) {
         available: actualRaised, // Assuming all raised is available for now
         reserved: 0,
         allocated: 0,
-        status: campaign.targetAmount && actualRaised >= Number(campaign.targetAmount) 
-          ? 'unrestricted' 
+        status: campaign.targetAmount && actualRaised >= Number(campaign.targetAmount)
+          ? 'unrestricted'
           : 'restricted',
         category: campaign.category.name.includes('Grant') ? 'Grants' : 'Fundraising',
         dateReceived: campaign.createdAt,
         source: campaign.category.name,
-        restrictions: campaign.targetAmount 
-          ? `Target: ${Number(campaign.targetAmount).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}` 
+        restrictions: campaign.targetAmount
+          ? `Target: ${Number(campaign.targetAmount).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`
           : 'None - Unrestricted funds',
         purpose: campaign.description || 'General operational support and program funding',
         expiryDate: campaign.endDate,
@@ -134,7 +135,7 @@ export async function GET(request) {
       category: donation.campaign?.category?.name || 'General',
       status: 'Completed',
       reference: donation.transactionId || `DON-${donation.id.slice(0, 8)}`,
-      donorName: donation.donorName,
+      donorName: donation.isAnonymous ? 'Anonymous Donor' : maskName(donation.donorName, donation.donorType),
       donorType: donation.donorType,
       paymentMethod: donation.paymentMethod
     }));
@@ -151,7 +152,7 @@ export async function GET(request) {
       }
     });
 
-    const monthlyInflow = monthlyDonations.reduce((sum, donation) => 
+    const monthlyInflow = monthlyDonations.reduce((sum, donation) =>
       sum + Number(donation.amount), 0
     );
 

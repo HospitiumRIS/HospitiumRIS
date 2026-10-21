@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
+import { maskName, maskEmail } from '@/lib/donor-privacy';
 
 export async function GET(request) {
   try {
     // Development bypass for authentication
     let currentUser = null;
-    
+
     if (process.env.NODE_ENV === 'development') {
       console.log('🔧 Development mode: Bypassing authentication for analytics API');
       currentUser = {
@@ -19,7 +20,7 @@ export async function GET(request) {
       // Production authentication
       const cookieStore = await cookies();
       const sessionCookie = cookieStore.get('hospitium_session');
-      
+
       if (!sessionCookie?.value) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }
@@ -68,40 +69,40 @@ export async function GET(request) {
       donationStats,
       totalAmount,
       avgAmount,
-      
+
       // Donor analysis
       donorDonations,
       donorTypeStatsGroupBy,
-      
+
       // Campaign and category performance
       campaignStats,
       categoryStats,
-      
+
       // Time-based analysis
       monthlyTrends,
-      
+
       // Payment method analysis
       paymentMethodStats,
-      
+
       // Top performers
       topDonors,
       topCampaigns
     ] = await Promise.all([
       // Total donations count
       prisma.donation.count({ where: donationWhere }),
-      
+
       // Total amount
       prisma.donation.aggregate({
         where: donationWhere,
         _sum: { amount: true }
       }),
-      
+
       // Average amount
       prisma.donation.aggregate({
         where: donationWhere,
         _avg: { amount: true }
       }),
-      
+
       // Get all donations for donor count calculation (filtered)
       prisma.donation.findMany({
         where: donationWhere,
@@ -112,7 +113,7 @@ export async function GET(request) {
           id: true
         }
       }),
-      
+
       // Donor type breakdown
       prisma.donation.groupBy({
         by: ['donorType'],
@@ -120,7 +121,7 @@ export async function GET(request) {
         _count: { _all: true },
         _sum: { amount: true }
       }),
-      
+
       // Campaign performance (limit to top 20 for performance)
       prisma.campaign.findMany({
         where: categoryId ? { categoryId } : {},
@@ -139,7 +140,7 @@ export async function GET(request) {
         },
         take: 20
       }),
-      
+
       // Category performance
       prisma.campaignCategory.findMany({
         include: {
@@ -159,26 +160,26 @@ export async function GET(request) {
           }
         }
       }),
-      
+
       // Monthly trends for last 12 months
       prisma.$queryRaw`
-        SELECT 
+        SELECT
           DATE_TRUNC('month', "donationDate") as month,
           COUNT(*)::int as count,
           SUM("amount")::float as total,
-          COUNT(DISTINCT 
-            CASE 
+          COUNT(DISTINCT
+            CASE
               WHEN "isAnonymous" = true THEN CONCAT('anonymous-', id::text)
               ELSE COALESCE("donorEmail", "donorName")
             END
           )::int as donors
-        FROM "donations" 
+        FROM "donations"
         WHERE "donationDate" >= NOW() - INTERVAL '12 months'
         GROUP BY DATE_TRUNC('month', "donationDate")
         ORDER BY month DESC
         LIMIT 12
       `,
-      
+
       // Payment method breakdown
       prisma.donation.groupBy({
         by: ['paymentMethod'],
@@ -186,12 +187,12 @@ export async function GET(request) {
         _count: { _all: true },
         _sum: { amount: true }
       }),
-      
+
       // Top 20 donors by total amount
       prisma.$queryRaw`
-        SELECT 
+        SELECT
           "donorName",
-          "donorEmail", 
+          "donorEmail",
           "donorType",
           "isAnonymous",
           COUNT(*)::int as donation_count,
@@ -206,10 +207,10 @@ export async function GET(request) {
         ORDER BY total_amount DESC
         LIMIT 20
       `,
-      
+
       // Top campaigns by raised amount
       prisma.$queryRaw`
-        SELECT 
+        SELECT
           c.id,
           c.name,
           c."targetAmount"::float as target_amount,
@@ -220,8 +221,8 @@ export async function GET(request) {
           cat.color as category_color,
           COALESCE(SUM(d.amount), 0)::float as raised,
           COUNT(d.id)::int as donation_count,
-          COUNT(DISTINCT 
-            CASE 
+          COUNT(DISTINCT
+            CASE
               WHEN d."isAnonymous" = true THEN CONCAT('anonymous-', d.id::text)
               ELSE COALESCE(d."donorEmail", d."donorName")
             END
@@ -242,7 +243,7 @@ export async function GET(request) {
       const donorCount = new Set(
         campaignDonations.map(d => d.isAnonymous ? `anonymous-${d.id}` : d.donorEmail || d.donorName)
       ).size;
-      
+
       return {
         id: campaign.id,
         name: campaign.name,
@@ -267,7 +268,7 @@ export async function GET(request) {
       const donorCount = new Set(
         categoryDonations.map(d => d.isAnonymous ? `anonymous-${d.id}` : d.donorEmail || d.donorName)
       ).size;
-      
+
       return {
         id: category.id,
         name: category.name,
@@ -291,7 +292,7 @@ export async function GET(request) {
       filteredDonors = topDonors.filter(donor => {
         const firstDonation = new Date(donor.first_donation);
         const lastDonation = new Date(donor.last_donation);
-        
+
         if (startDate && endDate) {
           return firstDonation >= new Date(startDate) || lastDonation >= new Date(startDate);
         } else if (startDate) {
@@ -307,7 +308,7 @@ export async function GET(request) {
     const oneTimeDonors = filteredDonors.filter(d => d.donation_count === 1).length;
     const returningDonors = filteredDonors.filter(d => d.donation_count > 1 && d.donation_count < 5).length;
     const loyalDonors = filteredDonors.filter(d => d.donation_count >= 5).length;
-    
+
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     const newDonors = filteredDonors.filter(d => new Date(d.first_donation) > sixMonthsAgo).length;
@@ -324,11 +325,11 @@ export async function GET(request) {
         retentionRate: filteredDonors.length > 0 ? ((filteredDonors.length - oneTimeDonors) / filteredDonors.length) * 100 : 0,
         averageDonorValue: uniqueDonorCount > 0 ? Number(totalAmount._sum.amount || 0) / uniqueDonorCount : 0
       },
-      
+
       campaignPerformance: processedCampaigns.sort((a, b) => b.raised - a.raised),
-      
+
       categoryPerformance: processedCategories.sort((a, b) => b.raised - a.raised),
-      
+
       monthlyTrends: monthlyTrends.map(trend => ({
         month: new Date(trend.month).toISOString().substring(0, 7), // YYYY-MM format
         monthName: new Date(trend.month).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
@@ -337,10 +338,10 @@ export async function GET(request) {
         donors: trend.donors || 0,
         avgDonation: trend.count > 0 ? Number(trend.total || 0) / trend.count : 0
       })),
-      
+
       topDonors: filteredDonors.slice(0, 20).map(donor => ({
-        name: donor.isAnonymous ? 'Anonymous Donor' : donor.donorName,
-        email: donor.donorEmail,
+        name: donor.isAnonymous ? 'Anonymous Donor' : maskName(donor.donorName, donor.donorType),
+        email: donor.isAnonymous ? null : maskEmail(donor.donorEmail),
         type: donor.donorType,
         isAnonymous: donor.isAnonymous,
         totalAmount: Number(donor.total_amount || 0),
@@ -349,10 +350,10 @@ export async function GET(request) {
         campaigns: donor.campaigns || 0,
         firstDonation: donor.first_donation,
         lastDonation: donor.last_donation,
-        donationFrequency: donor.first_donation && donor.last_donation ? 
+        donationFrequency: donor.first_donation && donor.last_donation ?
           (donor.donation_count || 0) / Math.max(1, Math.ceil((new Date(donor.last_donation) - new Date(donor.first_donation)) / (30 * 24 * 60 * 60 * 1000))) : 0
       })),
-      
+
       paymentMethods: paymentMethodStats.reduce((acc, stat) => {
         acc[stat.paymentMethod || 'Unknown'] = {
           count: stat._count._all,
@@ -360,7 +361,7 @@ export async function GET(request) {
         };
         return acc;
       }, {}),
-      
+
       donorTypes: donorTypeStatsGroupBy.reduce((acc, stat) => {
         acc[stat.donorType || 'Unknown'] = {
           count: stat._count._all,
@@ -368,7 +369,7 @@ export async function GET(request) {
         };
         return acc;
       }, {}),
-      
+
       donorTypeAnalysis: donorTypeStatsGroupBy.reduce((acc, stat) => {
         acc[stat.donorType || 'Unknown'] = {
           count: stat._count._all,
@@ -377,24 +378,24 @@ export async function GET(request) {
         };
         return acc;
       }, {}),
-      
+
       retentionAnalysis: {
         newDonors,
         returningDonors,
         loyalDonors,
         oneTimeDonors
       },
-      
+
       // Include essential raw data for modals (limited for performance)
       rawData: {
         donations: [], // Don't include all donations for performance
         categories: categoryStats.map(c => ({ id: c.id, name: c.name, color: c.color })),
-        campaigns: campaignStats.map(c => ({ 
-          id: c.id, 
-          name: c.name, 
+        campaigns: campaignStats.map(c => ({
+          id: c.id,
+          name: c.name,
           categoryId: c.categoryId,
           targetAmount: c.targetAmount,
-          status: c.status 
+          status: c.status
         }))
       }
     };

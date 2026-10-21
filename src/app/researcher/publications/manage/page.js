@@ -79,6 +79,14 @@ import {
   Inbox as UnfiledIcon
 } from '@mui/icons-material';
 import PageHeader from '../../../../components/common/PageHeader';
+import {
+  useLibrarySharing,
+  ShareLibraryDialog,
+  SharedWithMeList,
+  SharedLibraryPanel,
+  FolderContributionsPanel,
+} from '../../../../components/Library/LibrarySharing';
+import { GroupAdd as ShareFolderIcon, People as SharedPeopleIcon } from '@mui/icons-material';
 import { useAuth } from '../../../../components/AuthProvider';
 import { Skeleton, CircularProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
@@ -107,7 +115,7 @@ export default function ManagePublications() {
   const [viewType, setViewType] = useState('table'); // 'table' or 'cards'
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  
+
   // Library folder management
   const [folders, setFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
@@ -115,7 +123,7 @@ export default function ManagePublications() {
   const [showNewFolderInput, setShowNewFolderInput] = useState(false);
   const [newFolderParent, setNewFolderParent] = useState(null);
   const [libraryLoading, setLibraryLoading] = useState(true);
-  
+
   // Folder management states
   const [editingFolderId, setEditingFolderId] = useState(null);
   const [editingFolderName, setEditingFolderName] = useState('');
@@ -124,37 +132,42 @@ export default function ManagePublications() {
   const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false);
   const [folderToMove, setFolderToMove] = useState(null);
   const [moveTargetFolder, setMoveTargetFolder] = useState(null);
-  
+
   // Track publications in folders: { folderId: [publicationId1, publicationId2, ...] }
   const [folderPublications, setFolderPublications] = useState({});
-  
+
+  // Library sharing: folders shared with others, and libraries shared with me
+  const sharing = useLibrarySharing();
+  const [shareFolder, setShareFolder] = useState(null);
+  const [sharedView, setSharedView] = useState(null); // folderId of a library shared with me
+
   // View mode for library dialog: 'add' or 'browse'
   const [libraryViewMode, setLibraryViewMode] = useState('add');
   const [libraryFilter, setLibraryFilter] = useState('all'); // 'all' | 'unfiled' | folderId
   const [batchBusy, setBatchBusy] = useState(false);
   const [exportAnchor, setExportAnchor] = useState(null);
-  
+
   // Move publication between folders
   const [movePublicationDialogOpen, setMovePublicationDialogOpen] = useState(false);
   const [publicationToMove, setPublicationToMove] = useState(null);
   const [sourceFolderId, setSourceFolderId] = useState(null);
   const [targetFolderForPub, setTargetFolderForPub] = useState(null);
-  
+
   // Snackbar state for notifications
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     severity: 'success' // 'success', 'error', 'warning', 'info'
   });
-  
-  
+
+
   // Batch selection and delete
   const [selectedPublications, setSelectedPublications] = useState([]);
   const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
-  
+
   // Track if component is mounted (client-side only)
   const [isMounted, setIsMounted] = useState(false);
-  
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -196,7 +209,7 @@ export default function ManagePublications() {
 
       const data = await response.json();
       console.log('AI Summary API Response:', data);
-      
+
       if (data.results && data.results.length > 0) {
         const result = data.results[0];
         if (result.success) {
@@ -242,7 +255,7 @@ export default function ManagePublications() {
       setLibraryLoading(true);
       const response = await fetch('/api/publications/library');
       const data = await response.json();
-      
+
       if (data.success) {
         setFolders(data.folders || []);
         setFolderPublications(data.folderPublications || {});
@@ -259,17 +272,22 @@ export default function ManagePublications() {
     fetchLibrary();
   }, [fetchLibrary]);
 
+  const handleSharingChanged = async (message, severity = 'success') => {
+    await Promise.all([sharing.reload(), fetchLibrary()]);
+    if (message) showSnackbar(message, severity);
+  };
+
   // Transform database publication to UI format
   const transformPublicationForUI = (dbPublication) => {
     return {
       id: dbPublication.id,
       title: dbPublication.title || 'Unknown Title',
-      authors: Array.isArray(dbPublication.authors) && dbPublication.authors.length > 0 
-        ? dbPublication.authors 
+      authors: Array.isArray(dbPublication.authors) && dbPublication.authors.length > 0
+        ? dbPublication.authors
         : ['Unknown Author'],
       journal: dbPublication.journal || 'Unknown Journal',
-      year: dbPublication.year || (dbPublication.publicationDate 
-        ? new Date(dbPublication.publicationDate).getFullYear() 
+      year: dbPublication.year || (dbPublication.publicationDate
+        ? new Date(dbPublication.publicationDate).getFullYear()
         : 'Unknown Year'),
       type: dbPublication.type || 'article',
       status: dbPublication.status ? dbPublication.status.toLowerCase().replace('_', '-') : 'published',
@@ -284,8 +302,8 @@ export default function ManagePublications() {
       citations: 0, // Could be added to database later
       downloads: 0, // Could be added to database later
       visibility: 'public', // Could be added to database later
-      tags: Array.isArray(dbPublication.keywords) && dbPublication.keywords.length > 0 
-        ? dbPublication.keywords 
+      tags: Array.isArray(dbPublication.keywords) && dbPublication.keywords.length > 0
+        ? dbPublication.keywords
         : [],
       createdAt: dbPublication.createdAt || null,
       updatedAt: dbPublication.updatedAt || null,
@@ -312,7 +330,7 @@ export default function ManagePublications() {
         }
 
         const data = await response.json();
-        
+
         if (data.success && Array.isArray(data.publications)) {
           // Transform database publications to UI format
           const transformedPublications = data.publications.map(transformPublicationForUI);
@@ -343,7 +361,7 @@ export default function ManagePublications() {
       const matchesSearch = pub.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           pub.authors.some(author => author.toLowerCase().includes(searchQuery.toLowerCase())) ||
                           pub.journal.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const matchesType = typeFilter === 'all' || pub.type === typeFilter;
 
       let matchesLibrary = true;
@@ -394,10 +412,10 @@ export default function ManagePublications() {
   // Calculate recent publications count (client-side only to avoid hydration mismatch)
   const recentPublicationsCount = React.useMemo(() => {
     if (!isMounted || publications.length === 0) return 0;
-    
+
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    
+
     return publications.filter(pub => {
       if (!pub.createdAt) return false;
       const pubDate = new Date(pub.createdAt);
@@ -464,23 +482,23 @@ export default function ManagePublications() {
       const response = await fetch(`/api/publications?id=${selectedPublication.id}`, {
         method: 'DELETE'
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete publication');
       }
-      
+
       // Update local state
       setPublications(prev => prev.filter(pub => pub.id !== selectedPublication.id));
       setDeleteDialogOpen(false);
       setSelectedPublication(null);
-      
+
       showSnackbar('Publication deleted successfully', 'success');
     } catch (error) {
       console.error('Error deleting publication:', error);
       showSnackbar('Failed to delete publication', 'error');
     }
   };
-  
+
   const handleSelectAllPublications = (event) => {
     const pageIds = filteredPublications
       .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
@@ -495,7 +513,7 @@ export default function ManagePublications() {
   const handleSelectAllFiltered = () => {
     setSelectedPublications(filteredPublications.map((pub) => pub.id));
   };
-  
+
   const handleSelectPublication = (publicationId) => {
     setSelectedPublications(prev => {
       if (prev.includes(publicationId)) {
@@ -549,7 +567,7 @@ export default function ManagePublications() {
     }
     showSnackbar(`Exported ${pubs.length} publication(s)`, 'success');
   };
-  
+
   const handleBatchDelete = () => {
     setBatchDeleteDialogOpen(true);
   };
@@ -664,7 +682,7 @@ export default function ManagePublications() {
       setBatchBusy(false);
     }
   };
-  
+
   const confirmBatchDelete = async () => {
     const ids = [...selectedPublications];
     try {
@@ -718,9 +736,9 @@ export default function ManagePublications() {
             parentId: newFolderParent
           })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
           setFolders(prev => [...prev, data.folder]);
           setFolderPublications(prev => ({
@@ -729,7 +747,7 @@ export default function ManagePublications() {
           }));
           setNewFolderName('');
           setShowNewFolderInput(false);
-          
+
           // Expand parent folder if creating subfolder
           if (newFolderParent) {
             handleToggleFolderExpanded(newFolderParent, true);
@@ -748,10 +766,10 @@ export default function ManagePublications() {
 
   const toggleFolder = async (folderId) => {
     // Optimistically update UI
-    setFolders(folders.map(folder => 
+    setFolders(folders.map(folder =>
       folder.id === folderId ? { ...folder, expanded: !folder.expanded } : folder
     ));
-    
+
     // Persist to database
     try {
       await fetch('/api/publications/library', {
@@ -769,7 +787,7 @@ export default function ManagePublications() {
 
   // Helper to set folder expanded state
   const handleToggleFolderExpanded = async (folderId, expanded) => {
-    setFolders(prev => prev.map(folder => 
+    setFolders(prev => prev.map(folder =>
       folder.id === folderId ? { ...folder, expanded } : folder
     ));
   };
@@ -777,7 +795,7 @@ export default function ManagePublications() {
   const handleAddToSelectedFolder = async () => {
     if (selectedFolder && selectedPublication) {
       const folderName = folders.find(f => f.id === selectedFolder)?.name || 'folder';
-      
+
       try {
         const response = await fetch('/api/publications/library', {
           method: 'POST',
@@ -788,9 +806,9 @@ export default function ManagePublications() {
             publicationId: selectedPublication.id
           })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
           // Update local state
           setFolderPublications(prev => {
@@ -829,9 +847,9 @@ export default function ManagePublications() {
           publicationId
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         setFolderPublications(prev => ({
           ...prev,
@@ -873,17 +891,17 @@ export default function ManagePublications() {
   const getPublicationsInFolder = (folderId) => {
     // Get publications directly in this folder
     const directPubIds = folderPublications[folderId] || [];
-    
+
     // Get all descendant folder IDs
     const descendantIds = getDescendantFolderIds(folderId);
-    
+
     // Collect publication IDs from this folder and all subfolders
     const allPubIds = new Set(directPubIds);
     descendantIds.forEach(descendantId => {
       const descendantPubIds = folderPublications[descendantId] || [];
       descendantPubIds.forEach(pubId => allPubIds.add(pubId));
     });
-    
+
     // Return unique publications
     return publications.filter(pub => allPubIds.has(pub.id));
   };
@@ -893,7 +911,7 @@ export default function ManagePublications() {
     const folderIds = Object.entries(folderPublications)
       .filter(([folderId, pubIds]) => pubIds.includes(publicationId))
       .map(([folderId]) => folderId);
-    
+
     return folders.filter(f => folderIds.includes(f.id));
   };
 
@@ -909,7 +927,7 @@ export default function ManagePublications() {
   const handleConfirmMovePublication = async () => {
     if (publicationToMove && sourceFolderId && targetFolderForPub) {
       const targetFolderName = folders.find(f => f.id === targetFolderForPub)?.name || 'folder';
-      
+
       try {
         const response = await fetch('/api/publications/library', {
           method: 'POST',
@@ -921,9 +939,9 @@ export default function ManagePublications() {
             publicationId: publicationToMove.id
           })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
           // Update local state
           setFolderPublications(prev => {
@@ -935,7 +953,7 @@ export default function ManagePublications() {
             }
             return updated;
           });
-          
+
           setMovePublicationDialogOpen(false);
           setPublicationToMove(null);
           setSourceFolderId(null);
@@ -987,9 +1005,9 @@ export default function ManagePublications() {
             name: editingFolderName.trim()
           })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
           setFolders(folders.map(folder =>
             folder.id === editingFolderId
@@ -1041,27 +1059,27 @@ export default function ManagePublications() {
   const handleConfirmDeleteFolder = async () => {
     if (folderToDelete) {
       const folderName = folderToDelete.name;
-      
+
       try {
         const response = await fetch(`/api/publications/library?folderId=${folderToDelete.id}`, {
           method: 'DELETE'
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
           const descendantIds = getDescendantFolderIds(folderToDelete.id);
           const idsToDelete = [folderToDelete.id, ...descendantIds];
-          
+
           setFolders(folders.filter(folder => !idsToDelete.includes(folder.id)));
-          
+
           // Clean up publications from deleted folders
           setFolderPublications(prev => {
             const updated = { ...prev };
             idsToDelete.forEach(id => delete updated[id]);
             return updated;
           });
-          
+
           // Clear selection if deleted folder was selected
           if (idsToDelete.includes(selectedFolder)) {
             setSelectedFolder(null);
@@ -1069,7 +1087,7 @@ export default function ManagePublications() {
           if (idsToDelete.includes(libraryFilter)) {
             setLibraryFilter('all');
           }
-          
+
           setDeleteFolderDialogOpen(false);
           setFolderToDelete(null);
           showSnackbar(`Folder "${folderName}" deleted`, 'success');
@@ -1100,7 +1118,7 @@ export default function ManagePublications() {
   // Get valid move targets (exclude self, descendants, and current parent)
   const getValidMoveTargets = (folder) => {
     const descendantIds = getDescendantFolderIds(folder.id);
-    return folders.filter(f => 
+    return folders.filter(f =>
       f.id !== folder.id && // Not itself
       !descendantIds.includes(f.id) && // Not a descendant
       f.id !== folder.parent // Not current parent
@@ -1111,10 +1129,10 @@ export default function ManagePublications() {
   const handleConfirmMoveFolder = async () => {
     if (folderToMove) {
       const folderName = folderToMove.name;
-      const targetName = moveTargetFolder 
-        ? folders.find(f => f.id === moveTargetFolder)?.name 
+      const targetName = moveTargetFolder
+        ? folders.find(f => f.id === moveTargetFolder)?.name
         : 'root';
-      
+
       try {
         const response = await fetch('/api/publications/library', {
           method: 'PUT',
@@ -1125,9 +1143,9 @@ export default function ManagePublications() {
             parentId: moveTargetFolder
           })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
           setFolders(folders.map(folder =>
             folder.id === folderToMove.id
@@ -1157,7 +1175,7 @@ export default function ManagePublications() {
         const hasChildren = folders.some(f => f.parent === folder.id);
         const isSelected = selectedId === folder.id;
         const isEditing = editingFolderId === folder.id;
-        
+
         return (
           <Box key={folder.id}>
             <Box
@@ -1194,7 +1212,7 @@ export default function ManagePublications() {
               )}
               {!hasChildren && <Box sx={{ width: 28 }} />}
               <Box sx={{ mr: 1, color: '#8b6cbc' }}>📁</Box>
-              
+
               {/* Editable folder name or display name */}
               {isEditing ? (
                 <Box sx={{ display: 'flex', gap: 0.5, flex: 1, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
@@ -1207,7 +1225,7 @@ export default function ManagePublications() {
                       if (e.key === 'Escape') handleCancelEditFolder();
                     }}
                     autoFocus
-                    sx={{ 
+                    sx={{
                       flex: 1,
                       '& .MuiInputBase-input': { py: 0.5, fontSize: '0.875rem' }
                     }}
@@ -1232,12 +1250,30 @@ export default function ManagePublications() {
                           size="small"
                           label={getSubfolderCount(folder.id)}
                           icon={<FolderIcon sx={{ fontSize: '14px !important' }} />}
-                          sx={{ 
-                            height: 20, 
+                          sx={{
+                            height: 20,
                             fontSize: '0.7rem',
                             bgcolor: '#e3f2fd',
                             color: '#1976d2',
                             '& .MuiChip-icon': { color: '#1976d2', ml: 0.5 },
+                            '& .MuiChip-label': { px: 0.5 }
+                          }}
+                        />
+                      </Tooltip>
+                    )}
+                    {(sharing.mySharesByFolder[folder.id] || []).length > 0 && (
+                      <Tooltip title={`Shared with ${(sharing.mySharesByFolder[folder.id] || []).map((m) => m.name).join(', ')}`}>
+                        <Chip
+                          size="small"
+                          label={(sharing.mySharesByFolder[folder.id] || []).length}
+                          icon={<SharedPeopleIcon sx={{ fontSize: '14px !important' }} />}
+                          onClick={(e) => { e.stopPropagation(); setShareFolder(folder); }}
+                          sx={{
+                            height: 20,
+                            fontSize: '0.7rem',
+                            bgcolor: '#e0f2fe',
+                            color: '#0369a1',
+                            '& .MuiChip-icon': { color: '#0369a1', ml: 0.5 },
                             '& .MuiChip-label': { px: 0.5 }
                           }}
                         />
@@ -1249,8 +1285,8 @@ export default function ManagePublications() {
                           size="small"
                           label={getPublicationCount(folder.id)}
                           icon={<ArticleIcon sx={{ fontSize: '14px !important' }} />}
-                          sx={{ 
-                            height: 20, 
+                          sx={{
+                            height: 20,
                             fontSize: '0.7rem',
                             bgcolor: '#f3e5f5',
                             color: '#8b6cbc',
@@ -1263,17 +1299,29 @@ export default function ManagePublications() {
                   </Box>
                 </Box>
               )}
-              
+
               {/* Folder action buttons */}
               {!isEditing && (
-                <Box 
+                <Box
                   className="folder-actions"
-                  sx={{ 
-                    ml: 'auto', 
-                    display: 'flex', 
+                  sx={{
+                    ml: 'auto',
+                    display: 'flex',
                     gap: 0.25
                   }}
                 >
+                  <Tooltip title="Share with your team">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShareFolder(folder);
+                      }}
+                      sx={{ p: 0.5, color: '#0284c7' }}
+                    >
+                      <ShareFolderIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title="Add subfolder">
                     <IconButton
                       size="small"
@@ -1333,8 +1381,8 @@ export default function ManagePublications() {
                   <IconButton size="small" onClick={handleCreateFolder} color="primary">
                     <CheckIcon fontSize="small" />
                   </IconButton>
-                  <IconButton 
-                    size="small" 
+                  <IconButton
+                    size="small"
                     onClick={() => {
                       setShowNewFolderInput(false);
                       setNewFolderName('');
@@ -1359,6 +1407,16 @@ export default function ManagePublications() {
   const filedPublicationCount = new Set(Object.values(folderPublications).flat()).size;
   const unfiledPublicationCount = Math.max(0, publications.length - filedPublicationCount);
   const viewingFolder = libraryFilter !== 'all' && libraryFilter !== 'unfiled';
+  const viewedFolderIds = (() => {
+    if (!viewingFolder) return [];
+    const ids = [libraryFilter];
+    const walk = (parentId) => folders.forEach((f) => { if (f.parent === parentId) { ids.push(f.id); walk(f.id); } });
+    walk(libraryFilter);
+    return ids;
+  })();
+  const folderContributions = viewedFolderIds.flatMap((id) => sharing.contributionsByFolder[id] || []);
+  const folderNameById = Object.fromEntries(folders.map((f) => [f.id, f.name]));
+  const activeSharedLibrary = sharedView ? sharing.sharedWithMe.find((lib) => lib.folder.id === sharedView) || null : null;
   const allFilteredSelected = filteredPublications.length > 0 && filteredPublications.every((p) => selectedPublications.includes(p.id));
 
   const handleChangePage = (event, newPage) => {
@@ -1401,10 +1459,10 @@ export default function ManagePublications() {
   const PublicationsCards = ({ publications }) => (
     <Box>
       {publications.map((publication) => (
-        <Card 
+        <Card
           key={publication.id}
-          sx={{ 
-            mb: 2, 
+          sx={{
+            mb: 2,
             '&:hover': { boxShadow: 4 },
             transition: 'box-shadow 0.2s ease',
             border: selectedPublications.includes(publication.id) ? '1px solid #8b6cbc' : '1px solid transparent',
@@ -1423,10 +1481,10 @@ export default function ManagePublications() {
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
               {getTypeIcon(publication.type)}
                   <Box sx={{ ml: 1, flex: 1 }}>
-                    <Typography 
-                      variant="h6" 
-                      sx={{ 
-                        fontWeight: 600, 
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 600,
                         lineHeight: 1.3,
                         cursor: 'pointer',
                         '&:hover': { color: '#8b6cbc' }
@@ -1464,8 +1522,8 @@ export default function ManagePublications() {
                   </Typography>
                 )}
                 {publication.abstract && (
-                  <Typography variant="body2" color="text.secondary" sx={{ 
-                    mb: 1, 
+                  <Typography variant="body2" color="text.secondary" sx={{
+                    mb: 1,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     display: '-webkit-box',
@@ -1477,26 +1535,26 @@ export default function ManagePublications() {
             )}
           </Box>
           </Box>
-          
+
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, ml: 2 }}>
-            <Chip 
-              label={publication.status.replace('-', ' ')} 
+            <Chip
+              label={publication.status.replace('-', ' ')}
               size="small"
-              sx={{ 
+              sx={{
                 bgcolor: getStatusColor(publication.status),
                 color: 'white'
               }}
               icon={getStatusIcon(publication.status)}
             />
-            <Box sx={{ 
-              display: 'flex', 
+            <Box sx={{
+              display: 'flex',
               gap: 0.5
             }}>
               <Tooltip title="View" arrow>
                 <IconButton
                   size="small"
                   onClick={() => handleViewPublication(publication)}
-                  sx={{ 
+                  sx={{
                     color: '#8b6cbc',
                     '&:hover': { bgcolor: '#8b6cbc10' }
                   }}
@@ -1507,7 +1565,7 @@ export default function ManagePublications() {
               <Tooltip title="Edit" arrow>
                 <IconButton
                   size="small"
-                  sx={{ 
+                  sx={{
                     color: '#666',
                     '&:hover': { bgcolor: '#66666610' }
                   }}
@@ -1519,7 +1577,7 @@ export default function ManagePublications() {
                 <IconButton
                   size="small"
                   onClick={() => handleAddToLibrary(publication)}
-                  sx={{ 
+                  sx={{
                     color: '#4caf50',
                     '&:hover': { bgcolor: '#4caf5010' }
                   }}
@@ -1530,7 +1588,7 @@ export default function ManagePublications() {
               <Tooltip title="Download" arrow>
                 <IconButton
                   size="small"
-                  sx={{ 
+                  sx={{
                     color: '#666',
                     '&:hover': { bgcolor: '#66666610' }
                   }}
@@ -1542,7 +1600,7 @@ export default function ManagePublications() {
                 <IconButton
                   size="small"
                   onClick={() => handleDeletePublication(publication)}
-                  sx={{ 
+                  sx={{
                     color: '#f44336',
                     '&:hover': { bgcolor: '#f4433610' }
                   }}
@@ -1566,7 +1624,7 @@ export default function ManagePublications() {
               />
             ))}
           </Box>
-          
+
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
             {publication.visibility === 'public' ? (
               <PublicIcon sx={{ fontSize: 18, color: '#4caf50' }} />
@@ -1610,9 +1668,9 @@ export default function ManagePublications() {
         </TableHead>
         <TableBody>
           {publications.map((publication, index) => (
-            <TableRow 
+            <TableRow
               key={publication.id}
-              sx={{ 
+              sx={{
                 bgcolor: selectedPublications.includes(publication.id)
                   ? alpha('#8b6cbc', 0.08)
                   : index % 2 === 0 ? '#fafafa' : 'white',
@@ -1633,9 +1691,9 @@ export default function ManagePublications() {
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                   {getTypeIcon(publication.type)}
                   <Box sx={{ flex: 1 }}>
-                    <Typography 
-                      variant="subtitle2" 
-                      sx={{ 
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
                         fontWeight: 600,
                         lineHeight: 1.3,
                         mb: 0.5,
@@ -1665,9 +1723,9 @@ export default function ManagePublications() {
 
               {/* Authors */}
               <TableCell sx={{ py: 2, maxWidth: 200 }}>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
+                <Typography
+                  variant="body2"
+                  sx={{
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     display: '-webkit-box',
@@ -1683,11 +1741,11 @@ export default function ManagePublications() {
               {/* Date */}
               <TableCell sx={{ py: 2 }}>
                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {publication.publicationDate 
-                    ? new Date(publication.publicationDate).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
+                  {publication.publicationDate
+                    ? new Date(publication.publicationDate).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
                       })
                     : publication.year || 'N/A'
                   }
@@ -1697,11 +1755,11 @@ export default function ManagePublications() {
               {/* Imported Date */}
               <TableCell sx={{ py: 2 }}>
                 <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                  {publication.createdAt 
-                    ? new Date(publication.createdAt).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
+                  {publication.createdAt
+                    ? new Date(publication.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
                       })
                     : 'N/A'
                   }
@@ -1710,10 +1768,10 @@ export default function ManagePublications() {
 
               {/* Status */}
               <TableCell sx={{ py: 2 }}>
-                <Chip 
-                  label={publication.status === 'published' ? 'Published' : publication.status.replace('-', ' ')} 
+                <Chip
+                  label={publication.status === 'published' ? 'Published' : publication.status.replace('-', ' ')}
                   size="small"
-                  sx={{ 
+                  sx={{
                     bgcolor: publication.status === 'published' ? '#4caf50' : '#ff9800',
                     color: 'white',
                     fontWeight: 500,
@@ -1782,9 +1840,9 @@ export default function ManagePublications() {
               <TableCell sx={{ py: 2 }}>
                 {publication.source ? (
                   <Tooltip title={`Imported from ${publication.source}`} arrow>
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: 0.75,
                       cursor: 'default'
                     }}>
@@ -1803,18 +1861,18 @@ export default function ManagePublications() {
 
               {/* Actions */}
               <TableCell sx={{ py: 2, textAlign: 'center' }}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: 0.5, 
+                <Box sx={{
+                  display: 'flex',
+                  gap: 0.5,
                   justifyContent: 'center',
                   alignItems: 'center',
                   minHeight: '40px'
                 }}>
                   <Tooltip title="AI Preview" arrow>
-                    <IconButton 
-                      size="small" 
+                    <IconButton
+                      size="small"
                       onClick={() => handleOpenAIPreview(publication)}
-                      sx={{ 
+                      sx={{
                         color: '#8b6cbc',
                         '&:hover': { bgcolor: '#8b6cbc10' }
                       }}
@@ -1823,10 +1881,10 @@ export default function ManagePublications() {
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Add to Library" arrow>
-                    <IconButton 
+                    <IconButton
                       size="small"
                       onClick={() => handleAddToLibrary(publication)}
-                      sx={{ 
+                      sx={{
                         color: '#4caf50',
                         '&:hover': { bgcolor: '#4caf5010' }
                       }}
@@ -1835,10 +1893,10 @@ export default function ManagePublications() {
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Delete" arrow>
-                    <IconButton 
+                    <IconButton
                       size="small"
                       onClick={() => handleDeletePublication(publication)}
-                      sx={{ 
+                      sx={{
                         color: '#f44336',
                         '&:hover': { bgcolor: '#f4433610' }
                       }}
@@ -1857,14 +1915,21 @@ export default function ManagePublications() {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f8f9fa'}} >
+      <ShareLibraryDialog
+        open={Boolean(shareFolder)}
+        folder={shareFolder}
+        members={shareFolder ? sharing.mySharesByFolder[shareFolder.id] || [] : []}
+        onClose={() => setShareFolder(null)}
+        onChanged={(msg) => handleSharingChanged(msg)}
+      />
       <PageHeader
-        title={t('researcher.manage_publications')}
-        description={t('researcher.manage_publications_desc')}
+        title={t('researcher.manage_library', { defaultValue: 'Manage Library' })}
+        description={t('researcher.manage_library_desc', { defaultValue: 'Organise your publications into libraries and share them with your team' })}
         icon={<EditIcon />}
         breadcrumbs={[
           { label: t('common.dashboard'), path: '/researcher' },
           { label: t('researcher.publications'), path: '/researcher/publications' },
-          { label: t('researcher.manage_publications') }
+          { label: t('researcher.manage_library', { defaultValue: 'Manage Library' }) }
         ]}
         actionButton={
             <Button
@@ -1889,8 +1954,8 @@ export default function ManagePublications() {
         {/* Statistics Cards */}
         <Grid container spacing={2.5} sx={{ mb: 4, mt: -6 }}>
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper sx={{ 
-              p: 2, 
+            <Paper sx={{
+              p: 2,
               borderRadius: 2,
               bgcolor: '#8b6cbc',
               boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
@@ -1918,8 +1983,8 @@ export default function ManagePublications() {
             </Paper>
           </Grid>
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper sx={{ 
-              p: 2, 
+            <Paper sx={{
+              p: 2,
               borderRadius: 2,
               bgcolor: '#8b6cbc',
               boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
@@ -1947,8 +2012,8 @@ export default function ManagePublications() {
             </Paper>
           </Grid>
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper sx={{ 
-              p: 2, 
+            <Paper sx={{
+              p: 2,
               borderRadius: 2,
               bgcolor: '#8b6cbc',
               boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
@@ -1976,8 +2041,8 @@ export default function ManagePublications() {
             </Paper>
           </Grid>
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper sx={{ 
-              p: 2, 
+            <Paper sx={{
+              p: 2,
               borderRadius: 2,
               bgcolor: '#8b6cbc',
               boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
@@ -2008,9 +2073,9 @@ export default function ManagePublications() {
 
         {/* Filter & Search Publications */}
         <Paper sx={{ p: 2.5, mb: 3, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)' }}>
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 3, 
+          <Box sx={{
+            display: 'flex',
+            gap: 3,
             alignItems: 'center',
             flexWrap: 'wrap',
             '@media (max-width: 768px)': {
@@ -2118,7 +2183,7 @@ export default function ManagePublications() {
                 variant="text"
                 startIcon={<ClearIcon />}
                 onClick={clearFilters}
-                sx={{ 
+                sx={{
                   borderRadius: 3,
                   height: '56px',
                   px: 3,
@@ -2173,7 +2238,7 @@ export default function ManagePublications() {
               ].map((item) => (
                 <Box
                   key={item.id}
-                  onClick={() => { setLibraryFilter(item.id); setPage(0); setSelectedPublications([]); }}
+                  onClick={() => { setSharedView(null); setLibraryFilter(item.id); setPage(0); setSelectedPublications([]); }}
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
@@ -2208,16 +2273,41 @@ export default function ManagePublications() {
                 </Typography>
               ) : (
                 renderFolderTree(null, 0, {
-                  selectedId: libraryFilter,
-                  onSelect: (id) => { setLibraryFilter(id); setPage(0); setSelectedPublications([]); },
+                  selectedId: sharedView ? null : libraryFilter,
+                  onSelect: (id) => { setSharedView(null); setLibraryFilter(id); setPage(0); setSelectedPublications([]); },
                 })
               )}
+              <Divider sx={{ my: 1 }} />
+              <SharedWithMeList
+                libraries={sharing.sharedWithMe}
+                loading={sharing.loading}
+                activeId={sharedView}
+                onSelect={(id) => { setSharedView(id); setSelectedPublications([]); }}
+              />
             </Box>
           </Paper>
 
+        {activeSharedLibrary ? (
+          <SharedLibraryPanel
+            library={activeSharedLibrary}
+            myPublications={publications}
+            onChanged={(msg) => handleSharingChanged(msg)}
+            onLeft={async (msg) => { setSharedView(null); await handleSharingChanged(msg); }}
+            notify={showSnackbar}
+          />
+        ) : null}
+
         {/* Publications List */}
-        <Paper sx={{ flex: 1, minWidth: 0, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+        <Paper sx={{ flex: 1, minWidth: 0, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden', display: activeSharedLibrary ? 'none' : 'block' }}>
           <Box sx={{ p: 2.5, bgcolor: 'white' }}>
+            {viewingFolder ? (
+              <FolderContributionsPanel
+                items={folderContributions}
+                folderNames={folderNameById}
+                onChanged={(msg) => handleSharingChanged(msg)}
+                notify={showSnackbar}
+              />
+            ) : null}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
@@ -2228,10 +2318,10 @@ export default function ManagePublications() {
                       ? 'Unfiled'
                       : folders.find((f) => f.id === libraryFilter)?.name || 'Publications'}
             </Typography>
-                <Chip 
+                <Chip
                   label={filteredPublications.length}
                   size="small"
-                  sx={{ 
+                  sx={{
                     bgcolor: '#8b6cbc',
                     color: 'white',
                     fontWeight: 600,
@@ -2240,11 +2330,11 @@ export default function ManagePublications() {
                   }}
                 />
                 {selectedPublications.length > 0 && (
-                  <Chip 
+                  <Chip
                     label={`${selectedPublications.length} selected`}
                     size="small"
                     onDelete={() => setSelectedPublications([])}
-                    sx={{ 
+                    sx={{
                       bgcolor: '#ff9800',
                       color: 'white',
                       fontWeight: 600,
@@ -2473,14 +2563,14 @@ export default function ManagePublications() {
                 </Typography>
               </Box>
             )}
-            
+
             {/* Split panel layout */}
             <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
               {/* Left panel - Folder tree */}
-              <Box sx={{ 
-                width: '40%', 
-                borderRight: '1px solid #e0e0e0', 
-                display: 'flex', 
+              <Box sx={{
+                width: '40%',
+                borderRight: '1px solid #e0e0e0',
+                display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden'
               }}>
@@ -2494,7 +2584,7 @@ export default function ManagePublications() {
                 </Box>
                 <Box sx={{ flex: 1, overflow: 'auto', py: 1 }}>
                   {renderFolderTree()}
-                  
+
                   {showNewFolderInput && newFolderParent === null && (
                     <Box sx={{ px: 2, py: 1 }}>
                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -2510,8 +2600,8 @@ export default function ManagePublications() {
                         <IconButton size="small" onClick={handleCreateFolder} sx={{ color: '#4caf50' }}>
                           <CheckIcon fontSize="small" />
                         </IconButton>
-                        <IconButton 
-                          size="small" 
+                        <IconButton
+                          size="small"
                           onClick={() => {
                             setShowNewFolderInput(false);
                             setNewFolderName('');
@@ -2525,11 +2615,11 @@ export default function ManagePublications() {
                   )}
                 </Box>
               </Box>
-              
+
               {/* Right panel - Folder contents */}
-              <Box sx={{ 
-                width: '60%', 
-                display: 'flex', 
+              <Box sx={{
+                width: '60%',
+                display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
                 bgcolor: '#fafafa'
@@ -2558,7 +2648,7 @@ export default function ManagePublications() {
                     </>
                   )}
                 </Box>
-                
+
                 <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
                   {selectedFolder ? (
                     getPublicationsInFolder(selectedFolder).length > 0 ? (
@@ -2594,7 +2684,7 @@ export default function ManagePublications() {
                                   <IconButton
                                     size="small"
                                     onClick={() => handleOpenMovePublication(pub, selectedFolder)}
-                                    sx={{ 
+                                    sx={{
                                       color: '#ff9800',
                                       '&:hover': { bgcolor: '#ff980010' }
                                     }}
@@ -2606,7 +2696,7 @@ export default function ManagePublications() {
                                   <IconButton
                                     size="small"
                                     onClick={() => handleRemoveFromFolder(selectedFolder, pub.id)}
-                                    sx={{ 
+                                    sx={{
                                       color: '#f44336',
                                       '&:hover': { bgcolor: '#f4433610' }
                                     }}
@@ -2620,10 +2710,10 @@ export default function ManagePublications() {
                         ))}
                       </Box>
                     ) : (
-                      <Box sx={{ 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        alignItems: 'center', 
+                      <Box sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
                         justifyContent: 'center',
                         height: '100%',
                         color: 'text.secondary'
@@ -2640,10 +2730,10 @@ export default function ManagePublications() {
                       </Box>
                     )
                   ) : (
-                    <Box sx={{ 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      alignItems: 'center', 
+                    <Box sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
                       justifyContent: 'center',
                       height: '100%',
                       color: 'text.secondary'
@@ -2671,7 +2761,7 @@ export default function ManagePublications() {
                 )}
               </Box>
               <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button 
+                <Button
                   onClick={() => {
                     setLibraryDialogOpen(false);
                     setSelectedFolder(null);
@@ -2684,12 +2774,12 @@ export default function ManagePublications() {
                   {libraryViewMode === 'add' ? 'Cancel' : 'Close'}
                 </Button>
                 {libraryViewMode === 'add' && (
-                  <Button 
-                    variant="contained" 
+                  <Button
+                    variant="contained"
                     onClick={handleAddToSelectedFolder}
                     disabled={!selectedFolder}
-                    sx={{ 
-                      bgcolor: '#8b6cbc', 
+                    sx={{
+                      bgcolor: '#8b6cbc',
                       '&:hover': { bgcolor: '#7559a3' },
                       '&:disabled': { bgcolor: '#ccc' }
                     }}
@@ -2745,7 +2835,7 @@ export default function ManagePublications() {
                 </Typography>
                 {getDescendantFolderIds(folderToDelete.id).length > 0 && (
                   <Alert severity="warning" sx={{ mb: 2 }}>
-                    This folder contains {getDescendantFolderIds(folderToDelete.id).length} subfolder(s). 
+                    This folder contains {getDescendantFolderIds(folderToDelete.id).length} subfolder(s).
                     All subfolders will also be deleted.
                   </Alert>
                 )}
@@ -2756,7 +2846,7 @@ export default function ManagePublications() {
             )}
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
-            <Button 
+            <Button
               onClick={() => {
                 setDeleteFolderDialogOpen(false);
                 setFolderToDelete(null);
@@ -2764,8 +2854,8 @@ export default function ManagePublications() {
             >
               Cancel
             </Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               color="error"
               onClick={handleConfirmDeleteFolder}
               startIcon={<DeleteIcon />}
@@ -2802,12 +2892,12 @@ export default function ManagePublications() {
                     📁 {folderToMove.name}
                   </Typography>
                 </Box>
-                
+
                 <Box sx={{ p: 2 }}>
                   <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary' }}>
                     Select destination folder:
                   </Typography>
-                  
+
                   {/* Root option */}
                   <Box
                     onClick={() => setMoveTargetFolder(null)}
@@ -2831,9 +2921,9 @@ export default function ManagePublications() {
                       Root Level (No Parent)
                     </Typography>
                   </Box>
-                  
+
                   <Divider sx={{ my: 1 }} />
-                  
+
                   {/* Available folders */}
                   <Box sx={{ maxHeight: 250, overflow: 'auto' }}>
                     {getValidMoveTargets(folderToMove).length > 0 ? (
@@ -2847,7 +2937,7 @@ export default function ManagePublications() {
                           currentFolder = folders.find(f => f.id === currentFolder.parent);
                           if (!currentFolder) break;
                         }
-                        
+
                         return (
                           <Box
                             key={folder.id}
@@ -2875,7 +2965,7 @@ export default function ManagePublications() {
                       })
                     ) : (
                       <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
-                        No valid destinations available. 
+                        No valid destinations available.
                         <br />
                         <Typography variant="caption">
                           Cannot move to self, descendants, or current parent.
@@ -2888,7 +2978,7 @@ export default function ManagePublications() {
             )}
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
-            <Button 
+            <Button
               onClick={() => {
                 setMoveFolderDialogOpen(false);
                 setFolderToMove(null);
@@ -2897,13 +2987,13 @@ export default function ManagePublications() {
             >
               Cancel
             </Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={handleConfirmMoveFolder}
               disabled={folderToMove && moveTargetFolder === folderToMove.parent}
               startIcon={<MoveIcon />}
-              sx={{ 
-                bgcolor: '#ff9800', 
+              sx={{
+                bgcolor: '#ff9800',
                 '&:hover': { bgcolor: '#f57c00' },
                 '&:disabled': { bgcolor: '#ccc' }
               }}
@@ -2944,12 +3034,12 @@ export default function ManagePublications() {
                     From: <strong>{folders.find(f => f.id === sourceFolderId)?.name}</strong>
                   </Typography>
                 </Box>
-                
+
                 <Box sx={{ p: 2 }}>
                   <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary' }}>
                     Select destination folder:
                   </Typography>
-                  
+
                   {/* Available folders (excluding source folder) */}
                   <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
                     {folders
@@ -2964,10 +3054,10 @@ export default function ManagePublications() {
                           currentFolder = folders.find(f => f.id === currentFolder.parent);
                           if (!currentFolder) break;
                         }
-                        
+
                         // Check if publication already exists in this folder
                         const alreadyInFolder = (folderPublications[folder.id] || []).includes(publicationToMove.id);
-                        
+
                         return (
                           <Box
                             key={folder.id}
@@ -2995,15 +3085,15 @@ export default function ManagePublications() {
                               </Typography>
                             </Box>
                             {alreadyInFolder && (
-                              <Chip 
-                                label="Already here" 
-                                size="small" 
-                                sx={{ 
-                                  height: 20, 
+                              <Chip
+                                label="Already here"
+                                size="small"
+                                sx={{
+                                  height: 20,
                                   fontSize: '0.65rem',
                                   bgcolor: '#e0e0e0',
                                   color: '#666'
-                                }} 
+                                }}
                               />
                             )}
                             {getPublicationCount(folder.id) > 0 && !alreadyInFolder && (
@@ -3020,7 +3110,7 @@ export default function ManagePublications() {
             )}
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
-            <Button 
+            <Button
               onClick={() => {
                 setMovePublicationDialogOpen(false);
                 setPublicationToMove(null);
@@ -3030,13 +3120,13 @@ export default function ManagePublications() {
             >
               Cancel
             </Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={handleConfirmMovePublication}
               disabled={!targetFolderForPub}
               startIcon={<MoveIcon />}
-              sx={{ 
-                bgcolor: '#ff9800', 
+              sx={{
+                bgcolor: '#ff9800',
                 '&:hover': { bgcolor: '#f57c00' },
                 '&:disabled': { bgcolor: '#ccc' }
               }}
@@ -3070,7 +3160,7 @@ export default function ManagePublications() {
                 <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
                   {selectedPublication.title}
                 </Typography>
-                
+
                 <Grid container spacing={2} sx={{ mb: 2 }}>
                   <Grid size={3}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Authors</Typography>
@@ -3078,7 +3168,7 @@ export default function ManagePublications() {
                   <Grid size={9}>
                     <Typography variant="body2">{selectedPublication.authors.join(', ')}</Typography>
                   </Grid>
-                  
+
                   <Grid size={3}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Publication</Typography>
                   </Grid>
@@ -3090,25 +3180,25 @@ export default function ManagePublications() {
                       {selectedPublication.pages && `, pp. ${selectedPublication.pages}`}
                 </Typography>
                   </Grid>
-                  
+
                   <Grid size={3}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Type</Typography>
                   </Grid>
                   <Grid size={9}>
                     <Typography variant="body2">{selectedPublication.type}</Typography>
                   </Grid>
-                  
+
                   <Grid size={3}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Status</Typography>
                   </Grid>
                   <Grid size={9}>
-                    <Chip 
-                      label={selectedPublication.status.replace('-', ' ')} 
+                    <Chip
+                      label={selectedPublication.status.replace('-', ' ')}
                       size="small"
                       sx={{ bgcolor: getStatusColor(selectedPublication.status), color: 'white' }}
                     />
                   </Grid>
-                  
+
                   {selectedPublication.source && (
                     <>
                       <Grid size={3}>
@@ -3124,7 +3214,7 @@ export default function ManagePublications() {
                       </Grid>
                     </>
                   )}
-                  
+
                   {selectedPublication.doi && (
                     <>
                       <Grid size={3}>
@@ -3132,9 +3222,9 @@ export default function ManagePublications() {
                       </Grid>
                       <Grid size={9}>
                         <Typography variant="body2">
-                          <a 
-                            href={`https://doi.org/${selectedPublication.doi}`} 
-                            target="_blank" 
+                          <a
+                            href={`https://doi.org/${selectedPublication.doi}`}
+                            target="_blank"
                             rel="noopener noreferrer"
                             style={{ color: '#8b6cbc' }}
                           >
@@ -3144,7 +3234,7 @@ export default function ManagePublications() {
                       </Grid>
                     </>
                   )}
-                  
+
                   {selectedPublication.url && (
                     <>
                       <Grid size={3}>
@@ -3152,9 +3242,9 @@ export default function ManagePublications() {
                       </Grid>
                       <Grid size={9}>
                         <Typography variant="body2">
-                          <a 
-                            href={selectedPublication.url} 
-                            target="_blank" 
+                          <a
+                            href={selectedPublication.url}
+                            target="_blank"
                             rel="noopener noreferrer"
                             style={{ color: '#8b6cbc' }}
                           >
@@ -3164,7 +3254,7 @@ export default function ManagePublications() {
                       </Grid>
                     </>
                   )}
-                  
+
                   {selectedPublication.isbn && (
                     <>
                       <Grid size={3}>
@@ -3180,7 +3270,7 @@ export default function ManagePublications() {
                 {selectedPublication.abstract && (
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Abstract</Typography>
-                    <Typography variant="body2" sx={{ 
+                    <Typography variant="body2" sx={{
                       textAlign: 'justify',
                       bgcolor: '#f5f5f5',
                       p: 2,
@@ -3191,7 +3281,7 @@ export default function ManagePublications() {
                   </Typography>
                   </Box>
                 )}
-                
+
                 {selectedPublication.tags && selectedPublication.tags.length > 0 && (
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Keywords</Typography>
@@ -3210,7 +3300,7 @@ export default function ManagePublications() {
                 )}
 
                 <Divider sx={{ my: 2 }} />
-                
+
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'text.secondary' }}>
                   <Typography variant="body2">
                     Created: {selectedPublication.createdAt ? new Date(selectedPublication.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
@@ -3272,7 +3362,7 @@ export default function ManagePublications() {
                 <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
                   {aiPreviewPublication.title}
                 </Typography>
-                
+
                 <Grid container spacing={2} sx={{ mb: 3 }}>
                   <Grid size={3}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Authors</Typography>
@@ -3280,7 +3370,7 @@ export default function ManagePublications() {
                   <Grid size={9}>
                     <Typography variant="body2">{aiPreviewPublication.authors?.join(', ') || 'Unknown authors'}</Typography>
                   </Grid>
-                  
+
                   {aiPreviewPublication.journal && (
                     <>
                       <Grid size={3}>
@@ -3296,25 +3386,25 @@ export default function ManagePublications() {
                       </Grid>
                     </>
                   )}
-                  
+
                   <Grid size={3}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Type</Typography>
                   </Grid>
                   <Grid size={9}>
                     <Typography variant="body2">{aiPreviewPublication.type}</Typography>
                   </Grid>
-                  
+
                   <Grid size={3}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Status</Typography>
                   </Grid>
                   <Grid size={9}>
-                    <Chip 
-                      label={aiPreviewPublication.status?.replace('-', ' ') || 'Unknown'} 
+                    <Chip
+                      label={aiPreviewPublication.status?.replace('-', ' ') || 'Unknown'}
                       size="small"
                       sx={{ bgcolor: '#8b6cbc', color: 'white' }}
                     />
                   </Grid>
-                  
+
                   {aiPreviewPublication.source && (
                     <>
                       <Grid size={3}>
@@ -3327,7 +3417,7 @@ export default function ManagePublications() {
                       </Grid>
                     </>
                   )}
-                  
+
                   {aiPreviewPublication.doi && (
                     <>
                       <Grid size={3}>
@@ -3335,9 +3425,9 @@ export default function ManagePublications() {
                       </Grid>
                       <Grid size={9}>
                         <Typography variant="body2">
-                          <a 
-                            href={`https://doi.org/${aiPreviewPublication.doi}`} 
-                            target="_blank" 
+                          <a
+                            href={`https://doi.org/${aiPreviewPublication.doi}`}
+                            target="_blank"
                             rel="noopener noreferrer"
                             style={{ color: '#8b6cbc' }}
                           >
@@ -3347,7 +3437,7 @@ export default function ManagePublications() {
                       </Grid>
                     </>
                   )}
-                  
+
                   {aiPreviewPublication.url && (
                     <>
                       <Grid size={3}>
@@ -3355,9 +3445,9 @@ export default function ManagePublications() {
                       </Grid>
                       <Grid size={9}>
                         <Typography variant="body2">
-                          <a 
-                            href={aiPreviewPublication.url} 
-                            target="_blank" 
+                          <a
+                            href={aiPreviewPublication.url}
+                            target="_blank"
                             rel="noopener noreferrer"
                             style={{ color: '#8b6cbc' }}
                           >
@@ -3367,7 +3457,7 @@ export default function ManagePublications() {
                       </Grid>
                     </>
                   )}
-                  
+
                   {aiPreviewPublication.isbn && (
                     <>
                       <Grid size={3}>
@@ -3383,7 +3473,7 @@ export default function ManagePublications() {
                 {aiPreviewPublication.abstract && (
                   <Box sx={{ mb: 3 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Abstract</Typography>
-                    <Typography variant="body2" sx={{ 
+                    <Typography variant="body2" sx={{
                       textAlign: 'justify',
                       bgcolor: '#f5f5f5',
                       p: 2,
@@ -3394,7 +3484,7 @@ export default function ManagePublications() {
                     </Typography>
                   </Box>
                 )}
-                
+
                 {aiPreviewPublication.tags && aiPreviewPublication.tags.length > 0 && (
                   <Box sx={{ mb: 3 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Keywords</Typography>
@@ -3414,9 +3504,9 @@ export default function ManagePublications() {
 
                 <Divider sx={{ my: 3 }} />
 
-                <Box sx={{ 
-                  p: 2, 
-                  bgcolor: 'rgba(139, 108, 188, 0.08)', 
+                <Box sx={{
+                  p: 2,
+                  bgcolor: 'rgba(139, 108, 188, 0.08)',
                   borderRadius: 1,
                   border: '1px solid rgba(139, 108, 188, 0.2)'
                 }}>
@@ -3452,8 +3542,8 @@ export default function ManagePublications() {
                   {/* Success State */}
                   {aiSummary && !aiGenerating && !aiError && (
                     <Box>
-                      <Box 
-                        sx={{ 
+                      <Box
+                        sx={{
                           mb: 2,
                           '& h3': { fontSize: '1rem', fontWeight: 600, color: '#333', mt: 2, mb: 1 },
                           '& p': { fontSize: '0.875rem', lineHeight: 1.6, mb: 1 },
@@ -3554,9 +3644,9 @@ export default function ManagePublications() {
           onClose={handleCloseSnackbar}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         >
-          <Alert 
-            onClose={handleCloseSnackbar} 
-            severity={snackbar.severity} 
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity={snackbar.severity}
             variant="filled"
             sx={{ width: '100%' }}
           >

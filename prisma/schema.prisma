@@ -1683,7 +1683,27 @@ model LibraryFolder {
   // Publications in this folder
   publications LibraryFolderPublication[]
 
+  // People this folder (and its subfolders) is shared with
+  shares LibraryFolderShare[]
+
   @@map("library_folders")
+}
+
+// A library folder shared with another researcher. Sharing covers the folder and all
+// its subfolders. Members can view and add publications, and remove only what they added.
+model LibraryFolderShare {
+  id         String   @id @default(cuid())
+  folderId   String
+  userId     String // Member the folder is shared with
+  sharedById String // Owner who shared it
+  permission String   @default("CONTRIBUTOR")
+  createdAt  DateTime @default(now())
+
+  folder LibraryFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  @@unique([folderId, userId])
+  @@index([userId])
+  @@map("library_folder_shares")
 }
 
 // Junction table for Library Folder - Publication relationships
@@ -1692,8 +1712,9 @@ model LibraryFolderPublication {
   folderId      String
   publicationId String
 
-  // When the publication was added to the folder
-  addedAt DateTime @default(now())
+  // When the publication was added to the folder, and by whom (null = folder owner)
+  addedAt   DateTime @default(now())
+  addedById String?
 
   // Relations
   folder      LibraryFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)

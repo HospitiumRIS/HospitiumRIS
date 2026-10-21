@@ -1,0 +1,3569 @@
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Box,
+  Container,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Paper,
+  TextField,
+  Button,
+  IconButton,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  InputAdornment,
+  Select,
+  FormControl,
+  InputLabel,
+  Divider,
+  Tooltip,
+  Alert,
+  LinearProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TableSortLabel,
+  TablePagination,
+  Checkbox,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Snackbar,
+  alpha
+} from '@mui/material';
+import {
+  Search as SearchIcon,
+  FilterList as FilterIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Visibility as ViewIcon,
+  GetApp as DownloadIcon,
+  Add as AddIcon,
+  Sort as SortIcon,
+  Public as PublicIcon,
+  Lock as PrivateIcon,
+  Schedule as DraftIcon,
+  CheckCircle as PublishedIcon,
+  MoreVert as MoreIcon,
+  Article as ArticleIcon,
+  School as BookIcon,
+  Event as ConferenceIcon,
+  Description as ReportIcon,
+  Assignment as ThesisIcon,
+  Link as LinkIcon,
+  DateRange as DateIcon,
+  Person as AuthorIcon,
+  LocalOffer as TagIcon,
+  Assessment as MetricsIcon,
+  ViewList as TableViewIcon,
+  ViewModule as CardViewIcon,
+  LibraryAdd as LibraryAddIcon,
+  Folder as FolderIcon,
+  FolderOpen as FolderOpenIcon,
+  DriveFileMove as MoveIcon,
+  Check as CheckIcon,
+  Close as CloseIcon,
+  Clear as ClearIcon,
+  AutoAwesome as AIIcon,
+  FileDownload as ExportIcon,
+  Inbox as UnfiledIcon
+} from '@mui/icons-material';
+import PageHeader from '../../../../components/common/PageHeader';
+import { useAuth } from '../../../../components/AuthProvider';
+import { Skeleton, CircularProgress } from '@mui/material';
+import { useTranslation } from 'react-i18next';
+
+export default function ManagePublications() {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const [publications, setPublications] = useState([]);
+  const [filteredPublications, setFilteredPublications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('date-desc');
+  const [selectedPublication, setSelectedPublication] = useState(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [libraryDialogOpen, setLibraryDialogOpen] = useState(false);
+  const [aiPreviewDialogOpen, setAiPreviewDialogOpen] = useState(false);
+  const [aiPreviewPublication, setAiPreviewPublication] = useState(null);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [aiKeywords, setAiKeywords] = useState([]);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState(null);
+  const [activeTab, setActiveTab] = useState(0);
+  const [error, setError] = useState(null);
+  const [viewType, setViewType] = useState('table'); // 'table' or 'cards'
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  // Library folder management
+  const [folders, setFolders] = useState([]);
+  const [selectedFolder, setSelectedFolder] = useState(null);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+  const [newFolderParent, setNewFolderParent] = useState(null);
+  const [libraryLoading, setLibraryLoading] = useState(true);
+  
+  // Folder management states
+  const [editingFolderId, setEditingFolderId] = useState(null);
+  const [editingFolderName, setEditingFolderName] = useState('');
+  const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false);
+  const [folderToDelete, setFolderToDelete] = useState(null);
+  const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false);
+  const [folderToMove, setFolderToMove] = useState(null);
+  const [moveTargetFolder, setMoveTargetFolder] = useState(null);
+  
+  // Track publications in folders: { folderId: [publicationId1, publicationId2, ...] }
+  const [folderPublications, setFolderPublications] = useState({});
+  
+  // View mode for library dialog: 'add' or 'browse'
+  const [libraryViewMode, setLibraryViewMode] = useState('add');
+  const [libraryFilter, setLibraryFilter] = useState('all'); // 'all' | 'unfiled' | folderId
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [exportAnchor, setExportAnchor] = useState(null);
+  
+  // Move publication between folders
+  const [movePublicationDialogOpen, setMovePublicationDialogOpen] = useState(false);
+  const [publicationToMove, setPublicationToMove] = useState(null);
+  const [sourceFolderId, setSourceFolderId] = useState(null);
+  const [targetFolderForPub, setTargetFolderForPub] = useState(null);
+  
+  // Snackbar state for notifications
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' // 'success', 'error', 'warning', 'info'
+  });
+  
+  
+  // Batch selection and delete
+  const [selectedPublications, setSelectedPublications] = useState([]);
+  const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
+  
+  // Track if component is mounted (client-side only)
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') return;
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  // Generate AI summary for preview
+  const generateAISummary = async (publication) => {
+    setAiGenerating(true);
+    setAiError(null);
+    setAiSummary(null);
+    setAiKeywords([]);
+
+    try {
+      const response = await fetch('/api/ai/summarize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          publications: [{
+            id: publication.id,
+            title: publication.title,
+            abstract: publication.abstract
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate AI summary');
+      }
+
+      const data = await response.json();
+      console.log('AI Summary API Response:', data);
+      
+      if (data.results && data.results.length > 0) {
+        const result = data.results[0];
+        if (result.success) {
+          setAiSummary(result.summary);
+          setAiKeywords(result.keywords || []);
+        } else {
+          throw new Error(result.error || 'Failed to generate summary');
+        }
+      } else if (data.error) {
+        throw new Error(data.error);
+      } else {
+        throw new Error('No summary generated');
+      }
+    } catch (error) {
+      console.error('AI summary generation error:', error);
+      setAiError(error.message || 'Failed to generate AI summary');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  // Handle opening AI preview dialog
+  const handleOpenAIPreview = (publication) => {
+    setAiPreviewPublication(publication);
+    setAiPreviewDialogOpen(true);
+    // Generate AI summary when dialog opens
+    if (publication.abstract || publication.title) {
+      generateAISummary(publication);
+    }
+  };
+
+  // Handle closing AI preview dialog
+  const handleCloseAIPreview = () => {
+    setAiPreviewDialogOpen(false);
+    setAiSummary(null);
+    setAiKeywords([]);
+    setAiError(null);
+  };
+
+  // Fetch library data (folders and publications)
+  const fetchLibrary = useCallback(async () => {
+    try {
+      setLibraryLoading(true);
+      const response = await fetch('/api/publications/library');
+      const data = await response.json();
+      
+      if (data.success) {
+        setFolders(data.folders || []);
+        setFolderPublications(data.folderPublications || {});
+      }
+    } catch (error) {
+      console.error('Error fetching library:', error);
+    } finally {
+      setLibraryLoading(false);
+    }
+  }, []);
+
+  // Load library on mount
+  useEffect(() => {
+    fetchLibrary();
+  }, [fetchLibrary]);
+
+  // Transform database publication to UI format
+  const transformPublicationForUI = (dbPublication) => {
+    return {
+      id: dbPublication.id,
+      title: dbPublication.title || 'Unknown Title',
+      authors: Array.isArray(dbPublication.authors) && dbPublication.authors.length > 0 
+        ? dbPublication.authors 
+        : ['Unknown Author'],
+      journal: dbPublication.journal || 'Unknown Journal',
+      year: dbPublication.year || (dbPublication.publicationDate 
+        ? new Date(dbPublication.publicationDate).getFullYear() 
+        : 'Unknown Year'),
+      type: dbPublication.type || 'article',
+      status: dbPublication.status ? dbPublication.status.toLowerCase().replace('_', '-') : 'published',
+      doi: dbPublication.doi || null,
+      abstract: dbPublication.abstract || '',
+      url: dbPublication.url || '',
+      volume: dbPublication.volume || '',
+      pages: dbPublication.pages || '',
+      isbn: dbPublication.isbn || '',
+      source: dbPublication.source || 'Unknown',
+      // UI-specific fields with defaults
+      citations: 0, // Could be added to database later
+      downloads: 0, // Could be added to database later
+      visibility: 'public', // Could be added to database later
+      tags: Array.isArray(dbPublication.keywords) && dbPublication.keywords.length > 0 
+        ? dbPublication.keywords 
+        : [],
+      createdAt: dbPublication.createdAt || null,
+      updatedAt: dbPublication.updatedAt || null,
+      // Additional metadata
+      publicationDate: dbPublication.publicationDate || null,
+      authorId: dbPublication.authorId || null
+    };
+  };
+
+  useEffect(() => {
+    // Fetch publications from API
+    const fetchPublications = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/publications/import', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch publications: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.success && Array.isArray(data.publications)) {
+          // Transform database publications to UI format
+          const transformedPublications = data.publications.map(transformPublicationForUI);
+          setPublications(transformedPublications);
+          setFilteredPublications(transformedPublications);
+        } else {
+          console.error('Invalid response format:', data);
+          setError('Invalid response format from server');
+          setPublications([]);
+          setFilteredPublications([]);
+        }
+      } catch (error) {
+        console.error('Error fetching publications:', error);
+        setError(`Failed to load publications: ${error.message}`);
+        setPublications([]);
+        setFilteredPublications([]);
+      } finally {
+      setLoading(false);
+      }
+    };
+
+    fetchPublications();
+  }, []);
+
+  useEffect(() => {
+    // Filter and search publications
+    let filtered = publications.filter(pub => {
+      const matchesSearch = pub.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          pub.authors.some(author => author.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                          pub.journal.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesType = typeFilter === 'all' || pub.type === typeFilter;
+
+      let matchesLibrary = true;
+      if (libraryFilter === 'unfiled') {
+        const filed = new Set(Object.values(folderPublications).flat());
+        matchesLibrary = !filed.has(pub.id);
+      } else if (libraryFilter !== 'all') {
+        const descendants = [];
+        const walk = (parentId) => {
+          folders.forEach((folder) => {
+            if (folder.parent === parentId) {
+              descendants.push(folder.id);
+              walk(folder.id);
+            }
+          });
+        };
+        walk(libraryFilter);
+        const ids = new Set();
+        [libraryFilter, ...descendants].forEach((fid) => {
+          (folderPublications[fid] || []).forEach((id) => ids.add(id));
+        });
+        matchesLibrary = ids.has(pub.id);
+      }
+
+      return matchesSearch && matchesType && matchesLibrary;
+    });
+
+    // Sort publications
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'date-desc':
+          return new Date(b.year) - new Date(a.year);
+        case 'date-asc':
+          return new Date(a.year) - new Date(b.year);
+        case 'title':
+          return a.title.localeCompare(b.title);
+        case 'citations':
+          return b.citations - a.citations;
+        default:
+          return 0;
+      }
+    });
+
+    setFilteredPublications(filtered);
+    setPage(0); // Reset to first page when filters change
+  }, [publications, searchQuery, typeFilter, sortBy, libraryFilter, folderPublications, folders]);
+
+  // Calculate recent publications count (client-side only to avoid hydration mismatch)
+  const recentPublicationsCount = React.useMemo(() => {
+    if (!isMounted || publications.length === 0) return 0;
+    
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    return publications.filter(pub => {
+      if (!pub.createdAt) return false;
+      const pubDate = new Date(pub.createdAt);
+      return pubDate >= sixMonthsAgo;
+    }).length;
+  }, [isMounted, publications]);
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'published':
+        return <PublishedIcon sx={{ color: '#4caf50' }} />;
+      case 'under-review':
+        return <DraftIcon sx={{ color: '#ff9800' }} />;
+      case 'draft':
+        return <DraftIcon sx={{ color: '#757575' }} />;
+      default:
+        return <ArticleIcon />;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'published':
+        return '#4caf50';
+      case 'under-review':
+        return '#ff9800';
+      case 'draft':
+        return '#757575';
+      default:
+        return '#8b6cbc';
+    }
+  };
+
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'journal':
+        return <ArticleIcon />;
+      case 'book':
+        return <BookIcon />;
+      case 'conference':
+        return <ConferenceIcon />;
+      case 'report':
+        return <ReportIcon />;
+      case 'thesis':
+        return <ThesisIcon />;
+      default:
+        return <ArticleIcon />;
+    }
+  };
+
+  const handleViewPublication = (publication) => {
+    setSelectedPublication(publication);
+    setViewDialogOpen(true);
+  };
+
+  const handleDeletePublication = (publication) => {
+    setSelectedPublication(publication);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      // Delete from database
+      const response = await fetch(`/api/publications?id=${selectedPublication.id}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete publication');
+      }
+      
+      // Update local state
+      setPublications(prev => prev.filter(pub => pub.id !== selectedPublication.id));
+      setDeleteDialogOpen(false);
+      setSelectedPublication(null);
+      
+      showSnackbar('Publication deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting publication:', error);
+      showSnackbar('Failed to delete publication', 'error');
+    }
+  };
+  
+  const handleSelectAllPublications = (event) => {
+    const pageIds = filteredPublications
+      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+      .map((pub) => pub.id);
+    if (event.target.checked) {
+      setSelectedPublications((prev) => Array.from(new Set([...prev, ...pageIds])));
+    } else {
+      setSelectedPublications((prev) => prev.filter((id) => !pageIds.includes(id)));
+    }
+  };
+
+  const handleSelectAllFiltered = () => {
+    setSelectedPublications(filteredPublications.map((pub) => pub.id));
+  };
+  
+  const handleSelectPublication = (publicationId) => {
+    setSelectedPublications(prev => {
+      if (prev.includes(publicationId)) {
+        return prev.filter(id => id !== publicationId);
+      } else {
+        return [...prev, publicationId];
+      }
+    });
+  };
+
+  const escapeCsv = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+  const downloadTextFile = (filename, content, mime = 'text/plain') => {
+    const blob = new Blob([content], { type: `${mime};charset=utf-8` });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const getSelectedPublicationRecords = () =>
+    publications.filter((pub) => selectedPublications.includes(pub.id));
+
+  const handleExportSelected = (format) => {
+    const pubs = getSelectedPublicationRecords();
+    if (pubs.length === 0) return;
+    setExportAnchor(null);
+    if (format === 'csv') {
+      const header = ['Title', 'Authors', 'Journal', 'Year', 'DOI', 'Type', 'URL'];
+      const rows = pubs.map((pub) => [
+        pub.title,
+        Array.isArray(pub.authors) ? pub.authors.join('; ') : pub.authors,
+        pub.journal,
+        pub.year,
+        pub.doi,
+        pub.type,
+        pub.url,
+      ].map(escapeCsv).join(','));
+      downloadTextFile(`library-export-${pubs.length}.csv`, [header.join(','), ...rows].join('\n'), 'text/csv');
+    } else {
+      const bib = pubs.map((pub, i) => {
+        const key = (pub.doi || pub.id || `item${i}`).toString().replace(/[^a-zA-Z0-9]/g, '').slice(0, 24) || `item${i}`;
+        const authors = Array.isArray(pub.authors) ? pub.authors.join(' and ') : pub.authors;
+        return `@article{${key},\n  title={${pub.title || ''}},\n  author={${authors || ''}},\n  journal={${pub.journal || ''}},\n  year={${pub.year || ''}},\n  doi={${pub.doi || ''}},\n  url={${pub.url || ''}}\n}`;
+      }).join('\n\n');
+      downloadTextFile(`library-export-${pubs.length}.bib`, bib, 'application/x-bibtex');
+    }
+    showSnackbar(`Exported ${pubs.length} publication(s)`, 'success');
+  };
+  
+  const handleBatchDelete = () => {
+    setBatchDeleteDialogOpen(true);
+  };
+
+  const handleOpenBatchAdd = () => {
+    setSelectedFolder(libraryFilter !== 'all' && libraryFilter !== 'unfiled' ? libraryFilter : null);
+    setLibraryViewMode('batch-add');
+    setLibraryDialogOpen(true);
+  };
+
+  const handleOpenBatchMove = () => {
+    setSelectedFolder(null);
+    setLibraryViewMode('batch-move');
+    setLibraryDialogOpen(true);
+  };
+
+  const applyFolderMembership = (folderId, publicationIds, mode) => {
+    setFolderPublications((prev) => {
+      const current = new Set(prev[folderId] || []);
+      publicationIds.forEach((id) => {
+        if (mode === 'add') current.add(id);
+        else current.delete(id);
+      });
+      return { ...prev, [folderId]: Array.from(current) };
+    });
+  };
+
+  const confirmBatchAddToFolder = async () => {
+    if (!selectedFolder || selectedPublications.length === 0) return;
+    const folderName = folders.find((f) => f.id === selectedFolder)?.name || 'folder';
+    try {
+      setBatchBusy(true);
+      const response = await fetch('/api/publications/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'addPublications',
+          folderId: selectedFolder,
+          publicationIds: selectedPublications,
+        }),
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Failed to add to folder');
+      applyFolderMembership(selectedFolder, selectedPublications, 'add');
+      setLibraryDialogOpen(false);
+      showSnackbar(`Added ${selectedPublications.length} item(s) to "${folderName}"`, 'success');
+    } catch (error) {
+      showSnackbar(error.message || 'Failed to add to folder', 'error');
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
+  const confirmBatchMoveToFolder = async () => {
+    if (!selectedFolder || selectedPublications.length === 0) return;
+    if (libraryFilter === 'all' || libraryFilter === 'unfiled') {
+      return confirmBatchAddToFolder();
+    }
+    if (selectedFolder === libraryFilter) {
+      showSnackbar('Choose a different folder to move into', 'warning');
+      return;
+    }
+    const folderName = folders.find((f) => f.id === selectedFolder)?.name || 'folder';
+    try {
+      setBatchBusy(true);
+      const response = await fetch('/api/publications/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'movePublications',
+          sourceFolderId: libraryFilter,
+          targetFolderId: selectedFolder,
+          publicationIds: selectedPublications,
+        }),
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Failed to move items');
+      applyFolderMembership(libraryFilter, selectedPublications, 'remove');
+      applyFolderMembership(selectedFolder, selectedPublications, 'add');
+      setLibraryDialogOpen(false);
+      setSelectedPublications([]);
+      showSnackbar(`Moved ${selectedPublications.length} item(s) to "${folderName}"`, 'success');
+    } catch (error) {
+      showSnackbar(error.message || 'Failed to move items', 'error');
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
+  const handleBatchRemoveFromFolder = async () => {
+    if (libraryFilter === 'all' || libraryFilter === 'unfiled' || selectedPublications.length === 0) return;
+    const folderName = folders.find((f) => f.id === libraryFilter)?.name || 'folder';
+    try {
+      setBatchBusy(true);
+      const response = await fetch('/api/publications/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'removePublications',
+          folderId: libraryFilter,
+          publicationIds: selectedPublications,
+        }),
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Failed to remove from folder');
+      applyFolderMembership(libraryFilter, selectedPublications, 'remove');
+      setSelectedPublications([]);
+      showSnackbar(`Removed ${selectedPublications.length} item(s) from "${folderName}"`, 'success');
+    } catch (error) {
+      showSnackbar(error.message || 'Failed to remove from folder', 'error');
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+  
+  const confirmBatchDelete = async () => {
+    const ids = [...selectedPublications];
+    try {
+      setBatchBusy(true);
+      const response = await fetch('/api/publications', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to delete ${ids.length} publication(s)`);
+      }
+
+      setPublications((prev) => prev.filter((pub) => !ids.includes(pub.id)));
+      setFolderPublications((prev) => {
+        const next = {};
+        Object.entries(prev).forEach(([folderId, pubIds]) => {
+          next[folderId] = pubIds.filter((id) => !ids.includes(id));
+        });
+        return next;
+      });
+      setSelectedPublications([]);
+      setBatchDeleteDialogOpen(false);
+
+      showSnackbar(`Successfully deleted ${data.removed || ids.length} publication(s)`, 'success');
+    } catch (error) {
+      console.error('Error deleting publications:', error);
+      showSnackbar(error.message || 'Failed to delete some publications', 'error');
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
+  const handleAddToLibrary = (publication) => {
+    setSelectedPublication(publication);
+    setLibraryViewMode('add');
+    setLibraryDialogOpen(true);
+  };
+
+  const handleCreateFolder = async () => {
+    if (newFolderName.trim()) {
+      try {
+        const response = await fetch('/api/publications/library', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'createFolder',
+            name: newFolderName.trim(),
+            parentId: newFolderParent
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          setFolders(prev => [...prev, data.folder]);
+          setFolderPublications(prev => ({
+            ...prev,
+            [data.folder.id]: []
+          }));
+          setNewFolderName('');
+          setShowNewFolderInput(false);
+          
+          // Expand parent folder if creating subfolder
+          if (newFolderParent) {
+            handleToggleFolderExpanded(newFolderParent, true);
+          }
+          setNewFolderParent(null);
+          showSnackbar(`Folder "${data.folder.name}" created`, 'success');
+        } else {
+          showSnackbar(data.error || 'Failed to create folder', 'error');
+        }
+      } catch (error) {
+        console.error('Error creating folder:', error);
+        showSnackbar('Failed to create folder', 'error');
+      }
+    }
+  };
+
+  const toggleFolder = async (folderId) => {
+    // Optimistically update UI
+    setFolders(folders.map(folder => 
+      folder.id === folderId ? { ...folder, expanded: !folder.expanded } : folder
+    ));
+    
+    // Persist to database
+    try {
+      await fetch('/api/publications/library', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'toggleExpanded',
+          folderId
+        })
+      });
+    } catch (error) {
+      console.error('Error toggling folder:', error);
+    }
+  };
+
+  // Helper to set folder expanded state
+  const handleToggleFolderExpanded = async (folderId, expanded) => {
+    setFolders(prev => prev.map(folder => 
+      folder.id === folderId ? { ...folder, expanded } : folder
+    ));
+  };
+
+  const handleAddToSelectedFolder = async () => {
+    if (selectedFolder && selectedPublication) {
+      const folderName = folders.find(f => f.id === selectedFolder)?.name || 'folder';
+      
+      try {
+        const response = await fetch('/api/publications/library', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'addPublication',
+            folderId: selectedFolder,
+            publicationId: selectedPublication.id
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // Update local state
+          setFolderPublications(prev => {
+            const currentPubs = prev[selectedFolder] || [];
+            if (currentPubs.includes(selectedPublication.id)) {
+              return prev;
+            }
+            return {
+              ...prev,
+              [selectedFolder]: [...currentPubs, selectedPublication.id]
+            };
+          });
+          setLibraryDialogOpen(false);
+          setSelectedFolder(null);
+          showSnackbar(`Added to "${folderName}" successfully`, 'success');
+          setSelectedPublication(null);
+        } else {
+          showSnackbar(data.error || 'Failed to add publication to folder', 'error');
+        }
+      } catch (error) {
+        console.error('Error adding publication to folder:', error);
+        showSnackbar('Failed to add publication to folder', 'error');
+      }
+    }
+  };
+
+  // Remove publication from folder
+  const handleRemoveFromFolder = async (folderId, publicationId) => {
+    try {
+      const response = await fetch('/api/publications/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'removePublication',
+          folderId,
+          publicationId
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setFolderPublications(prev => ({
+          ...prev,
+          [folderId]: (prev[folderId] || []).filter(id => id !== publicationId)
+        }));
+        showSnackbar('Removed from folder', 'success');
+      } else {
+        showSnackbar(data.error || 'Failed to remove publication', 'error');
+      }
+    } catch (error) {
+      console.error('Error removing publication from folder:', error);
+      showSnackbar('Failed to remove publication', 'error');
+    }
+  };
+
+  // Get subfolder count for a folder
+  const getSubfolderCount = (folderId) => {
+    return folders.filter(f => f.parent === folderId).length;
+  };
+
+  // Get total subfolder count (including nested)
+  const getTotalSubfolderCount = (folderId) => {
+    return getDescendantFolderIds(folderId).length;
+  };
+
+  // Get publication count for a folder (direct)
+  const getPublicationCount = (folderId) => {
+    return (folderPublications[folderId] || []).length;
+  };
+
+  // Get total publication count (including subfolders)
+  const getTotalPublicationCount = (folderId) => {
+    const descendantIds = getDescendantFolderIds(folderId);
+    const allFolderIds = [folderId, ...descendantIds];
+    return allFolderIds.reduce((total, id) => total + (folderPublications[id] || []).length, 0);
+  };
+
+  // Get publications in a folder (including subfolders)
+  const getPublicationsInFolder = (folderId) => {
+    // Get publications directly in this folder
+    const directPubIds = folderPublications[folderId] || [];
+    
+    // Get all descendant folder IDs
+    const descendantIds = getDescendantFolderIds(folderId);
+    
+    // Collect publication IDs from this folder and all subfolders
+    const allPubIds = new Set(directPubIds);
+    descendantIds.forEach(descendantId => {
+      const descendantPubIds = folderPublications[descendantId] || [];
+      descendantPubIds.forEach(pubId => allPubIds.add(pubId));
+    });
+    
+    // Return unique publications
+    return publications.filter(pub => allPubIds.has(pub.id));
+  };
+
+  // Get folders that contain a specific publication
+  const getFoldersForPublication = (publicationId) => {
+    const folderIds = Object.entries(folderPublications)
+      .filter(([folderId, pubIds]) => pubIds.includes(publicationId))
+      .map(([folderId]) => folderId);
+    
+    return folders.filter(f => folderIds.includes(f.id));
+  };
+
+  // Open move publication dialog
+  const handleOpenMovePublication = (publication, currentFolderId) => {
+    setPublicationToMove(publication);
+    setSourceFolderId(currentFolderId);
+    setTargetFolderForPub(null);
+    setMovePublicationDialogOpen(true);
+  };
+
+  // Confirm move publication
+  const handleConfirmMovePublication = async () => {
+    if (publicationToMove && sourceFolderId && targetFolderForPub) {
+      const targetFolderName = folders.find(f => f.id === targetFolderForPub)?.name || 'folder';
+      
+      try {
+        const response = await fetch('/api/publications/library', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'movePublication',
+            sourceFolderId,
+            targetFolderId: targetFolderForPub,
+            publicationId: publicationToMove.id
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // Update local state
+          setFolderPublications(prev => {
+            const updated = { ...prev };
+            updated[sourceFolderId] = (updated[sourceFolderId] || []).filter(id => id !== publicationToMove.id);
+            const targetPubs = updated[targetFolderForPub] || [];
+            if (!targetPubs.includes(publicationToMove.id)) {
+              updated[targetFolderForPub] = [...targetPubs, publicationToMove.id];
+            }
+            return updated;
+          });
+          
+          setMovePublicationDialogOpen(false);
+          setPublicationToMove(null);
+          setSourceFolderId(null);
+          setTargetFolderForPub(null);
+          showSnackbar(`Moved to "${targetFolderName}" successfully`, 'success');
+        } else {
+          showSnackbar(data.error || 'Failed to move publication', 'error');
+        }
+      } catch (error) {
+        console.error('Error moving publication:', error);
+        showSnackbar('Failed to move publication', 'error');
+      }
+    }
+  };
+
+  // Copy publication to another folder (keep in both)
+  const handleCopyPublication = (publication, currentFolderId, targetFolderId) => {
+    if (targetFolderId && targetFolderId !== currentFolderId) {
+      setFolderPublications(prev => {
+        const targetPubs = prev[targetFolderId] || [];
+        if (!targetPubs.includes(publication.id)) {
+          return {
+            ...prev,
+            [targetFolderId]: [...targetPubs, publication.id]
+          };
+        }
+        return prev;
+      });
+    }
+  };
+
+  // Start editing a folder name
+  const handleStartEditFolder = (folder, e) => {
+    e.stopPropagation();
+    setEditingFolderId(folder.id);
+    setEditingFolderName(folder.name);
+  };
+
+  // Save edited folder name
+  const handleSaveEditFolder = async () => {
+    if (editingFolderName.trim() && editingFolderId) {
+      try {
+        const response = await fetch('/api/publications/library', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'rename',
+            folderId: editingFolderId,
+            name: editingFolderName.trim()
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          setFolders(folders.map(folder =>
+            folder.id === editingFolderId
+              ? { ...folder, name: editingFolderName.trim() }
+              : folder
+          ));
+          setEditingFolderId(null);
+          setEditingFolderName('');
+          showSnackbar('Folder renamed', 'success');
+        } else {
+          showSnackbar(data.error || 'Failed to rename folder', 'error');
+        }
+      } catch (error) {
+        console.error('Error renaming folder:', error);
+        showSnackbar('Failed to rename folder', 'error');
+      }
+    }
+  };
+
+  // Cancel editing folder
+  const handleCancelEditFolder = () => {
+    setEditingFolderId(null);
+    setEditingFolderName('');
+  };
+
+  // Open delete confirmation dialog
+  const handleOpenDeleteFolder = (folder, e) => {
+    e.stopPropagation();
+    setFolderToDelete(folder);
+    setDeleteFolderDialogOpen(true);
+  };
+
+  // Get all descendant folder IDs (for cascading delete)
+  const getDescendantFolderIds = (folderId) => {
+    const descendants = [];
+    const findDescendants = (parentId) => {
+      folders.forEach(folder => {
+        if (folder.parent === parentId) {
+          descendants.push(folder.id);
+          findDescendants(folder.id);
+        }
+      });
+    };
+    findDescendants(folderId);
+    return descendants;
+  };
+
+  // Confirm delete folder
+  const handleConfirmDeleteFolder = async () => {
+    if (folderToDelete) {
+      const folderName = folderToDelete.name;
+      
+      try {
+        const response = await fetch(`/api/publications/library?folderId=${folderToDelete.id}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          const descendantIds = getDescendantFolderIds(folderToDelete.id);
+          const idsToDelete = [folderToDelete.id, ...descendantIds];
+          
+          setFolders(folders.filter(folder => !idsToDelete.includes(folder.id)));
+          
+          // Clean up publications from deleted folders
+          setFolderPublications(prev => {
+            const updated = { ...prev };
+            idsToDelete.forEach(id => delete updated[id]);
+            return updated;
+          });
+          
+          // Clear selection if deleted folder was selected
+          if (idsToDelete.includes(selectedFolder)) {
+            setSelectedFolder(null);
+          }
+          if (idsToDelete.includes(libraryFilter)) {
+            setLibraryFilter('all');
+          }
+          
+          setDeleteFolderDialogOpen(false);
+          setFolderToDelete(null);
+          showSnackbar(`Folder "${folderName}" deleted`, 'success');
+        } else {
+          showSnackbar(data.error || 'Failed to delete folder', 'error');
+        }
+      } catch (error) {
+        console.error('Error deleting folder:', error);
+        showSnackbar('Failed to delete folder', 'error');
+      }
+    }
+  };
+
+  // Open move folder dialog
+  const handleOpenMoveFolder = (folder, e) => {
+    e.stopPropagation();
+    setFolderToMove(folder);
+    setMoveTargetFolder(null);
+    setMoveFolderDialogOpen(true);
+  };
+
+  // Check if a folder is a descendant of another (to prevent circular references)
+  const isDescendantOf = (folderId, potentialAncestorId) => {
+    const descendantIds = getDescendantFolderIds(potentialAncestorId);
+    return descendantIds.includes(folderId);
+  };
+
+  // Get valid move targets (exclude self, descendants, and current parent)
+  const getValidMoveTargets = (folder) => {
+    const descendantIds = getDescendantFolderIds(folder.id);
+    return folders.filter(f => 
+      f.id !== folder.id && // Not itself
+      !descendantIds.includes(f.id) && // Not a descendant
+      f.id !== folder.parent // Not current parent
+    );
+  };
+
+  // Confirm move folder
+  const handleConfirmMoveFolder = async () => {
+    if (folderToMove) {
+      const folderName = folderToMove.name;
+      const targetName = moveTargetFolder 
+        ? folders.find(f => f.id === moveTargetFolder)?.name 
+        : 'root';
+      
+      try {
+        const response = await fetch('/api/publications/library', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'move',
+            folderId: folderToMove.id,
+            parentId: moveTargetFolder
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          setFolders(folders.map(folder =>
+            folder.id === folderToMove.id
+              ? { ...folder, parent: moveTargetFolder }
+              : folder
+          ));
+          setMoveFolderDialogOpen(false);
+          setFolderToMove(null);
+          setMoveTargetFolder(null);
+          showSnackbar(`Folder "${folderName}" moved to ${targetName}`, 'success');
+        } else {
+          showSnackbar(data.error || 'Failed to move folder', 'error');
+        }
+      } catch (error) {
+        console.error('Error moving folder:', error);
+        showSnackbar('Failed to move folder', 'error');
+      }
+    }
+  };
+
+  const renderFolderTree = (parentId = null, level = 0, options = {}) => {
+    const selectedId = options.selectedId ?? selectedFolder;
+    const onSelect = options.onSelect ?? ((id) => setSelectedFolder(id));
+    return folders
+      .filter(folder => folder.parent === parentId)
+      .map(folder => {
+        const hasChildren = folders.some(f => f.parent === folder.id);
+        const isSelected = selectedId === folder.id;
+        const isEditing = editingFolderId === folder.id;
+        
+        return (
+          <Box key={folder.id}>
+            <Box
+              onClick={() => !isEditing && onSelect(folder.id)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                py: 1,
+                px: 2,
+                pl: 2 + level * 3,
+                cursor: isEditing ? 'default' : 'pointer',
+                bgcolor: isSelected ? '#8b6cbc15' : 'transparent',
+                borderLeft: isSelected ? '3px solid #8b6cbc' : '3px solid transparent',
+                '&:hover': {
+                  bgcolor: isEditing ? 'transparent' : '#8b6cbc08',
+                  '& .folder-actions': {
+                    opacity: 1
+                  }
+                },
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {hasChildren && (
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFolder(folder.id);
+                  }}
+                  sx={{ mr: 0.5, p: 0.5 }}
+                >
+                  {folder.expanded ? '▼' : '▶'}
+                </IconButton>
+              )}
+              {!hasChildren && <Box sx={{ width: 28 }} />}
+              <Box sx={{ mr: 1, color: '#8b6cbc' }}>📁</Box>
+              
+              {/* Editable folder name or display name */}
+              {isEditing ? (
+                <Box sx={{ display: 'flex', gap: 0.5, flex: 1, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                  <TextField
+                    size="small"
+                    value={editingFolderName}
+                    onChange={(e) => setEditingFolderName(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') handleSaveEditFolder();
+                      if (e.key === 'Escape') handleCancelEditFolder();
+                    }}
+                    autoFocus
+                    sx={{ 
+                      flex: 1,
+                      '& .MuiInputBase-input': { py: 0.5, fontSize: '0.875rem' }
+                    }}
+                  />
+                  <IconButton size="small" onClick={handleSaveEditFolder} sx={{ color: '#4caf50', p: 0.5 }}>
+                    <CheckIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton size="small" onClick={handleCancelEditFolder} sx={{ color: '#f44336', p: 0.5 }}>
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, gap: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: isSelected ? 600 : 400 }}>
+                    {folder.name}
+                  </Typography>
+                  {/* Folder stats badges */}
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    {getSubfolderCount(folder.id) > 0 && (
+                      <Tooltip title={`${getSubfolderCount(folder.id)} subfolder(s)`}>
+                        <Chip
+                          size="small"
+                          label={getSubfolderCount(folder.id)}
+                          icon={<FolderIcon sx={{ fontSize: '14px !important' }} />}
+                          sx={{ 
+                            height: 20, 
+                            fontSize: '0.7rem',
+                            bgcolor: '#e3f2fd',
+                            color: '#1976d2',
+                            '& .MuiChip-icon': { color: '#1976d2', ml: 0.5 },
+                            '& .MuiChip-label': { px: 0.5 }
+                          }}
+                        />
+                      </Tooltip>
+                    )}
+                    {getPublicationCount(folder.id) > 0 && (
+                      <Tooltip title={`${getPublicationCount(folder.id)} publication(s)`}>
+                        <Chip
+                          size="small"
+                          label={getPublicationCount(folder.id)}
+                          icon={<ArticleIcon sx={{ fontSize: '14px !important' }} />}
+                          sx={{ 
+                            height: 20, 
+                            fontSize: '0.7rem',
+                            bgcolor: '#f3e5f5',
+                            color: '#8b6cbc',
+                            '& .MuiChip-icon': { color: '#8b6cbc', ml: 0.5 },
+                            '& .MuiChip-label': { px: 0.5 }
+                          }}
+                        />
+                      </Tooltip>
+                    )}
+                  </Box>
+                </Box>
+              )}
+              
+              {/* Folder action buttons */}
+              {!isEditing && (
+                <Box 
+                  className="folder-actions"
+                  sx={{ 
+                    ml: 'auto', 
+                    display: 'flex', 
+                    gap: 0.25
+                  }}
+                >
+                  <Tooltip title="Add subfolder">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setNewFolderParent(folder.id);
+                        setShowNewFolderInput(true);
+                      }}
+                      sx={{ p: 0.5,  color: '#8b6cbc'  }}
+                    >
+                      <AddIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Rename folder">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleStartEditFolder(folder, e)}
+                      sx={{ p: 0.5,  color: '#2196f3'}}
+                    >
+                      <EditIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Move folder">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleOpenMoveFolder(folder, e)}
+                      sx={{ p: 0.5, color: '#ff9800'  }}
+                    >
+                      <MoveIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete folder">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleOpenDeleteFolder(folder, e)}
+                      sx={{ p: 0.5, color: '#f44336'  }}
+                    >
+                      <DeleteIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              )}
+            </Box>
+            {folder.expanded && renderFolderTree(folder.id, level + 1, options)}
+            {showNewFolderInput && newFolderParent === folder.id && (
+              <Box sx={{ pl: 2 + (level + 1) * 3, pr: 2, py: 1 }}>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <TextField
+                    size="small"
+                    placeholder="Folder name"
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
+                    autoFocus
+                    sx={{ flex: 1 }}
+                  />
+                  <IconButton size="small" onClick={handleCreateFolder} color="primary">
+                    <CheckIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton 
+                    size="small" 
+                    onClick={() => {
+                      setShowNewFolderInput(false);
+                      setNewFolderName('');
+                      setNewFolderParent(null);
+                    }}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              </Box>
+            )}
+          </Box>
+        );
+      });
+  };
+
+  // Pagination calculations
+  const currentPagePublications = filteredPublications.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+  const filedPublicationCount = new Set(Object.values(folderPublications).flat()).size;
+  const unfiledPublicationCount = Math.max(0, publications.length - filedPublicationCount);
+  const viewingFolder = libraryFilter !== 'all' && libraryFilter !== 'unfiled';
+  const allFilteredSelected = filteredPublications.length > 0 && filteredPublications.every((p) => selectedPublications.includes(p.id));
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setTypeFilter('all');
+    setSortBy('date-desc');
+    setPage(0);
+  };
+
+  const TabPanel = ({ children, value, index }) => (
+    <div hidden={value !== index}>
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
+
+  const getSourceIcon = (source) => {
+    switch (source?.toLowerCase()) {
+      case 'pubmed':
+        return <img src="/pubmed.svg" alt="PubMed" style={{ width: 20, height: 20 }} />;
+      case 'crossref':
+        return <img src="/doi.svg" alt="Crossref" style={{ width: 20, height: 20 }} />;
+      case 'openalex':
+        return <img src="/OpenAlex.png" alt="OpenAlex" style={{ width: 20, height: 20 }} />;
+      case 'bibtex':
+        return <img src="/bibtex_s.png" alt="BibTeX" style={{ width: 20, height: 20 }} />;
+      default:
+        return <ArticleIcon sx={{ fontSize: 20 }} />;
+    }
+  };
+
+  const PublicationsCards = ({ publications }) => (
+    <Box>
+      {publications.map((publication) => (
+        <Card 
+          key={publication.id}
+          sx={{ 
+            mb: 2, 
+            '&:hover': { boxShadow: 4 },
+            transition: 'box-shadow 0.2s ease',
+            border: selectedPublications.includes(publication.id) ? '1px solid #8b6cbc' : '1px solid transparent',
+            bgcolor: selectedPublications.includes(publication.id) ? alpha('#8b6cbc', 0.04) : 'background.paper',
+          }}
+        >
+      <CardContent>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+          <Box sx={{ flex: 1, display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                <Checkbox
+                  checked={selectedPublications.includes(publication.id)}
+                  onChange={() => handleSelectPublication(publication.id)}
+                  sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' }, mt: 0.25, p: 0.5 }}
+                />
+                <Box sx={{ flex: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+              {getTypeIcon(publication.type)}
+                  <Box sx={{ ml: 1, flex: 1 }}>
+                    <Typography 
+                      variant="h6" 
+                      sx={{ 
+                        fontWeight: 600, 
+                        lineHeight: 1.3,
+                        cursor: 'pointer',
+                        '&:hover': { color: '#8b6cbc' }
+                      }}
+                      onClick={() => handleViewPublication(publication)}
+                    >
+                {publication.title}
+                    </Typography>
+                    {publication.source && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                        {getSourceIcon(publication.source)}
+                        <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                          Imported from {publication.source}
+              </Typography>
+                      </Box>
+                    )}
+                  </Box>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              <AuthorIcon sx={{ fontSize: 16, mr: 0.5 }} />
+              {publication.authors.join(', ')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              <DateIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                  {publication.journal} {publication.year && `(${publication.year})`}
+                  {publication.volume && `, Vol. ${publication.volume}`}
+                  {publication.pages && `, pp. ${publication.pages}`}
+            </Typography>
+            {publication.doi && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                <LinkIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                    DOI: <a href={`https://doi.org/${publication.doi}`} target="_blank" rel="noopener noreferrer" style={{ color: '#8b6cbc' }}>
+                      {publication.doi}
+                    </a>
+                  </Typography>
+                )}
+                {publication.abstract && (
+                  <Typography variant="body2" color="text.secondary" sx={{ 
+                    mb: 1, 
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
+                  }}>
+                    {publication.abstract}
+              </Typography>
+            )}
+          </Box>
+          </Box>
+          
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, ml: 2 }}>
+            <Chip 
+              label={publication.status.replace('-', ' ')} 
+              size="small"
+              sx={{ 
+                bgcolor: getStatusColor(publication.status),
+                color: 'white'
+              }}
+              icon={getStatusIcon(publication.status)}
+            />
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 0.5
+            }}>
+              <Tooltip title="View" arrow>
+                <IconButton
+                  size="small"
+                  onClick={() => handleViewPublication(publication)}
+                  sx={{ 
+                    color: '#8b6cbc',
+                    '&:hover': { bgcolor: '#8b6cbc10' }
+                  }}
+                >
+                  <ViewIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Edit" arrow>
+                <IconButton
+                  size="small"
+                  sx={{ 
+                    color: '#666',
+                    '&:hover': { bgcolor: '#66666610' }
+                  }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Add to Library" arrow>
+                <IconButton
+                  size="small"
+                  onClick={() => handleAddToLibrary(publication)}
+                  sx={{ 
+                    color: '#4caf50',
+                    '&:hover': { bgcolor: '#4caf5010' }
+                  }}
+                >
+                  <LibraryAddIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Download" arrow>
+                <IconButton
+                  size="small"
+                  sx={{ 
+                    color: '#666',
+                    '&:hover': { bgcolor: '#66666610' }
+                  }}
+                >
+                  <DownloadIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete" arrow>
+                <IconButton
+                  size="small"
+                  onClick={() => handleDeletePublication(publication)}
+                  sx={{ 
+                    color: '#f44336',
+                    '&:hover': { bgcolor: '#f4433610' }
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
+        </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                {publication.tags && publication.tags.length > 0 && publication.tags.map((tag, index) => (
+              <Chip
+                key={index}
+                label={tag}
+                size="small"
+                variant="outlined"
+                sx={{ borderColor: '#8b6cbc40', color: '#8b6cbc' }}
+              />
+            ))}
+          </Box>
+          
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+            {publication.visibility === 'public' ? (
+              <PublicIcon sx={{ fontSize: 18, color: '#4caf50' }} />
+            ) : (
+              <PrivateIcon sx={{ fontSize: 18, color: '#757575' }} />
+            )}
+            <Typography variant="caption" color="text.secondary">
+              Updated {publication.updatedAt ? new Date(publication.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+            </Typography>
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+      ))}
+    </Box>
+  );
+
+  const PublicationsTable = ({ publications }) => (
+    <TableContainer sx={{ borderRadius: 1, overflow: 'hidden' }}>
+      <Table>
+        <TableHead>
+          <TableRow sx={{ bgcolor: '#8b6cbc' }}>
+            <TableCell padding="checkbox" sx={{ borderBottom: 'none' }}>
+              <Checkbox
+                sx={{ color: 'white', '&.Mui-checked': { color: 'white' }, '&.MuiCheckbox-indeterminate': { color: 'white' } }}
+                indeterminate={publications.some((p) => selectedPublications.includes(p.id)) && !publications.every((p) => selectedPublications.includes(p.id))}
+                checked={publications.length > 0 && publications.every((p) => selectedPublications.includes(p.id))}
+                onChange={handleSelectAllPublications}
+              />
+            </TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('common.name')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('researcher.authors')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('common.date')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('researcher.imported')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('common.status')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('common.type')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('researcher.library')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2 }}>{t('common.source')}</TableCell>
+            <TableCell sx={{ fontWeight: 600, color: 'white', borderBottom: 'none', py: 2, textAlign: 'center' }}>{t('common.actions')}</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {publications.map((publication, index) => (
+            <TableRow 
+              key={publication.id}
+              sx={{ 
+                bgcolor: selectedPublications.includes(publication.id)
+                  ? alpha('#8b6cbc', 0.08)
+                  : index % 2 === 0 ? '#fafafa' : 'white',
+                '&:hover': { backgroundColor: alpha('#8b6cbc', 0.12) },
+                transition: 'background-color 0.2s ease'
+              }}
+            >
+              {/* Checkbox */}
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={selectedPublications.includes(publication.id)}
+                  onChange={() => handleSelectPublication(publication.id)}
+                  sx={{ color: '#8b6cbc', '&.Mui-checked': { color: '#8b6cbc' } }}
+                />
+              </TableCell>
+              {/* Title */}
+              <TableCell sx={{ py: 2, maxWidth: 400 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                  {getTypeIcon(publication.type)}
+                  <Box sx={{ flex: 1 }}>
+                    <Typography 
+                      variant="subtitle2" 
+                      sx={{ 
+                        fontWeight: 600,
+                        lineHeight: 1.3,
+                        mb: 0.5,
+                        cursor: 'pointer',
+                        '&:hover': { color: '#8b6cbc' }
+                      }}
+                      onClick={() => handleViewPublication(publication)}
+                    >
+                      {publication.title}
+                    </Typography>
+                    {publication.journal && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        {publication.journal}
+                        {publication.volume && ` • Vol. ${publication.volume}`}
+                        {publication.pages && ` • pp. ${publication.pages}`}
+                      </Typography>
+                    )}
+                    {publication.doi && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        <LinkIcon sx={{ fontSize: 12, mr: 0.5 }} />
+                        {publication.doi.length > 40 ? `${publication.doi.substring(0, 40)}...` : publication.doi}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              </TableCell>
+
+              {/* Authors */}
+              <TableCell sx={{ py: 2, maxWidth: 200 }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    lineHeight: 1.4
+                  }}
+                >
+                  {publication.authors.join(', ')}
+                </Typography>
+              </TableCell>
+
+              {/* Date */}
+              <TableCell sx={{ py: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {publication.publicationDate 
+                    ? new Date(publication.publicationDate).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })
+                    : publication.year || 'N/A'
+                  }
+                </Typography>
+              </TableCell>
+
+              {/* Imported Date */}
+              <TableCell sx={{ py: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                  {publication.createdAt 
+                    ? new Date(publication.createdAt).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })
+                    : 'N/A'
+                  }
+                </Typography>
+              </TableCell>
+
+              {/* Status */}
+              <TableCell sx={{ py: 2 }}>
+                <Chip 
+                  label={publication.status === 'published' ? 'Published' : publication.status.replace('-', ' ')} 
+                  size="small"
+                  sx={{ 
+                    bgcolor: publication.status === 'published' ? '#4caf50' : '#ff9800',
+                    color: 'white',
+                    fontWeight: 500,
+                    textTransform: 'capitalize'
+                  }}
+                />
+              </TableCell>
+
+              {/* Type */}
+              <TableCell sx={{ py: 2 }}>
+                <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                  {publication.type}
+                </Typography>
+              </TableCell>
+
+              {/* Library */}
+              <TableCell sx={{ py: 2 }}>
+                {(() => {
+                  const pubFolders = getFoldersForPublication(publication.id);
+                  if (pubFolders.length === 0) {
+                    return (
+                      <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                        —
+                      </Typography>
+                    );
+                  }
+                  return (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {pubFolders.slice(0, 2).map(folder => (
+                        <Chip
+                          key={folder.id}
+                          label={folder.name}
+                          size="small"
+                          icon={<FolderIcon sx={{ fontSize: '14px !important' }} />}
+                          sx={{
+                            height: 24,
+                            fontSize: '0.75rem',
+                            bgcolor: '#f3e5f5',
+                            color: '#8b6cbc',
+                            '& .MuiChip-icon': { color: '#8b6cbc', ml: 0.5 },
+                            '& .MuiChip-label': { px: 0.75 }
+                          }}
+                        />
+                      ))}
+                      {pubFolders.length > 2 && (
+                        <Tooltip title={pubFolders.slice(2).map(f => f.name).join(', ')}>
+                          <Chip
+                            label={`+${pubFolders.length - 2}`}
+                            size="small"
+                            sx={{
+                              height: 24,
+                              fontSize: '0.75rem',
+                              bgcolor: '#e0e0e0',
+                              color: '#666',
+                              '& .MuiChip-label': { px: 0.75 }
+                            }}
+                          />
+                        </Tooltip>
+                      )}
+                    </Box>
+                  );
+                })()}
+              </TableCell>
+
+              {/* Source / Imported From */}
+              <TableCell sx={{ py: 2 }}>
+                {publication.source ? (
+                  <Tooltip title={`Imported from ${publication.source}`} arrow>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 0.75,
+                      cursor: 'default'
+                    }}>
+                      {getSourceIcon(publication.source)}
+                      <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                        {publication.source}
+                      </Typography>
+                    </Box>
+                  </Tooltip>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                    —
+                  </Typography>
+                )}
+              </TableCell>
+
+              {/* Actions */}
+              <TableCell sx={{ py: 2, textAlign: 'center' }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 0.5, 
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  minHeight: '40px'
+                }}>
+                  <Tooltip title="AI Preview" arrow>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleOpenAIPreview(publication)}
+                      sx={{ 
+                        color: '#8b6cbc',
+                        '&:hover': { bgcolor: '#8b6cbc10' }
+                      }}
+                    >
+                      <AIIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Add to Library" arrow>
+                    <IconButton 
+                      size="small"
+                      onClick={() => handleAddToLibrary(publication)}
+                      sx={{ 
+                        color: '#4caf50',
+                        '&:hover': { bgcolor: '#4caf5010' }
+                      }}
+                    >
+                      <LibraryAddIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete" arrow>
+                    <IconButton 
+                      size="small"
+                      onClick={() => handleDeletePublication(publication)}
+                      sx={{ 
+                        color: '#f44336',
+                        '&:hover': { bgcolor: '#f4433610' }
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f8f9fa'}} >
+      <PageHeader
+        title={t('researcher.manage_publications')}
+        description={t('researcher.manage_publications_desc')}
+        icon={<EditIcon />}
+        breadcrumbs={[
+          { label: t('common.dashboard'), path: '/researcher' },
+          { label: t('researcher.publications'), path: '/researcher/publications' },
+          { label: t('researcher.manage_publications') }
+        ]}
+        actionButton={
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              sx={{
+                bgcolor: 'white',
+                color: '#8b6cbc',
+                '&:hover': {
+                  bgcolor: '#f5f5f5',
+                  color: '#7559a3'
+                }
+              }}
+              onClick={() => window.location.href = '/researcher/publications/import'}
+            >
+              {t('researcher.import_publication')}
+            </Button>
+        }
+      />
+
+      <Container maxWidth="xl" sx={{ py: 4, mt:5 }}>
+        {/* Statistics Cards */}
+        <Grid container spacing={2.5} sx={{ mb: 4, mt: -6 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  {t('researcher.total_publications')}
+                </Typography>
+                <ArticleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {publications.length}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                All research outputs
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  {t('researcher.with_doi')}
+              </Typography>
+                <LinkIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {publications.filter(pub => pub.doi && pub.doi.length > 0).length}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                {publications.length > 0 ? Math.round((publications.filter(pub => pub.doi && pub.doi.length > 0).length / publications.length) * 100) : 0}% have DOI
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  {t('researcher.recent_6m')}
+              </Typography>
+                <DateIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {recentPublicationsCount}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Added in last 6 months
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Paper sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              bgcolor: '#8b6cbc',
+              boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+              height: '100px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
+                  {t('researcher.libraries')}
+              </Typography>
+                <FolderIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
+                {folders.length}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Library folders created
+              </Typography>
+            </Paper>
+          </Grid>
+        </Grid>
+
+        {/* Filter & Search Publications */}
+        <Paper sx={{ p: 2.5, mb: 3, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)' }}>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 3, 
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            '@media (max-width: 768px)': {
+              flexDirection: 'column',
+              alignItems: 'stretch'
+            }
+          }}>
+            <Box sx={{ flex: '2 1 300px', minWidth: '300px' }}>
+              <TextField
+                fullWidth
+                placeholder="Search publications, authors, journals..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: '#8b6cbc' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchQuery && (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setSearchQuery('')} size="small">
+                        <ClearIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  )
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    backgroundColor: 'rgba(255,255,255,0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,1)',
+                      '& fieldset': {
+                        borderColor: '#8b6cbc',
+                      }
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#8b6cbc',
+                    },
+                  },
+                }}
+              />
+            </Box>
+            <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+              <FormControl fullWidth>
+                <InputLabel>{t('researcher.pub_type')}</InputLabel>
+                <Select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  label={t('researcher.pub_type')}
+                  MenuProps={{
+                    disableScrollLock: true
+                  }}
+                  sx={{
+                    borderRadius: 3,
+                    backgroundColor: 'rgba(255,255,255,0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,1)'
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#8b6cbc',
+                    },
+                  }}
+                >
+                  <MenuItem value="all">{t('common.all')}</MenuItem>
+                  <MenuItem value="article">{t('researcher.journal_article')}</MenuItem>
+                  <MenuItem value="conference">{t('researcher.conference_paper')}</MenuItem>
+                  <MenuItem value="book">{t('researcher.book_chapter')}</MenuItem>
+                  <MenuItem value="report">{t('common.report')}</MenuItem>
+                  <MenuItem value="thesis">{t('researcher.thesis')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
+              <FormControl fullWidth>
+                <InputLabel>{t('common.sort_by')}</InputLabel>
+                <Select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  label={t('common.sort_by')}
+                  MenuProps={{
+                    disableScrollLock: true
+                  }}
+                  sx={{
+                    borderRadius: 3,
+                    backgroundColor: 'rgba(255,255,255,0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,1)'
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#8b6cbc',
+                    },
+                  }}
+                >
+                  <MenuItem value="date-desc">{t('common.newest_first')}</MenuItem>
+                  <MenuItem value="date-asc">{t('common.oldest_first')}</MenuItem>
+                  <MenuItem value="title">{t('common.title_az')}</MenuItem>
+                  <MenuItem value="citations">{t('researcher.most_citations')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            <Box sx={{ flex: '0 0 auto' }}>
+              <Button
+                variant="text"
+                startIcon={<ClearIcon />}
+                onClick={clearFilters}
+                sx={{ 
+                  borderRadius: 3,
+                  height: '56px',
+                  px: 3,
+                  color: '#8b6cbc',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'rgba(139, 108, 188, 0.08)',
+                    color: '#7a5cac'
+                  }
+                }}
+              >
+                {t('common.clear_all')}
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
+
+        {/* Error Display */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 4 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Library + publications */}
+        <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'stretch', flexDirection: { xs: 'column', md: 'row' } }}>
+          <Paper sx={{ width: { xs: '100%', md: 280 }, flexShrink: 0, borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: { md: 'calc(100vh - 220px)' } }}>
+            <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{t('researcher.my_library')}</Typography>
+                <Typography variant="caption" color="text.secondary">{folders.length} folder{folders.length === 1 ? '' : 's'}</Typography>
+              </Box>
+              <Tooltip title="New folder">
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setNewFolderParent(null);
+                    setShowNewFolderInput(true);
+                    setLibraryViewMode('browse');
+                    setLibraryDialogOpen(true);
+                  }}
+                  sx={{ color: '#8b6cbc' }}
+                >
+                  <AddIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+            <Box sx={{ flex: 1, overflow: 'auto', py: 1 }}>
+              {[
+                { id: 'all', label: 'All publications', count: publications.length, icon: <ArticleIcon sx={{ fontSize: 18, color: '#8b6cbc' }} /> },
+                { id: 'unfiled', label: 'Unfiled', count: unfiledPublicationCount, icon: <UnfiledIcon sx={{ fontSize: 18, color: '#8b6cbc' }} /> },
+              ].map((item) => (
+                <Box
+                  key={item.id}
+                  onClick={() => { setLibraryFilter(item.id); setPage(0); setSelectedPublications([]); }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 2,
+                    py: 1,
+                    cursor: 'pointer',
+                    bgcolor: libraryFilter === item.id ? alpha('#8b6cbc', 0.1) : 'transparent',
+                    borderLeft: libraryFilter === item.id ? '3px solid #8b6cbc' : '3px solid transparent',
+                    '&:hover': { bgcolor: alpha('#8b6cbc', 0.06) },
+                  }}
+                >
+                  {item.icon}
+                  <Typography variant="body2" sx={{ flex: 1, fontWeight: libraryFilter === item.id ? 600 : 400 }}>{item.label}</Typography>
+                  <Chip label={item.count} size="small" sx={{ height: 20, fontSize: '0.65rem', bgcolor: alpha('#8b6cbc', 0.1), color: '#8b6cbc' }} />
+                </Box>
+              ))}
+              <Divider sx={{ my: 1 }} />
+              <Box sx={{ px: 2, py: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', letterSpacing: 0.6 }}>FOLDERS</Typography>
+                <Tooltip title="Manage folders">
+                  <IconButton size="small" onClick={() => { setLibraryViewMode('browse'); setLibraryDialogOpen(true); }} sx={{ color: '#8b6cbc' }}>
+                    <FolderOpenIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+              {libraryLoading ? (
+                <Box sx={{ px: 2, py: 2 }}><LinearProgress /></Box>
+              ) : folders.length === 0 ? (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', px: 2, py: 1.5 }}>
+                  No folders yet. Create one to organize your library.
+                </Typography>
+              ) : (
+                renderFolderTree(null, 0, {
+                  selectedId: libraryFilter,
+                  onSelect: (id) => { setLibraryFilter(id); setPage(0); setSelectedPublications([]); },
+                })
+              )}
+            </Box>
+          </Paper>
+
+        {/* Publications List */}
+        <Paper sx={{ flex: 1, minWidth: 0, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+          <Box sx={{ p: 2.5, bgcolor: 'white' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <ArticleIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.125rem' }}>
+                  {libraryFilter === 'all'
+                    ? 'Publications'
+                    : libraryFilter === 'unfiled'
+                      ? 'Unfiled'
+                      : folders.find((f) => f.id === libraryFilter)?.name || 'Publications'}
+            </Typography>
+                <Chip 
+                  label={filteredPublications.length}
+                  size="small"
+                  sx={{ 
+                    bgcolor: '#8b6cbc',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.7rem',
+                    height: 20
+                  }}
+                />
+                {selectedPublications.length > 0 && (
+                  <Chip 
+                    label={`${selectedPublications.length} selected`}
+                    size="small"
+                    onDelete={() => setSelectedPublications([])}
+                    sx={{ 
+                      bgcolor: '#ff9800',
+                      color: 'white',
+                      fontWeight: 600,
+                      fontSize: '0.7rem',
+                      height: 20,
+                      '& .MuiChip-deleteIcon': {
+                        color: 'white',
+                        '&:hover': { color: 'rgba(255,255,255,0.8)' }
+                      }
+                    }}
+                  />
+                )}
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                {selectedPublications.length > 0 && (
+                  <>
+                    <Button size="small" variant="outlined" startIcon={<LibraryAddIcon />} disabled={batchBusy} onClick={handleOpenBatchAdd} sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}>
+                      Add to folder
+                    </Button>
+                    {viewingFolder && (
+                      <>
+                        <Button size="small" variant="outlined" startIcon={<MoveIcon />} disabled={batchBusy} onClick={handleOpenBatchMove} sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}>
+                          Move
+                        </Button>
+                        <Button size="small" variant="outlined" startIcon={<CloseIcon />} disabled={batchBusy} onClick={handleBatchRemoveFromFolder} sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}>
+                          Remove from folder
+                        </Button>
+                      </>
+                    )}
+                    <Button size="small" variant="outlined" startIcon={<ExportIcon />} onClick={(e) => setExportAnchor(e.currentTarget)} sx={{ borderColor: '#8b6cbc', color: '#8b6cbc' }}>
+                      Export
+                    </Button>
+                    <Menu anchorEl={exportAnchor} open={Boolean(exportAnchor)} onClose={() => setExportAnchor(null)}>
+                      <MenuItem onClick={() => handleExportSelected('csv')}>
+                        <ListItemIcon><ExportIcon fontSize="small" /></ListItemIcon>
+                        <ListItemText>CSV</ListItemText>
+                      </MenuItem>
+                      <MenuItem onClick={() => handleExportSelected('bibtex')}>
+                        <ListItemIcon><ArticleIcon fontSize="small" /></ListItemIcon>
+                        <ListItemText>BibTeX</ListItemText>
+                      </MenuItem>
+                    </Menu>
+                    <Button size="small" variant="contained" color="error" startIcon={<DeleteIcon />} disabled={batchBusy} onClick={handleBatchDelete}>
+                      Delete
+                    </Button>
+                    {!allFilteredSelected && (
+                      <Button size="small" onClick={handleSelectAllFiltered} sx={{ color: '#8b6cbc', textTransform: 'none' }}>
+                        Select all {filteredPublications.length}
+                      </Button>
+                    )}
+                  </>
+                )}
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                  {filteredPublications.length === 0
+                    ? 'No publications'
+                    : `Showing ${page * rowsPerPage + 1}-${Math.min((page + 1) * rowsPerPage, filteredPublications.length)} of ${filteredPublications.length}`}
+                </Typography>
+              </Box>
+            </Box>
+
+            {loading ? (
+              <Box sx={{ py: 4 }}>
+                <LinearProgress sx={{ color: '#8b6cbc' }} />
+                <Typography sx={{ textAlign: 'center', mt: 2 }}>
+                  Loading publications...
+                </Typography>
+              </Box>
+            ) : filteredPublications.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 6 }}>
+                <ArticleIcon sx={{ fontSize: 80, color: '#e0e0e0', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No publications found
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  {searchQuery || typeFilter !== 'all' || libraryFilter !== 'all'
+                    ? 'Try adjusting your search, type, or folder filter'
+                    : 'Start by importing publications from PubMed, Crossref, OpenAlex, or other sources'}
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7559a3' } }}
+                  onClick={() => window.location.href = '/researcher/publications/import'}
+                >
+                  Import Publications
+                </Button>
+              </Box>
+            ) : viewType === 'table' ? (
+              <Box>
+                <PublicationsTable publications={currentPagePublications} />
+                {/* Pagination */}
+                <TablePagination
+                  component="div"
+                  count={filteredPublications.length}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  rowsPerPageOptions={[5, 10, 25, 50]}
+                  sx={{
+                    borderTop: '1px solid #e5e7eb',
+                    bgcolor: '#fafbfd',
+                    '.MuiTablePagination-toolbar': {
+                      minHeight: 52
+                    },
+                    '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+                      fontWeight: 500,
+                      color: '#6b7280'
+                    },
+                    '.MuiTablePagination-select': {
+                      color: '#8b6cbc',
+                      fontWeight: 600
+                    }
+                  }}
+                />
+              </Box>
+            ) : (
+              <Box>
+                <PublicationsCards publications={currentPagePublications} />
+                {/* Pagination for Cards View */}
+                <TablePagination
+                  component="div"
+                  count={filteredPublications.length}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  rowsPerPageOptions={[5, 10, 25, 50]}
+                  sx={{
+                    mt: 4,
+                    pt: 3,
+                    borderTop: '1px solid #e5e7eb',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    '.MuiTablePagination-toolbar': {
+                      minHeight: 52
+                    },
+                    '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
+                      fontWeight: 500,
+                      color: '#6b7280'
+                    },
+                    '.MuiTablePagination-select': {
+                      color: '#8b6cbc',
+                      fontWeight: 600
+                    }
+                  }}
+                />
+              </Box>
+            )}
+          </Box>
+        </Paper>
+        </Box>
+
+        {/* Add to Library Dialog */}
+        <Dialog
+          open={libraryDialogOpen}
+          onClose={() => {
+            setLibraryDialogOpen(false);
+            setSelectedFolder(null);
+            setShowNewFolderInput(false);
+            setNewFolderName('');
+            setNewFolderParent(null);
+            setLibraryViewMode('add');
+          }}
+          maxWidth="lg"
+          fullWidth
+          scroll="paper"
+          disableScrollLock={true}
+          sx={{
+            '& .MuiDialog-paper': {
+              margin: 2,
+              height: '80vh',
+              maxHeight: 700,
+            }
+          }}
+        >
+          <DialogTitle sx={{ bgcolor: '#8b6cbc', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <LibraryAddIcon sx={{ mr: 1 }} />
+              {libraryViewMode === 'add' ? 'Add to My Library' : libraryViewMode === 'batch-add' ? `Add ${selectedPublications.length} to folder` : libraryViewMode === 'batch-move' ? `Move ${selectedPublications.length} to folder` : 'Library Browser'}
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Tooltip title="Create new folder at root">
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setNewFolderParent(null);
+                    setShowNewFolderInput(true);
+                  }}
+                  sx={{ color: 'white' }}
+                >
+                  <AddIcon />
+                </IconButton>
+              </Tooltip>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setLibraryDialogOpen(false);
+                  setSelectedFolder(null);
+                  setShowNewFolderInput(false);
+                  setNewFolderName('');
+                  setNewFolderParent(null);
+                  setLibraryViewMode('add');
+                }}
+                sx={{ color: 'white' }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>
+            {/* Selected publication banner (only in add mode) */}
+            {['add', 'batch-add', 'batch-move'].includes(libraryViewMode) && (selectedPublication || selectedPublications.length > 0) && (
+              <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                  {libraryViewMode === 'batch-move'
+                    ? 'Moving to folder:'
+                    : libraryViewMode === 'batch-add'
+                      ? 'Adding to folder:'
+                      : 'Adding publication:'}
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {libraryViewMode === 'add'
+                    ? selectedPublication?.title
+                    : `${selectedPublications.length} selected publication${selectedPublications.length === 1 ? '' : 's'}`}
+                </Typography>
+              </Box>
+            )}
+            
+            {/* Split panel layout */}
+            <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+              {/* Left panel - Folder tree */}
+              <Box sx={{ 
+                width: '40%', 
+                borderRight: '1px solid #e0e0e0', 
+                display: 'flex', 
+                flexDirection: 'column',
+                overflow: 'hidden'
+              }}>
+                <Box sx={{ p: 1.5, bgcolor: '#fafafa', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#333' }}>
+                    Folders
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {folders.length} folder(s)
+                  </Typography>
+                </Box>
+                <Box sx={{ flex: 1, overflow: 'auto', py: 1 }}>
+                  {renderFolderTree()}
+                  
+                  {showNewFolderInput && newFolderParent === null && (
+                    <Box sx={{ px: 2, py: 1 }}>
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                        <TextField
+                          size="small"
+                          placeholder="New folder name"
+                          value={newFolderName}
+                          onChange={(e) => setNewFolderName(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
+                          autoFocus
+                          sx={{ flex: 1 }}
+                        />
+                        <IconButton size="small" onClick={handleCreateFolder} sx={{ color: '#4caf50' }}>
+                          <CheckIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => {
+                            setShowNewFolderInput(false);
+                            setNewFolderName('');
+                          }}
+                          sx={{ color: '#f44336' }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+              
+              {/* Right panel - Folder contents */}
+              <Box sx={{ 
+                width: '60%', 
+                display: 'flex', 
+                flexDirection: 'column',
+                overflow: 'hidden',
+                bgcolor: '#fafafa'
+              }}>
+                <Box sx={{ p: 1.5, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
+                  {selectedFolder ? (
+                    <>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <FolderOpenIcon sx={{ color: '#8b6cbc', fontSize: 20 }} />
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#333' }}>
+                          {folders.find(f => f.id === selectedFolder)?.name}
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {getPublicationCount(selectedFolder)} publication(s) • {getSubfolderCount(selectedFolder)} subfolder(s)
+                      </Typography>
+                    </>
+                  ) : (
+                    <>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#333' }}>
+                        Folder Contents
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Select a folder to view its contents
+                      </Typography>
+                    </>
+                  )}
+                </Box>
+                
+                <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+                  {selectedFolder ? (
+                    getPublicationsInFolder(selectedFolder).length > 0 ? (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {getPublicationsInFolder(selectedFolder).map(pub => (
+                          <Paper
+                            key={pub.id}
+                            sx={{
+                              p: 2,
+                              bgcolor: 'white',
+                              borderRadius: 1,
+                              border: '1px solid #e0e0e0',
+                              '&:hover': {
+                                borderColor: '#8b6cbc',
+                                boxShadow: '0 2px 8px rgba(139, 108, 188, 0.1)'
+                              }
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <Box sx={{ flex: 1, pr: 2 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5, lineHeight: 1.3 }}>
+                                  {pub.title}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                  {pub.authors.slice(0, 3).join(', ')}{pub.authors.length > 3 ? ' et al.' : ''}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {pub.journal} {pub.year && `(${pub.year})`}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                <Tooltip title="Move to another folder">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleOpenMovePublication(pub, selectedFolder)}
+                                    sx={{ 
+                                      color: '#ff9800',
+                                      '&:hover': { bgcolor: '#ff980010' }
+                                    }}
+                                  >
+                                    <MoveIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Remove from folder">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleRemoveFromFolder(selectedFolder, pub.id)}
+                                    sx={{ 
+                                      color: '#f44336',
+                                      '&:hover': { bgcolor: '#f4433610' }
+                                    }}
+                                  >
+                                    <CloseIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            </Box>
+                          </Paper>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Box sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        height: '100%',
+                        color: 'text.secondary'
+                      }}>
+                        <ArticleIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 1 }} />
+                        <Typography variant="body2" color="text.secondary">
+                          No publications in this folder
+                        </Typography>
+                        {libraryViewMode === 'add' && (
+                          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                            Click "Add to Folder" to add the selected publication
+                          </Typography>
+                        )}
+                      </Box>
+                    )
+                  ) : (
+                    <Box sx={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      height: '100%',
+                      color: 'text.secondary'
+                    }}>
+                      <FolderOpenIcon sx={{ fontSize: 48, color: '#e0e0e0', mb: 1 }} />
+                      <Typography variant="body2">
+                        Select a folder from the left panel
+                      </Typography>
+                      <Typography variant="caption" sx={{ mt: 0.5 }}>
+                        to view its contents
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+              <Box>
+                {selectedFolder && (
+                  <Typography variant="body2" color="text.secondary">
+                    Selected: <strong>{folders.find(f => f.id === selectedFolder)?.name}</strong>
+                  </Typography>
+                )}
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button 
+                  onClick={() => {
+                    setLibraryDialogOpen(false);
+                    setSelectedFolder(null);
+                    setShowNewFolderInput(false);
+                    setNewFolderName('');
+                    setNewFolderParent(null);
+                    setLibraryViewMode('add');
+                  }}
+                >
+                  {libraryViewMode === 'add' ? 'Cancel' : 'Close'}
+                </Button>
+                {libraryViewMode === 'add' && (
+                  <Button 
+                    variant="contained" 
+                    onClick={handleAddToSelectedFolder}
+                    disabled={!selectedFolder}
+                    sx={{ 
+                      bgcolor: '#8b6cbc', 
+                      '&:hover': { bgcolor: '#7559a3' },
+                      '&:disabled': { bgcolor: '#ccc' }
+                    }}
+                  >
+                    Add to Folder
+                  </Button>
+                )}
+                {libraryViewMode === 'batch-add' && (
+                  <Button
+                    variant="contained"
+                    onClick={confirmBatchAddToFolder}
+                    disabled={!selectedFolder || batchBusy}
+                    sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7559a3' } }}
+                  >
+                    {batchBusy ? 'Adding…' : `Add ${selectedPublications.length} to folder`}
+                  </Button>
+                )}
+                {libraryViewMode === 'batch-move' && (
+                  <Button
+                    variant="contained"
+                    onClick={confirmBatchMoveToFolder}
+                    disabled={!selectedFolder || batchBusy}
+                    sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7559a3' } }}
+                  >
+                    {batchBusy ? 'Moving…' : `Move ${selectedPublications.length} here`}
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete Folder Confirmation Dialog */}
+        <Dialog
+          open={deleteFolderDialogOpen}
+          onClose={() => {
+            setDeleteFolderDialogOpen(false);
+            setFolderToDelete(null);
+          }}
+          maxWidth="xs"
+          fullWidth
+          disableScrollLock={true}
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#f44336' }}>
+            <DeleteIcon />
+            Delete Folder
+          </DialogTitle>
+          <DialogContent>
+            {folderToDelete && (
+              <Box>
+                <Typography variant="body1" sx={{ mb: 2 }}>
+                  Are you sure you want to delete the folder <strong>"{folderToDelete.name}"</strong>?
+                </Typography>
+                {getDescendantFolderIds(folderToDelete.id).length > 0 && (
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    This folder contains {getDescendantFolderIds(folderToDelete.id).length} subfolder(s). 
+                    All subfolders will also be deleted.
+                  </Alert>
+                )}
+                <Typography variant="body2" color="text.secondary">
+                  This action cannot be undone.
+                </Typography>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button 
+              onClick={() => {
+                setDeleteFolderDialogOpen(false);
+                setFolderToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="contained" 
+              color="error"
+              onClick={handleConfirmDeleteFolder}
+              startIcon={<DeleteIcon />}
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Move Folder Dialog */}
+        <Dialog
+          open={moveFolderDialogOpen}
+          onClose={() => {
+            setMoveFolderDialogOpen(false);
+            setFolderToMove(null);
+            setMoveTargetFolder(null);
+          }}
+          maxWidth="sm"
+          fullWidth
+          disableScrollLock={true}
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#ff9800', color: 'white' }}>
+            <MoveIcon />
+            Move Folder
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 0 }}>
+            {folderToMove && (
+              <Box>
+                <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                    Moving folder:
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    📁 {folderToMove.name}
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ p: 2 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary' }}>
+                    Select destination folder:
+                  </Typography>
+                  
+                  {/* Root option */}
+                  <Box
+                    onClick={() => setMoveTargetFolder(null)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      py: 1.5,
+                      px: 2,
+                      cursor: 'pointer',
+                      bgcolor: moveTargetFolder === null ? '#ff980015' : 'transparent',
+                      borderLeft: moveTargetFolder === null ? '3px solid #ff9800' : '3px solid transparent',
+                      borderRadius: 1,
+                      mb: 1,
+                      '&:hover': {
+                        bgcolor: '#ff980008'
+                      }
+                    }}
+                  >
+                    <Box sx={{ mr: 1.5 }}>🏠</Box>
+                    <Typography variant="body2" sx={{ fontWeight: moveTargetFolder === null ? 600 : 400 }}>
+                      Root Level (No Parent)
+                    </Typography>
+                  </Box>
+                  
+                  <Divider sx={{ my: 1 }} />
+                  
+                  {/* Available folders */}
+                  <Box sx={{ maxHeight: 250, overflow: 'auto' }}>
+                    {getValidMoveTargets(folderToMove).length > 0 ? (
+                      getValidMoveTargets(folderToMove).map(folder => {
+                        const isSelected = moveTargetFolder === folder.id;
+                        // Calculate indent level
+                        let indent = 0;
+                        let currentFolder = folder;
+                        while (currentFolder.parent !== null) {
+                          indent++;
+                          currentFolder = folders.find(f => f.id === currentFolder.parent);
+                          if (!currentFolder) break;
+                        }
+                        
+                        return (
+                          <Box
+                            key={folder.id}
+                            onClick={() => setMoveTargetFolder(folder.id)}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              py: 1,
+                              px: 2,
+                              pl: 2 + indent * 2,
+                              cursor: 'pointer',
+                              bgcolor: isSelected ? '#ff980015' : 'transparent',
+                              borderLeft: isSelected ? '3px solid #ff9800' : '3px solid transparent',
+                              '&:hover': {
+                                bgcolor: '#ff980008'
+                              }
+                            }}
+                          >
+                            <Box sx={{ mr: 1, color: '#8b6cbc' }}>📁</Box>
+                            <Typography variant="body2" sx={{ fontWeight: isSelected ? 600 : 400 }}>
+                              {folder.name}
+                            </Typography>
+                          </Box>
+                        );
+                      })
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+                        No valid destinations available. 
+                        <br />
+                        <Typography variant="caption">
+                          Cannot move to self, descendants, or current parent.
+                        </Typography>
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button 
+              onClick={() => {
+                setMoveFolderDialogOpen(false);
+                setFolderToMove(null);
+                setMoveTargetFolder(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handleConfirmMoveFolder}
+              disabled={folderToMove && moveTargetFolder === folderToMove.parent}
+              startIcon={<MoveIcon />}
+              sx={{ 
+                bgcolor: '#ff9800', 
+                '&:hover': { bgcolor: '#f57c00' },
+                '&:disabled': { bgcolor: '#ccc' }
+              }}
+            >
+              Move Here
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Move Publication Dialog */}
+        <Dialog
+          open={movePublicationDialogOpen}
+          onClose={() => {
+            setMovePublicationDialogOpen(false);
+            setPublicationToMove(null);
+            setSourceFolderId(null);
+            setTargetFolderForPub(null);
+          }}
+          maxWidth="sm"
+          fullWidth
+          disableScrollLock={true}
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#ff9800', color: 'white' }}>
+            <MoveIcon />
+            Move Publication
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 0 }}>
+            {publicationToMove && (
+              <Box>
+                <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                    Moving publication:
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {publicationToMove.title}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    From: <strong>{folders.find(f => f.id === sourceFolderId)?.name}</strong>
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ p: 2 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary' }}>
+                    Select destination folder:
+                  </Typography>
+                  
+                  {/* Available folders (excluding source folder) */}
+                  <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+                    {folders
+                      .filter(f => f.id !== sourceFolderId)
+                      .map(folder => {
+                        const isSelected = targetFolderForPub === folder.id;
+                        // Calculate indent level
+                        let indent = 0;
+                        let currentFolder = folder;
+                        while (currentFolder.parent !== null) {
+                          indent++;
+                          currentFolder = folders.find(f => f.id === currentFolder.parent);
+                          if (!currentFolder) break;
+                        }
+                        
+                        // Check if publication already exists in this folder
+                        const alreadyInFolder = (folderPublications[folder.id] || []).includes(publicationToMove.id);
+                        
+                        return (
+                          <Box
+                            key={folder.id}
+                            onClick={() => !alreadyInFolder && setTargetFolderForPub(folder.id)}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              py: 1,
+                              px: 2,
+                              pl: 2 + indent * 2,
+                              cursor: alreadyInFolder ? 'not-allowed' : 'pointer',
+                              bgcolor: isSelected ? '#ff980015' : 'transparent',
+                              borderLeft: isSelected ? '3px solid #ff9800' : '3px solid transparent',
+                              opacity: alreadyInFolder ? 0.5 : 1,
+                              '&:hover': {
+                                bgcolor: alreadyInFolder ? 'transparent' : '#ff980008'
+                              }
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Box sx={{ mr: 1, color: '#8b6cbc' }}>📁</Box>
+                              <Typography variant="body2" sx={{ fontWeight: isSelected ? 600 : 400 }}>
+                                {folder.name}
+                              </Typography>
+                            </Box>
+                            {alreadyInFolder && (
+                              <Chip 
+                                label="Already here" 
+                                size="small" 
+                                sx={{ 
+                                  height: 20, 
+                                  fontSize: '0.65rem',
+                                  bgcolor: '#e0e0e0',
+                                  color: '#666'
+                                }} 
+                              />
+                            )}
+                            {getPublicationCount(folder.id) > 0 && !alreadyInFolder && (
+                              <Typography variant="caption" color="text.secondary">
+                                {getPublicationCount(folder.id)} items
+                              </Typography>
+                            )}
+                          </Box>
+                        );
+                      })}
+                  </Box>
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button 
+              onClick={() => {
+                setMovePublicationDialogOpen(false);
+                setPublicationToMove(null);
+                setSourceFolderId(null);
+                setTargetFolderForPub(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handleConfirmMovePublication}
+              disabled={!targetFolderForPub}
+              startIcon={<MoveIcon />}
+              sx={{ 
+                bgcolor: '#ff9800', 
+                '&:hover': { bgcolor: '#f57c00' },
+                '&:disabled': { bgcolor: '#ccc' }
+              }}
+            >
+              Move Here
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* View Publication Dialog */}
+        <Dialog
+          open={viewDialogOpen}
+          onClose={() => setViewDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+          scroll="paper"
+          disableScrollLock={true}
+          sx={{
+            '& .MuiDialog-paper': {
+              margin: 2,
+            }
+          }}
+        >
+          <DialogTitle sx={{ bgcolor: '#8b6cbc', color: 'white', display: 'flex', alignItems: 'center' }}>
+            <ViewIcon sx={{ mr: 1 }} />
+            Publication Details
+          </DialogTitle>
+          <DialogContent dividers>
+            {selectedPublication && (
+              <Box>
+                <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                  {selectedPublication.title}
+                </Typography>
+                
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid size={3}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Authors</Typography>
+                  </Grid>
+                  <Grid size={9}>
+                    <Typography variant="body2">{selectedPublication.authors.join(', ')}</Typography>
+                  </Grid>
+                  
+                  <Grid size={3}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Publication</Typography>
+                  </Grid>
+                  <Grid size={9}>
+                    <Typography variant="body2">
+                      {selectedPublication.journal}
+                      {selectedPublication.year && ` (${selectedPublication.year})`}
+                      {selectedPublication.volume && `, Vol. ${selectedPublication.volume}`}
+                      {selectedPublication.pages && `, pp. ${selectedPublication.pages}`}
+                </Typography>
+                  </Grid>
+                  
+                  <Grid size={3}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Type</Typography>
+                  </Grid>
+                  <Grid size={9}>
+                    <Typography variant="body2">{selectedPublication.type}</Typography>
+                  </Grid>
+                  
+                  <Grid size={3}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Status</Typography>
+                  </Grid>
+                  <Grid size={9}>
+                    <Chip 
+                      label={selectedPublication.status.replace('-', ' ')} 
+                      size="small"
+                      sx={{ bgcolor: getStatusColor(selectedPublication.status), color: 'white' }}
+                    />
+                  </Grid>
+                  
+                  {selectedPublication.source && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Source</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          {getSourceIcon(selectedPublication.source)}
+                          <Typography variant="body2" sx={{ ml: 0.5 }}>
+                            Imported from {selectedPublication.source}
+                </Typography>
+                        </Box>
+                      </Grid>
+                    </>
+                  )}
+                  
+                  {selectedPublication.doi && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>DOI</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Typography variant="body2">
+                          <a 
+                            href={`https://doi.org/${selectedPublication.doi}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ color: '#8b6cbc' }}
+                          >
+                            {selectedPublication.doi}
+                          </a>
+                </Typography>
+                      </Grid>
+                    </>
+                  )}
+                  
+                  {selectedPublication.url && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>URL</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Typography variant="body2">
+                          <a 
+                            href={selectedPublication.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ color: '#8b6cbc' }}
+                          >
+                            View Publication
+                          </a>
+                </Typography>
+                      </Grid>
+                    </>
+                  )}
+                  
+                  {selectedPublication.isbn && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>ISBN</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Typography variant="body2">{selectedPublication.isbn}</Typography>
+                      </Grid>
+                    </>
+                  )}
+                </Grid>
+
+                {selectedPublication.abstract && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Abstract</Typography>
+                    <Typography variant="body2" sx={{ 
+                      textAlign: 'justify',
+                      bgcolor: '#f5f5f5',
+                      p: 2,
+                      borderRadius: 1,
+                      lineHeight: 1.6
+                    }}>
+                      {selectedPublication.abstract}
+                  </Typography>
+                  </Box>
+                )}
+                
+                {selectedPublication.tags && selectedPublication.tags.length > 0 && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Keywords</Typography>
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                      {selectedPublication.tags.map((tag, index) => (
+                        <Chip
+                          key={index}
+                          label={tag}
+                          size="small"
+                          variant="outlined"
+                          sx={{ borderColor: '#8b6cbc40', color: '#8b6cbc' }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+
+                <Divider sx={{ my: 2 }} />
+                
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'text.secondary' }}>
+                  <Typography variant="body2">
+                    Created: {selectedPublication.createdAt ? new Date(selectedPublication.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                  </Typography>
+                  <Typography variant="body2">
+                    Updated: {selectedPublication.updatedAt ? new Date(selectedPublication.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                </Typography>
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          scroll="paper"
+          disableScrollLock={true}
+          sx={{
+            '& .MuiDialog-paper': {
+              margin: 2,
+            }
+          }}
+        >
+          <DialogTitle>Confirm Delete</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to delete "{selectedPublication?.title}"? This action cannot be undone.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button onClick={confirmDelete} color="error" variant="contained">
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* AI Preview Dialog */}
+        <Dialog
+          open={aiPreviewDialogOpen}
+          onClose={() => setAiPreviewDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+          scroll="paper"
+          disableScrollLock={true}
+        >
+          <DialogTitle sx={{ bgcolor: '#8b6cbc', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AIIcon />
+            Publication Details & AI Summary
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 3 }}>
+            {aiPreviewPublication && (
+              <Box>
+                <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                  {aiPreviewPublication.title}
+                </Typography>
+                
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid size={3}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Authors</Typography>
+                  </Grid>
+                  <Grid size={9}>
+                    <Typography variant="body2">{aiPreviewPublication.authors?.join(', ') || 'Unknown authors'}</Typography>
+                  </Grid>
+                  
+                  {aiPreviewPublication.journal && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Publication</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Typography variant="body2">
+                          {aiPreviewPublication.journal}
+                          {aiPreviewPublication.year && ` (${aiPreviewPublication.year})`}
+                          {aiPreviewPublication.volume && `, Vol. ${aiPreviewPublication.volume}`}
+                          {aiPreviewPublication.pages && `, pp. ${aiPreviewPublication.pages}`}
+                        </Typography>
+                      </Grid>
+                    </>
+                  )}
+                  
+                  <Grid size={3}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Type</Typography>
+                  </Grid>
+                  <Grid size={9}>
+                    <Typography variant="body2">{aiPreviewPublication.type}</Typography>
+                  </Grid>
+                  
+                  <Grid size={3}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Status</Typography>
+                  </Grid>
+                  <Grid size={9}>
+                    <Chip 
+                      label={aiPreviewPublication.status?.replace('-', ' ') || 'Unknown'} 
+                      size="small"
+                      sx={{ bgcolor: '#8b6cbc', color: 'white' }}
+                    />
+                  </Grid>
+                  
+                  {aiPreviewPublication.source && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Source</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Typography variant="body2">
+                          Imported from {aiPreviewPublication.source}
+                        </Typography>
+                      </Grid>
+                    </>
+                  )}
+                  
+                  {aiPreviewPublication.doi && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>DOI</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Typography variant="body2">
+                          <a 
+                            href={`https://doi.org/${aiPreviewPublication.doi}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ color: '#8b6cbc' }}
+                          >
+                            {aiPreviewPublication.doi}
+                          </a>
+                        </Typography>
+                      </Grid>
+                    </>
+                  )}
+                  
+                  {aiPreviewPublication.url && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>URL</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Typography variant="body2">
+                          <a 
+                            href={aiPreviewPublication.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ color: '#8b6cbc' }}
+                          >
+                            View Publication
+                          </a>
+                        </Typography>
+                      </Grid>
+                    </>
+                  )}
+                  
+                  {aiPreviewPublication.isbn && (
+                    <>
+                      <Grid size={3}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>ISBN</Typography>
+                      </Grid>
+                      <Grid size={9}>
+                        <Typography variant="body2">{aiPreviewPublication.isbn}</Typography>
+                      </Grid>
+                    </>
+                  )}
+                </Grid>
+
+                {aiPreviewPublication.abstract && (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Abstract</Typography>
+                    <Typography variant="body2" sx={{ 
+                      textAlign: 'justify',
+                      bgcolor: '#f5f5f5',
+                      p: 2,
+                      borderRadius: 1,
+                      lineHeight: 1.6
+                    }}>
+                      {aiPreviewPublication.abstract}
+                    </Typography>
+                  </Box>
+                )}
+                
+                {aiPreviewPublication.tags && aiPreviewPublication.tags.length > 0 && (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Keywords</Typography>
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                      {aiPreviewPublication.tags.map((tag, index) => (
+                        <Chip
+                          key={index}
+                          label={tag}
+                          size="small"
+                          variant="outlined"
+                          sx={{ borderColor: '#8b6cbc40', color: '#8b6cbc' }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+
+                <Divider sx={{ my: 3 }} />
+
+                <Box sx={{ 
+                  p: 2, 
+                  bgcolor: 'rgba(139, 108, 188, 0.08)', 
+                  borderRadius: 1,
+                  border: '1px solid rgba(139, 108, 188, 0.2)'
+                }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                    <AIIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
+                    AI-Generated Summary
+                  </Typography>
+
+                  {/* Loading State */}
+                  {aiGenerating && (
+                    <Box sx={{ py: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                        <CircularProgress size={20} sx={{ color: '#8b6cbc' }} />
+                        <Typography variant="body2" color="text.secondary">
+                          Generating AI summary...
+                        </Typography>
+                      </Box>
+                      <Skeleton variant="text" width="100%" height={20} />
+                      <Skeleton variant="text" width="95%" height={20} />
+                      <Skeleton variant="text" width="90%" height={20} />
+                    </Box>
+                  )}
+
+                  {/* Error State */}
+                  {aiError && !aiGenerating && (
+                    <Alert severity="warning" sx={{ mt: 1 }}>
+                      <Typography variant="body2">
+                        {aiError}
+                      </Typography>
+                    </Alert>
+                  )}
+
+                  {/* Success State */}
+                  {aiSummary && !aiGenerating && !aiError && (
+                    <Box>
+                      <Box 
+                        sx={{ 
+                          mb: 2,
+                          '& h3': { fontSize: '1rem', fontWeight: 600, color: '#333', mt: 2, mb: 1 },
+                          '& p': { fontSize: '0.875rem', lineHeight: 1.6, mb: 1 },
+                          '& ul': { pl: 2, mb: 1 },
+                          '& li': { fontSize: '0.875rem', lineHeight: 1.6, mb: 0.5 },
+                          '& strong': { fontWeight: 600, color: '#8b6cbc' }
+                        }}
+                        dangerouslySetInnerHTML={{ __html: aiSummary }}
+                      />
+
+                      {aiKeywords && aiKeywords.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontWeight: 600 }}>
+                            AI-Extracted Keywords:
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                            {aiKeywords.map((keyword, index) => (
+                              <Chip
+                                key={index}
+                                label={keyword}
+                                size="small"
+                                sx={{
+                                  bgcolor: '#8b6cbc',
+                                  color: 'white',
+                                  fontWeight: 500,
+                                  fontSize: '0.75rem',
+                                  '&:hover': { bgcolor: '#7b5ca7' }
+                                }}
+                              />
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
+                    </Box>
+                  )}
+
+                  {/* No Summary Yet */}
+                  {!aiSummary && !aiGenerating && !aiError && (
+                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                      No abstract available to generate summary.
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={handleCloseAIPreview}>Close</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Batch Delete Confirmation Dialog */}
+        <Dialog
+          open={batchDeleteDialogOpen}
+          onClose={() => setBatchDeleteDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle sx={{ bgcolor: '#f44336', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DeleteIcon />
+            Confirm Batch Delete
+          </DialogTitle>
+          <DialogContent sx={{ mt: 2 }}>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              This action cannot be undone!
+            </Alert>
+            <Typography variant="body1">
+              Are you sure you want to delete <strong>{selectedPublications.length}</strong> publication{selectedPublications.length > 1 ? 's' : ''}?
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              This will permanently remove {selectedPublications.length > 1 ? 'these publications' : 'this publication'} from your library.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setBatchDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={confirmBatchDelete}
+              disabled={batchBusy}
+              startIcon={<DeleteIcon />}
+              sx={{
+                bgcolor: '#f44336',
+                '&:hover': { bgcolor: '#d32f2f' }
+              }}
+            >
+              Delete {selectedPublications.length} Publication{selectedPublications.length > 1 ? 's' : ''}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert 
+            onClose={handleCloseSnackbar} 
+            severity={snackbar.severity} 
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Container>
+    </Box>
+  );
+}

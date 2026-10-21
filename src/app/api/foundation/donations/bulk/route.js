@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
+import { maskName } from '@/lib/donor-privacy';
 
 export async function POST(request) {
   try {
@@ -99,7 +100,7 @@ export async function POST(request) {
           },
         });
 
-        succeeded.push({ rowIndex, id: newDonation.id, donorName: newDonation.donorName });
+        succeeded.push({ rowIndex, id: newDonation.id, donorName: newDonation.isAnonymous ? 'Anonymous Donor' : maskName(newDonation.donorName, newDonation.donorType) });
       } catch (err) {
         failed.push({ rowIndex, error: err.message });
       }

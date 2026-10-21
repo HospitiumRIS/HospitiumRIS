@@ -11,10 +11,12 @@ function buildFallbackInsights(metrics) {
   const top = topPublications?.[0];
 
   return {
-    narrativeSummary: `You have ${overview.totalPublications} publications with ${overview.totalCitations} tracked citations and an h-index of ${overview.hIndex}.`,
+    narrativeSummary: overview.totalCitations === null || overview.totalCitations === undefined
+      ? `You have ${overview.totalPublications} publications on record. Citation metrics are not available yet; link your ORCID iD so they can be retrieved from OpenAlex.`
+      : `You have ${overview.totalPublications} publications with ${overview.totalCitations} citations and an h-index of ${overview.hIndex ?? 0}.`,
     growthRecommendations: [
       overview.collaborators < 5 ? 'Expand your co-author network — cross-institution collaborations tend to raise citation counts.' : 'Keep nurturing your existing collaborator network; it is a meaningful share of your output.',
-      overview.totalPublications > 0 && overview.hIndex / overview.totalPublications < 0.3 ? 'Consider targeting higher-visibility journals for upcoming submissions to lift your h-index.' : 'Your h-index is tracking well relative to your publication count.'
+      overview.totalPublications > 0 && (overview.hIndex || 0) / overview.totalPublications < 0.3 ? 'Consider targeting higher-visibility journals for upcoming submissions to lift your h-index.' : 'Your h-index is tracking well relative to your publication count.'
     ],
     standoutPublication: top
       ? { title: top.title, reason: `Your most-cited work, with ${top.citations} tracked citations${top.year ? ` since ${top.year}` : ''}.` }
