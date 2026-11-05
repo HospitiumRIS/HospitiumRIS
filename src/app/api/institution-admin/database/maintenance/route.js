@@ -5,10 +5,11 @@ import {
   getOwnedInstitution,
   getInstitutionMemberIds,
 } from '@/lib/institution-admin';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const ALLOWED_OPERATIONS = new Set(['cleanup']);
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     const { user, error } = await requireInstitutionAdmin();
     if (error) return error;
@@ -79,3 +80,5 @@ async function performInstitutionCleanup(institution) {
     executedAt: new Date().toISOString(),
   };
 }
+
+export const POST = withAdminAudit(handlePOST, { action: 'INSTITUTION_MAINTENANCE_RUN', summary: ({ values }) => `Ran database maintenance${values.operation ? `: ${values.operation}` : ''}`, targetType: 'Database', captureValues: ['operation'] });

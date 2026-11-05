@@ -4,6 +4,7 @@ import { requireGlobalAdmin } from '@/lib/require-global-admin';
 import { uniqueInstitutionSlug, slugify } from '@/lib/institution-slug';
 import { defaultEnabledModules } from '@/lib/institution-modules';
 import { loadInstitutionAdmins } from '@/lib/institution-admins';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -73,7 +74,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     const { user, error } = await requireGlobalAdmin();
     if (error) return error;
@@ -128,3 +129,5 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Failed to create institution' }, { status: 500 });
   }
 }
+
+export const POST = withAdminAudit(handlePOST, { action: 'INSTITUTION_CREATED', summary: ({ json }) => `Created institution ${json?.institution?.name || ''}`.trim(), targetType: 'Institution', targetFromResponse: (json) => json?.institution?.id, institutionFromResponse: (json) => json?.institution?.id });

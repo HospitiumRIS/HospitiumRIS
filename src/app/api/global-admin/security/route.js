@@ -59,13 +59,18 @@ export async function GET(request) {
       }),
       prisma.user.count({
         where: {
-          updatedAt: {
+          lastLoginAt: {
             gte: last24Hours
           }
         }
       }),
-      // This would come from a failed login attempts table if implemented
-      0
+      // Failed sign-in attempts are recorded in the audit trail (audit_events)
+      prisma.auditEvent.count({
+        where: {
+          action: 'LOGIN_FAILED',
+          createdAt: { gte: last24Hours }
+        }
+      })
     ]);
 
     // Parse security events from logs

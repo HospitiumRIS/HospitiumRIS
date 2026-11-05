@@ -6,6 +6,7 @@ import {
   deleteInstitutionLogoFile,
   readInstitutionLogoFile,
 } from '@/lib/institution-logo';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 export async function GET() {
   try {
@@ -34,7 +35,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     const { user, error } = await requireInstitutionAdmin();
     if (error) return error;
@@ -77,7 +78,7 @@ export async function POST(request) {
   }
 }
 
-export async function DELETE() {
+async function handleDELETE() {
   try {
     const { user, error } = await requireInstitutionAdmin();
     if (error) return error;
@@ -99,3 +100,6 @@ export async function DELETE() {
     return NextResponse.json({ error: 'Failed to remove logo' }, { status: 500 });
   }
 }
+
+export const POST = withAdminAudit(handlePOST, { action: 'INSTITUTION_LOGO_UPLOADED', summary: 'Uploaded a new logo', targetType: 'Institution' });
+export const DELETE = withAdminAudit(handleDELETE, { action: 'INSTITUTION_LOGO_REMOVED', summary: 'Removed the logo', targetType: 'Institution' });

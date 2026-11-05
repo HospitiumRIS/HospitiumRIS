@@ -122,6 +122,15 @@ export async function anonymizeUser(userId) {
     await tx.notification.deleteMany({ where: { userId } });
     await scrubReviewerSnapshots(tx, userId);
     await purgeProfilePhotos(tx, userId);
+    // Audit trail keeps the events but drops the personal data in them.
+    await tx.auditEvent.updateMany({
+      where: { actorUserId: userId },
+      data: { actorEmail: null, actorName: 'Deleted user', ipAddress: null, userAgent: null },
+    });
+    await tx.auditEvent.updateMany({
+      where: { actorEmail: { equals: user.email, mode: 'insensitive' } },
+      data: { actorEmail: null, ipAddress: null, userAgent: null },
+    });
 
     return tx.user.update({
       where: { id: userId },
