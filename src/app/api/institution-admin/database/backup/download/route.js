@@ -10,8 +10,9 @@ import {
   sanitizeFilename,
   readBackupMetadata,
 } from '../route';
+import { withAdminAudit } from '@/lib/ops/audit';
 
-export async function GET(request) {
+async function handleGET(request) {
   try {
     const { user, error } = await requireInstitutionAdmin();
     if (error) return error;
@@ -57,3 +58,5 @@ export async function GET(request) {
     );
   }
 }
+
+export const GET = withAdminAudit(handleGET, { action: 'INSTITUTION_BACKUP_DOWNLOADED', summary: 'Downloaded an institution data backup', targetType: 'Database' });

@@ -7,6 +7,7 @@ import {
   serializeAdmin,
   validatePasswordPair,
 } from '@/lib/institution-admins';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -73,7 +74,7 @@ export async function GET(_request, { params }) {
   }
 }
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   try {
     const { error } = await requireGlobalAdmin();
     if (error) return error;
@@ -197,7 +198,7 @@ export async function POST(request, { params }) {
   }
 }
 
-export async function PATCH(request, { params }) {
+async function handlePATCH(request, { params }) {
   try {
     const { error } = await requireGlobalAdmin();
     if (error) return error;
@@ -292,3 +293,6 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: 'Failed to update institution admin' }, { status: 500 });
   }
 }
+
+export const POST = withAdminAudit(handlePOST, { action: 'INSTITUTION_ADMIN_INVITED', summary: 'Added an institution admin', targetType: 'Institution', institutionFromParam: 'id' });
+export const PATCH = withAdminAudit(handlePATCH, { action: 'INSTITUTION_ADMIN_UPDATED', summary: ({ values }) => `Institution admin change: ${values.action || (values.password ? 'reset-password' : 'update')}`, targetType: 'Institution', institutionFromParam: 'id', captureValues: ['action'] });

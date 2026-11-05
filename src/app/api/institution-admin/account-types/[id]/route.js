@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getUserId } from '../../../../../lib/auth-server.js';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const prisma = new PrismaClient();
 
 const INSTITUTION_HIDDEN_ACCOUNT_TYPES = ['GLOBAL_ADMIN'];
 
 // PATCH - Update account type
-export async function PATCH(request, { params }) {
+async function handlePATCH(request, { params }) {
   try {
     const userId = await getUserId(request);
     
@@ -91,7 +92,7 @@ export async function PATCH(request, { params }) {
 }
 
 // DELETE - Delete account type
-export async function DELETE(request, { params }) {
+async function handleDELETE(request, { params }) {
   try {
     const userId = await getUserId(request);
     
@@ -177,3 +178,6 @@ export async function DELETE(request, { params }) {
     );
   }
 }
+
+export const PATCH = withAdminAudit(handlePATCH, { action: 'ACCOUNT_TYPE_UPDATED', summary: 'Changed an account type', targetType: 'AccountType' });
+export const DELETE = withAdminAudit(handleDELETE, { action: 'ACCOUNT_TYPE_DELETED', summary: 'Deleted an account type', targetType: 'AccountType' });

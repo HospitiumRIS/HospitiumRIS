@@ -5,10 +5,11 @@ import { getAuthenticatedUser } from '@/lib/auth-server';
 import { seedDomainForInstitution } from '@/lib/institution-domain';
 import { uniqueInstitutionSlug } from '@/lib/institution-slug';
 import { defaultEnabledModules } from '@/lib/institution-modules';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const prisma = new PrismaClient();
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     // Check authentication and authorization
     const currentUser = await getAuthenticatedUser();
@@ -166,3 +167,5 @@ export async function POST(request) {
     await prisma.$disconnect();
   }
 }
+
+export const POST = withAdminAudit(handlePOST, { action: 'INSTITUTION_CREATED', summary: ({ json }) => `Created institution ${json?.data?.institution || ''} with an admin account`.trim(), targetType: 'User', targetFromResponse: (json) => json?.data?.id });

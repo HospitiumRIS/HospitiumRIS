@@ -9,6 +9,7 @@ import {
   INSTITUTION_MODULES,
   normalizeEnabledModules,
 } from '@/lib/institution-modules';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const DEFAULT_PREFERENCES = {
   emailMemberSignup: true,
@@ -153,7 +154,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(request) {
+async function handlePUT(request) {
   try {
     const { user, error } = await requireInstitutionAdmin();
     if (error) return error;
@@ -224,3 +225,5 @@ export async function PUT(request) {
     );
   }
 }
+
+export const PUT = withAdminAudit(handlePUT, { action: 'INSTITUTION_SETTINGS_UPDATED', summary: 'Changed institution settings', targetType: 'Settings' });

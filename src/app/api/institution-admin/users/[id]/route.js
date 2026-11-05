@@ -9,6 +9,7 @@ import { hashPassword, validateEmail } from '@/lib/auth';
 import { normalizeOrcid } from '@/lib/orcid';
 import { softDeleteUser, ANONYMIZE_AFTER_DAYS } from '@/lib/user-lifecycle';
 import { logInfo } from '@/utils/activityLogger';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MANAGEABLE_ACCOUNT_TYPES = ['RESEARCHER', 'RESEARCH_ADMIN'];
@@ -64,7 +65,7 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function PATCH(request, { params }) {
+async function handlePATCH(request, { params }) {
   try {
     const { user, error } = await requireInstitutionAdmin();
     if (error) return error;
@@ -212,7 +213,7 @@ export async function PATCH(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+async function handleDELETE(request, { params }) {
   try {
     const { user, error } = await requireInstitutionAdmin();
     if (error) return error;
@@ -258,3 +259,6 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ success: false, message: 'Failed to delete user' }, { status: 500 });
   }
 }
+
+export const PATCH = withAdminAudit(handlePATCH, { action: 'USER_UPDATED', summary: ({ values }) => { const parts = []; if (values.accountType) parts.push(`role → ${values.accountType}`); if (values.status) parts.push(`status → ${values.status}`); return parts.length ? `Changed a user: ${parts.join(', ')}` : 'Changed a user account'; }, targetType: 'User', captureValues: ['accountType', 'status'] });
+export const DELETE = withAdminAudit(handleDELETE, { action: 'USER_DELETED', summary: 'Deleted a user account (recoverable)', targetType: 'User' });

@@ -1812,6 +1812,8 @@
     "type_other": "Other"
   },
   "global_admin": {
+    "operations": "Operations",
+    "audit_log": "Audit log",
     "access_denied": "Access denied. This login is for Global Administrators only.",
     "access_logged": "All access attempts are logged and monitored",
     "action": "Action",

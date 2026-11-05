@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireGlobalAdmin } from '@/lib/require-global-admin';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const DOMAIN_REGEX = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
 
@@ -14,7 +15,7 @@ function normalizeDomain(value) {
     .replace(/\/.*$/, '');
 }
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   try {
     const { user, error } = await requireGlobalAdmin();
     if (error) return error;
@@ -85,3 +86,5 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: 'Failed to add verified domain' }, { status: 500 });
   }
 }
+
+export const POST = withAdminAudit(handlePOST, { action: 'INSTITUTION_DOMAINS_UPDATED', summary: 'Changed verified email domains', targetType: 'Institution', institutionFromParam: 'id' });
