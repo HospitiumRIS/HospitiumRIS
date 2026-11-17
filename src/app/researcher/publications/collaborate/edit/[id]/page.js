@@ -447,6 +447,7 @@ const getHeadingLabel = (level) => {
 
 // Main Editor Component
 export default function ManuscriptEditor() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const params = useParams();
   const router = useRouter();

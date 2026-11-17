@@ -15,6 +15,7 @@ import {
 import Image from 'next/image';
 
 function OrcidCallbackContent() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [processingStage, setProcessingStage] = useState('Initializing...');
@@ -373,7 +374,6 @@ function LoadingFallback() {
 }
 
 export default function OrcidCallback() {
-  const { t } = useTranslation();
   return (
     <Suspense fallback={<LoadingFallback />}>
       <OrcidCallbackContent />

@@ -109,12 +109,15 @@ export async function GET(request, { params }) {
 
 // POST - Add a citation to the manuscript library
 export async function POST(request, { params }) {
+    // Declared outside try so the error log below can reference them
+    let manuscriptId;
+    let publicationId;
     try {
         // Await params for Next.js 15 compatibility
         const resolvedParams = await params;
-        const { manuscriptId } = resolvedParams;
+        manuscriptId = resolvedParams.manuscriptId;
         const body = await request.json();
-        const { publicationId } = body;
+        publicationId = body.publicationId;
         
         console.log('Citations POST - manuscriptId:', manuscriptId);
         
