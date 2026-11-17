@@ -4,6 +4,10 @@ const eslintConfig = [
   ...nextCoreWebVitals,
   {
     rules: {
+      // Catch variables used where they aren't defined (e.g. `t` from
+      // useTranslation used in a component that never called the hook),
+      // which otherwise only shows up as a client-side crash in production.
+      'no-undef': 'error',
       // React Compiler advisory rules (new in eslint-plugin-react-hooks v6).
       // Surfaced as warnings so they can be cleaned up gradually without
       // blocking CI; real bugs (rules-of-hooks, jsx-no-undef, ...) stay errors.

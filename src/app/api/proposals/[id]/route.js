@@ -232,10 +232,12 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
+    // Declared outside try so the error handler below can reference it
+    let id;
     const requestMetadata = getRequestMetadata(request);
     
     try {
-        const { id } = await params;
+        ({ id } = await params);
         await logApiActivity('PUT', `/api/proposals/${id}`, 200, requestMetadata);
         
         
