@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { getUserId } from '../../../../../../../lib/auth-server.js';
 
-const prisma = new PrismaClient();
 
 /**
  * Restore manuscript to a specific version
@@ -141,7 +140,5 @@ export async function POST(request, { params }) {
       { error: 'Internal server error' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

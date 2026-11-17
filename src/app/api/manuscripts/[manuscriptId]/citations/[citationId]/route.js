@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 
 // DELETE - Remove or decrement citation from manuscript
 export async function DELETE(request, { params }) {
@@ -70,7 +69,5 @@ export async function DELETE(request, { params }) {
             { error: 'Failed to delete citation' },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }

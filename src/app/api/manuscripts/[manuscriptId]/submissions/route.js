@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { getUserId } from '../../../../../lib/auth-server.js';
 import { SUBMISSION_STATUS_VALUES } from '../../../../../lib/manuscript-workflow.js';
 
-const prisma = new PrismaClient();
 
 const SUBMISSION_TYPE_VALUES = ['EXTERNAL', 'MANUAL', 'PREPRINT'];
 
@@ -59,8 +58,6 @@ export async function GET(request, { params }) {
       { error: 'Internal server error' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -153,7 +150,5 @@ export async function POST(request, { params }) {
       { error: 'Internal server error' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { getUserId } from '../../../../../lib/auth-server.js';
 
-const prisma = new PrismaClient();
 
 /**
  * Get pending invitations for the current user
@@ -131,7 +130,5 @@ export async function GET(request) {
       { error: 'Internal server error' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { getUserId } from '../../../../lib/auth-server.js';
 
-const prisma = new PrismaClient();
 
 /**
  * Get a specific manuscript by ID
@@ -126,8 +125,6 @@ export async function GET(request, { params }) {
       { error: 'Internal server error' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -290,8 +287,6 @@ export async function PATCH(request, { params }) {
       { error: 'Internal server error' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -363,7 +358,5 @@ export async function DELETE(request, { params }) {
       { error: 'Internal server error' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

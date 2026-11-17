@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { getUserId } from '../../../../lib/auth-server.js';
 import { sendCollaborationInviteEmail } from '../../../../lib/email.js';
 import { getInstitutionalEmailError, normalizeEmail } from '../../../../lib/institutional-email.js';
 
-const prisma = new PrismaClient();
 
 /**
  * Send manuscript collaboration invitation

@@ -1606,6 +1606,8 @@ export default function ManuscriptEditor() {
   // Auto-save function
   const handleAutoSave = useCallback(async () => {
     if (!editor || saving || !manuscriptId) return;
+    // Don't try to save a document that failed to load or that this user can't edit
+    if (!userPermissions.canEdit) return;
     
     const content = editor.getHTML();
     
@@ -1657,7 +1659,7 @@ export default function ManuscriptEditor() {
       setSaving(false);
       isSavingRef.current = false;
     }
-  }, [editor, saving, manuscriptId]);
+  }, [editor, saving, manuscriptId, userPermissions.canEdit]);
 
   // Handle title change
   const handleTitleChange = useCallback(async (newTitle) => {
