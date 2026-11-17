@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma, { ensurePrismaConnected } from '@/lib/prisma';
 import { requireInstitutionPortalAccess, getInstitutionProposalScope } from '@/lib/institution-scope';
+import { syncStaleResearcherMetrics, normalizeOrcid } from '@/lib/researcher-metrics';
 
 /**
  * GET /api/institution/analytics/reports?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
@@ -115,7 +116,7 @@ export async function GET(request) {
               email: true,
               orcidId: true,
               createdAt: true,
-              researchProfile: { select: { department: true, hIndex: true, citationCount: true } },
+              researchProfile: { select: { department: true, hIndex: true, citationCount: true, metricsSyncedAt: true } },
             },
           })
         : [],
@@ -174,6 +175,14 @@ export async function GET(request) {
     ]);
 
     // ---------- lookups ----------
+    // Fill in citation counts and h-index from OpenAlex (via ORCID) for
+    // researchers never synced or not synced in the last 24 hours
+    const refreshed = await syncStaleResearcherMetrics(members);
+    refreshed.forEach((metrics, userId) => {
+      const member = members.find((m) => m.id === userId);
+      if (member) member.researchProfile = { ...(member.researchProfile || {}), ...metrics };
+    });
+
     const memberById = new Map(members.map((m) => [m.id, m]));
     const memberByOrcid = new Map(members.filter((m) => m.orcidId).map((m) => [String(m.orcidId).replace(/^https?:\/\/orcid\.org\//, ''), m]));
     const nameOf = (m) => `${m.givenName || ''} ${m.familyName || ''}`.trim() || m.email || 'Researcher';
@@ -340,7 +349,13 @@ export async function GET(request) {
         averageHIndex: researcherRows.length ? Math.round((researcherRows.reduce((s, r) => s + r.hIndex, 0) / researcherRows.length) * 10) / 10 : 0,
         researchersWithProfiles: researcherRows.filter((r) => r.citations > 0 || r.hIndex > 0).length,
         researchers: researcherRows.length,
+        researchersWithOrcid: members.filter((m) => normalizeOrcid(m.orcidId)).length,
+        lastSyncedAt: members.reduce((latest, m) => {
+          const at = m.researchProfile?.metricsSyncedAt ? new Date(m.researchProfile.metricsSyncedAt) : null;
+          return at && (!latest || at > latest) ? at : latest;
+        }, null),
       },
+      source: 'OpenAlex (via ORCID)',
       notCaptured: ['Citations per individual work', 'Citation growth over time'],
     };
 
