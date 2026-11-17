@@ -1556,8 +1556,16 @@ export default function ManuscriptEditor() {
         setSelectedCitationIndex(0);
         openCitePanel();
         
-        // Fetch citations from database based on search query
-        await fetchQuickCitations(detection.query);
+        // Fetch citations once typing pauses. This handler runs on both
+        // 'update' and 'selectionUpdate', so without the debounce each
+        // keystroke fired two concurrent requests.
+        if (citationSearchTimerRef.current) {
+          clearTimeout(citationSearchTimerRef.current);
+        }
+        const query = detection.query;
+        citationSearchTimerRef.current = setTimeout(() => {
+          fetchQuickCitations(query);
+        }, 250);
       } else if (citeTriggerActive) {
         setCiteTriggerActive(false);
         setCitationSearch('');
