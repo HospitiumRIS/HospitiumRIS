@@ -1,31 +1,35 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import { getAuthenticatedUser } from '@/lib/auth-server';
+import { userLibraryWhere } from '@/lib/publication-library';
 
 export async function GET(request) {
     try {
-        // TODO: Add proper authentication when auth is set up
-        // For now, we'll fetch all publications for development
-        const session = { user: { id: 'dev-user-id', orcidId: null } };
+        const user = await getAuthenticatedUser();
+        if (!user) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
 
         const { searchParams } = new URL(request.url);
         const search = searchParams.get('search') || '';
         const type = searchParams.get('type') || '';
-        const limit = parseInt(searchParams.get('limit')) || 100;
-        const offset = parseInt(searchParams.get('offset')) || 0;
+        const limit = Math.min(200, Math.max(1, parseInt(searchParams.get('limit'), 10) || 100));
+        const offset = Math.max(0, parseInt(searchParams.get('offset'), 10) || 0);
 
-        // Build where clause for filtering
-        const where = {};
+        // Only search publications in the current user's library
+        const where = { ...userLibraryWhere(user.id) };
         
         if (search) {
-            where.OR = [
+            where.AND = [{ OR: [
                 { title: { contains: search, mode: 'insensitive' } },
                 { authors: { hasSome: [search] } },
                 { journal: { contains: search, mode: 'insensitive' } },
                 { keywords: { hasSome: [search] } },
                 { abstract: { contains: search, mode: 'insensitive' } }
-            ];
+            ] }];
         }
 
         if (type && type !== 'all') {
@@ -110,8 +114,6 @@ export async function GET(request) {
             { error: 'Failed to fetch citations' },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
