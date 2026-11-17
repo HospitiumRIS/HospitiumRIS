@@ -31,7 +31,7 @@ function validateFile(file, maxBytes, allowedExtensions, label) {
   return { ok: true, ext };
 }
 
-export function useTrainingStorage() {
+export function isTrainingStorageEnabled() {
   return process.env.STORAGE_CUTOVER_TRAINING === 'true' || process.env.STORAGE_DRIVER === 'r2';
 }
 
@@ -68,7 +68,7 @@ export function parseTrainingFileUrl(url) {
 }
 
 export async function saveTrainingMaterial(materialId, file, options = {}) {
-  if (useTrainingStorage() && options.user) {
+  if (isTrainingStorageEnabled() && options.user) {
     const stored = await uploadServerSide({
       user: options.user,
       module: 'TRAINING_MATERIAL',
@@ -88,7 +88,7 @@ export async function saveTrainingMaterial(materialId, file, options = {}) {
 }
 
 export async function saveTrainingCertificate(certificateId, file, options = {}) {
-  if (useTrainingStorage() && options.user) {
+  if (isTrainingStorageEnabled() && options.user) {
     const stored = await uploadServerSide({
       user: options.user,
       module: 'TRAINING_CERTIFICATE',

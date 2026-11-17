@@ -432,7 +432,7 @@ const LibrarySelectionModal = ({
                             </Box>
                         </Box>
                         <Box 
-                            className="folder-actions"
+                            className={`folder-actions${isSelected ? ' selected' : ''}`}
                             sx={{ 
                                 display: 'flex', 
                                 gap: 0.5, 
@@ -443,7 +443,6 @@ const LibrarySelectionModal = ({
                                     opacity: 1
                                 }
                             }}
-                            className={isSelected ? 'selected' : ''}
                         >
                             <Tooltip title="Add subfolder">
                                 <IconButton

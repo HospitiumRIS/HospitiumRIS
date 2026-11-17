@@ -30,7 +30,6 @@ import {
 
 // Utility functions
 const formatCurrency = (amount, currency = 'USD') => {
-  const { t } = useTranslation();
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,
