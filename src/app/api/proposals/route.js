@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { logApiActivity, logDatabaseActivity, getRequestMetadata } from '../../../utils/activityLogger.js';
 import { getUserId, requireAuth } from '../../../lib/auth-server.js';
 import { saveProposalDocument } from '../../../lib/proposal-files.js';
 import { collectBudgetDocuments, persistProposalBudgetFields } from '../../../lib/proposal-budget.js';
 import { ensureProposalInReviewPipeline, isProposalInReview } from '../../../lib/proposal-review-pipeline.js';
 
-const prisma = new PrismaClient();
 
 export async function GET(request) {
     try {
@@ -27,8 +26,10 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const search = searchParams.get('search') || '';
         const status = searchParams.get('status') || '';
-        const limit = parseInt(searchParams.get('limit')) || 50;
-        const offset = parseInt(searchParams.get('offset')) || 0;
+        const limit = Math.min(500, Math.max(1, parseInt(searchParams.get('limit'), 10) || 50));
+        const offset = Math.max(0, parseInt(searchParams.get('offset'), 10) || 0);
+        // ?include=review adds a per-proposal review summary in the same query
+        const includeReview = (searchParams.get('include') || '').split(',').includes('review');
 
         console.log('Query params:', { search, status, limit, offset });
         console.log('Current user:', { orcidId: currentUser?.orcidId, accountType: currentUser?.accountType, institution: currentUser?.primaryInstitution });
@@ -61,7 +62,24 @@ export async function GET(request) {
             where,
             orderBy: { createdAt: 'desc' },
             take: limit,
-            skip: offset
+            skip: offset,
+            ...(includeReview && {
+                include: {
+                    reviewTracking: {
+                        select: {
+                            currentStageId: true,
+                            currentStageOrder: true,
+                            overallStatus: true,
+                            startedAt: true,
+                            createdAt: true,
+                            pipeline: { select: { stages: { select: { id: true, name: true, order: true }, orderBy: { order: 'asc' } } } },
+                            stageProgress: {
+                                select: { stageId: true, status: true, startedAt: true, createdAt: true, assignedReviewers: true, completedReviewers: true }
+                            }
+                        }
+                    }
+                }
+            })
         });
 
         console.log('Found proposals:', proposals.length);
@@ -79,7 +97,8 @@ export async function GET(request) {
             completion: proposal.status === 'DRAFT' ? 25 : proposal.status === 'UNDER_REVIEW' ? 75 : 100,
             daysOverdue: proposal.endDate && new Date() > proposal.endDate ? 
                 Math.floor((new Date() - proposal.endDate) / (1000 * 60 * 60 * 24)) : 0,
-            description: proposal.abstract || proposal.researchObjectives || 'No description available'
+            description: proposal.abstract || proposal.researchObjectives || 'No description available',
+            ...(includeReview && { reviewTracking: undefined, review: summarizeReview(proposal.reviewTracking) })
         }));
 
         return NextResponse.json({
@@ -298,7 +317,30 @@ export async function POST(request) {
             { error: 'Failed to create proposal. Please try again.' },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
+}
+
+/**
+ * Compact review summary for list views: current stage, reviewer counts and
+ * how long the proposal has been waiting in that stage.
+ */
+function summarizeReview(tracking) {
+    if (!tracking) return null;
+    const stages = tracking.pipeline?.stages || [];
+    const stage = stages.find((item) => item.id === tracking.currentStageId)
+        || stages.find((item) => item.order === tracking.currentStageOrder)
+        || null;
+    const progress = (tracking.stageProgress || []).find((item) => item.stageId === stage?.id) || null;
+    const assigned = progress?.assignedReviewers || [];
+    const completed = progress?.completedReviewers || [];
+    return {
+        overallStatus: tracking.overallStatus,
+        stageOrder: stage?.order || tracking.currentStageOrder || 1,
+        stageCount: stages.length,
+        stageName: stage?.name || null,
+        stageStatus: progress?.status || 'NOT_STARTED',
+        reviewersAssigned: assigned.length,
+        reviewersCompleted: completed.filter((reviewer) => assigned.includes(reviewer)).length || completed.length,
+        waitingSince: progress?.startedAt || progress?.createdAt || tracking.startedAt || tracking.createdAt,
+    };
 }

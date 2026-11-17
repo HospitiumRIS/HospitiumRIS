@@ -4,68 +4,83 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Alert,
+  Avatar,
+  Badge,
   Box,
   Button,
-  Chip,
   CircularProgress,
   Container,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
-  InputAdornment,
   MenuItem,
-  Paper,
-  Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TablePagination,
   TableRow,
+  Tabs,
   TextField,
-  Tooltip,
   Typography,
-  alpha,
 } from '@mui/material';
 import {
   CheckCircle as ApproveIcon,
-  Clear as ClearIcon,
   Home as HomeIcon,
   PersonAdd as AssignIcon,
+  PersonSearch as NeedsReviewersIcon,
   RateReview as ReviewIcon,
   Refresh as RefreshIcon,
-  Search as SearchIcon,
   Visibility as ViewIcon,
 } from '@mui/icons-material';
 import PageHeader from '../../../../components/common/PageHeader';
-import ProposalReviewStatus from '../../../../components/Proposals/ProposalReviewStatus';
+import RowActions from '../../../../components/common/RowActions';
+import StatusPill, { StageBar, humanizeStatus } from '../../../../components/common/StatusPill';
+import {
+  BRAND_PURPLE as PURPLE,
+  FilterBar,
+  PurpleTableHead,
+  StatCards,
+  TablePaper,
+  filterFieldSx,
+  paginationSx,
+  zebraRowSx,
+} from '../../../../components/common/ListPage';
 
-const PURPLE = '#8b6cbc';
+const ACTIVE = ['SUBMITTED', 'UNDER_REVIEW'];
 
-const statusChip = (status) => {
-  const tones = {
-    UNDER_REVIEW: { bg: PURPLE, color: '#fff' },
-    SUBMITTED: { bg: '#0284c7', color: '#fff' },
-    APPROVED: { bg: '#16a34a', color: '#fff' },
-    REJECTED: { bg: '#dc2626', color: '#fff' },
-    REVISION_REQUESTED: { bg: '#d97706', color: '#fff' },
-    DRAFT: { bg: '#64748b', color: '#fff' },
-  };
-  const tone = tones[status] || tones.DRAFT;
-  return (
-    <Chip
-      size="small"
-      label={String(status || 'DRAFT').replaceAll('_', ' ')}
-      sx={{ bgcolor: tone.bg, color: tone.color, fontWeight: 700, textTransform: 'capitalize' }}
-    />
-  );
+const STATUS_TONE = {
+  SUBMITTED: 'info',
+  UNDER_REVIEW: 'progress',
+  REVISION_REQUESTED: 'warning',
+  APPROVED: 'success',
+  REJECTED: 'danger',
+};
+
+// Work queues shown as tabs above the table
+const QUEUES = [
+  { key: 'all', label: 'All' },
+  { key: 'needs_reviewers', label: 'Needs reviewers' },
+  { key: 'in_review', label: 'In review' },
+  { key: 'awaiting_decision', label: 'Awaiting decision' },
+  { key: 'with_researcher', label: 'With researcher' },
+  { key: 'decided', label: 'Decided' },
+];
+
+const queueOf = (proposal) => {
+  if (proposal.status === 'REVISION_REQUESTED') return 'with_researcher';
+  if (['APPROVED', 'REJECTED'].includes(proposal.status)) return 'decided';
+  const review = proposal.review;
+  const assigned = review?.reviewersAssigned || 0;
+  if (!assigned) return 'needs_reviewers';
+  if ((review?.reviewersCompleted || 0) >= assigned) return 'awaiting_decision';
+  return 'in_review';
 };
 
 const formatCurrency = (amount, currency = 'USD') => {
-  if (amount === null || amount === undefined || amount === '') return 'Not set';
+  if (amount === null || amount === undefined || amount === '') return null;
   try {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(Number(amount));
   } catch {
@@ -73,20 +88,70 @@ const formatCurrency = (amount, currency = 'USD') => {
   }
 };
 
-const daysInReview = (proposal) => {
-  if (!['UNDER_REVIEW', 'SUBMITTED'].includes(proposal.status)) return '-';
-  const start = new Date(proposal.updatedAt || proposal.createdAt);
-  if (Number.isNaN(start.getTime())) return '-';
-  return `${Math.max(0, Math.ceil((Date.now() - start.getTime()) / 86400000))} days`;
+/** Days the proposal has been waiting in its current review stage (active proposals only). */
+const daysWaiting = (proposal) => {
+  if (!ACTIVE.includes(proposal.status)) return null;
+  const since = new Date(proposal.review?.waitingSince || proposal.updatedAt || proposal.createdAt);
+  if (Number.isNaN(since.getTime())) return null;
+  return Math.max(0, Math.floor((Date.now() - since.getTime()) / 86400000));
 };
+
+const waitingTone = (days) => (days >= 21 ? 'danger' : days >= 14 ? 'warning' : 'neutral');
+
+const initials = (name) =>
+  name ? name.split(' ').filter(Boolean).map((n) => n.charAt(0)).join('').substring(0, 2).toUpperCase() : '?';
+
+function ReviewStatusCell({ proposal }) {
+  const review = proposal.review;
+  const tone = STATUS_TONE[proposal.status] || 'neutral';
+  const total = review?.stageCount || 0;
+  const decided = ['APPROVED', 'REJECTED'].includes(proposal.status);
+  const filled = decided || review?.overallStatus === 'COMPLETED' ? total : Math.min(total, review?.stageOrder || 0);
+  let caption;
+  if (decided) caption = proposal.status === 'APPROVED' ? 'Review complete' : 'Not approved';
+  else if (proposal.status === 'REVISION_REQUESTED') caption = 'Waiting for the researcher';
+  else if (review && total) caption = `Stage ${review.stageOrder} of ${total}${review.stageName ? ` · ${review.stageName}` : ''}`;
+  else caption = 'Not yet in a review pipeline';
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 180 }}>
+      <StatusPill label={humanizeStatus(proposal.status)} tone={tone} />
+      {total > 0 && <StageBar filled={filled} total={total} tone={tone} maxWidth={140} />}
+      <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.72rem', lineHeight: 1.3 }}>
+        {caption}
+      </Typography>
+    </Box>
+  );
+}
+
+function ReviewersCell({ proposal }) {
+  if (!ACTIVE.includes(proposal.status)) {
+    return <Typography variant="caption" color="text.secondary">—</Typography>;
+  }
+  const assigned = proposal.review?.reviewersAssigned || 0;
+  const done = Math.min(assigned, proposal.review?.reviewersCompleted || 0);
+  if (!assigned) {
+    return <StatusPill label="None assigned" tone="warning" dot={false} />;
+  }
+  return (
+    <Box>
+      <Typography variant="body2" sx={{ fontWeight: 600, color: '#1f2937' }}>
+        {done} of {assigned} reviews in
+      </Typography>
+      <Typography variant="caption" color="text.secondary">
+        {assigned - done ? `${assigned - done} pending` : 'Ready for a decision'}
+      </Typography>
+    </Box>
+  );
+}
 
 export default function InstitutionProposalReviewPage() {
   const router = useRouter();
   const [proposals, setProposals] = useState([]);
-  const [tracking, setTracking] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [queue, setQueue] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [page, setPage] = useState(0);
@@ -102,22 +167,11 @@ export default function InstitutionProposalReviewPage() {
     try {
       setLoading(true);
       setError('');
-      const response = await fetch('/api/proposals?limit=100');
+      // One request: review stage and reviewer counts come with each proposal
+      const response = await fetch('/api/proposals?limit=500&include=review');
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || 'Failed to load proposals');
-      const items = (data.proposals || []).filter((item) => item.status !== 'DRAFT');
-      setProposals(items);
-      const results = await Promise.all(items.map(async (item) => {
-        try {
-          const res = await fetch(`/api/proposals/${item.id}/review-status`);
-          if (!res.ok) return [item.id, null];
-          const payload = await res.json();
-          return [item.id, payload.tracking || null];
-        } catch {
-          return [item.id, null];
-        }
-      }));
-      setTracking(Object.fromEntries(results));
+      setProposals((data.proposals || []).filter((item) => item.status !== 'DRAFT'));
     } catch (err) {
       setError(err.message || 'Failed to load proposals');
     } finally {
@@ -129,28 +183,46 @@ export default function InstitutionProposalReviewPage() {
     loadProposals();
   }, []);
 
-  const filtered = useMemo(() => {
-    return proposals.filter((proposal) => {
-      const haystack = `${proposal.title} ${proposal.principalInvestigator} ${(proposal.departments || []).join(' ')}`.toLowerCase();
-      const matchesSearch = !search || haystack.includes(search.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || proposal.status === statusFilter;
-      const matchesDepartment = departmentFilter === 'all'
-        || (proposal.departments || []).includes(departmentFilter);
-      return matchesSearch && matchesStatus && matchesDepartment;
-    });
-  }, [proposals, search, statusFilter, departmentFilter]);
-
   const departments = useMemo(
     () => [...new Set(proposals.flatMap((item) => item.departments || []))].sort(),
     [proposals]
   );
 
-  const paged = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  const stats = {
-    total: proposals.length,
-    review: proposals.filter((item) => ['UNDER_REVIEW', 'SUBMITTED'].includes(item.status)).length,
-    approved: proposals.filter((item) => item.status === 'APPROVED').length,
-  };
+  const queueCounts = useMemo(() => {
+    const counts = { all: proposals.length };
+    proposals.forEach((p) => {
+      const key = queueOf(p);
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }, [proposals]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return proposals.filter((proposal) => {
+      const haystack = `${proposal.title} ${proposal.principalInvestigator} ${(proposal.departments || []).join(' ')}`.toLowerCase();
+      const matchesSearch = !q || haystack.includes(q);
+      const matchesQueue = queue === 'all' || queueOf(proposal) === queue;
+      const matchesStatus = statusFilter === 'all' || proposal.status === statusFilter;
+      const matchesDepartment = departmentFilter === 'all'
+        || (proposal.departments || []).includes(departmentFilter);
+      return matchesSearch && matchesQueue && matchesStatus && matchesDepartment;
+    });
+  }, [proposals, search, queue, statusFilter, departmentFilter]);
+
+  const lastPage = Math.max(0, Math.ceil(filtered.length / rowsPerPage) - 1);
+  const currentPage = Math.min(page, lastPage);
+  const paged = filtered.slice(currentPage * rowsPerPage, currentPage * rowsPerPage + rowsPerPage);
+
+  const inReviewCount = (queueCounts.in_review || 0) + (queueCounts.awaiting_decision || 0);
+  const stats = [
+    { label: 'Total proposals', value: proposals.length, sub: 'Submitted for review', icon: <ReviewIcon /> },
+    { label: 'Needs reviewers', value: queueCounts.needs_reviewers || 0, sub: 'No reviewers assigned yet', icon: <NeedsReviewersIcon /> },
+    { label: 'In review', value: inReviewCount, sub: `${queueCounts.awaiting_decision || 0} awaiting a decision`, icon: <ReviewIcon /> },
+    { label: 'Approved', value: proposals.filter((item) => item.status === 'APPROVED').length, sub: 'Cleared internal review', icon: <ApproveIcon /> },
+  ];
+
+  const resetPage = () => setPage(0);
 
   const openAssign = (proposal) => {
     setAssignTarget(proposal);
@@ -195,17 +267,26 @@ export default function InstitutionProposalReviewPage() {
         ]}
         actionButton={
           <Button
-            variant="contained"
+            variant="outlined"
             startIcon={<RefreshIcon />}
             onClick={loadProposals}
-            sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}
+            sx={{
+              borderColor: 'rgba(255, 255, 255, 0.3)',
+              color: 'rgba(255, 255, 255, 0.9)',
+              '&:hover': { borderColor: 'rgba(255, 255, 255, 0.6)', backgroundColor: 'rgba(255, 255, 255, 0.05)' },
+              borderRadius: 2,
+              px: 2,
+              py: 1,
+              textTransform: 'none',
+              fontWeight: 500,
+            }}
           >
             Refresh
           </Button>
         }
       />
 
-      <Container maxWidth={false} sx={{ py: 3, maxWidth: '1600px', mx: 'auto' }}>
+      <Container maxWidth="xl" sx={{ py: 4 }}>
         {error ? (
           <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>
             {error}
@@ -217,69 +298,76 @@ export default function InstitutionProposalReviewPage() {
           </Alert>
         ) : null}
 
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2 }}>
-          {[
-            ['Total proposals', stats.total, <ReviewIcon key="t" />],
-            ['Under review', stats.review, <ReviewIcon key="r" />],
-            ['Approved', stats.approved, <ApproveIcon key="a" />],
-          ].map(([label, value, icon]) => (
-            <Paper key={label} sx={{ flex: 1, p: 2, borderRadius: 2, bgcolor: PURPLE, color: 'white' }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="caption" sx={{ opacity: 0.85, fontWeight: 700 }}>{label}</Typography>
-                {icon}
-              </Stack>
-              <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5 }}>{value}</Typography>
-            </Paper>
-          ))}
-        </Stack>
+        <StatCards cards={stats} />
 
-        <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Search by title, PI, or department"
-              value={search}
-              onChange={(event) => { setSearch(event.target.value); setPage(0); }}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
-              }}
-            />
-            <TextField
-              select
-              size="small"
-              label="Status"
-              value={statusFilter}
-              onChange={(event) => { setStatusFilter(event.target.value); setPage(0); }}
-              sx={{ minWidth: 200 }}
-            >
-              <MenuItem value="all">All statuses</MenuItem>
-              <MenuItem value="SUBMITTED">Submitted</MenuItem>
-              <MenuItem value="UNDER_REVIEW">Under review</MenuItem>
-              <MenuItem value="REVISION_REQUESTED">Revision requested</MenuItem>
-              <MenuItem value="APPROVED">Approved</MenuItem>
-              <MenuItem value="REJECTED">Rejected</MenuItem>
-            </TextField>
-            <TextField
-              select
-              size="small"
-              label="Department"
-              value={departmentFilter}
-              onChange={(event) => { setDepartmentFilter(event.target.value); setPage(0); }}
-              sx={{ minWidth: 220 }}
-            >
-              <MenuItem value="all">All departments</MenuItem>
-              {departments.map((department) => (
-                <MenuItem key={department} value={department}>{department}</MenuItem>
-              ))}
-            </TextField>
-            <Button startIcon={<ClearIcon />} onClick={() => { setSearch(''); setStatusFilter('all'); setDepartmentFilter('all'); }} sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
-              Clear
-            </Button>
-          </Stack>
-        </Paper>
+        <FilterBar
+          search={search}
+          onSearchChange={(value) => { setSearch(value); resetPage(); }}
+          searchPlaceholder="Search by title, PI, or department"
+          onClear={() => { setSearch(''); setQueue('all'); setStatusFilter('all'); setDepartmentFilter('all'); resetPage(); }}
+        >
+          <TextField
+            select
+            className="filter-control"
+            label="Status"
+            value={statusFilter}
+            onChange={(event) => { setStatusFilter(event.target.value); resetPage(); }}
+            sx={filterFieldSx}
+          >
+            <MenuItem value="all">All statuses</MenuItem>
+            {Object.keys(STATUS_TONE).map((status) => (
+              <MenuItem key={status} value={status}>{humanizeStatus(status)}</MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            select
+            className="filter-control"
+            label="Department"
+            value={departmentFilter}
+            onChange={(event) => { setDepartmentFilter(event.target.value); resetPage(); }}
+            sx={filterFieldSx}
+          >
+            <MenuItem value="all">All departments</MenuItem>
+            {departments.map((department) => (
+              <MenuItem key={department} value={department}>{department}</MenuItem>
+            ))}
+          </TextField>
+        </FilterBar>
 
-        <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+        <TablePaper>
+          <Tabs
+            value={queue}
+            onChange={(_, value) => { setQueue(value); resetPage(); }}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              px: 1,
+              borderBottom: '1px solid rgba(139, 108, 188, 0.12)',
+              '& .MuiTab-root': { textTransform: 'none', fontWeight: 600, minHeight: 52 },
+              '& .Mui-selected': { color: `${PURPLE} !important` },
+              '& .MuiTabs-indicator': { bgcolor: PURPLE },
+            }}
+          >
+            {QUEUES.map((item) => (
+              <Tab
+                key={item.key}
+                value={item.key}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {item.label}
+                    <Box component="span" sx={{
+                      px: 0.75, borderRadius: 999, fontSize: '0.7rem', fontWeight: 700, minWidth: 20, textAlign: 'center',
+                      bgcolor: queue === item.key ? PURPLE : '#f3f4f6',
+                      color: queue === item.key ? 'white' : '#6b7280',
+                    }}>
+                      {queueCounts[item.key] || 0}
+                    </Box>
+                  </Box>
+                }
+              />
+            ))}
+          </Tabs>
+
           {loading ? (
             <Box sx={{ py: 8, display: 'flex', justifyContent: 'center' }}>
               <CircularProgress sx={{ color: PURPLE }} />
@@ -288,54 +376,88 @@ export default function InstitutionProposalReviewPage() {
             <>
               <TableContainer>
                 <Table>
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: alpha(PURPLE, 0.06) }}>
-                      {['Proposal', 'Principal investigator', 'Status', 'Review pipeline', 'Budget', 'Time in review', 'Actions'].map((label) => (
-                        <TableCell key={label} sx={{ fontWeight: 700 }}>{label}</TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
+                  <PurpleTableHead columns={['Proposal', 'Review status', 'Reviewers', 'Waiting', { label: 'Actions', align: 'center' }]} />
                   <TableBody>
-                    {paged.map((proposal) => (
-                      <TableRow key={proposal.id} hover>
-                        <TableCell sx={{ maxWidth: 360 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e293b' }}>{proposal.title}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {(proposal.departments || []).slice(0, 2).join(' · ') || 'No department'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>{proposal.principalInvestigator || proposal.author}</TableCell>
-                        <TableCell>{statusChip(proposal.status)}</TableCell>
-                        <TableCell>
-                          {tracking[proposal.id] ? (
-                            <ProposalReviewStatus tracking={tracking[proposal.id]} compact />
-                          ) : (
-                            <Typography variant="caption" color="text.secondary">No pipeline</Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>{formatCurrency(proposal.totalBudgetAmount, proposal.budgetCurrency)}</TableCell>
-                        <TableCell>{daysInReview(proposal)}</TableCell>
-                        <TableCell>
-                          <Stack direction="row" spacing={0.5}>
-                            <Tooltip title="Open review">
-                              <IconButton size="small" sx={{ color: PURPLE }} onClick={() => router.push(`/institution/proposals/review/${proposal.id}`)}>
-                                <ViewIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Invite reviewers">
-                              <IconButton size="small" sx={{ color: PURPLE }} onClick={() => openAssign(proposal)}>
-                                <AssignIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </Stack>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {paged.map((proposal, index) => {
+                      const pi = proposal.principalInvestigator || proposal.author;
+                      const budget = formatCurrency(proposal.totalBudgetAmount, proposal.budgetCurrency);
+                      const days = daysWaiting(proposal);
+                      const meta = [
+                        (proposal.departments || []).slice(0, 2).join(', '),
+                        budget || 'Budget not set',
+                      ].filter(Boolean).join(' · ');
+                      return (
+                        <TableRow key={proposal.id} sx={zebraRowSx(index)}>
+                          <TableCell sx={{ maxWidth: 420 }}>
+                            <Typography
+                              variant="subtitle1"
+                              onClick={() => router.push(`/institution/proposals/review/${proposal.id}`)}
+                              sx={{
+                                fontWeight: 600,
+                                color: '#2D3748',
+                                fontSize: '0.95rem',
+                                lineHeight: 1.3,
+                                mb: 0.75,
+                                display: '-webkit-box',
+                                WebkitBoxOrient: 'vertical',
+                                WebkitLineClamp: 2,
+                                overflow: 'hidden',
+                                cursor: 'pointer',
+                                '&:hover': { color: PURPLE, textDecoration: 'underline' },
+                              }}
+                            >
+                              {proposal.title}
+                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                              <Avatar sx={{ width: 22, height: 22, fontSize: '0.62rem', fontWeight: 700, bgcolor: PURPLE }}>
+                                {initials(pi)}
+                              </Avatar>
+                              <Typography variant="caption" color="text.secondary" noWrap>
+                                <Box component="span" sx={{ color: '#374151', fontWeight: 600 }}>{pi || 'Unknown PI'}</Box>
+                                {meta ? ` · ${meta}` : ''}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell><ReviewStatusCell proposal={proposal} /></TableCell>
+                          <TableCell><ReviewersCell proposal={proposal} /></TableCell>
+                          <TableCell>
+                            {days === null ? (
+                              <Typography variant="caption" color="text.secondary">—</Typography>
+                            ) : (
+                              <StatusPill label={`${days} day${days === 1 ? '' : 's'}`} tone={waitingTone(days)} dot={false} />
+                            )}
+                          </TableCell>
+                          <TableCell align="center">
+                            <RowActions
+                              reserveMenuSpace={false}
+                              actions={[
+                                {
+                                  key: 'open',
+                                  label: 'Open review',
+                                  icon: <ViewIcon fontSize="small" />,
+                                  onClick: () => router.push(`/institution/proposals/review/${proposal.id}`),
+                                },
+                                {
+                                  key: 'invite',
+                                  label: 'Invite reviewers',
+                                  icon: (
+                                    <Badge color="warning" variant="dot" invisible={queueOf(proposal) !== 'needs_reviewers'}>
+                                      <AssignIcon fontSize="small" />
+                                    </Badge>
+                                  ),
+                                  onClick: () => openAssign(proposal),
+                                },
+                              ]}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                     {!paged.length ? (
                       <TableRow>
-                        <TableCell colSpan={7}>
-                          <Typography variant="body2" color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
-                            No proposals match these filters.
+                        <TableCell colSpan={5}>
+                          <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+                            {proposals.length ? 'No proposals match these filters.' : 'No proposals have been submitted for review yet.'}
                           </Typography>
                         </TableCell>
                       </TableRow>
@@ -346,14 +468,16 @@ export default function InstitutionProposalReviewPage() {
               <TablePagination
                 component="div"
                 count={filtered.length}
-                page={page}
+                page={currentPage}
                 onPageChange={(_, next) => setPage(next)}
                 rowsPerPage={rowsPerPage}
                 onRowsPerPageChange={(event) => { setRowsPerPage(parseInt(event.target.value, 10)); setPage(0); }}
+                rowsPerPageOptions={[5, 10, 25, 50]}
+                sx={paginationSx}
               />
             </>
           )}
-        </Paper>
+        </TablePaper>
       </Container>
 
       <Dialog open={assignOpen} onClose={() => !assigning && setAssignOpen(false)} fullWidth maxWidth="sm" disableScrollLock>
