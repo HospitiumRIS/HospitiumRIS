@@ -376,8 +376,9 @@ model ResearchProfile {
   researcherIds Json?
 
   // Research Metrics
-  hIndex        Int?
-  citationCount Int?
+  hIndex          Int?
+  citationCount   Int?
+  metricsSyncedAt DateTime? // last automatic sync of hIndex/citationCount from OpenAlex (via ORCID)
 
   // Timestamps
   createdAt DateTime @default(now())

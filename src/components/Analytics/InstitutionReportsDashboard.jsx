@@ -320,7 +320,7 @@ function CitationTrackingReport({ data }) {
       id="citation-tracking"
       icon={REPORT_ICONS['citation-tracking']}
       title="Citation tracking"
-      subtitle="Total citations and h-index from researcher profiles. Click a bar to focus on one researcher."
+      subtitle="Total citations and h-index from OpenAlex, matched by each researcher's ORCID iD. Click a bar to focus on one researcher."
       action={<DownloadButton reportId="citation-tracking" title="Citation Tracking Report" data={data} />}
     >
       <Stack spacing={2.5}>
@@ -337,6 +337,14 @@ function CitationTrackingReport({ data }) {
             </Paper>
           ))}
         </Box>
+
+        {c.totals.researchersWithOrcid != null && (
+          <Typography variant="caption" color="text.secondary">
+            {c.totals.researchersWithOrcid} of {c.totals.researchers} researchers have an ORCID iD linked.
+            {c.totals.researchersWithOrcid < c.totals.researchers ? ' Researchers without one can\'t be matched in OpenAlex.' : ''}
+            {c.totals.lastSyncedAt ? ` Last updated ${new Date(c.totals.lastSyncedAt).toLocaleString()}.` : ''}
+          </Typography>
+        )}
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.2fr 1fr' }, gap: 3 }}>
           <Box>
@@ -356,7 +364,11 @@ function CitationTrackingReport({ data }) {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <EmptyState>No citation counts on researcher profiles yet. They fill in when researchers sync ORCID or Google Scholar.</EmptyState>
+              <EmptyState>
+                {c.totals.researchersWithOrcid
+                  ? 'OpenAlex has no citations yet for the works linked to these ORCID iDs. Recently published work can take a few weeks to show citations.'
+                  : 'No researchers have an ORCID iD linked yet. Citation counts are matched in OpenAlex by ORCID iD, so ask researchers to connect ORCID on their profile.'}
+              </EmptyState>
             )}
             {selected && (
               <Button size="small" onClick={() => setSelected(null)} sx={{ mt: 1, color: PURPLE }}>Clear filter: {selected}</Button>

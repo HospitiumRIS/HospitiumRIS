@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { getScholarMetrics } from '@/lib/openalex';
+import { saveResearcherMetrics } from '@/lib/researcher-metrics';
 
 /**
  * A researcher's works: pulled live from ORCID, merged with manuscripts published inside
@@ -198,6 +199,14 @@ export async function buildResearcherWorks(user) {
     metricsError = 'Citation metrics are temporarily unavailable.';
   } else {
     scholar = scholarResult.v;
+    // Keep the profile's citation count and h-index current for institution reports
+    if (user.orcidId && user.id) {
+      try {
+        await saveResearcherMetrics(user.id, scholar?.citedBy || null);
+      } catch (error) {
+        console.error('Error saving researcher metrics:', error);
+      }
+    }
   }
 
   const works = enrichWithOpenAlex(mergeWorks(orcidWorks, hospitiumWorks), scholar?.works || []);
