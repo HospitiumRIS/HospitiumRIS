@@ -32,9 +32,6 @@ import {
   InputAdornment,
   TablePagination,
   MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
   Autocomplete,
   Checkbox,
 } from '@mui/material';
@@ -57,10 +54,12 @@ import {
   AutoAwesome as AutoFillIcon,
   Link as LinkIcon,
   Replay as ResubmitIcon,
-  Search as SearchIcon,
   CompareArrows as CompareIcon,
 } from '@mui/icons-material';
 import PageHeader from '../../../components/common/PageHeader';
+import RowActions from '../../../components/common/RowActions';
+import StatusPill from '../../../components/common/StatusPill';
+import { FilterBar, StatCards, TablePaper, filterFieldSx, paginationSx, zebraRowSx } from '../../../components/common/ListPage';
 import { useAuth } from '../../../components/AuthProvider';
 import { useTranslation } from 'react-i18next';
 import { normalizeDoi } from '../../../utils/extractPdfMetadata';
@@ -90,22 +89,11 @@ const STATUS_CONFIG = {
 const SUPPORTED_EXTENSIONS = ['png', 'tif', 'tiff', 'jpg', 'jpeg', 'zip', 'pdf'];
 const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg'];
 
+const STATUS_TONE = { UPLOADING: 'info', PROCESSING: 'progress', COMPLETED: 'success', FAILED: 'danger' };
+
 const StatusChip = ({ status }) => {
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.UPLOADING;
-  return (
-    <Chip
-      label={config.label}
-      size="small"
-      sx={{
-        bgcolor: config.bgColor,
-        color: config.color,
-        fontWeight: 600,
-        fontSize: '0.7rem',
-        height: 24,
-        border: `1px solid ${config.color}30`,
-      }}
-    />
-  );
+  return <StatusPill label={config.label} tone={STATUS_TONE[status] || 'info'} />;
 };
 
 function getExtension(fileName = '') {
@@ -279,28 +267,6 @@ function formatDateTime(value) {
   });
 }
 
-function SummaryCard({ label, value, color }) {
-  return (
-    <Paper
-      variant="outlined"
-      sx={{
-        px: 2,
-        py: 1.5,
-        borderRadius: 2,
-        minWidth: 120,
-        flex: 1,
-        borderColor: 'divider',
-      }}
-    >
-      <Typography variant="h5" sx={{ fontWeight: 700, color: color || 'text.primary', lineHeight: 1.2 }}>
-        {value}
-      </Typography>
-      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-        {label}
-      </Typography>
-    </Paper>
-  );
-}
 
 function SectionLabel({ children, action }) {
   return (
@@ -955,6 +921,16 @@ export default function ResearcherImageIntegrityPage() {
     }
   };
 
+  const clearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('ALL');
+    setTypeFilter('ALL');
+    setFindingsFilter('ALL');
+    setCollectionFilter('ALL');
+    setLabFilter('ALL');
+    setPage(0);
+  };
+
   return (
     <Box>
       <PageHeader
@@ -970,7 +946,17 @@ export default function ResearcherImageIntegrityPage() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleOpenDialog}
-            sx={{ bgcolor: 'white', color: '#8b6cbc', '&:hover': { bgcolor: '#f5f5f5' } }}
+            sx={{
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              color: 'white',
+              '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.3)' },
+              borderRadius: 2,
+              px: 3,
+              textTransform: 'none',
+              fontWeight: 600,
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              boxShadow: 'none',
+            }}
           >
             {t('researcher.integrity_new_check', 'New Integrity Check')}
           </Button>
@@ -1043,35 +1029,74 @@ export default function ResearcherImageIntegrityPage() {
           </Paper>
         )}
 
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1.5}
-          sx={{ mb: 2.5 }}
-        >
-          <SummaryCard label={t('researcher.integrity_stat_total', 'Total')} value={statusCounts.total} />
-          <SummaryCard
-            label={t('researcher.integrity_stat_completed', 'Completed')}
-            value={statusCounts.COMPLETED || 0}
-            color="#2e7d32"
-          />
-          <SummaryCard
-            label={t('researcher.integrity_stat_in_progress', 'In progress')}
-            value={(statusCounts.PROCESSING || 0) + (statusCounts.UPLOADING || 0)}
-            color="#ed6c02"
-          />
-          <SummaryCard
-            label={t('researcher.integrity_stat_failed', 'Failed')}
-            value={statusCounts.FAILED || 0}
-            color="#d32f2f"
-          />
-          <SummaryCard
-            label={t('researcher.integrity_stat_flagged', 'With findings')}
-            value={statusCounts.flagged || 0}
-            color="#ed6c02"
-          />
-        </Stack>
+        <StatCards cards={[
+          {
+            label: t('researcher.integrity_stat_total', 'Total'),
+            value: statusCounts.total,
+            sub: `${statusCounts.COMPLETED || 0} ${t('researcher.integrity_stat_completed', 'Completed').toLowerCase()}`,
+            icon: <ImageIntegrityIcon />,
+          },
+          {
+            label: t('researcher.integrity_stat_in_progress', 'In progress'),
+            value: (statusCounts.PROCESSING || 0) + (statusCounts.UPLOADING || 0),
+            sub: 'Uploading or being analyzed',
+            icon: <RefreshIcon />,
+          },
+          {
+            label: t('researcher.integrity_stat_flagged', 'With findings'),
+            value: statusCounts.flagged || 0,
+            sub: 'Possible duplication or edits',
+            icon: <ScienceIcon />,
+          },
+          {
+            label: t('researcher.integrity_stat_failed', 'Failed'),
+            value: statusCounts.FAILED || 0,
+            sub: 'Can be resubmitted',
+            icon: <ResubmitIcon />,
+          },
+        ]} />
 
-        <Paper sx={{ borderRadius: 2.5, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+        <FilterBar
+          search={searchQuery}
+          onSearchChange={(value) => { setSearchQuery(value); setPage(0); }}
+          searchPlaceholder={t('researcher.integrity_search_placeholder', 'Search title, file, DOI…')}
+          onClear={clearFilters}
+        >
+          <TextField select className="filter-control" label={t('researcher.integrity_filter_status', 'Status')} value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }} sx={filterFieldSx}>
+            <MenuItem value="ALL">{t('common.all', 'All')}</MenuItem>
+            <MenuItem value="COMPLETED">{t('researcher.integrity_status_completed', 'Completed')}</MenuItem>
+            <MenuItem value="PROCESSING">{t('researcher.integrity_status_processing', 'Processing')}</MenuItem>
+            <MenuItem value="UPLOADING">{t('researcher.integrity_status_uploading', 'Uploading')}</MenuItem>
+            <MenuItem value="FAILED">{t('researcher.integrity_status_failed', 'Failed')}</MenuItem>
+          </TextField>
+          <TextField select className="filter-control" label={t('researcher.integrity_filter_findings', 'Findings')} value={findingsFilter} onChange={(e) => { setFindingsFilter(e.target.value); setPage(0); }} sx={filterFieldSx}>
+            <MenuItem value="ALL">{t('common.all', 'All')}</MenuItem>
+            <MenuItem value="FLAGGED">{t('researcher.integrity_stat_flagged', 'With findings')}</MenuItem>
+            <MenuItem value="CLEAN">{t('researcher.integrity_stat_clean', 'No findings')}</MenuItem>
+          </TextField>
+          <TextField select className="filter-control" label={t('researcher.integrity_filter_type', 'File type')} value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(0); }} sx={filterFieldSx}>
+            <MenuItem value="ALL">{t('common.all', 'All')}</MenuItem>
+            <MenuItem value="IMAGE">{t('researcher.integrity_type_image', 'Images')}</MenuItem>
+            <MenuItem value="PDF">PDF</MenuItem>
+            <MenuItem value="ZIP">ZIP</MenuItem>
+          </TextField>
+          <TextField select className="filter-control" label={t('researcher.integrity_lab_units_label', 'Labs / Units')} value={labFilter} onChange={(e) => { setLabFilter(e.target.value); setPage(0); }} sx={filterFieldSx}>
+            <MenuItem value="ALL">{t('common.all', 'All')}</MenuItem>
+            <MenuItem value="NONE">{t('researcher.integrity_lab_unit_none', 'No lab/unit tag')}</MenuItem>
+            {labUnits.map((unit) => (
+              <MenuItem key={unit.id} value={unit.id}>{unit.name}</MenuItem>
+            ))}
+          </TextField>
+          <TextField select className="filter-control" label={t('researcher.integrity_filter_collection', 'Collection')} value={collectionFilter} onChange={(e) => { setCollectionFilter(e.target.value); setPage(0); }} sx={filterFieldSx}>
+            <MenuItem value="ALL">{t('common.all', 'All')}</MenuItem>
+            <MenuItem value="NONE">{t('researcher.integrity_collection_unassigned', 'Uncollected')}</MenuItem>
+            {collections.map((collection) => (
+              <MenuItem key={collection.id} value={collection.id}>{collection.name}</MenuItem>
+            ))}
+          </TextField>
+        </FilterBar>
+
+        <TablePaper>
           <Box
             sx={{
               px: 2.5,
@@ -1081,13 +1106,11 @@ export default function ResearcherImageIntegrityPage() {
               gap: 1.5,
               justifyContent: 'space-between',
               alignItems: { xs: 'stretch', md: 'center' },
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-              bgcolor: '#faf8fc',
+              borderBottom: '1px solid rgba(139, 108, 188, 0.12)',
             }}
           >
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.05rem' }}>
                 {t('researcher.integrity_submissions', 'My Submissions')}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
@@ -1098,107 +1121,21 @@ export default function ResearcherImageIntegrityPage() {
               </Typography>
             </Box>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ sm: 'center' }}>
-              <TextField
-                size="small"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('researcher.integrity_search_placeholder', 'Search title, file, DOI…')}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{ minWidth: { sm: 220 }, bgcolor: 'background.paper' }}
-              />
-              <FormControl size="small" sx={{ minWidth: 140, bgcolor: 'background.paper' }}>
-                <InputLabel>{t('researcher.integrity_filter_status', 'Status')}</InputLabel>
-                <Select
-                  label={t('researcher.integrity_filter_status', 'Status')}
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="ALL">{t('common.all', 'All')}</MenuItem>
-                  <MenuItem value="COMPLETED">{t('researcher.integrity_status_completed', 'Completed')}</MenuItem>
-                  <MenuItem value="PROCESSING">{t('researcher.integrity_status_processing', 'Processing')}</MenuItem>
-                  <MenuItem value="UPLOADING">{t('researcher.integrity_status_uploading', 'Uploading')}</MenuItem>
-                  <MenuItem value="FAILED">{t('researcher.integrity_status_failed', 'Failed')}</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl size="small" sx={{ minWidth: 130, bgcolor: 'background.paper' }}>
-                <InputLabel>{t('researcher.integrity_filter_type', 'File type')}</InputLabel>
-                <Select
-                  label={t('researcher.integrity_filter_type', 'File type')}
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                >
-                  <MenuItem value="ALL">{t('common.all', 'All')}</MenuItem>
-                  <MenuItem value="IMAGE">{t('researcher.integrity_type_image', 'Images')}</MenuItem>
-                  <MenuItem value="PDF">PDF</MenuItem>
-                  <MenuItem value="ZIP">ZIP</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl size="small" sx={{ minWidth: 130, bgcolor: 'background.paper' }}>
-                <InputLabel>{t('researcher.integrity_filter_findings', 'Findings')}</InputLabel>
-                <Select
-                  label={t('researcher.integrity_filter_findings', 'Findings')}
-                  value={findingsFilter}
-                  onChange={(e) => setFindingsFilter(e.target.value)}
-                >
-                  <MenuItem value="ALL">{t('common.all', 'All')}</MenuItem>
-                  <MenuItem value="FLAGGED">{t('researcher.integrity_stat_flagged', 'With findings')}</MenuItem>
-                  <MenuItem value="CLEAN">{t('researcher.integrity_stat_clean', 'No findings')}</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl size="small" sx={{ minWidth: 160, bgcolor: 'background.paper' }}>
-                <InputLabel>{t('researcher.integrity_lab_units_label', 'Labs / Units')}</InputLabel>
-                <Select
-                  label={t('researcher.integrity_lab_units_label', 'Labs / Units')}
-                  value={labFilter}
-                  onChange={(e) => setLabFilter(e.target.value)}
-                >
-                  <MenuItem value="ALL">{t('common.all', 'All')}</MenuItem>
-                  <MenuItem value="NONE">{t('researcher.integrity_lab_unit_none', 'No lab/unit tag')}</MenuItem>
-                  {labUnits.map((unit) => (
-                    <MenuItem key={unit.id} value={unit.id}>
-                      {unit.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl size="small" sx={{ minWidth: 160, bgcolor: 'background.paper' }}>
-                <InputLabel>{t('researcher.integrity_filter_collection', 'Collection')}</InputLabel>
-                <Select
-                  label={t('researcher.integrity_filter_collection', 'Collection')}
-                  value={collectionFilter}
-                  onChange={(e) => setCollectionFilter(e.target.value)}
-                >
-                  <MenuItem value="ALL">{t('common.all', 'All')}</MenuItem>
-                  <MenuItem value="NONE">{t('researcher.integrity_collection_unassigned', 'Uncollected')}</MenuItem>
-                  {collections.map((collection) => (
-                    <MenuItem key={collection.id} value={collection.id}>
-                      {collection.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <Tooltip title={t('common.refresh', 'Refresh')}>
-                <IconButton onClick={fetchCases} sx={{ bgcolor: 'background.paper' }}>
-                  <RefreshIcon />
-                </IconButton>
-              </Tooltip>
-            </Stack>
+            <Tooltip title={t('common.refresh', 'Refresh')}>
+              <IconButton onClick={fetchCases} aria-label={t('common.refresh', 'Refresh')} sx={{ color: '#6b7280', alignSelf: { xs: 'flex-start', md: 'center' } }}>
+                <RefreshIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
 
           <TableContainer>
             <Table size="medium">
               <TableHead>
-                <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: 'grey.50', whiteSpace: 'nowrap' } }}>
+                <TableRow sx={{ bgcolor: PURPLE, '& th': { fontWeight: 600, color: 'white', borderBottom: 'none', py: 2, whiteSpace: 'nowrap' } }}>
                   <TableCell padding="checkbox">
                     <Checkbox
                       size="small"
+                      sx={{ color: 'rgba(255,255,255,0.8)', '&.Mui-checked, &.MuiCheckbox-indeterminate': { color: 'white' } }}
                       indeterminate={
                         pagedCases.some((c) => selectedIds.includes(c.id)) &&
                         !pagedCases
@@ -1216,24 +1153,22 @@ export default function ResearcherImageIntegrityPage() {
                   </TableCell>
                   <TableCell sx={{ width: 72 }}>{t('researcher.integrity_col_preview', 'Preview')}</TableCell>
                   <TableCell>{t('researcher.integrity_col_submission', 'Submission')}</TableCell>
-                  <TableCell>{t('researcher.integrity_lab_units_label', 'Labs / Units')}</TableCell>
-                  <TableCell>{t('researcher.integrity_collection_name', 'Collection')}</TableCell>
                   <TableCell>{t('researcher.integrity_col_findings', 'Findings')}</TableCell>
                   <TableCell>{t('researcher.integrity_col_status', 'Status')}</TableCell>
                   <TableCell>{t('researcher.integrity_col_submitted', 'Submitted')}</TableCell>
-                  <TableCell align="right">{t('common.actions', 'Actions')}</TableCell>
+                  <TableCell align="center">{t('common.actions', 'Actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                       <CircularProgress size={28} />
                     </TableCell>
                   </TableRow>
                 ) : filteredCases.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                       <Stack alignItems="center" spacing={1}>
                         <ScienceIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
                         <Typography color="text.secondary">
@@ -1246,17 +1181,7 @@ export default function ResearcherImageIntegrityPage() {
                             {t('researcher.integrity_new_check', 'New Integrity Check')}
                           </Button>
                         ) : (
-                          <Button
-                            size="small"
-                            onClick={() => {
-                              setSearchQuery('');
-                              setStatusFilter('ALL');
-                              setTypeFilter('ALL');
-                              setFindingsFilter('ALL');
-                              setCollectionFilter('ALL');
-                              setLabFilter('ALL');
-                            }}
-                          >
+                          <Button size="small" onClick={clearFilters}>
                             {t('researcher.integrity_clear_filters', 'Clear filters')}
                           </Button>
                         )}
@@ -1264,11 +1189,10 @@ export default function ResearcherImageIntegrityPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  pagedCases.map((c) => (
+                  pagedCases.map((c, index) => (
                     <TableRow
                       key={c.id}
-                      hover
-                      sx={{ cursor: 'pointer', '& td': { verticalAlign: 'middle' } }}
+                      sx={{ ...zebraRowSx(index), cursor: 'pointer', '& td': { verticalAlign: 'middle', py: 1.5 } }}
                       onClick={() => router.push(`/researcher/image-integrity/${c.id}`)}
                     >
                       <TableCell onClick={(e) => e.stopPropagation()} padding="checkbox">
@@ -1283,7 +1207,7 @@ export default function ResearcherImageIntegrityPage() {
                         <SubmissionThumbnail caseItem={c} onOpen={setPreviewCase} />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600, maxWidth: 280 }} noWrap title={c.title}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#2D3748', maxWidth: 320 }} noWrap title={c.title}>
                           {c.title}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" noWrap title={c.fileName} sx={{ display: 'block' }}>
@@ -1297,50 +1221,34 @@ export default function ResearcherImageIntegrityPage() {
                             DOI: {c.doi}
                           </Typography>
                         ) : null}
-                      </TableCell>
-                      <TableCell>
                         {(() => {
                           const lab = resolveLabUnit(c, labUnits);
-                          return lab ? (
-                            <Chip
-                              size="small"
-                              icon={<ScienceIcon sx={{ fontSize: '16px !important' }} />}
-                              label={lab.name}
-                              sx={{
-                                maxWidth: 180,
-                                fontWeight: 600,
-                                bgcolor: 'rgba(139, 108, 188, 0.1)',
-                                color: '#6f4fa0',
-                                '& .MuiChip-icon': { color: PURPLE },
-                                '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
-                              }}
-                            />
-                          ) : (
-                            <Typography variant="body2" color="text.disabled">
-                              —
-                            </Typography>
-                          );
-                        })()}
-                      </TableCell>
-                      <TableCell>
-                        {(() => {
                           const collection = resolveCollection(c, collections);
-                          return collection ? (
-                            <Chip
-                              size="small"
-                              label={collection.name}
-                              sx={{
-                                maxWidth: 180,
-                                fontWeight: 600,
-                                bgcolor: collection.color ? `${collection.color}22` : 'rgba(139, 108, 188, 0.1)',
-                                color: collection.color || '#6f4fa0',
-                                '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
-                              }}
-                            />
-                          ) : (
-                            <Typography variant="body2" color="text.disabled">
-                              —
-                            </Typography>
+                          if (!lab && !collection) return null;
+                          const tagSx = {
+                            height: 20, maxWidth: 170, fontSize: '0.7rem', fontWeight: 600, borderRadius: 1,
+                            '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+                          };
+                          return (
+                            <Stack direction="row" spacing={0.75} sx={{ mt: 0.75 }} flexWrap="wrap" useFlexGap>
+                              {lab && (
+                                <Chip
+                                  size="small"
+                                  icon={<ScienceIcon sx={{ fontSize: '14px !important' }} />}
+                                  label={lab.name}
+                                  title={t('researcher.integrity_lab_units_label', 'Labs / Units')}
+                                  sx={{ ...tagSx, bgcolor: 'rgba(139, 108, 188, 0.1)', color: '#6f4fa0', '& .MuiChip-icon': { color: PURPLE } }}
+                                />
+                              )}
+                              {collection && (
+                                <Chip
+                                  size="small"
+                                  label={collection.name}
+                                  title={t('researcher.integrity_collection_name', 'Collection')}
+                                  sx={{ ...tagSx, bgcolor: collection.color ? `${collection.color}22` : 'rgba(139, 108, 188, 0.1)', color: collection.color || '#6f4fa0' }}
+                                />
+                              )}
+                            </Stack>
                           );
                         })()}
                       </TableCell>
@@ -1360,40 +1268,22 @@ export default function ResearcherImageIntegrityPage() {
                           </Typography>
                         )}
                       </TableCell>
-                      <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                        <Stack direction="row" spacing={0.25} justifyContent="flex-end">
-                          <Tooltip title={t('common.view_details', 'View Details')}>
-                            <IconButton
-                              size="small"
-                              onClick={() => router.push(`/researcher/image-integrity/${c.id}`)}
-                            >
-                              <ViewIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          {c.status === 'FAILED' && (
-                            <Tooltip title={t('researcher.integrity_resubmit', 'Resubmit')}>
-                              <span>
-                                <IconButton
-                                  size="small"
-                                  color="primary"
-                                  disabled={resubmittingId === c.id}
-                                  onClick={() => handleResubmit(c.id)}
-                                >
-                                  {resubmittingId === c.id ? (
-                                    <CircularProgress size={16} />
-                                  ) : (
-                                    <ResubmitIcon fontSize="small" />
-                                  )}
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                          )}
-                          <Tooltip title={t('common.delete', 'Delete')}>
-                            <IconButton size="small" color="error" onClick={() => handleDelete(c.id)}>
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
+                      <TableCell align="center" onClick={(e) => e.stopPropagation()}>
+                        <RowActions
+                          actions={[
+                            { key: 'view', label: t('common.view_details', 'View Details'), icon: <ViewIcon fontSize="small" />, onClick: () => router.push(`/researcher/image-integrity/${c.id}`) },
+                            ...(c.status === 'FAILED' ? [{
+                              key: 'resubmit',
+                              label: t('researcher.integrity_resubmit', 'Resubmit'),
+                              icon: resubmittingId === c.id ? <CircularProgress size={16} /> : <ResubmitIcon fontSize="small" />,
+                              onClick: () => handleResubmit(c.id),
+                              disabled: resubmittingId === c.id,
+                            }] : []),
+                          ]}
+                          menuItems={[
+                            { key: 'delete', label: t('common.delete', 'Delete'), icon: <DeleteIcon fontSize="small" />, onClick: () => handleDelete(c.id), danger: true },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   ))
@@ -1406,9 +1296,8 @@ export default function ResearcherImageIntegrityPage() {
             sx={{
               px: 2.5,
               py: 1.5,
-              borderTop: '1px solid',
-              borderColor: 'divider',
-              bgcolor: '#faf8fc',
+              borderTop: '1px solid rgba(139, 108, 188, 0.12)',
+              bgcolor: '#fafbfd',
               display: 'flex',
               flexWrap: 'wrap',
               gap: 1.5,
@@ -1439,8 +1328,9 @@ export default function ResearcherImageIntegrityPage() {
             }}
             rowsPerPageOptions={[5, 10, 25, 50]}
             labelRowsPerPage={t('common.rows_per_page', 'Rows per page')}
+            sx={paginationSx}
           />
-        </Paper>
+        </TablePaper>
       </Container>
 
       {/* Upload Dialog */}

@@ -7,8 +7,6 @@ import {
   Typography,
   Button,
   Grid,
-  Card,
-  CardContent,
   TextField,
   InputAdornment,
   Select,
@@ -19,8 +17,6 @@ import {
   Avatar,
   IconButton,
   LinearProgress,
-  Menu,
-  Divider,
   Paper,
   Stack,
   Tooltip,
@@ -28,32 +24,25 @@ import {
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TableRow,
   TablePagination,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Alert
+  Alert,
 } from '@mui/material';
 import {
   Search as SearchIcon,
-  FilterList as FilterIcon,
   Add as AddIcon,
-  MoreVert as MoreVertIcon,
   Person as PersonIcon,
   Visibility as ViewIcon,
   Edit as EditIcon,
-  Delete as DeleteIcon,
   CalendarToday as CalendarIcon,
   Assignment as ProposalIcon,
   CheckCircle as CheckCircleIcon,
-  Schedule as ScheduleIcon,
-  Pending as PendingIcon,
   RateReview as ReviewIcon,
   Clear as ClearIcon,
-  Sort as SortIcon,
   PlayArrow as ContinueIcon,
   DeleteOutline as DiscardIcon,
   Close as CloseIcon,
@@ -61,12 +50,14 @@ import {
   Error as ErrorIcon,
   Send as SendIcon,
   EmojiEvents as AwardIcon,
-  AttachMoney as MoneyIcon
+  AttachMoney as MoneyIcon,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import PageHeader from '../../../../../components/common/PageHeader';
-import ProposalReviewStatus from '../../../../../components/Proposals/ProposalReviewStatus';
+import ProposalStatusCell from '../../../../../components/Proposals/ProposalStatusCell';
+import RowActions from '../../../../../components/common/RowActions';
+import { PurpleTableHead, TablePaper, paginationSx, zebraRowSx } from '../../../../../components/common/ListPage';
 
 const ProposalsListPage = () => {
   const { t } = useTranslation();
@@ -74,7 +65,6 @@ const ProposalsListPage = () => {
   
   // State management
   const [proposals, setProposals] = useState([]);
-  const [proposalTracking, setProposalTracking] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Statuses');
@@ -117,7 +107,8 @@ const ProposalsListPage = () => {
       if (statusFilter && statusFilter !== 'All Statuses') {
         params.append('status', statusFilter);
       }
-      params.append('limit', '50');
+      params.append('limit', '500');
+      params.append('include', 'review');
       params.append('offset', '0');
 
       const response = await fetch(`/api/proposals?${params}`);
@@ -129,27 +120,6 @@ const ProposalsListPage = () => {
       
       if (data.success) {
         setProposals(data.proposals);
-        
-        // Fetch review tracking for each proposal
-        const trackingPromises = data.proposals.map(async (proposal) => {
-          try {
-            const trackingRes = await fetch(`/api/proposals/${proposal.id}/review-status`);
-            if (trackingRes.ok) {
-              const trackingData = await trackingRes.json();
-              return { id: proposal.id, tracking: trackingData.tracking };
-            }
-          } catch (err) {
-            console.error(`Failed to fetch tracking for proposal ${proposal.id}:`, err);
-          }
-          return { id: proposal.id, tracking: null };
-        });
-        
-        const trackingResults = await Promise.all(trackingPromises);
-        const trackingMap = {};
-        trackingResults.forEach(({ id, tracking }) => {
-          trackingMap[id] = tracking;
-        });
-        setProposalTracking(trackingMap);
         
         // Calculate statistics
         const total = data.proposals.length;
@@ -208,10 +178,6 @@ const ProposalsListPage = () => {
   };
 
   // Handle menu actions
-  const handleMenuClick = (event, proposal) => {
-    setMenuAnchor(event.currentTarget);
-    setSelectedProposal(proposal);
-  };
 
   const handleMenuClose = () => {
     setMenuAnchor(null);
@@ -360,36 +326,19 @@ const ProposalsListPage = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'APPROVED': return '#4caf50';
-      case 'UNDER_REVIEW': return '#ff9800';
-      case 'DRAFT': return '#607d8b';
-      default: return '#9e9e9e';
-    }
-  };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'APPROVED': return <CheckCircleIcon fontSize="small" />;
-      case 'UNDER_REVIEW': return <ReviewIcon fontSize="small" />;
-      case 'DRAFT': return <EditIcon fontSize="small" />;
-      default: return <PendingIcon fontSize="small" />;
-    }
-  };
 
   const formatDateRange = (startDate, endDate) => {
-    const start = new Date(startDate).toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
-    const end = new Date(endDate).toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
-    return `${start} - ${end}`;
+    const fmt = (value) => {
+      const d = value ? new Date(value) : null;
+      return d && !Number.isNaN(d.getTime())
+        ? d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        : null;
+    };
+    const start = fmt(startDate);
+    const end = fmt(endDate);
+    if (start && end) return `${start} – ${end}`;
+    return start || end || 'Dates not set';
   };
 
   return (
@@ -789,220 +738,100 @@ const ProposalsListPage = () => {
             </Button>
           </Paper>
         ) : (
-          <Paper sx={{ 
-            borderRadius: 4,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            border: '1px solid rgba(0,0,0,0.06)',
-            overflow: 'hidden'
-          }}>
+          <TablePaper>
             <TableContainer>
               <Table>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
-                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Title</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Principal Investigator</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Review Pipeline</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Fields</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem' }}>Date Range</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#2c3e50', fontSize: '0.875rem', textAlign: 'center' }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
+                <PurpleTableHead columns={['Title', 'Status', 'Timeline', { label: 'Actions', align: 'center' }]} />
                 <TableBody>
-                  {paginatedProposals.map((proposal) => (
-                    <TableRow 
-                      key={proposal.id}
-                      sx={{ 
-                        '&:hover': { 
-                          backgroundColor: 'rgba(139, 108, 188, 0.04)'
-                        },
-                        transition: 'background-color 0.2s ease'
-                      }}
-                    >
-                      <TableCell 
-                        sx={{ 
-                          py: 2,
-                          cursor: (proposal.status === 'REJECTED' || proposal.status === 'REVISION_REQUESTED') ? 'pointer' : 'default',
-                          '&:hover': (proposal.status === 'REJECTED' || proposal.status === 'REVISION_REQUESTED') ? {
-                            backgroundColor: 'rgba(139, 108, 188, 0.04)'
-                          } : {}
-                        }}
-                        onClick={() => {
-                          if (proposal.status === 'REJECTED' || proposal.status === 'REVISION_REQUESTED') {
-                            handleOpenStatusDialog(proposal);
-                          }
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50', mb: 0.5 }}>
-                            {proposal.title}
-                          </Typography>
-                          {(proposal.status === 'REJECTED' || proposal.status === 'REVISION_REQUESTED') && (
-                            <Tooltip title="Click to view details">
-                              <WarningIcon sx={{ fontSize: 18, color: '#f59e0b' }} />
-                            </Tooltip>
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ py: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Avatar sx={{ 
-                            width: 32, 
-                            height: 32, 
-                            backgroundColor: '#8b6cbc',
-                            fontSize: '0.75rem',
-                            fontWeight: 600
-                          }}>
-                            {proposal.author.split(' ').map(n => n[0]).join('')}
-                          </Avatar>
-                          <Typography variant="body2" sx={{ fontWeight: 500, color: '#2c3e50' }}>
-                            {proposal.author}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ py: 2 }}>
-                        <Chip
-                          icon={getStatusIcon(proposal.status)}
-                          label={proposal.status.replace('_', ' ')}
-                          size="small"
-                          sx={{
-                            backgroundColor: '#8b6cbc',
-                            color: 'white',
-                            fontWeight: 600,
-                            fontSize: '0.75rem',
-                            '& .MuiChip-icon': {
-                              color: 'white'
-                            }
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ py: 2 }}>
-                        {proposalTracking[proposal.id] ? (
-                          <ProposalReviewStatus tracking={proposalTracking[proposal.id]} compact={true} />
-                        ) : (
-                          <Typography variant="caption" sx={{ color: '#999', fontStyle: 'italic' }}>
-                            {proposal.status === 'DRAFT' ? 'Not submitted' : 'No pipeline assigned'}
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell sx={{ py: 2 }}>
-                        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                          {proposal.fields.slice(0, 2).map((field, index) => (
-                            <Chip
-                              key={index}
-                              label={field}
-                              size="small"
+                  {paginatedProposals.map((proposal, index) => {
+                    const needsAttention = proposal.status === 'REJECTED' || proposal.status === 'REVISION_REQUESTED';
+                    const fields = proposal.fields || [];
+                    const isDraft = proposal.status === 'DRAFT';
+                    const actions = [
+                      { key: 'view', label: 'View', icon: <ViewIcon fontSize="small" />, onClick: () => handleViewProposal(proposal) },
+                      isDraft
+                        ? { key: 'continue', label: 'Continue editing', icon: <ContinueIcon fontSize="small" />, onClick: () => handleContinueProposal(proposal) }
+                        : {
+                            key: 'edit',
+                            label: isProposalEditable(proposal) ? 'Edit' : 'Submitted proposals cannot be edited',
+                            icon: <EditIcon fontSize="small" />,
+                            onClick: () => handleEditProposal(proposal),
+                            disabled: !isProposalEditable(proposal),
+                          },
+                    ];
+                    const menuItems = [];
+                    if (needsAttention) {
+                      menuItems.push({ key: 'feedback', label: 'View review feedback', icon: <WarningIcon fontSize="small" />, onClick: () => handleOpenStatusDialog(proposal) });
+                    }
+                    if (!isDraft) {
+                      menuItems.push({ key: 'award', label: 'Approve & Award Grant', icon: <AwardIcon fontSize="small" />, onClick: () => handleOpenApproveGrantDialog(proposal) });
+                    }
+                    if (isDraft) {
+                      menuItems.push({ key: 'discard', label: 'Discard draft', icon: <DiscardIcon fontSize="small" />, onClick: () => handleDiscardProposal(proposal), danger: true });
+                    }
+                    return (
+                      <TableRow key={proposal.id} sx={zebraRowSx(index)}>
+                        <TableCell sx={{ maxWidth: 460 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                            <Typography
+                              variant="subtitle1"
+                              onClick={() => (needsAttention ? handleOpenStatusDialog(proposal) : handleViewProposal(proposal))}
                               sx={{
-                                backgroundColor: 'rgba(139, 108, 188, 0.1)',
-                                color: '#8b6cbc',
-                                fontWeight: 500,
-                                fontSize: '0.7rem',
-                                height: 20
+                                fontWeight: 600, color: '#2D3748', fontSize: '0.95rem', lineHeight: 1.3, mb: 0.75,
+                                display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden',
+                                cursor: 'pointer', '&:hover': { color: '#8b6cbc', textDecoration: 'underline' },
                               }}
-                            />
-                          ))}
-                          {proposal.fields.length > 2 && (
-                            <Chip
-                              label={`+${proposal.fields.length - 2}`}
-                              size="small"
-                              sx={{
-                                backgroundColor: 'rgba(139, 108, 188, 0.05)',
-                                color: '#8b6cbc',
-                                fontWeight: 500,
-                                fontSize: '0.7rem',
-                                height: 20
-                              }}
-                            />
-                          )}
-                        </Stack>
-                      </TableCell>
-                      <TableCell sx={{ py: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <CalendarIcon sx={{ fontSize: 16, color: '#8b6cbc' }} />
-                          <Typography variant="body2" sx={{ fontSize: '0.8rem', color: '#2c3e50' }}>
+                            >
+                              {proposal.title}
+                            </Typography>
+                            {needsAttention && (
+                              <Tooltip title="Reviewers left feedback. Click the title to see it.">
+                                <WarningIcon sx={{ fontSize: 18, color: '#f59e0b', mt: 0.25, flexShrink: 0 }} />
+                              </Tooltip>
+                            )}
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                            <Avatar sx={{ width: 22, height: 22, backgroundColor: '#8b6cbc', fontSize: '0.62rem', fontWeight: 700 }}>
+                              {(proposal.author || '?').split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                            </Avatar>
+                            <Typography variant="caption" sx={{ color: '#374151', fontWeight: 600 }}>
+                              {proposal.author}
+                            </Typography>
+                            {fields.slice(0, 2).map((field) => (
+                              <Chip
+                                key={field}
+                                label={field}
+                                size="small"
+                                sx={{ backgroundColor: 'rgba(139, 108, 188, 0.1)', color: '#8b6cbc', fontWeight: 500, fontSize: '0.7rem', height: 20, borderRadius: 1 }}
+                              />
+                            ))}
+                            {fields.length > 2 && (
+                              <Tooltip title={fields.slice(2).join(', ')}>
+                                <Typography variant="caption" sx={{ color: '#8b6cbc', fontWeight: 600 }}>
+                                  +{fields.length - 2}
+                                </Typography>
+                              </Tooltip>
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <ProposalStatusCell status={proposal.status} review={proposal.review} />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
                             {formatDateRange(proposal.startDate, proposal.endDate)}
                           </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ py: 2 }}>
-                        <Stack direction="row" spacing={1} justifyContent="center">
-                          <Tooltip title="View">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleViewProposal(proposal)}
-                              sx={{ 
-                                color: '#8b6cbc',
-                                '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.08)' }
-                              }}
-                            >
-                              <ViewIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          {proposal.status === 'DRAFT' ? (
-                            <>
-                              <Tooltip title="Continue">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleContinueProposal(proposal)}
-                                  sx={{ 
-                                    color: '#22c55e',
-                                    '&:hover': { backgroundColor: 'rgba(34, 197, 94, 0.08)' }
-                                  }}
-                                >
-                                  <ContinueIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Discard">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleDiscardProposal(proposal)}
-                                  sx={{ 
-                                    color: '#ef4444',
-                                    '&:hover': { backgroundColor: 'rgba(239, 68, 68, 0.08)' }
-                                  }}
-                                >
-                                  <DiscardIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </>
-                          ) : (
-                            <Tooltip title={isProposalEditable(proposal) ? 'Edit' : 'Submitted proposals cannot be edited'}>
-                              <span>
-                                <IconButton
-                                  size="small"
-                                  disabled={!isProposalEditable(proposal)}
-                                  onClick={() => handleEditProposal(proposal)}
-                                  sx={{ 
-                                    color: '#8b6cbc',
-                                    '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.08)' }
-                                  }}
-                                >
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                          )}
-                          <Tooltip title="More">
-                            <IconButton
-                              size="small"
-                              onClick={(e) => handleMenuClick(e, proposal)}
-                              sx={{ 
-                                color: '#8b6cbc',
-                                '&:hover': { backgroundColor: 'rgba(139, 108, 188, 0.08)' }
-                              }}
-                            >
-                              <MoreVertIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell align="center">
+                          <RowActions actions={actions} menuItems={menuItems} />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>
-            
-            {/* Pagination */}
+
             <TablePagination
               component="div"
               count={filteredProposals.length}
@@ -1011,80 +840,11 @@ const ProposalsListPage = () => {
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={handleChangeRowsPerPage}
               rowsPerPageOptions={[5, 10, 25, 50]}
-              sx={{
-                borderTop: '1px solid rgba(0,0,0,0.06)',
-                bgcolor: '#fafbfd',
-                '.MuiTablePagination-toolbar': {
-                  minHeight: 52
-                },
-                '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
-                  fontWeight: 500,
-                  color: '#6b7280'
-                },
-                '.MuiTablePagination-select': {
-                  color: '#8b6cbc',
-                  fontWeight: 600
-                }
-              }}
+              sx={paginationSx}
             />
-          </Paper>
+          </TablePaper>
         )}
 
-        {/* Context Menu */}
-        <Menu
-          anchorEl={menuAnchor}
-          open={Boolean(menuAnchor)}
-          onClose={handleMenuClose}
-          PaperProps={{
-            sx: {
-              borderRadius: 3,
-              boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-              minWidth: 200,
-              border: '1px solid rgba(0,0,0,0.04)',
-              '& .MuiMenuItem-root': {
-                borderRadius: 1,
-                mx: 1,
-                my: 0.5,
-                fontWeight: 500
-              }
-            }
-          }}
-        >
-          <MenuItem onClick={() => handleViewProposal(selectedProposal)}>
-            <ViewIcon fontSize="small" sx={{ mr: 1 }} />
-            View Proposal
-          </MenuItem>
-          {selectedProposal?.status === 'DRAFT' ? [
-              <MenuItem key="continue" onClick={() => handleContinueProposal(selectedProposal)}>
-                <ContinueIcon fontSize="small" sx={{ mr: 1 }} />
-                Continue Editing
-              </MenuItem>,
-              <Divider key="divider1" />,
-              <MenuItem key="discard" onClick={() => handleDiscardProposal(selectedProposal)} sx={{ color: '#f44336' }}>
-                <DiscardIcon fontSize="small" sx={{ mr: 1 }} />
-                Discard Draft
-              </MenuItem>
-            ] : [
-              <MenuItem
-                key="edit"
-                disabled={!isProposalEditable(selectedProposal)}
-                onClick={() => handleEditProposal(selectedProposal)}
-              >
-                <EditIcon fontSize="small" sx={{ mr: 1 }} />
-                Edit Proposal
-              </MenuItem>,
-              <Divider key="divider2" />,
-              <MenuItem key="approve" onClick={() => handleOpenApproveGrantDialog(selectedProposal)} sx={{ color: '#10b981' }}>
-                <AwardIcon fontSize="small" sx={{ mr: 1 }} />
-                Approve & Award Grant
-              </MenuItem>,
-              <Divider key="divider3" />,
-              <MenuItem key="delete" onClick={handleMenuClose} sx={{ color: '#f44336' }}>
-                <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
-                Delete Proposal
-              </MenuItem>
-            ]}
-        </Menu>
 
         {/* Approve & Award Grant Dialog */}
         <Dialog

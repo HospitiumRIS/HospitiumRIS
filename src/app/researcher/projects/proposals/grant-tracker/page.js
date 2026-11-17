@@ -7,7 +7,6 @@ import {
   Avatar,
   Box,
   Button,
-  Chip,
   CircularProgress,
   Container,
   Dialog,
@@ -15,8 +14,6 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
-  Grid,
-  IconButton,
   InputAdornment,
   InputLabel,
   LinearProgress,
@@ -29,11 +26,9 @@ import {
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TablePagination,
   TableRow,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import {
@@ -42,12 +37,10 @@ import {
   CalendarToday as CalendarIcon,
   Cancel as CancelIcon,
   CheckCircle as AwardedIcon,
-  Clear as ClearIcon,
   Edit as EditIcon,
   EmojiEvents as TrophyIcon,
   HourglassEmpty as PendingIcon,
   Person as PersonIcon,
-  Search as SearchIcon,
   Send as AppliedIcon,
   ThumbDown as RejectedIcon,
   Visibility as ViewIcon,
@@ -56,6 +49,11 @@ import { useTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import PageHeader from '../../../../../components/common/PageHeader';
+import RowActions from '../../../../../components/common/RowActions';
+import StatusPill from '../../../../../components/common/StatusPill';
+import {
+  FilterBar, PurpleTableHead, StatCards, TablePaper, filterFieldSx, paginationSx, zebraRowSx,
+} from '../../../../../components/common/ListPage';
 
 const STATUS_META = {
   NOT_APPLIED: { label: 'Not applied', color: '#64748b', bg: 'rgba(100, 116, 139, 0.12)', icon: <PendingIcon sx={{ fontSize: 16 }} /> },
@@ -98,58 +96,19 @@ function initials(name = '') {
     .toUpperCase();
 }
 
+const STATUS_TONE = {
+  NOT_APPLIED: 'neutral',
+  APPLIED: 'info',
+  AWARDED: 'success',
+  REJECTED: 'danger',
+  CANCELLED: 'warning',
+};
+
 function StatusChip({ status }) {
   const meta = STATUS_META[status] || STATUS_META.NOT_APPLIED;
-  return (
-    <Chip
-      size="small"
-      icon={meta.icon}
-      label={meta.label}
-      sx={{
-        backgroundColor: meta.bg,
-        color: meta.color,
-        fontWeight: 600,
-        '& .MuiChip-icon': { color: meta.color },
-      }}
-    />
-  );
+  return <StatusPill label={meta.label} tone={STATUS_TONE[status] || 'neutral'} />;
 }
 
-function StatCard({ label, value, caption, icon }) {
-  return (
-    <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-      <Paper
-        sx={{
-          p: 2,
-          borderRadius: 2,
-          bgcolor: '#8b6cbc',
-          boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-          border: 'none',
-          position: 'relative',
-          overflow: 'hidden',
-          height: '100px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-        }}
-      >
-        <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-            {label}
-          </Typography>
-          {icon}
-        </Box>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-          {value}
-        </Typography>
-        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-          {caption}
-        </Typography>
-      </Paper>
-    </Grid>
-  );
-}
 
 export default function GrantTrackerPage() {
   const { t } = useTranslation();
@@ -328,68 +287,35 @@ export default function GrantTrackerPage() {
           </Alert>
         )}
 
-        <Grid container spacing={2.5} sx={{ mb: 4 }}>
-          <StatCard label="Total" value={stats.total} caption="Approved proposals" icon={<GrantIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />} />
-          <StatCard label="Not applied" value={stats.notApplied} caption="Ready to apply" icon={<PendingIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />} />
-          <StatCard label="Applied" value={stats.applied} caption="Awaiting decision" icon={<AppliedIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />} />
-          <StatCard label="Awarded" value={stats.awarded} caption="Successful grants" icon={<AwardedIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />} />
-          <StatCard label="Rejected" value={stats.rejected} caption="Not funded" icon={<RejectedIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />} />
-          <StatCard label="Cancelled" value={stats.cancelled} caption="Withdrawn" icon={<CancelIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />} />
-        </Grid>
+        <StatCards cards={[
+          { label: 'Approved proposals', value: stats.total, sub: 'Eligible for grant tracking', icon: <GrantIcon /> },
+          { label: 'Not applied', value: stats.notApplied, sub: 'Ready to apply', icon: <PendingIcon /> },
+          { label: 'Applied', value: stats.applied, sub: 'Awaiting a funder decision', icon: <AppliedIcon /> },
+          { label: 'Awarded', value: stats.awarded, sub: `${stats.rejected + stats.cancelled} not funded or withdrawn`, icon: <AwardedIcon /> },
+        ]} />
 
-        <Paper
-          sx={{
-            p: 3,
-            mb: 3,
-            borderRadius: 4,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            border: '1px solid rgba(0,0,0,0.06)',
-          }}
+        <FilterBar
+          search={searchQuery}
+          onSearchChange={(value) => { setSearchQuery(value); setPage(0); }}
+          searchPlaceholder="Search proposal, PI, or follow-up assignee..."
+          onClear={() => { setSearchQuery(''); setStatusFilter('All'); setPage(0); }}
         >
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <TextField
-              fullWidth
-              placeholder="Search proposal, PI, or follow-up assignee..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setPage(0);
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#8b6cbc' }} />
-                  </InputAdornment>
-                ),
-                endAdornment: searchQuery ? (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setSearchQuery('')} size="small">
-                      <ClearIcon />
-                    </IconButton>
-                  </InputAdornment>
-                ) : null,
-              }}
-            />
-            <FormControl sx={{ minWidth: 200 }}>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={statusFilter}
-                label="Status"
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPage(0);
-                }}
-              >
-                <MenuItem value="All">All statuses</MenuItem>
-                {Object.entries(STATUS_META).map(([value, meta]) => (
-                  <MenuItem key={value} value={value}>
-                    {meta.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
-        </Paper>
+          <TextField
+            select
+            className="filter-control"
+            label="Status"
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+            sx={filterFieldSx}
+          >
+            <MenuItem value="All">All statuses</MenuItem>
+            {Object.entries(STATUS_META).map(([value, meta]) => (
+              <MenuItem key={value} value={value}>
+                {meta.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </FilterBar>
 
         {loading ? (
           <Paper sx={{ p: 8, textAlign: 'center', borderRadius: 4 }}>
@@ -405,31 +331,32 @@ export default function GrantTrackerPage() {
           <Paper sx={{ p: 8, textAlign: 'center', borderRadius: 4 }}>
             <TrophyIcon sx={{ fontSize: 64, color: '#ddd', mb: 2 }} />
             <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, color: '#666' }}>
-              No approved proposals to track
+              {proposals.length ? 'No proposals match your filters' : 'No approved proposals to track'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Proposals appear here after they complete internal review and are approved.
+              {proposals.length
+                ? 'Try adjusting your search or status filter.'
+                : 'Proposals appear here after they complete internal review and are approved.'}
             </Typography>
           </Paper>
         ) : (
-          <Paper sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+          <TablePaper>
             <TableContainer>
               <Table>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: 'rgba(139, 108, 188, 0.06)' }}>
-                    <TableCell sx={{ fontWeight: 700 }}>Proposal name</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Amount applied for</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Dates</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Follow-up assignee</TableCell>
-                    <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
+                <PurpleTableHead columns={['Proposal', 'Amount applied for', 'Dates', 'Status', 'Follow-up assignee', { label: 'Actions', align: 'center' }]} />
                 <TableBody>
-                  {paginated.map((proposal) => (
-                    <TableRow key={proposal.id} hover>
-                      <TableCell sx={{ py: 2, maxWidth: 360 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50' }}>
+                  {paginated.map((proposal, index) => (
+                    <TableRow key={proposal.id} sx={zebraRowSx(index)}>
+                      <TableCell sx={{ maxWidth: 380 }}>
+                        <Typography
+                          variant="subtitle1"
+                          onClick={() => router.push(`/researcher/projects/proposals/view/${proposal.id}`)}
+                          sx={{
+                            fontWeight: 600, color: '#2D3748', fontSize: '0.95rem', lineHeight: 1.3, mb: 0.5,
+                            display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden',
+                            cursor: 'pointer', '&:hover': { color: '#8b6cbc', textDecoration: 'underline' },
+                          }}
+                        >
                           {proposal.title}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
@@ -451,8 +378,8 @@ export default function GrantTrackerPage() {
                       </TableCell>
                       <TableCell>
                         <Stack spacing={0.3}>
-                          <Typography variant="body2">
-                            Applied on: {proposal.grantAppliedOn ? formatDate(proposal.grantAppliedOn) : 'Not applied'}
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {proposal.grantAppliedOn ? `Applied ${formatDate(proposal.grantAppliedOn)}` : 'Not applied yet'}
                           </Typography>
                           {proposal.grantDecisionOn && ['AWARDED', 'REJECTED', 'CANCELLED'].includes(proposal.grantTrackingStatus) && (
                             <Typography variant="caption" color="text.secondary">
@@ -485,21 +412,14 @@ export default function GrantTrackerPage() {
                           </Typography>
                         )}
                       </TableCell>
-                      <TableCell sx={{ textAlign: 'center' }}>
-                        <Tooltip title="View proposal">
-                          <IconButton
-                            size="small"
-                            onClick={() => router.push(`/researcher/projects/proposals/view/${proposal.id}`)}
-                            sx={{ color: '#8b6cbc' }}
-                          >
-                            <ViewIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Update tracking">
-                          <IconButton size="small" onClick={() => openUpdate(proposal)} sx={{ color: '#8b6cbc' }}>
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                      <TableCell align="center">
+                        <RowActions
+                          reserveMenuSpace={false}
+                          actions={[
+                            { key: 'view', label: 'View proposal', icon: <ViewIcon fontSize="small" />, onClick: () => router.push(`/researcher/projects/proposals/view/${proposal.id}`) },
+                            { key: 'update', label: 'Update tracking', icon: <EditIcon fontSize="small" />, onClick: () => openUpdate(proposal) },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -517,8 +437,9 @@ export default function GrantTrackerPage() {
                 setPage(0);
               }}
               rowsPerPageOptions={[5, 10, 25]}
+              sx={paginationSx}
             />
-          </Paper>
+          </TablePaper>
         )}
       </Container>
 

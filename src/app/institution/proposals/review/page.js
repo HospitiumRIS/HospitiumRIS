@@ -37,7 +37,8 @@ import {
 } from '@mui/icons-material';
 import PageHeader from '../../../../components/common/PageHeader';
 import RowActions from '../../../../components/common/RowActions';
-import StatusPill, { StageBar, humanizeStatus } from '../../../../components/common/StatusPill';
+import StatusPill, { humanizeStatus } from '../../../../components/common/StatusPill';
+import ProposalStatusCell, { PROPOSAL_STATUS_TONE } from '../../../../components/Proposals/ProposalStatusCell';
 import {
   BRAND_PURPLE as PURPLE,
   FilterBar,
@@ -51,13 +52,7 @@ import {
 
 const ACTIVE = ['SUBMITTED', 'UNDER_REVIEW'];
 
-const STATUS_TONE = {
-  SUBMITTED: 'info',
-  UNDER_REVIEW: 'progress',
-  REVISION_REQUESTED: 'warning',
-  APPROVED: 'success',
-  REJECTED: 'danger',
-};
+const STATUS_TONE = PROPOSAL_STATUS_TONE;
 
 // Work queues shown as tabs above the table
 const QUEUES = [
@@ -100,29 +95,6 @@ const waitingTone = (days) => (days >= 21 ? 'danger' : days >= 14 ? 'warning' : 
 
 const initials = (name) =>
   name ? name.split(' ').filter(Boolean).map((n) => n.charAt(0)).join('').substring(0, 2).toUpperCase() : '?';
-
-function ReviewStatusCell({ proposal }) {
-  const review = proposal.review;
-  const tone = STATUS_TONE[proposal.status] || 'neutral';
-  const total = review?.stageCount || 0;
-  const decided = ['APPROVED', 'REJECTED'].includes(proposal.status);
-  const filled = decided || review?.overallStatus === 'COMPLETED' ? total : Math.min(total, review?.stageOrder || 0);
-  let caption;
-  if (decided) caption = proposal.status === 'APPROVED' ? 'Review complete' : 'Not approved';
-  else if (proposal.status === 'REVISION_REQUESTED') caption = 'Waiting for the researcher';
-  else if (review && total) caption = `Stage ${review.stageOrder} of ${total}${review.stageName ? ` · ${review.stageName}` : ''}`;
-  else caption = 'Not yet in a review pipeline';
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 180 }}>
-      <StatusPill label={humanizeStatus(proposal.status)} tone={tone} />
-      {total > 0 && <StageBar filled={filled} total={total} tone={tone} maxWidth={140} />}
-      <Typography variant="caption" sx={{ color: '#6b7280', fontSize: '0.72rem', lineHeight: 1.3 }}>
-        {caption}
-      </Typography>
-    </Box>
-  );
-}
 
 function ReviewersCell({ proposal }) {
   if (!ACTIVE.includes(proposal.status)) {
@@ -315,7 +287,7 @@ export default function InstitutionProposalReviewPage() {
             sx={filterFieldSx}
           >
             <MenuItem value="all">All statuses</MenuItem>
-            {Object.keys(STATUS_TONE).map((status) => (
+            {Object.keys(STATUS_TONE).filter((status) => status !== 'DRAFT').map((status) => (
               <MenuItem key={status} value={status}>{humanizeStatus(status)}</MenuItem>
             ))}
           </TextField>
@@ -418,7 +390,7 @@ export default function InstitutionProposalReviewPage() {
                               </Typography>
                             </Box>
                           </TableCell>
-                          <TableCell><ReviewStatusCell proposal={proposal} /></TableCell>
+                          <TableCell><ProposalStatusCell status={proposal.status} review={proposal.review} /></TableCell>
                           <TableCell><ReviewersCell proposal={proposal} /></TableCell>
                           <TableCell>
                             {days === null ? (
