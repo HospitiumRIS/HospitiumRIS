@@ -14,11 +14,11 @@ export const MANUSCRIPT_STAGE_ORDER = [
 ];
 
 export const MANUSCRIPT_STAGES = {
-  DRAFT: { label: 'Draft', color: '#f59e0b', bg: '#fef3c7', order: 1 },
-  IN_REVIEW: { label: 'In Review', color: '#3b82f6', bg: '#dbeafe', order: 2 },
-  UNDER_REVISION: { label: 'Under Revision', color: '#8b5cf6', bg: '#ede9fe', order: 3 },
-  PUBLISHED: { label: 'Published', color: '#10b981', bg: '#d1fae5', order: 4 },
-  ARCHIVED: { label: 'Archived', color: '#6b7280', bg: '#f3f4f6', order: 5 },
+  DRAFT: { label: 'Draft', color: '#f59e0b', bg: '#fef3c7', text: '#92400e', order: 1 },
+  IN_REVIEW: { label: 'In Review', color: '#3b82f6', bg: '#dbeafe', text: '#1e40af', order: 2 },
+  UNDER_REVISION: { label: 'Under Revision', color: '#8b5cf6', bg: '#ede9fe', text: '#5b21b6', order: 3 },
+  PUBLISHED: { label: 'Published', color: '#10b981', bg: '#d1fae5', text: '#065f46', order: 4 },
+  ARCHIVED: { label: 'Archived', color: '#6b7280', bg: '#f3f4f6', text: '#374151', order: 5 },
 };
 
 export const MANUSCRIPT_STATUS_VALUES = MANUSCRIPT_STAGE_ORDER;

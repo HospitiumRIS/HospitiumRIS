@@ -119,6 +119,8 @@ import { useAuth } from '../../../../components/AuthProvider';
 import PageHeader from '../../../../components/common/PageHeader';
 import OrcidCollaboratorInvite from '../../../../components/Manuscripts/OrcidCollaboratorInvite';
 import StagePipeline from '../../../../components/Manuscripts/StagePipeline';
+import ManuscriptStatusCell from '../../../../components/Manuscripts/ManuscriptStatusCell';
+import ManuscriptRowActions from '../../../../components/Manuscripts/ManuscriptRowActions';
 import TipTapEditor from '../../../../components/common/TipTapEditor';
 import ManuscriptWorkflowDialog from '../../../../components/Manuscripts/ManuscriptWorkflowDialog';
 import {
@@ -2781,23 +2783,7 @@ export default function CollaborativeWriting() {
 
                           {/* Status */}
                           <TableCell sx={{ py: 2 }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                              <Chip
-                                label={t(getStageTranslationKey(manuscript.status))}
-                                size="small"
-                                sx={{
-                                  backgroundColor: statusOption?.color || '#8b6cbc',
-                                  color: 'white',
-                                  fontWeight: 500,
-                                  fontSize: '0.75rem',
-                                  alignSelf: 'flex-start'
-                                }}
-                              />
-                              <StagePipeline currentStatus={manuscript.status} size={18} />
-                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                                {manuscript.type}
-                              </Typography>
-                            </Box>
+                            <ManuscriptStatusCell status={manuscript.status} type={manuscript.type} />
                           </TableCell>
 
                           {/* Team */}
@@ -2982,83 +2968,34 @@ export default function CollaborativeWriting() {
 
                           {/* Actions */}
                           <TableCell sx={{ py: 2, textAlign: 'center' }}>
-                            <Box sx={{ 
-                              display: 'flex', 
-                              gap: 0.5, 
-                              justifyContent: 'center',
-                              alignItems: 'center'
-                            }}>
-                              <Tooltip title="View Details" arrow>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleViewManuscript(manuscript)}
-                                  sx={{ 
-                                    color: '#8b6cbc',
-                                    '&:hover': { bgcolor: '#8b6cbc10' }
-                                  }}
-                                >
-                                  <VisibilityIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Edit Manuscript" arrow>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleEditManuscript(manuscript)}
-                                  disabled={manuscript.permissions && !manuscript.permissions.canEdit}
-                                  sx={{ 
-                                    color: '#666',
-                                    '&:hover': { bgcolor: '#66666610' }
-                                  }}
-                                >
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              {/* Advance through peer review and publication */}
-                              {manuscript.permissions?.canManageTeam && (
-                                <Tooltip title={t('manuscript_workflow.title')} arrow>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleOpenWorkflow(manuscript)}
-                                    sx={{
-                                      color: '#3b82f6',
-                                      '&:hover': { bgcolor: '#3b82f610' }
-                                    }}
-                                  >
-                                    <RateReviewIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                              )}
-                              {/* Only show Team button if user has permission */}
-                              {manuscript.permissions?.canManageTeam && (
-                                <Tooltip title="Manage Team" arrow>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleManageTeam(manuscript)}
-                                    sx={{ 
-                                      color: '#4caf50',
-                                      '&:hover': { bgcolor: '#4caf5010' }
-                                    }}
-                                  >
-                                    <GroupsIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                              )}
-                              {/* Only show Delete button if user has permission */}
-                              {manuscript.permissions?.canDelete && (
-                                <Tooltip title="Delete" arrow>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleDeleteManuscript(manuscript)}
-                                    sx={{ 
-                                      color: '#f44336',
-                                      '&:hover': { bgcolor: '#f4433610' }
-                                    }}
-                                  >
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                              )}
-                            </Box>
+                            <ManuscriptRowActions
+                              onView={() => handleViewManuscript(manuscript)}
+                              onEdit={() => handleEditManuscript(manuscript)}
+                              canEdit={!(manuscript.permissions && !manuscript.permissions.canEdit)}
+                              menuItems={[
+                                ...(manuscript.permissions?.canManageTeam ? [
+                                  {
+                                    key: 'workflow',
+                                    label: t('manuscript_workflow.title'),
+                                    icon: <RateReviewIcon fontSize="small" />,
+                                    onClick: () => handleOpenWorkflow(manuscript),
+                                  },
+                                  {
+                                    key: 'team',
+                                    label: 'Manage team',
+                                    icon: <GroupsIcon fontSize="small" />,
+                                    onClick: () => handleManageTeam(manuscript),
+                                  },
+                                ] : []),
+                                ...(manuscript.permissions?.canDelete ? [{
+                                  key: 'delete',
+                                  label: 'Delete',
+                                  icon: <DeleteIcon fontSize="small" />,
+                                  onClick: () => handleDeleteManuscript(manuscript),
+                                  danger: true,
+                                }] : []),
+                              ]}
+                            />
                           </TableCell>
                         </TableRow>
                       );
