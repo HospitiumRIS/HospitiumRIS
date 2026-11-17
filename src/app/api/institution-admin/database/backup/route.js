@@ -6,6 +6,7 @@ import {
   getOwnedInstitution,
   fetchInstitutionScopedData,
 } from '@/lib/institution-admin';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const BACKUP_DIR = path.join(process.cwd(), 'backups');
 
@@ -34,7 +35,7 @@ async function readBackupMetadata(filepath) {
   }
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     const { user, error } = await requireInstitutionAdmin();
     if (error) return error;
@@ -159,3 +160,5 @@ export async function GET() {
 }
 
 export { sanitizeFilename, readBackupMetadata, BACKUP_DIR };
+
+export const POST = withAdminAudit(handlePOST, { action: 'INSTITUTION_BACKUP_CREATED', summary: 'Created an institution data backup', targetType: 'Database' });

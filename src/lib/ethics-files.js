@@ -29,7 +29,7 @@ function getExtension(fileName) {
   return parts.length > 1 ? parts.pop().toLowerCase() : '';
 }
 
-export function useEthicsStorage() {
+export function isEthicsStorageEnabled() {
   return process.env.STORAGE_CUTOVER_ETHICS === 'true' || process.env.STORAGE_DRIVER === 'r2';
 }
 
@@ -79,7 +79,7 @@ export function getFileExtension(fileName = '') {
 export async function saveEthicsFile(applicationId, file, options = {}) {
   const storedName = `${Date.now()}_${sanitizeFileName(file.name || 'certificate')}`;
 
-  if (useEthicsStorage() && options.user) {
+  if (isEthicsStorageEnabled() && options.user) {
     const stored = await uploadServerSide({
       user: options.user,
       module: options.module || 'ETHICS_DOCUMENT',

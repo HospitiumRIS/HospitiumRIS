@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireInstitutionAdmin, getOwnedInstitution } from '@/lib/institution-admin';
 import { uniqueInstitutionSlug, slugify } from '@/lib/institution-slug';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const INSTITUTION_TYPES = [
@@ -57,7 +58,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(request) {
+async function handlePUT(request) {
   try {
     const { user, error } = await requireInstitutionAdmin();
     if (error) return error;
@@ -118,3 +119,5 @@ export async function PUT(request) {
     return NextResponse.json({ error: 'Failed to update institution profile' }, { status: 500 });
   }
 }
+
+export const PUT = withAdminAudit(handlePUT, { action: 'INSTITUTION_PROFILE_UPDATED', summary: 'Changed the institution profile', targetType: 'Institution' });

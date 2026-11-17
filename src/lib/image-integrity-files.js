@@ -19,7 +19,7 @@ const MIME_BY_EXT = {
 
 export { sanitizeFileName };
 
-export function useImageIntegrityStorage() {
+export function isImageIntegrityStorageEnabled() {
   return process.env.STORAGE_CUTOVER_IMAGE_INTEGRITY === 'true' || process.env.STORAGE_DRIVER === 'r2';
 }
 
@@ -40,7 +40,7 @@ export function getMimeType(fileFormat, fileName) {
 export async function saveIntegrityFile(caseId, file, options = {}) {
   const storedName = sanitizeFileName(file.name || 'upload');
 
-  if (useImageIntegrityStorage() && options.user) {
+  if (isImageIntegrityStorageEnabled() && options.user) {
     const stored = await uploadServerSide({
       user: options.user,
       module: 'IMAGE_INTEGRITY',

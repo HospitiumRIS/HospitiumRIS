@@ -30,7 +30,7 @@ function getExtension(fileName) {
   return parts.length > 1 ? parts.pop().toLowerCase() : '';
 }
 
-export function useProposalStorage() {
+export function isProposalStorageEnabled() {
   return process.env.STORAGE_CUTOVER_PROPOSALS === 'true' || process.env.STORAGE_DRIVER === 'r2';
 }
 
@@ -139,7 +139,7 @@ export async function saveProposalDocument(prefix, file, options = {}) {
   const meta = buildProposalFileMeta(prefix, file);
   const module = PREFIX_TO_MODULE[prefix] || 'PROPOSAL_DOCUMENT';
 
-  if (useProposalStorage() && options.user && options.proposalId) {
+  if (isProposalStorageEnabled() && options.user && options.proposalId) {
     const stored = await uploadServerSide({
       user: options.user,
       module,

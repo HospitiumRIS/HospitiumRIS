@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 import { logSuccess, logError, logInfo, logApiActivity, getRequestMetadata } from '@/utils/activityLogger';
 import { setSessionCookie } from '@/lib/session-cookie';
+import { recordAuthEvent } from '@/lib/ops/audit';
 
 export async function GET(request) {
   const requestMetadata = getRequestMetadata(request);
@@ -215,6 +216,9 @@ export async function GET(request) {
       
       // Check if user is activated
       if (!existingUser.emailVerified) {
+        await recordAuthEvent(request, {
+          action: 'LOGIN_FAILED', user: existingUser, outcome: 'FAILURE', reason: 'account_not_verified', method: 'orcid',
+        });
         // Log account not activated
         await logError('ORCID login failed - account not activated', {
           ...requestMetadata,
@@ -236,6 +240,9 @@ export async function GET(request) {
 
       // Check if user status is active
       if (existingUser.status !== 'ACTIVE') {
+        await recordAuthEvent(request, {
+          action: 'LOGIN_FAILED', user: existingUser, outcome: 'FAILURE', reason: 'account_suspended', method: 'orcid',
+        });
         // Log account suspended
         await logError('ORCID login failed - account suspended', {
           ...requestMetadata,
@@ -259,7 +266,7 @@ export async function GET(request) {
       // Update last login time
       await prisma.user.update({
         where: { id: existingUser.id },
-        data: { updatedAt: new Date() }
+        data: { updatedAt: new Date(), lastLoginAt: new Date() }
       });
 
       // Determine redirect route based on account type
@@ -281,6 +288,8 @@ export async function GET(request) {
           dashboardRoute = '/global-admin';
           break;
       }
+
+      await recordAuthEvent(request, { action: 'LOGIN_SUCCESS', user: existingUser, method: 'orcid' });
 
       // Log successful ORCID login with comprehensive activity logging
       await logSuccess('ORCID login successful', {

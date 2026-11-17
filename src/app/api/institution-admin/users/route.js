@@ -8,6 +8,7 @@ import {
 import { hashPassword, validateEmail } from '@/lib/auth';
 import { normalizeOrcid } from '@/lib/orcid';
 import { anonymizeExpiredDeletedUsers } from '@/lib/user-lifecycle';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MANAGEABLE_ACCOUNT_TYPES = ['RESEARCHER', 'RESEARCH_ADMIN'];
@@ -161,7 +162,7 @@ export async function GET(request) {
   }
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     const { user, error } = await requireInstitutionAdmin();
     if (error) return error;
@@ -263,3 +264,5 @@ export async function POST(request) {
     );
   }
 }
+
+export const POST = withAdminAudit(handlePOST, { action: 'USER_CREATED', summary: ({ values }) => `Created a user account${values.accountType ? ` (${values.accountType})` : ''}`, targetType: 'User', captureValues: ['accountType'] });

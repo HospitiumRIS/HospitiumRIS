@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-server';
 import DatabaseService from '@/lib/database-service';
+import { withAdminAudit } from '@/lib/ops/audit';
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     // Check authentication and authorization
     const currentUser = await getAuthenticatedUser();
@@ -87,3 +88,5 @@ export async function GET(request) {
     );
   }
 }
+
+export const POST = withAdminAudit(handlePOST, { action: 'DATABASE_BACKUP_CREATED', summary: 'Created a database backup', targetType: 'Database', captureValues: ['format'] });

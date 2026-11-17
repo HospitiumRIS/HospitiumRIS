@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { isTokenExpired } from '@/lib/email';
+import { recordAuthEvent } from '@/lib/ops/audit';
 
 /**
  * @swagger
@@ -101,6 +102,8 @@ export async function GET(request) {
         status: 'ACTIVE', // Activate the account
       },
     });
+
+    await recordAuthEvent(request, { action: 'ACCOUNT_ACTIVATED', user: updatedUser });
 
     // Return success response
     return NextResponse.json(

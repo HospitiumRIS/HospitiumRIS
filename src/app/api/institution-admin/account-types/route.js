@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getUserId } from '../../../../lib/auth-server.js';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const prisma = new PrismaClient();
 
@@ -64,7 +65,7 @@ export async function GET(request) {
 }
 
 // POST - Create new account type
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     const userId = await getUserId(request);
     
@@ -147,3 +148,5 @@ export async function POST(request) {
     );
   }
 }
+
+export const POST = withAdminAudit(handlePOST, { action: 'ACCOUNT_TYPE_CREATED', summary: 'Created an account type', targetType: 'AccountType' });

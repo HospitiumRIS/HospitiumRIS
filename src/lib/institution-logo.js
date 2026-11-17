@@ -11,7 +11,7 @@ export const INSTITUTION_LOGO_TYPES = {
   'image/webp': 'webp',
 };
 
-export function useLogoStorage() {
+export function isLogoStorageEnabled() {
   return process.env.STORAGE_CUTOVER_LOGO === 'true' || process.env.STORAGE_DRIVER === 'r2';
 }
 
@@ -52,7 +52,7 @@ export async function saveInstitutionLogo(institutionId, file, options = {}) {
     throw new Error('Logo must be 2 MB or smaller');
   }
 
-  if (useLogoStorage() && options.user) {
+  if (isLogoStorageEnabled() && options.user) {
     const stored = await uploadServerSide({
       user: options.user,
       module: 'INSTITUTION_LOGO',

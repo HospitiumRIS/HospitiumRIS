@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-server';
+import { withAdminAudit } from '@/lib/ops/audit';
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   try {
     const user = await getAuthenticatedUser(request);
 
@@ -77,3 +78,5 @@ export async function POST(request, { params }) {
     );
   }
 }
+
+export const POST = withAdminAudit(handlePOST, { action: 'DOMAIN_VERIFIED', summary: 'Verified an email domain', targetType: 'VerifiedDomain' });

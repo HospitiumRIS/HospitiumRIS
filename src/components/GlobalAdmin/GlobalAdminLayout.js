@@ -30,7 +30,9 @@ import {
   Storage as DatabaseIcon,
   ListAlt as LogsIcon,
   SupervisorAccount as GlobalAdminIcon,
-  HealthAndSafety as HealthIcon
+  HealthAndSafety as HealthIcon,
+  MonitorHeart as OperationsIcon,
+  History as AuditIcon
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../AuthProvider';
@@ -54,6 +56,12 @@ const GlobalAdminLayout = ({ children }) => {
       color: 'primary'
     },
     {
+      text: t('global_admin.operations', 'Operations'),
+      icon: <OperationsIcon />,
+      path: '/global-admin/operations',
+      color: 'success'
+    },
+    {
       text: t('global_admin.institution_admins'),
       icon: <InstitutionsIcon />,
       path: '/global-admin/institutions',
@@ -70,6 +78,12 @@ const GlobalAdminLayout = ({ children }) => {
       icon: <DatabaseIcon />,
       path: '/global-admin/database',
       color: 'warning'
+    },
+    {
+      text: t('global_admin.audit_log', 'Audit log'),
+      icon: <AuditIcon />,
+      path: '/global-admin/audit',
+      color: 'primary'
     },
     {
       text: t('global_admin.system_logs'),
