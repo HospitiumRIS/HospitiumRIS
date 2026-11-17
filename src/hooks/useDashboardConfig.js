@@ -10,7 +10,6 @@ import {
   School as SchoolIcon,
   Assignment as AssignmentIcon,
   MonetizationOn as FundingIcon,
-  ManageAccounts as UserManagerIcon,
   ManageSearch as OpportunityIcon,
   Assessment as ReportsIcon,
   Description as DescriptionIcon,
@@ -157,14 +156,9 @@ function buildInstitutionConfig(t) {
         categories: [
           category(t, 'nav_categories.researcher_management', [
             item(t, 'institution_nav.manage_researchers', 'institution_nav.manage_researchers_desc', '/institution/researchers', <GroupIcon sx={ICON_SM} />),
-            item(t, 'institution_nav.performance_review', 'institution_nav.performance_review_desc', '/institution/researchers/review', <AssessmentIcon sx={ICON_SM} />),
           ]),
           category(t, 'nav_categories.review_automation', [
             item(t, 'institution_nav.auto_review', 'institution_nav.auto_review_desc', '/institution/administration/auto-review', <SettingsIcon sx={ICON_SM} />),
-            item(t, 'institution_nav.review_pipeline', 'institution_nav.review_pipeline_desc', '/institution/administration/proposal-review-pipeline', <StatusIcon sx={ICON_SM} />),
-          ]),
-          category(t, 'nav_categories.user_management', [
-            item(t, 'institution_nav.user_accounts', 'institution_nav.user_accounts_desc', '/institution/users', <UserManagerIcon sx={ICON_SM} />),
           ]),
         ],
       },
