@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { getUserId } from '../../../../../../lib/auth-server.js';
 
-const prisma = new PrismaClient();
 
 /**
  * Update a specific tracked change (accept/reject)
@@ -135,8 +134,6 @@ export async function PUT(request, { params }) {
       { error: 'Internal server error' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -228,7 +225,5 @@ export async function DELETE(request, { params }) {
       { error: 'Internal server error' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

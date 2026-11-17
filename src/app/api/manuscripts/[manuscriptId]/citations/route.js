@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 
 // GET - Fetch all citations for a specific manuscript
 export async function GET(request, { params }) {
@@ -105,8 +104,6 @@ export async function GET(request, { params }) {
             { error: 'Failed to fetch manuscript citations' },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
@@ -194,8 +191,6 @@ export async function POST(request, { params }) {
             },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
@@ -239,8 +234,6 @@ export async function DELETE(request, { params }) {
             { error: 'Failed to remove citation from manuscript library' },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
