@@ -19,7 +19,6 @@ import {
   Divider,
   FormControl,
   IconButton,
-  InputAdornment,
   InputLabel,
   LinearProgress,
   List,
@@ -42,7 +41,6 @@ import {
   TableRow,
   Tabs,
   TextField,
-  Tooltip,
   Typography,
   alpha,
 } from '@mui/material';
@@ -52,7 +50,6 @@ import {
   AttachFile as AttachFileIcon,
   Cancel as BlockedIcon,
   CheckCircle as CheckIcon,
-  Clear as ClearIcon,
   CloudUpload as CloudUploadIcon,
   Delete as DeleteOutlineIcon,
   Description as ReportIcon,
@@ -67,7 +64,6 @@ import {
   RadioButtonUnchecked as PendingIcon,
   Refresh as RefreshIcon,
   Schedule as ScheduleIcon,
-  Search as SearchIcon,
   TrackChanges as TrackIcon,
   Timeline as TimelineIcon,
   Visibility as ViewIcon,
@@ -75,6 +71,9 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import PageHeader from '../../../../../components/common/PageHeader';
+import RowActions from '../../../../../components/common/RowActions';
+import StatusPill from '../../../../../components/common/StatusPill';
+import { FilterBar, StatCards, filterFieldSx, paginationSx } from '../../../../../components/common/ListPage';
 import TipTapEditor from '../../../../../components/common/TipTapEditor';
 
 const PURPLE = '#8b6cbc';
@@ -166,62 +165,40 @@ const deriveUrgency = (days) => {
 };
 
 const STATUS_TONE = {
-  Active: { bg: '#16a34a', color: '#fff' },
-  Planning: { bg: '#0284c7', color: '#fff' },
-  Completed: { bg: PURPLE, color: '#fff' },
-  'On Hold': { bg: '#d97706', color: '#fff' },
-  Review: { bg: '#64748b', color: '#fff' },
+  Active: 'success',
+  Planning: 'info',
+  Completed: 'progress',
+  'On Hold': 'warning',
+  Review: 'neutral',
 };
 
 const ITEM_TONE = {
-  Completed: { bg: '#dcfce7', color: '#166534' },
-  Delivered: { bg: '#dcfce7', color: '#166534' },
-  'In Progress': { bg: alpha(PURPLE, 0.12), color: PURPLE },
-  Blocked: { bg: '#fee2e2', color: '#b91c1c' },
-  Pending: { bg: '#f1f5f9', color: '#475569' },
+  Completed: 'success',
+  Delivered: 'success',
+  'In Progress': 'progress',
+  Blocked: 'danger',
+  Pending: 'neutral',
 };
 
 const URGENCY_TONE = {
-  overdue: { label: 'Overdue', bg: '#fee2e2', color: '#b91c1c' },
-  soon: { label: 'Due this week', bg: '#ffedd5', color: '#c2410c' },
-  ontrack: { label: 'On track', bg: '#dcfce7', color: '#166534' },
-  none: { label: 'No deadline', bg: '#f1f5f9', color: '#64748b' },
+  overdue: { label: 'Overdue', tone: 'danger' },
+  soon: { label: 'Due this week', tone: 'warning' },
+  ontrack: { label: 'On track', tone: 'success' },
+  none: { label: 'No deadline', tone: 'neutral' },
 };
 
 function StatusChip({ status }) {
-  const tone = STATUS_TONE[status] || STATUS_TONE.Planning;
-  return (
-    <Chip
-      size="small"
-      label={status}
-      sx={{ bgcolor: tone.bg, color: tone.color, fontWeight: 700, height: 24 }}
-    />
-  );
+  return <StatusPill label={status} tone={STATUS_TONE[status] || 'info'} />;
 }
 
 function ItemChip({ status }) {
   const label = normalizeItemStatus(status);
-  const tone = ITEM_TONE[label] || ITEM_TONE.Pending;
-  return <Chip size="small" label={label} sx={{ bgcolor: tone.bg, color: tone.color, fontWeight: 700, height: 22, fontSize: '0.7rem' }} />;
+  return <StatusPill label={label} tone={ITEM_TONE[label] || 'neutral'} />;
 }
 
 function UrgencyChip({ days }) {
-  const tone = URGENCY_TONE[deriveUrgency(days)];
-  return <Chip size="small" label={tone.label} sx={{ bgcolor: tone.bg, color: tone.color, fontWeight: 700, height: 22 }} />;
-}
-
-function StatCard({ label, value, caption, icon }) {
-  return (
-    <Paper sx={{ flex: 1, minWidth: 180, p: 2, borderRadius: 2, bgcolor: PURPLE, color: 'white', position: 'relative', overflow: 'hidden' }}>
-      <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="caption" sx={{ opacity: 0.85, fontWeight: 700 }}>{label}</Typography>
-        {icon}
-      </Stack>
-      <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5 }}>{value}</Typography>
-      <Typography variant="caption" sx={{ opacity: 0.75 }}>{caption}</Typography>
-    </Paper>
-  );
+  const meta = URGENCY_TONE[deriveUrgency(days)];
+  return <StatusPill label={meta.label} tone={meta.tone} dot={false} />;
 }
 
 const mapMilestoneFromRaw = (milestone, index) => ({
@@ -927,10 +904,6 @@ export default function ProjectStatusPage() {
     );
   };
 
-  const fieldSx = {
-    '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: PURPLE },
-    '& .MuiInputLabel-root.Mui-focused': { color: PURPLE },
-  };
 
   return (
     <Box>
@@ -945,17 +918,24 @@ export default function ProjectStatusPage() {
         ]}
         actionButton={
           <Button
-            variant="contained"
+            variant="outlined"
             startIcon={<RefreshIcon />}
             onClick={loadProjects}
-            sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}
+            sx={{
+              borderColor: 'rgba(255, 255, 255, 0.3)',
+              color: 'rgba(255, 255, 255, 0.9)',
+              '&:hover': { borderColor: 'rgba(255, 255, 255, 0.6)', backgroundColor: 'rgba(255, 255, 255, 0.05)' },
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 500,
+            }}
           >
             Refresh
           </Button>
         }
       />
 
-      <Container maxWidth={false} sx={{ py: 3, maxWidth: '1600px', mx: 'auto' }}>
+      <Container maxWidth="xl" sx={{ py: 4 }}>
         {error ? <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert> : null}
 
         {loading ? (
@@ -964,14 +944,14 @@ export default function ProjectStatusPage() {
           </Box>
         ) : (
           <>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2.5 }}>
-              <StatCard label="Total projects" value={stats.total} caption="Approved and planning records" icon={<TrackIcon sx={{ fontSize: 18 }} />} />
-              <StatCard label="Active" value={stats.active} caption="Currently in progress" icon={<PlayIcon sx={{ fontSize: 18 }} />} />
-              <StatCard label="Overdue" value={stats.overdue} caption="Past the project end date" icon={<OverdueIcon sx={{ fontSize: 18 }} />} />
-              <StatCard label="Due this week" value={stats.upcoming} caption="Ending in the next 7 days" icon={<ScheduleIcon sx={{ fontSize: 18 }} />} />
-            </Stack>
+            <StatCards sx={{ mb: 3 }} cards={[
+              { label: 'Total projects', value: stats.total, sub: 'Approved and planning records', icon: <TrackIcon /> },
+              { label: 'Active', value: stats.active, sub: 'Currently in progress', icon: <PlayIcon /> },
+              { label: 'Overdue', value: stats.overdue, sub: 'Past the project end date', icon: <OverdueIcon /> },
+              { label: 'Due this week', value: stats.upcoming, sub: 'Ending in the next 7 days', icon: <ScheduleIcon /> },
+            ]} />
 
-            <Paper sx={{ mb: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+            <Paper sx={{ mb: 3, borderRadius: 3, boxShadow: '0 4px 16px rgba(139, 108, 188, 0.08)', border: '1px solid rgba(139, 108, 188, 0.12)' }}>
               <Tabs
                 value={currentTab}
                 onChange={(_, value) => setCurrentTab(value)}
@@ -991,36 +971,27 @@ export default function ProjectStatusPage() {
 
             {currentTab === 0 && (
               <Box>
-                <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      placeholder="Search by title, PI, or department"
-                      value={search}
-                      onChange={(event) => { setSearch(event.target.value); setPage(0); }}
-                      InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-                      sx={fieldSx}
-                    />
-                    <TextField select size="small" label="Status" value={filterStatus} onChange={(event) => { setFilterStatus(event.target.value); setPage(0); }} sx={{ minWidth: 170, ...fieldSx }}>
-                      <MenuItem value="All">All statuses</MenuItem>
-                      <MenuItem value="Active">Active</MenuItem>
-                      <MenuItem value="Planning">Planning</MenuItem>
-                      <MenuItem value="Completed">Completed</MenuItem>
-                      <MenuItem value="On Hold">On hold</MenuItem>
-                    </TextField>
-                    <TextField select size="small" label="Deadline" value={filterUrgency} onChange={(event) => { setFilterUrgency(event.target.value); setPage(0); }} sx={{ minWidth: 180, ...fieldSx }}>
-                      <MenuItem value="All">All deadlines</MenuItem>
-                      <MenuItem value="overdue">Overdue</MenuItem>
-                      <MenuItem value="soon">Due this week</MenuItem>
-                      <MenuItem value="ontrack">On track</MenuItem>
-                      <MenuItem value="none">No deadline</MenuItem>
-                    </TextField>
-                    <Button startIcon={<ClearIcon />} onClick={() => { setSearch(''); setFilterStatus('All'); setFilterUrgency('All'); }} sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
-                      Clear
-                    </Button>
-                  </Stack>
-                </Paper>
+                <FilterBar
+                  search={search}
+                  onSearchChange={(value) => { setSearch(value); setPage(0); }}
+                  searchPlaceholder="Search by title, PI, or department"
+                  onClear={() => { setSearch(''); setFilterStatus('All'); setFilterUrgency('All'); setPage(0); }}
+                >
+                  <TextField select className="filter-control" label="Status" value={filterStatus} onChange={(event) => { setFilterStatus(event.target.value); setPage(0); }} sx={filterFieldSx}>
+                    <MenuItem value="All">All statuses</MenuItem>
+                    <MenuItem value="Active">Active</MenuItem>
+                    <MenuItem value="Planning">Planning</MenuItem>
+                    <MenuItem value="Completed">Completed</MenuItem>
+                    <MenuItem value="On Hold">On hold</MenuItem>
+                  </TextField>
+                  <TextField select className="filter-control" label="Deadline" value={filterUrgency} onChange={(event) => { setFilterUrgency(event.target.value); setPage(0); }} sx={filterFieldSx}>
+                    <MenuItem value="All">All deadlines</MenuItem>
+                    <MenuItem value="overdue">Overdue</MenuItem>
+                    <MenuItem value="soon">Due this week</MenuItem>
+                    <MenuItem value="ontrack">On track</MenuItem>
+                    <MenuItem value="none">No deadline</MenuItem>
+                  </TextField>
+                </FilterBar>
 
                 {pagedProjects.length === 0 ? (
                   <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2, border: '1px dashed', borderColor: alpha(PURPLE, 0.3) }}>
@@ -1032,7 +1003,7 @@ export default function ProjectStatusPage() {
                     {pagedProjects.map((project) => {
                       const isExpanded = Boolean(expandedRows[project.id]);
                       return (
-                        <Paper key={project.id} elevation={0} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+                        <Paper key={project.id} elevation={0} sx={{ borderRadius: 3, border: '1px solid rgba(139, 108, 188, 0.12)', boxShadow: '0 2px 8px rgba(139, 108, 188, 0.06)', overflow: 'hidden' }}>
                           <Box
                             onClick={() => handleToggleRow(project.id)}
                             sx={{ px: 2, py: 2, display: 'flex', gap: 1.5, cursor: 'pointer', bgcolor: isExpanded ? alpha(PURPLE, 0.03) : 'white', '&:hover': { bgcolor: alpha(PURPLE, 0.04) } }}
@@ -1042,7 +1013,7 @@ export default function ProjectStatusPage() {
                             </IconButton>
                             <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{project.title}</Typography>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#2D3748', fontSize: '0.95rem', lineHeight: 1.3 }}>{project.title}</Typography>
                                 <StatusChip status={project.status} />
                                 <UrgencyChip days={project.daysUntilDeadline} />
                               </Stack>
@@ -1060,18 +1031,15 @@ export default function ProjectStatusPage() {
                                 <Typography variant="caption">Due: {formatDisplayDate(project.endDate) || 'Not set'}</Typography>
                               </Stack>
                             </Box>
-                            <Stack direction="row" spacing={0.5} onClick={(event) => event.stopPropagation()}>
-                              <Tooltip title="View details">
-                                <IconButton size="small" sx={{ color: PURPLE }} onClick={() => { setSelectedProject(project); setDetailsTab(0); setViewDetailsDialog(true); }}>
-                                  <ViewIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Update status">
-                                <IconButton size="small" sx={{ color: '#64748b' }} onClick={() => openStatusUpdateDialog(project)}>
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </Stack>
+                            <Box onClick={(event) => event.stopPropagation()}>
+                              <RowActions
+                                reserveMenuSpace={false}
+                                actions={[
+                                  { key: 'view', label: 'View details', icon: <ViewIcon fontSize="small" />, onClick: () => { setSelectedProject(project); setDetailsTab(0); setViewDetailsDialog(true); } },
+                                  { key: 'update', label: 'Update status', icon: <EditIcon fontSize="small" />, onClick: () => openStatusUpdateDialog(project) },
+                                ]}
+                              />
+                            </Box>
                           </Box>
                           <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                             <Box sx={{ px: 2, pb: 2, bgcolor: '#fafbfd', borderTop: '1px solid', borderColor: 'divider' }}>
@@ -1095,7 +1063,7 @@ export default function ProjectStatusPage() {
                   page={page}
                   onPageChange={(_, next) => setPage(next)}
                   onRowsPerPageChange={(event) => { setRowsPerPage(parseInt(event.target.value, 10)); setPage(0); }}
-                  sx={{ mt: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}
+                  sx={{ mt: 2, borderRadius: 3, border: '1px solid rgba(139, 108, 188, 0.12)', ...paginationSx }}
                 />
               </Box>
             )}
@@ -1121,11 +1089,11 @@ export default function ProjectStatusPage() {
 
             {currentTab === 2 && (
               <Stack spacing={2}>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                  <StatCard label="People on projects" value={stats.teamMembers} caption="Investigators across all records" icon={<TeamIcon sx={{ fontSize: 18 }} />} />
-                  <StatCard label="Completed milestones" value={stats.completedTasks} caption="Finished across all projects" icon={<CheckIcon sx={{ fontSize: 18 }} />} />
-                  <StatCard label="Open milestones" value={stats.pendingTasks} caption="Still pending or in progress" icon={<PendingIcon sx={{ fontSize: 18 }} />} />
-                </Stack>
+                <StatCards sx={{ mb: 0 }} cards={[
+                  { label: 'People on projects', value: stats.teamMembers, sub: 'Investigators across all records', icon: <TeamIcon /> },
+                  { label: 'Completed milestones', value: stats.completedTasks, sub: 'Finished across all projects', icon: <CheckIcon /> },
+                  { label: 'Open milestones', value: stats.pendingTasks, sub: 'Still pending or in progress', icon: <PendingIcon /> },
+                ]} />
                 {projects.map((project) => (
                   <Paper key={project.id} sx={{ p: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                     <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={1} sx={{ mb: 1.5 }}>

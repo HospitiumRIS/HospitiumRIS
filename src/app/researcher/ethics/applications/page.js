@@ -7,40 +7,26 @@ import {
   Container,
   Typography,
   Button,
-  Card,
-  CardContent,
-  Grid,
   Chip,
-  IconButton,
   Table,
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TableRow,
   Paper,
   TextField,
-  InputAdornment,
-  Menu,
   MenuItem,
   CircularProgress,
   Alert,
-  Tooltip,
+  TablePagination,
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Search as SearchIcon,
-  FilterList as FilterIcon,
-  MoreVert as MoreVertIcon,
   Visibility as ViewIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Send as SubmitIcon,
   Shield as EthicsIcon,
-  CheckCircle as ApprovedIcon,
-  Schedule as PendingIcon,
-  Cancel as RejectedIcon,
-  Warning as WarningIcon,
   Groups as GroupsIcon,
   Description as DescriptionIcon,
   Assessment as AssessmentIcon,
@@ -54,29 +40,22 @@ import PageHeader from '../../../../components/common/PageHeader';
 import { useAuth } from '../../../../components/AuthProvider';
 import { useTranslation } from 'react-i18next';
 import UploadCertificateDialog from '../../../../components/Ethics/UploadCertificateDialog';
+import RowActions from '../../../../components/common/RowActions';
+import StatusPill, { humanizeStatus } from '../../../../components/common/StatusPill';
+import {
+  FilterBar, PurpleTableHead, StatCards, TablePaper, filterFieldSx, paginationSx, zebraRowSx,
+} from '../../../../components/common/ListPage';
 
-const statusColors = {
-  DRAFT: '#9e9e9e',
-  SUBMITTED: '#2196f3',
-  UNDER_REVIEW: '#ff9800',
-  APPROVED: '#4caf50',
-  CONDITIONAL_APPROVAL: '#8bc34a',
-  REJECTED: '#f44336',
-  REVISION_REQUESTED: '#ff5722',
-  WITHDRAWN: '#607d8b',
-  EXPIRED: '#795548',
-};
-
-const statusIcons = {
-  DRAFT: <EditIcon />,
-  SUBMITTED: <SubmitIcon />,
-  UNDER_REVIEW: <WarningIcon />,
-  APPROVED: <ApprovedIcon />,
-  CONDITIONAL_APPROVAL: <ApprovedIcon />,
-  REJECTED: <RejectedIcon />,
-  REVISION_REQUESTED: <WarningIcon />,
-  WITHDRAWN: <RejectedIcon />,
-  EXPIRED: <WarningIcon />,
+const ETHICS_STATUS_TONE = {
+  DRAFT: 'neutral',
+  SUBMITTED: 'info',
+  UNDER_REVIEW: 'progress',
+  APPROVED: 'success',
+  CONDITIONAL_APPROVAL: 'success',
+  REJECTED: 'danger',
+  REVISION_REQUESTED: 'warning',
+  WITHDRAWN: 'neutral',
+  EXPIRED: 'warning',
 };
 
 export default function EthicsApplicationsPage() {
@@ -87,8 +66,8 @@ export default function EthicsApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [menuAnchor, setMenuAnchor] = useState(null);
-  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [notice, setNotice] = useState('');
 
@@ -139,37 +118,25 @@ export default function EthicsApplicationsPage() {
     return cert?.url || null;
   };
 
-  const handleMenuOpen = (event, application) => {
-    setMenuAnchor(event.currentTarget);
-    setSelectedApplication(application);
+  const handleView = (application) => {
+    router.push(`/researcher/ethics/applications/view/${application.id}`);
   };
 
-  const handleMenuClose = () => {
-    setMenuAnchor(null);
-    setSelectedApplication(null);
+  const handleEdit = (application) => {
+    router.push(`/researcher/ethics/applications/edit/${application.id}`);
   };
 
-  const handleView = () => {
-    router.push(`/researcher/ethics/applications/view/${selectedApplication.id}`);
-    handleMenuClose();
-  };
-
-  const handleEdit = () => {
-    router.push(`/researcher/ethics/applications/edit/${selectedApplication.id}`);
-    handleMenuClose();
-  };
-
-  const handleDelete = async () => {
-    const external = isExternalCertificate(selectedApplication);
+  const handleDelete = async (application) => {
+    const external = isExternalCertificate(application);
     const message = external
       ? 'Remove this uploaded ethics clearance certificate from your records?'
       : 'Are you sure you want to delete this ethics application?';
     if (confirm(message)) {
       try {
-        const response = await fetch(`/api/ethics/applications/${selectedApplication.id}`, {
+        const response = await fetch(`/api/ethics/applications/${application.id}`, {
           method: 'DELETE',
         });
-        
+
         if (response.ok) {
           fetchApplications();
         }
@@ -177,15 +144,13 @@ export default function EthicsApplicationsPage() {
         console.error('Error deleting application:', error);
       }
     }
-    handleMenuClose();
   };
 
-  const handleDownloadCertificate = () => {
-    const url = certificateUrl(selectedApplication);
+  const handleDownloadCertificate = (application) => {
+    const url = certificateUrl(application);
     if (url) {
       window.open(url, '_blank');
     }
-    handleMenuClose();
   };
 
   const handleCertificateUploaded = () => {
@@ -193,13 +158,13 @@ export default function EthicsApplicationsPage() {
     fetchApplications();
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (application) => {
     if (confirm('Are you sure you want to submit this ethics application for review?')) {
       try {
-        const response = await fetch(`/api/ethics/applications/${selectedApplication.id}/submit`, {
+        const response = await fetch(`/api/ethics/applications/${application.id}/submit`, {
           method: 'POST',
         });
-        
+
         if (response.ok) {
           fetchApplications();
         }
@@ -207,12 +172,14 @@ export default function EthicsApplicationsPage() {
         console.error('Error submitting application:', error);
       }
     }
-    handleMenuClose();
   };
 
   const filteredApplications = applications.filter(app => {
-    const matchesSearch = app.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         app.principalInvestigator.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.trim().toLowerCase();
+    const matchesSearch = !q ||
+      (app.title || '').toLowerCase().includes(q) ||
+      (app.principalInvestigator || '').toLowerCase().includes(q) ||
+      (app.referenceNumber || '').toLowerCase().includes(q);
     const matchesStatus = statusFilter === 'All' || app.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -222,6 +189,33 @@ export default function EthicsApplicationsPage() {
     draft: applications.filter(a => a.status === 'DRAFT').length,
     submitted: applications.filter(a => a.status === 'SUBMITTED' || a.status === 'UNDER_REVIEW').length,
     approved: applications.filter(a => a.status === 'APPROVED' || a.status === 'CONDITIONAL_APPROVAL').length,
+  };
+
+  const statusOptions = [...new Set(applications.map((a) => a.status).filter(Boolean))];
+  const lastPage = Math.max(0, Math.ceil(filteredApplications.length / rowsPerPage) - 1);
+  const currentPage = Math.min(page, lastPage);
+  const pagedApplications = filteredApplications.slice(currentPage * rowsPerPage, currentPage * rowsPerPage + rowsPerPage);
+
+  const rowActions = (application) => {
+    const external = isExternalCertificate(application);
+    const editable = ['DRAFT', 'REVISION_REQUESTED'].includes(application.status) && !external;
+    const actions = [
+      { key: 'view', label: t('common.view'), icon: <ViewIcon fontSize="small" />, onClick: () => handleView(application) },
+    ];
+    if (editable) {
+      actions.push({ key: 'edit', label: t('common.edit'), icon: <EditIcon fontSize="small" />, onClick: () => handleEdit(application) });
+    }
+    const menuItems = [];
+    if (external && certificateUrl(application)) {
+      menuItems.push({ key: 'download', label: t('researcher.ethics_download_certificate', 'Download Certificate'), icon: <DownloadIcon fontSize="small" />, onClick: () => handleDownloadCertificate(application) });
+    }
+    if (application.status === 'DRAFT' && !external) {
+      menuItems.push({ key: 'submit', label: t('common.submit'), icon: <SubmitIcon fontSize="small" />, onClick: () => handleSubmit(application) });
+    }
+    if (external || application.status === 'DRAFT') {
+      menuItems.push({ key: 'delete', label: t('common.delete'), icon: <DeleteIcon fontSize="small" />, onClick: () => handleDelete(application), danger: true });
+    }
+    return { actions, menuItems };
   };
 
   return (
@@ -279,212 +273,60 @@ export default function EthicsApplicationsPage() {
           </Alert>
         )}
 
-        {/* Statistics Cards */}
-        <Box sx={{ display: 'flex', gap: 2.5, mb: 4, flexWrap: 'wrap' }}>
-          <Paper sx={{ 
-            flex: '1 1 200px',
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: '#8b6cbc',
-            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Total Applications
-              </Typography>
-              <GroupsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {stats.total}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              All ethics applications
-            </Typography>
-          </Paper>
-          
-          <Paper sx={{ 
-            flex: '1 1 200px',
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: '#8b6cbc',
-            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Draft Applications
-              </Typography>
-              <DescriptionIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {stats.draft}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Work in progress
-            </Typography>
-          </Paper>
-          
-          <Paper sx={{ 
-            flex: '1 1 200px',
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: '#8b6cbc',
-            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Under Review
-              </Typography>
-              <AssessmentIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {stats.submitted}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Submitted for review
-            </Typography>
-          </Paper>
-          
-          <Paper sx={{ 
-            flex: '1 1 200px',
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: '#8b6cbc',
-            boxShadow: '0 2px 8px rgba(139, 108, 188, 0.2)',
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                Approved
-              </Typography>
-              <ArticleIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {stats.approved}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Approved applications
-            </Typography>
-          </Paper>
-        </Box>
+        <StatCards cards={[
+          { label: 'Total Applications', value: stats.total, sub: 'All ethics applications', icon: <GroupsIcon /> },
+          { label: 'Draft Applications', value: stats.draft, sub: 'Work in progress', icon: <DescriptionIcon /> },
+          { label: 'Under Review', value: stats.submitted, sub: 'Submitted for review', icon: <AssessmentIcon /> },
+          { label: 'Approved', value: stats.approved, sub: 'Approved applications', icon: <ArticleIcon /> },
+        ]} />
 
-      {/* Actions Bar */}
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        mb: 3,
-        flexWrap: 'wrap',
-        gap: 2
-      }}>
-        <TextField
-          placeholder="Search by title or investigator..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          size="small"
-          sx={{ 
-            width: { xs: '100%', sm: 350 },
-            '& .MuiOutlinedInput-root': {
-              '&:hover fieldset': {
-                borderColor: '#8b6cbc',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#8b6cbc',
-              },
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#8b6cbc' }} />
-              </InputAdornment>
-            ),
-          }}
-        />
-        
-        <Button
-          variant="outlined"
-          startIcon={<FilterIcon />}
-          onClick={() => {}}
-          sx={{
-            borderColor: '#8b6cbc',
-            color: '#8b6cbc',
-            '&:hover': {
-              borderColor: '#7a5caa',
-              bgcolor: 'rgba(139, 108, 188, 0.04)',
-            },
-          }}
+        <FilterBar
+          search={searchQuery}
+          onSearchChange={(value) => { setSearchQuery(value); setPage(0); }}
+          searchPlaceholder="Search by title, investigator or reference..."
+          onClear={() => { setSearchQuery(''); setStatusFilter('All'); setPage(0); }}
         >
-          Filter: {statusFilter}
-        </Button>
-      </Box>
+          <TextField
+            select
+            className="filter-control"
+            label={t('common.status')}
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }}
+            sx={filterFieldSx}
+          >
+            <MenuItem value="All">All statuses</MenuItem>
+            {statusOptions.map((status) => (
+              <MenuItem key={status} value={status}>{humanizeStatus(status)}</MenuItem>
+            ))}
+          </TextField>
+        </FilterBar>
 
-      {/* Applications Table */}
       {loading ? (
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: 'column',
-          justifyContent: 'center', 
-          alignItems: 'center',
-          py: 8,
-          bgcolor: 'white',
-          borderRadius: 2,
-          border: '1px solid rgba(0, 0, 0, 0.12)'
-        }}>
+        <TablePaper sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <CircularProgress sx={{ color: '#8b6cbc' }} />
           <Typography sx={{ mt: 2, color: '#718096' }}>{t('common.loading')}</Typography>
-        </Box>
+        </TablePaper>
       ) : filteredApplications.length === 0 ? (
-        <Paper sx={{ 
-          p: 6, 
+        <Paper sx={{
+          p: 6,
           textAlign: 'center',
           bgcolor: 'rgba(139, 108, 188, 0.02)',
           border: '2px dashed rgba(139, 108, 188, 0.3)',
-          borderRadius: 2
+          borderRadius: 3
         }}>
           <EthicsIcon sx={{ fontSize: 64, color: '#8b6cbc', opacity: 0.5, mb: 2 }} />
           <Typography variant="h6" sx={{ color: '#2D3748', mb: 1, fontWeight: 600 }}>
-            {t('common.no_data')}
+            {applications.length ? t('common.no_results') : t('common.no_data')}
           </Typography>
           <Typography variant="body2" sx={{ color: '#718096', mb: 3 }}>
-            {searchQuery
-              ? t('common.no_results')
+            {applications.length
+              ? 'Try adjusting your search or status filter.'
               : t(
                   'researcher.ethics_empty_desc',
                   'Create a new ethics application, or upload a clearance certificate you already have.'
                 )}
           </Typography>
-          {!searchQuery && (
+          {!applications.length && (
             <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Button
                 variant="outlined"
@@ -502,7 +344,7 @@ export default function EthicsApplicationsPage() {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => router.push('/researcher/ethics/applications/create')}
-                sx={{ 
+                sx={{
                   background: 'linear-gradient(135deg, #8b6cbc 0%, #7a5caa 100%)',
                   boxShadow: '0 4px 12px rgba(139, 108, 188, 0.3)',
                 }}
@@ -513,225 +355,81 @@ export default function EthicsApplicationsPage() {
           )}
         </Paper>
       ) : (
-        <TableContainer component={Paper} sx={{ 
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-          borderRadius: 2,
-          border: '1px solid rgba(0, 0, 0, 0.08)'
-        }}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ 
-                bgcolor: 'rgba(139, 108, 188, 0.08)',
-                '& .MuiTableCell-head': {
-                  color: '#2D3748',
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }
-              }}>
-                <TableCell>{t('common.name')}</TableCell>
-                <TableCell>{t('researcher.principal_investigator')}</TableCell>
-                <TableCell>{t('common.type')}</TableCell>
-                <TableCell>{t('common.status')}</TableCell>
-                <TableCell>Reference Number</TableCell>
-                <TableCell>{t('common.date')}</TableCell>
-                <TableCell align="center">{t('common.actions')}</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredApplications.map((application) => (
-                <TableRow 
-                  key={application.id} 
-                  hover
-                  sx={{
-                    '&:hover': {
-                      bgcolor: 'rgba(139, 108, 188, 0.04)',
-                    },
-                    '& .MuiTableCell-root': {
-                      borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
-                    }
-                  }}
-                >
-                  <TableCell sx={{ fontWeight: 500, color: '#2D3748' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      {application.title}
-                      {isExternalCertificate(application) && (
-                        <Chip
-                          label={t('researcher.ethics_cert_badge', 'Certificate')}
-                          size="small"
+        <TablePaper>
+          <TableContainer>
+            <Table>
+              <PurpleTableHead columns={[
+                t('common.name'),
+                t('common.status'),
+                'Reference',
+                'Submitted',
+                { label: t('common.actions'), align: 'center' },
+              ]} />
+              <TableBody>
+                {pagedApplications.map((application, index) => {
+                  const external = isExternalCertificate(application);
+                  const { actions, menuItems } = rowActions(application);
+                  return (
+                    <TableRow key={application.id} sx={zebraRowSx(index)}>
+                      <TableCell sx={{ maxWidth: 440 }}>
+                        <Typography
+                          variant="subtitle1"
+                          onClick={() => handleView(application)}
                           sx={{
-                            height: 20,
-                            fontSize: '0.65rem',
-                            fontWeight: 700,
-                            bgcolor: 'rgba(139, 108, 188, 0.12)',
-                            color: '#8b6cbc',
+                            fontWeight: 600, color: '#2D3748', fontSize: '0.95rem', lineHeight: 1.3, mb: 0.5,
+                            display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden',
+                            cursor: 'pointer', '&:hover': { color: '#8b6cbc', textDecoration: 'underline' },
                           }}
-                        />
-                      )}
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ color: '#4A5568' }}>
-                    {application.principalInvestigator}
-                  </TableCell>
-                  <TableCell sx={{ color: '#4A5568' }}>
-                    {application.researchType}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={application.status.replace(/_/g, ' ')}
-                      size="small"
-                      sx={{
-                        bgcolor: statusColors[application.status],
-                        color: 'white',
-                        fontWeight: 600,
-                        fontSize: '0.75rem',
-                        height: 24,
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ color: '#4A5568', fontFamily: 'monospace' }}>
-                    {application.referenceNumber || '-'}
-                  </TableCell>
-                  <TableCell sx={{ color: '#4A5568' }}>
-                    {application.submittedDate
-                      ? format(new Date(application.submittedDate), 'MMM dd, yyyy')
-                      : '-'}
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleMenuOpen(e, application)}
-                      sx={{
-                        color: '#8b6cbc',
-                        '&:hover': {
-                          bgcolor: 'rgba(139, 108, 188, 0.1)',
-                        }
-                      }}
-                    >
-                      <MoreVertIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                        >
+                          {application.title}
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                          {external && (
+                            <Chip
+                              label={t('researcher.ethics_cert_badge', 'Certificate')}
+                              size="small"
+                              sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, bgcolor: 'rgba(139, 108, 188, 0.1)', color: '#8b6cbc', borderRadius: 1 }}
+                            />
+                          )}
+                          <Typography variant="caption" color="text.secondary">
+                            {[application.principalInvestigator, application.researchType].filter(Boolean).join(' · ')}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <StatusPill label={humanizeStatus(application.status)} tone={ETHICS_STATUS_TONE[application.status] || 'neutral'} />
+                      </TableCell>
+                      <TableCell sx={{ color: '#4A5568', fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                        {application.referenceNumber || '—'}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {application.submittedDate
+                            ? format(new Date(application.submittedDate), 'MMM dd, yyyy')
+                            : '—'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <RowActions actions={actions} menuItems={menuItems} />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={filteredApplications.length}
+            page={currentPage}
+            onPageChange={(_, next) => setPage(next)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+            rowsPerPageOptions={[5, 10, 25]}
+            sx={paginationSx}
+          />
+        </TablePaper>
       )}
-
-      {/* Action Menu */}
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={handleMenuClose}
-        PaperProps={{
-          sx: {
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-            borderRadius: 2,
-            mt: 1,
-            minWidth: 200,
-          }
-        }}
-      >
-        <MenuItem 
-          onClick={handleView}
-          sx={{
-            py: 1.5,
-            '&:hover': {
-              bgcolor: 'rgba(139, 108, 188, 0.08)',
-            }
-          }}
-        >
-          <ViewIcon sx={{ mr: 1.5, color: '#8b6cbc' }} fontSize="small" />
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>{t('common.view')}</Typography>
-        </MenuItem>
-        {isExternalCertificate(selectedApplication) && certificateUrl(selectedApplication) && (
-          <MenuItem
-            onClick={handleDownloadCertificate}
-            sx={{
-              py: 1.5,
-              '&:hover': {
-                bgcolor: 'rgba(139, 108, 188, 0.08)',
-              }
-            }}
-          >
-            <DownloadIcon sx={{ mr: 1.5, color: '#8b6cbc' }} fontSize="small" />
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {t('researcher.ethics_download_certificate', 'Download Certificate')}
-            </Typography>
-          </MenuItem>
-        )}
-        {isExternalCertificate(selectedApplication) && (
-          <MenuItem
-            onClick={handleDelete}
-            sx={{
-              py: 1.5,
-              '&:hover': {
-                bgcolor: 'rgba(239, 68, 68, 0.08)',
-              }
-            }}
-          >
-            <DeleteIcon sx={{ mr: 1.5, color: '#ef4444' }} fontSize="small" />
-            <Typography variant="body2" sx={{ fontWeight: 500, color: '#ef4444' }}>{t('common.delete')}</Typography>
-          </MenuItem>
-        )}
-        {selectedApplication?.status === 'DRAFT' && (
-          <>
-            <MenuItem 
-              onClick={handleEdit}
-              sx={{
-                py: 1.5,
-                '&:hover': {
-                  bgcolor: 'rgba(139, 108, 188, 0.08)',
-                }
-              }}
-            >
-              <EditIcon sx={{ mr: 1.5, color: '#3b82f6' }} fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>{t('common.edit')}</Typography>
-            </MenuItem>
-            <MenuItem 
-              onClick={handleSubmit}
-              sx={{
-                py: 1.5,
-                '&:hover': {
-                  bgcolor: 'rgba(16, 185, 129, 0.08)',
-                }
-              }}
-            >
-              <SubmitIcon sx={{ mr: 1.5, color: '#10b981' }} fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>{t('common.submit')}</Typography>
-            </MenuItem>
-            <MenuItem 
-              onClick={handleDelete}
-              sx={{
-                py: 1.5,
-                '&:hover': {
-                  bgcolor: 'rgba(239, 68, 68, 0.08)',
-                }
-              }}
-            >
-              <DeleteIcon sx={{ mr: 1.5, color: '#ef4444' }} fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 500, color: '#ef4444' }}>{t('common.delete')}</Typography>
-            </MenuItem>
-          </>
-        )}
-        {selectedApplication?.status === 'REVISION_REQUESTED' && (
-          <>
-            <MenuItem 
-              onClick={handleEdit}
-              sx={{
-                py: 1.5,
-                '&:hover': {
-                  bgcolor: 'rgba(139, 108, 188, 0.08)',
-                }
-              }}
-            >
-              <EditIcon sx={{ mr: 1.5, color: '#ff5722' }} fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>{t('common.edit')}</Typography>
-            </MenuItem>
-          </>
-        )}
-      </Menu>
 
       <UploadCertificateDialog
         open={uploadOpen}
