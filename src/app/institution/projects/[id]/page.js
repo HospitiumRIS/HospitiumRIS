@@ -52,6 +52,7 @@ import {
   Gavel as GrantIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import { isMilestoneDone } from '@/lib/project-milestones';
 import { useAuth } from '@/components/AuthProvider';
 
 // --- Stage Pipeline (reused from projects list) ---
@@ -289,7 +290,7 @@ const ProjectDetailPage = () => {
   // Compute derived values
   const milestones = project.milestones || [];
   const deliverables = project.deliverables || [];
-  const completedMilestones = milestones.filter(m => m.completed).length;
+  const completedMilestones = milestones.filter(isMilestoneDone).length;
   const milestoneProgress = milestones.length > 0 ? Math.round((completedMilestones / milestones.length) * 100) : 0;
 
   // Determine project status for the stage pipeline
@@ -537,7 +538,7 @@ const ProjectDetailPage = () => {
                   <Divider sx={{ mb: 3 }} />
                   <Box sx={{ position: 'relative' }}>
                     {milestones.map((milestone, index) => {
-                      const isDone = milestone.completed;
+                      const isDone = isMilestoneDone(milestone);
                       const isLast = index === milestones.length - 1;
                       const dotColor = isDone ? '#10b981' : '#d1d5db';
                       return (

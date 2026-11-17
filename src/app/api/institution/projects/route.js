@@ -5,6 +5,7 @@ import {
   getInstitutionProposalScopeWhere,
   withDateFilter,
 } from '@/lib/institution-scope';
+import { isMilestoneDone } from '@/lib/project-milestones';
 
 export async function GET() {
   try {
@@ -43,7 +44,7 @@ export async function GET() {
           const daysUntilEnd = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
           const milestoneProgress =
             proposal.milestones && proposal.milestones.length > 0
-              ? (proposal.milestones.filter((m) => m.completed).length / proposal.milestones.length) * 100
+              ? (proposal.milestones.filter(isMilestoneDone).length / proposal.milestones.length) * 100
               : 0;
           const percentComplete =
             startDate && endDate
@@ -70,6 +71,7 @@ export async function GET() {
         startDate: proposal.startDate,
         endDate: proposal.endDate,
         totalBudgetAmount: proposal.totalBudgetAmount,
+        budgetCurrency: proposal.budgetCurrency || 'USD',
         milestones: proposal.milestones || [],
         deliverables: proposal.deliverables || [],
         researchObjectives: proposal.researchObjectives,
