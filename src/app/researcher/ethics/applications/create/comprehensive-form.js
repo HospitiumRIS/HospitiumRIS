@@ -3,7 +3,7 @@
 
 export const renderStepContent = (step, formData, handleChange, handleVulnerablePopChange, coInvestigator, setCoInvestigator, addCoInvestigator, removeCoInvestigator, t) => {
   const tr = (key, opts) => (t ? t(key, opts) : key);
-  const { Box, Typography, TextField, MenuItem, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Checkbox, Divider, Chip, Button, Alert } = require('@mui/material');
+  const { Box, Typography, TextField, MenuItem, FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Checkbox, Divider, Chip, Button, Alert, Paper } = require('@mui/material');
   const { AddIcon } = require('@mui/icons-material');
 
   switch (step) {

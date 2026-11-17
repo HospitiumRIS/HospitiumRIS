@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { sendActivationEmail, generateActivationToken } from '@/lib/email';
 import { validateEmail } from '@/lib/auth';
+import { recordAuthEvent } from '@/lib/ops/audit';
 
 export async function POST(request) {
   try {
@@ -53,6 +54,8 @@ export async function POST(request) {
     // Generate new activation token
     const activationToken = generateActivationToken();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await recordAuthEvent(request, { action: 'ACTIVATION_RESENT', user });
 
     // Update user with new token
     await prisma.user.update({

@@ -6,6 +6,7 @@ import NavigationProgressBar from '../components/NavigationProgressBar';
 import AuthProvider from '../components/AuthProvider';
 import AppNavbar from '../components/AppNavbar';
 import I18nProvider from '../components/I18nProvider';
+import UsageTracker from '../components/UsageTracker';
 
 // Fonts are bundled locally via the `geist` package so the production build
 // never needs to reach fonts.googleapis.com (which failed on the VPS).
@@ -25,6 +26,7 @@ export default function RootLayout({ children }) {
           <ThemeContextProvider>
             <AuthProvider>
               <NavigationProgressBar />
+              <UsageTracker />
               <AppNavbar />
               {children}
             </AuthProvider>

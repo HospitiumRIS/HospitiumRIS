@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-server';
+import { withAdminAudit } from '@/lib/ops/audit';
 
-export async function PUT(request, { params }) {
+async function handlePUT(request, { params }) {
   try {
     const user = await getAuthenticatedUser(request);
 
@@ -94,7 +95,7 @@ export async function PUT(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+async function handleDELETE(request, { params }) {
   try {
     const user = await getAuthenticatedUser(request);
 
@@ -157,3 +158,6 @@ export async function DELETE(request, { params }) {
     );
   }
 }
+
+export const PUT = withAdminAudit(handlePUT, { action: 'DOMAIN_UPDATED', summary: 'Changed a verified email domain', targetType: 'VerifiedDomain' });
+export const DELETE = withAdminAudit(handleDELETE, { action: 'DOMAIN_REMOVED', summary: 'Removed a verified email domain', targetType: 'VerifiedDomain' });

@@ -6,6 +6,7 @@ import { normalizeEnabledModules } from '@/lib/institution-modules';
 import { INSTITUTION_TYPE_VALUES } from '@/lib/institution-types';
 import { loadInstitutionAdmins } from '@/lib/institution-admins';
 import { deleteInstitutionLogoFile } from '@/lib/institution-logo';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -81,7 +82,7 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function PUT(request, { params }) {
+async function handlePUT(request, { params }) {
   try {
     const { error } = await requireGlobalAdmin();
     if (error) return error;
@@ -162,7 +163,7 @@ export async function PUT(request, { params }) {
   }
 }
 
-export async function DELETE(_request, { params }) {
+async function handleDELETE(_request, { params }) {
   try {
     const { user, error } = await requireGlobalAdmin();
     if (error) return error;
@@ -232,3 +233,6 @@ export async function DELETE(_request, { params }) {
     return NextResponse.json({ error: 'Failed to delete institution' }, { status: 500 });
   }
 }
+
+export const PUT = withAdminAudit(handlePUT, { action: 'INSTITUTION_UPDATED', summary: ({ values }) => (values.enabledModules ? `Changed institution details / modules (${values.enabledModules.join(', ') || 'none'})` : 'Changed institution details'), targetType: 'Institution', institutionFromParam: 'id', captureValues: ['enabledModules', 'type', 'country'] });
+export const DELETE = withAdminAudit(handleDELETE, { action: 'INSTITUTION_DELETED', summary: 'Deleted an institution', targetType: 'Institution', institutionFromParam: 'id' });

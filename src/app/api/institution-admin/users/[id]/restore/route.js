@@ -7,9 +7,10 @@ import {
 } from '@/lib/institution-admin';
 import { restoreUser, UserLifecycleError } from '@/lib/user-lifecycle';
 import { logInfo } from '@/utils/activityLogger';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 // POST /api/institution-admin/users/:id/restore — undo a soft delete (before anonymisation)
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   try {
     const { user, error } = await requireInstitutionAdmin();
     if (error) return error;
@@ -45,3 +46,5 @@ export async function POST(request, { params }) {
     return NextResponse.json({ success: false, message: 'Failed to restore user' }, { status: 500 });
   }
 }
+
+export const POST = withAdminAudit(handlePOST, { action: 'USER_RESTORED', summary: 'Restored a deleted user account', targetType: 'User' });

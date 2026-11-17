@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getAuthenticatedUser } from '@/lib/auth-server';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 const prisma = new PrismaClient();
 
@@ -95,7 +96,7 @@ export async function GET(request) {
   }
 }
 
-export async function PUT(request) {
+async function handlePUT(request) {
   try {
     // Check authentication and authorization
     const currentUser = await getAuthenticatedUser();
@@ -138,3 +139,5 @@ export async function PUT(request) {
     await prisma.$disconnect();
   }
 }
+
+export const PUT = withAdminAudit(handlePUT, { action: 'PLATFORM_SETTINGS_UPDATED', summary: 'Changed platform settings', targetType: 'Settings' });

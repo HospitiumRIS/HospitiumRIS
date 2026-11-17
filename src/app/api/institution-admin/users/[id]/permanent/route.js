@@ -7,10 +7,11 @@ import {
 } from '@/lib/institution-admin';
 import { hardDeleteUser, UserLifecycleError } from '@/lib/user-lifecycle';
 import { logInfo } from '@/utils/activityLogger';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 // DELETE /api/institution-admin/users/:id/permanent  body: { confirm: "DELETE" }
 // Permanent erasure. Only allowed for users that are already soft-deleted.
-export async function DELETE(request, { params }) {
+async function handleDELETE(request, { params }) {
   try {
     const { user, error } = await requireInstitutionAdmin();
     if (error) return error;
@@ -64,3 +65,5 @@ export async function DELETE(request, { params }) {
     );
   }
 }
+
+export const DELETE = withAdminAudit(handleDELETE, { action: 'USER_PERMANENTLY_DELETED', summary: 'Permanently deleted a user account', targetType: 'User' });

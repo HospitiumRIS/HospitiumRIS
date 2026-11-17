@@ -6,6 +6,7 @@ import { linkInstitutionIfNeeded } from '@/lib/institution-domain';
 import { setSessionCookie } from '@/lib/session-cookie';
 import { resolveUserEnabledModules } from '@/lib/institution-modules';
 import { claimPendingInvitations } from '@/lib/manuscript-invitations';
+import { recordAuthEvent } from '@/lib/ops/audit';
 
 /**
  * @swagger
@@ -52,6 +53,10 @@ export async function POST(request) {
       });
 
       if (!user) {
+        await recordAuthEvent(request, {
+          action: 'LOGIN_FAILED', outcome: 'FAILURE', reason: 'orcid_not_linked', method: 'orcid',
+          summary: 'Failed ORCID sign-in: ORCID iD not linked to an account',
+        });
         await logError('ORCID login failed: User not found', {
           ...requestMetadata,
           orcidId: orcidId,
@@ -78,6 +83,9 @@ export async function POST(request) {
 
       // Check if user is activated
       if (!user.emailVerified) {
+        await recordAuthEvent(request, {
+          action: 'LOGIN_FAILED', user, outcome: 'FAILURE', reason: 'account_not_verified', method: 'orcid',
+        });
         await logError('ORCID login failed: Account not activated', {
           ...requestMetadata,
           userId: user.id,
@@ -107,6 +115,9 @@ export async function POST(request) {
 
       // Check if user status is active
       if (user.status !== 'ACTIVE') {
+        await recordAuthEvent(request, {
+          action: 'LOGIN_FAILED', user, outcome: 'FAILURE', reason: 'account_suspended', method: 'orcid',
+        });
         await logError('ORCID login failed: Account suspended or inactive', {
           ...requestMetadata,
           userId: user.id,
@@ -158,6 +169,7 @@ export async function POST(request) {
         where: { id: user.id },
         data: {
           updatedAt: new Date(),
+          lastLoginAt: new Date(),
         }
       });
 
@@ -171,6 +183,8 @@ export async function POST(request) {
       } catch (claimError) {
         console.error('Failed to claim pending manuscript invitations:', claimError);
       }
+
+      await recordAuthEvent(request, { action: 'LOGIN_SUCCESS', user, method: 'orcid' });
 
       // Log successful ORCID login
       await logSuccess('ORCID login successful', {
@@ -256,6 +270,10 @@ export async function POST(request) {
       const errorField = !email ? 'email' : 'password';
       const errorMessage = 'Email and password are required';
       
+      await recordAuthEvent(request, {
+        action: 'LOGIN_FAILED', email: email?.toLowerCase() || null, outcome: 'FAILURE',
+        reason: 'missing_credentials', method: 'password',
+      });
       await logError(`Login validation failed: ${errorMessage}`, {
         ...requestMetadata,
         email: email?.toLowerCase(),
@@ -290,6 +308,10 @@ export async function POST(request) {
     });
 
     if (!user) {
+      await recordAuthEvent(request, {
+        action: 'LOGIN_FAILED', email: email.toLowerCase(), outcome: 'FAILURE',
+        reason: 'user_not_found', method: 'password',
+      });
       await logError('Login failed: User not found', {
         ...requestMetadata,
         email: email.toLowerCase(),
@@ -314,6 +336,9 @@ export async function POST(request) {
 
     // Check if user is activated
     if (!user.emailVerified) {
+      await recordAuthEvent(request, {
+        action: 'LOGIN_FAILED', user, outcome: 'FAILURE', reason: 'account_not_verified', method: 'password',
+      });
       await logError('Login failed: Account not verified', {
         ...requestMetadata,
         userId: user.id,
@@ -342,6 +367,9 @@ export async function POST(request) {
 
     // Check if user status is active
     if (user.status !== 'ACTIVE') {
+      await recordAuthEvent(request, {
+        action: 'LOGIN_FAILED', user, outcome: 'FAILURE', reason: 'account_suspended', method: 'password',
+      });
       await logError('Login failed: Account suspended or inactive', {
         ...requestMetadata,
         userId: user.id,
@@ -370,6 +398,9 @@ export async function POST(request) {
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
+      await recordAuthEvent(request, {
+        action: 'LOGIN_FAILED', user, outcome: 'FAILURE', reason: 'invalid_password', method: 'password',
+      });
       await logError('Login failed: Invalid password', {
         ...requestMetadata,
         userId: user.id,
@@ -420,6 +451,7 @@ export async function POST(request) {
       where: { id: user.id },
       data: {
         updatedAt: new Date(),
+        lastLoginAt: new Date(),
       }
     });
 
@@ -433,6 +465,8 @@ export async function POST(request) {
     } catch (claimError) {
       console.error('Failed to claim pending manuscript invitations:', claimError);
     }
+
+    await recordAuthEvent(request, { action: 'LOGIN_SUCCESS', user, method: 'password' });
 
     // Log successful login with comprehensive activity logging
     await logSuccess('User login successful', {
@@ -503,6 +537,11 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Login error:', error);
+
+    await recordAuthEvent(request, {
+      action: 'LOGIN_FAILED', email: requestBody?.email?.toLowerCase?.() || null, outcome: 'FAILURE',
+      reason: 'unexpected_error',
+    });
 
     // Log unexpected error with comprehensive activity logging
     await logError('Unexpected login error', {

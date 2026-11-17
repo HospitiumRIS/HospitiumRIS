@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import { clearSessionCookie } from '@/lib/session-cookie';
+import { getAuthenticatedUser } from '@/lib/auth-server';
+import { recordAuthEvent } from '@/lib/ops/audit';
 
 export async function POST(request) {
   try {
     const { preserveRememberMe = false } = await request.json().catch(() => ({}));
+
+    const user = await getAuthenticatedUser();
+    if (user) {
+      await recordAuthEvent(request, { action: 'LOGOUT', user });
+    }
     
     const response = NextResponse.json(
       { success: true, message: 'Logged out successfully' },

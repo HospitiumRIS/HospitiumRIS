@@ -6,6 +6,7 @@ import {
   getOwnedInstitution,
   fetchInstitutionScopedData,
 } from '@/lib/institution-admin';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 function convertToCSV(data) {
   let csv = '';
@@ -39,7 +40,7 @@ function getRecordCount(data) {
   );
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     const { user, error } = await requireInstitutionAdmin();
     if (error) return error;
@@ -98,3 +99,5 @@ export async function POST(request) {
     );
   }
 }
+
+export const POST = withAdminAudit(handlePOST, { action: 'INSTITUTION_DATA_EXPORTED', summary: ({ values }) => `Exported institution data${values.scope ? ` (${values.scope})` : ''}`, targetType: 'Database', captureValues: ['scope', 'format'] });

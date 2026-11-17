@@ -63,7 +63,7 @@ model User {
   orcidGivenNames String?
   orcidFamilyName String?
   // Profile photo: "/api/files/<StoredFile id>" (PROFILE_PHOTO module, stored in R2)
-  avatarUrl String?
+  avatarUrl       String?
 
   // Research Information (for RESEARCHER and RESEARCH_ADMIN)
   primaryInstitution String?
@@ -84,6 +84,9 @@ model User {
   // Onboarding (researcher welcome tour + profile checklist)
   onboardingCompletedAt       DateTime? // set when the welcome tour is finished or skipped
   profileChecklistDismissedAt DateTime? // "complete your profile" card hidden by the user
+
+  // Operations monitoring
+  lastLoginAt DateTime? // set on every successful sign-in (password or ORCID)
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -164,14 +167,14 @@ model Institution {
   userId String? @unique
 
   // Institution Details
-  name         String
-  slug         String  @unique
-  type         String  @default("UNIVERSITY") // University, Hospital, Research Institute, Other
-  country      String  @default("")
-  website      String?
-  contactEmail String?
-  logo           String?
-  storageBucket  String? // Optional per-tenant bucket override for hard isolation
+  name          String
+  slug          String  @unique
+  type          String  @default("UNIVERSITY") // University, Hospital, Research Institute, Other
+  country       String  @default("")
+  website       String?
+  contactEmail  String?
+  logo          String?
+  storageBucket String? // Optional per-tenant bucket override for hard isolation
 
   // Module keys this institution may access (publications, projects, etc.)
   enabledModules Json @default("[\"publications\",\"projects\",\"clinical_trials\",\"image_integrity\",\"training\",\"administration\",\"analytics\"]")
@@ -1162,7 +1165,7 @@ model Proposal {
   grantEndDate       DateTime?
   totalBudgetAmount  Decimal?  @db.Decimal(15, 2)
   budgetCurrency     String?
-  budgetDocuments    Json[] @default([]) // Detailed budget breakdown files
+  budgetDocuments    Json[]    @default([]) // Detailed budget breakdown files
 
   // Ethical Considerations
   ethicalConsiderationsOverview String?
@@ -2694,4 +2697,69 @@ model StoredFile {
   @@index([entityType, entityId])
   @@index([status, createdAt])
   @@map("stored_files")
+}
+
+// ---------------------------------------------------------------------------
+// Operations monitoring & audit
+// ---------------------------------------------------------------------------
+
+// Append-only audit trail: sign-ins (AUTH), administrator changes (ADMIN) and
+// background jobs (SYSTEM). Never stores request bodies, passwords or record
+// content — only who, what kind of action, when, where from and the outcome.
+model AuditEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  category String // AUTH | ADMIN | SYSTEM
+  action   String // e.g. LOGIN_SUCCESS, LOGIN_FAILED, LOGOUT, INSTITUTION_UPDATED, JOB_RUN
+  outcome  String  @default("SUCCESS") // SUCCESS | FAILURE
+  reason   String? // machine-readable failure reason, e.g. invalid_password
+
+  actorUserId      String?
+  actorEmail       String? // kept even when the attempt was for an unknown account
+  actorName        String?
+  actorAccountType String?
+
+  institutionId String? // institution the actor (or the target) belongs to
+
+  targetType String?
+  targetId   String?
+
+  summary  String // human-readable "what happened"
+  metadata Json? // small, non-sensitive context (changed field names, job counts)
+
+  ipAddress String?
+  userAgent String?
+
+  @@index([createdAt])
+  @@index([category, createdAt])
+  @@index([action, createdAt])
+  @@index([institutionId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([ipAddress, createdAt])
+  @@map("audit_events")
+}
+
+// High-volume, privacy-preserving usage telemetry: which module a signed-in
+// user opened (VIEW) or acted in (ACTION). Routes are normalised (record IDs
+// replaced with :id) and no query strings, bodies or record content are kept.
+model UsageEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId        String
+  institutionId String?
+  accountType   String?
+
+  module     String // see src/lib/ops/modules.js
+  kind       String // VIEW | ACTION
+  action     String? // CREATE | UPDATE | DELETE (for ACTION)
+  route      String // normalised path, e.g. /researcher/projects/:id
+  statusCode Int?
+
+  @@index([createdAt])
+  @@index([institutionId, createdAt])
+  @@index([module, createdAt])
+  @@index([userId, createdAt])
+  @@map("usage_events")
 }

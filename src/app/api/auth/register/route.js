@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { hashPassword, validateEmail, validatePassword } from '@/lib/auth';
 import { findInstitutionByEmailDomain, findVerifiedDomainByEmail } from '@/lib/institution-domain';
 import { claimPendingInvitations } from '@/lib/manuscript-invitations';
+import { recordAuthEvent } from '@/lib/ops/audit';
 
 export async function POST(request) {
   let body = {};
@@ -181,6 +182,10 @@ export async function POST(request) {
     });
 
     if (existingUser) {
+      await recordAuthEvent(request, {
+        action: 'REGISTRATION_FAILED', email, outcome: 'FAILURE', reason: 'email_already_registered',
+        summary: 'Registration failed: email already registered',
+      });
       return NextResponse.json(
         {
           success: false,
@@ -277,6 +282,8 @@ export async function POST(request) {
     } catch (claimError) {
       console.error('Failed to claim pending manuscript invitations:', claimError);
     }
+
+    await recordAuthEvent(request, { action: 'REGISTERED', user: result });
 
     // Return success response (don't include sensitive data)
     const response = NextResponse.json({

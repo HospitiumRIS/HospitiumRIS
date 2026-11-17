@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-server';
+import { withAdminAudit } from '@/lib/ops/audit';
 
 export async function GET(request) {
   try {
@@ -54,7 +55,7 @@ export async function GET(request) {
   }
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     const user = await getAuthenticatedUser(request);
 
@@ -147,3 +148,5 @@ export async function POST(request) {
     );
   }
 }
+
+export const POST = withAdminAudit(handlePOST, { action: 'DOMAIN_ADDED', summary: 'Added a verified email domain', targetType: 'VerifiedDomain' });

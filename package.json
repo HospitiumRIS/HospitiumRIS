@@ -9,7 +9,7 @@
     "build": "next build",
     "start": "next start -p 3001",
     "start:3000": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
@@ -91,6 +91,8 @@
   },
   "devDependencies": {
     "@types/node": "24.10.1",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.0.10",
     "typescript": "5.9.3"
   }
 }
