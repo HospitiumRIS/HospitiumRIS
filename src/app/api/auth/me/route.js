@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 import { logInfo, logError, getRequestMetadata } from '@/utils/activityLogger';
 import { resolveUserEnabledModules } from '@/lib/institution-modules';
+import { readOrcidProof, orcidLookupValues } from '@/lib/orcid-proof';
 
 export async function GET(request) {
   try {
@@ -101,9 +102,18 @@ export async function POST(request) {
   const requestMetadata = getRequestMetadata(request);
   
   try {
-    const { action, orcidId, orcidData } = await request.json();
+    const { action } = await request.json();
 
     if (action === 'check_orcid_user') {
+      // Only answer for an ORCID iD this browser actually verified with ORCID
+      const proof = readOrcidProof(request);
+      if (!proof) {
+        return NextResponse.json(
+          { success: false, code: 'orcid_session_expired', message: 'Your ORCID sign-in expired. Please sign in with ORCID again.' },
+          { status: 401 }
+        );
+      }
+      const orcidId = proof.orcid;
       // Log ORCID user check request
       await logInfo('ORCID user check initiated', {
         ...requestMetadata,
@@ -113,7 +123,7 @@ export async function POST(request) {
 
       // Check if user exists with this ORCID ID
       const existingUser = await prisma.user.findFirst({
-        where: { orcidId: orcidId },
+        where: { orcidId: { in: orcidLookupValues(orcidId) } },
         include: {
           institution: true,
           foundation: true,
@@ -163,7 +173,7 @@ export async function POST(request) {
         await logInfo('ORCID user not found - needs registration', {
           ...requestMetadata,
           orcidId: orcidId,
-          orcidName: orcidData?.name
+          orcidName: [proof.givenNames, proof.familyName].filter(Boolean).join(' ')
         });
 
         return NextResponse.json({

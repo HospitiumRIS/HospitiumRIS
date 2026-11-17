@@ -125,6 +125,8 @@ const RegisterPage = () => {
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [selectedOrcidProfile, setSelectedOrcidProfile] = useState(null);
+  // Set when arriving from "Sign in with ORCID" with a verified ORCID iD
+  const [orcidSession, setOrcidSession] = useState(null);
   const [inviteDetails, setInviteDetails] = useState(null);
 
   // Form data state
@@ -175,14 +177,42 @@ const RegisterPage = () => {
     const inviteToken = urlParams.get('invite');
     
     if (isOrcidLogin) {
-      console.log('🔗 ORCID registration detected - user will need to complete registration');
-      setFormData(prev => ({
-        ...prev,
-        isOrcidRegistration: true
-      }));
-      
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
+
+      // The server holds a signed proof of the ORCID iD verified at sign-in.
+      // Use it to skip the account type and ORCID search steps.
+      fetch('/api/auth/orcid/session')
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.success) {
+            setFormError(data.message || 'Your ORCID sign-in expired. Please sign in with ORCID again.');
+            return;
+          }
+          setOrcidSession(data);
+          setAccountType('RESEARCHER');
+          setSelectedOrcidProfile({
+            'orcid-id': data.orcidId,
+            'given-names': data.givenNames,
+            'family-names': data.familyName,
+            'institution-name': [],
+          });
+          setFormData(prev => ({
+            ...prev,
+            accountType: 'RESEARCHER',
+            isOrcidRegistration: true,
+            orcidId: data.orcidId,
+            orcidGivenNames: data.givenNames,
+            orcidFamilyName: data.familyName,
+            givenName: data.givenNames || prev.givenName,
+            familyName: data.familyName || prev.familyName,
+          }));
+          setActiveStep(2); // account details
+        })
+        .catch((error) => {
+          console.error('Failed to load ORCID session:', error);
+          setFormError('We couldn\u2019t load your ORCID details. Please sign in with ORCID again.');
+        });
     }
 
     if (inviteToken) {
@@ -523,7 +553,6 @@ const RegisterPage = () => {
         foundationDescription: formData.foundationDescription,
       };
 
-      console.log('Submitting registration with data:', requestBody);
 
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -536,8 +565,12 @@ const RegisterPage = () => {
       const data = await response.json();
 
       if (data.success) {
-        console.log('Registration successful:', data);
-        
+        // ORCID-verified researchers are signed in by the server straight away
+        if (data.signedIn) {
+          window.location.href = data.dashboardRoute || '/researcher';
+          return;
+        }
+
         // Redirect to success page with login prompt
         setFormError('');
         router.push(
@@ -546,8 +579,11 @@ const RegisterPage = () => {
         );
       } else {
         // Handle validation errors from server
-        console.log('Registration failed:', data);
-        console.log('Validation errors:', data.errors);
+        if (orcidSession && (data.code === 'orcid_session_expired' || data.errors?.orcidSearch)) {
+          // The ORCID steps are skipped in this flow, so show the problem here
+          setFormError(data.errors?.orcidSearch || data.message);
+          return;
+        }
         if (data.errors) {
           setErrors(data.errors);
           
@@ -670,7 +706,11 @@ const RegisterPage = () => {
   };
 
   const isLastStep = activeStep === steps.length - 1;
-  const progress = accountType ? ((activeStep + 1) / steps.length) * 100 : 0;
+  // From ORCID sign-in, the account type and ORCID search steps are done already
+  const stepOffset = orcidSession ? 2 : 0;
+  const visibleStep = activeStep - stepOffset + 1;
+  const visibleTotal = steps.length - stepOffset;
+  const progress = accountType ? (visibleStep / visibleTotal) * 100 : 0;
 
   // Selecting an account type moves straight to the next step
   const handleAccountTypePick = (event, newAccountType) => {
@@ -689,7 +729,7 @@ const RegisterPage = () => {
       {showProgress && (
         <Box sx={{ mb: 3 }}>
           <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: 'primary.main', mb: 1 }}>
-            {t('auth.register_step_of', 'Step {{current}} of {{total}}', { current: activeStep + 1, total: steps.length })}
+            {t('auth.register_step_of', 'Step {{current}} of {{total}}', { current: visibleStep, total: visibleTotal })}
             <Box component="span" sx={{ color: 'text.secondary', fontWeight: 400 }}> · {steps[activeStep]}</Box>
           </Typography>
           <LinearProgress variant="determinate" value={progress} sx={{ height: 4, borderRadius: 2 }} />
@@ -717,7 +757,7 @@ const RegisterPage = () => {
 
       {/* Actions */}
       <Box sx={{ display: 'flex', gap: 1.5, mt: 3.5 }}>
-        {activeStep > 0 && (
+        {activeStep > stepOffset && (
           <Button
             variant="outlined"
             color="inherit"
