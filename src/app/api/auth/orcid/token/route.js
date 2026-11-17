@@ -1,4 +1,29 @@
 import { NextResponse } from 'next/server';
+import { setOrcidProofCookie } from '@/lib/orcid-proof';
+
+/**
+ * Best-effort lookup of the researcher's given and family names from their
+ * public ORCID record (more reliable than splitting the token's `name`).
+ */
+async function fetchOrcidNames(orcid, tokenUrl, fallbackName = '') {
+  const parts = String(fallbackName || '').trim().split(/\s+/).filter(Boolean);
+  const fallback = { givenNames: parts[0] || '', familyName: parts.slice(1).join(' ') };
+  try {
+    const host = tokenUrl.includes('sandbox') ? 'https://pub.sandbox.orcid.org' : 'https://pub.orcid.org';
+    const res = await fetch(`${host}/v3.0/${orcid}/person`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) return fallback;
+    const person = await res.json();
+    return {
+      givenNames: person?.name?.['given-names']?.value || fallback.givenNames,
+      familyName: person?.name?.['family-name']?.value || fallback.familyName,
+    };
+  } catch {
+    return fallback;
+  }
+}
 
 // Simple in-memory cache to prevent duplicate token exchanges
 const tokenExchangeCache = new Map();
@@ -28,7 +53,9 @@ export async function POST(request) {
       if (now - cached.timestamp < CACHE_TTL) {
         console.log('💾 Returning cached response');
         if (cached.success) {
-          return NextResponse.json(cached.data);
+          const cachedResponse = NextResponse.json(cached.data);
+          setOrcidProofCookie(cachedResponse, { orcid: cached.data.orcid, givenNames: cached.data.givenNames, familyName: cached.data.familyName });
+          return cachedResponse;
         } else {
           return NextResponse.json(cached.error, { status: cached.status });
         }
@@ -160,23 +187,24 @@ export async function POST(request) {
       return NextResponse.json(errorResponse, { status: tokenResponse.status });
     }
 
-    // Extract user information from token response
+    if (!tokenData.orcid) {
+      return NextResponse.json({ error: 'ORCID did not return an ORCID iD' }, { status: 502 });
+    }
+
+    const names = await fetchOrcidNames(tokenData.orcid, requiredEnvVars.tokenUrl, tokenData.name);
+
+    // Only identity details go back to the browser. ORCID access/refresh
+    // tokens stay on the server; proof of the verified iD is carried in a
+    // signed httpOnly cookie (see lib/orcid-proof).
     const successResponse = {
       success: true,
       orcid: tokenData.orcid,
       name: tokenData.name,
-      access_token: tokenData.access_token,
-      token_type: tokenData.token_type,
-      refresh_token: tokenData.refresh_token,
-      expires_in: tokenData.expires_in,
-      scope: tokenData.scope
+      givenNames: names.givenNames,
+      familyName: names.familyName,
     };
 
-    console.log('✅ ORCID authentication successful:', {
-      orcid: successResponse.orcid,
-      name: successResponse.name,
-      hasAccessToken: !!successResponse.access_token
-    });
+    console.log('✅ ORCID authentication successful:', { orcid: successResponse.orcid });
     
     // Cache the success response
     tokenExchangeCache.set(cacheKey, {
@@ -185,7 +213,9 @@ export async function POST(request) {
       data: successResponse
     });
     
-    return NextResponse.json(successResponse);
+    const response = NextResponse.json(successResponse);
+    setOrcidProofCookie(response, { orcid: successResponse.orcid, givenNames: names.givenNames, familyName: names.familyName });
+    return response;
 
   } catch (error) {
     console.error('❌ Token exchange error:', error);

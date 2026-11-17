@@ -4,27 +4,31 @@ import { hashPassword, validateEmail, validatePassword } from '@/lib/auth';
 import { findInstitutionByEmailDomain, findVerifiedDomainByEmail } from '@/lib/institution-domain';
 import { claimPendingInvitations } from '@/lib/manuscript-invitations';
 import { recordAuthEvent } from '@/lib/ops/audit';
+import { readOrcidProof, clearOrcidProofCookie, orcidLookupValues } from '@/lib/orcid-proof';
+import { setSessionCookie } from '@/lib/session-cookie';
 
 export async function POST(request) {
   let body = {};
   try {
     body = await request.json();
     
-    // Check for ORCID data from secure cookie
-    let orcidData = null;
-    const orcidCookie = request.cookies.get('orcid_data')?.value;
-    if (orcidCookie) {
-      try {
-        orcidData = JSON.parse(orcidCookie);
-        console.log('🔗 ORCID data found in cookie:', {
-          orcidId: orcidData.orcidId,
-          givenNames: orcidData.givenNames,
-          familyName: orcidData.familyName
-        });
-      } catch (parseError) {
-        console.error('Failed to parse ORCID cookie:', parseError);
-      }
+    // Researchers who arrive from "Sign in with ORCID" carry a signed proof
+    // of the ORCID iD they verified (set by /api/auth/orcid/token). Their iD
+    // and names come from that proof, never from the request body.
+    const orcidProof = body.accountType === 'RESEARCHER' ? readOrcidProof(request) : null;
+    if (body.isOrcidRegistration && !orcidProof) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: 'orcid_session_expired',
+          message: 'Your ORCID sign-in expired. Please sign in with ORCID again to continue.',
+        },
+        { status: 401 }
+      );
     }
+    const orcidData = orcidProof
+      ? { orcidId: orcidProof.orcid, givenNames: orcidProof.givenNames, familyName: orcidProof.familyName }
+      : null;
     
     const {
       // Account type
@@ -105,11 +109,11 @@ export async function POST(request) {
       }
     } else {
       // Standard validation for RESEARCHER
-      if (!givenName?.trim()) {
+      if (!(givenName || orcidData?.givenNames)?.trim()) {
         errors.givenName = 'Given name is required';
       }
       
-      if (!familyName?.trim()) {
+      if (!(familyName || orcidData?.familyName)?.trim()) {
         errors.familyName = 'Family name is required';
       }
       
@@ -196,6 +200,29 @@ export async function POST(request) {
       );
     }
 
+    // One Hospitium account per ORCID iD
+    const requestedOrcid = accountType === 'RESEARCHER' ? (orcidData?.orcidId || orcidId || null) : null;
+    if (requestedOrcid) {
+      const orcidOwner = await prisma.user.findFirst({
+        where: { orcidId: { in: orcidLookupValues(requestedOrcid) } },
+        select: { id: true },
+      });
+      if (orcidOwner) {
+        await recordAuthEvent(request, {
+          action: 'REGISTRATION_FAILED', email, outcome: 'FAILURE', reason: 'orcid_already_linked',
+          summary: 'Registration failed: ORCID iD already linked to an account',
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            errors: { orcidSearch: 'This ORCID iD is already linked to a Hospitium account. Sign in with ORCID instead.' },
+            message: 'ORCID iD already linked',
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     // Hash password
     const passwordHash = await hashPassword(password);
 
@@ -212,8 +239,9 @@ export async function POST(request) {
         userGivenName = accountName.trim();
         userFamilyName = '';
       } else {
-        userGivenName = (orcidData?.givenNames || givenName).trim();
-        userFamilyName = (orcidData?.familyName || familyName).trim();
+        // Names as the researcher entered them (pre-filled from ORCID when available)
+        userGivenName = (givenName || orcidData?.givenNames || '').trim();
+        userFamilyName = (familyName || orcidData?.familyName || '').trim();
       }
 
       // For researchers, check whether their email domain already matches a
@@ -298,13 +326,15 @@ export async function POST(request) {
         emailVerified: true,
         orcidId: result.orcidId,
       },
-      nextStep: 'Please login to access your account.'
+      nextStep: orcidData ? 'You are signed in.' : 'Please login to access your account.',
+      // ORCID-verified researchers are signed in straight away
+      ...(orcidData && { signedIn: true, dashboardRoute: '/researcher' }),
     }, { status: 201 });
 
-    // Clear ORCID cookie if it was used
     if (orcidData) {
-      response.cookies.delete('orcid_data');
-      console.log('🧹 Cleared ORCID data cookie after successful registration');
+      setSessionCookie(response, result.id);
+      clearOrcidProofCookie(response);
+      await recordAuthEvent(request, { action: 'LOGIN_SUCCESS', user: result, method: 'orcid' });
     }
 
     return response;

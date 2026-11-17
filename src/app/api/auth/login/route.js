@@ -7,6 +7,7 @@ import { setSessionCookie } from '@/lib/session-cookie';
 import { resolveUserEnabledModules } from '@/lib/institution-modules';
 import { claimPendingInvitations } from '@/lib/manuscript-invitations';
 import { recordAuthEvent } from '@/lib/ops/audit';
+import { readOrcidProof, clearOrcidProofCookie, orcidLookupValues } from '@/lib/orcid-proof';
 
 /**
  * @swagger
@@ -30,10 +31,30 @@ export async function POST(request) {
   
   try {
     requestBody = await request.json();
-    const { email, password, rememberMe, orcidLogin, orcidId, orcidData } = requestBody;
+    const { email, password, rememberMe, orcidLogin } = requestBody;
 
-    // Handle ORCID login flow
-    if (orcidLogin && orcidId && orcidData) {
+    // Handle ORCID login flow. The ORCID iD comes only from the signed proof
+    // cookie set by /api/auth/orcid/token after ORCID verified the user;
+    // anything the browser sends about ORCID is ignored.
+    if (orcidLogin) {
+      const proof = readOrcidProof(request);
+      if (!proof) {
+        await recordAuthEvent(request, {
+          action: 'LOGIN_FAILED', outcome: 'FAILURE', reason: 'orcid_proof_missing', method: 'orcid',
+          summary: 'Failed ORCID sign-in: no verified ORCID session',
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            code: 'orcid_session_expired',
+            message: 'Your ORCID sign-in expired. Please sign in with ORCID again.',
+          },
+          { status: 401 }
+        );
+      }
+      const orcidId = proof.orcid;
+      const orcidData = { name: [proof.givenNames, proof.familyName].filter(Boolean).join(' ') };
+
       await logInfo('ORCID login attempt initiated', {
         ...requestMetadata,
         orcidId: orcidId,
@@ -44,7 +65,7 @@ export async function POST(request) {
 
       // Find user by ORCID ID
       const user = await prisma.user.findFirst({
-        where: { orcidId: orcidId },
+        where: { orcidId: { in: orcidLookupValues(orcidId) } },
         include: {
           institution: true,
           secondaryInstitution: true,
@@ -73,11 +94,13 @@ export async function POST(request) {
         return NextResponse.json(
           {
             success: false,
-            message: 'ORCID account not found. Please register first.',
+            code: 'no_account',
+            message: 'No Hospitium account is linked to this ORCID iD yet.',
             needsRegistration: true,
-            redirectTo: '/register?orcid=true'
+            redirectTo: '/register?orcid=true',
+            orcid: { orcidId, givenNames: proof.givenNames, familyName: proof.familyName }
           },
-          { status: 401 }
+          { status: 404 }
         );
       }
 
@@ -105,6 +128,7 @@ export async function POST(request) {
         return NextResponse.json(
           {
             success: false,
+            code: 'not_activated',
             message: 'Account not activated. Please check your email and activate your account first.',
             redirectTo: '/resend-activation',
             needsActivation: true
@@ -138,6 +162,7 @@ export async function POST(request) {
         return NextResponse.json(
           {
             success: false,
+            code: 'inactive',
             message: 'Account is suspended or inactive. Please contact support.',
           },
           { status: 403 }
@@ -250,8 +275,9 @@ export async function POST(request) {
         loginMethod: 'orcid'
       }, { status: 200 });
 
-      // Set session cookie
+      // Set session cookie; the ORCID proof has served its purpose
       setSessionCookie(response, user.id, { rememberMe: rememberMe || false });
+      clearOrcidProofCookie(response);
 
       return response;
     }
