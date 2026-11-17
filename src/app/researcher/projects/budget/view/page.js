@@ -6,46 +6,107 @@ import {
   Container,
   Typography,
   Paper,
-  Chip,
-  LinearProgress,
-  IconButton,
-  Tooltip,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
   MenuItem,
-  InputAdornment,
   Table,
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TableRow,
   TablePagination,
   CircularProgress,
-  Button
+  Button,
+  Alert,
 } from '@mui/material';
 import {
   AccountBalance as BudgetIcon,
   TrendingUp as TrendingUpIcon,
-  Receipt as ExpenseIcon,
   Analytics as AnalyticsIcon,
   AttachMoney as MoneyIcon,
   Warning as WarningIcon,
   Business as BusinessIcon,
   Assignment as ProjectIcon,
-  Search as SearchIcon,
-  Clear as ClearIcon,
-  OpenInNew as ViewIcon,
-  ArrowForward as ArrowIcon
+  Visibility as ViewIcon,
+  InfoOutlined as InfoIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 
 import PageHeader from '../../../../../components/common/PageHeader';
+import RowActions from '../../../../../components/common/RowActions';
+import StatusPill, { humanizeStatus } from '../../../../../components/common/StatusPill';
+import {
+  BRAND_PURPLE, FilterBar, PurpleTableHead, StatCards, TablePaper, filterFieldSx, paginationSx, zebraRowSx,
+} from '../../../../../components/common/ListPage';
+
+const PROPOSAL_STATUS_TONE = {
+  DRAFT: 'neutral',
+  SUBMITTED: 'info',
+  UNDER_REVIEW: 'progress',
+  REVISION_REQUESTED: 'warning',
+  APPROVED: 'success',
+  REJECTED: 'danger',
+};
+
+const formatMoney = (amount, currency = 'USD') => {
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount || 0);
+  } catch {
+    return `${currency} ${Math.round(amount || 0).toLocaleString()}`;
+  }
+};
+
+const formatRange = (start, end) => {
+  const fmt = (d) => {
+    const date = d ? new Date(d) : null;
+    return date && !Number.isNaN(date.getTime()) ? format(date, 'MMM yyyy') : null;
+  };
+  const a = fmt(start);
+  const b = fmt(end);
+  if (a && b) return `${a} – ${b}`;
+  return a || b || '—';
+};
 import { useAuth } from '../../../../../components/AuthProvider';
 import { useTranslation } from 'react-i18next';
+
+// Transform proposal data to budget project format.
+// Only real figures: there is no expense data yet, so nothing about
+// spending is shown here.
+const transformProposalToBudgetProject = (proposal) => {
+  let budget = {};
+  if (typeof proposal.budget === 'string') {
+    try {
+      budget = JSON.parse(proposal.budget);
+    } catch {
+      budget = {};
+    }
+  } else if (typeof proposal.budget === 'object' && proposal.budget !== null) {
+    budget = proposal.budget;
+  }
+
+  const totalBudget = parseFloat(budget.total || budget.totalBudget || proposal.totalBudgetAmount || 0) || 0;
+
+  let piName = 'Not assigned';
+  if (typeof proposal.principalInvestigator === 'string') {
+    piName = proposal.principalInvestigator;
+  } else if (proposal.principalInvestigator?.name) {
+    piName = proposal.principalInvestigator.name;
+  } else if (proposal.pi) {
+    piName = proposal.pi;
+  }
+
+  return {
+    id: proposal.id,
+    title: proposal.title || 'Untitled Project',
+    status: proposal.status || 'DRAFT',
+    pi: piName,
+    departments: proposal.departments || [],
+    currency: proposal.budgetCurrency || 'USD',
+    startDate: proposal.startDate || proposal.proposalDate,
+    endDate: proposal.endDate || proposal.projectEndDate,
+    totalBudget,
+  };
+};
 
 const BudgetManagementPage = () => {
   const { t } = useTranslation();
@@ -63,7 +124,6 @@ const BudgetManagementPage = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        console.log('Fetching project proposals from database...');
         const response = await fetch('/api/proposals', {
           method: 'GET',
           headers: {
@@ -76,7 +136,6 @@ const BudgetManagementPage = () => {
         }
         
         const data = await response.json();
-        console.log('Fetched proposals:', data);
         
         const proposalsArray = data.success && Array.isArray(data.proposals)
           ? data.proposals
@@ -89,7 +148,6 @@ const BudgetManagementPage = () => {
         }
         
         const transformedProjects = proposalsArray.map(transformProposalToBudgetProject);
-        console.log('Transformed projects:', transformedProjects);
         
         setProjects(transformedProjects);
       } catch (error) {
@@ -105,137 +163,31 @@ const BudgetManagementPage = () => {
     fetchProjects();
   }, []);
 
-  // Transform proposal data to budget project format
-  const transformProposalToBudgetProject = (proposal) => {
-    console.log('Transforming proposal:', proposal.title);
-    
-    // Handle different budget data structures
-    let budget = {};
-    if (typeof proposal.budget === 'string') {
-      try {
-        budget = JSON.parse(proposal.budget);
-      } catch (e) {
-        console.warn('Failed to parse budget JSON for', proposal.title, e);
-        budget = {};
-      }
-    } else if (typeof proposal.budget === 'object' && proposal.budget !== null) {
-      budget = proposal.budget;
-    }
-    
-    const totalBudget = parseFloat(budget.total || budget.totalBudget || proposal.totalBudgetAmount || 0);
-    
-    // Calculate spent amount - use random percentage between 20-60% for realistic variation
-    const spentPercentage = 0.2 + Math.random() * 0.4; // 20-60%
-    const spentAmount = totalBudget * spentPercentage;
-    
-    // Handle PI data structure
-    let piName = 'Not assigned';
-    if (typeof proposal.principalInvestigator === 'string') {
-      piName = proposal.principalInvestigator;
-    } else if (proposal.principalInvestigator?.name) {
-      piName = proposal.principalInvestigator.name;
-    } else if (proposal.pi) {
-      piName = proposal.pi;
-    }
-    
-    // Map status values
-    const statusMapping = {
-      'UNDER_REVIEW': 'Under Review',
-      'APPROVED': 'Active',
-      'REJECTED': 'Rejected',
-      'ACTIVE': 'Active',
-      'COMPLETED': 'Completed',
-      'CANCELLED': 'Cancelled'
-    };
-    
-    const displayStatus = statusMapping[proposal.status] || proposal.status || 'Unknown';
-    
-    return {
-      id: proposal.id,
-      title: proposal.title || 'Untitled Project',
-      description: proposal.description || proposal.abstract || 'No description available',
-      status: displayStatus,
-      pi: piName,
-      startDate: proposal.startDate || proposal.proposalDate,
-      endDate: proposal.endDate || proposal.projectEndDate,
-      budget: {
-        total: totalBudget,
-        spent: Math.round(spentAmount * 100) / 100,
-        remaining: Math.round((totalBudget - spentAmount) * 100) / 100,
-        utilization: totalBudget > 0 ? Math.round((spentAmount / totalBudget) * 100 * 100) / 100 : 0,
-        categories: {
-          personnel: parseFloat(budget.personnel || totalBudget * 0.6),
-          equipment: parseFloat(budget.equipment || totalBudget * 0.2),
-          supplies: parseFloat(budget.supplies || totalBudget * 0.1),
-          travel: parseFloat(budget.travel || totalBudget * 0.05),
-          other: parseFloat(budget.other || totalBudget * 0.05)
-        }
-      },
-      expenses: generateMockExpenses(proposal.id, spentAmount)
-    };
-  };
-
-  // Generate mock expenses for a project
-  const generateMockExpenses = (projectId, totalSpent) => {
-    const categories = ['Personnel', 'Equipment', 'Supplies', 'Travel', 'Other'];
-    const numExpenses = Math.floor(Math.random() * 8) + 3;
-    const expenses = [];
-    let remainingAmount = totalSpent;
-
-    for (let i = 0; i < numExpenses; i++) {
-      const amount = i === numExpenses - 1 
-        ? remainingAmount 
-        : Math.random() * (remainingAmount / (numExpenses - i));
-      
-      expenses.push({
-        id: `exp_${projectId}_${i}`,
-        description: `${categories[Math.floor(Math.random() * categories.length)]} expense ${i + 1}`,
-        amount: Math.round(amount * 100) / 100,
-        category: categories[Math.floor(Math.random() * categories.length)],
-        date: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000),
-        status: Math.random() > 0.2 ? 'Approved' : 'Pending',
-        receipt: Math.random() > 0.3 ? 'receipt.pdf' : null
-      });
-      
-      remainingAmount -= amount;
-    }
-
-    return expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
-  };
-
-  // Calculate budget statistics
   const budgetStats = React.useMemo(() => {
-    if (!projects.length) return { totalBudget: 0, totalSpent: 0, avgUtilization: 0, activeProjects: 0 };
-    const totalBudget = projects.reduce((sum, p) => sum + p.budget.total, 0);
-    const totalSpent = projects.reduce((sum, p) => sum + p.budget.spent, 0);
-    const avgUtilization = projects.reduce((sum, p) => sum + p.budget.utilization, 0) / projects.length;
-    const activeProjects = projects.filter(p => p.status === 'Active').length;
-    return { totalBudget, totalSpent, avgUtilization, activeProjects };
+    const withBudget = projects.filter((p) => p.totalBudget > 0);
+    return {
+      totalBudget: withBudget.reduce((sum, p) => sum + p.totalBudget, 0),
+      approvedBudget: withBudget.filter((p) => p.status === 'APPROVED').reduce((sum, p) => sum + p.totalBudget, 0),
+      withBudget: withBudget.length,
+      missingBudget: projects.length - withBudget.length,
+      approvedCount: projects.filter((p) => p.status === 'APPROVED').length,
+    };
   }, [projects]);
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'active': case 'approved': return 'success';
-      case 'under review': case 'pending': return 'warning';
-      case 'rejected': case 'cancelled': return 'error';
-      case 'completed': return 'info';
-      default: return 'default';
-    }
-  };
-
-  const getBudgetStatus = (utilization) => {
-    if (utilization < 50) return { color: '#4caf50', label: 'On Track' };
-    if (utilization < 80) return { color: '#ff9800', label: 'Monitor' };
-    return { color: '#f44336', label: 'At Risk' };
-  };
+  const statuses = React.useMemo(() => [...new Set(projects.map((p) => p.status))], [projects]);
 
   const filteredProjects = projects.filter(p => {
-    const matchesSearch = !searchQuery ||
-      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.pi.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.trim().toLowerCase();
+    const matchesSearch = !q ||
+      p.title.toLowerCase().includes(q) ||
+      p.pi.toLowerCase().includes(q);
     const matchesStatus = filterStatus === 'All' || p.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
+
+  const lastPage = Math.max(0, Math.ceil(filteredProjects.length / rowsPerPage) - 1);
+  const currentPage = Math.min(page, lastPage);
+  const openProject = (id) => router.push(`/researcher/projects/budget/view/${id}`);
 
   if (loading) {
     return (
@@ -259,96 +211,56 @@ const BudgetManagementPage = () => {
       />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
+        <StatCards cards={[
+          { label: 'Total Budget', value: formatMoney(budgetStats.totalBudget), sub: `Across ${budgetStats.withBudget} project${budgetStats.withBudget === 1 ? '' : 's'}`, icon: <MoneyIcon /> },
+          { label: 'Approved Funding', value: formatMoney(budgetStats.approvedBudget), sub: 'Budgets on approved proposals', icon: <TrendingUpIcon /> },
+          { label: 'Approved Projects', value: budgetStats.approvedCount, sub: 'Cleared internal review', icon: <AnalyticsIcon /> },
+          { label: 'Budget Not Set', value: budgetStats.missingBudget, sub: 'Proposals without a budget', icon: <WarningIcon /> },
+        ]} />
 
-        {/* Stats Cards */}
-        <Box sx={{ display: 'flex', gap: 2.5, mb: 4, flexWrap: { xs: 'wrap', sm: 'nowrap' }, '& > *': { flex: { xs: '1 1 100%', sm: '1 1 0' }, minWidth: 0 } }}>
-          {[
-            { label: 'Total Budget', value: `$${budgetStats.totalBudget.toLocaleString()}`, sub: 'Allocated funding', icon: <MoneyIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} /> },
-            { label: 'Total Spent', value: `$${budgetStats.totalSpent.toLocaleString()}`, sub: 'Expenses to date', icon: <ExpenseIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} /> },
-            { label: 'Avg Utilization', value: `${budgetStats.avgUtilization.toFixed(1)}%`, sub: 'Budget utilization rate', icon: <TrendingUpIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} /> },
-            { label: 'Active Projects', value: budgetStats.activeProjects, sub: 'Currently running', icon: <AnalyticsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} /> },
-          ].map((card) => (
-            <Paper key={card.label} sx={{ p: 2, borderRadius: 2, bgcolor: '#8b6cbc', boxShadow: '0 2px 8px rgba(139,108,188,0.2)', position: 'relative', overflow: 'hidden', height: 100, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>{card.label}</Typography>
-                {card.icon}
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>{card.value}</Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>{card.sub}</Typography>
-            </Paper>
-          ))}
-        </Box>
+        <Alert severity="info" icon={<InfoIcon fontSize="inherit" />} sx={{ mb: 3, borderRadius: 2 }}>
+          Spending tracking isn&apos;t set up yet, so this page shows planned budgets only.
+        </Alert>
 
-        {/* Search & Filter Bar */}
-        <Paper sx={{ p: 2.5, mb: 3, borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField
-              placeholder="Search by title or PI..."
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
-              size="small"
-              sx={{ flex: '1 1 260px', '& .MuiOutlinedInput-root': { borderRadius: 2, '&.Mui-focused fieldset': { borderColor: '#8b6cbc' } } }}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: '#8b6cbc', fontSize: 20 }} /></InputAdornment>,
-                endAdornment: searchQuery && (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setSearchQuery('')} size="small"><ClearIcon fontSize="small" /></IconButton>
-                  </InputAdornment>
-                )
-              }}
-            />
-            <FormControl size="small" sx={{ minWidth: 160 }}>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={filterStatus}
-                label="Status"
-                onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
-                sx={{ borderRadius: 2, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#8b6cbc' } }}
-              >
-                <MenuItem value="All">All Statuses</MenuItem>
-                <MenuItem value="Active">Active</MenuItem>
-                <MenuItem value="Under Review">Under Review</MenuItem>
-                <MenuItem value="Completed">Completed</MenuItem>
-                <MenuItem value="Rejected">Rejected</MenuItem>
-              </Select>
-            </FormControl>
-            <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
-              {filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''}
-            </Typography>
-          </Box>
-        </Paper>
+        <FilterBar
+          search={searchQuery}
+          onSearchChange={(value) => { setSearchQuery(value); setPage(0); }}
+          searchPlaceholder="Search by title or PI..."
+          onClear={() => { setSearchQuery(''); setFilterStatus('All'); setPage(0); }}
+        >
+          <TextField
+            select
+            className="filter-control"
+            label="Status"
+            value={filterStatus}
+            onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
+            sx={filterFieldSx}
+          >
+            <MenuItem value="All">All Statuses</MenuItem>
+            {statuses.map((status) => (
+              <MenuItem key={status} value={status}>{humanizeStatus(status)}</MenuItem>
+            ))}
+          </TextField>
+        </FilterBar>
 
-        {/* Projects Table */}
         {error ? (
-          <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
+          <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3 }}>
             <WarningIcon sx={{ fontSize: 56, color: 'error.main', mb: 2 }} />
             <Typography variant="h6" color="error.main" sx={{ mb: 1 }}>Error Loading Projects</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>{error}</Typography>
-            <Button variant="contained" onClick={() => window.location.reload()} sx={{ bgcolor: '#8b6cbc', '&:hover': { bgcolor: '#7b5cac' } }}>
+            <Button variant="contained" onClick={() => window.location.reload()} sx={{ bgcolor: BRAND_PURPLE, '&:hover': { bgcolor: '#7b5cac' } }}>
               Try Again
             </Button>
           </Paper>
         ) : (
-          <Paper sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+          <TablePaper>
             <TableContainer>
               <Table>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: '#8b6cbc' }}>
-                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>Project Title</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>Principal Investigator</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>Status</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }} align="right">Total Budget</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }} align="right">Spent</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem', minWidth: 160 }}>Utilization</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }}>End Date</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: '0.85rem' }} align="center">Action</TableCell>
-                  </TableRow>
-                </TableHead>
+                <PurpleTableHead columns={['Project', 'Status', { label: 'Total Budget', align: 'right' }, 'Timeline', { label: 'Actions', align: 'center' }]} />
                 <TableBody>
                   {filteredProjects.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} sx={{ textAlign: 'center', py: 8 }}>
+                      <TableCell colSpan={5} sx={{ textAlign: 'center', py: 8 }}>
                         <BudgetIcon sx={{ fontSize: 52, color: 'text.disabled', mb: 1.5 }} />
                         <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
                           {projects.length === 0 ? 'No projects available' : 'No projects match your filters'}
@@ -360,68 +272,50 @@ const BudgetManagementPage = () => {
                     </TableRow>
                   ) : (
                     filteredProjects
-                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                      .map((project) => {
-                        const budSt = getBudgetStatus(project.budget.utilization);
-                        return (
-                          <TableRow
-                            key={project.id}
-                            hover
-                            onClick={() => router.push(`/researcher/projects/budget/view/${project.id}`)}
-                            sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'rgba(139,108,188,0.05)' }, '&:last-child td': { borderBottom: 0 } }}
-                          >
-                            <TableCell sx={{ maxWidth: 320 }}>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#2c3e50', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {project.title}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" color="text.secondary">{project.pi}</Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Chip label={project.status} color={getStatusColor(project.status)} size="small" sx={{ fontWeight: 600, fontSize: '0.72rem' }} />
-                            </TableCell>
-                            <TableCell align="right">
+                      .slice(currentPage * rowsPerPage, currentPage * rowsPerPage + rowsPerPage)
+                      .map((project, index) => (
+                        <TableRow key={project.id} sx={zebraRowSx(index)}>
+                          <TableCell sx={{ maxWidth: 420 }}>
+                            <Typography
+                              variant="subtitle1"
+                              onClick={() => openProject(project.id)}
+                              sx={{
+                                fontWeight: 600, color: '#2D3748', fontSize: '0.95rem', lineHeight: 1.3, mb: 0.5,
+                                display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden',
+                                cursor: 'pointer', '&:hover': { color: BRAND_PURPLE, textDecoration: 'underline' },
+                              }}
+                            >
+                              {project.title}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {[project.pi, project.departments.slice(0, 2).join(', ')].filter(Boolean).join(' · ')}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <StatusPill label={humanizeStatus(project.status)} tone={PROPOSAL_STATUS_TONE[project.status] || 'neutral'} />
+                          </TableCell>
+                          <TableCell align="right">
+                            {project.totalBudget > 0 ? (
                               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                ${project.budget.total.toLocaleString()}
+                                {formatMoney(project.totalBudget, project.currency)}
                               </Typography>
-                            </TableCell>
-                            <TableCell align="right">
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                                ${project.budget.spent.toLocaleString()}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <LinearProgress
-                                  variant="determinate"
-                                  value={Math.min(project.budget.utilization, 100)}
-                                  sx={{ flex: 1, height: 6, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.08)', '& .MuiLinearProgress-bar': { bgcolor: budSt.color, borderRadius: 3 } }}
-                                />
-                                <Typography variant="caption" sx={{ fontWeight: 600, minWidth: 36, color: budSt.color }}>
-                                  {project.budget.utilization.toFixed(0)}%
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" color="text.secondary">
-                                {project.endDate ? format(new Date(project.endDate), 'MMM dd, yyyy') : '—'}
-                              </Typography>
-                            </TableCell>
-                            <TableCell align="center">
-                              <Tooltip title="View Budget Details">
-                                <IconButton
-                                  size="small"
-                                  onClick={(e) => { e.stopPropagation(); router.push(`/researcher/projects/budget/view/${project.id}`); }}
-                                  sx={{ color: '#8b6cbc', '&:hover': { bgcolor: 'rgba(139,108,188,0.1)' } }}
-                                >
-                                  <ArrowIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
+                            ) : (
+                              <StatusPill label="Not set" tone="warning" dot={false} />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {formatRange(project.startDate, project.endDate)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <RowActions
+                              reserveMenuSpace={false}
+                              actions={[{ key: 'view', label: 'View budget details', icon: <ViewIcon fontSize="small" />, onClick: () => openProject(project.id) }]}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))
                   )}
                 </TableBody>
               </Table>
@@ -432,12 +326,13 @@ const BudgetManagementPage = () => {
                 component="div"
                 count={filteredProjects.length}
                 rowsPerPage={rowsPerPage}
-                page={page}
+                page={currentPage}
                 onPageChange={(_, newPage) => setPage(newPage)}
                 onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+                sx={paginationSx}
               />
             )}
-          </Paper>
+          </TablePaper>
         )}
       </Container>
     </Box>
