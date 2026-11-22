@@ -5,7 +5,8 @@ import {
   getOwnedInstitution,
   resolveInstitutionMemberScope,
 } from '@/lib/institution-admin';
-import { hashPassword, validateEmail } from '@/lib/auth';
+import { hashPassword, validateEmail, validatePassword } from '@/lib/auth';
+import { getPasswordPolicy } from '@/lib/system-settings';
 import { normalizeOrcid } from '@/lib/orcid';
 import { softDeleteUser, ANONYMIZE_AFTER_DAYS } from '@/lib/user-lifecycle';
 import { logInfo } from '@/utils/activityLogger';
@@ -188,9 +189,10 @@ async function handlePATCH(request, { params }) {
     }
 
     if (typeof body.password === 'string') {
-      if (body.password.length < 8) {
+      const policyCheck = validatePassword(body.password, await getPasswordPolicy());
+      if (!policyCheck.isValid) {
         return NextResponse.json(
-          { success: false, message: 'Password must be at least 8 characters' },
+          { success: false, message: policyCheck.message },
           { status: 400 }
         );
       }

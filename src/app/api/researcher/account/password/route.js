@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-server';
 import { hashPassword, verifyPassword, validatePassword } from '@/lib/auth';
+import { getPasswordPolicy } from '@/lib/system-settings';
 import { sendPasswordChangedEmail } from '@/lib/email';
 import { logInfo, logWarning } from '@/utils/activityLogger';
 
@@ -26,13 +27,10 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: 'Password is too long (max 128 characters)' }, { status: 400 });
     }
 
-    const { isValid } = validatePassword(newPassword);
+    const { isValid, message: policyMessage } = validatePassword(newPassword, await getPasswordPolicy());
     if (!isValid) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'New password must be at least 8 characters and include upper and lower case letters, a number and a symbol',
-        },
+        { success: false, message: policyMessage },
         { status: 400 }
       );
     }

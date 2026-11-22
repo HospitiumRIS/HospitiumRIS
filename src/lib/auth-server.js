@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import prisma from './prisma';
+import { isBlockedByMaintenance } from './system-settings';
 
 /**
  * Get authenticated user from request
@@ -32,6 +33,11 @@ export async function getAuthenticatedUser(request) {
 
     // Check if user is still active
     if (user.status !== 'ACTIVE' || !user.emailVerified) {
+      return null;
+    }
+
+    // Maintenance mode: only global admins keep access.
+    if (await isBlockedByMaintenance(user)) {
       return null;
     }
 

@@ -7,6 +7,7 @@ import AuthProvider from '../components/AuthProvider';
 import AppNavbar from '../components/AppNavbar';
 import I18nProvider from '../components/I18nProvider';
 import UsageTracker from '../components/UsageTracker';
+import MaintenanceGate from '../components/MaintenanceGate';
 
 // Fonts are bundled locally via the `geist` package so the production build
 // never needs to reach fonts.googleapis.com (which failed on the VPS).
@@ -27,8 +28,10 @@ export default function RootLayout({ children }) {
             <AuthProvider>
               <NavigationProgressBar />
               <UsageTracker />
-              <AppNavbar />
-              {children}
+              <MaintenanceGate>
+                <AppNavbar />
+                {children}
+              </MaintenanceGate>
             </AuthProvider>
           </ThemeContextProvider>
         </I18nProvider>

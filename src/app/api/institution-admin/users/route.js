@@ -5,7 +5,8 @@ import {
   getOwnedInstitution,
   resolveInstitutionMemberScope,
 } from '@/lib/institution-admin';
-import { hashPassword, validateEmail } from '@/lib/auth';
+import { hashPassword, validateEmail, validatePassword } from '@/lib/auth';
+import { getPasswordPolicy } from '@/lib/system-settings';
 import { normalizeOrcid } from '@/lib/orcid';
 import { anonymizeExpiredDeletedUsers } from '@/lib/user-lifecycle';
 import { withAdminAudit } from '@/lib/ops/audit';
@@ -197,9 +198,10 @@ async function handlePOST(request) {
       return NextResponse.json({ success: false, message: 'Invalid email format' }, { status: 400 });
     }
 
-    if (password.length < 8) {
+    const policyCheck = validatePassword(password, await getPasswordPolicy());
+    if (!policyCheck.isValid) {
       return NextResponse.json(
-        { success: false, message: 'Password must be at least 8 characters' },
+        { success: false, message: policyCheck.message },
         { status: 400 }
       );
     }

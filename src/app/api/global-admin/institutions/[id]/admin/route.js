@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireGlobalAdmin } from '@/lib/require-global-admin';
-import { hashPassword } from '@/lib/auth';
+import { hashPassword, validatePassword } from '@/lib/auth';
+import { getPasswordPolicy } from '@/lib/system-settings';
 import {
   loadInstitutionAdmins,
   serializeAdmin,
@@ -111,6 +112,12 @@ async function handlePOST(request, { params }) {
     });
     if (passwordError) {
       return NextResponse.json({ error: passwordError }, { status: 400 });
+    }
+    if (password) {
+      const policyCheck = validatePassword(password, await getPasswordPolicy());
+      if (!policyCheck.isValid) {
+        return NextResponse.json({ error: policyCheck.message }, { status: 400 });
+      }
     }
 
     if (existingUser?.accountType === 'GLOBAL_ADMIN') {
@@ -258,6 +265,10 @@ async function handlePATCH(request, { params }) {
       });
       if (passwordError) {
         return NextResponse.json({ error: passwordError }, { status: 400 });
+      }
+      const policyCheck = validatePassword(body.password, await getPasswordPolicy());
+      if (!policyCheck.isValid) {
+        return NextResponse.json({ error: policyCheck.message }, { status: 400 });
       }
 
       const admin = await prisma.user.findFirst({

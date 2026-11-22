@@ -1,733 +1,560 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
   Typography,
   Paper,
-  LinearProgress,
-  IconButton,
-  Tooltip,
+  Tabs,
+  Tab,
   TextField,
   Switch,
-  FormControlLabel,
   Button,
-  Divider,
-  Chip,
   Alert,
   Select,
   MenuItem,
-  FormControl,
-  InputLabel
+  Skeleton,
+  LinearProgress,
 } from '@mui/material';
 import {
-  Settings as SettingsIcon,
   Refresh as RefreshIcon,
   Save as SaveIcon,
-  Computer as SystemIcon,
-  Email as EmailIcon,
-  Security as SecurityIcon,
-  Notifications as NotificationsIcon,
-  Storage as StorageIcon,
-  Api as ApiIcon
+  Send as SendIcon,
+  ComputerOutlined as SystemIcon,
+  EmailOutlined as EmailIcon,
+  ShieldOutlined as SecurityIcon,
+  NotificationsOutlined as NotificationsIcon,
+  FolderOutlined as StorageIcon,
+  ApiOutlined as ApiIcon,
 } from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
-import { useAuth } from '../../../components/AuthProvider';
-import { useRouter } from 'next/navigation';
 import GlobalAdminLayout from '../../../components/GlobalAdmin/GlobalAdminLayout';
+import { useGlobalAdminGuard, PageHeader, StatusPill } from '../../../components/GlobalAdmin/ops/OpsUi';
 
-const SettingsPage = () => {
+/**
+ * Field layout per tab. Whether a field is editable comes from the API's
+ * `meta` (status: active | env | coming_soon), so the page never offers a
+ * control the server would ignore.
+ */
+const SECTIONS = [
+  {
+    id: 'system',
+    label: 'System',
+    icon: SystemIcon,
+    description: 'Site name, maintenance mode and who can create an account.',
+    fields: [
+      { key: 'siteName', label: 'Site name', type: 'text', help: 'Shown on the maintenance page.' },
+      { key: 'siteUrl', label: 'Site URL', type: 'text', help: 'Used in email links. Set NEXT_PUBLIC_APP_URL on the server to change it.' },
+      {
+        key: 'maintenanceMode',
+        label: 'Maintenance mode',
+        type: 'switch',
+        help: 'Everyone except global admins sees a maintenance page and cannot sign in.',
+      },
+      { key: 'maintenanceMessage', label: 'Maintenance message', type: 'multiline', help: 'Shown to users while maintenance mode is on.' },
+      { key: 'allowRegistration', label: 'Allow new registrations', type: 'switch', help: 'When off, the sign-up page is closed and the register API refuses new accounts.' },
+      { key: 'requireEmailVerification', label: 'Require email verification', type: 'switch' },
+      { key: 'sessionTimeout', label: 'Session timeout (minutes)', type: 'number' },
+      { key: 'maxLoginAttempts', label: 'Max failed sign-ins before lockout', type: 'number' },
+      { key: 'lockoutDuration', label: 'Lockout duration (minutes)', type: 'number' },
+    ],
+  },
+  {
+    id: 'email',
+    label: 'Email',
+    icon: EmailIcon,
+    description: 'Outgoing email. Server details come from the SMTP_* environment variables; passwords are never stored here.',
+    fields: [
+      { key: 'smtpHost', label: 'SMTP host', type: 'text' },
+      { key: 'smtpPort', label: 'SMTP port', type: 'text' },
+      { key: 'smtpUser', label: 'SMTP user', type: 'text' },
+      { key: 'smtpSecure', label: 'Use TLS (SMTP_SECURE)', type: 'switch' },
+      { key: 'fromName', label: 'From name', type: 'text', help: 'Sender name on every email HospitiumRIS sends.' },
+      { key: 'fromEmail', label: 'From email', type: 'text', help: 'Leave empty to use FROM_EMAIL from the server. Must be an address your SMTP server may send as.' },
+    ],
+  },
+  {
+    id: 'security',
+    label: 'Security',
+    icon: SecurityIcon,
+    description: 'Password rules apply to registration, password changes and accounts created by admins.',
+    fields: [
+      { key: 'passwordMinLength', label: 'Minimum password length', type: 'number' },
+      { key: 'passwordRequireUppercase', label: 'Require an uppercase letter', type: 'switch' },
+      { key: 'passwordRequireLowercase', label: 'Require a lowercase letter', type: 'switch' },
+      { key: 'passwordRequireNumbers', label: 'Require a number', type: 'switch' },
+      { key: 'passwordRequireSpecialChars', label: 'Require a symbol', type: 'switch' },
+      { key: 'twoFactorEnabled', label: 'Two-factor authentication', type: 'switch' },
+      { key: 'rateLimitEnabled', label: 'Request rate limiting', type: 'switch' },
+      { key: 'rateLimitRequests', label: 'Requests allowed per window', type: 'number' },
+      { key: 'rateLimitWindow', label: 'Rate limit window (minutes)', type: 'number' },
+      { key: 'ipWhitelist', label: 'Admin IP allow-list', type: 'list' },
+    ],
+  },
+  {
+    id: 'notifications',
+    label: 'Notifications',
+    icon: NotificationsIcon,
+    description: 'Platform-wide notification switches.',
+    fields: [
+      { key: 'emailNotifications', label: 'Email notifications', type: 'switch' },
+      { key: 'systemAlerts', label: 'System alerts', type: 'switch' },
+      { key: 'securityAlerts', label: 'Security alerts', type: 'switch' },
+      { key: 'maintenanceAlerts', label: 'Maintenance alerts', type: 'switch' },
+      { key: 'digestFrequency', label: 'Digest frequency', type: 'select', options: ['daily', 'weekly', 'never'] },
+    ],
+  },
+  {
+    id: 'storage',
+    label: 'Storage',
+    icon: StorageIcon,
+    description: 'File uploads. Each module also has its own size and file-type limits.',
+    fields: [
+      { key: 'storageProvider', label: 'Storage provider', type: 'text', help: 'Set by STORAGE_DRIVER on the server.' },
+      {
+        key: 'maxFileSize',
+        label: 'Platform upload limit (MB)',
+        type: 'number',
+        help: 'Uploads larger than this are rejected everywhere, even where a module allows more (module limits go up to 50 MB).',
+      },
+      { key: 'storageQuota', label: 'Storage quota (GB)', type: 'number' },
+      { key: 'allowedFileTypes', label: 'Allowed file types', type: 'list' },
+    ],
+  },
+  {
+    id: 'api',
+    label: 'API',
+    icon: ApiIcon,
+    description: 'Public API access, webhooks and CORS.',
+    fields: [
+      { key: 'apiEnabled', label: 'API enabled', type: 'switch' },
+      { key: 'apiRateLimit', label: 'API rate limit (requests)', type: 'number' },
+      { key: 'apiRateLimitWindow', label: 'API rate limit window (minutes)', type: 'number' },
+      { key: 'webhooksEnabled', label: 'Webhooks', type: 'switch' },
+      { key: 'corsEnabled', label: 'CORS', type: 'switch' },
+      { key: 'allowedOrigins', label: 'Allowed origins', type: 'list' },
+    ],
+  },
+];
+
+const STATUS_PILL = {
+  env: { label: 'Server config', color: 'info' },
+  coming_soon: { label: 'Coming soon', color: 'default' },
+};
+
+function FieldRow({ field, value, status, error, onChange, meta }) {
+  const disabled = status !== 'active';
+  const pill = STATUS_PILL[status];
+
+  let control;
+  if (field.type === 'switch') {
+    control = (
+      <Switch
+        checked={Boolean(value)}
+        onChange={(e) => onChange(e.target.checked)}
+        disabled={disabled}
+        inputProps={{ 'aria-label': field.label }}
+      />
+    );
+  } else if (field.type === 'select') {
+    control = (
+      <Select size="small" value={value ?? ''} onChange={(e) => onChange(e.target.value)} disabled={disabled} sx={{ minWidth: 180 }}>
+        {field.options.map((opt) => (
+          <MenuItem key={opt} value={opt} sx={{ textTransform: 'capitalize' }}>
+            {opt}
+          </MenuItem>
+        ))}
+      </Select>
+    );
+  } else {
+    const isNumber = field.type === 'number';
+    const isList = field.type === 'list';
+    control = (
+      <TextField
+        size="small"
+        value={isList ? (Array.isArray(value) ? value.join(', ') : '') : value ?? ''}
+        onChange={(e) => onChange(isNumber ? e.target.value.replace(/[^\d]/g, '') : e.target.value)}
+        disabled={disabled}
+        error={Boolean(error)}
+        multiline={field.type === 'multiline'}
+        minRows={field.type === 'multiline' ? 2 : undefined}
+        inputProps={{
+          inputMode: isNumber ? 'numeric' : undefined,
+          'aria-label': field.label,
+        }}
+        placeholder={status === 'env' && !value ? 'Not set' : undefined}
+        sx={{ width: { xs: '100%', md: field.type === 'multiline' ? 420 : isNumber ? 160 : 320 } }}
+      />
+    );
+  }
+
+  const rangeHint =
+    field.type === 'number' && status === 'active' && meta?.min != null && meta?.max != null
+      ? `Between ${meta.min} and ${meta.max}.`
+      : '';
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' },
+        alignItems: { xs: 'stretch', md: field.type === 'multiline' ? 'flex-start' : 'center' },
+        justifyContent: 'space-between',
+        gap: { xs: 1, md: 3 },
+        px: { xs: 2, md: 3 },
+        py: 2,
+        borderTop: '1px solid',
+        borderColor: 'divider',
+        opacity: status === 'coming_soon' ? 0.7 : 1,
+      }}
+    >
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>{field.label}</Typography>
+          {pill && <StatusPill label={pill.label} color={pill.color} />}
+        </Box>
+        {(field.help || rangeHint || error) && (
+          <Typography variant="body2" color={error ? 'error.main' : 'text.secondary'} sx={{ mt: 0.25 }}>
+            {error || [field.help, rangeHint].filter(Boolean).join(' ')}
+          </Typography>
+        )}
+      </Box>
+      <Box sx={{ flexShrink: 0, display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>{control}</Box>
+    </Box>
+  );
+}
+
+export default function SettingsPage() {
   const { t } = useTranslation();
-  const theme = useTheme();
-  const { user, isLoading: authLoading } = useAuth();
-  const router = useRouter();
+  const { ready } = useGlobalAdminGuard();
+  const [tab, setTab] = useState('system');
+  const [saved, setSaved] = useState(null); // last values from the server
+  const [draft, setDraft] = useState(null); // values being edited
+  const [meta, setMeta] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [alert, setAlert] = useState({ show: false, message: '', severity: 'info' });
-  const [activeTab, setActiveTab] = useState('system');
-  const [settings, setSettings] = useState({
-    system: {
-      siteName: '',
-      siteUrl: '',
-      maintenanceMode: false,
-      allowRegistration: true,
-      requireEmailVerification: true,
-      sessionTimeout: 30,
-      maxLoginAttempts: 5,
-      lockoutDuration: 15
-    },
-    email: {
-      smtpHost: '',
-      smtpPort: 587,
-      smtpUser: '',
-      smtpSecure: true,
-      fromEmail: '',
-      fromName: ''
-    },
-    security: {
-      passwordMinLength: 8,
-      passwordRequireUppercase: true,
-      passwordRequireLowercase: true,
-      passwordRequireNumbers: true,
-      passwordRequireSpecialChars: true,
-      twoFactorEnabled: false,
-      rateLimitEnabled: true,
-      rateLimitRequests: 100,
-      rateLimitWindow: 15
-    },
-    notifications: {
-      emailNotifications: true,
-      systemAlerts: true,
-      securityAlerts: true,
-      maintenanceAlerts: true,
-      digestFrequency: 'daily'
-    },
-    storage: {
-      maxFileSize: 10,
-      allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png'],
-      storageProvider: 'local',
-      storageQuota: 1000
-    },
-    api: {
-      apiEnabled: true,
-      apiRateLimit: 1000,
-      apiRateLimitWindow: 60,
-      webhooksEnabled: false,
-      corsEnabled: true,
-      allowedOrigins: ['http://localhost:3000']
-    }
-  });
+  const [testing, setTesting] = useState(false);
+  const [notice, setNotice] = useState(null); // { severity, text }
+  const [fieldErrors, setFieldErrors] = useState({});
 
-  useEffect(() => {
-    if (!authLoading && user?.accountType !== 'GLOBAL_ADMIN') {
-      router.push('/dashboard');
-    }
-  }, [user, authLoading, router]);
-
-  useEffect(() => {
-    if (user?.accountType === 'GLOBAL_ADMIN') {
-      fetchSettings();
-    }
-  }, [user]);
-
-  const fetchSettings = async () => {
+  const load = useCallback(async () => {
+    setLoading(true);
+    setNotice(null);
     try {
-      setLoading(true);
-      const response = await fetch('/api/global-admin/settings');
-      if (response.ok) {
-        const data = await response.json();
-        setSettings(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching settings:', error);
-      showAlert('Failed to fetch settings', 'error');
+      const res = await fetch('/api/global-admin/settings', { cache: 'no-store' });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load settings');
+      setSaved(json.data);
+      setDraft(json.data);
+      setMeta(json.meta || {});
+      setFieldErrors({});
+    } catch (err) {
+      setNotice({ severity: 'error', text: err.message });
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (ready) load();
+  }, [ready, load]);
+
+  const section = SECTIONS.find((s) => s.id === tab);
+  const sectionMeta = meta[tab] || {};
+
+  const activeKeys = useMemo(
+    () => section.fields.filter((f) => sectionMeta[f.key]?.status === 'active').map((f) => f.key),
+    [section, sectionMeta]
+  );
+  const dirtyKeys = useMemo(() => {
+    if (!saved || !draft) return [];
+    return activeKeys.filter((k) => String(draft[tab]?.[k] ?? '') !== String(saved[tab]?.[k] ?? ''));
+  }, [activeKeys, draft, saved, tab]);
+  const dirtyTabs = useMemo(() => {
+    if (!saved || !draft) return new Set();
+    return new Set(
+      SECTIONS.filter((s) =>
+        s.fields.some(
+          (f) => meta[s.id]?.[f.key]?.status === 'active' && String(draft[s.id]?.[f.key] ?? '') !== String(saved[s.id]?.[f.key] ?? '')
+        )
+      ).map((s) => s.id)
+    );
+  }, [draft, saved, meta]);
+
+  const setField = (key, value) => {
+    setDraft((d) => ({ ...d, [tab]: { ...d[tab], [key]: value } }));
+    setFieldErrors((e) => {
+      if (!e[key]) return e;
+      const next = { ...e };
+      delete next[key];
+      return next;
+    });
   };
 
-  const handleRefresh = () => {
-    fetchSettings();
-  };
-
-  const showAlert = (message, severity = 'info') => {
-    setAlert({ show: true, message, severity });
-    setTimeout(() => setAlert({ show: false, message: '', severity: 'info' }), 5000);
-  };
-
-  const handleSettingChange = (category, field, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [field]: value
-      }
-    }));
-  };
-
-  const handleSaveSettings = async (category) => {
+  const save = async () => {
+    setSaving(true);
+    setNotice(null);
+    setFieldErrors({});
     try {
-      setSaving(true);
-      const response = await fetch('/api/global-admin/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          category,
-          settings: settings[category]
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        showAlert(`${category.charAt(0).toUpperCase() + category.slice(1)} settings saved successfully`, 'success');
-      } else {
-        showAlert(data.error || 'Failed to save settings', 'error');
+      const payload = {};
+      for (const key of activeKeys) {
+        const fieldDef = section.fields.find((f) => f.key === key);
+        const value = draft[tab][key];
+        payload[key] = fieldDef.type === 'number' ? Number(value) : value;
       }
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      showAlert('An error occurred while saving settings', 'error');
+      const res = await fetch('/api/global-admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category: tab, settings: payload }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        if (json.fieldErrors) setFieldErrors(json.fieldErrors);
+        throw new Error(json.error || 'Failed to save settings');
+      }
+      setSaved((s) => ({ ...s, [tab]: json.data }));
+      setDraft((d) => ({ ...d, [tab]: json.data }));
+      setNotice({ severity: 'success', text: json.changed?.length ? `${section.label} settings saved.` : 'No changes to save.' });
+    } catch (err) {
+      setNotice({ severity: 'error', text: err.message });
     } finally {
       setSaving(false);
     }
   };
 
-  const tabs = [
-    { id: 'system', label: 'System', icon: <SystemIcon /> },
-    { id: 'email', label: 'Email', icon: <EmailIcon /> },
-    { id: 'security', label: 'Security', icon: <SecurityIcon /> },
-    { id: 'notifications', label: 'Notifications', icon: <NotificationsIcon /> },
-    { id: 'storage', label: 'Storage', icon: <StorageIcon /> },
-    { id: 'api', label: 'API', icon: <ApiIcon /> }
-  ];
+  const discard = () => {
+    setDraft((d) => ({ ...d, [tab]: saved[tab] }));
+    setFieldErrors({});
+  };
 
-  if (authLoading) {
-    return null;
-  }
+  const sendTest = async () => {
+    setTesting(true);
+    setNotice(null);
+    try {
+      const res = await fetch('/api/global-admin/settings/test-email', { method: 'POST' });
+      const json = await res.json();
+      setNotice({ severity: json.success ? 'success' : 'error', text: json.message || json.error || 'Test failed' });
+    } catch (err) {
+      setNotice({ severity: 'error', text: err.message });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  if (!ready) return null;
+
+  const activeFields = section.fields.filter((f) => sectionMeta[f.key]?.status !== 'coming_soon');
+  const plannedFields = section.fields.filter((f) => sectionMeta[f.key]?.status === 'coming_soon');
+  const turningOnMaintenance = tab === 'system' && draft?.system?.maintenanceMode && !saved?.system?.maintenanceMode;
 
   return (
     <GlobalAdminLayout>
-      <Container maxWidth="xl" sx={{ pt: { xs: 3, sm: 4, md: 5 } }}>
-        {/* Header */}
-        <Box sx={{ 
-          mb: 4,
-          pb: 3,
-          borderBottom: '2px solid',
-          borderColor: 'divider'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-            <Box>
-              <Typography 
-                variant="h4" 
-                sx={{ 
-                  fontWeight: 700, 
-                  mb: 1,
-                  color: theme.palette.text.primary,
-                  letterSpacing: '-0.02em'
-                }}
-              >
-                {t('global_admin.settings')}
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('global_admin.settings_subtitle')}
-              </Typography>
-            </Box>
-            <Tooltip title="Refresh settings">
-              <IconButton 
-                onClick={handleRefresh} 
-                sx={{ 
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  '&:hover': { bgcolor: 'primary.dark' },
-                  boxShadow: 2
-                }}
-              >
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
+      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 } }}>
+        <PageHeader
+          title={t('global_admin.settings', 'System Settings')}
+          subtitle={t('global_admin.settings_subtitle')}
+          actions={
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<RefreshIcon />}
+              onClick={load}
+              disabled={loading || saving}
+              sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 1.5 }}
+            >
+              Reload
+            </Button>
+          }
+        />
 
-        {loading && <LinearProgress sx={{ mb: 3 }} />}
-
-        {/* Alert */}
-        {alert.show && (
-          <Alert severity={alert.severity} sx={{ mb: 3, borderRadius: 2 }} onClose={() => setAlert({ ...alert, show: false })}>
-            {alert.message}
+        {saved?.system?.maintenanceMode && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Maintenance mode is <strong>on</strong>. Only global admins can use HospitiumRIS right now.
+          </Alert>
+        )}
+        {notice && (
+          <Alert severity={notice.severity} sx={{ mb: 2 }} onClose={() => setNotice(null)}>
+            {notice.text}
           </Alert>
         )}
 
-        {/* Settings Tabs */}
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 2.5, 
-          mb: 4,
-          flexWrap: { xs: 'wrap', sm: 'nowrap' },
-          '& > *': {
-            flex: {
-              xs: '1 1 calc(50% - 10px)',
-              sm: '1 1 0'
-            },
-            minWidth: 0
-          }
-        }}>
-          {tabs.map((tab) => (
-            <Paper 
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              sx={{ 
-                p: 2, 
-                borderRadius: 2,
-                bgcolor: activeTab === tab.id ? theme.palette.primary.main : 'background.paper',
-                color: activeTab === tab.id ? 'white' : 'text.primary',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  bgcolor: activeTab === tab.id ? theme.palette.primary.dark : 'action.hover',
-                  transform: 'translateY(-2px)',
-                  boxShadow: 3
-                },
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 1
-              }}
-            >
-              {React.cloneElement(tab.icon, { 
-                sx: { fontSize: 24, opacity: activeTab === tab.id ? 1 : 0.7 } 
-              })}
-              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
-                {tab.label}
-              </Typography>
-            </Paper>
-          ))}
-        </Box>
+        <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}>
+          <Tabs
+            value={tab}
+            onChange={(_, v) => {
+              setTab(v);
+              setFieldErrors({});
+            }}
+            variant="scrollable"
+            allowScrollButtonsMobile
+            sx={{
+              px: { xs: 1, md: 2 },
+              borderBottom: 1,
+              borderColor: 'divider',
+              '& .MuiTab-root': { textTransform: 'none', fontWeight: 600, minHeight: 52, fontSize: '0.875rem' },
+            }}
+          >
+            {SECTIONS.map((s) => {
+              const Icon = s.icon;
+              return (
+                <Tab
+                  key={s.id}
+                  value={s.id}
+                  icon={<Icon sx={{ fontSize: 18 }} />}
+                  iconPosition="start"
+                  label={
+                    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+                      {s.label}
+                      {dirtyTabs.has(s.id) && (
+                        <Box component="span" title="Unsaved changes" sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: 'warning.main' }} />
+                      )}
+                    </Box>
+                  }
+                />
+              );
+            })}
+          </Tabs>
 
-        {/* Settings Content */}
-        <Paper sx={{ p: 4, borderRadius: 2 }}>
-          {/* System Settings */}
-          {activeTab === 'system' && (
-            <Box>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-                System Configuration
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <TextField
-                  fullWidth
-                  label="Site Name"
-                  value={settings.system.siteName}
-                  onChange={(e) => handleSettingChange('system', 'siteName', e.target.value)}
-                />
-                <TextField
-                  fullWidth
-                  label="Site URL"
-                  value={settings.system.siteUrl}
-                  onChange={(e) => handleSettingChange('system', 'siteUrl', e.target.value)}
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.system.maintenanceMode}
-                      onChange={(e) => handleSettingChange('system', 'maintenanceMode', e.target.checked)}
-                    />
-                  }
-                  label="Maintenance Mode"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.system.allowRegistration}
-                      onChange={(e) => handleSettingChange('system', 'allowRegistration', e.target.checked)}
-                    />
-                  }
-                  label="Allow User Registration"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.system.requireEmailVerification}
-                      onChange={(e) => handleSettingChange('system', 'requireEmailVerification', e.target.checked)}
-                    />
-                  }
-                  label="Require Email Verification"
-                />
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Session Timeout (minutes)"
-                  value={settings.system.sessionTimeout}
-                  onChange={(e) => handleSettingChange('system', 'sessionTimeout', parseInt(e.target.value))}
-                />
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Max Login Attempts"
-                  value={settings.system.maxLoginAttempts}
-                  onChange={(e) => handleSettingChange('system', 'maxLoginAttempts', parseInt(e.target.value))}
-                />
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Account Lockout Duration (minutes)"
-                  value={settings.system.lockoutDuration}
-                  onChange={(e) => handleSettingChange('system', 'lockoutDuration', parseInt(e.target.value))}
-                />
-              </Box>
-              <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  variant="contained"
-                  startIcon={<SaveIcon />}
-                  onClick={() => handleSaveSettings('system')}
-                  disabled={saving}
-                >
-                  {saving ? 'Saving...' : 'Save System Settings'}
-                </Button>
-              </Box>
+          {loading && saved && <LinearProgress sx={{ height: 2 }} />}
+
+          <Box sx={{ px: { xs: 2, md: 3 }, py: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              {section.description}
+            </Typography>
+          </Box>
+
+          {!draft ? (
+            <Box sx={{ px: 3, pb: 3 }}>
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} height={56} />
+              ))}
             </Box>
-          )}
-
-          {/* Email Settings */}
-          {activeTab === 'email' && (
-            <Box>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-                Email Configuration
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <TextField
-                  fullWidth
-                  label="SMTP Host"
-                  value={settings.email.smtpHost}
-                  onChange={(e) => handleSettingChange('email', 'smtpHost', e.target.value)}
-                />
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="SMTP Port"
-                  value={settings.email.smtpPort}
-                  onChange={(e) => handleSettingChange('email', 'smtpPort', parseInt(e.target.value))}
-                />
-                <TextField
-                  fullWidth
-                  label="SMTP Username"
-                  value={settings.email.smtpUser}
-                  onChange={(e) => handleSettingChange('email', 'smtpUser', e.target.value)}
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.email.smtpSecure}
-                      onChange={(e) => handleSettingChange('email', 'smtpSecure', e.target.checked)}
-                    />
-                  }
-                  label="Use Secure Connection (TLS)"
-                />
-                <TextField
-                  fullWidth
-                  label="From Email Address"
-                  type="email"
-                  value={settings.email.fromEmail}
-                  onChange={(e) => handleSettingChange('email', 'fromEmail', e.target.value)}
-                />
-                <TextField
-                  fullWidth
-                  label="From Name"
-                  value={settings.email.fromName}
-                  onChange={(e) => handleSettingChange('email', 'fromName', e.target.value)}
-                />
-              </Box>
-              <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  variant="contained"
-                  startIcon={<SaveIcon />}
-                  onClick={() => handleSaveSettings('email')}
-                  disabled={saving}
-                >
-                  {saving ? 'Saving...' : 'Save Email Settings'}
-                </Button>
-              </Box>
-            </Box>
-          )}
-
-          {/* Security Settings */}
-          {activeTab === 'security' && (
-            <Box>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-                Security Configuration
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Minimum Password Length"
-                  value={settings.security.passwordMinLength}
-                  onChange={(e) => handleSettingChange('security', 'passwordMinLength', parseInt(e.target.value))}
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.security.passwordRequireUppercase}
-                      onChange={(e) => handleSettingChange('security', 'passwordRequireUppercase', e.target.checked)}
-                    />
-                  }
-                  label="Require Uppercase Letters"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.security.passwordRequireLowercase}
-                      onChange={(e) => handleSettingChange('security', 'passwordRequireLowercase', e.target.checked)}
-                    />
-                  }
-                  label="Require Lowercase Letters"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.security.passwordRequireNumbers}
-                      onChange={(e) => handleSettingChange('security', 'passwordRequireNumbers', e.target.checked)}
-                    />
-                  }
-                  label="Require Numbers"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.security.passwordRequireSpecialChars}
-                      onChange={(e) => handleSettingChange('security', 'passwordRequireSpecialChars', e.target.checked)}
-                    />
-                  }
-                  label="Require Special Characters"
-                />
-                <Divider sx={{ my: 2 }} />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.security.twoFactorEnabled}
-                      onChange={(e) => handleSettingChange('security', 'twoFactorEnabled', e.target.checked)}
-                    />
-                  }
-                  label="Enable Two-Factor Authentication"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.security.rateLimitEnabled}
-                      onChange={(e) => handleSettingChange('security', 'rateLimitEnabled', e.target.checked)}
-                    />
-                  }
-                  label="Enable Rate Limiting"
-                />
-                {settings.security.rateLimitEnabled && (
-                  <>
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="Rate Limit (requests)"
-                      value={settings.security.rateLimitRequests}
-                      onChange={(e) => handleSettingChange('security', 'rateLimitRequests', parseInt(e.target.value))}
-                    />
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="Rate Limit Window (minutes)"
-                      value={settings.security.rateLimitWindow}
-                      onChange={(e) => handleSettingChange('security', 'rateLimitWindow', parseInt(e.target.value))}
-                    />
-                  </>
-                )}
-              </Box>
-              <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  variant="contained"
-                  startIcon={<SaveIcon />}
-                  onClick={() => handleSaveSettings('security')}
-                  disabled={saving}
-                >
-                  {saving ? 'Saving...' : 'Save Security Settings'}
-                </Button>
-              </Box>
-            </Box>
-          )}
-
-          {/* Notifications Settings */}
-          {activeTab === 'notifications' && (
-            <Box>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-                Notification Preferences
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.notifications.emailNotifications}
-                      onChange={(e) => handleSettingChange('notifications', 'emailNotifications', e.target.checked)}
-                    />
-                  }
-                  label="Enable Email Notifications"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.notifications.systemAlerts}
-                      onChange={(e) => handleSettingChange('notifications', 'systemAlerts', e.target.checked)}
-                    />
-                  }
-                  label="System Alerts"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.notifications.securityAlerts}
-                      onChange={(e) => handleSettingChange('notifications', 'securityAlerts', e.target.checked)}
-                    />
-                  }
-                  label="Security Alerts"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.notifications.maintenanceAlerts}
-                      onChange={(e) => handleSettingChange('notifications', 'maintenanceAlerts', e.target.checked)}
-                    />
-                  }
-                  label="Maintenance Alerts"
-                />
-                <FormControl fullWidth>
-                  <InputLabel>Digest Frequency</InputLabel>
-                  <Select
-                    value={settings.notifications.digestFrequency}
-                    label="Digest Frequency"
-                    onChange={(e) => handleSettingChange('notifications', 'digestFrequency', e.target.value)}
-                  >
-                    <MenuItem value="daily">Daily</MenuItem>
-                    <MenuItem value="weekly">Weekly</MenuItem>
-                    <MenuItem value="never">Never</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-              <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  variant="contained"
-                  startIcon={<SaveIcon />}
-                  onClick={() => handleSaveSettings('notifications')}
-                  disabled={saving}
-                >
-                  {saving ? 'Saving...' : 'Save Notification Settings'}
-                </Button>
-              </Box>
-            </Box>
-          )}
-
-          {/* Storage Settings */}
-          {activeTab === 'storage' && (
-            <Box>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-                Storage Configuration
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Max File Size (MB)"
-                  value={settings.storage.maxFileSize}
-                  onChange={(e) => handleSettingChange('storage', 'maxFileSize', parseInt(e.target.value))}
-                />
-                <FormControl fullWidth>
-                  <InputLabel>Storage Provider</InputLabel>
-                  <Select
-                    value={settings.storage.storageProvider}
-                    label="Storage Provider"
-                    onChange={(e) => handleSettingChange('storage', 'storageProvider', e.target.value)}
-                  >
-                    <MenuItem value="local">Local Storage</MenuItem>
-                    <MenuItem value="s3">Amazon S3</MenuItem>
-                    <MenuItem value="azure">Azure Blob Storage</MenuItem>
-                  </Select>
-                </FormControl>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Storage Quota (GB)"
-                  value={settings.storage.storageQuota}
-                  onChange={(e) => handleSettingChange('storage', 'storageQuota', parseInt(e.target.value))}
-                />
-                <Box>
-                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-                    Allowed File Types
+          ) : (
+            <>
+              {activeFields.length === 0 && (
+                <Box sx={{ px: { xs: 2, md: 3 }, py: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Nothing in this section can be changed yet. The options below are planned.
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    {settings.storage.allowedFileTypes.map((type, index) => (
-                      <Chip key={index} label={type} size="small" />
-                    ))}
-                  </Box>
                 </Box>
-              </Box>
-              <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  variant="contained"
-                  startIcon={<SaveIcon />}
-                  onClick={() => handleSaveSettings('storage')}
-                  disabled={saving}
-                >
-                  {saving ? 'Saving...' : 'Save Storage Settings'}
-                </Button>
-              </Box>
-            </Box>
-          )}
+              )}
 
-          {/* API Settings */}
-          {activeTab === 'api' && (
-            <Box>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-                API Configuration
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.api.apiEnabled}
-                      onChange={(e) => handleSettingChange('api', 'apiEnabled', e.target.checked)}
-                    />
-                  }
-                  label="Enable API Access"
+              {activeFields.map((field) => (
+                <FieldRow
+                  key={field.key}
+                  field={field}
+                  value={draft[tab]?.[field.key]}
+                  status={sectionMeta[field.key]?.status}
+                  meta={sectionMeta[field.key]}
+                  error={fieldErrors[field.key]}
+                  onChange={(v) => setField(field.key, v)}
                 />
-                {settings.api.apiEnabled && (
-                  <>
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="API Rate Limit (requests)"
-                      value={settings.api.apiRateLimit}
-                      onChange={(e) => handleSettingChange('api', 'apiRateLimit', parseInt(e.target.value))}
-                    />
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="API Rate Limit Window (minutes)"
-                      value={settings.api.apiRateLimitWindow}
-                      onChange={(e) => handleSettingChange('api', 'apiRateLimitWindow', parseInt(e.target.value))}
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={settings.api.webhooksEnabled}
-                          onChange={(e) => handleSettingChange('api', 'webhooksEnabled', e.target.checked)}
-                        />
-                      }
-                      label="Enable Webhooks"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={settings.api.corsEnabled}
-                          onChange={(e) => handleSettingChange('api', 'corsEnabled', e.target.checked)}
-                        />
-                      }
-                      label="Enable CORS"
-                    />
-                  </>
-                )}
-              </Box>
-              <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  variant="contained"
-                  startIcon={<SaveIcon />}
-                  onClick={() => handleSaveSettings('api')}
-                  disabled={saving}
+              ))}
+
+              {tab === 'email' && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 2,
+                    px: { xs: 2, md: 3 },
+                    py: 2,
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'action.hover',
+                  }}
                 >
-                  {saving ? 'Saving...' : 'Save API Settings'}
-                </Button>
-              </Box>
-            </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <StatusPill
+                      label={draft.email.smtpConfigured ? 'SMTP configured' : 'SMTP not configured'}
+                      color={draft.email.smtpConfigured ? 'success' : 'warning'}
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                      Sends a test message to your own email address.
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<SendIcon />}
+                    onClick={sendTest}
+                    disabled={testing || !draft.email.smtpConfigured || dirtyKeys.length > 0}
+                    sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 1.5 }}
+                  >
+                    {testing ? 'Sending…' : 'Send test email'}
+                  </Button>
+                </Box>
+              )}
+
+              {plannedFields.length > 0 && (
+                <>
+                  <Box sx={{ px: { xs: 2, md: 3 }, pt: 3, pb: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.disabled' }}>
+                      Planned: not active yet
+                    </Typography>
+                  </Box>
+                  {plannedFields.map((field) => (
+                    <FieldRow
+                      key={field.key}
+                      field={field}
+                      value={draft[tab]?.[field.key]}
+                      status="coming_soon"
+                      meta={sectionMeta[field.key]}
+                      onChange={() => {}}
+                    />
+                  ))}
+                </>
+              )}
+
+              {activeKeys.length > 0 && (
+                <Box
+                  sx={{
+                    position: 'sticky',
+                    bottom: 0,
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    gap: 1.5,
+                    px: { xs: 2, md: 3 },
+                    py: 1.5,
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'background.paper',
+                  }}
+                >
+                  {turningOnMaintenance && (
+                    <Typography variant="body2" color="warning.main" sx={{ mr: 'auto', fontWeight: 500 }}>
+                      Saving will lock out everyone except global admins.
+                    </Typography>
+                  )}
+                  {!turningOnMaintenance && dirtyKeys.length > 0 && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mr: 'auto' }}>
+                      {dirtyKeys.length} unsaved {dirtyKeys.length === 1 ? 'change' : 'changes'}
+                    </Typography>
+                  )}
+                  <Button onClick={discard} disabled={!dirtyKeys.length || saving} sx={{ textTransform: 'none', fontWeight: 600 }}>
+                    Discard
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color={turningOnMaintenance ? 'warning' : 'primary'}
+                    startIcon={<SaveIcon />}
+                    onClick={save}
+                    disabled={!dirtyKeys.length || saving}
+                    sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 1.5 }}
+                  >
+                    {saving ? 'Saving…' : `Save ${section.label.toLowerCase()} settings`}
+                  </Button>
+                </Box>
+              )}
+            </>
           )}
         </Paper>
       </Container>
     </GlobalAdminLayout>
   );
-};
-
-export default SettingsPage;
+}
