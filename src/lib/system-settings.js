@@ -33,7 +33,8 @@ export const SETTINGS_SCHEMA = {
     },
     allowRegistration: { type: 'boolean', default: true, status: 'active' },
     requireEmailVerification: { type: 'boolean', default: true, status: 'coming_soon' },
-    sessionTimeout: { type: 'int', default: 30, min: 5, max: 1440, status: 'coming_soon' },
+    // Idle limit for admin roles (see lib/sessions.js); other users: 24 h.
+    sessionTimeout: { type: 'int', default: 30, min: 5, max: 1440, status: 'active' },
     maxLoginAttempts: { type: 'int', default: 5, min: 1, max: 50, status: 'coming_soon' },
     lockoutDuration: { type: 'int', default: 15, min: 1, max: 1440, status: 'coming_soon' },
   },

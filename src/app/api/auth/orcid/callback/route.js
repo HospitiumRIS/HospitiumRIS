@@ -335,7 +335,7 @@ export async function GET(request) {
       const rememberMeCookie = cookieStore.get('orcid_remember_me');
       const rememberMe = rememberMeCookie?.value === 'true';
       
-      setSessionCookie(response, existingUser.id, { rememberMe });
+      await setSessionCookie(response, existingUser.id, { rememberMe, request });
       if (rememberMe) {
         response.cookies.delete('orcid_remember_me');
       }

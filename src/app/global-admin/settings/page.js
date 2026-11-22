@@ -55,7 +55,12 @@ const SECTIONS = [
       { key: 'maintenanceMessage', label: 'Maintenance message', type: 'multiline', help: 'Shown to users while maintenance mode is on.' },
       { key: 'allowRegistration', label: 'Allow new registrations', type: 'switch', help: 'When off, the sign-up page is closed and the register API refuses new accounts.' },
       { key: 'requireEmailVerification', label: 'Require email verification', type: 'switch' },
-      { key: 'sessionTimeout', label: 'Session timeout (minutes)', type: 'number' },
+      {
+        key: 'sessionTimeout',
+        label: 'Admin session timeout (minutes)',
+        type: 'number',
+        help: 'Admin accounts are signed out after this long without activity. Researchers are signed out after 24 hours idle; "Remember me" sessions end after 30 days at most.',
+      },
       { key: 'maxLoginAttempts', label: 'Max failed sign-ins before lockout', type: 'number' },
       { key: 'lockoutDuration', label: 'Lockout duration (minutes)', type: 'number' },
     ],

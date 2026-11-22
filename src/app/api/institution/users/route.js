@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revokeUserSessions } from '@/lib/sessions';
 import prisma from '@/lib/prisma';
 import {
   requireInstitutionPortalAccess,
@@ -145,6 +146,11 @@ export async function PATCH(request) {
         updatedAt: true,
       },
     });
+
+    // Suspension or role change: end the user's existing sessions.
+    if ((status && status !== 'ACTIVE') || accountType) {
+      await revokeUserSessions(userId);
+    }
 
     return NextResponse.json({
       success: true,

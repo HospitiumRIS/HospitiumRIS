@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { requireGlobalAdmin } from '@/lib/require-global-admin';
 import { hashPassword, validatePassword } from '@/lib/auth';
 import { getPasswordPolicy } from '@/lib/system-settings';
+import { revokeUserSessions } from '@/lib/sessions';
 import {
   loadInstitutionAdmins,
   serializeAdmin,
@@ -290,6 +291,8 @@ async function handlePATCH(request, { params }) {
         where: { id: admin.id },
         data: { passwordHash: await hashPassword(body.password) },
       });
+      // A reset password must not leave old sessions signed in.
+      await revokeUserSessions(admin.id);
 
       return NextResponse.json({
         success: true,

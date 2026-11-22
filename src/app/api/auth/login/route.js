@@ -289,7 +289,7 @@ export async function POST(request) {
       if (blockedOrcid) return blockedOrcid;
 
       // Set session cookie; the ORCID proof has served its purpose
-      setSessionCookie(response, user.id, { rememberMe: rememberMe || false });
+      await setSessionCookie(response, user.id, { rememberMe: rememberMe || false, request });
       clearOrcidProofCookie(response);
 
       return response;
@@ -573,7 +573,7 @@ export async function POST(request) {
     if (blocked) return blocked;
 
     // Set session cookie (simple approach - in production, use proper JWT/session management)
-    setSessionCookie(response, user.id, { rememberMe: rememberMe || false });
+    await setSessionCookie(response, user.id, { rememberMe: rememberMe || false, request });
 
     return response;
 

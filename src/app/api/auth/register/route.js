@@ -347,7 +347,7 @@ export async function POST(request) {
     }, { status: 201 });
 
     if (orcidData) {
-      setSessionCookie(response, result.id);
+      await setSessionCookie(response, result.id, { request });
       clearOrcidProofCookie(response);
       await recordAuthEvent(request, { action: 'LOGIN_SUCCESS', user: result, method: 'orcid' });
     }

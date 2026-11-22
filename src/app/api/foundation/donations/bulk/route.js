@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getSessionRef } from '@/lib/auth-server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 import { maskName } from '@/lib/donor-privacy';
@@ -16,7 +17,7 @@ export async function POST(request) {
       };
     } else {
       const cookieStore = await cookies();
-      const sessionCookie = cookieStore.get('hospitium_session');
+      const sessionCookie = await getSessionRef();
       if (!sessionCookie?.value) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }

@@ -7,6 +7,7 @@ import {
 } from '@/lib/institution-admin';
 import { hashPassword, validateEmail, validatePassword } from '@/lib/auth';
 import { getPasswordPolicy } from '@/lib/system-settings';
+import { revokeUserSessions } from '@/lib/sessions';
 import { normalizeOrcid } from '@/lib/orcid';
 import { softDeleteUser, ANONYMIZE_AFTER_DAYS } from '@/lib/user-lifecycle';
 import { logInfo } from '@/utils/activityLogger';
@@ -203,6 +204,13 @@ async function handlePATCH(request, { params }) {
       where: { id: existingUser.id },
       data,
     });
+
+    // New password, suspension or role change: end the user's existing sessions.
+    const roleChanged = data.accountType && data.accountType !== existingUser.accountType;
+    const deactivated = data.status && data.status !== 'ACTIVE';
+    if (data.passwordHash || roleChanged || deactivated) {
+      await revokeUserSessions(existingUser.id);
+    }
 
     return NextResponse.json({
       success: true,
