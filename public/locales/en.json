@@ -1906,7 +1906,21 @@
     "users_count": "Users",
     "verified_domains": "Domains",
     "view_logs": "View Logs",
-    "website": "Website"
+    "website": "Website",
+    "nav_overview": "Overview",
+    "nav_institutions": "Institutions",
+    "nav_monitoring": "Monitoring",
+    "nav_platform": "Platform",
+    "role_global_admin": "Global administrator",
+    "open_menu": "Open menu",
+    "status_unknown": "Unknown",
+    "status_unavailable": "Health data unavailable",
+    "high_usage": "High {{list}}",
+    "active_share": "{{pct}}% of all users",
+    "last_updated": "Updated",
+    "view_details": "View details",
+    "view_all": "View all",
+    "system_actor": "System"
   },
   "hero": {
     "cta_learn": "Learn More",
