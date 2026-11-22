@@ -1,479 +1,570 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
   Typography,
-  Card,
-  CardContent,
-  Grid,
-  LinearProgress,
-  IconButton,
-  Tooltip,
-  Button,
-  Avatar,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
+  Button,
+  Chip,
+  LinearProgress,
+  Skeleton,
+  ButtonBase,
   Divider
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import {
-  TrendingUp as TrendingUpIcon,
-  Business as InstitutionsIcon,
-  People as UsersIcon,
-  CheckCircle as CheckIcon,
-  Warning as WarningIcon,
-  Memory as MemoryIcon,
-  Storage as StorageIcon,
-  Speed as SpeedIcon,
+  ApartmentOutlined as InstitutionsIcon,
+  PeopleAltOutlined as UsersIcon,
+  HowToRegOutlined as ActiveIcon,
+  HealthAndSafetyOutlined as HealthIcon,
   Refresh as RefreshIcon,
-  HealthAndSafety as HealthIcon,
-  Article as ManuscriptsIcon,
-  Science as ResearchIcon,
-  AccountBalance as FoundationIcon
+  StorageOutlined as StorageIcon,
+  MonitorHeartOutlined as OperationsIcon,
+  HistoryOutlined as AuditIcon,
+  ChevronRight as ChevronRightIcon,
+  CheckCircleRounded as SuccessIcon,
+  ErrorRounded as FailureIcon,
+  ArrowForward as ArrowForwardIcon
 } from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import GlobalAdminLayout from '../../components/GlobalAdmin/GlobalAdminLayout';
 
+const EMPTY_STATS = { totalInstitutions: 0, totalUsers: 0, activeUsers: 0, totalManuscripts: 0 };
+const EMPTY_HEALTH = { cpuUsage: 0, memoryUsage: 0, diskUsage: 0, status: 'unknown' };
+const HEALTH_LIMIT = 80;
+
+// Green below 60%, amber up to the health limit, red above it.
+const usageColor = (value) => (value >= HEALTH_LIMIT ? 'error' : value >= 60 ? 'warning' : 'success');
+
+const formatRelative = (date, locale) => {
+  const diffSeconds = Math.round((new Date(date).getTime() - Date.now()) / 1000);
+  const units = [
+    ['day', 86400],
+    ['hour', 3600],
+    ['minute', 60]
+  ];
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  for (const [unit, seconds] of units) {
+    if (Math.abs(diffSeconds) >= seconds) return rtf.format(Math.round(diffSeconds / seconds), unit);
+  }
+  return rtf.format(diffSeconds, 'second');
+};
+
+const formatUptime = (hours) => {
+  const h = Number(hours) || 0;
+  const days = Math.floor(h / 24);
+  return days > 0 ? `${days}d ${h % 24}h` : `${h}h`;
+};
+
+/* ---------- Small presentational pieces ---------- */
+
+const SectionCard = ({ title, action, children, sx }) => (
+  <Paper
+    elevation={0}
+    sx={{
+      border: '1px solid',
+      borderColor: 'divider',
+      borderRadius: 2,
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      ...sx
+    }}
+  >
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 2,
+        px: 3,
+        py: 2,
+        borderBottom: '1px solid',
+        borderColor: 'divider'
+      }}
+    >
+      <Typography sx={{ fontWeight: 600, fontSize: '1rem' }}>{title}</Typography>
+      {action}
+    </Box>
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</Box>
+  </Paper>
+);
+
+const StatCard = ({ label, value, caption, icon: Icon, color, loading }) => {
+  const theme = useTheme();
+  const main = theme.palette[color]?.main || theme.palette.primary.main;
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 10px)', lg: '1 1 0' },
+        minWidth: 0,
+        p: 2.5,
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2,
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        gap: 2
+      }}
+    >
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }} noWrap>
+          {label}
+        </Typography>
+        {loading ? (
+          <Skeleton width={72} height={44} />
+        ) : (
+          <Typography sx={{ fontSize: '1.875rem', fontWeight: 700, lineHeight: 1.25, mt: 0.5 }} noWrap>
+            {value}
+          </Typography>
+        )}
+        <Box sx={{ mt: 0.5, color: 'text.secondary', fontSize: '0.8rem' }}>{caption}</Box>
+      </Box>
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          borderRadius: 1.5,
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: alpha(main, 0.12),
+          color: main
+        }}
+      >
+        <Icon />
+      </Box>
+    </Paper>
+  );
+};
+
+const UsageMeter = ({ label, value, loading }) => (
+  <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 0' }, minWidth: 0 }}>
+    <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', mb: 1 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+        {label}
+      </Typography>
+      {loading ? (
+        <Skeleton width={36} />
+      ) : (
+        <Typography sx={{ fontWeight: 700, fontSize: '1.125rem' }}>{value}%</Typography>
+      )}
+    </Box>
+    <LinearProgress
+      variant={loading ? 'indeterminate' : 'determinate'}
+      value={Math.min(value, 100)}
+      color={usageColor(value)}
+      sx={{ height: 6, borderRadius: 3 }}
+    />
+  </Box>
+);
+
+const InfoRow = ({ label, children }) => (
+  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, py: 1.25 }}>
+    <Typography variant="body2" color="text.secondary">
+      {label}
+    </Typography>
+    <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'right' }} component="div">
+      {children}
+    </Typography>
+  </Box>
+);
+
+/* ---------- Page ---------- */
+
 const GlobalAdminPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [stats, setStats] = useState({});
-  const [systemHealth, setSystemHealth] = useState({});
+  const [stats, setStats] = useState(EMPTY_STATS);
+  const [systemHealth, setSystemHealth] = useState(EMPTY_HEALTH);
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
-    
     if (!user) {
       router.push('/login');
       return;
     }
-    
     if (user.accountType !== 'GLOBAL_ADMIN') {
       router.push('/dashboard');
-      return;
     }
   }, [user, router, authLoading]);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const response = await fetch('/api/global-admin/dashboard-stats');
-        
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data.stats || {});
-          setSystemHealth(data.systemHealth || {});
-          setRecentActivity(data.recentActivity || []);
-        } else {
-          setStats({
-            totalInstitutions: 0,
-            totalUsers: 0,
-            activeUsers: 0,
-            totalManuscripts: 0
-          });
-          setSystemHealth({
-            cpuUsage: 0,
-            memoryUsage: 0,
-            diskUsage: 0,
-            status: 'unknown'
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setStats({
-          totalInstitutions: 0,
-          totalUsers: 0,
-          activeUsers: 0,
-          totalManuscripts: 0
-        });
-        setSystemHealth({
-          cpuUsage: 0,
-          memoryUsage: 0,
-          diskUsage: 0,
-          status: 'unknown'
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (user?.accountType === 'GLOBAL_ADMIN') {
-      fetchDashboardData();
-    }
-  }, [user]);
-
-  const handleRefresh = () => {
+  const fetchDashboardData = useCallback(async () => {
     setLoading(true);
-    window.location.reload();
-  };
+    const [statsResult, activityResult] = await Promise.allSettled([
+      fetch('/api/global-admin/dashboard-stats', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)),
+      fetch('/api/global-admin/audit?pageSize=6', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null))
+    ]);
 
-  if (!user || user.accountType !== 'GLOBAL_ADMIN') {
-    return null;
-  }
+    const data = statsResult.status === 'fulfilled' ? statsResult.value : null;
+    setStats(data?.stats || EMPTY_STATS);
+    setSystemHealth(data?.systemHealth || EMPTY_HEALTH);
+
+    const activity = activityResult.status === 'fulfilled' ? activityResult.value : null;
+    setRecentActivity(activity?.success ? activity.data?.events || [] : []);
+
+    setLastUpdated(new Date());
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (user?.accountType === 'GLOBAL_ADMIN') fetchDashboardData();
+  }, [user, fetchDashboardData]);
+
+  if (!user || user.accountType !== 'GLOBAL_ADMIN') return null;
+
+  const locale = i18n?.language || undefined;
+  const isHealthy = systemHealth.status === 'healthy';
+  const isUnknown = systemHealth.status === 'unknown';
+  const overLimit = [
+    [t('global_admin.cpu_usage'), systemHealth.cpuUsage],
+    [t('global_admin.memory_usage'), systemHealth.memoryUsage],
+    [t('global_admin.disk_usage'), systemHealth.diskUsage]
+  ]
+    .filter(([, v]) => (v || 0) >= HEALTH_LIMIT)
+    .map(([label]) => label);
+
+  const statusColor = isUnknown ? 'text.disabled' : isHealthy ? 'success.main' : 'warning.main';
+  const statusLabel = isUnknown
+    ? t('global_admin.status_unknown', 'Unknown')
+    : isHealthy
+      ? t('global_admin.healthy')
+      : t('common.warning');
+  const statusCaption = isUnknown
+    ? t('global_admin.status_unavailable', 'Health data unavailable')
+    : isHealthy
+      ? t('global_admin.all_systems_operational')
+      : t('global_admin.high_usage', { list: overLimit.join(', '), defaultValue: 'High {{list}}' });
+
+  const activeShare = stats.totalUsers ? Math.round((stats.activeUsers / stats.totalUsers) * 100) : 0;
+
+  const quickActions = [
+    { label: t('global_admin.manage_institutions'), icon: InstitutionsIcon, path: '/global-admin/institutions' },
+    { label: t('global_admin.operations', 'Operations'), icon: OperationsIcon, path: '/global-admin/operations' },
+    { label: t('global_admin.system_health_check'), icon: HealthIcon, path: '/global-admin/health' },
+    { label: t('global_admin.database_management'), icon: StorageIcon, path: '/global-admin/database' },
+    { label: t('global_admin.audit_log', 'Audit log'), icon: AuditIcon, path: '/global-admin/audit' }
+  ];
 
   return (
     <GlobalAdminLayout>
-      <Container maxWidth="xl" sx={{ pt: { xs: 3, sm: 4, md: 5 } }}>
+      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4 } }}>
         {/* Header */}
-        <Box sx={{ 
-          mb: 4,
-          pb: 3,
-          borderBottom: '2px solid',
-          borderColor: 'divider'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box>
-              <Typography 
-                variant="h4" 
-                sx={{ 
-                  fontWeight: 700, 
-                  mb: 1,
-                  color: theme.palette.text.primary,
-                  letterSpacing: '-0.02em'
-                }}
-              >
-                {t('global_admin.system_dashboard')}
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            justifyContent: 'space-between',
+            gap: 2,
+            mb: 3
+          }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              component="h1"
+              sx={{ fontSize: { xs: '1.5rem', md: '1.75rem' }, fontWeight: 700, letterSpacing: '-0.02em' }}
+            >
+              {t('global_admin.system_dashboard')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {t('global_admin.system_health_label')}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            {lastUpdated && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                {t('global_admin.last_updated', 'Updated')}{' '}
+                {lastUpdated.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
               </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('global_admin.system_health_label')}
-              </Typography>
-            </Box>
-            <Tooltip title={t('global_admin.refresh_data')}>
-              <IconButton
-                onClick={handleRefresh} 
-                sx={{ 
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  '&:hover': { bgcolor: 'primary.dark' },
-                  boxShadow: 2
-                }}
-              >
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
+            )}
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<RefreshIcon />}
+              onClick={fetchDashboardData}
+              disabled={loading}
+              sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 1.5 }}
+            >
+              {t('global_admin.refresh_data')}
+            </Button>
           </Box>
         </Box>
 
-        {loading && <LinearProgress sx={{ mb: 3 }} />}
-
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 2.5, 
-          flexWrap: { xs: 'wrap', sm: 'nowrap' },
-          '& > *': {
-            flex: {
-              xs: '1 1 100%',
-              sm: '1 1 0'
-            },
-            minWidth: 0
-          }
-        }}>
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: theme.palette.primary.main,
-            boxShadow: `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(139, 108, 188, 0.2)'}`,
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                {t('global_admin.total_institutions')}
-              </Typography>
-              <InstitutionsIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {stats.totalInstitutions || 0}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              {t('global_admin.registered_institutions')}
-            </Typography>
-          </Paper>
-
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: theme.palette.primary.main,
-            boxShadow: `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(139, 108, 188, 0.2)'}`,
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                {t('global_admin.total_users')}
-              </Typography>
-              <UsersIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {stats.totalUsers || 0}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              {t('global_admin.system_wide_users')}
-            </Typography>
-          </Paper>
-
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: theme.palette.primary.main,
-            boxShadow: `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(139, 108, 188, 0.2)'}`,
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                {t('global_admin.active_users')}
-              </Typography>
-              <CheckIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {stats.activeUsers || 0}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              {t('global_admin.currently_active')}
-            </Typography>
-          </Paper>
-
-          <Paper sx={{ 
-            p: 2, 
-            borderRadius: 2,
-            bgcolor: theme.palette.primary.main,
-            boxShadow: `0 2px 8px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(139, 108, 188, 0.2)'}`,
-            border: 'none',
-            position: 'relative',
-            overflow: 'hidden',
-            height: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <Box sx={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)' }}>
-                {t('global_admin.system_status')}
-              </Typography>
-              <HealthIcon sx={{ fontSize: 18, color: 'white', opacity: 0.9 }} />
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: 'white', fontSize: '1.75rem' }}>
-              {systemHealth.status === 'healthy' ? t('global_admin.healthy') : t('common.warning')}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              {t('global_admin.all_systems_operational')}
-            </Typography>
-          </Paper>
-          </Box>
-
-          <Paper sx={{ mt: 3, p: 3 }}>
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-            {t('global_admin.system_health_metrics')}
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
-              <Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">{t('global_admin.cpu_usage')}</Typography>
-                  <Typography variant="body2" fontWeight={600}>{systemHealth.cpuUsage || 0}%</Typography>
+        {/* KPI cards */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2.5, mb: 2.5 }}>
+          <StatCard
+            label={t('global_admin.total_institutions')}
+            value={stats.totalInstitutions || 0}
+            caption={t('global_admin.registered_institutions')}
+            icon={InstitutionsIcon}
+            color="primary"
+            loading={loading}
+          />
+          <StatCard
+            label={t('global_admin.total_users')}
+            value={stats.totalUsers || 0}
+            caption={t('global_admin.system_wide_users')}
+            icon={UsersIcon}
+            color="info"
+            loading={loading}
+          />
+          <StatCard
+            label={t('global_admin.active_users')}
+            value={stats.activeUsers || 0}
+            caption={
+              loading
+                ? t('global_admin.currently_active')
+                : t('global_admin.active_share', { pct: activeShare, defaultValue: '{{pct}}% of all users' })
+            }
+            icon={ActiveIcon}
+            color="success"
+            loading={loading}
+          />
+          <StatCard
+            label={t('global_admin.system_status')}
+            value={statusLabel}
+            caption={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: statusColor, flexShrink: 0 }} />
+                <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {statusCaption}
                 </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={systemHealth.cpuUsage || 0}
-                  sx={{ height: 8, borderRadius: 4 }}
-                />
               </Box>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">{t('global_admin.memory_usage')}</Typography>
-                  <Typography variant="body2" fontWeight={600}>{systemHealth.memoryUsage || 0}%</Typography>
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={systemHealth.memoryUsage || 0}
-                  sx={{ height: 8, borderRadius: 4 }}
-                  color="warning"
-                />
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">{t('global_admin.disk_usage')}</Typography>
-                  <Typography variant="body2" fontWeight={600}>{systemHealth.diskUsage || 0}%</Typography>
-                </Box>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={systemHealth.diskUsage || 0}
-                  sx={{ height: 8, borderRadius: 4 }}
-                  color="secondary"
-                />
-              </Box>
-            </Grid>
-          </Grid>
-        </Paper>
+            }
+            icon={HealthIcon}
+            color={isUnknown ? 'primary' : isHealthy ? 'success' : 'warning'}
+            loading={loading}
+          />
+        </Box>
 
-        {/* Recent Activity */}
-        <Paper sx={{ mt: 3, p: 3 }}>
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-            {t('global_admin.recent_system_activity')}
-          </Typography>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('global_admin.timestamp')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('global_admin.event_type')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('global_admin.user')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('global_admin.details')}</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{t('global_admin.status')}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {recentActivity.length > 0 ? (
-                  recentActivity.map((activity, index) => (
-                    <TableRow key={index} hover>
-                      <TableCell>{new Date(activity.timestamp).toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={activity.type} 
-                          size="small" 
-                          color="primary" 
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>{activity.user}</TableCell>
-                      <TableCell>{activity.details}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={activity.status} 
-                          size="small" 
-                          color={activity.status === 'Success' ? 'success' : 'error'}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))
+        {/* Health metrics + system info */}
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 2.5, mb: 2.5 }}>
+          <SectionCard
+            title={t('global_admin.system_health_metrics')}
+            sx={{ flex: { lg: 2 } }}
+            action={
+              <Button
+                size="small"
+                endIcon={<ArrowForwardIcon fontSize="small" />}
+                onClick={() => router.push('/global-admin/health')}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                {t('global_admin.view_details', 'View details')}
+              </Button>
+            }
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 4,
+                px: 3,
+                py: 3,
+                flex: 1,
+                alignItems: 'center'
+              }}
+            >
+              <UsageMeter label={t('global_admin.cpu_usage')} value={systemHealth.cpuUsage || 0} loading={loading} />
+              <UsageMeter label={t('global_admin.memory_usage')} value={systemHealth.memoryUsage || 0} loading={loading} />
+              <UsageMeter label={t('global_admin.disk_usage')} value={systemHealth.diskUsage || 0} loading={loading} />
+            </Box>
+          </SectionCard>
+
+          <SectionCard title={t('global_admin.system_information')} sx={{ flex: { lg: 1 } }}>
+            <Box sx={{ px: 3, py: 1 }}>
+              <InfoRow label={t('global_admin.platform')}>
+                {loading ? (
+                  <Skeleton width={60} />
                 ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        {t('global_admin.no_recent_activity')}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
+                  <Chip
+                    label={systemHealth.platform || t('common.not_available')}
+                    size="small"
+                    sx={{ fontWeight: 600, textTransform: 'capitalize', height: 22 }}
+                  />
                 )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          </Paper>
+              </InfoRow>
+              <Divider />
+              <InfoRow label={t('global_admin.cpu_cores')}>
+                {loading ? <Skeleton width={30} /> : systemHealth.cpuCount || 0}
+              </InfoRow>
+              <Divider />
+              <InfoRow label={t('global_admin.total_memory')}>
+                {loading ? <Skeleton width={50} /> : `${systemHealth.totalMemoryGB || 0} GB`}
+              </InfoRow>
+              <Divider />
+              <InfoRow label={t('global_admin.uptime')}>
+                {loading ? <Skeleton width={50} /> : formatUptime(systemHealth.uptime)}
+              </InfoRow>
+            </Box>
+          </SectionCard>
+        </Box>
 
-          {/* Quick Actions */}
-          <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                {t('global_admin.quick_actions')}
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  sx={{
-                    justifyContent: 'flex-start',
-                    py: 1.5
-                  }}
-                  onClick={() => router.push('/global-admin/institutions')}
-                >
-                  <InstitutionsIcon sx={{ mr: 2 }} />
-                  {t('global_admin.manage_institutions')}
-                </Button>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  sx={{
-                    justifyContent: 'flex-start',
-                    py: 1.5
-                  }}
-                  onClick={() => router.push('/global-admin/health')}
-                >
-                  <HealthIcon sx={{ mr: 2 }} />
-                  {t('global_admin.system_health_check')}
-                </Button>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  sx={{
-                    justifyContent: 'flex-start',
-                    py: 1.5
-                  }}
-                  onClick={() => router.push('/global-admin/database')}
-                >
-                  <StorageIcon sx={{ mr: 2 }} />
-                  {t('global_admin.database_management')}
-                </Button>
+        {/* Recent activity + quick actions */}
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 2.5 }}>
+          <SectionCard
+            title={t('global_admin.recent_system_activity')}
+            sx={{ flex: { lg: 2 } }}
+            action={
+              <Button
+                size="small"
+                endIcon={<ArrowForwardIcon fontSize="small" />}
+                onClick={() => router.push('/global-admin/audit')}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                {t('global_admin.view_all', 'View all')}
+              </Button>
+            }
+          >
+            {loading ? (
+              <Box sx={{ px: 3, py: 1 }}>
+                {[0, 1, 2, 3].map((i) => (
+                  <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
+                    <Skeleton variant="circular" width={20} height={20} />
+                    <Box sx={{ flex: 1 }}>
+                      <Skeleton width="60%" />
+                      <Skeleton width="35%" />
+                    </Box>
+                  </Box>
+                ))}
               </Box>
-            </Paper>
-            </Grid>
-            <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                {t('global_admin.system_information')}
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">{t('global_admin.platform')}</Typography>
-                  <Chip label={systemHealth.platform || t('common.not_available')} size="small" />
-                </Box>
-                <Divider />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">{t('global_admin.cpu_cores')}</Typography>
-                  <Typography variant="body2" fontWeight={600}>{systemHealth.cpuCount || 0}</Typography>
-                </Box>
-                <Divider />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">{t('global_admin.total_memory')}</Typography>
-                  <Typography variant="body2" fontWeight={600}>{systemHealth.totalMemoryGB || 0} GB</Typography>
-                </Box>
-                <Divider />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">{t('global_admin.uptime')}</Typography>
-                  <Typography variant="body2" fontWeight={600}>{systemHealth.uptime || 0} hours</Typography>
-                </Box>
+            ) : recentActivity.length === 0 ? (
+              <Box
+                sx={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1,
+                  py: 6,
+                  color: 'text.secondary'
+                }}
+              >
+                <AuditIcon sx={{ fontSize: 32, color: 'text.disabled' }} />
+                <Typography variant="body2">{t('global_admin.no_recent_activity')}</Typography>
               </Box>
-            </Paper>
-            </Grid>
-          </Grid>
+            ) : (
+              <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+                {recentActivity.map((event, index) => {
+                  const failed = event.outcome === 'FAILURE';
+                  return (
+                    <Box
+                      component="li"
+                      key={event.id || index}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 1.75,
+                        px: 3,
+                        py: 1.5,
+                        borderTop: index === 0 ? 'none' : '1px solid',
+                        borderColor: 'divider'
+                      }}
+                    >
+                      {failed ? (
+                        <FailureIcon sx={{ fontSize: 20, color: 'error.main', mt: 0.25 }} />
+                      ) : (
+                        <SuccessIcon sx={{ fontSize: 20, color: 'success.main', mt: 0.25 }} />
+                      )}
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap title={event.summary}>
+                          {event.summary}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" noWrap display="block">
+                          {event.actorName || event.actorEmail || t('global_admin.system_actor', 'System')}
+                          {event.institutionName ? ` · ${event.institutionName}` : ''}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-end',
+                          gap: 0.5,
+                          flexShrink: 0
+                        }}
+                      >
+                        <Chip
+                          label={event.category}
+                          size="small"
+                          variant="outlined"
+                          sx={{ height: 20, fontSize: '0.68rem', fontWeight: 600 }}
+                        />
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          title={new Date(event.createdAt).toLocaleString(locale)}
+                        >
+                          {formatRelative(event.createdAt, locale)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
+          </SectionCard>
+
+          <SectionCard title={t('global_admin.quick_actions')} sx={{ flex: { lg: 1 } }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', p: 1 }}>
+              {quickActions.map(({ label, icon: Icon, path }) => (
+                <ButtonBase
+                  key={path}
+                  onClick={() => router.push(path)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    px: 2,
+                    py: 1.25,
+                    borderRadius: 1.5,
+                    textAlign: 'left',
+                    justifyContent: 'flex-start',
+                    transition: 'background-color 0.15s ease',
+                    '&:hover': { bgcolor: 'action.hover' },
+                    '&:hover .qa-chevron': { color: 'primary.main', transform: 'translateX(2px)' }
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 1.25,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      color: 'primary.main',
+                      flexShrink: 0
+                    }}
+                  >
+                    <Icon sx={{ fontSize: 19 }} />
+                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 500, flex: 1 }} noWrap>
+                    {label}
+                  </Typography>
+                  <ChevronRightIcon
+                    className="qa-chevron"
+                    sx={{ fontSize: 20, color: 'text.disabled', transition: 'all 0.15s ease' }}
+                  />
+                </ButtonBase>
+              ))}
+            </Box>
+          </SectionCard>
+        </Box>
       </Container>
     </GlobalAdminLayout>
   );

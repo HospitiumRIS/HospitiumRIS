@@ -7,37 +7,33 @@ import {
   Drawer,
   AppBar,
   Toolbar,
-  List,
   Typography,
-  Divider,
   IconButton,
-  ListItem,
   ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Avatar,
-  Chip,
+  Tooltip,
   useMediaQuery,
   useTheme
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import {
   Menu as MenuIcon,
-  Dashboard as DashboardIcon,
-  Business as InstitutionsIcon,
-  Settings as SettingsIcon,
-  Security as SecurityIcon,
-  Assessment as AnalyticsIcon,
-  Storage as DatabaseIcon,
-  ListAlt as LogsIcon,
-  SupervisorAccount as GlobalAdminIcon,
-  HealthAndSafety as HealthIcon,
-  MonitorHeart as OperationsIcon,
-  History as AuditIcon
+  SpaceDashboardOutlined as DashboardIcon,
+  MonitorHeartOutlined as OperationsIcon,
+  ApartmentOutlined as InstitutionsIcon,
+  HealthAndSafetyOutlined as HealthIcon,
+  ReceiptLongOutlined as LogsIcon,
+  HistoryOutlined as AuditIcon,
+  InsightsOutlined as AnalyticsIcon,
+  StorageOutlined as DatabaseIcon,
+  ShieldOutlined as SecurityIcon,
+  SettingsOutlined as SettingsIcon,
+  AdminPanelSettingsOutlined as BrandIcon
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../AuthProvider';
 
-const drawerWidth = 260;
+const drawerWidth = 264;
 
 const GlobalAdminLayout = ({ children }) => {
   const { t } = useTranslation();
@@ -48,239 +44,233 @@ const GlobalAdminLayout = ({ children }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const menuItems = [
+  // Navigation grouped by purpose so admins can scan it quickly.
+  const navSections = [
     {
-      text: t('global_admin.system_dashboard'),
-      icon: <DashboardIcon />,
-      path: '/global-admin',
-      color: 'primary'
+      label: t('global_admin.nav_overview', 'Overview'),
+      items: [
+        { text: t('global_admin.system_dashboard'), icon: DashboardIcon, path: '/global-admin' },
+        { text: t('global_admin.operations', 'Operations'), icon: OperationsIcon, path: '/global-admin/operations' }
+      ]
     },
     {
-      text: t('global_admin.operations', 'Operations'),
-      icon: <OperationsIcon />,
-      path: '/global-admin/operations',
-      color: 'success'
+      label: t('global_admin.nav_institutions', 'Institutions'),
+      items: [
+        { text: t('global_admin.institution_admins'), icon: InstitutionsIcon, path: '/global-admin/institutions' }
+      ]
     },
     {
-      text: t('global_admin.institution_admins'),
-      icon: <InstitutionsIcon />,
-      path: '/global-admin/institutions',
-      color: 'info'
+      label: t('global_admin.nav_monitoring', 'Monitoring'),
+      items: [
+        { text: t('global_admin.system_health'), icon: HealthIcon, path: '/global-admin/health' },
+        { text: t('global_admin.analytics'), icon: AnalyticsIcon, path: '/global-admin/analytics' },
+        { text: t('global_admin.audit_log', 'Audit log'), icon: AuditIcon, path: '/global-admin/audit' },
+        { text: t('global_admin.system_logs'), icon: LogsIcon, path: '/global-admin/logs' }
+      ]
     },
     {
-      text: t('global_admin.system_health'),
-      icon: <HealthIcon />,
-      path: '/global-admin/health',
-      color: 'success'
-    },
-    {
-      text: t('global_admin.database_management'),
-      icon: <DatabaseIcon />,
-      path: '/global-admin/database',
-      color: 'warning'
-    },
-    {
-      text: t('global_admin.audit_log', 'Audit log'),
-      icon: <AuditIcon />,
-      path: '/global-admin/audit',
-      color: 'primary'
-    },
-    {
-      text: t('global_admin.system_logs'),
-      icon: <LogsIcon />,
-      path: '/global-admin/logs',
-      color: 'primary'
-    },
-    {
-      text: t('global_admin.analytics'),
-      icon: <AnalyticsIcon />,
-      path: '/global-admin/analytics',
-      color: 'secondary'
-    },
-    {
-      text: t('global_admin.security'),
-      icon: <SecurityIcon />,
-      path: '/global-admin/security',
-      color: 'error'
-    },
-    {
-      text: t('global_admin.settings'),
-      icon: <SettingsIcon />,
-      path: '/global-admin/settings',
-      color: 'warning'
+      label: t('global_admin.nav_platform', 'Platform'),
+      items: [
+        { text: t('global_admin.database_management'), icon: DatabaseIcon, path: '/global-admin/database' },
+        { text: t('global_admin.security'), icon: SecurityIcon, path: '/global-admin/security' },
+        { text: t('global_admin.settings'), icon: SettingsIcon, path: '/global-admin/settings' }
+      ]
     }
   ];
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
+  const isActivePath = (path) =>
+    path === '/global-admin'
+      ? pathname === path
+      : pathname === path || pathname?.startsWith(`${path}/`);
 
   const handleNavigation = (path) => {
     router.push(path);
-    if (isMobile) {
-      setMobileOpen(false);
-    }
+    if (isMobile) setMobileOpen(false);
   };
 
+  const initials = `${user?.givenName?.[0] || ''}${user?.familyName?.[0] || ''}`.toUpperCase() || 'A';
+  const fullName = [user?.givenName, user?.familyName].filter(Boolean).join(' ');
+
   const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Sidebar Header */}
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: 'background.paper'
+      }}
+    >
+      {/* Brand */}
       <Box
         sx={{
-          p: 3,
           display: 'flex',
           alignItems: 'center',
-          gap: 2,
-          bgcolor: 'primary.main',
-          color: 'white',
-          position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '120px',
-            height: '120px',
-            background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-            borderRadius: '50%',
-            transform: 'translate(40%, -40%)'
-          }
+          gap: 1.5,
+          px: 2.5,
+          height: 72,
+          flexShrink: 0,
+          borderBottom: '1px solid',
+          borderColor: 'divider'
         }}
       >
-        <Avatar sx={{ 
-          bgcolor: 'rgba(255,255,255,0.2)', 
-          width: 48, 
-          height: 48,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-        }}>
-          <GlobalAdminIcon />
-        </Avatar>
-        <Box sx={{ flex: 1, position: 'relative', zIndex: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
-            {t('global_admin.global_admin_panel')}
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
+            flexShrink: 0
+          }}
+        >
+          <BrandIcon sx={{ fontSize: 20 }} />
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.2 }} noWrap>
+            HospitiumRIS
           </Typography>
-          <Typography variant="caption" sx={{ opacity: 0.95, fontWeight: 500 }}>
-            {t('global_admin.system_administration')}
+          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }} noWrap display="block">
+            {t('global_admin.global_admin_panel')}
           </Typography>
         </Box>
       </Box>
 
-      <Divider />
+      {/* Navigation */}
+      <Box
+        component="nav"
+        aria-label={t('global_admin.global_admin_panel')}
+        sx={{ flex: 1, overflowY: 'auto', px: 1.5, py: 2 }}
+      >
+        {navSections.map((section, sectionIndex) => (
+          <Box key={section.label} sx={{ mt: sectionIndex === 0 ? 0 : 2.5 }}>
+            <Typography
+              component="div"
+              sx={{
+                px: 1.5,
+                mb: 0.75,
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'text.disabled'
+              }}
+            >
+              {section.label}
+            </Typography>
 
-      {/* User Info */}
-      {user && (
-        <Box sx={{ 
-          p: 2.5, 
-          bgcolor: 'background.default',
-          borderBottom: '1px solid',
-          borderColor: 'divider'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ 
-              width: 40, 
-              height: 40, 
-              bgcolor: 'primary.main',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              fontWeight: 600
-            }}>
-              {user.givenName?.[0]}{user.familyName?.[0]}
-            </Avatar>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, noWrap: true, mb: 0.5 }}>
-                {user.givenName} {user.familyName}
-              </Typography>
-              <Chip
-                label={t('global_admin.global_admin_panel')}
-                size="small"
-                sx={{ 
-                  height: 22, 
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
-                  color: 'white',
-                  border: 'none'
-                }}
-              />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+              {section.items.map((item) => {
+                const active = isActivePath(item.path);
+                const Icon = item.icon;
+                return (
+                  <ListItemButton
+                    key={item.path}
+                    onClick={() => handleNavigation(item.path)}
+                    selected={active}
+                    aria-current={active ? 'page' : undefined}
+                    sx={{
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      borderRadius: 1.5,
+                      px: 1.5,
+                      py: 0.875,
+                      minHeight: 40,
+                      color: active ? 'primary.main' : 'text.secondary',
+                      transition: 'background-color 0.15s ease, color 0.15s ease',
+                      '&:hover': {
+                        bgcolor: active
+                          ? alpha(theme.palette.primary.main, 0.12)
+                          : 'action.hover',
+                        color: active ? 'primary.main' : 'text.primary'
+                      },
+                      '&.Mui-selected': {
+                        bgcolor: alpha(theme.palette.primary.main, 0.1)
+                      },
+                      '&.Mui-selected:hover': {
+                        bgcolor: alpha(theme.palette.primary.main, 0.14)
+                      },
+                      '&::before': active
+                        ? {
+                            content: '""',
+                            position: 'absolute',
+                            left: -12,
+                            top: 8,
+                            bottom: 8,
+                            width: 3,
+                            borderRadius: '0 3px 3px 0',
+                            bgcolor: 'primary.main'
+                          }
+                        : {}
+                    }}
+                  >
+                    <Icon sx={{ fontSize: 20, flexShrink: 0 }} />
+                    <Typography
+                      noWrap
+                      sx={{
+                        fontSize: '0.875rem',
+                        fontWeight: active ? 600 : 500,
+                        color: 'inherit'
+                      }}
+                    >
+                      {item.text}
+                    </Typography>
+                  </ListItemButton>
+                );
+              })}
             </Box>
           </Box>
-        </Box>
-      )}
+        ))}
+      </Box>
 
-      <Divider />
-
-      {/* Navigation Menu */}
-      <List sx={{ flex: 1, py: 2, px: 1.5 }}>
-        {menuItems.map((item) => {
-          const isActive = item.path === '/global-admin'
-            ? pathname === item.path
-            : pathname === item.path || pathname?.startsWith(`${item.path}/`);
-          return (
-            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                onClick={() => handleNavigation(item.path)}
-                sx={{
-                  borderRadius: 2,
-                  py: 1.5,
-                  px: 2,
-                  color: isActive ? theme.palette.primary.main : theme.palette.text.secondary,
-                  bgcolor: isActive ? theme.palette.action.selected : 'transparent',
-                  '&:hover': {
-                    bgcolor: isActive ? theme.palette.action.selected : theme.palette.action.hover,
-                    transform: 'translateX(4px)',
-                    boxShadow: isActive ? '0 6px 16px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.08)'
-                  },
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    color: isActive ? theme.palette.primary.main : 'inherit',
-                    minWidth: 44
-                  }}
-                >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.text}
-                  primaryTypographyProps={{
-                    fontSize: '0.95rem',
-                    fontWeight: isActive ? 700 : 500,
-                    letterSpacing: '-0.01em'
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
-
-      <Divider />
-
-      {/* Footer */}
-      <Box sx={{ 
-        p: 2.5, 
-        bgcolor: 'background.default',
-        borderTop: '1px solid',
-        borderColor: 'divider'
-      }}>
-        <Typography 
-          variant="caption" 
-          color="text.secondary" 
-          align="center" 
-          display="block"
-          sx={{ fontWeight: 500 }}
-        >
-          HospitiumRIS v1.0
-        </Typography>
+      {/* Signed-in admin + version */}
+      <Box sx={{ flexShrink: 0, borderTop: '1px solid', borderColor: 'divider', p: 1.5 }}>
+        {user && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.25,
+              p: 1,
+              borderRadius: 1.5,
+              bgcolor: 'action.hover'
+            }}
+          >
+            <Avatar
+              sx={{
+                width: 34,
+                height: 34,
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                bgcolor: 'primary.main'
+              }}
+            >
+              {initials}
+            </Avatar>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Tooltip title={user.email || ''} placement="top">
+                <Typography sx={{ fontSize: '0.825rem', fontWeight: 600, lineHeight: 1.3 }} noWrap>
+                  {fullName || user.email}
+                </Typography>
+              </Tooltip>
+              <Typography variant="caption" color="text.secondary" noWrap display="block" sx={{ lineHeight: 1.3 }}>
+                {t('global_admin.role_global_admin', 'Global administrator')}
+              </Typography>
+            </Box>
+          </Box>
+        )}
         <Typography
           variant="caption"
-          color="text.secondary"
-          align="center"
+          color="text.disabled"
           display="block"
-          sx={{ fontSize: '0.65rem', mt: 0.5, opacity: 0.7 }}
+          align="center"
+          sx={{ mt: 1.25, fontSize: '0.68rem' }}
         >
-          {t('footer.copyright', { year: new Date().getFullYear() })}
+          HospitiumRIS v1.0 · {t('footer.copyright', { year: new Date().getFullYear() })}
         </Typography>
       </Box>
     </Box>
@@ -288,77 +278,68 @@ const GlobalAdminLayout = ({ children }) => {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* AppBar for mobile */}
       {isMobile && (
         <AppBar
           position="fixed"
+          elevation={0}
           sx={{
-            width: '100%',
             bgcolor: 'background.paper',
             color: 'text.primary',
-            boxShadow: 1
+            borderBottom: '1px solid',
+            borderColor: 'divider'
           }}
         >
           <Toolbar>
             <IconButton
               color="inherit"
               edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
+              onClick={() => setMobileOpen((open) => !open)}
+              sx={{ mr: 1.5 }}
+              aria-label={t('global_admin.open_menu', 'Open menu')}
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600 }}>
+            <Typography variant="subtitle1" noWrap component="div" sx={{ fontWeight: 600 }}>
               {t('global_admin.global_admin_console')}
             </Typography>
           </Toolbar>
         </AppBar>
       )}
 
-      {/* Sidebar Drawer */}
-      <Box
-        component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
-      >
+      <Box sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
         {isMobile ? (
           <Drawer
             variant="temporary"
             open={mobileOpen}
-            onClose={handleDrawerToggle}
-            ModalProps={{
-              keepMounted: true
-            }}
-            sx={{
-              '& .MuiDrawer-paper': {
-                boxSizing: 'border-box',
-                width: drawerWidth
-              }
-            }}
+            onClose={() => setMobileOpen(false)}
+            ModalProps={{ keepMounted: true }}
+            sx={{ '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth } }}
           >
             {drawer}
           </Drawer>
         ) : (
           <Drawer
             variant="permanent"
+            open
             sx={{
               '& .MuiDrawer-paper': {
                 boxSizing: 'border-box',
                 width: drawerWidth,
-                borderRight: `1px solid ${theme.palette.divider}`
+                borderRight: '1px solid',
+                borderColor: 'divider'
               }
             }}
-            open
           >
             {drawer}
           </Drawer>
         )}
       </Box>
 
-      {/* Main Content */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
+          minWidth: 0,
           width: { md: `calc(100% - ${drawerWidth}px)` },
           minHeight: '100vh',
           bgcolor: 'background.default',
