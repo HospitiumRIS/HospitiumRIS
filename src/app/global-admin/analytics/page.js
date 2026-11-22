@@ -114,7 +114,7 @@ const AnalyticsPage = () => {
                 {t('global_admin.analytics')}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('global_admin.system_health_label')}
+                {t('global_admin.analytics_subtitle', 'Users, institutions and research output across the platform')}
               </Typography>
             </Box>
             <Tooltip title="Refresh data">

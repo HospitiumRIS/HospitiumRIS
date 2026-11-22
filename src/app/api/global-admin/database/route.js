@@ -33,7 +33,8 @@ export async function GET(request) {
       prisma.user.count(),
       prisma.institution.count(),
       prisma.publication.count(),
-      prisma.activityLog.count()
+      // The old ActivityLog table was replaced by AuditEvent.
+      prisma.auditEvent.count()
     ]);
 
     // Get database size (PostgreSQL specific)
@@ -76,8 +77,8 @@ export async function GET(request) {
       console.error('Error getting connections:', error);
     }
 
-    // Get recent activity (last 10 operations)
-    const recentActivity = await prisma.activityLog.findMany({
+    // Get recent activity (last 10 audit events)
+    const recentActivity = await prisma.auditEvent.findMany({
       take: 10,
       orderBy: {
         createdAt: 'desc'
@@ -85,15 +86,12 @@ export async function GET(request) {
       select: {
         id: true,
         action: true,
-        entityType: true,
-        createdAt: true,
-        user: {
-          select: {
-            givenName: true,
-            familyName: true,
-            email: true
-          }
-        }
+        category: true,
+        targetType: true,
+        summary: true,
+        actorName: true,
+        actorEmail: true,
+        createdAt: true
       }
     });
 
@@ -138,8 +136,9 @@ export async function GET(request) {
       recentActivity: recentActivity.map(log => ({
         id: log.id,
         action: log.action,
-        entityType: log.entityType,
-        user: log.user ? `${log.user.givenName} ${log.user.familyName}` : 'System',
+        entityType: log.targetType || log.category,
+        summary: log.summary,
+        user: log.actorName || log.actorEmail || 'System',
         timestamp: log.createdAt
       })),
       tableSizes: tableSizes.map(table => ({
