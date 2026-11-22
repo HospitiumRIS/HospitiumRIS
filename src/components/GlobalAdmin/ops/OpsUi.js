@@ -6,11 +6,15 @@
  */
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Paper, Typography, Chip, Tooltip, Button, Alert } from '@mui/material';
+import { Box, Paper, Typography, Chip, Tooltip, Button, Skeleton } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import {
   ErrorOutline as ErrorIcon,
   WarningAmber as WarningIcon,
   InfoOutlined as InfoIcon,
+  CheckCircleOutline as OkIcon,
+  ChevronRight as ChevronRightIcon,
+  InboxOutlined as InboxIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../AuthProvider';
 
@@ -92,38 +96,84 @@ export function describeDevice(userAgent) {
   return osName ? `${browser} on ${osName}` : browser;
 }
 
-export function PageHeader({ title, subtitle, actions, back }) {
+export function PageHeader({ title, subtitle, actions, back, meta }) {
   return (
-    <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2, mb: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
-      <Box>
+    <Box
+      sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: { xs: 'flex-start', md: 'center' },
+        justifyContent: 'space-between',
+        gap: 2,
+        mb: 3,
+      }}
+    >
+      <Box sx={{ minWidth: 0, flex: '1 1 420px' }}>
         {back}
-        <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+        <Typography
+          component="h1"
+          sx={{ fontSize: { xs: '1.5rem', md: '1.75rem' }, fontWeight: 700, letterSpacing: '-0.02em' }}
+        >
           {title}
         </Typography>
         {subtitle && (
-          <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 760 }}>
             {subtitle}
           </Typography>
         )}
       </Box>
-      {actions && <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>{actions}</Box>}
+      {(actions || meta) && (
+        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, flexShrink: 0 }}>
+          {meta && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+              {meta}
+            </Typography>
+          )}
+          {actions}
+        </Box>
+      )}
     </Box>
   );
 }
 
-export function SectionCard({ title, subtitle, action, children, sx }) {
+/**
+ * Card with a header bar. `flush` removes the body padding so tables and
+ * lists can run edge to edge.
+ */
+export function SectionCard({ title, subtitle, action, children, sx, flush = false }) {
+  const hasHeader = Boolean(title || action);
   return (
-    <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, borderRadius: 3, mb: 3, ...sx }}>
-      {(title || action) && (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, mb: 2 }}>
-          <Box>
-            {title && (
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                {title}
-              </Typography>
-            )}
+    <Paper
+      elevation={0}
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2,
+        mb: 3,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        ...sx,
+      }}
+    >
+      {hasHeader && (
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 2,
+            px: { xs: 2, md: 3 },
+            py: 2,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Box sx={{ minWidth: 0, flex: '1 1 260px' }}>
+            {title && <Typography sx={{ fontWeight: 600, fontSize: '1rem' }}>{title}</Typography>}
             {subtitle && (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
                 {subtitle}
               </Typography>
             )}
@@ -131,38 +181,120 @@ export function SectionCard({ title, subtitle, action, children, sx }) {
           {action}
         </Box>
       )}
-      {children}
+      <Box sx={{ flex: 1, ...(flush ? {} : { p: { xs: 2, md: 3 } }) }}>{children}</Box>
     </Paper>
   );
 }
 
-export function StatTile({ label, value, hint, tone }) {
-  const color = tone === 'error' ? 'error.main' : tone === 'warning' ? 'warning.main' : 'text.primary';
+/** Consistent table header styling for tables inside a flush SectionCard. */
+export const tableSx = {
+  '& .MuiTableCell-head': {
+    bgcolor: 'action.hover',
+    color: 'text.secondary',
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+    whiteSpace: 'nowrap',
+    py: 1.25,
+  },
+  '& .MuiTableCell-root': { borderColor: 'divider' },
+  '& .MuiTableCell-root:first-of-type': { pl: { xs: 2, md: 3 } },
+  '& .MuiTableCell-root:last-of-type': { pr: { xs: 2, md: 3 } },
+  '& .MuiTableBody-root .MuiTableRow-root:last-of-type .MuiTableCell-root': { borderBottom: 'none' },
+  '& .MuiTableBody-root .MuiTableCell-root': { py: 1.5 },
+};
+
+const TONE_COLOR = { error: 'error', warning: 'warning', success: 'success', info: 'info' };
+
+export function StatTile({ label, value, hint, tone, icon: Icon, loading }) {
+  const theme = useTheme();
+  const paletteKey = TONE_COLOR[tone] || 'primary';
+  const main = theme.palette[paletteKey].main;
+  const valueColor = tone === 'error' ? 'error.main' : tone === 'warning' ? 'warning.main' : 'text.primary';
   return (
-    <Paper variant="outlined" sx={{ p: 2.25, borderRadius: 3, minWidth: 0, height: '100%' }}>
-      <Typography variant="body2" color="text.secondary" noWrap title={label}>
-        {label}
-      </Typography>
-      <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5, color, fontVariantNumeric: 'tabular-nums' }}>
-        {value}
-      </Typography>
-      {hint && (
-        <Typography variant="caption" color="text.secondary">
-          {hint}
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2.25,
+        border: '1px solid',
+        borderColor: tone === 'error' || tone === 'warning' ? alpha(main, 0.45) : 'divider',
+        borderRadius: 2,
+        minWidth: 0,
+        height: '100%',
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        gap: 1.5,
+      }}
+    >
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="body2" color="text.secondary" noWrap title={label} sx={{ fontWeight: 500 }}>
+          {label}
         </Typography>
+        {loading ? (
+          <Skeleton width={64} height={40} />
+        ) : (
+          <Typography
+            sx={{
+              fontSize: '1.625rem',
+              fontWeight: 700,
+              lineHeight: 1.3,
+              mt: 0.5,
+              color: valueColor,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+            noWrap
+            title={typeof value === 'string' ? value : undefined}
+          >
+            {value}
+          </Typography>
+        )}
+        {hint && (
+          <Typography variant="caption" color="text.secondary" noWrap display="block" title={typeof hint === 'string' ? hint : undefined}>
+            {hint}
+          </Typography>
+        )}
+      </Box>
+      {Icon && (
+        <Box
+          sx={{
+            width: 38,
+            height: 38,
+            borderRadius: 1.5,
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: alpha(main, 0.12),
+            color: main,
+          }}
+        >
+          <Icon sx={{ fontSize: 20 }} />
+        </Box>
       )}
     </Paper>
   );
 }
 
-export function StatGrid({ children }) {
+/** Wrapping flex row of StatTiles: 2 per row on phones, 3 on tablets, 6 on wide screens. */
+export function StatGrid({ children, sx }) {
   return (
     <Box
       sx={{
-        display: 'grid',
+        display: 'flex',
+        flexWrap: 'wrap',
         gap: 2,
         mb: 3,
-        gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))', lg: 'repeat(6, minmax(0, 1fr))' },
+        '& > *': {
+          flex: {
+            xs: '1 1 calc(50% - 8px)',
+            md: '1 1 calc(33.333% - 11px)',
+            xl: '1 1 0',
+          },
+          minWidth: { xs: 0, md: 0 },
+        },
+        ...sx,
       }}
     >
       {children}
@@ -171,39 +303,106 @@ export function StatGrid({ children }) {
 }
 
 const SEVERITY = {
-  error: { icon: <ErrorIcon fontSize="small" />, label: 'Critical', color: 'error' },
-  warning: { icon: <WarningIcon fontSize="small" />, label: 'Warning', color: 'warning' },
-  info: { icon: <InfoIcon fontSize="small" />, label: 'Info', color: 'info' },
+  error: { icon: ErrorIcon, label: 'Critical', color: 'error' },
+  warning: { icon: WarningIcon, label: 'Warning', color: 'warning' },
+  info: { icon: InfoIcon, label: 'Info', color: 'info' },
 };
 
 export function AttentionList({ items, onOpen }) {
+  const theme = useTheme();
   if (!items?.length) {
-    return <Alert severity="success">Nothing needs attention right now.</Alert>;
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, px: { xs: 2, md: 3 }, py: 2, color: 'success.main' }}>
+        <OkIcon fontSize="small" />
+        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+          Nothing needs attention right now.
+        </Typography>
+      </Box>
+    );
   }
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+    <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
       {items.map((item, idx) => {
         const s = SEVERITY[item.severity] || SEVERITY.info;
+        const Icon = s.icon;
+        const main = theme.palette[s.color].main;
         return (
-          <Alert
+          <Box
+            component="li"
             key={`${item.code}-${idx}`}
-            severity={s.color}
-            icon={s.icon}
-            action={
-              item.tab && onOpen ? (
-                <Button color="inherit" size="small" onClick={() => onOpen(item.tab)}>
-                  Open
-                </Button>
-              ) : null
-            }
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              px: { xs: 2, md: 3 },
+              py: 1.5,
+              borderTop: idx === 0 ? 'none' : '1px solid',
+              borderColor: 'divider',
+            }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              <Chip label={s.label} size="small" variant="outlined" color={s.color} />
-              <span>{item.message}</span>
+            <Box
+              sx={{
+                width: 30,
+                height: 30,
+                borderRadius: 1.25,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: alpha(main, 0.12),
+                color: main,
+              }}
+            >
+              <Icon sx={{ fontSize: 18 }} />
             </Box>
-          </Alert>
+            <Typography variant="body2" sx={{ flex: 1, minWidth: 0, fontWeight: 500 }}>
+              {item.message}
+            </Typography>
+            <Chip
+              label={s.label}
+              size="small"
+              sx={{ height: 22, fontWeight: 600, fontSize: '0.7rem', bgcolor: alpha(main, 0.1), color: main, display: { xs: 'none', sm: 'inline-flex' } }}
+            />
+            {item.tab && onOpen && (
+              <Button
+                size="small"
+                onClick={() => onOpen(item.tab)}
+                endIcon={<ChevronRightIcon fontSize="small" />}
+                sx={{ textTransform: 'none', fontWeight: 600, flexShrink: 0 }}
+              >
+                Open
+              </Button>
+            )}
+          </Box>
         );
       })}
+    </Box>
+  );
+}
+
+/** Small status pill with a coloured dot. color: success | warning | error | info | default */
+export function StatusPill({ label, color = 'default' }) {
+  const theme = useTheme();
+  const main = color === 'default' ? theme.palette.text.secondary : theme.palette[color].main;
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 0.75,
+        px: 1,
+        py: 0.25,
+        borderRadius: 1,
+        fontSize: '0.75rem',
+        fontWeight: 600,
+        whiteSpace: 'nowrap',
+        color: main,
+        bgcolor: alpha(main, 0.1),
+      }}
+    >
+      <Box component="span" sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: main }} />
+      {label}
     </Box>
   );
 }
@@ -250,9 +449,20 @@ export function ActionChip({ action, category }) {
   );
 }
 
-export function EmptyState({ children }) {
+export function EmptyState({ children, icon: Icon = InboxIcon }) {
   return (
-    <Box sx={{ py: 4, textAlign: 'center' }}>
+    <Box
+      sx={{
+        py: 5,
+        px: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 1,
+        textAlign: 'center',
+      }}
+    >
+      <Icon sx={{ fontSize: 30, color: 'text.disabled' }} />
       <Typography variant="body2" color="text.secondary">
         {children}
       </Typography>
