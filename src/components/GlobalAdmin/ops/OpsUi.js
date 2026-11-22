@@ -277,7 +277,7 @@ export function StatTile({ label, value, hint, tone, icon: Icon, loading }) {
   );
 }
 
-/** Wrapping flex row of StatTiles: 2 per row on phones, 3 on tablets, 6 on wide screens. */
+/** Wrapping flex row of StatTiles: 1 per row on phones, 2 on small tablets, 3 on tablets/laptops, 6 on wide screens. */
 export function StatGrid({ children, sx }) {
   return (
     <Box
@@ -288,11 +288,12 @@ export function StatGrid({ children, sx }) {
         mb: 3,
         '& > *': {
           flex: {
-            xs: '1 1 calc(50% - 8px)',
+            xs: '1 1 100%',
+            sm: '1 1 calc(50% - 8px)',
             md: '1 1 calc(33.333% - 11px)',
             xl: '1 1 0',
           },
-          minWidth: { xs: 0, md: 0 },
+          minWidth: 0,
         },
         ...sx,
       }}

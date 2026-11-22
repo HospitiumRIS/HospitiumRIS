@@ -185,7 +185,7 @@ const DatabaseManagementPage = () => {
                 {t('global_admin.database_management')}
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {t('admin.database')}
+                {t('global_admin.database_subtitle', 'Tables, storage size, connections and recent activity')}
               </Typography>
             </Box>
             <Tooltip title="Refresh data">
@@ -326,7 +326,7 @@ const DatabaseManagementPage = () => {
               {stats.activityLogs?.toLocaleString() || 0}
             </Typography>
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
-              Activity log entries
+              Audit log entries
             </Typography>
           </Paper>
         </Box>
@@ -356,7 +356,7 @@ const DatabaseManagementPage = () => {
                 >
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {activity.action} - {activity.entityType}
+                      {activity.summary || `${activity.action} - ${activity.entityType}`}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       by {activity.user}

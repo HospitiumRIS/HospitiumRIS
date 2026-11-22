@@ -298,7 +298,13 @@ function OperationsPageInner() {
                 data.attention?.length ? (
                   <StatusPill
                     label={`${data.attention.length} ${data.attention.length === 1 ? 'item' : 'items'}`}
-                    color={data.attention.some((a) => a.severity === 'error') ? 'error' : 'warning'}
+                    color={
+                      data.attention.some((a) => a.severity === 'error')
+                        ? 'error'
+                        : data.attention.some((a) => a.severity === 'warning')
+                          ? 'warning'
+                          : 'info'
+                    }
                   />
                 ) : null
               }

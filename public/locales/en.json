@@ -1920,7 +1920,16 @@
     "last_updated": "Updated",
     "view_details": "View details",
     "view_all": "View all",
-    "system_actor": "System"
+    "system_actor": "System",
+    "network_latency": "Network latency",
+    "security_subtitle": "Account status, sign-in failures and suspicious activity across the platform",
+    "settings_subtitle": "Platform-wide configuration for the system, email, security, notifications, storage and API",
+    "database_subtitle": "Tables, storage size, connections and recent activity",
+    "analytics_subtitle": "Users, institutions and research output across the platform",
+    "add_system_admin": "Add system admin",
+    "delete_institution": "Delete institution",
+    "domain": "Domain",
+    "admin_menu": "Admin menu"
   },
   "hero": {
     "cta_learn": "Learn More",
@@ -2222,7 +2231,11 @@
     "module": "Module",
     "severity": "Severity",
     "subtitle": "Activity and audit logs",
-    "title": "System Logs"
+    "title": "System Logs",
+    "total_logs": "Total logs",
+    "recent_errors": "Recent errors",
+    "api_calls": "API calls",
+    "unique_accounts": "Unique accounts"
   },
   "mobile_menu": {
     "close": "Close menu",

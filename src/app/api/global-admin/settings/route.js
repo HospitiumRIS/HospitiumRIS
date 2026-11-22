@@ -121,7 +121,8 @@ async function handlePUT(request) {
     // In a real implementation, you would save these to a database
     // For now, we'll just validate and return success
     
-    console.log(`Updating ${category} settings:`, settings);
+    // Log only which section changed: the payload can include SMTP credentials.
+    console.log(`Updating ${category} settings (fields: ${Object.keys(settings || {}).join(', ')})`);
 
     return NextResponse.json({
       success: true,

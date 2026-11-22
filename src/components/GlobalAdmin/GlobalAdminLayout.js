@@ -5,10 +5,8 @@ import { useTranslation } from 'react-i18next';
 import {
   Box,
   Drawer,
-  AppBar,
-  Toolbar,
+  Button,
   Typography,
-  IconButton,
   ListItemButton,
   Avatar,
   Tooltip,
@@ -32,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../AuthProvider';
+import { TOPBAR_HEIGHT } from '../TopBar';
 
 const drawerWidth = 264;
 
@@ -82,6 +81,10 @@ const GlobalAdminLayout = ({ children }) => {
     path === '/global-admin'
       ? pathname === path
       : pathname === path || pathname?.startsWith(`${path}/`);
+
+  const currentItem = navSections
+    .flatMap((section) => section.items)
+    .find((item) => isActivePath(item.path));
 
   const handleNavigation = (path) => {
     router.push(path);
@@ -278,34 +281,6 @@ const GlobalAdminLayout = ({ children }) => {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {isMobile && (
-        <AppBar
-          position="fixed"
-          elevation={0}
-          sx={{
-            bgcolor: 'background.paper',
-            color: 'text.primary',
-            borderBottom: '1px solid',
-            borderColor: 'divider'
-          }}
-        >
-          <Toolbar>
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={() => setMobileOpen((open) => !open)}
-              sx={{ mr: 1.5 }}
-              aria-label={t('global_admin.open_menu', 'Open menu')}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="subtitle1" noWrap component="div" sx={{ fontWeight: 600 }}>
-              {t('global_admin.global_admin_console')}
-            </Typography>
-          </Toolbar>
-        </AppBar>
-      )}
-
       <Box sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
         {isMobile ? (
           <Drawer
@@ -342,10 +317,50 @@ const GlobalAdminLayout = ({ children }) => {
           minWidth: 0,
           width: { md: `calc(100% - ${drawerWidth}px)` },
           minHeight: '100vh',
-          bgcolor: 'background.default',
-          mt: { xs: 7, md: 0 }
+          bgcolor: 'background.default'
         }}
       >
+        {/*
+          On phones/tablets the site header (TopBar + Navbar) is already fixed at
+          the top, so the admin menu button lives in this sticky strip just below
+          it instead of in a second fixed AppBar that the site header would cover.
+        */}
+        {isMobile && (
+          <Box
+            sx={{
+              position: 'sticky',
+              top: { xs: TOPBAR_HEIGHT + 56, sm: TOPBAR_HEIGHT + 64 },
+              zIndex: theme.zIndex.appBar - 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              px: 1,
+              py: 0.5,
+              bgcolor: 'background.paper',
+              borderBottom: '1px solid',
+              borderColor: 'divider'
+            }}
+          >
+            <Button
+              onClick={() => setMobileOpen(true)}
+              startIcon={<MenuIcon />}
+              aria-label={t('global_admin.open_menu', 'Open menu')}
+              sx={{ textTransform: 'none', fontWeight: 600, color: 'text.primary', minWidth: 0 }}
+            >
+              {t('global_admin.admin_menu', 'Admin menu')}
+            </Button>
+            {currentItem && (
+              <>
+                <Typography color="text.disabled" sx={{ fontSize: '0.875rem' }}>
+                  /
+                </Typography>
+                <Typography noWrap sx={{ fontSize: '0.875rem', fontWeight: 600, color: 'primary.main', minWidth: 0 }}>
+                  {currentItem.text}
+                </Typography>
+              </>
+            )}
+          </Box>
+        )}
         {children}
       </Box>
     </Box>
