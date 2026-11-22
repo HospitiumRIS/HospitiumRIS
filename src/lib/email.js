@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { getEmailFromAddress } from './system-settings';
 
 // Create reusable transporter object using SMTP transport
 const createTransporter = () => {
@@ -299,7 +300,7 @@ HospitiumRIS
     console.log('✅ SMTP connection verified');
     
     const mailOptions = {
-      from: process.env.FROM_EMAIL || 'HospitiumRIS <noreply@hospitiumris.com>',
+      from: await getEmailFromAddress(),
       to: user.email,
       subject: isResend ? 'HospitiumRIS - New Activation Link' : 'Welcome to HospitiumRIS - Activate Your Account',
       html: htmlContent,
@@ -497,7 +498,7 @@ HospitiumRIS
     await transporter.verify();
     
     const mailOptions = {
-      from: process.env.FROM_EMAIL || 'HospitiumRIS <noreply@hospitiumris.com>',
+      from: await getEmailFromAddress(),
       to: user.email,
       subject: 'HospitiumRIS - Password Reset Request',
       html: htmlContent,
@@ -755,7 +756,7 @@ This email was sent to ${inviteeEmail} because ${inviterName} invited you to col
     await transporter.verify();
     
     const mailOptions = {
-      from: process.env.FROM_EMAIL || 'HospitiumRIS <noreply@hospitiumris.com>',
+      from: await getEmailFromAddress(),
       to: inviteeEmail,
       subject: `HospitiumRIS - Invitation to collaborate on "${manuscriptTitle}"`,
       html: htmlContent,
@@ -817,7 +818,7 @@ export async function sendProposalReviewInviteEmail({
       actionLabel: 'Review proposal',
     });
     const result = await transporter.sendMail({
-      from: process.env.FROM_EMAIL || 'HospitiumRIS <noreply@hospitiumris.com>',
+      from: await getEmailFromAddress(),
       to,
       subject: `Review invitation: ${proposalTitle}`,
       html,
@@ -851,7 +852,7 @@ export async function sendProposalStatusEmail({
       actionLabel: 'View proposal',
     });
     const result = await transporter.sendMail({
-      from: process.env.FROM_EMAIL || 'HospitiumRIS <noreply@hospitiumris.com>',
+      from: await getEmailFromAddress(),
       to,
       subject: `Proposal update: ${proposalTitle} is ${statusLabel}`,
       html,
@@ -916,7 +917,7 @@ Not you? Contact your institution administrator immediately so they can secure y
   try {
     const transporter = createTransporter();
     const result = await transporter.sendMail({
-      from: process.env.FROM_EMAIL || 'HospitiumRIS <noreply@hospitiumris.com>',
+      from: await getEmailFromAddress(),
       to: user.email,
       subject: 'HospitiumRIS - Your password was changed',
       html: htmlContent,
@@ -926,5 +927,36 @@ Not you? Contact your institution administrator immediately so they can secure y
   } catch (error) {
     console.error('Password changed email error:', error);
     return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Send a short test message so admins can confirm SMTP works.
+ * @param {string} to - Recipient address (the signed-in admin)
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function sendTestEmail(to) {
+  const missing = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS'].filter((name) => !process.env[name]);
+  if (missing.length) {
+    return { success: false, error: `Email is not configured on the server (missing ${missing.join(', ')}).` };
+  }
+  try {
+    const transporter = createTransporter();
+    await transporter.sendMail({
+      from: await getEmailFromAddress(),
+      to,
+      subject: 'HospitiumRIS test email',
+      text: 'This is a test email from HospitiumRIS System Settings. If you received it, outgoing email is working.',
+      html: '<p>This is a test email from <strong>HospitiumRIS</strong> System Settings.</p><p>If you received it, outgoing email is working.</p>',
+    });
+    return { success: true };
+  } catch (error) {
+    let message = 'Could not send the test email.';
+    if (error.code === 'EAUTH') message = 'The SMTP server rejected the username or password.';
+    else if (error.code === 'ECONNECTION' || error.code === 'ETIMEDOUT' || error.code === 'ESOCKET') {
+      message = 'Could not connect to the SMTP server. Check the host and port.';
+    }
+    console.error('Test email failed:', error.code || error.message);
+    return { success: false, error: message };
   }
 }

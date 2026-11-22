@@ -2764,3 +2764,16 @@ model UsageEvent {
   @@index([userId, createdAt])
   @@map("usage_events")
 }
+
+// Platform-wide settings edited on Global Admin > System Settings. One row per
+// settings section ("system", "email", "security", ...); `value` holds only the
+// fields an admin has changed, merged over code defaults in lib/system-settings.
+// Secrets (SMTP password etc.) are never stored here: they stay in env vars.
+model SystemSetting {
+  key         String   @id
+  value       Json
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  @@map("system_settings")
+}

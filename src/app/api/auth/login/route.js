@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { logApiActivity, logError, logInfo, logSuccess, getRequestMetadata } from '@/utils/activityLogger';
 import { linkInstitutionIfNeeded } from '@/lib/institution-domain';
 import { setSessionCookie } from '@/lib/session-cookie';
+import { isBlockedByMaintenance, getSettingsSection } from '@/lib/system-settings';
 import { resolveUserEnabledModules } from '@/lib/institution-modules';
 import { claimPendingInvitations } from '@/lib/manuscript-invitations';
 import { recordAuthEvent } from '@/lib/ops/audit';
@@ -24,6 +25,15 @@ import { readOrcidProof, clearOrcidProofCookie, orcidLookupValues } from '@/lib/
  *       500:
  *         description: Internal server error
  */
+
+async function maintenanceResponse(user) {
+  if (!(await isBlockedByMaintenance(user))) return null;
+  const system = await getSettingsSection('system');
+  return NextResponse.json(
+    { success: false, code: 'maintenance', message: system.maintenanceMessage },
+    { status: 503 }
+  );
+}
 
 export async function POST(request) {
   const requestMetadata = getRequestMetadata(request);
@@ -274,6 +284,9 @@ export async function POST(request) {
         rememberMe: rememberMe || false,
         loginMethod: 'orcid'
       }, { status: 200 });
+
+      const blockedOrcid = await maintenanceResponse(user);
+      if (blockedOrcid) return blockedOrcid;
 
       // Set session cookie; the ORCID proof has served its purpose
       setSessionCookie(response, user.id, { rememberMe: rememberMe || false });
@@ -555,6 +568,9 @@ export async function POST(request) {
       dashboardRoute,
       rememberMe: rememberMe || false
     }, { status: 200 });
+
+    const blocked = await maintenanceResponse(user);
+    if (blocked) return blocked;
 
     // Set session cookie (simple approach - in production, use proper JWT/session management)
     setSessionCookie(response, user.id, { rememberMe: rememberMe || false });

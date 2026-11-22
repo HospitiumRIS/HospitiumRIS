@@ -31,7 +31,8 @@ import Image from 'next/image';
 import { useThemeMode } from '@/components/ThemeProvider';
 import dynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
-import { formFieldsSx } from '@/components/Registration/FormKit';
+import { formFieldsSx, passwordRules } from '@/components/Registration/FormKit';
+import usePublicSettings from '@/hooks/usePublicSettings';
 
 // Dynamic imports for step components with loading fallbacks
 const AccountTypeStep = dynamic(() => import('@/components/Registration/AccountTypeStep'), {
@@ -119,6 +120,7 @@ const RegisterPage = () => {
   const { t, i18n } = useTranslation();
   
   // Multi-step form state
+  const { settings: publicSettings, loaded: publicSettingsLoaded } = usePublicSettings();
   const [activeStep, setActiveStep] = useState(0);
   const [accountType, setAccountType] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -345,24 +347,21 @@ const RegisterPage = () => {
     return response.json();
   };
 
+  // Mirrors the server's password policy (System Settings > Security).
   const validatePassword = (password) => {
-    const minLength = password.length >= 8;
-    const hasUpper = /[A-Z]/.test(password);
-    const hasLower = /[a-z]/.test(password);
-    const hasNumber = /\d/.test(password);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    
+    const policy = publicSettings.passwordPolicy;
+    const requirements = passwordRules(password, policy);
     return {
-      isValid: minLength && hasUpper && hasLower && hasNumber && hasSpecial,
-      requirements: {
-        minLength,
-        hasUpper,
-        hasLower,
-        hasNumber,
-        hasSpecial,
-      }
+      isValid:
+        requirements.minLength &&
+        (!policy.requireUppercase || requirements.hasUpper) &&
+        (!policy.requireLowercase || requirements.hasLower) &&
+        (!policy.requireNumbers || requirements.hasNumber) &&
+        (!policy.requireSpecialChars || requirements.hasSpecial),
+      requirements,
     };
   };
+
 
   const validateResearcherAccountDetails = (newErrors) => {
     if (!formData.givenName.trim()) {
@@ -420,7 +419,7 @@ const RegisterPage = () => {
     } else {
       const validation = validatePassword(formData.password);
       if (!validation.isValid) {
-        newErrors.password = t('auth.error_password_weak');
+        newErrors.password = t('auth.error_password_policy', 'Password does not meet the requirements listed below');
       }
     }
     if (!formData.confirmPassword) {
@@ -722,6 +721,22 @@ const RegisterPage = () => {
 
 
   const showProgress = !!accountType;
+
+  if (publicSettingsLoaded && !publicSettings.allowRegistration) {
+    return (
+      <Box sx={{ textAlign: 'center', py: 4 }}>
+        <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, mb: 1 }}>
+          {t('auth.registration_closed_title', 'Registration is closed')}
+        </Typography>
+        <Typography color="text.secondary" sx={{ mb: 3 }}>
+          {t('auth.registration_closed_body', 'New accounts cannot be created right now. If you need access, contact your institution administrator.')}
+        </Typography>
+        <Button variant="contained" href="/login" sx={{ textTransform: 'none', fontWeight: 600 }}>
+          {t('auth.back_to_login', 'Back to sign in')}
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <>

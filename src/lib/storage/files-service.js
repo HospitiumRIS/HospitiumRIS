@@ -6,6 +6,7 @@ import { getStorageDriver, getPrivateBucket, getPublicBucket } from './index.js'
 import { resolveTenantId } from '../tenant.js';
 import { buildKey, resolveTenant } from './keys.js';
 import { getModulePolicy, validateUploadRequest, isAllowedMimeType } from './policy.js';
+import { getUploadCapBytes } from '../system-settings.js';
 import { sniffMimeType } from './sniff.js';
 import { canReadStoredFile, canInitiateForTenant } from './access.js';
 import { canAccessTrainingStoredFile } from '../training-access.js';
@@ -52,6 +53,12 @@ export async function initiateUpload({ user, module, entityType, entityId, fileN
 
   const validation = validateUploadRequest({ module, fileName, sizeBytes });
   if (!validation.ok) throw new StorageError(validation.error, 400);
+
+  // Platform-wide cap from System Settings > Storage (on top of the module limit).
+  const capBytes = await getUploadCapBytes();
+  if (sizeBytes > capBytes) {
+    throw new StorageError(`File exceeds the platform upload limit of ${Math.round(capBytes / (1024 * 1024))} MB`, 400);
+  }
 
   if (!canInitiateForTenant(user, entityTenantId)) {
     throw new StorageError('Not found', 404);

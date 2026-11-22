@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { hashPassword, validateEmail, validatePassword } from '@/lib/auth';
+import { getPasswordPolicy, isMaintenanceMode, isRegistrationOpen } from '@/lib/system-settings';
 import { findInstitutionByEmailDomain, findVerifiedDomainByEmail } from '@/lib/institution-domain';
 import { claimPendingInvitations } from '@/lib/manuscript-invitations';
 import { recordAuthEvent } from '@/lib/ops/audit';
@@ -10,6 +11,20 @@ import { setSessionCookie } from '@/lib/session-cookie';
 export async function POST(request) {
   let body = {};
   try {
+    if (await isMaintenanceMode()) {
+      return NextResponse.json(
+        { success: false, code: 'maintenance', message: 'HospitiumRIS is under maintenance. Please try again later.' },
+        { status: 503 }
+      );
+    }
+    if (!(await isRegistrationOpen())) {
+      return NextResponse.json(
+        { success: false, code: 'registration_closed', message: 'New registrations are currently closed. Please contact your institution administrator.' },
+        { status: 403 }
+      );
+    }
+    const passwordPolicy = await getPasswordPolicy();
+
     body = await request.json();
     
     // Researchers who arrive from "Sign in with ORCID" carry a signed proof
@@ -98,9 +113,9 @@ export async function POST(request) {
       if (!password) {
         errors.password = 'Password is required';
       } else {
-        const passwordValidation = validatePassword(password);
+        const passwordValidation = validatePassword(password, passwordPolicy);
         if (!passwordValidation.isValid) {
-          errors.password = 'Password must contain at least 8 characters, including uppercase, lowercase, number, and special character';
+          errors.password = passwordValidation.message;
         }
       }
       
@@ -126,9 +141,9 @@ export async function POST(request) {
       if (!password) {
         errors.password = 'Password is required';
       } else {
-        const passwordValidation = validatePassword(password);
+        const passwordValidation = validatePassword(password, passwordPolicy);
         if (!passwordValidation.isValid) {
-          errors.password = 'Password must contain at least 8 characters, including uppercase, lowercase, number, and special character';
+          errors.password = passwordValidation.message;
         }
       }
       

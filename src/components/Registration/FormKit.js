@@ -5,6 +5,7 @@
  * uses the same heading, label, input and password styles.
  */
 import React, { useState } from 'react';
+import usePublicSettings, { PUBLIC_SETTINGS_DEFAULTS } from '@/hooks/usePublicSettings';
 import {
   Box,
   Typography,
@@ -109,19 +110,21 @@ export const FieldRow = ({ children, sx }) => (
   </Box>
 );
 
-/* ---------- Password rules (kept in sync with page validation) ---------- */
-export const passwordRules = (password = '') => ({
-  minLength: password.length >= 8,
+/* ---------- Password rules (kept in sync with the server's password policy) ---------- */
+export const passwordRules = (password = '', policy = PUBLIC_SETTINGS_DEFAULTS.passwordPolicy) => ({
+  minLength: password.length >= Math.max(8, Number(policy?.minLength) || 8),
   hasUpper: /[A-Z]/.test(password),
   hasLower: /[a-z]/.test(password),
   hasNumber: /\d/.test(password),
-  hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+  hasSpecial: /[^A-Za-z0-9]/.test(password),
 });
 
 const PasswordStrength = ({ password }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const rules = passwordRules(password);
+  const { settings } = usePublicSettings();
+  const policy = settings.passwordPolicy;
+  const rules = passwordRules(password, policy);
   const met = Object.values(rules).filter(Boolean).length;
 
   const levels = [
@@ -133,13 +136,17 @@ const PasswordStrength = ({ password }) => {
   const level = met <= 2 ? 0 : met === 3 ? 1 : met === 4 ? 2 : 3;
   const filled = password ? level + 1 : 0;
 
+  const minLength = Math.max(8, Number(policy?.minLength) || 8);
+  // Only list the rules the admin has switched on (System Settings > Security).
   const items = [
-    ['minLength', t('auth.pw_rule_length', 'At least 8 characters')],
-    ['hasUpper', t('auth.pw_rule_upper', 'One uppercase letter')],
-    ['hasLower', t('auth.pw_rule_lower', 'One lowercase letter')],
-    ['hasNumber', t('auth.pw_rule_number', 'One number')],
-    ['hasSpecial', t('auth.pw_rule_special', 'One special character')],
-  ];
+    ['minLength', minLength === 8
+      ? t('auth.pw_rule_length', 'At least 8 characters')
+      : t('auth.pw_rule_length_n', { count: minLength, defaultValue: 'At least {{count}} characters' }), true],
+    ['hasUpper', t('auth.pw_rule_upper', 'One uppercase letter'), policy?.requireUppercase !== false],
+    ['hasLower', t('auth.pw_rule_lower', 'One lowercase letter'), policy?.requireLowercase !== false],
+    ['hasNumber', t('auth.pw_rule_number', 'One number'), policy?.requireNumbers !== false],
+    ['hasSpecial', t('auth.pw_rule_special', 'One special character'), policy?.requireSpecialChars !== false],
+  ].filter(([, , required]) => required);
 
   return (
     <Box sx={{ mt: 1.25 }}>
