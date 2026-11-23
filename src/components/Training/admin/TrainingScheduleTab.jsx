@@ -33,6 +33,7 @@ import {
   EventAvailable as RestoreIcon,
   Event as SessionIcon,
   ViewList as ListIcon,
+  QrCode2 as QrIcon,
   WarningAmber as WarningIcon,
 } from '@mui/icons-material';
 import {
@@ -108,7 +109,7 @@ function draftFromSession(session) {
   };
 }
 
-function SessionRow({ session, onEdit, onToggleCancel, onDelete, busy }) {
+function SessionRow({ session, onEdit, onToggleCancel, onDelete, onPresent, busy }) {
   const cancelled = session.status === 'CANCELLED';
   const where = session.effective?.deliveryMode === 'ONLINE'
     ? (session.effective?.onlineLink ? 'Online meeting' : 'Online (no link yet)')
@@ -144,6 +145,9 @@ function SessionRow({ session, onEdit, onToggleCancel, onDelete, busy }) {
         </Stack>
       </Box>
       <Stack direction="row" spacing={0.5}>
+        {!cancelled ? (
+          <Tooltip title="Open check-in screen (QR code)"><span><IconButton size="small" disabled={busy} onClick={() => onPresent(session)}><QrIcon fontSize="small" /></IconButton></span></Tooltip>
+        ) : null}
         <Tooltip title="Edit session"><span><IconButton size="small" disabled={busy} onClick={() => onEdit(session)}><EditIcon fontSize="small" /></IconButton></span></Tooltip>
         <Tooltip title={cancelled ? 'Restore session' : 'Cancel session'}>
           <span><IconButton size="small" disabled={busy} onClick={() => onToggleCancel(session)}>{cancelled ? <RestoreIcon fontSize="small" /> : <CancelIcon fontSize="small" />}</IconButton></span>
@@ -398,6 +402,7 @@ export default function TrainingScheduleTab({ trainingId, training, modules = []
                   busy={busy}
                   onEdit={openEdit}
                   onToggleCancel={toggleCancel}
+                  onPresent={(s) => window.open(`/institution/training/${trainingId}/sessions/${s.id}/present`, '_blank', 'noopener')}
                   onDelete={(s) => setConfirm({ type: 'delete', session: s })}
                 />
               ))}

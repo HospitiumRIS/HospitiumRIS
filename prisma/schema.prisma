@@ -2127,6 +2127,7 @@ model TrainingSession {
   checkInOpensMinutesBefore Int                   @default(15)
   checkInClosesMinutesAfter Int                   @default(30)
   lateAfterMinutes          Int                   @default(10)
+  checkInCode               String? // 6-digit fallback code for QR check-in (#93)
   status                    TrainingSessionStatus @default(SCHEDULED)
   order                     Int                   @default(0)
   createdBy                 String?
