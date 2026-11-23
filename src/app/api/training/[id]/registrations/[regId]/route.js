@@ -43,7 +43,16 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
     }
 
-    const { status, moduleProgress, reason } = body || {};
+    const { status, moduleProgress, reason, dueDate } = body || {};
+
+    // Due date of an assigned training (#103); null clears it.
+    let dueDateValue;
+    if (dueDate !== undefined) {
+      dueDateValue = dueDate ? new Date(dueDate) : null;
+      if (dueDateValue && Number.isNaN(dueDateValue.getTime())) {
+        return NextResponse.json({ error: 'Due date is not a valid date' }, { status: 400 });
+      }
+    }
 
     // Validate everything before writing anything (#90).
     let transition = null;
@@ -76,6 +85,19 @@ export async function PUT(request, { params }) {
         }
       }
       progressUpdates = moduleProgress;
+    }
+
+    if (dueDateValue !== undefined) {
+      await prisma.trainingRegistration.update({ where: { id: regId }, data: { dueDate: dueDateValue } });
+      await auditTraining({
+        trainingId: id,
+        actorId: user.id,
+        action: 'DUE_DATE_CHANGED',
+        entityType: 'TrainingRegistration',
+        entityId: regId,
+        before: { dueDate: registration.dueDate },
+        after: { dueDate: dueDateValue },
+      });
     }
 
     // Status: one shared path for the menu and bulk actions (#102).

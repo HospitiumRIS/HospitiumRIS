@@ -27,6 +27,7 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
+  AssignmentInd as AssignIcon,
   Block as RejectIcon,
   CheckCircle as ApproveIcon,
   Download as DownloadIcon,
@@ -41,6 +42,16 @@ import {
   InstitutionModalSection,
 } from '@/components/GlobalAdmin/InstitutionModalShell';
 import { allowedAdminStatuses } from '@/lib/training-registration-state';
+import { COMPLIANCE_LABELS, complianceState } from '@/lib/training-assignment';
+import AssignTrainingDialog from './AssignTrainingDialog';
+
+const STATE_SX = {
+  OVERDUE: { bgcolor: '#fee2e2', color: '#b91c1c' },
+  DUE_SOON: { bgcolor: '#fef3c7', color: '#92400e' },
+  ON_TRACK: { bgcolor: '#e0f2fe', color: '#075985' },
+  RETRAINING_DUE: { bgcolor: '#fee2e2', color: '#b91c1c' },
+  EXPIRING: { bgcolor: '#fef3c7', color: '#92400e' },
+};
 
 const PURPLE = '#8b6cbc';
 
@@ -76,6 +87,7 @@ export default function TrainingRegistrationsTab({ trainingId, training, registr
   const [notice, setNotice] = useState('');
   const [reasonDialog, setReasonDialog] = useState(null); // { action, ids, title }
   const [reason, setReason] = useState('');
+  const [assignOpen, setAssignOpen] = useState(false);
 
   const waitlistPosition = useMemo(() => {
     const map = new Map();
@@ -164,6 +176,9 @@ export default function TrainingRegistrationsTab({ trainingId, training, registr
           {training?.waitlistEnabled ? ` · waiting list on (${counts.WAITLISTED})` : ''}
         </Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Button size="small" variant="outlined" startIcon={<AssignIcon />} onClick={() => setAssignOpen(true)} sx={{ borderColor: PURPLE, color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
+            Assign
+          </Button>
           <Button size="small" variant="contained" startIcon={<ApproveIcon />} disabled={busy || !can('approve')} onClick={() => runBulk('approve', selected)} sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 }}>
             Approve
           </Button>
@@ -199,7 +214,7 @@ export default function TrainingRegistrationsTab({ trainingId, training, registr
                     onChange={() => setSelected(allOnPage ? [] : rows.map((r) => r.id))}
                   />
                 </TableCell>
-                {['Participant', 'Email', 'Requested', 'Progress', 'Attendance', 'Status', 'Certificate'].map((label) => (
+                {['Participant', 'Email', 'Requested', 'Due', 'Progress', 'Attendance', 'Status', 'Certificate'].map((label) => (
                   <TableCell key={label} sx={{ fontWeight: 700 }}>{label}</TableCell>
                 ))}
               </TableRow>
@@ -222,7 +237,22 @@ export default function TrainingRegistrationsTab({ trainingId, training, registr
                       ) : null}
                     </TableCell>
                     <TableCell>{reg.user?.email}</TableCell>
-                    <TableCell>{formatDate(reg.registeredAt)}</TableCell>
+                    <TableCell>
+                      {formatDate(reg.registeredAt)}
+                      {reg.source === 'ASSIGNED' ? <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Assigned</Typography> : null}
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const { state } = complianceState(reg);
+                        if (!reg.dueDate && !STATE_SX[state]) return '—';
+                        return (
+                          <Stack spacing={0.4} alignItems="flex-start">
+                            {reg.dueDate ? <Typography variant="body2">{formatDate(reg.dueDate)}</Typography> : null}
+                            {STATE_SX[state] ? <Chip size="small" label={COMPLIANCE_LABELS[state]} sx={{ fontWeight: 700, height: 20, ...STATE_SX[state] }} /> : null}
+                          </Stack>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell sx={{ minWidth: 120 }}>
                       {total ? (
                         <>
@@ -271,7 +301,7 @@ export default function TrainingRegistrationsTab({ trainingId, training, registr
                 );
               }) : (
                 <TableRow>
-                  <TableCell colSpan={8} sx={{ py: 4, textAlign: 'center' }}>
+                  <TableCell colSpan={9} sx={{ py: 4, textAlign: 'center' }}>
                     <Typography color="text.secondary">Nobody here yet.</Typography>
                   </TableCell>
                 </TableRow>
@@ -280,6 +310,8 @@ export default function TrainingRegistrationsTab({ trainingId, training, registr
           </Table>
         </TableContainer>
       </Paper>
+
+      <AssignTrainingDialog open={assignOpen} onClose={() => setAssignOpen(false)} training={training} onAssigned={onChanged} />
 
       <InstitutionModal open={Boolean(reasonDialog)} onClose={() => setReasonDialog(null)} maxWidth="sm" disableClose={busy}>
         <InstitutionModalHeader

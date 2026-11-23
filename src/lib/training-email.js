@@ -24,6 +24,8 @@ export const TRAINING_EMAIL_KINDS = [
   'FEEDBACK_REQUESTED',
   'CERTIFICATE_ISSUED',
   'CERTIFICATE_REVOKED',
+  'CERTIFICATE_EXPIRING',
+  'RETRAINING_DUE',
 ];
 
 /** In-app notification type (existing NotificationType enum values). */
@@ -46,9 +48,11 @@ const NOTIFICATION_TYPE = {
   FEEDBACK_REQUESTED: 'SYSTEM_NOTIFICATION',
   CERTIFICATE_ISSUED: 'TRAINING_CERTIFICATE_ISSUED',
   CERTIFICATE_REVOKED: 'SYSTEM_NOTIFICATION',
+  CERTIFICATE_EXPIRING: 'SYSTEM_NOTIFICATION',
+  RETRAINING_DUE: 'SYSTEM_NOTIFICATION',
 };
 
-const HIGH_PRIORITY = new Set(['SESSION_CANCELLED', 'TRAINING_OVERDUE', 'CERTIFICATE_REVOKED', 'REGISTRATION_REJECTED']);
+const HIGH_PRIORITY = new Set(['SESSION_CANCELLED', 'TRAINING_OVERDUE', 'CERTIFICATE_REVOKED', 'REGISTRATION_REJECTED', 'RETRAINING_DUE']);
 
 function fmt(date, timeZone, options) {
   if (!date) return '';
@@ -200,6 +204,23 @@ export function buildTrainingEmail(kind, data) {
       heading = 'A required training is overdue';
       paragraphs = [`"${title}" was due on ${fmt(data.dueDate, tz, dayFmt)} and has not been completed.`];
       message = `"${title}" is overdue.`;
+      break;
+    case 'CERTIFICATE_EXPIRING':
+      subject = `Certificate expiring: ${title}`;
+      heading = 'Your certificate expires soon';
+      paragraphs = [`Your certificate for "${title}" expires on ${fmt(data.expiresAt, tz, dayFmt)}.`];
+      details.push(['Certificate number', data.certificate?.number]);
+      note = 'Book a refresher before it expires to stay compliant. Ask your training team which cohort to join.';
+      action = { url: `${base}/researcher/training#available`, label: 'Find a refresher' };
+      message = `Your "${title}" certificate expires ${fmt(data.expiresAt, tz, { day: 'numeric', month: 'short' })}.`;
+      break;
+    case 'RETRAINING_DUE':
+      subject = `Re-training due: ${title}`;
+      heading = 'Your certificate has expired';
+      paragraphs = [`Your certificate for "${title}" expired on ${fmt(data.expiresAt, tz, dayFmt)}, so re-training is now due.`];
+      details.push(['Certificate number', data.certificate?.number]);
+      action = { url: `${base}/researcher/training#available`, label: 'Find a refresher' };
+      message = `Your "${title}" certificate has expired: re-training is due.`;
       break;
     case 'TRAINING_COMPLETED':
       subject = `Completed: ${title}`;

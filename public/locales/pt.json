@@ -2160,6 +2160,8 @@
     "manage_trainings_desc": "Criar e gerir formações institucionais",
     "certificate_templates": "Modelos de certificados",
     "certificate_templates_desc": "Crie os certificados emitidos pelas suas formações",
+    "training_compliance": "Conformidade de formação",
+    "training_compliance_desc": "Formações obrigatórias: atribuídas, concluídas, em atraso",
     "performance_review": "Avaliação de desempenho",
     "performance_review_desc": "Rever o desempenho dos investigadores",
     "results_reporting": "Resultados e relatórios",

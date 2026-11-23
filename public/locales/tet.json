@@ -2160,6 +2160,8 @@
     "manage_trainings_desc": "Kria no jere treinamentu instituisaun",
     "certificate_templates": "Certificate Templates",
     "certificate_templates_desc": "Design the certificates your trainings issue",
+    "training_compliance": "Training Compliance",
+    "training_compliance_desc": "Mandatory training: assigned, completed, overdue",
     "performance_review": "Avaliasaun Dezempeñu",
     "performance_review_desc": "Revisa dezempeñu peskizadór",
     "results_reporting": "Rezultadu no Relatóriu",

@@ -72,6 +72,9 @@ export function checkSelfCancel(training, registration, now = new Date()) {
   if (!['REGISTERED', 'PENDING_APPROVAL', 'WAITLISTED'].includes(registration.status)) {
     return { ok: false, error: 'This registration cannot be cancelled' };
   }
+  if (registration.source === 'ASSIGNED') {
+    return { ok: false, error: 'This training was assigned to you. Contact the training team to change it.' };
+  }
   const start = training?.startDate ? new Date(training.startDate) : null;
   if (start && now >= start) return { ok: false, error: 'Cannot cancel registration - training has already started' };
   if (registration.status === 'REGISTERED' && training?.cancellationDeadline && now > new Date(training.cancellationDeadline)) {
@@ -120,7 +123,7 @@ export function validateEnrolmentSettings(body, existing = {}) {
   if (opens && closes && new Date(closes) <= new Date(opens)) {
     return { ok: false, error: 'Registration must close after it opens' };
   }
-  for (const key of ['requiresApproval', 'waitlistEnabled']) {
+  for (const key of ['requiresApproval', 'waitlistEnabled', 'isMandatory']) {
     if (b[key] !== undefined) data[key] = b[key] === true;
   }
   if (b.eligibilityMode !== undefined) {

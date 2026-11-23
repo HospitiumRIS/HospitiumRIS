@@ -2210,6 +2210,8 @@
     "manage_trainings_desc": "Create and manage institutional trainings",
     "certificate_templates": "Certificate Templates",
     "certificate_templates_desc": "Design the certificates your trainings issue",
+    "training_compliance": "Training Compliance",
+    "training_compliance_desc": "Mandatory training: assigned, completed, overdue",
     "performance_review": "Performance Review",
     "performance_review_desc": "Review researcher performance",
     "results_reporting": "Results & Reporting",

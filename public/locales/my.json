@@ -2160,6 +2160,8 @@
     "manage_trainings_desc": "အဖွဲ့အစည်း သင်တန်းများ ဖန်တီးပြီး စီမံပါ",
     "certificate_templates": "Certificate Templates",
     "certificate_templates_desc": "Design the certificates your trainings issue",
+    "training_compliance": "Training Compliance",
+    "training_compliance_desc": "Mandatory training: assigned, completed, overdue",
     "performance_review": "စွမ်းဆောင်ရည် သုံးသပ်ခြင်း",
     "performance_review_desc": "သုတေသီ စွမ်းဆောင်ရည်ကို သုံးသပ်ပါ",
     "results_reporting": "ရလဒ်များနှင့် အစီရင်ခံခြင်း",

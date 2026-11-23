@@ -92,3 +92,11 @@ describe('validateEnrolmentSettings', () => {
     assert.equal(validateEnrolmentSettings({ registrationOpensAt: null }).data.registrationOpensAt, null);
   });
 });
+
+describe('checkSelfCancel for assigned trainings (#103)', () => {
+  it('people cannot drop a training assigned to them', () => {
+    const training = { startDate: '2099-01-01T00:00:00Z' };
+    assert.equal(checkSelfCancel(training, { status: 'REGISTERED', source: 'ASSIGNED' }).ok, false);
+    assert.equal(checkSelfCancel(training, { status: 'REGISTERED', source: 'SELF' }).ok, true);
+  });
+});

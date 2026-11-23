@@ -2160,6 +2160,8 @@
     "manage_trainings_desc": "Tạo và quản lý khóa đào tạo của tổ chức",
     "certificate_templates": "Certificate Templates",
     "certificate_templates_desc": "Design the certificates your trainings issue",
+    "training_compliance": "Training Compliance",
+    "training_compliance_desc": "Mandatory training: assigned, completed, overdue",
     "performance_review": "Đánh giá hiệu suất",
     "performance_review_desc": "Đánh giá hiệu suất nhà nghiên cứu",
     "results_reporting": "Kết quả & Báo cáo",

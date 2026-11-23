@@ -119,6 +119,7 @@ export async function GET(request) {
         isRegistered: isActiveRegistration(userRegistration),
         userRegistrationStatus: userRegistration?.status || null,
         modules: training.modules,
+        isMandatory: training.isMandatory,
         // Enrolment controls (#102).
         waitlistCount: enrolment.waitlistCount,
         myWaitlistPosition: enrolment.myWaitlistPosition,
