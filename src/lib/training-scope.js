@@ -11,6 +11,7 @@
  */
 
 import { TRAINING_ADMIN_TYPES } from './training-admin.js';
+import { deliveryFieldsFromLegacyLocation } from './training-sessions.js';
 
 export const NO_TRAININGS_WHERE = { id: { equals: '__none__' } };
 
@@ -137,8 +138,27 @@ export function shapeTrainingForViewer(training, user, { isAdmin }) {
   };
 
   if (!isAdmin) {
+    Object.assign(shaped, redactMeetingLink(shaped, shaped.isRegistered));
     delete shaped.registrations;
     if (shaped._count) shaped._count = { ...shaped._count, registrations: activeCount };
   }
   return shaped;
+}
+
+/**
+ * Hide the online meeting link from people who may not join (#94): only the owning
+ * institution's admins and active registrants see it. The legacy `location` string can
+ * carry the link too, so it is reduced to the venue.
+ */
+export function redactMeetingLink(training, canSeeLink) {
+  if (!training || canSeeLink) return training;
+  const legacy = deliveryFieldsFromLegacyLocation(training.location);
+  const venue = training.venue ?? legacy.venue ?? null;
+  const hasOnlineLink = Boolean(training.onlineLink || legacy.onlineLink);
+  return {
+    ...training,
+    onlineLink: null,
+    location: venue || (hasOnlineLink ? 'Online' : null),
+    hasOnlineLink,
+  };
 }

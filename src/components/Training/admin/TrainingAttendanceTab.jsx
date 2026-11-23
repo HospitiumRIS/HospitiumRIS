@@ -39,6 +39,7 @@ import {
   VerifiedUser as ExcusedIcon,
   PersonOff as RemainingAbsentIcon,
   QrCode2 as QrIcon,
+  VideoCall as VirtualIcon,
 } from '@mui/icons-material';
 import {
   InstitutionModal,
@@ -47,6 +48,7 @@ import {
   InstitutionModalHeader,
 } from '@/components/GlobalAdmin/InstitutionModalShell';
 import { ATTENDANCE_LABELS } from '@/lib/training-attendance';
+import VirtualAttendanceImportDialog from './VirtualAttendanceImportDialog';
 
 const PURPLE = '#8b6cbc';
 
@@ -112,6 +114,7 @@ export default function TrainingAttendanceTab({ trainingId, training, onTraining
   const [cellMenu, setCellMenu] = useState(null); // { anchor, session, participant, record }
   const [sessionMenu, setSessionMenu] = useState(null); // { anchor, session }
   const [noteEditor, setNoteEditor] = useState(null); // { session, participant, record, note, status }
+  const [importSession, setImportSession] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -402,7 +405,30 @@ export default function TrainingAttendanceTab({ trainingId, training, onTraining
           <ListItemIcon><QrIcon fontSize="small" /></ListItemIcon>
           <ListItemText>Open check-in screen</ListItemText>
         </MenuItem>
+        {sessionMenu?.session?.deliveryMode !== 'IN_PERSON' ? (
+          <MenuItem
+            onClick={() => {
+              const { session } = sessionMenu;
+              setSessionMenu(null);
+              setImportSession(session);
+            }}
+          >
+            <ListItemIcon><VirtualIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Import Zoom / Teams report…</ListItemText>
+          </MenuItem>
+        ) : null}
       </Menu>
+
+      <VirtualAttendanceImportDialog
+        open={Boolean(importSession)}
+        trainingId={trainingId}
+        session={importSession}
+        onClose={() => setImportSession(null)}
+        onImported={async (result) => {
+          setNotice(`Imported online attendance: ${result.written} participant${result.written === 1 ? '' : 's'} updated.`);
+          await load();
+        }}
+      />
 
       <InstitutionModal open={Boolean(noteEditor)} onClose={() => setNoteEditor(null)} disableClose={busy} maxWidth="xs">
         <InstitutionModalHeader
