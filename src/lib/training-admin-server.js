@@ -1,10 +1,25 @@
 import { NextResponse } from 'next/server';
 import { getOwnedInstitution } from '@/lib/institution-admin';
 import { TRAINING_ADMIN_TYPES, trainingBelongsToInstitution } from '@/lib/training-admin';
+import { trainingUserInstitutionId } from '@/lib/training-scope';
 
 export async function resolveTrainingInstitution(user) {
   const institution = await getOwnedInstitution(user);
   return institution ? { id: institution.id } : null;
+}
+
+/**
+ * Institution context used by training scoping (src/lib/training-scope.js).
+ * Admins resolve to the institution they own or administer; everyone else to their
+ * verified institution link.
+ */
+export async function resolveTrainingScopeContext(user) {
+  if (!user) return { institutionId: null };
+  if (TRAINING_ADMIN_TYPES.includes(user.accountType)) {
+    const institution = await resolveTrainingInstitution(user);
+    return { institutionId: institution?.id || trainingUserInstitutionId(user) };
+  }
+  return { institutionId: trainingUserInstitutionId(user) };
 }
 
 export function isTrainingAdmin(user) {

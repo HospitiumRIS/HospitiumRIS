@@ -6,7 +6,8 @@ import {
   trainingBelongsToInstitution,
   TRAINING_ADMIN_TYPES,
 } from '@/lib/training-admin';
-import { resolveTrainingInstitution } from '@/lib/training-admin-server';
+import { resolveTrainingInstitution, resolveTrainingScopeContext } from '@/lib/training-admin-server';
+import { canViewTraining } from '@/lib/training-scope';
 
 /**
  * GET /api/training/[id]
@@ -75,11 +76,14 @@ export async function GET(request, { params }) {
       );
     }
 
-    // TODO(institution-filtering): Institution access scoping is temporarily
-    // disabled so any authenticated user can view any training regardless of
-    // institution. Re-enable by restoring the institution match check here
-    // once institution assignment is reliable — keep this in sync with
-    // /api/training, /api/training/my, and /api/training/[id]/register.
+    // Tenant scoping (#88): out-of-scope trainings look like they don't exist.
+    const scopeCtx = await resolveTrainingScopeContext(user);
+    if (!canViewTraining(user, training, scopeCtx)) {
+      return NextResponse.json(
+        { error: 'Training not found' },
+        { status: 404 }
+      );
+    }
 
     // Filter materials based on access level and user registration
     const userRegistration = training.registrations.find(r => r.userId === user.id);
@@ -162,6 +166,7 @@ export async function PUT(request, { params }) {
       endDate,
       maxParticipants,
       status,
+      openToOtherInstitutions,
     } = body;
 
     // Build update data
@@ -184,6 +189,7 @@ export async function PUT(request, { params }) {
     if (endDate !== undefined) updateData.endDate = new Date(endDate);
     if (maxParticipants !== undefined) updateData.maxParticipants = parseInt(maxParticipants);
     if (status !== undefined) updateData.status = status;
+    if (openToOtherInstitutions !== undefined) updateData.openToOtherInstitutions = openToOtherInstitutions === true;
 
     const training = await prisma.training.update({
       where: { id },

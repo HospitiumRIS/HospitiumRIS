@@ -58,11 +58,9 @@ export async function GET(request) {
       },
     });
 
-    // TODO(institution-filtering): Institution scoping is temporarily disabled
-    // so a user's registrations all show up regardless of institution.
-    // Re-enable by restoring the institution filter here once institution
-    // assignment is reliable — keep this in sync with /api/training,
-    // /api/training/[id], and /api/training/[id]/register.
+    // A user's own registrations are always returned, including registrations made
+    // through the shared catalogue at another institution (#88). Only the caller's
+    // own rows are queried above, so nothing crosses tenants here.
     const transformedRegistrations = registrations
       .map(reg => {
         const completedModules = reg.moduleProgress.filter(p => p.status === 'COMPLETED').length;

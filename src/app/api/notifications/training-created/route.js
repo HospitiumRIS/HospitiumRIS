@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../lib/auth-server';
 import { resolveInstitutionMemberScope } from '../../../../lib/institution-admin';
+import { isTrainingAdmin, resolveTrainingInstitution } from '@/lib/training-admin-server';
+import { isOwningTrainingAdmin } from '@/lib/training-scope';
 
 /**
  * POST /api/notifications/training-created
@@ -11,7 +13,7 @@ export async function POST(request) {
   try {
     const user = await getAuthenticatedUser(request);
 
-    if (!user || user.accountType !== 'RESEARCH_ADMIN') {
+    if (!user || !isTrainingAdmin(user)) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 403 }
@@ -40,17 +42,20 @@ export async function POST(request) {
       );
     }
 
-    // Tenant isolation: notify researchers of the training's own institution only
-    // (previously every researcher on the platform was notified).
-    const institutionId = training.institutionId || user.secondaryInstitutionId || null;
-    const institution = institutionId
-      ? await prisma.institution.findUnique({ where: { id: institutionId }, select: { id: true, userId: true } })
-      : null;
+    // Tenant isolation (#88): only the owning institution's training admins can trigger
+    // this, and only that institution's researchers are notified. Trainings open to
+    // other institutions are discoverable in the shared catalogue, not pushed to
+    // every researcher on the platform.
+    const ownInstitution = await resolveTrainingInstitution(user);
+    if (!isOwningTrainingAdmin(user, training, { institutionId: ownInstitution?.id })) {
+      return NextResponse.json({ error: 'Training not found' }, { status: 404 });
+    }
+    const institution = await prisma.institution.findUnique({
+      where: { id: training.institutionId },
+      select: { id: true, userId: true },
+    });
     if (!institution) {
       return NextResponse.json({ success: true, notificationsSent: 0, totalUsers: 0 });
-    }
-    if (training.institutionId && user.secondaryInstitutionId && training.institutionId !== user.secondaryInstitutionId) {
-      return NextResponse.json({ error: 'Training not found' }, { status: 404 });
     }
     const { memberWhere } = await resolveInstitutionMemberScope(institution);
 

@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import prisma from '../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../lib/auth-server';
 import { normalizeTargetGroups, TRAINING_ADMIN_TYPES } from '@/lib/training-admin';
-import { resolveTrainingInstitution } from '@/lib/training-admin-server';
+import { resolveTrainingInstitution, resolveTrainingScopeContext } from '@/lib/training-admin-server';
+import { trainingAdminListWhere, trainingVisibilityWhere } from '@/lib/training-scope';
 
 /**
  * GET /api/training
- * List all published trainings (institution filtering temporarily disabled)
+ * List trainings visible to the caller (tenant-scoped, see lib/training-scope.js)
  */
 export async function GET(request) {
   try {
@@ -23,19 +24,21 @@ export async function GET(request) {
     const status = searchParams.get('status');
     const includeAll = searchParams.get('includeAll') === 'true'; // For admin to see all statuses
 
-    // TODO(institution-filtering): Institution scoping is temporarily disabled
-    // so researchers see all trainings regardless of institution. Re-enable by
-    // restoring the institutionId filter here once institution assignment is
-    // reliable — keep this in sync with /api/training/[id], /api/training/my,
-    // and /api/training/[id]/register.
-    const where = {};
-
-    // If not admin or includeAll not set, only show published trainings
     const isTrainingAdmin = TRAINING_ADMIN_TYPES.includes(user.accountType);
+    const scopeCtx = await resolveTrainingScopeContext(user);
+
+    // Tenant scoping (#88): admins managing trainings (includeAll) only see their own
+    // institution's trainings, in any status. Everyone else sees their institution's
+    // published trainings plus published trainings open to other institutions.
+    const scopeWhere = includeAll && isTrainingAdmin
+      ? trainingAdminListWhere(user, scopeCtx)
+      : trainingVisibilityWhere(user, scopeCtx);
+
+    const where = { AND: [scopeWhere] };
     if (!includeAll || !isTrainingAdmin) {
-      where.status = 'PUBLISHED';
+      where.AND.push({ status: 'PUBLISHED' });
     } else if (status) {
-      where.status = status;
+      where.AND.push({ status });
     }
 
     const trainings = await prisma.training.findMany({
@@ -82,6 +85,7 @@ export async function GET(request) {
         endDate: training.endDate,
         maxParticipants: training.maxParticipants,
         status: training.status,
+        openToOtherInstitutions: training.openToOtherInstitutions,
         institutionId: training.institutionId,
         createdBy: training.createdBy,
         createdAt: training.createdAt,
@@ -135,6 +139,7 @@ export async function POST(request) {
       endDate,
       maxParticipants,
       status = 'DRAFT',
+      openToOtherInstitutions = false,
     } = body;
 
     // Validation
@@ -174,6 +179,7 @@ export async function POST(request) {
         endDate: new Date(endDate),
         maxParticipants: parseInt(maxParticipants),
         status,
+        openToOtherInstitutions: openToOtherInstitutions === true,
         institutionId: ownInstitution.id,
         createdBy: user.id,
       },

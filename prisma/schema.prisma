@@ -1942,6 +1942,10 @@ model Training {
   maxParticipants Int
   status          TrainingStatus @default(DRAFT)
 
+  // Shared catalogue: when true (and PUBLISHED), researchers of other institutions
+  // can see and register for this training. Rosters never cross tenants.
+  openToOtherInstitutions Boolean @default(false)
+
   // Institution scoping
   institutionId String // User's primaryInstitution
   createdBy     String // User ID of creator
@@ -1957,6 +1961,8 @@ model Training {
   certificates  TrainingCertificate[]
   notifications Notification[]
 
+  @@index([institutionId, status])
+  @@index([status, openToOtherInstitutions])
   @@map("trainings")
 }
 

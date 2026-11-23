@@ -19,6 +19,7 @@ import {
   Step,
   StepLabel,
   Stepper,
+  Switch,
   TextField,
   Typography,
 } from '@mui/material';
@@ -65,6 +66,7 @@ const EMPTY_FORM = {
   onlineLink: '',
   maxParticipants: 30,
   status: 'PUBLISHED',
+  openToOtherInstitutions: false,
 };
 
 const fieldSx = { '& .MuiInputBase-root': { borderRadius: 1.5 } };
@@ -119,6 +121,7 @@ function buildDetailsPayload(form) {
       startDate: schedule.startDate.toISOString(),
       endDate: schedule.endDate.toISOString(),
       maxParticipants: Number(form.maxParticipants) || 30,
+      openToOtherInstitutions: form.openToOtherInstitutions === true,
       status: 'DRAFT',
     },
   };
@@ -505,6 +508,25 @@ export default function TrainingFormDialog({
                 ))}
               </TextField>
             </Box>
+
+            <SectionLabel>Visibility</SectionLabel>
+            <FormControlLabel
+              control={(
+                <Switch
+                  checked={form.openToOtherInstitutions === true}
+                  onChange={(e) => updateForm({ openToOtherInstitutions: e.target.checked })}
+                />
+              )}
+              label={(
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>Open to researchers from other institutions</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Off: only your institution&apos;s staff can see and register. On: the published training is listed in the shared catalogue. Participant lists stay private to your institution.
+                  </Typography>
+                </Box>
+              )}
+              sx={{ alignItems: 'flex-start', ml: 0, '& .MuiSwitch-root': { mt: -0.5 } }}
+            />
             {step === 0 && !detailsValid && !working ? (
               <Alert severity="warning" sx={{ borderRadius: 1.5 }}>
                 {detailsValidationErrors[0]}
