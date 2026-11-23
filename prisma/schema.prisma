@@ -1960,6 +1960,7 @@ model Training {
   registrations TrainingRegistration[]
   certificates  TrainingCertificate[]
   notifications Notification[]
+  auditLogs     TrainingAuditLog[]
 
   @@index([institutionId, status])
   @@index([status, openToOtherInstitutions])
@@ -2066,6 +2067,26 @@ model TrainingCertificate {
   registration TrainingRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
 
   @@map("training_certificates")
+}
+
+// Training activity log (#90): who changed what on a training, with before/after.
+model TrainingAuditLog {
+  id         String   @id @default(cuid())
+  trainingId String
+  actorId    String? // User ID; null for system jobs
+  action     String // e.g. REGISTRATION_STATUS_CHANGED, MODULE_PROGRESS_UPDATED, CERTIFICATE_UPLOADED
+  entityType String // e.g. TrainingRegistration, TrainingCertificate
+  entityId   String
+  before     Json?
+  after      Json?
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+
+  @@index([trainingId, createdAt])
+  @@index([entityType, entityId])
+  @@map("training_audit_logs")
 }
 
 // Proposal Review Pipeline Models
