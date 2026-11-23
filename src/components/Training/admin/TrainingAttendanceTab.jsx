@@ -40,6 +40,9 @@ import {
   PersonOff as RemainingAbsentIcon,
   QrCode2 as QrIcon,
   VideoCall as VirtualIcon,
+  Download as DownloadIcon,
+  UploadFile as ImportIcon,
+  Print as PrintIcon,
 } from '@mui/icons-material';
 import {
   InstitutionModal,
@@ -49,6 +52,15 @@ import {
 } from '@/components/GlobalAdmin/InstitutionModalShell';
 import { ATTENDANCE_LABELS } from '@/lib/training-attendance';
 import VirtualAttendanceImportDialog from './VirtualAttendanceImportDialog';
+import AttendanceSheetImportDialog from './AttendanceSheetImportDialog';
+
+const browserTimeZone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Nairobi';
+  } catch {
+    return 'Africa/Nairobi';
+  }
+};
 
 const PURPLE = '#8b6cbc';
 
@@ -115,6 +127,8 @@ export default function TrainingAttendanceTab({ trainingId, training, onTraining
   const [sessionMenu, setSessionMenu] = useState(null); // { anchor, session }
   const [noteEditor, setNoteEditor] = useState(null); // { session, participant, record, note, status }
   const [importSession, setImportSession] = useState(null);
+  const [sheetImportOpen, setSheetImportOpen] = useState(false);
+  const [exportMenu, setExportMenu] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -253,6 +267,14 @@ export default function TrainingAttendanceTab({ trainingId, training, onTraining
               control={<Switch size="small" checked={data?.excludeExcusedSessions !== false} disabled={busy} onChange={(e) => toggleExcused(e.target.checked)} />}
               label={<Typography variant="body2">Excused sessions don&apos;t count against attendance</Typography>}
             />
+            <Stack direction="row" spacing={1}>
+              <Button size="small" variant="outlined" startIcon={<DownloadIcon />} onClick={(e) => setExportMenu(e.currentTarget)} sx={{ borderColor: PURPLE, color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
+                Export
+              </Button>
+              <Button size="small" variant="outlined" startIcon={<ImportIcon />} onClick={() => setSheetImportOpen(true)} sx={{ borderColor: PURPLE, color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
+                Import
+              </Button>
+            </Stack>
             <TextField
               size="small"
               placeholder="Search participants"
@@ -405,6 +427,24 @@ export default function TrainingAttendanceTab({ trainingId, training, onTraining
           <ListItemIcon><QrIcon fontSize="small" /></ListItemIcon>
           <ListItemText>Open check-in screen</ListItemText>
         </MenuItem>
+        <MenuItem
+          component="a"
+          href={sessionMenu ? `/api/training/${trainingId}/sessions/${sessionMenu.session.id}/sign-in-sheet?tz=${encodeURIComponent(browserTimeZone())}` : undefined}
+          target="_blank"
+          rel="noopener"
+          onClick={() => setSessionMenu(null)}
+        >
+          <ListItemIcon><PrintIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Printable sign-in sheet (PDF)</ListItemText>
+        </MenuItem>
+        <MenuItem
+          component="a"
+          href={sessionMenu ? `/api/training/${trainingId}/attendance/export?format=xlsx&sessionId=${sessionMenu.session.id}&tz=${encodeURIComponent(browserTimeZone())}` : undefined}
+          onClick={() => setSessionMenu(null)}
+        >
+          <ListItemIcon><DownloadIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Export this session (.xlsx)</ListItemText>
+        </MenuItem>
         {sessionMenu?.session?.deliveryMode !== 'IN_PERSON' ? (
           <MenuItem
             onClick={() => {
@@ -418,6 +458,25 @@ export default function TrainingAttendanceTab({ trainingId, training, onTraining
           </MenuItem>
         ) : null}
       </Menu>
+
+      <Menu anchorEl={exportMenu} open={Boolean(exportMenu)} onClose={() => setExportMenu(null)} disableScrollLock>
+        <MenuItem component="a" href={`/api/training/${trainingId}/attendance/export?format=xlsx&tz=${encodeURIComponent(browserTimeZone())}`} onClick={() => setExportMenu(null)}>
+          <ListItemText primary="Excel (.xlsx)" secondary="All sessions; also the import template" />
+        </MenuItem>
+        <MenuItem component="a" href={`/api/training/${trainingId}/attendance/export?format=csv&tz=${encodeURIComponent(browserTimeZone())}`} onClick={() => setExportMenu(null)}>
+          <ListItemText primary="CSV" secondary="All sessions" />
+        </MenuItem>
+      </Menu>
+
+      <AttendanceSheetImportDialog
+        open={sheetImportOpen}
+        trainingId={trainingId}
+        onClose={() => setSheetImportOpen(false)}
+        onImported={async (result) => {
+          setNotice(`Attendance sheet imported: ${result.written} mark${result.written === 1 ? '' : 's'} updated${result.errors?.length ? `, ${result.errors.length} row(s) skipped with errors` : ''}.`);
+          await load();
+        }}
+      />
 
       <VirtualAttendanceImportDialog
         open={Boolean(importSession)}
