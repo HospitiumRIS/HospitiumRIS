@@ -23,7 +23,9 @@ import {
   Home as HomeIcon,
   QrCode2 as QrIcon,
   RecordVoiceOver as FacilitatorIcon,
+  RateReview as FeedbackIcon,
 } from '@mui/icons-material';
+import FeedbackResults from '@/components/Training/FeedbackResults';
 import PageHeader from '@/components/common/PageHeader';
 import {
   InstitutionModal,
@@ -172,6 +174,7 @@ export default function FacilitatingPage() {
   const [error, setError] = useState('');
   const [view, setView] = useState('upcoming');
   const [register, setRegister] = useState(null);
+  const [feedbackFor, setFeedbackFor] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -263,6 +266,11 @@ export default function FacilitatingPage() {
                       </Button>
                     </Stack>
                   ) : null}
+                  {view === 'past' ? (
+                    <Button size="small" startIcon={<FeedbackIcon />} onClick={() => setFeedbackFor(s.training)} sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
+                      Feedback
+                    </Button>
+                  ) : null}
                 </Stack>
               </Paper>
             );
@@ -270,6 +278,15 @@ export default function FacilitatingPage() {
         </Stack>
       </Container>
       <RegisterDialog target={register} onClose={() => { setRegister(null); load(); }} />
+      <InstitutionModal open={Boolean(feedbackFor)} onClose={() => setFeedbackFor(null)} maxWidth="md">
+        <InstitutionModalHeader icon={FeedbackIcon} title="Feedback" subtitle={feedbackFor?.title} onClose={() => setFeedbackFor(null)} />
+        <InstitutionModalBody>
+          {feedbackFor ? <FeedbackResults trainingId={feedbackFor.id} /> : null}
+        </InstitutionModalBody>
+        <InstitutionModalFooter>
+          <Button onClick={() => setFeedbackFor(null)} sx={{ textTransform: 'none' }}>Close</Button>
+        </InstitutionModalFooter>
+      </InstitutionModal>
     </Box>
   );
 }

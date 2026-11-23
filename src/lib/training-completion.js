@@ -86,7 +86,7 @@ export function evaluateCompletion(training, facts = {}) {
   }
 
   if (training?.requireFeedback) {
-    const available = facts.feedbackAvailable === true; // until #106 adds forms, nothing to submit
+    const available = facts.feedbackAvailable === true; // no form, nothing to submit (#106)
     checks.push({
       rule: 'feedback',
       label: 'Submit the feedback form',
