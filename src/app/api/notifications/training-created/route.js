@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../lib/auth-server';
+import { resolveInstitutionMemberScope } from '../../../../lib/institution-admin';
 
 /**
  * POST /api/notifications/training-created
@@ -39,12 +40,30 @@ export async function POST(request) {
       );
     }
 
-    // Get all researchers (no institution filtering)
+    // Tenant isolation: notify researchers of the training's own institution only
+    // (previously every researcher on the platform was notified).
+    const institutionId = training.institutionId || user.secondaryInstitutionId || null;
+    const institution = institutionId
+      ? await prisma.institution.findUnique({ where: { id: institutionId }, select: { id: true, userId: true } })
+      : null;
+    if (!institution) {
+      return NextResponse.json({ success: true, notificationsSent: 0, totalUsers: 0 });
+    }
+    if (training.institutionId && user.secondaryInstitutionId && training.institutionId !== user.secondaryInstitutionId) {
+      return NextResponse.json({ error: 'Training not found' }, { status: 404 });
+    }
+    const { memberWhere } = await resolveInstitutionMemberScope(institution);
+
     const targetUsers = await prisma.user.findMany({
       where: {
-        id: { not: user.id }, // Exclude the creator
-        status: 'ACTIVE',
-        accountType: 'RESEARCHER', // Only notify researchers
+        AND: [
+          memberWhere,
+          {
+            id: { not: user.id }, // Exclude the creator
+            status: 'ACTIVE',
+            accountType: 'RESEARCHER', // Only notify researchers
+          },
+        ],
       },
     });
 

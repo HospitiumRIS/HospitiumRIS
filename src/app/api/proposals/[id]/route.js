@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { logApiActivity, logDatabaseActivity, getRequestMetadata } from '../../../../utils/activityLogger.js';
 import { requireAuth } from '../../../../lib/auth-server.js';
+import { canAccessProposal, findAccessibleProposal } from '../../../../lib/proposals/visibility.js';
+import { authorizeProposalDelete, authorizeProposalPatch, isGlobalAdmin, isProposalAdmin } from '../../../../lib/proposals/scope.js';
 import {
-    canAccessProposal,
     saveProposalDocument,
     proposalDocumentDisplayUrl,
     resolveProposalTenantId,
@@ -12,6 +13,23 @@ import { collectBudgetDocuments, persistProposalBudgetFields, readProposalBudget
 import { ensureProposalInReviewPipeline, isProposalInReview } from '../../../../lib/proposal-review-pipeline.js';
 
 const prisma = new PrismaClient();
+
+const SUBMIT_FROM = ['DRAFT', 'REVISION_REQUESTED'];
+const SUBMIT_TO = ['SUBMITTED', 'UNDER_REVIEW'];
+
+/**
+ * Status a PUT may set. Institution and global admins keep the previous behaviour
+ * (an in-review or decided proposal is never pushed back to DRAFT). Everyone else may
+ * only submit a draft or a revision; any other requested status leaves it unchanged.
+ */
+function nextStatusForPut(user, existing, requested) {
+    if (isGlobalAdmin(user) || isProposalAdmin(user)) {
+        const locked = isProposalInReview(existing.status) || ['APPROVED', 'REJECTED'].includes(existing.status);
+        return locked && requested === 'DRAFT' ? existing.status : (requested || 'DRAFT');
+    }
+    if (SUBMIT_FROM.includes(existing.status) && SUBMIT_TO.includes(requested)) return requested;
+    return existing.status;
+}
 
 export async function GET(request, { params }) {
     try {
@@ -22,6 +40,14 @@ export async function GET(request, { params }) {
                 { error: 'Proposal ID is required' },
                 { status: 400 }
             );
+        }
+
+        const auth = await requireAuth(request);
+        if (auth.error) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!(await findAccessibleProposal(auth.user, id))) {
+            return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
         }
 
         const proposal = await prisma.proposal.findUnique({
@@ -264,7 +290,7 @@ export async function PUT(request, { params }) {
         if (auth.error) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-        if (!canAccessProposal(auth.user, existingProposal)) {
+        if (!(await canAccessProposal(auth.user, existingProposal))) {
             return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
 
@@ -340,10 +366,7 @@ export async function PUT(request, { params }) {
             ethicsCommittee: proposalData.ethicsCommittee,
             approvalDate: proposalData.approvalDate ? new Date(proposalData.approvalDate) : null,
             publicationRelevance: proposalData.publicationRelevance,
-            status: (isProposalInReview(existingProposal.status) || ['APPROVED', 'REJECTED'].includes(existingProposal.status))
-              && proposalData.status === 'DRAFT'
-                ? existingProposal.status
-                : (proposalData.status || 'DRAFT'),
+            status: nextStatusForPut(auth.user, existingProposal, proposalData.status),
             updatedAt: new Date()
         };
 
@@ -454,12 +477,24 @@ export async function PATCH(request, { params }) {
             return NextResponse.json({ error: 'Proposal ID is required' }, { status: 400 });
         }
 
+        const auth = await requireAuth(request);
+        if (auth.error) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const body = await request.json();
         const { status, awardedAmount, notes } = body;
 
         const existing = await prisma.proposal.findUnique({ where: { id } });
         if (!existing) {
             return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
+        }
+
+        const decision = authorizeProposalPatch(auth.user, existing, { status, awardedAmount }, {
+            hasAccess: await canAccessProposal(auth.user, existing),
+        });
+        if (!decision.ok) {
+            return NextResponse.json({ error: decision.error }, { status: decision.status });
         }
 
         const updateData = { updatedAt: new Date() };
@@ -523,6 +558,11 @@ export async function DELETE(request, { params }) {
             );
         }
 
+        const auth = await requireAuth(request);
+        if (auth.error) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         // Check if proposal exists
         const existingProposal = await prisma.proposal.findUnique({
             where: { id }
@@ -533,6 +573,13 @@ export async function DELETE(request, { params }) {
                 { error: 'Proposal not found' },
                 { status: 404 }
             );
+        }
+
+        const decision = authorizeProposalDelete(auth.user, existingProposal, {
+            hasAccess: await canAccessProposal(auth.user, existingProposal),
+        });
+        if (!decision.ok) {
+            return NextResponse.json({ error: decision.error }, { status: decision.status });
         }
 
         // Delete related records first (due to foreign key constraints)

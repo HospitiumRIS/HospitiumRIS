@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../../lib/prisma';
 import { requireAuth } from '../../../../../../lib/auth-server';
-import {
-  canAccessProposal,
-  readProposalDocument,
-} from '../../../../../../lib/proposal-files';
+import { readProposalDocument } from '../../../../../../lib/proposal-files';
+import { canAccessProposal } from '../../../../../../lib/proposals/visibility';
 import { sanitizeFileName } from '../../../../../../lib/sanitize-file-name';
 
 export async function GET(request, { params }) {
@@ -21,7 +19,7 @@ export async function GET(request, { params }) {
             where: { id }
         });
 
-        if (!proposal || !canAccessProposal(auth.user, proposal)) {
+        if (!proposal || !(await canAccessProposal(auth.user, proposal))) {
             return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
 

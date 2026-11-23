@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-server';
+import { userInstitutionId } from '@/lib/proposals/scope';
 
 /**
  * Library sharing.
@@ -82,15 +83,26 @@ export async function GET(request) {
     if (search !== null) {
       const q = search.trim();
       if (q.length < 2) return NextResponse.json({ success: true, users: [] });
+      // Tenant isolation: name/email search covers the caller's own institution only.
+      // People at other institutions can still be found, but only by their exact email.
+      const institutionId = userInstitutionId(user);
+      const sameInstitution = institutionId
+        ? {
+            secondaryInstitutionId: institutionId,
+            OR: [
+              { email: { contains: q, mode: 'insensitive' } },
+              { givenName: { contains: q, mode: 'insensitive' } },
+              { familyName: { contains: q, mode: 'insensitive' } },
+            ],
+          }
+        : null;
+      const exactEmail = { email: { equals: q, mode: 'insensitive' } };
       const users = await prisma.user.findMany({
         where: {
           id: { not: user.id },
           status: 'ACTIVE',
-          OR: [
-            { email: { contains: q, mode: 'insensitive' } },
-            { givenName: { contains: q, mode: 'insensitive' } },
-            { familyName: { contains: q, mode: 'insensitive' } },
-          ],
+          deletedAt: null,
+          OR: sameInstitution ? [sameInstitution, exactEmail] : [exactEmail],
         },
         select: userSelect,
         take: 8,

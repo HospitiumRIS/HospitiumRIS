@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { getUserId } from '../../../../lib/auth-server.js';
+import { getAuthenticatedUser, getUserId } from '../../../../lib/auth-server.js';
+import { myProposalsWhere } from '../../../../lib/proposals/visibility.js';
 
 const prisma = new PrismaClient();
 
@@ -133,6 +134,8 @@ export async function GET(request) {
 
         // 4. Recent proposals
         const recentProposals = await prisma.proposal.findMany({
+            // Tenant isolation: only the caller's own proposals
+            where: await myProposalsWhere(await getAuthenticatedUser(request)),
             orderBy: {
                 updatedAt: 'desc'
             },

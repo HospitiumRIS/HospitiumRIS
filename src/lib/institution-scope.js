@@ -7,6 +7,8 @@ import {
   resolveInstitutionMemberScope,
 } from '@/lib/institution-admin';
 
+import { institutionProposalWhere } from '@/lib/proposals/scope';
+
 export const INSTITUTION_PORTAL_ROLES = ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN'];
 
 export function resolveInstitutionScope(user) {
@@ -25,57 +27,30 @@ export function withDateFilter(where, dateFilter) {
   return { AND: [where, dateFilter] };
 }
 
+/**
+ * IDs of the proposals that belong to an institution (tenant isolation).
+ *
+ * Uses the institution recorded on the proposal at creation, and for older rows without
+ * one, the people involved (creator, PI ORCID, follow-up, manuscript link) who are
+ * members. The free-text departments field and review-pipeline membership are no longer
+ * trusted: both let other institutions' proposals into this institution's portal.
+ * See lib/proposals/scope.js (institutionProposalWhere).
+ */
 export async function getInstitutionProposalScope(institution, memberIds = null) {
+  if (!institution?.id) return [];
   const ids = memberIds ?? (await getInstitutionMemberIds(institution));
-
   const memberOrcids = ids.length
     ? (await prisma.user.findMany({
         where: { id: { in: ids }, orcidId: { not: null } },
         select: { orcidId: true },
-      }))
-        .map((entry) => String(entry.orcidId).replace(/^https?:\/\/orcid\.org\//i, '').trim())
-        .filter(Boolean)
+      })).map((entry) => entry.orcidId)
     : [];
-  const orcidVariants = memberOrcids.flatMap((orcid) => [orcid, `https://orcid.org/${orcid}`]);
 
-  const [tracking, byDepartment, byMemberActivity, byMemberPi] = await Promise.all([
-    prisma.proposalReviewTracking.findMany({
-      where: { pipeline: { institutionId: institution.id } },
-      select: { proposalId: true },
-    }),
-    institution.name
-      ? prisma.proposal.findMany({
-          where: { departments: { has: institution.name } },
-          select: { id: true },
-        })
-      : Promise.resolve([]),
-    ids.length
-      ? prisma.proposal.findMany({
-          where: {
-            OR: [
-              { manuscripts: { some: { manuscript: { createdBy: { in: ids } } } } },
-              { grantFollowUpUserId: { in: ids } },
-            ],
-          },
-          select: { id: true },
-        })
-      : Promise.resolve([]),
-    orcidVariants.length
-      ? prisma.proposal.findMany({
-          where: { principalInvestigatorOrcid: { in: orcidVariants } },
-          select: { id: true },
-        })
-      : Promise.resolve([]),
-  ]);
-
-  return [
-    ...new Set([
-      ...tracking.map((entry) => entry.proposalId),
-      ...byDepartment.map((entry) => entry.id),
-      ...byMemberActivity.map((entry) => entry.id),
-      ...byMemberPi.map((entry) => entry.id),
-    ]),
-  ];
+  const rows = await prisma.proposal.findMany({
+    where: institutionProposalWhere(institution.id, { memberIds: ids, memberOrcids }),
+    select: { id: true },
+  });
+  return rows.map((row) => row.id);
 }
 
 export async function buildInstitutionProposalWhere(institution) {
