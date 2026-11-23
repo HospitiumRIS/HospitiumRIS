@@ -78,7 +78,8 @@ export async function GET(request, { params }) {
 
     // Tenant scoping (#88): out-of-scope trainings look like they don't exist.
     const scopeCtx = await resolveTrainingScopeContext(user);
-    if (!canViewTraining(user, training, scopeCtx)) {
+    const hasRegistration = training.registrations.some((r) => r.userId === user.id);
+    if (!canViewTraining(user, training, { ...scopeCtx, hasRegistration })) {
       return NextResponse.json(
         { error: 'Training not found' },
         { status: 404 }

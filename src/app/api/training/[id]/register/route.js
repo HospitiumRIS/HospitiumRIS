@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '../../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../../lib/auth-server';
 import { resolveTrainingScopeContext } from '@/lib/training-admin-server';
-import { canViewTraining } from '@/lib/training-scope';
+import { canRegisterForTraining, canViewTraining } from '@/lib/training-scope';
 
 /**
  * POST /api/training/[id]/register
@@ -48,7 +48,13 @@ export async function POST(request, { params }) {
 
     // Tenant scoping (#88): only trainings the caller can see can be registered for.
     const scopeCtx = await resolveTrainingScopeContext(user);
-    if (!canViewTraining(user, training, scopeCtx)) {
+    if (training.status === 'PUBLISHED' && !canRegisterForTraining(user, training, scopeCtx)) {
+      return NextResponse.json(
+        { error: 'Training not found' },
+        { status: 404 }
+      );
+    }
+    if (training.status !== 'PUBLISHED' && !canViewTraining(user, training, scopeCtx)) {
       return NextResponse.json(
         { error: 'Training not found' },
         { status: 404 }

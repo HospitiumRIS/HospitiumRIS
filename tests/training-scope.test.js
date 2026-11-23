@@ -122,3 +122,19 @@ describe('isOwningTrainingAdmin', () => {
     assert.equal(isOwningTrainingAdmin(researcherB, privateB, { institutionId: B }), false);
   });
 });
+
+describe('registrants keep access', () => {
+  const completedB = { id: 'tcb', institutionId: B, status: 'COMPLETED', openToOtherInstitutions: false };
+  const completedA = { id: 'tca', institutionId: A, status: 'COMPLETED', openToOtherInstitutions: false };
+
+  it('a registrant can still view a completed or no-longer-shared training', () => {
+    assert.equal(canViewTraining(researcherA, completedA), false);
+    assert.equal(canViewTraining(researcherA, completedA, { hasRegistration: true }), true);
+    assert.equal(canViewTraining(researcherA, completedB, { hasRegistration: true }), true);
+  });
+
+  it('a registration never unlocks drafts or new registrations', () => {
+    assert.equal(canViewTraining(researcherA, draftA, { hasRegistration: true }), false);
+    assert.equal(canRegisterForTraining(researcherA, privateB, { hasRegistration: true }), false);
+  });
+});

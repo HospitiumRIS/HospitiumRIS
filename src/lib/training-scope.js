@@ -58,10 +58,16 @@ export function trainingAdminListWhere(user, ctx = {}) {
   return { institutionId };
 }
 
-/** Can this user see this training? Mirrors trainingVisibilityWhere for one row. */
+/**
+ * Can this user see this training? Mirrors trainingVisibilityWhere for one row.
+ * `ctx.hasRegistration`: the user has their own registration for this training, so
+ * they keep access to it after it stops being listed (e.g. COMPLETED, or the
+ * shared-catalogue flag was turned off).
+ */
 export function canViewTraining(user, training, ctx = {}) {
   if (!user || !training) return false;
   if (isGlobalAdmin(user)) return true;
+  if (ctx.hasRegistration && training.status !== 'DRAFT') return true;
 
   const institutionId = ctx.institutionId ?? trainingUserInstitutionId(user);
   const isOwn = Boolean(institutionId) && training.institutionId === institutionId;
@@ -75,7 +81,7 @@ export function canViewTraining(user, training, ctx = {}) {
 /** Can this user register for this training (visibility only; capacity etc. checked elsewhere)? */
 export function canRegisterForTraining(user, training, ctx = {}) {
   if (!training || training.status !== 'PUBLISHED') return false;
-  return canViewTraining(user, training, ctx);
+  return canViewTraining(user, training, { ...ctx, hasRegistration: false });
 }
 
 /** Is the user an admin of the institution that owns this training? */
