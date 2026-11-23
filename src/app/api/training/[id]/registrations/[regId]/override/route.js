@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { auditTraining } from '@/lib/training-audit';
 import { requireSessionAdmin } from '@/lib/training-sessions-server';
 import { refreshTrainingProgress } from '@/lib/training-progress-server';
+import { notifyTraining } from '@/lib/training-notify';
 
 /**
  * POST /api/training/[id]/registrations/[regId]/override
@@ -63,6 +64,14 @@ export async function POST(request, { params }) {
       where: { id: regId },
       select: { id: true, status: true, completedAt: true, completionOverride: true },
     });
+
+    if (type !== 'CLEAR' && after.status !== before.status) {
+      await notifyTraining(type === 'COMPLETE' ? 'TRAINING_COMPLETED' : 'TRAINING_NOT_COMPLETED', {
+        userId: registration.userId,
+        trainingId: id,
+        dedupeKey: `${type === 'COMPLETE' ? 'completed' : 'not-completed'}:${regId}`,
+      });
+    }
 
     await auditTraining({
       trainingId: id,

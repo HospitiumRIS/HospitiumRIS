@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auditTraining } from '@/lib/training-audit';
 import { recomputeAttendancePercent, sessionHasAttendance } from '@/lib/training-attendance-server';
+import { notifyTrainingParticipants } from '@/lib/training-notify';
 import { validateSessionInput } from '@/lib/training-sessions';
 import {
   requireSessionAdmin,
@@ -41,6 +42,16 @@ export async function PUT(request, { params }) {
       data: validation.data,
       include: { module: { select: { id: true, title: true } } },
     });
+
+    // Tell participants about a cancelled session that hasn't happened yet.
+    if (existing.status !== 'CANCELLED' && session.status === 'CANCELLED' && new Date(session.endsAt) > new Date()) {
+      await notifyTrainingParticipants('SESSION_CANCELLED', {
+        trainingId: id,
+        sessionId: sid,
+        dedupeKey: `session-cancelled:${sid}`,
+        extra: { reason: typeof body?.reason === 'string' ? body.reason.slice(0, 500) : null },
+      });
+    }
 
     // Cancelling, restoring, moving or making a session optional changes everyone's %.
     if (
