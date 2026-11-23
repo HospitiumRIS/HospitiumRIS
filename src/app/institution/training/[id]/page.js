@@ -51,6 +51,7 @@ import { DELIVERY_MODE_LABELS } from '@/lib/training-sessions';
 import TrainingScheduleTab from '@/components/Training/admin/TrainingScheduleTab';
 import TrainingAttendanceTab from '@/components/Training/admin/TrainingAttendanceTab';
 import TrainingCompletionTab from '@/components/Training/admin/TrainingCompletionTab';
+import TrainingCertificateSettings from '@/components/Training/admin/TrainingCertificateSettings';
 import { MODULE_COMPLETION_LABELS, MODULE_COMPLETION_MODES } from '@/lib/training-completion';
 
 const PURPLE = '#8b6cbc';
@@ -334,6 +335,12 @@ export default function TrainingDetailPage() {
               </Button>
             </Paper>
           </Stack>
+        )}
+
+        {activeTab === 0 && (
+          <Box sx={{ mt: 2 }}>
+            <TrainingCertificateSettings training={training} onSaved={load} />
+          </Box>
         )}
 
         {activeTab === 5 && (

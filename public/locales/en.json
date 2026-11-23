@@ -2208,6 +2208,8 @@
     "manage_researchers_desc": "Add, edit, and manage researchers",
     "manage_trainings": "Manage Trainings",
     "manage_trainings_desc": "Create and manage institutional trainings",
+    "certificate_templates": "Certificate Templates",
+    "certificate_templates_desc": "Design the certificates your trainings issue",
     "performance_review": "Performance Review",
     "performance_review_desc": "Review researcher performance",
     "results_reporting": "Results & Reporting",

@@ -148,6 +148,7 @@ function buildInstitutionConfig(t) {
         categories: [
           category(t, 'nav_categories.training_management', [
             item(t, 'institution_nav.manage_trainings', 'institution_nav.manage_trainings_desc', '/institution/training', <SchoolIcon sx={ICON_SM} />),
+            item(t, 'institution_nav.certificate_templates', 'institution_nav.certificate_templates_desc', '/institution/training/certificate-templates', <AwardIcon sx={ICON_SM} />),
           ]),
         ],
       },

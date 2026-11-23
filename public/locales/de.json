@@ -2158,6 +2158,8 @@
     "manage_researchers_desc": "Forscher hinzufügen, bearbeiten und verwalten",
     "manage_trainings": "Schulungen verwalten",
     "manage_trainings_desc": "Institutionelle Schulungen erstellen und verwalten",
+    "certificate_templates": "Zertifikatsvorlagen",
+    "certificate_templates_desc": "Gestalten Sie die Zertifikate Ihrer Schulungen",
     "performance_review": "Leistungsbeurteilung",
     "performance_review_desc": "Leistung der Forscher prüfen",
     "results_reporting": "Ergebnisse & Berichte",

@@ -2158,6 +2158,8 @@
     "manage_researchers_desc": "शोधकर्ता जोड़ें, संपादित करें और प्रबंधित करें",
     "manage_trainings": "प्रशिक्षण प्रबंधित करें",
     "manage_trainings_desc": "संस्थागत प्रशिक्षण बनाएँ और प्रबंधित करें",
+    "certificate_templates": "Certificate Templates",
+    "certificate_templates_desc": "Design the certificates your trainings issue",
     "performance_review": "प्रदर्शन समीक्षा",
     "performance_review_desc": "शोधकर्ता प्रदर्शन की समीक्षा करें",
     "results_reporting": "परिणाम और रिपोर्टिंग",

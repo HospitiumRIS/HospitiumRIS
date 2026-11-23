@@ -332,6 +332,13 @@ export default function InstitutionTrainingPage() {
           <Stack direction="row" spacing={1}>
             <Button
               variant="contained"
+              onClick={() => router.push('/institution/training/certificate-templates')}
+              sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}
+            >
+              Certificate templates
+            </Button>
+            <Button
+              variant="contained"
               startIcon={<RefreshIcon />}
               onClick={fetchTrainings}
               sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}

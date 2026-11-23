@@ -2158,6 +2158,8 @@
     "manage_researchers_desc": "เพิ่ม แก้ไข และจัดการนักวิจัย",
     "manage_trainings": "จัดการการอบรม",
     "manage_trainings_desc": "สร้างและจัดการการอบรมของสถาบัน",
+    "certificate_templates": "Certificate Templates",
+    "certificate_templates_desc": "Design the certificates your trainings issue",
     "performance_review": "การประเมินผลงาน",
     "performance_review_desc": "ประเมินผลงานนักวิจัย",
     "results_reporting": "ผลลัพธ์และการรายงาน",

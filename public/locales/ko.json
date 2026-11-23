@@ -2158,6 +2158,8 @@
     "manage_researchers_desc": "연구자를 추가, 편집, 관리합니다",
     "manage_trainings": "교육 관리",
     "manage_trainings_desc": "기관 교육을 만들고 관리합니다",
+    "certificate_templates": "Certificate Templates",
+    "certificate_templates_desc": "Design the certificates your trainings issue",
     "performance_review": "성과 평가",
     "performance_review_desc": "연구자 성과를 검토합니다",
     "results_reporting": "결과 및 보고",

@@ -2158,6 +2158,8 @@
     "manage_researchers_desc": "သုတေသီများ ထည့်၊ တည်းဖြတ်ပြီး စီမံပါ",
     "manage_trainings": "သင်တန်းများ စီမံရန်",
     "manage_trainings_desc": "အဖွဲ့အစည်း သင်တန်းများ ဖန်တီးပြီး စီမံပါ",
+    "certificate_templates": "Certificate Templates",
+    "certificate_templates_desc": "Design the certificates your trainings issue",
     "performance_review": "စွမ်းဆောင်ရည် သုံးသပ်ခြင်း",
     "performance_review_desc": "သုတေသီ စွမ်းဆောင်ရည်ကို သုံးသပ်ပါ",
     "results_reporting": "ရလဒ်များနှင့် အစီရင်ခံခြင်း",
