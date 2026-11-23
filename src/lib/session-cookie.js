@@ -1,4 +1,4 @@
-const SESSION_COOKIE_NAME = 'hospitium_session';
+import { createSession, SESSION_COOKIE_NAME } from './sessions.js';
 
 /**
  * Session cookie options for login/logout.
@@ -32,9 +32,19 @@ export function getSessionCookieOptions(maxAge) {
   return options;
 }
 
-export function setSessionCookie(response, userId, { rememberMe = false } = {}) {
+/**
+ * Start a server-side session for this user and put its token in the cookie.
+ * The cookie never contains the user ID.
+ *
+ * @param {Response} response - NextResponse to set the cookie on
+ * @param {string} userId
+ * @param {{ rememberMe?: boolean, request?: Request }} options
+ */
+export async function setSessionCookie(response, userId, { rememberMe = false, request = null } = {}) {
+  const token = await createSession(userId, { rememberMe, request });
   const maxAge = rememberMe ? 30 * 24 * 60 * 60 : undefined;
-  response.cookies.set(SESSION_COOKIE_NAME, userId, getSessionCookieOptions(maxAge));
+  response.cookies.set(SESSION_COOKIE_NAME, token, getSessionCookieOptions(maxAge));
+  return token;
 }
 
 export function clearSessionCookie(response) {

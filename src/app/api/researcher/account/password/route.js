@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-server';
 import { hashPassword, verifyPassword, validatePassword } from '@/lib/auth';
 import { getPasswordPolicy } from '@/lib/system-settings';
+import { revokeUserSessions } from '@/lib/sessions';
+import { getSessionToken } from '@/lib/auth-server';
 import { sendPasswordChangedEmail } from '@/lib/email';
 import { logInfo, logWarning } from '@/utils/activityLogger';
 
@@ -54,7 +56,10 @@ export async function POST(request) {
       data: { passwordHash: await hashPassword(newPassword) },
     });
 
-    await logInfo('User changed their password', { action: 'PASSWORD_CHANGE', userId: user.id });
+    // Sign out every other device; keep this one signed in.
+    const endedSessions = await revokeUserSessions(user.id, { exceptToken: await getSessionToken() });
+
+    await logInfo('User changed their password', { action: 'PASSWORD_CHANGE', userId: user.id, endedSessions });
 
     // Security notice — don't fail the request if email delivery fails.
     const forwarded = request.headers.get('x-forwarded-for');
@@ -63,7 +68,12 @@ export async function POST(request) {
       userAgent: request.headers.get('user-agent'),
     }).catch((err) => console.error('Password changed email failed:', err));
 
-    return NextResponse.json({ success: true, message: 'Password updated' });
+    return NextResponse.json({
+      success: true,
+      message: endedSessions
+        ? `Password updated. You were signed out on ${endedSessions} other ${endedSessions === 1 ? 'device' : 'devices'}.`
+        : 'Password updated',
+    });
   } catch (err) {
     console.error('Error changing password:', err);
     return NextResponse.json({ success: false, message: 'Failed to change password' }, { status: 500 });

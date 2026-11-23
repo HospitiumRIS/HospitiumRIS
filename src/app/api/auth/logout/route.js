@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { clearSessionCookie } from '@/lib/session-cookie';
-import { getAuthenticatedUser } from '@/lib/auth-server';
+import { getAuthenticatedUser, getSessionToken } from '@/lib/auth-server';
+import { deleteSessionByToken } from '@/lib/sessions';
 import { recordAuthEvent } from '@/lib/ops/audit';
 
 export async function POST(request) {
@@ -11,6 +12,12 @@ export async function POST(request) {
     if (user) {
       await recordAuthEvent(request, { action: 'LOGOUT', user });
     }
+
+    // End the server-side session so the token stops working everywhere,
+    // even if a copy of the cookie exists.
+    await deleteSessionByToken(await getSessionToken()).catch((err) =>
+      console.error('Failed to delete session on logout:', err.message)
+    );
     
     const response = NextResponse.json(
       { success: true, message: 'Logged out successfully' },

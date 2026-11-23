@@ -27,7 +27,7 @@ export function retentionSettings() {
 async function runOpsRetention() {
   const { usageDays, authDays, adminDays } = retentionSettings();
   const now = Date.now();
-  const [usage, auth, admin] = await Promise.all([
+  const [usage, auth, admin, sessions] = await Promise.all([
     prisma.usageEvent.deleteMany({ where: { createdAt: { lt: new Date(now - usageDays * DAY_MS) } } }),
     prisma.auditEvent.deleteMany({
       where: { category: 'AUTH', createdAt: { lt: new Date(now - authDays * DAY_MS) } },
@@ -35,10 +35,15 @@ async function runOpsRetention() {
     prisma.auditEvent.deleteMany({
       where: { category: { in: ['ADMIN', 'SYSTEM'] }, createdAt: { lt: new Date(now - adminDays * DAY_MS) } },
     }),
+    // Sessions past their absolute expiry, or idle longer than the longest
+    // idle limit (24 h), can never be used again.
+    prisma.session.deleteMany({
+      where: { OR: [{ expiresAt: { lt: new Date(now) } }, { lastSeenAt: { lt: new Date(now - DAY_MS) } }] },
+    }),
   ]);
   return {
-    summary: `Removed ${usage.count} usage, ${auth.count} sign-in and ${admin.count} admin/system events past retention`,
-    metadata: { usageDeleted: usage.count, authDeleted: auth.count, adminDeleted: admin.count, usageDays, authDays, adminDays },
+    summary: `Removed ${usage.count} usage, ${auth.count} sign-in and ${admin.count} admin/system events past retention, and ${sessions.count} expired sessions`,
+    metadata: { usageDeleted: usage.count, authDeleted: auth.count, adminDeleted: admin.count, sessionsDeleted: sessions.count, usageDays, authDays, adminDays },
   };
 }
 

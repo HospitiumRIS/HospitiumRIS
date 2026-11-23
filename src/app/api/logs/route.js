@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 import { getRequestMetadata, logApiActivity, logError } from '@/utils/activityLogger';
-import { getAuthenticatedUser } from '@/lib/auth-server';
+import { getAuthenticatedUser, getSessionRef } from '@/lib/auth-server';
 
 const LOG_FILE = path.join(process.cwd(), 'logs', 'activity.log');
 
@@ -16,7 +16,7 @@ const isAdminUser = async (request) => {
       user = await getAuthenticatedUser(request);
     } catch (authError) {
       // Fallback: check session cookie directly
-      const sessionCookie = request.cookies.get('hospitium_session')?.value;
+      const sessionCookie = (await getSessionRef())?.value;
       if (sessionCookie) {
         const { default: prisma } = await import('@/lib/prisma');
         user = await prisma.user.findUnique({

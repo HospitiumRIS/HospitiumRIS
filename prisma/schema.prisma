@@ -130,6 +130,9 @@ model User {
   // Grant tracker follow-up assignments
   grantFollowUpAssignments Proposal[] @relation("ProposalGrantFollowUp")
 
+  // Signed-in browser sessions (see lib/sessions.js)
+  sessions Session[]
+
   // Notification Preferences
   notificationPreferences NotificationPreference?
 
@@ -2776,4 +2779,24 @@ model SystemSetting {
   updatedById String?
 
   @@map("system_settings")
+}
+
+// Server-side login sessions. The browser cookie holds a random token; only its
+// SHA-256 hash is stored here, so a database leak doesn't hand out live sessions.
+// Rows are deleted on logout, password change, suspension and expiry.
+model Session {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  expiresAt  DateTime
+  rememberMe Boolean  @default(false)
+  ipAddress  String?
+  userAgent  String?
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
 }

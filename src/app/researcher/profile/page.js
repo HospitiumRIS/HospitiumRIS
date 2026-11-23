@@ -59,6 +59,7 @@ import { ResearcherIdLinks, ResearcherIdsPanel } from '../../../components/Resea
 import ProfilePhotoAvatar from '../../../components/Researcher/ProfilePhotoAvatar';
 import ResearchExpertiseCard from '../../../components/Researcher/ResearchExpertiseCard';
 import ChangePasswordButton from '../../../components/Researcher/ChangePasswordCard';
+import SignOutEverywhere from '../../../components/Researcher/SignOutEverywhere';
 
 // ---------------------------------------------------------------------------
 // Design tokens
@@ -851,9 +852,18 @@ const ResearcherProfilePage = () => {
                     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
                       <SectionHeading icon={LockIcon} title="Password" subtitle="Change the password you use to sign in. We'll email you to confirm." />
                       <Box sx={{ flexShrink: 0, mb: { sm: 2 } }}>
-                        <ChangePasswordButton onChanged={() => setSuccess('Password updated. A confirmation has been sent to your email.')} />
+                        <ChangePasswordButton
+                          onChanged={(message) => {
+                            const base = (message || 'Password updated').replace(/\.?$/, '.');
+                            setSuccess(`${base} A confirmation has been sent to your email.`);
+                          }}
+                        />
                       </Box>
                     </Box>
+
+                    <Divider />
+
+                    <SignOutEverywhere heading={SectionHeading} />
 
                     {SELF_DELETABLE.includes(user?.accountType) && (
                       <>

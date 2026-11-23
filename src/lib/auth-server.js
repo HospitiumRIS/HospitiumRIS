@@ -1,35 +1,32 @@
 import { cookies } from 'next/headers';
-import prisma from './prisma';
 import { isBlockedByMaintenance } from './system-settings';
+import { findSession, SESSION_COOKIE_NAME } from './sessions';
+
+/** Raw session token from the cookie (never a user ID). */
+export async function getSessionToken() {
+  const cookieStore = await cookies();
+  return cookieStore.get(SESSION_COOKIE_NAME)?.value || null;
+}
 
 /**
- * Get authenticated user from request
- * @param {Request} request - The incoming request
+ * Get authenticated user from the session cookie.
+ * The cookie holds a random token that is looked up (by hash) in the sessions
+ * table; idle/expired sessions are rejected and deleted.
+ * @param {Request} request - The incoming request (unused; kept for callers)
  * @returns {Promise<Object|null>} User object or null if not authenticated
  */
 export async function getAuthenticatedUser(request) {
   try {
-    // Check for session cookie
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('hospitium_session');
-    
-    if (!sessionCookie?.value) {
+    const token = await getSessionToken();
+    if (!token) {
       return null;
     }
 
-    // Find user by session ID (which is the user ID in our implementation)
-    const user = await prisma.user.findUnique({
-      where: { id: sessionCookie.value },
-        include: {
-          institution: true,
-          secondaryInstitution: true,
-          foundation: true,
-        }
-    });
-
-    if (!user) {
+    const found = await findSession(token);
+    if (!found) {
       return null;
     }
+    const { user } = found;
 
     // Check if user is still active
     if (user.status !== 'ACTIVE' || !user.emailVerified) {
@@ -46,6 +43,18 @@ export async function getAuthenticatedUser(request) {
     console.error('Authentication error:', error);
     return null;
   }
+}
+
+/**
+ * Compatibility shim for routes that used to read the cookie directly and then
+ * query `prisma.user.findUnique({ where: { id: sessionCookie.value } })`.
+ * Returns `{ value: <userId> }` for a valid session, or null, so those routes
+ * keep their own status/role checks unchanged while no longer trusting the
+ * cookie value as a user ID. Prefer getAuthenticatedUser in new code.
+ */
+export async function getSessionRef() {
+  const user = await getAuthenticatedUser();
+  return user ? { value: user.id } : null;
 }
 
 /**

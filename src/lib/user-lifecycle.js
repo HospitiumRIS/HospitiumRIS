@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
+import { revokeUserSessions } from '@/lib/sessions';
 import { hashPassword } from '@/lib/auth';
 import { purgeProfilePhotos } from '@/lib/profile-photo';
 
@@ -56,6 +57,8 @@ async function scrubReviewerSnapshots(tx, userId, reassignTo = null) {
  * @param institution institution to pin the account to (optional; keeps it visible to that admin)
  */
 export async function softDeleteUser({ target, actor, institution = null }) {
+  // A deleted account must not stay signed in anywhere.
+  await revokeUserSessions(target.id);
   return prisma.user.update({
     where: { id: target.id },
     data: {
@@ -116,6 +119,7 @@ export async function anonymizeUser(userId) {
     const user = await tx.user.findUnique({ where: { id: userId } });
     if (!user || user.status !== 'DELETED' || user.anonymizedAt) return null;
 
+    await tx.session.deleteMany({ where: { userId } });
     await tx.researchProfile.deleteMany({ where: { userId } });
     await tx.notificationPreference.deleteMany({ where: { userId } });
     await tx.userSettings.deleteMany({ where: { userId } });

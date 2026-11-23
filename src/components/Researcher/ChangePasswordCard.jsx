@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import usePublicSettings from '@/hooks/usePublicSettings';
 import {
   Alert,
   Box,
@@ -28,14 +29,18 @@ import {
 const PURPLE = '#8b6cbc';
 const PURPLE_DARK = '#7a5caa';
 
-// Mirrors validatePassword() in src/lib/auth.js
-const RULES = [
-  { key: 'minLength', label: 'At least 8 characters', test: (p) => p.length >= 8 },
-  { key: 'hasUpper', label: 'An uppercase letter', test: (p) => /[A-Z]/.test(p) },
-  { key: 'hasLower', label: 'A lowercase letter', test: (p) => /[a-z]/.test(p) },
-  { key: 'hasNumber', label: 'A number', test: (p) => /\d/.test(p) },
-  { key: 'hasSpecial', label: 'A symbol (e.g. ! @ # $ %)', test: (p) => /[!@#$%^&*(),.?":{}|<>]/.test(p) },
-];
+// Mirrors validatePassword() in src/lib/auth.js, using the admin-configured
+// policy from System Settings > Security.
+function buildRules(policy) {
+  const min = Math.max(8, Number(policy?.minLength) || 8);
+  return [
+    { key: 'minLength', label: `At least ${min} characters`, test: (p) => p.length >= min, on: true },
+    { key: 'hasUpper', label: 'An uppercase letter', test: (p) => /[A-Z]/.test(p), on: policy?.requireUppercase !== false },
+    { key: 'hasLower', label: 'A lowercase letter', test: (p) => /[a-z]/.test(p), on: policy?.requireLowercase !== false },
+    { key: 'hasNumber', label: 'A number', test: (p) => /\d/.test(p), on: policy?.requireNumbers !== false },
+    { key: 'hasSpecial', label: 'A symbol (e.g. ! @ # $ %)', test: (p) => /[^A-Za-z0-9]/.test(p), on: policy?.requireSpecialChars !== false },
+  ].filter((r) => r.on);
+}
 
 const STRENGTH = [
   { label: 'Too weak', color: '#dc2626' },
@@ -84,10 +89,12 @@ export default function ChangePasswordButton({ onChanged }) {
   const [confirm, setConfirm] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const { settings } = usePublicSettings();
+  const RULES = buildRules(settings.passwordPolicy);
 
   const passed = RULES.filter((r) => r.test(next)).length;
   const allPassed = passed === RULES.length;
-  const strength = next ? STRENGTH[Math.max(0, passed - 1)] : null;
+  const strength = next ? STRENGTH[Math.min(STRENGTH.length - 1, Math.max(0, Math.round((passed / RULES.length) * STRENGTH.length) - 1))] : null;
   const mismatch = confirm.length > 0 && confirm !== next;
   const canSubmit = current && allPassed && confirm === next && !saving;
 
@@ -121,7 +128,7 @@ export default function ChangePasswordButton({ onChanged }) {
         return;
       }
       setOpen(false);
-      onChanged?.();
+      onChanged?.(data.message);
     } catch (err) {
       console.error(err);
       setError('Failed to change password');

@@ -424,6 +424,7 @@ const ACTION_LABELS = {
   ACTIVATION_RESENT: 'Activation resent',
   JOB_RUN: 'Job run',
   AUDIT_EXPORTED: 'Audit exported',
+  SESSIONS_REVOKED: 'Signed out other devices',
 };
 
 export function actionLabel(action) {

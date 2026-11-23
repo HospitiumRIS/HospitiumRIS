@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
+import { getSessionRef } from '@/lib/auth-server';
 import { cookies } from 'next/headers';
 
 export async function GET(request) {
   try {
     // Check for session cookie
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('hospitium_session');
+    const sessionCookie = await getSessionRef();
     
     if (!sessionCookie?.value) {
       return NextResponse.json(
@@ -14,9 +15,9 @@ export async function GET(request) {
       );
     }
 
-    // In a real application, you would validate the session against your database
-    // For now, we'll just check if the cookie exists and is not expired
-    
+    // getSessionRef looks the token up in the sessions table and rejects
+    // expired, idle or revoked sessions and inactive accounts.
+
     return NextResponse.json(
       { success: true, message: 'Session valid' },
       { status: 200 }

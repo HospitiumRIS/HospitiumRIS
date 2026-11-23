@@ -190,6 +190,10 @@ async function handleDELETE(_request, { params }) {
     }
 
     await prisma.$transaction(async (tx) => {
+      // These admins are demoted below, so end their current (admin) sessions.
+      await tx.session.deleteMany({
+        where: { user: { OR: adminConditions, accountType: 'INSTITUTION_ADMIN' } },
+      });
       await tx.user.updateMany({
         where: {
           OR: adminConditions,
