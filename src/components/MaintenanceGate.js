@@ -27,7 +27,9 @@ export default function MaintenanceGate({ children }) {
     !isLoading &&
     settings.maintenanceMode &&
     user?.accountType !== 'GLOBAL_ADMIN' &&
-    !ALWAYS_OPEN.includes(pathname);
+    !ALWAYS_OPEN.includes(pathname) &&
+    // Certificates must stay verifiable during maintenance (#101).
+    !pathname.startsWith('/verify/');
 
   if (!blocked) return children;
 
