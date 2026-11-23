@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { getUserId } from '../../../../lib/auth-server.js';
+import { getAuthenticatedUser, getUserId } from '../../../../lib/auth-server.js';
+import { myProposalsWhere } from '../../../../lib/proposals/visibility.js';
 
 const prisma = new PrismaClient();
 
@@ -14,6 +15,8 @@ export async function GET(request) {
                 { status: 401 }
             );
         }
+        // Tenant isolation: only the caller's own proposals (creator, PI, co-investigator, follow-up)
+        const myProposals = await myProposalsWhere(await getAuthenticatedUser(request));
 
         const deadlines = [];
         const now = new Date();
@@ -21,6 +24,7 @@ export async function GET(request) {
         // 1. Get deadlines from proposals with start dates
         const upcomingProposals = await prisma.proposal.findMany({
             where: {
+                AND: [myProposals],
                 startDate: {
                     gte: now
                 },
@@ -65,6 +69,7 @@ export async function GET(request) {
         // 2. Get deadlines from proposals with end dates
         const endingProposals = await prisma.proposal.findMany({
             where: {
+                AND: [myProposals],
                 endDate: {
                     gte: now
                 },

@@ -1,5 +1,8 @@
 const IN_REVIEW_STATUSES = ['SUBMITTED', 'UNDER_REVIEW'];
 
+/** Pipeline owner for proposals that have no institution. */
+export const UNASSIGNED_PIPELINE_INSTITUTION = 'default';
+
 const DEFAULT_STAGES = [
   {
     name: 'Administrative Review',
@@ -24,9 +27,20 @@ const DEFAULT_STAGES = [
   },
 ];
 
-async function resolveReviewPipeline(client) {
+/**
+ * Review pipeline for one institution.
+ *
+ * Tenant isolation: a proposal is only ever routed to a pipeline owned by its own
+ * institution. (Previously the first active pipeline on the platform was used, so one
+ * institution's pipeline collected every institution's submissions.) When the
+ * institution has no pipeline yet, a default one is created for it. Proposals with no
+ * institution (researcher not linked to one) use the shared 'default' pipeline, which
+ * no institution portal treats as its own.
+ */
+export async function resolveReviewPipeline(client, institutionId) {
+  const ownerId = institutionId || UNASSIGNED_PIPELINE_INSTITUTION;
   let pipeline = await client.proposalReviewPipeline.findFirst({
-    where: { isActive: true },
+    where: { isActive: true, institutionId: ownerId },
     orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
     include: { stages: { orderBy: { order: 'asc' } } },
   });
@@ -34,7 +48,7 @@ async function resolveReviewPipeline(client) {
   if (!pipeline) {
     pipeline = await client.proposalReviewPipeline.create({
       data: {
-        institutionId: 'default',
+        institutionId: ownerId,
         name: 'Standard Proposal Review',
         description: 'Default review pipeline for submitted proposals',
         isActive: true,
@@ -59,6 +73,27 @@ async function resolveReviewPipeline(client) {
   return pipeline;
 }
 
+
+/**
+ * Institution a proposal belongs to: the value recorded at creation, else the creator's
+ * institution, else the institution of the user whose ORCID is the PI. Null if unknown.
+ */
+export async function proposalInstitutionId(client, proposal) {
+  if (!proposal) return null;
+  if (proposal.institutionId) return proposal.institutionId;
+  const creator = proposal.createdBy;
+  if (creator?.secondaryInstitutionId || creator?.institution?.id) {
+    return creator.secondaryInstitutionId || creator.institution.id;
+  }
+  const orcid = String(proposal.principalInvestigatorOrcid || '').match(/\d{4}-\d{4}-\d{4}-\d{3}[\dX]/i)?.[0];
+  if (!orcid) return null;
+  const pi = await client.user.findFirst({
+    where: { orcidId: { in: [orcid, `https://orcid.org/${orcid}`] } },
+    select: { secondaryInstitutionId: true, institution: { select: { id: true } } },
+  });
+  return pi?.secondaryInstitutionId || pi?.institution?.id || null;
+}
+
 export async function ensureProposalInReviewPipeline(client, proposalId, { status = 'UNDER_REVIEW' } = {}) {
   const existing = await client.proposalReviewTracking.findUnique({
     where: { proposalId },
@@ -66,7 +101,12 @@ export async function ensureProposalInReviewPipeline(client, proposalId, { statu
 
   const proposal = await client.proposal.findUnique({
     where: { id: proposalId },
-    select: { status: true },
+    select: {
+      status: true,
+      institutionId: true,
+      principalInvestigatorOrcid: true,
+      createdBy: { select: { secondaryInstitutionId: true, institution: { select: { id: true } } } },
+    },
   });
   const canPromote = ['DRAFT', 'SUBMITTED', 'REVISION_REQUESTED'].includes(proposal?.status);
   const nextStatus = IN_REVIEW_STATUSES.includes(status) ? status : 'UNDER_REVIEW';
@@ -92,7 +132,7 @@ export async function ensureProposalInReviewPipeline(client, proposalId, { statu
     return existing;
   }
 
-  const pipeline = await resolveReviewPipeline(client);
+  const pipeline = await resolveReviewPipeline(client, await proposalInstitutionId(client, proposal));
   const firstStage = pipeline.stages?.[0] || null;
 
   const tracking = await client.proposalReviewTracking.create({

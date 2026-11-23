@@ -1,25 +1,25 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { logApiActivity, logDatabaseActivity, getRequestMetadata } from '../../../utils/activityLogger.js';
-import { getUserId, requireAuth } from '../../../lib/auth-server.js';
+import { getAuthenticatedUser, requireAuth } from '../../../lib/auth-server.js';
+import { proposalListWhere, withVisibility } from '../../../lib/proposals/visibility.js';
+import { userInstitutionId } from '../../../lib/proposals/scope.js';
 import { saveProposalDocument } from '../../../lib/proposal-files.js';
 import { collectBudgetDocuments, persistProposalBudgetFields } from '../../../lib/proposal-budget.js';
 import { ensureProposalInReviewPipeline, isProposalInReview } from '../../../lib/proposal-review-pipeline.js';
 
 
+const CREATE_STATUSES = ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW'];
+
 export async function GET(request) {
     try {
-        // Get current user
-        const userId = await getUserId(request);
-        let currentUser = null;
-        
-        if (userId) {
-            currentUser = await prisma.user.findUnique({
-                where: { id: userId },
-                select: { id: true, email: true, orcidId: true, accountType: true, givenName: true, familyName: true, primaryInstitution: true }
-            });
+        // Tenant isolation: every caller sees only the proposals they are allowed to.
+        const currentUser = await getAuthenticatedUser(request);
+        const visibilityWhere = await proposalListWhere(currentUser);
+        if (!visibilityWhere) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-        
+
         const requestMetadata = getRequestMetadata(request, currentUser);
         await logApiActivity('GET', '/api/proposals', 200, requestMetadata);
         
@@ -31,32 +31,19 @@ export async function GET(request) {
         // ?include=review adds a per-proposal review summary in the same query
         const includeReview = (searchParams.get('include') || '').split(',').includes('review');
 
-        console.log('Query params:', { search, status, limit, offset });
-        console.log('Current user:', { orcidId: currentUser?.orcidId, accountType: currentUser?.accountType, institution: currentUser?.primaryInstitution });
-
-        // Build where clause
-        const where = {};
-        
-        // Filter based on user account type
-        if (currentUser?.accountType === 'RESEARCHER' && currentUser?.orcidId) {
-            // Researchers only see their own proposals
-            where.principalInvestigatorOrcid = currentUser.orcidId;
-        }
-        // Institution admins and global admins see all proposals (no filter)
-        
+        // Route filters, combined with the caller's visibility scope
+        const filters = {};
         if (search) {
-            where.OR = [
+            filters.OR = [
                 { title: { contains: search, mode: 'insensitive' } },
                 { principalInvestigator: { contains: search, mode: 'insensitive' } },
                 { researchAreas: { hasSome: [search] } }
             ];
         }
-        
         if (status && status !== 'All Statuses') {
-            where.status = status;
+            filters.status = status;
         }
-
-        console.log('Where clause:', JSON.stringify(where, null, 2));
+        const where = withVisibility(visibilityWhere, filters);
 
         const proposals = await prisma.proposal.findMany({
             where,
@@ -81,8 +68,6 @@ export async function GET(request) {
                 }
             })
         });
-
-        console.log('Found proposals:', proposals.length);
 
         // Transform data for frontend
         const transformedProposals = proposals.map(proposal => ({
@@ -194,7 +179,12 @@ export async function POST(request) {
                 dataManagementPlan: [],
                 otherRelatedFiles: [],
 
-                status: proposalData.status || 'DRAFT',
+                // Researchers can only save a draft or submit; decisions belong to the review process
+                status: CREATE_STATUSES.includes(proposalData.status) ? proposalData.status : 'DRAFT',
+
+                // Owner and tenant, fixed at creation (tenant isolation)
+                createdById: user.id,
+                institutionId: userInstitutionId(user),
             }
         });
 

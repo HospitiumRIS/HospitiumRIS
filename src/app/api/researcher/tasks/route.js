@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { getUserId } from '../../../../lib/auth-server.js';
+import { getAuthenticatedUser, getUserId } from '../../../../lib/auth-server.js';
+import { myProposalsWhere } from '../../../../lib/proposals/visibility.js';
 
 const prisma = new PrismaClient();
 
@@ -14,6 +15,8 @@ export async function GET(request) {
                 { status: 401 }
             );
         }
+        // Tenant isolation: only the caller's own proposals (creator, PI, co-investigator, follow-up)
+        const myProposals = await myProposalsWhere(await getAuthenticatedUser(request));
 
         const tasks = [];
 
@@ -100,6 +103,7 @@ export async function GET(request) {
         // 3. Tasks from proposals in DRAFT status
         const draftProposals = await prisma.proposal.findMany({
             where: {
+                AND: [myProposals],
                 status: 'DRAFT'
             },
             select: {
@@ -134,6 +138,7 @@ export async function GET(request) {
         // 4. Tasks from proposals UNDER_REVIEW
         const reviewProposals = await prisma.proposal.findMany({
             where: {
+                AND: [myProposals],
                 status: 'UNDER_REVIEW'
             },
             select: {

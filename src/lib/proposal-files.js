@@ -1,4 +1,5 @@
 import path from 'path';
+import { canAccessProposalWith } from './proposals/scope.js';
 import { mkdir, writeFile, readFile, access, unlink } from 'fs/promises';
 import { sanitizeFileName } from './sanitize-file-name.js';
 import { uploadServerSide, softDeleteFile } from './storage/files-service.js';
@@ -207,15 +208,12 @@ export async function deleteProposalDocument(fileInfo, user) {
   }
 }
 
-/** Check whether a user may read or modify a proposal. */
+/**
+ * Synchronous access check kept for backwards compatibility. It never grants an
+ * institution admin access to a proposal of another institution. Prefer the async
+ * canAccessProposal() in lib/proposals/visibility.js, which also resolves legacy rows
+ * (no institutionId) against the admin's institution scope.
+ */
 export function canAccessProposal(user, proposal) {
-  if (!user || !proposal) return false;
-  if (user.accountType === 'GLOBAL_ADMIN') return true;
-  if (user.accountType === 'INSTITUTION_ADMIN' || user.accountType === 'RESEARCH_ADMIN') {
-    return true;
-  }
-  if (user.accountType === 'RESEARCHER' && user.orcidId && proposal.principalInvestigatorOrcid) {
-    return proposal.principalInvestigatorOrcid === user.orcidId;
-  }
-  return false;
+  return canAccessProposalWith(user, proposal);
 }

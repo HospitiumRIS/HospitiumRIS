@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { getUserId } from '../../../../lib/auth-server.js';
+import { getAuthenticatedUser, getUserId } from '../../../../lib/auth-server.js';
+import { myProposalsWhere } from '../../../../lib/proposals/visibility.js';
 
 const prisma = new PrismaClient();
 
@@ -34,13 +35,12 @@ export async function GET(request) {
             }
         };
         
-        if (currentUser?.orcidId) {
-            proposalWhere.principalInvestigatorOrcid = currentUser.orcidId;
-            console.log('[Project Health] Filtering proposals by ORCID:', currentUser.orcidId);
-        } else {
-            console.log('[Project Health] No ORCID filter applied');
+        // Tenant isolation: only the caller's own proposals; nothing without a session
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-        
+        proposalWhere.AND = [await myProposalsWhere(await getAuthenticatedUser(request))];
+
         console.log('[Project Health] Proposal where clause:', JSON.stringify(proposalWhere, null, 2));
         
         const proposals = await prisma.proposal.findMany({

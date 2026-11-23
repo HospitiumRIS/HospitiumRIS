@@ -129,6 +129,7 @@ model User {
 
   // Grant tracker follow-up assignments
   grantFollowUpAssignments Proposal[] @relation("ProposalGrantFollowUp")
+  createdProposals         Proposal[] @relation("ProposalCreatedBy")
 
   // Notification Preferences
   notificationPreferences NotificationPreference?
@@ -186,6 +187,7 @@ model Institution {
   // Relations
   user                   User?                   @relation("InstitutionOwner", fields: [userId], references: [id], onDelete: SetNull)
   members                User[]                  @relation("InstitutionMembers")
+  proposals              Proposal[]              @relation("InstitutionProposals")
   verifiedDomains        VerifiedDomain[]
   imageIntegrityLabUnits ImageIntegrityLabUnit[]
 
@@ -1215,12 +1217,17 @@ model Proposal {
   reviewTracking    ProposalReviewTracking?
   grantFollowUpUser User?                   @relation("ProposalGrantFollowUp", fields: [grantFollowUpUserId], references: [id], onDelete: SetNull)
 
-  // TODO: Add userId when authentication is implemented
-  // userId      String
-  // user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Owner and tenant, written once when the proposal is created (tenant isolation).
+  // Nullable until existing rows are backfilled.
+  createdById   String?
+  createdBy     User?        @relation("ProposalCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  institutionId String?
+  institution   Institution? @relation("InstitutionProposals", fields: [institutionId], references: [id], onDelete: SetNull)
 
   @@index([grantFollowUpUserId])
   @@index([grantTrackingStatus])
+  @@index([createdById])
+  @@index([institutionId, status])
   @@map("proposals")
 }
 

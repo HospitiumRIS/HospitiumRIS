@@ -1,5 +1,5 @@
 import prisma from './prisma.js';
-import { canAccessProposal } from './proposal-files.js';
+import { canAccessProposal } from './proposals/visibility.js';
 
 export async function canAccessProposalStoredFile(user, row) {
   if (!row?.module?.startsWith('PROPOSAL_')) return true;
@@ -8,5 +8,5 @@ export async function canAccessProposalStoredFile(user, row) {
     where: { id: row.entityId },
   });
 
-  return canAccessProposal(user, proposal);
+  return proposal ? canAccessProposal(user, proposal) : false;
 }

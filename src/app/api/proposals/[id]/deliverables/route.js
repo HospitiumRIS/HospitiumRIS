@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../lib/prisma.js';
 import { requireAuth } from '../../../../../lib/auth-server.js';
+import { canAccessProposal } from '../../../../../lib/proposals/visibility.js';
 import {
-  canAccessProposal,
   saveProposalDocument,
   resolveProposalTenantId,
 } from '../../../../../lib/proposal-files.js';
@@ -65,7 +65,7 @@ async function authorizeProposal(request, proposalId) {
   if (!proposal) {
     return { error: NextResponse.json({ error: 'Proposal not found' }, { status: 404 }) };
   }
-  if (!canAccessProposal(auth.user, proposal)) {
+  if (!(await canAccessProposal(auth.user, proposal))) {
     return { error: NextResponse.json({ error: 'Not found' }, { status: 404 }) };
   }
 

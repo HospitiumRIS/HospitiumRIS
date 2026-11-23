@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../lib/prisma';
+import { orcidVariants } from '../../../../../lib/proposals/scope.js';
 
 /**
  * GET /api/researcher/profile/[id]
@@ -62,13 +63,16 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Fetch proposals by this researcher
+    // Approved proposals this researcher leads or created. Matching on the PI's name
+    // attributed namesakes' proposals (including other institutions' drafts) to them.
+    const piOrcids = orcidVariants(userProfile.orcidId);
     const proposals = await prisma.proposal.findMany({
       where: {
-        principalInvestigator: {
-          contains: `${userProfile.givenName} ${userProfile.familyName}`,
-          mode: 'insensitive',
-        },
+        status: 'APPROVED',
+        OR: [
+          { createdById: userProfile.id },
+          ...(piOrcids.length ? [{ principalInvestigatorOrcid: { in: piOrcids } }] : []),
+        ],
       },
       orderBy: { createdAt: 'desc' },
       select: {
