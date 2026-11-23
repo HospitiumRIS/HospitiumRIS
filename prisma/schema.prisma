@@ -2072,6 +2072,7 @@ model Training {
   certificateTemplate TrainingCertificateTemplate? @relation(fields: [certificateTemplateId], references: [id], onDelete: SetNull)
 
   facilitators TrainingFacilitator[]
+  assessments TrainingAssessment[]
   @@index([institutionId, status])
   @@index([status, openToOtherInstitutions])
   @@map("trainings")
@@ -2098,6 +2099,7 @@ model TrainingModule {
   progress  TrainingModuleProgress[]
   sessions  TrainingSession[]
 
+  assessments TrainingAssessment[]
   @@map("training_modules")
 }
 
@@ -2161,6 +2163,7 @@ model TrainingRegistration {
   certificate    TrainingCertificate?
   attendance     TrainingAttendance[]
 
+  assessmentAttempts TrainingAssessmentAttempt[]
   @@unique([trainingId, userId])
   @@index([source, dueDate])
   @@map("training_registrations")
@@ -3116,4 +3119,105 @@ model TrainingFacilitator {
   @@index([sessionId])
   @@index([userId])
   @@map("training_facilitators")
+}
+
+// Assessments (#105): pre-tests, post-tests and quizzes with auto-grading.
+enum TrainingAssessmentType {
+  PRE_TEST
+  POST_TEST
+  QUIZ
+}
+
+enum TrainingQuestionType {
+  SINGLE
+  MULTI
+  TRUE_FALSE
+  SHORT_TEXT
+}
+
+enum TrainingAttemptStatus {
+  IN_PROGRESS
+  NEEDS_GRADING
+  GRADED
+}
+
+model TrainingAssessment {
+  id                      String                 @id @default(cuid())
+  trainingId              String
+  moduleId                String?
+  title                   String
+  description             String?                @db.Text
+  type                    TrainingAssessmentType @default(QUIZ)
+  passMark                Int                    @default(70) // percent
+  maxAttempts             Int? // null = unlimited
+  timeLimitMinutes        Int?
+  shuffleQuestions        Boolean                @default(false)
+  shuffleOptions          Boolean                @default(false)
+  showCorrectAnswers      Boolean                @default(true) // after submission
+  availableFrom           DateTime?
+  availableUntil          DateTime?
+  isRequiredForCompletion Boolean                @default(false)
+  isPublished             Boolean                @default(false)
+  order                   Int                    @default(0)
+  createdBy               String?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+
+  training  Training                     @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  module    TrainingModule?              @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  questions TrainingAssessmentQuestion[]
+  attempts  TrainingAssessmentAttempt[]
+
+  @@index([trainingId])
+  @@map("training_assessments")
+}
+
+model TrainingAssessmentQuestion {
+  id           String               @id @default(cuid())
+  assessmentId String
+  type         TrainingQuestionType @default(SINGLE)
+  prompt       String               @db.Text
+  options      Json                 @default("[]") // [{ id, text }]
+  correct      Json                 @default("[]") // option ids, 'true'/'false', or accepted short answers
+  points       Float                @default(1)
+  explanation  String?              @db.Text
+  order        Int                  @default(0)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  assessment TrainingAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId, order])
+  @@map("training_assessment_questions")
+}
+
+model TrainingAssessmentAttempt {
+  id             String                @id @default(cuid())
+  assessmentId   String
+  registrationId String
+  userId         String
+  attemptNumber  Int
+  status         TrainingAttemptStatus @default(IN_PROGRESS)
+  layout         Json                  @default("[]") // [{ questionId, optionIds }]
+  answers        Json                  @default("{}")
+  startedAt      DateTime              @default(now())
+  deadlineAt     DateTime?
+  submittedAt    DateTime?
+  score          Float?
+  maxScore       Float?
+  percent        Float?
+  passed         Boolean?
+  feedback       Json? // { perQuestion, manualScores, comments }
+  gradedBy       String?
+  gradedAt       DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  assessment   TrainingAssessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  registration TrainingRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, registrationId, attemptNumber], map: "training_assessment_attempts_number_key")
+  @@index([registrationId])
+  @@index([assessmentId, status])
+  @@map("training_assessment_attempts")
 }

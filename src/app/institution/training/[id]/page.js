@@ -43,6 +43,7 @@ import TrainingCompletionTab from '@/components/Training/admin/TrainingCompletio
 import TrainingCertificateSettings from '@/components/Training/admin/TrainingCertificateSettings';
 import TrainingCertificatesTab from '@/components/Training/admin/TrainingCertificatesTab';
 import TrainingRegistrationsTab from '@/components/Training/admin/TrainingRegistrationsTab';
+import TrainingAssessmentsTab from '@/components/Training/admin/TrainingAssessmentsTab';
 import TrainingEnrolmentSettings from '@/components/Training/admin/TrainingEnrolmentSettings';
 import { MODULE_COMPLETION_LABELS, MODULE_COMPLETION_MODES } from '@/lib/training-completion';
 
@@ -272,6 +273,8 @@ export default function TrainingDetailPage() {
           <Tabs
             value={activeTab}
             onChange={(_, value) => setActiveTab(value)}
+            variant="scrollable"
+            scrollButtons="auto"
             sx={{
               '& .MuiTab-root': { textTransform: 'none', fontWeight: 700, minHeight: 52, color: '#64748b' },
               '& .Mui-selected': { color: `${PURPLE} !important` },
@@ -285,6 +288,7 @@ export default function TrainingDetailPage() {
             <Tab label="Attendance" />
             <Tab label="Completion" />
             <Tab label="Certificates" />
+            <Tab label="Assessments" />
           </Tabs>
         </Paper>
 
@@ -329,6 +333,10 @@ export default function TrainingDetailPage() {
           <Box sx={{ mt: 2 }}>
             <TrainingEnrolmentSettings training={training} onSaved={load} />
           </Box>
+        )}
+
+        {activeTab === 7 && (
+          <TrainingAssessmentsTab trainingId={trainingId} training={training} modules={modules} onChanged={load} />
         )}
 
         {activeTab === 6 && (
