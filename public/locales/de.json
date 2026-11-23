@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "Erworbene Zertifikate herunterladen",
     "training_mine": "Meine Schulungen",
     "training_mine_desc": "Angemeldete Schulungen und Fortschritt ansehen",
+    "training_checkin": "Sitzungs-Check-in",
+    "training_checkin_desc": "Mit dem angezeigten Code für eine Schulungssitzung einchecken",
     "trial_approvals": "Regulatorische und ethische Genehmigungen",
     "trial_approvals_desc": "IRB-/Ethikgenehmigungen und regulatorische Einreichungen verfolgen",
     "trial_intake": "Studienerfassung & Registrierung",

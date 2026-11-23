@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "Muat turun sijil yang diperoleh",
     "training_mine": "Latihan Saya",
     "training_mine_desc": "Lihat latihan berdaftar dan kemajuan",
+    "training_checkin": "Session Check-in",
+    "training_checkin_desc": "Check in to a training session with the code on screen",
     "trial_approvals": "Kelulusan Kawal Selia & Etika",
     "trial_approvals_desc": "Jejak kelulusan IRB/etika dan penyerahan kawal selia",
     "trial_intake": "Penerimaan & Pendaftaran Ujian",

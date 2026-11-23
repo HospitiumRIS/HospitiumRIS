@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "ດາວໂຫຼດໃບຢັ້ງຢືນທີ່ໄດ້ຮັບ",
     "training_mine": "ການຝຶກອົບຮົມຂອງຂ້ອຍ",
     "training_mine_desc": "ເບິ່ງການຝຶກອົບຮົມທີ່ລົງທະບຽນ ແລະ ຄວາມຄືບໜ້າ",
+    "training_checkin": "Session Check-in",
+    "training_checkin_desc": "Check in to a training session with the code on screen",
     "trial_approvals": "ການອະນຸມັດກົດລະບຽບ ແລະ ຈັນຍາທຳ",
     "trial_approvals_desc": "ຕິດຕາມການອະນຸມັດ IRB/ຈັນຍາທຳ ແລະ ການສົ່ງກົດລະບຽບ",
     "trial_intake": "ຮັບ ແລະ ລົງທະບຽນການທົດລອງ",

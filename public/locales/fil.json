@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "I-download ang mga nakuha na sertipiko",
     "training_mine": "Aking mga Pagsasanay",
     "training_mine_desc": "Tingnan ang naka-rehistrong pagsasanay at progreso",
+    "training_checkin": "Session Check-in",
+    "training_checkin_desc": "Check in to a training session with the code on screen",
     "trial_approvals": "Mga Regulasyon at Etikal na Pag-apruba",
     "trial_approvals_desc": "Subaybayan ang mga pag-apruba ng IRB/etika at mga pagsusumite sa regulasyon",
     "trial_intake": "Pagtanggap at Rehistrasyon ng Pagsubok",

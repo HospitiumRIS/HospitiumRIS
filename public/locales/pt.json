@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "Descarregar certificados obtidos",
     "training_mine": "As minhas formações",
     "training_mine_desc": "Ver formações inscritas e o progresso",
+    "training_checkin": "Check-in da sessão",
+    "training_checkin_desc": "Faça check-in numa sessão com o código no ecrã",
     "trial_approvals": "Aprovações regulamentares e éticas",
     "trial_approvals_desc": "Acompanhar aprovações IRB/ética e submissões regulamentares",
     "trial_intake": "Registo do ensaio",

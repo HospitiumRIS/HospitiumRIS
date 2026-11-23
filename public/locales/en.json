@@ -2824,6 +2824,8 @@
     "training_certificates_desc": "Download earned certificates",
     "training_mine": "My Trainings",
     "training_mine_desc": "View registered trainings and progress",
+    "training_checkin": "Session Check-in",
+    "training_checkin_desc": "Check in to a training session with the code on screen",
     "trial_approvals": "Regulatory & Ethical Approvals",
     "trial_approvals_desc": "Track IRB/Ethics approvals and regulatory submissions",
     "trial_intake": "Trial Intake & Registration",

@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "취득한 수료증을 다운로드합니다",
     "training_mine": "내 교육",
     "training_mine_desc": "등록된 교육과 진행 상황을 봅니다",
+    "training_checkin": "Session Check-in",
+    "training_checkin_desc": "Check in to a training session with the code on screen",
     "trial_approvals": "규제 및 윤리 승인",
     "trial_approvals_desc": "IRB/윤리 승인과 규제 제출을 추적합니다",
     "trial_intake": "시험 접수 및 등록",

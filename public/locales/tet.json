@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "Baixa sertifikadu ne'ebé hetan",
     "training_mine": "Hau-nia Treinamentu",
     "training_mine_desc": "Haree treinamentu ne'ebé rejista no progresu",
+    "training_checkin": "Session Check-in",
+    "training_checkin_desc": "Check in to a training session with the code on screen",
     "trial_approvals": "Aprovasaun Regulatóriu no Étika",
     "trial_approvals_desc": "Akompaña aprovasaun IRB/étika no submisaun regulatóriu",
     "trial_intake": "Simu no Rejistu Ensaia",

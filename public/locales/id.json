@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "Unduh sertifikat yang diperoleh",
     "training_mine": "Pelatihan Saya",
     "training_mine_desc": "Lihat pelatihan terdaftar dan kemajuan",
+    "training_checkin": "Session Check-in",
+    "training_checkin_desc": "Check in to a training session with the code on screen",
     "trial_approvals": "Persetujuan Regulasi & Etika",
     "trial_approvals_desc": "Lacak persetujuan IRB/etika dan pengajuan regulasi",
     "trial_intake": "Penerimaan & Registrasi Uji",

@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "Télécharger les certificats obtenus",
     "training_mine": "Mes formations",
     "training_mine_desc": "Voir les formations inscrites et la progression",
+    "training_checkin": "Pointage de session",
+    "training_checkin_desc": "Pointez votre présence à une session avec le code affiché",
     "trial_approvals": "Approbations réglementaires et éthiques",
     "trial_approvals_desc": "Suivre les approbations IRB/éthique et les soumissions réglementaires",
     "trial_intake": "Enregistrement de l’essai",

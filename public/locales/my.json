@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "ရရှိထားသော လက်မှတ်များကို ဒေါင်းလုဒ်လုပ်ပါ",
     "training_mine": "ကျွန်ုပ်၏ သင်တန်းများ",
     "training_mine_desc": "စာရင်းသွင်းထားသော သင်တန်းများနှင့် တိုးတက်မှုကို ကြည့်ပါ",
+    "training_checkin": "Session Check-in",
+    "training_checkin_desc": "Check in to a training session with the code on screen",
     "trial_approvals": "စည်းမျဉ်းနှင့် ကျင့်ဝတ် အတည်ပြုချက်များ",
     "trial_approvals_desc": "IRB/ကျင့်ဝတ် အတည်ပြုချက်များနှင့် စည်းမျဉ်း တင်သွင်းမှုများကို ခြေရာခံပါ",
     "trial_intake": "စမ်းသပ်မှု လက်ခံခြင်းနှင့် မှတ်ပုံတင်ခြင်း",
