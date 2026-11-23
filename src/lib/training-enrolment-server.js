@@ -79,13 +79,16 @@ export async function eligibilityFor(user, trainings) {
         })
       : [],
     prereqIds.length ? prisma.training.findMany({ where: { id: { in: prereqIds } }, select: { id: true, title: true } }) : [],
-    user.department !== undefined ? null : prisma.user.findUnique({ where: { id: user.id }, select: { department: true } }),
+    // The department lives on the research profile, not on the user (#102 hotfix).
+    user.researchProfile !== undefined
+      ? user.researchProfile
+      : prisma.researchProfile.findUnique({ where: { userId: user.id }, select: { department: true } }),
   ]);
   const facts = {
     completedTrainingIds: completed.map((c) => c.trainingId),
     prerequisiteTitles: Object.fromEntries(titles.map((t) => [t.id, t.title])),
   };
-  const person = { department: user.department ?? profile?.department ?? null };
+  const person = { department: profile?.department ?? null };
   return new Map(trainings.map((t) => [t.id, checkEligibility(t, person, facts)]));
 }
 
