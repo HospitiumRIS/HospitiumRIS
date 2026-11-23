@@ -31,6 +31,7 @@ import {
   EmojiEvents as CertificateIcon,
   Refresh as ReissueIcon,
   Send as ResendIcon,
+  DriveFolderUpload as BulkIcon,
 } from '@mui/icons-material';
 import {
   InstitutionModal,
@@ -39,6 +40,7 @@ import {
   InstitutionModalHeader,
 } from '@/components/GlobalAdmin/InstitutionModalShell';
 import { CERTIFICATE_MODE_LABELS } from '@/lib/certificate-template';
+import BulkCertificateUploadDialog from './BulkCertificateUploadDialog';
 
 const PURPLE = '#8b6cbc';
 const fullName = (u) => [u?.givenName, u?.familyName].filter(Boolean).join(' ') || u?.email || 'Participant';
@@ -62,6 +64,7 @@ export default function TrainingCertificatesTab({ trainingId, onChanged }) {
   const [view, setView] = useState(0);
   const [selected, setSelected] = useState(new Set());
   const [revoking, setRevoking] = useState(null); // { reg, reason }
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -172,7 +175,10 @@ export default function TrainingCertificatesTab({ trainingId, onChanged }) {
               {CERTIFICATE_MODE_LABELS[data?.mode] || ''}. {data?.notYet ? `${data.notYet} participant(s) haven't completed yet.` : ''}
             </Typography>
           </Box>
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+            <Button size="small" variant="outlined" startIcon={<BulkIcon />} onClick={() => setBulkOpen(true)} sx={{ borderColor: PURPLE, color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
+              Upload certificates
+            </Button>
             <Chip label={`${ready.length} ready`} sx={{ bgcolor: alpha(PURPLE, 0.1), color: PURPLE, fontWeight: 700 }} />
             <Chip label={`${issued.length} issued`} sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} />
             {revoked.length ? <Chip label={`${revoked.length} revoked`} sx={{ bgcolor: '#fee2e2', color: '#b91c1c', fontWeight: 700 }} /> : null}
@@ -292,6 +298,18 @@ export default function TrainingCertificatesTab({ trainingId, onChanged }) {
           )
         ) : null}
       </Paper>
+
+      <BulkCertificateUploadDialog
+        open={bulkOpen}
+        trainingId={trainingId}
+        participants={[...ready, ...issued, ...revoked].map((r) => ({ registrationId: r.id, status: r.status, user: r.user }))}
+        onClose={() => setBulkOpen(false)}
+        onDone={async (summary) => {
+          setNotice(`${summary.uploaded} certificate${summary.uploaded === 1 ? '' : 's'} uploaded.`);
+          await load();
+          onChanged?.();
+        }}
+      />
 
       <InstitutionModal open={Boolean(revoking)} onClose={() => setRevoking(null)} disableClose={busy} maxWidth="xs">
         <InstitutionModalHeader icon={RevokeIcon} tone="danger" title="Revoke certificate" subtitle="The certificate will show as revoked when verified" onClose={() => setRevoking(null)} disableClose={busy} />
