@@ -13,6 +13,7 @@ import {
 } from '@/lib/training-registration-state';
 import { auditTraining } from '@/lib/training-audit';
 import { notifyTraining } from '@/lib/training-notify';
+import { autoIssueCertificates } from '@/lib/training-certificates-server';
 import { recomputeAttendancePercent } from '@/lib/training-attendance-server';
 
 /**
@@ -148,6 +149,7 @@ export async function PUT(request, { params }) {
         await notifyTraining('REGISTRATION_CONFIRMED', { userId: registration.userId, trainingId: id });
       } else if (status === 'COMPLETED') {
         await notifyTraining('TRAINING_COMPLETED', { userId: registration.userId, trainingId: id, dedupeKey: `completed:${regId}` });
+        await autoIssueCertificates(id, [regId]);
       } else if (status === 'NOT_COMPLETED') {
         await notifyTraining('TRAINING_NOT_COMPLETED', { userId: registration.userId, trainingId: id, dedupeKey: `not-completed:${regId}` });
       }

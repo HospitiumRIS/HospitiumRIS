@@ -1921,6 +1921,16 @@ enum TrainingCertificateMode {
   MANUAL_UPLOAD
 }
 
+enum TrainingCertificateSource {
+  GENERATED
+  UPLOADED
+}
+
+enum TrainingCertificateStatus {
+  ISSUED
+  REVOKED
+}
+
 enum CertificateOrientation {
   LANDSCAPE
   PORTRAIT
@@ -2141,7 +2151,22 @@ model TrainingCertificate {
   registrationId String   @unique
   certificateUrl String
   issuedAt       DateTime @default(now())
-  uploadedBy     String // User ID of admin who uploaded
+  uploadedBy     String // User ID of the admin who issued or uploaded it (system: training creator)
+
+  // Issuance (#99). One row per registration; reissues bump `version`, history is in
+  // the training activity log.
+  certificateNumber String?                   @unique
+  verificationCode  String?                   @unique
+  source            TrainingCertificateSource @default(UPLOADED)
+  status            TrainingCertificateStatus @default(ISSUED)
+  version           Int                       @default(1)
+  templateId        String?
+  snapshot          Json? // merge values at issue time, so a reissue can be reproduced
+  expiresAt         DateTime?
+  revokedAt         DateTime?
+  revokedBy         String?
+  revokedReason     String?
+  emailedAt         DateTime?
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -2239,6 +2264,18 @@ model TrainingCertificateTemplate {
 
   @@index([institutionId])
   @@map("training_certificate_templates")
+}
+
+// Certificate number counter per institution, prefix and year (#99, decision D1).
+model TrainingCertificateSequence {
+  id            String @id @default(cuid())
+  institutionId String
+  prefix        String
+  year          Int
+  lastNumber    Int    @default(0)
+
+  @@unique([institutionId, prefix, year])
+  @@map("training_certificate_sequences")
 }
 
 // Training activity log (#90): who changed what on a training, with before/after.
