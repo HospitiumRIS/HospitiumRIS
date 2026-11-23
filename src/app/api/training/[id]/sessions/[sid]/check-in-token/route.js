@@ -103,7 +103,8 @@ export async function GET(request, { params }) {
     );
   } catch (error) {
     console.error('Error building check-in token:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    // Admin-only route: show the reason so problems can be fixed without server logs.
+    return NextResponse.json({ error: `Could not load the check-in screen: ${error?.message || 'unknown error'}` }, { status: 500 });
   }
 }
 

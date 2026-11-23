@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   TOKEN_WINDOW_SECONDS,
+  checkInSecret,
   checkInToken,
   checkInUrl,
   checkInWindow,
@@ -103,5 +104,25 @@ describe('rateLimit', () => {
     assert.equal(blocked.retryAfterMs, 1000);
     assert.equal(rateLimit('k', { ...opts, now: 1000 }).allowed, true);
     assert.equal(rateLimit('other', opts).allowed, true);
+  });
+});
+
+describe('checkInSecret', () => {
+  it('prefers the dedicated secret, then other server secrets', () => {
+    assert.equal(checkInSecret({ TRAINING_CHECKIN_SECRET: 'a', JWT_SECRET: 'b' }), 'a');
+    assert.equal(checkInSecret({ SESSION_SECRET: 's', DATABASE_URL: 'postgres://x' }), 's');
+    assert.equal(checkInSecret({ JWT_SECRET: 'b' }), 'b');
+  });
+
+  it('falls back to a stable key derived from DATABASE_URL instead of failing', () => {
+    const env = { DATABASE_URL: 'postgresql://u:p@db:5432/x' };
+    const one = checkInSecret(env);
+    assert.equal(one, checkInSecret(env));
+    assert.notEqual(one, env.DATABASE_URL);
+    assert.notEqual(one, checkInSecret({ DATABASE_URL: 'postgresql://u:other@db:5432/x' }));
+  });
+
+  it('only throws when the server has no secret at all', () => {
+    assert.throws(() => checkInSecret({}), /TRAINING_CHECKIN_SECRET/);
   });
 });
