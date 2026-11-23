@@ -8,6 +8,9 @@ import {
 } from '../../../../../../lib/training-files';
 import { requireTrainingAdminAccess } from '@/lib/training-admin-server';
 import { auditTraining } from '@/lib/training-audit';
+import { notifyTraining } from '@/lib/training-notify';
+import { certificateExpiry, verifyUrl } from '@/lib/certificate-issuance';
+import { appBaseUrl, ensureCertificateIdentity } from '@/lib/training-certificates-server';
 
 /**
  * POST /api/training/[id]/certificates/[regId]
@@ -93,14 +96,24 @@ export async function POST(request, { params }) {
       await deleteTrainingFile(certificate.certificateUrl, user);
     }
 
+    const issuedAt = new Date();
     certificate = await prisma.trainingCertificate.update({
       where: { id: certificate.id },
       data: {
         certificateUrl: fileUrl,
         uploadedBy: user.id,
-        issuedAt: new Date(),
+        issuedAt,
+        // An upload is a new version of the certificate (#99): valid again, numbered.
+        source: 'UPLOADED',
+        status: 'ISSUED',
+        version: existingCertificate?.certificateUrl ? (existingCertificate.version || 1) + 1 : existingCertificate?.version || 1,
+        expiresAt: certificateExpiry(issuedAt, registration.training.certificateValidityMonths),
+        revokedAt: null,
+        revokedBy: null,
+        revokedReason: null,
       },
     });
+    certificate = await ensureCertificateIdentity(certificate, registration.training);
 
     await auditTraining({
       trainingId: id,
@@ -110,6 +123,13 @@ export async function POST(request, { params }) {
       entityId: certificate.id,
       before: existingCertificate ? { certificateUrl: existingCertificate.certificateUrl, issuedAt: existingCertificate.issuedAt } : null,
       after: { certificateUrl: certificate.certificateUrl, registrationId: regId },
+    });
+
+    await notifyTraining('CERTIFICATE_ISSUED', {
+      userId: registration.userId,
+      trainingId: id,
+      dedupeKey: `certificate:${certificate.id}:v${certificate.version}:upload`,
+      extra: { certificate: { number: certificate.certificateNumber, verifyUrl: verifyUrl(appBaseUrl(), certificate.verificationCode) } },
     });
 
     return NextResponse.json({

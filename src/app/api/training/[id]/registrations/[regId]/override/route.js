@@ -5,6 +5,7 @@ import { auditTraining } from '@/lib/training-audit';
 import { requireSessionAdmin } from '@/lib/training-sessions-server';
 import { refreshTrainingProgress } from '@/lib/training-progress-server';
 import { notifyTraining } from '@/lib/training-notify';
+import { autoIssueCertificates } from '@/lib/training-certificates-server';
 
 /**
  * POST /api/training/[id]/registrations/[regId]/override
@@ -65,6 +66,7 @@ export async function POST(request, { params }) {
       select: { id: true, status: true, completedAt: true, completionOverride: true },
     });
 
+    if (type === 'COMPLETE' && before.status !== 'COMPLETED') await autoIssueCertificates(id, [regId]);
     if (type !== 'CLEAR' && after.status !== before.status) {
       await notifyTraining(type === 'COMPLETE' ? 'TRAINING_COMPLETED' : 'TRAINING_NOT_COMPLETED', {
         userId: registration.userId,

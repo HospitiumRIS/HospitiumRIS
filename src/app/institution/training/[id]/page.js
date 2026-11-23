@@ -52,6 +52,7 @@ import TrainingScheduleTab from '@/components/Training/admin/TrainingScheduleTab
 import TrainingAttendanceTab from '@/components/Training/admin/TrainingAttendanceTab';
 import TrainingCompletionTab from '@/components/Training/admin/TrainingCompletionTab';
 import TrainingCertificateSettings from '@/components/Training/admin/TrainingCertificateSettings';
+import TrainingCertificatesTab from '@/components/Training/admin/TrainingCertificatesTab';
 import { MODULE_COMPLETION_LABELS, MODULE_COMPLETION_MODES } from '@/lib/training-completion';
 
 const PURPLE = '#8b6cbc';
@@ -308,6 +309,7 @@ export default function TrainingDetailPage() {
             <Tab label={`Registrations (${registrations.length})`} />
             <Tab label="Attendance" />
             <Tab label="Completion" />
+            <Tab label="Certificates" />
           </Tabs>
         </Paper>
 
@@ -341,6 +343,10 @@ export default function TrainingDetailPage() {
           <Box sx={{ mt: 2 }}>
             <TrainingCertificateSettings training={training} onSaved={load} />
           </Box>
+        )}
+
+        {activeTab === 6 && (
+          <TrainingCertificatesTab trainingId={trainingId} onChanged={load} />
         )}
 
         {activeTab === 5 && (

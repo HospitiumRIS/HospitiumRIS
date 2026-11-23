@@ -35,6 +35,7 @@ export default function CertificatesPage() {
   const [certificates, setCertificates] = useState([]);
   const [filteredCertificates, setFilteredCertificates] = useState([]);
   const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -214,9 +215,24 @@ export default function CertificatesPage() {
                     <CertificateIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                     <Typography variant="body2" color="text.secondary">
                       Issued: {formatDate(certificate.issuedAt)}
+                      {certificate.expiresAt ? ` · Expires: ${formatDate(certificate.expiresAt)}` : ''}
                     </Typography>
                   </Box>
+                  {certificate.certificateNumber ? (
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
+                      No. {certificate.certificateNumber}
+                    </Typography>
+                  ) : null}
                 </Stack>
+
+                {certificate.state && certificate.state !== 'VALID' ? (
+                  <Box sx={{ mt: 1.5, p: 1, borderRadius: 1, bgcolor: certificate.state === 'REVOKED' ? '#fee2e2' : '#fef3c7', color: certificate.state === 'REVOKED' ? '#b91c1c' : '#92400e' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {certificate.state === 'REVOKED' ? 'This certificate has been revoked' : 'This certificate has expired'}
+                    </Typography>
+                    {certificate.state === 'REVOKED' && certificate.revokedReason ? <Typography variant="caption">{certificate.revokedReason}</Typography> : null}
+                  </Box>
+                ) : null}
 
                 {/* Target Group Badge */}
                 <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
@@ -229,7 +245,25 @@ export default function CertificatesPage() {
                 </Box>
               </CardContent>
 
-              <CardActions sx={{ p: 2, pt: 0, justifyContent: 'center' }}>
+              <CardActions sx={{ p: 2, pt: 0, justifyContent: 'center', flexDirection: 'column', gap: 1 }}>
+                {certificate.verifyUrl && certificate.state === 'VALID' ? (
+                  <Button
+                    size="small"
+                    fullWidth
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(certificate.verifyUrl);
+                        setCopied(certificate.id);
+                        setTimeout(() => setCopied(null), 2000);
+                      } catch {
+                        window.open(certificate.verifyUrl, '_blank', 'noopener');
+                      }
+                    }}
+                    sx={{ color: '#8b6cbc', textTransform: 'none', fontWeight: 700, m: '0 !important' }}
+                  >
+                    {copied === certificate.id ? 'Link copied' : 'Copy verification link'}
+                  </Button>
+                ) : null}
                 <Button
                   variant="contained"
                   startIcon={<DownloadIcon />}

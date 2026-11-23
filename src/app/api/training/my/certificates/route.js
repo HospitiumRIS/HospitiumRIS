@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { certificateState, verifyUrl } from '@/lib/certificate-issuance';
+import { appBaseUrl } from '@/lib/training-certificates-server';
 import prisma from '../../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../../lib/auth-server';
 
@@ -47,10 +49,16 @@ export async function GET(request) {
       },
     });
 
-    // Filter by institution (verified FK link)
-    const filteredCertificates = certificates.filter(
-      cert => cert.training.institutionId === user.secondaryInstitutionId
-    );
+    // A person's own certificates are always theirs to see, including ones from
+    // shared-catalogue trainings at other institutions (#99). Unfinished uploads are skipped.
+    const base = appBaseUrl();
+    const filteredCertificates = certificates
+      .filter((cert) => cert.certificateUrl)
+      .map(({ verificationCode, snapshot, ...cert }) => ({
+        ...cert,
+        state: certificateState(cert),
+        verifyUrl: verificationCode ? verifyUrl(base, verificationCode) : null,
+      }));
 
     return NextResponse.json({
       success: true,

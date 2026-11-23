@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { auditTraining } from '@/lib/training-audit';
 import { notifyTraining } from '@/lib/training-notify';
+import { autoIssueCertificates } from '@/lib/training-certificates-server';
 import { ACTIVE_REGISTRATION_STATUSES } from '@/lib/training-scope';
 import { computeAttendance } from '@/lib/training-attendance';
 import {
@@ -88,6 +89,7 @@ export async function refreshTrainingProgress(trainingId, registrationIds = null
   });
 
   const summary = { evaluated: registrations.length, completed: 0, notCompleted: 0, reopened: 0 };
+  const newlyCompleted = [];
   const rules = hasCompletionRules(facts.training);
 
   for (const registration of registrations) {
@@ -108,7 +110,10 @@ export async function refreshTrainingProgress(trainingId, registrationIds = null
     if (next) {
       data.status = next;
       data.completedAt = next === 'COMPLETED' ? now : null;
-      if (next === 'COMPLETED') summary.completed += 1;
+      if (next === 'COMPLETED') {
+        summary.completed += 1;
+        newlyCompleted.push(registration.id);
+      }
       else if (next === 'NOT_COMPLETED') summary.notCompleted += 1;
       else summary.reopened += 1;
     }
@@ -136,6 +141,8 @@ export async function refreshTrainingProgress(trainingId, registrationIds = null
       });
     }
   }
+  // Trainings set to issue certificates automatically (#99).
+  if (newlyCompleted.length) await autoIssueCertificates(trainingId, newlyCompleted);
   return summary;
 }
 
