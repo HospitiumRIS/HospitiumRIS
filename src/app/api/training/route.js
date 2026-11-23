@@ -3,7 +3,7 @@ import prisma from '../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../lib/auth-server';
 import { normalizeTargetGroups, TRAINING_ADMIN_TYPES } from '@/lib/training-admin';
 import { resolveTrainingInstitution, resolveTrainingScopeContext } from '@/lib/training-admin-server';
-import { isActiveRegistration, trainingAdminListWhere, trainingVisibilityWhere } from '@/lib/training-scope';
+import { isActiveRegistration, redactMeetingLink, trainingAdminListWhere, trainingVisibilityWhere } from '@/lib/training-scope';
 import { buildDailySessions, resolveTrainingDeliveryUpdate } from '@/lib/training-sessions';
 import { auditTraining } from '@/lib/training-audit';
 
@@ -76,16 +76,24 @@ export async function GET(request) {
       const remainingSlots = training.maxParticipants - activeRegistrations;
       const userRegistration = training.registrations.find(r => r.userId === user.id);
 
+      const ownsIt = includeAll && isTrainingAdmin;
+      const canSeeLink = ownsIt || isActiveRegistration(userRegistration);
+      const linkFields = redactMeetingLink(
+        { location: training.location, onlineLink: training.onlineLink, venue: training.venue },
+        canSeeLink
+      );
+
       return {
         id: training.id,
         title: training.title,
         description: training.description,
         department: training.department,
         targetGroup: training.targetGroup,
-        location: training.location,
+        location: linkFields.location,
         deliveryMode: training.deliveryMode,
         venue: training.venue,
-        onlineLink: training.onlineLink,
+        onlineLink: linkFields.onlineLink,
+        hasOnlineLink: linkFields.hasOnlineLink ?? Boolean(training.onlineLink),
         code: training.code,
         category: training.category,
         startDate: training.startDate,

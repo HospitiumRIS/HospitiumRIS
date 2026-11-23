@@ -7,6 +7,7 @@ import {
   shapeTrainingForViewer,
   canViewTraining,
   isOwningTrainingAdmin,
+  redactMeetingLink,
   trainingAdminListWhere,
   trainingUserInstitutionId,
   trainingVisibilityWhere,
@@ -202,5 +203,31 @@ describe('shapeTrainingForViewer (#89)', () => {
     const shaped = shapeTrainingForViewer(training, adminA, { isAdmin: true });
     assert.equal(shaped.registrations.length, 3);
     assert.equal(shaped.materials.length, 2);
+  });
+});
+
+describe('redactMeetingLink (#94)', () => {
+  it('hides the link (and the link inside the legacy location) from non-registrants', () => {
+    const hybrid = { location: 'Main hall | https://meet.x/1', venue: 'Main hall', onlineLink: 'https://meet.x/1' };
+    const hidden = redactMeetingLink(hybrid, false);
+    assert.equal(hidden.onlineLink, null);
+    assert.equal(hidden.location, 'Main hall');
+    assert.equal(hidden.hasOnlineLink, true);
+    assert.equal(JSON.stringify(hidden).includes('meet.x'), false);
+
+    const online = redactMeetingLink({ location: 'https://zoom.us/j/9', venue: null, onlineLink: 'https://zoom.us/j/9' }, false);
+    assert.equal(online.location, 'Online');
+    assert.equal(JSON.stringify(online).includes('zoom.us'), false);
+  });
+
+  it('leaves it for admins and active registrants', () => {
+    const t = { location: 'https://zoom.us/j/9', onlineLink: 'https://zoom.us/j/9' };
+    assert.equal(redactMeetingLink(t, true), t);
+  });
+
+  it('shapeTrainingForViewer redacts for a non-registrant', () => {
+    const t = { id: 't', maxParticipants: 5, registrations: [], materials: [], location: 'https://zoom.us/j/9', onlineLink: 'https://zoom.us/j/9' };
+    const shaped = shapeTrainingForViewer(t, researcherB, { isAdmin: false });
+    assert.equal(JSON.stringify(shaped).includes('zoom.us'), false);
   });
 });

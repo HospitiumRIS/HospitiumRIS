@@ -133,6 +133,14 @@ const checkInOpenNow = (session) => {
     && now <= start + (session.checkInClosesMinutesAfter ?? 30) * 60000;
 };
 
+// Same window as the server's join link (lib/training-virtual-attendance.js).
+const joinOpenNow = (session) => {
+  if (session.status !== 'SCHEDULED') return false;
+  const now = Date.now();
+  return now >= new Date(session.startsAt).getTime() - (session.checkInOpensMinutesBefore ?? 15) * 60000
+    && now <= new Date(session.endsAt).getTime();
+};
+
 const formatSessionTime = (start, end) => {
   const s = new Date(start);
   const e = new Date(end);
@@ -562,7 +570,20 @@ export default function TrainingPage() {
                               </Typography>
                             </Box>
                             <Box sx={{ textAlign: { sm: 'right' } }}>
-                              {!session.myAttendance && selectedTraining.isRegistered && checkInOpenNow(session) ? (
+                              {selectedTraining.isRegistered && session.effective?.hasOnlineLink && session.effective?.deliveryMode !== 'IN_PERSON' && joinOpenNow(session) ? (
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  component="a"
+                                  href={`/api/training/sessions/${session.id}/join`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  sx={{ mr: 0.75, bgcolor: '#166534', textTransform: 'none', fontWeight: 700, py: 0.25, '&:hover': { bgcolor: '#14532d' } }}
+                                >
+                                  Join session
+                                </Button>
+                              ) : null}
+                              {!session.myAttendance && selectedTraining.isRegistered && session.effective?.deliveryMode !== 'ONLINE' && checkInOpenNow(session) ? (
                                 <Button size="small" variant="contained" onClick={() => router.push('/researcher/training/check-in')} sx={{ mr: 0.75, bgcolor: PURPLE, textTransform: 'none', fontWeight: 700, py: 0.25 }}>
                                   Check in
                                 </Button>
