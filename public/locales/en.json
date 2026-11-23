@@ -2826,6 +2826,8 @@
     "training_browse_desc": "Register for trainings and track your progress",
     "training_certificates": "My Certificates",
     "training_certificates_desc": "Download earned certificates",
+    "training_facilitating": "Facilitating",
+    "training_facilitating_desc": "Your sessions: check-in screen and register",
     "training_mine": "My Trainings",
     "training_mine_desc": "View registered trainings and progress",
     "training_checkin": "Session Check-in",

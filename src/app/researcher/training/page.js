@@ -755,6 +755,16 @@ export default function TrainingPage() {
                               <Typography variant="caption" color="text.secondary">
                                 {formatSessionTime(session.startsAt, session.endsAt)}
                               </Typography>
+                              {session.facilitators?.length ? (
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                  With {session.facilitators.map((f) => (f.title ? `${f.name} (${f.title})` : f.name)).join(', ')}
+                                </Typography>
+                              ) : null}
+                              {selectedTraining.myFacilitatedSessionIds?.includes(session.id) ? (
+                                <Button size="small" onClick={() => router.push('/researcher/training/facilitating')} sx={{ px: 0, color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
+                                  You facilitate this session
+                                </Button>
+                              ) : null}
                             </Box>
                             <Box sx={{ textAlign: { sm: 'right' } }}>
                               {selectedTraining.isRegistered && session.effective?.hasOnlineLink && session.effective?.deliveryMode !== 'IN_PERSON' && joinOpenNow(session) ? (

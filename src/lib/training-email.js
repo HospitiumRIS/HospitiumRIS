@@ -26,6 +26,7 @@ export const TRAINING_EMAIL_KINDS = [
   'CERTIFICATE_REVOKED',
   'CERTIFICATE_EXPIRING',
   'RETRAINING_DUE',
+  'FACILITATOR_ASSIGNED',
 ];
 
 /** In-app notification type (existing NotificationType enum values). */
@@ -50,6 +51,7 @@ const NOTIFICATION_TYPE = {
   CERTIFICATE_REVOKED: 'SYSTEM_NOTIFICATION',
   CERTIFICATE_EXPIRING: 'SYSTEM_NOTIFICATION',
   RETRAINING_DUE: 'SYSTEM_NOTIFICATION',
+  FACILITATOR_ASSIGNED: 'TRAINING_AVAILABLE',
 };
 
 const HIGH_PRIORITY = new Set(['SESSION_CANCELLED', 'TRAINING_OVERDUE', 'CERTIFICATE_REVOKED', 'REGISTRATION_REJECTED', 'RETRAINING_DUE']);
@@ -205,6 +207,19 @@ export function buildTrainingEmail(kind, data) {
       paragraphs = [`"${title}" was due on ${fmt(data.dueDate, tz, dayFmt)} and has not been completed.`];
       message = `"${title}" is overdue.`;
       break;
+    case 'FACILITATOR_ASSIGNED': {
+      const roleLabel = { LEAD: 'lead facilitator', CO_FACILITATOR: 'co-facilitator', GUEST: 'guest speaker' }[data.role] || 'facilitator';
+      subject = `You're facilitating: ${s?.title || title}`;
+      heading = `You are ${roleLabel === 'guest speaker' ? 'a guest speaker' : `the ${roleLabel}`}`;
+      paragraphs = [s
+        ? `You have been added as ${roleLabel} for the session "${s.title}" of "${title}".`
+        : `You have been added as ${roleLabel} for "${title}".`];
+      details.push(['When', s ? when : trainingDates(t, tz)], ['Venue', s?.venue || t.venue]);
+      note = 'From Training › Facilitating you can show the check-in screen and take the register for your sessions.';
+      action = { url: `${base}/researcher/training/facilitating`, label: 'Open my sessions' };
+      message = `You are ${roleLabel} for ${s ? `"${s.title}"` : `"${title}"`}.`;
+      break;
+    }
     case 'CERTIFICATE_EXPIRING':
       subject = `Certificate expiring: ${title}`;
       heading = 'Your certificate expires soon';

@@ -2677,6 +2677,8 @@
     "training_browse_desc": "Für Schulungen anmelden und den Fortschritt verfolgen",
     "training_certificates": "Meine Zertifikate",
     "training_certificates_desc": "Erworbene Zertifikate herunterladen",
+    "training_facilitating": "Moderation",
+    "training_facilitating_desc": "Ihre Sitzungen: Check-in-Bildschirm und Anwesenheitsliste",
     "training_mine": "Meine Schulungen",
     "training_mine_desc": "Angemeldete Schulungen und Fortschritt ansehen",
     "training_checkin": "Sitzungs-Check-in",

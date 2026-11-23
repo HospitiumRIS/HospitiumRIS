@@ -17,6 +17,7 @@ import { validateCompletionRules } from '@/lib/training-completion';
 import { validateCertificateSettings } from '@/lib/certificate-template';
 import { findInstitutionTemplate } from '@/lib/certificate-templates-server';
 import { validateEnrolmentSettings } from '@/lib/training-enrolment';
+import { facilitatedSessionIds, facilitatorsForSession, shapeFacilitator, sortFacilitators } from '@/lib/training-facilitators';
 import { eligibilityFor, enrolmentSummary, promoteWaitlist } from '@/lib/training-enrolment-server';
 import { loadOwnCompletion, refreshTrainingProgress } from '@/lib/training-progress-server';
 
@@ -46,6 +47,9 @@ export async function GET(request, { params }) {
         },
         materials: {
           orderBy: { createdAt: 'desc' },
+        },
+        facilitators: {
+          include: { user: { select: { givenName: true, familyName: true, email: true } } },
         },
         sessions: {
           orderBy: [{ startsAt: 'asc' }, { order: 'asc' }],
@@ -129,7 +133,15 @@ export async function GET(request, { params }) {
       .map((session) => ({
         ...serializeSession(session, training, { canSeeLink }),
         myAttendance: myAttendance.get(session.id) || null,
+        // Facilitators (#104): names and roles for everyone, contact details for admins.
+        facilitators: facilitatorsForSession(training.facilitators, session.id)
+          .map(shapeFacilitator)
+          .map((f) => (isAdmin ? f : { ...f, email: null, userId: null })),
       }));
+    shaped.facilitators = sortFacilitators(training.facilitators)
+      .map(shapeFacilitator)
+      .map((f) => (isAdmin ? f : { ...f, email: null, userId: null }));
+    shaped.myFacilitatedSessionIds = facilitatedSessionIds(training.facilitators, user.id, training.sessions);
     // The caller's own completion checklist (#96). Once the training has ended, bring
     // their status up to date first.
     if (shaped.userRegistration && shaped.isRegistered) {

@@ -2677,6 +2677,8 @@
     "training_browse_desc": "ລົງທະບຽນການຝຶກອົບຮົມ ແລະ ຕິດຕາມຄວາມຄືບໜ້າ",
     "training_certificates": "ໃບຢັ້ງຢືນຂອງຂ້ອຍ",
     "training_certificates_desc": "ດາວໂຫຼດໃບຢັ້ງຢືນທີ່ໄດ້ຮັບ",
+    "training_facilitating": "Facilitating",
+    "training_facilitating_desc": "Your sessions: check-in screen and register",
     "training_mine": "ການຝຶກອົບຮົມຂອງຂ້ອຍ",
     "training_mine_desc": "ເບິ່ງການຝຶກອົບຮົມທີ່ລົງທະບຽນ ແລະ ຄວາມຄືບໜ້າ",
     "training_checkin": "Session Check-in",

@@ -2677,6 +2677,8 @@
     "training_browse_desc": "교육에 등록하고 진행 상황을 추적합니다",
     "training_certificates": "내 수료증",
     "training_certificates_desc": "취득한 수료증을 다운로드합니다",
+    "training_facilitating": "Facilitating",
+    "training_facilitating_desc": "Your sessions: check-in screen and register",
     "training_mine": "내 교육",
     "training_mine_desc": "등록된 교육과 진행 상황을 봅니다",
     "training_checkin": "Session Check-in",

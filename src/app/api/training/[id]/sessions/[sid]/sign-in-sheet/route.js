@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { ACTIVE_REGISTRATION_STATUSES } from '@/lib/training-scope';
 import { effectiveSessionDelivery } from '@/lib/training-sessions';
-import { requireSessionAdmin } from '@/lib/training-sessions-server';
+import { requireSessionStaff } from '@/lib/training-sessions-server';
 import { buildSignInSheetPdf } from '@/lib/training-signin-sheet';
 import { sanitizeFileName } from '@/lib/sanitize-file-name';
 
@@ -13,7 +13,7 @@ import { sanitizeFileName } from '@/lib/sanitize-file-name';
 export async function GET(request, { params }) {
   try {
     const { id, sid } = await params;
-    const access = await requireSessionAdmin(request, id);
+    const access = await requireSessionStaff(request, id, sid);
     if (access.error) return access.error;
     const { training } = access;
 
