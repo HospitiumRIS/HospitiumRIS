@@ -271,7 +271,7 @@ export function buildTrainingEmail(kind, data) {
       subject = `Tell us how it went: ${title}`;
       heading = 'Your feedback, please';
       paragraphs = [`Thank you for attending "${title}". Please take a couple of minutes to share your feedback.`];
-      action = { url: trainingUrl, label: 'Give feedback' };
+      action = { url: `${base}/researcher/training/feedback/${encodeURIComponent(t.id || '')}`, label: 'Give feedback' };
       message = `Please give feedback on "${title}".`;
       break;
     case 'CERTIFICATE_ISSUED':

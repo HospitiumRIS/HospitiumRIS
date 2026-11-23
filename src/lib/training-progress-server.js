@@ -11,6 +11,7 @@ import {
   modulesCompletedByAttendance,
 } from '@/lib/training-completion';
 import { assessmentCompletionFacts, modulesCompletedByAssessment } from '@/lib/training-assessment';
+import { loadEffectiveForm } from '@/lib/training-feedback-server';
 
 const TRAINING_FIELDS = {
   id: true,
@@ -21,6 +22,7 @@ const TRAINING_FIELDS = {
   requireAssessmentPass: true,
   requireFeedback: true,
   completionGraceDays: true,
+  institutionId: true,
 };
 
 async function loadTrainingFacts(trainingId) {
@@ -40,11 +42,13 @@ async function loadTrainingFacts(trainingId) {
       select: { id: true, moduleId: true, isPublished: true, isRequiredForCompletion: true },
     }),
   ]);
-  return { training, sessions, modules, assessments };
+  // Feedback (#106): is there a form to submit?
+  const feedbackAvailable = training ? Boolean((await loadEffectiveForm(training)).form) : false;
+  return { training, sessions, modules, assessments, feedbackAvailable };
 }
 
 /** Evaluate one registration from already-loaded facts (no writes). */
-export function evaluateRegistration({ training, sessions, modules, assessments = [] }, registration, now = new Date()) {
+export function evaluateRegistration({ training, sessions, modules, assessments = [], feedbackAvailable = false }, registration, now = new Date()) {
   const attendance = computeAttendance(sessions, registration.attendance || [], {
     excludeExcused: training.excludeExcusedSessions !== false,
     now,
@@ -59,12 +63,13 @@ export function evaluateRegistration({ training, sessions, modules, assessments 
   ])].filter((id) => progress.get(id) !== 'COMPLETED');
   for (const id of autoModules) progress.set(id, 'COMPLETED');
 
-  // Feedback (#106) facts are added when that feature exists.
   const evaluation = evaluateCompletion(training, {
     attendancePercent: attendance.percent,
     modules,
     progress,
     assessments: assessmentCompletionFacts(assessments, passedIds),
+    feedbackAvailable,
+    feedbackSubmitted: Boolean(registration.feedbackResponse),
   });
   return { attendance, progress, autoModules, evaluation };
 }
@@ -97,6 +102,7 @@ export async function refreshTrainingProgress(trainingId, registrationIds = null
       attendance: { select: { sessionId: true, status: true } },
       moduleProgress: { select: { moduleId: true, status: true } },
       assessmentAttempts: { where: { passed: true }, select: { assessmentId: true, passed: true } },
+      feedbackResponse: { select: { id: true } },
     },
   });
 
@@ -174,6 +180,7 @@ export async function loadCompletionReport(trainingId, now = new Date()) {
       attendance: { select: { sessionId: true, status: true } },
       moduleProgress: { select: { moduleId: true, status: true } },
       assessmentAttempts: { where: { passed: true }, select: { assessmentId: true, passed: true } },
+      feedbackResponse: { select: { id: true } },
     },
   });
   return {
@@ -213,6 +220,7 @@ export async function loadOwnCompletion(trainingId, registrationId, now = new Da
       attendance: { select: { sessionId: true, status: true } },
       moduleProgress: { select: { moduleId: true, status: true } },
       assessmentAttempts: { where: { passed: true }, select: { assessmentId: true, passed: true } },
+      feedbackResponse: { select: { id: true } },
     },
   });
   if (!registration) return null;

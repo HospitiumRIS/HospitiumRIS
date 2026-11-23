@@ -724,7 +724,19 @@ export default function TrainingPage() {
                   </Stack>
                 ) : null}
 
-                {myAssessments.length ? (
+                {selectedTraining.myFeedback?.available && (selectedTraining.myFeedback.unlocked || selectedTraining.myFeedback.submittedAt) ? (
+                  <Alert
+                    severity={selectedTraining.myFeedback.submittedAt ? 'success' : 'info'}
+                    action={(
+                      <Button size="small" onClick={() => router.push(`/researcher/training/feedback/${selectedTraining.id}`)} sx={{ textTransform: 'none', fontWeight: 700 }}>
+                        {selectedTraining.myFeedback.submittedAt ? 'View' : 'Give feedback'}
+                      </Button>
+                    )}
+                  >
+                    {selectedTraining.myFeedback.submittedAt ? 'Thanks for your feedback.' : 'Tell us how this training went: it takes about two minutes.'}
+                  </Alert>
+                ) : null}
+                                {myAssessments.length ? (
                   <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>Assessments</Typography>
                     <Stack spacing={1}>

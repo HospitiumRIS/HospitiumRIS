@@ -2073,6 +2073,8 @@ model Training {
 
   facilitators TrainingFacilitator[]
   assessments TrainingAssessment[]
+  feedbackForm      TrainingFeedbackForm?
+  feedbackResponses TrainingFeedbackResponse[]
   @@index([institutionId, status])
   @@index([status, openToOtherInstitutions])
   @@map("trainings")
@@ -2164,6 +2166,7 @@ model TrainingRegistration {
   attendance     TrainingAttendance[]
 
   assessmentAttempts TrainingAssessmentAttempt[]
+  feedbackResponse TrainingFeedbackResponse?
   @@unique([trainingId, userId])
   @@index([source, dueDate])
   @@map("training_registrations")
@@ -3220,4 +3223,43 @@ model TrainingAssessmentAttempt {
   @@index([registrationId])
   @@index([assessmentId, status])
   @@map("training_assessment_attempts")
+}
+
+// Feedback (#106). An institution default (trainingId null) or a training's own form.
+// questions: [{ id, type: RATING|LIKERT|NPS|TEXT|CHOICE, label, required, options? }]
+model TrainingFeedbackForm {
+  id                      String   @id @default(cuid())
+  institutionId           String
+  trainingId              String?  @unique
+  title                   String   @default("Training feedback")
+  intro                   String?  @db.Text
+  questions               Json     @default("[]")
+  anonymousToFacilitators Boolean  @default(true)
+  isActive                Boolean  @default(true)
+  createdBy               String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  training  Training?                  @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  responses TrainingFeedbackResponse[]
+
+  @@index([institutionId])
+  @@map("training_feedback_forms")
+}
+
+model TrainingFeedbackResponse {
+  id             String   @id @default(cuid())
+  trainingId     String
+  formId         String
+  registrationId String   @unique
+  userId         String
+  answers        Json     @default("{}")
+  submittedAt    DateTime @default(now())
+
+  training     Training             @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  form         TrainingFeedbackForm @relation(fields: [formId], references: [id], onDelete: NoAction)
+  registration TrainingRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@index([trainingId])
+  @@map("training_feedback_responses")
 }

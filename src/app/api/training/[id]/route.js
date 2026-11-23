@@ -17,6 +17,8 @@ import { validateCompletionRules } from '@/lib/training-completion';
 import { validateCertificateSettings } from '@/lib/certificate-template';
 import { findInstitutionTemplate } from '@/lib/certificate-templates-server';
 import { validateEnrolmentSettings } from '@/lib/training-enrolment';
+import { feedbackUnlocked } from '@/lib/training-feedback';
+import { loadEffectiveForm } from '@/lib/training-feedback-server';
 import { facilitatedSessionIds, facilitatorsForSession, shapeFacilitator, sortFacilitators } from '@/lib/training-facilitators';
 import { eligibilityFor, enrolmentSummary, promoteWaitlist } from '@/lib/training-enrolment-server';
 import { loadOwnCompletion, refreshTrainingProgress } from '@/lib/training-progress-server';
@@ -154,6 +156,15 @@ export async function GET(request, { params }) {
         if (fresh) Object.assign(shaped.userRegistration, fresh);
       }
       shaped.myCompletion = await loadOwnCompletion(training.id, shaped.userRegistration.id);
+    }
+    // Feedback (#106): is there a form, may they answer, did they already?
+    if (shaped.userRegistration && shaped.isRegistered) {
+      const { form } = await loadEffectiveForm(training);
+      if (form) {
+        const response = await prisma.trainingFeedbackResponse.findUnique({ where: { registrationId: shaped.userRegistration.id }, select: { submittedAt: true } });
+        const reg = await prisma.trainingRegistration.findUnique({ where: { id: shaped.userRegistration.id }, select: { status: true, attendancePercent: true } });
+        shaped.myFeedback = { available: true, unlocked: feedbackUnlocked(training, reg).unlocked, submittedAt: response?.submittedAt || null };
+      }
     }
     // The caller's own attendance (#92).
     shaped.myAttendanceSummary = shaped.userRegistration

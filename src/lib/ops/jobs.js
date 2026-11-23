@@ -76,9 +76,12 @@ async function runTrainingCompletion() {
 async function runTrainingReminders() {
   const { sendComplianceReminders } = await import('@/lib/training-assignment-server');
   const r = await sendComplianceReminders();
+  // Feedback requests for trainings that ended in the last 14 days (#106).
+  const { sendFeedbackRequests } = await import('@/lib/training-feedback-server');
+  const f = await sendFeedbackRequests();
   return {
-    summary: `Checked ${r.checked} registration(s): ${r.sent} reminder(s) sent`,
-    metadata: r,
+    summary: `Checked ${r.checked} registration(s): ${r.sent} reminder(s), ${f.sent} feedback request(s) sent`,
+    metadata: { ...r, feedbackRequests: f.sent },
   };
 }
 
@@ -102,7 +105,7 @@ export const OPS_JOBS = {
   training_reminders: {
     key: 'training_reminders',
     label: 'Training reminders',
-    description: 'Due-soon and overdue reminders for assigned trainings, and certificate expiring / re-training due notices.',
+    description: 'Due-soon and overdue reminders for assigned trainings, certificate expiring / re-training due notices, and feedback requests after a training ends.',
     cronPath: '/api/cron/training-reminders',
     expectedEveryHours: 24,
     run: runTrainingReminders,
