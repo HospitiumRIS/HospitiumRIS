@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Alert,
@@ -9,16 +9,13 @@ import {
   Chip,
   CircularProgress,
   Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
+  FormControlLabel,
   InputAdornment,
   LinearProgress,
+  MenuItem,
   Paper,
-  Snackbar,
   Stack,
+  Switch,
   Tab,
   Tabs,
   TextField,
@@ -26,940 +23,440 @@ import {
   alpha,
 } from '@mui/material';
 import {
+  AccessTime as TimeIcon,
   CalendarToday as CalendarIcon,
-  Close as CloseIcon,
+  CheckCircleOutline as AllDoneIcon,
+  Dashboard as OverviewIcon,
   Description as MaterialsIcon,
   EmojiEvents as CertificateIcon,
   Home as HomeIcon,
   LocationOn as LocationIcon,
   People as PeopleIcon,
+  Public as SharedIcon,
+  QrCodeScanner as CheckInIcon,
+  RecordVoiceOver as FacilitatingIcon,
   Refresh as RefreshIcon,
   School as TrainingIcon,
-  Search as SearchIcon,
   Schedule as ScheduleIcon,
-  QrCodeScanner as CheckInIcon,
+  Search as SearchIcon,
+  WorkspacePremium as CpdIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
 import { DELIVERY_MODE_LABELS } from '@/lib/training-sessions';
-import { ATTENDANCE_LABELS } from '@/lib/training-attendance';
+import { DATE_FILTERS, filterCatalogue } from '@/lib/training-hub';
+import {
+  DUE_CHIP,
+  DeadlineLabel,
+  LocationText,
+  MetaRow,
+  PURPLE,
+  StatCard,
+  StatusChip,
+  asList,
+  formatDate,
+  formatRange,
+  formatSessionTime,
+} from '@/components/Training/researcher/trainingUi';
 
-const ATTENDANCE_CHIP_SX = {
-  PRESENT: { bgcolor: '#dcfce7', color: '#166534' },
-  LATE: { bgcolor: '#fef3c7', color: '#92400e' },
-  ABSENT: { bgcolor: '#fee2e2', color: '#b91c1c' },
-  EXCUSED: { bgcolor: '#e0f2fe', color: '#075985' },
+const TABS = ['overview', 'mine', 'catalogue'];
+const btn = { textTransform: 'none', fontWeight: 700 };
+const grid = { display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(3, 1fr)' }, gap: 2 };
+const fieldSx = {
+  '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: PURPLE },
+  '& .MuiInputLabel-root.Mui-focused': { color: PURPLE },
 };
 
-const PURPLE = '#8b6cbc';
-const dialogLock = { disableScrollLock: true };
-
-const STATUS_TONE = {
-  REGISTERED: { bg: alpha(PURPLE, 0.12), color: PURPLE, label: 'Registered' },
-  COMPLETED: { bg: '#dcfce7', color: '#166534', label: 'Completed' },
-  NOT_COMPLETED: { bg: '#fef3c7', color: '#92400e', label: 'Not completed' },
-  CANCELLED: { bg: '#fee2e2', color: '#b91c1c', label: 'Cancelled' },
-  PENDING_APPROVAL: { bg: '#fef3c7', color: '#92400e', label: 'Awaiting approval' },
-  WAITLISTED: { bg: '#e0f2fe', color: '#075985', label: 'Waiting list' },
-  REJECTED: { bg: '#fee2e2', color: '#b91c1c', label: 'Not approved' },
+const TODO_TONE = {
+  MANDATORY_OVERDUE: '#b91c1c',
+  CHECK_IN: '#166534',
+  JOIN: '#166534',
+  RETRAINING: '#b91c1c',
+  ASSESSMENT: PURPLE,
+  MANDATORY_DUE: '#92400e',
+  FEEDBACK: '#075985',
+  WAITING: '#64748b',
+};
+const TODO_ACTION = {
+  MANDATORY_OVERDUE: 'Open', CHECK_IN: 'Check in', JOIN: 'Join', RETRAINING: 'Find a refresher',
+  ASSESSMENT: 'Start', MANDATORY_DUE: 'Open', FEEDBACK: 'Give feedback', WAITING: 'View',
 };
 
-const formatDateTime = (value) => {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
-};
-
-// What the main button does for someone not yet holding a place (#102).
-function enrolmentAction(training) {
-  const status = training.userRegistration?.status;
-  if (status === 'PENDING_APPROVAL' || status === 'WAITLISTED' || status === 'REJECTED') return { show: false };
-  const now = Date.now();
-  if (training.eligibility && !training.eligibility.ok) return { show: true, disabled: true, label: 'Not eligible' };
-  if (training.registrationOpensAt && new Date(training.registrationOpensAt).getTime() > now) {
-    return { show: true, disabled: true, label: 'Registration not open yet' };
-  }
-  const closes = [training.registrationClosesAt, training.startDate].filter(Boolean).map((d) => new Date(d).getTime());
-  if (closes.length && Math.min(...closes) <= now) return { show: true, disabled: true, label: 'Registration closed' };
-  if ((training.remainingSlots ?? 0) <= 0) {
-    return training.waitlistEnabled
-      ? { show: true, label: 'Join waiting list' }
-      : { show: true, disabled: true, label: 'Training is full' };
-  }
-  return { show: true, label: training.requiresApproval ? 'Request a place' : 'Register' };
-}
-
-// Assigned trainings and certificate expiry (#103).
-const DUE_CHIP = {
-  OVERDUE: { label: 'Overdue', sx: { bgcolor: '#fee2e2', color: '#b91c1c' } },
-  DUE_SOON: { label: 'Due soon', sx: { bgcolor: '#fef3c7', color: '#92400e' } },
-  RETRAINING_DUE: { label: 'Certificate expired: re-training due', sx: { bgcolor: '#fee2e2', color: '#b91c1c' } },
-  EXPIRING: { label: 'Certificate expiring soon', sx: { bgcolor: '#fef3c7', color: '#92400e' } },
-};
-
-const CANCEL_LABELS = {
-  REGISTERED: 'Cancel registration',
-  PENDING_APPROVAL: 'Withdraw request',
-  WAITLISTED: 'Leave waiting list',
-};
-
-const formatDate = (value) => {
-  if (!value) return 'Not set';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Not set';
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-};
-
-const formatRange = (start, end) => `${formatDate(start)} - ${formatDate(end)}`;
-
-const daysUntil = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return Math.ceil((date.getTime() - Date.now()) / 86400000);
-};
-
-const asList = (value) => {
-  if (Array.isArray(value)) return value.filter(Boolean);
-  if (typeof value === 'string' && value.trim()) return [value];
-  return [];
-};
-
-const locationDisplay = (location) => {
-  if (!location) return { label: 'Location to be announced', href: null };
-  const trimmed = String(location).trim();
-  try {
-    const url = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
-    if (url.hostname.includes('.')) {
-      return { label: url.hostname.replace(/^www\./, ''), href: url.href };
-    }
-  } catch {
-    // not a URL
-  }
-  return { label: trimmed, href: trimmed.startsWith('http') ? trimmed : null };
-};
-
-function StatusChip({ status }) {
-  const tone = STATUS_TONE[status] || { bg: '#f1f5f9', color: '#475569', label: String(status || '').replaceAll('_', ' ') };
-  return <Chip size="small" label={tone.label} sx={{ bgcolor: tone.bg, color: tone.color, fontWeight: 700, height: 24 }} />;
-}
-
-function StatCard({ label, value, caption }) {
+function EmptyState({ icon, title, text, action }) {
   return (
-    <Paper sx={{ flex: 1, minWidth: 160, p: 2, borderRadius: 2, bgcolor: PURPLE, color: 'white' }}>
-      <Typography variant="caption" sx={{ opacity: 0.85, fontWeight: 700 }}>{label}</Typography>
-      <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5 }}>{value}</Typography>
-      {caption ? <Typography variant="caption" sx={{ opacity: 0.75 }}>{caption}</Typography> : null}
+    <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 2, border: '1px dashed', borderColor: alpha(PURPLE, 0.3) }}>
+      <Box sx={{ color: '#cbd5e1', mb: 1, '& svg': { fontSize: 42 } }}>{icon}</Box>
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>{title}</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: action ? 2 : 0 }}>{text}</Typography>
+      {action}
     </Paper>
   );
 }
 
-function MetaRow({ icon, children }) {
+function TrainingCard({ training, registration, onOpen, catalogue }) {
+  const groups = asList(training.targetGroup);
+  const full = (training.remainingSlots ?? 0) <= 0;
   return (
-    <Stack direction="row" spacing={1} alignItems="flex-start">
-      <Box sx={{ color: PURPLE, mt: '1px' }}>{icon}</Box>
-      <Typography variant="body2" color="text.secondary">{children}</Typography>
+    <Paper
+      elevation={0}
+      onClick={onOpen}
+      role="link"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }}
+      sx={{
+        p: 2.25,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 240,
+        '&:hover, &:focus-visible': { borderColor: alpha(PURPLE, 0.45), boxShadow: `0 8px 24px ${alpha(PURPLE, 0.12)}`, outline: 'none' },
+      }}
+    >
+      <Stack direction="row" justifyContent="space-between" spacing={1} sx={{ mb: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1e293b' }}>{training.title}</Typography>
+        {registration ? <StatusChip status={registration.status} /> : <DeadlineLabel startDate={training.startDate} endDate={training.endDate} />}
+      </Stack>
+      <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
+        {training.isMandatory ? <Chip size="small" label="Mandatory" sx={{ height: 22, fontWeight: 700, bgcolor: alpha(PURPLE, 0.12), color: PURPLE }} /> : null}
+        {registration?.source === 'ASSIGNED' ? (
+          <Chip size="small" label={registration.dueDate ? `Assigned · due ${formatDate(registration.dueDate)}` : 'Assigned to you'} sx={{ height: 22, fontWeight: 700, bgcolor: '#f1f5f9', color: '#334155' }} />
+        ) : null}
+        {DUE_CHIP[registration?.compliance?.state] ? (
+          <Chip size="small" label={DUE_CHIP[registration.compliance.state].label} sx={{ height: 22, fontWeight: 700, ...DUE_CHIP[registration.compliance.state].sx }} />
+        ) : null}
+        {catalogue && training.deliveryMode ? <Chip size="small" variant="outlined" label={DELIVERY_MODE_LABELS[training.deliveryMode] || training.deliveryMode} sx={{ height: 22 }} /> : null}
+        {catalogue && (training.cpdHours || training.cpdPoints) ? (
+          <Chip size="small" icon={<CpdIcon sx={{ fontSize: 14 }} />} label={`CPD ${[training.cpdHours ? `${training.cpdHours} h` : null, training.cpdPoints ? `${training.cpdPoints} pts` : null].filter(Boolean).join(' · ')}`} sx={{ height: 22, fontWeight: 700, bgcolor: '#e0f2fe', color: '#075985' }} />
+        ) : null}
+        {catalogue && training.fromOtherInstitution ? (
+          <Chip size="small" icon={<SharedIcon sx={{ fontSize: 14 }} />} label="Open to other institutions" sx={{ height: 22, fontWeight: 700, bgcolor: '#f0fdf4', color: '#166534' }} />
+        ) : null}
+        {catalogue && training.eligibility && !training.eligibility.ok ? (
+          <Chip size="small" label="Not eligible" title={training.eligibility.reasons.join(' · ')} sx={{ height: 22, fontWeight: 700, bgcolor: '#fef3c7', color: '#92400e' }} />
+        ) : null}
+        {catalogue && training.requiresApproval ? <Chip size="small" variant="outlined" label="Approval needed" sx={{ height: 22 }} /> : null}
+      </Stack>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        {training.description || 'No description provided.'}
+      </Typography>
+      <Stack spacing={0.75} sx={{ mb: 1.5 }}>
+        <MetaRow icon={<CalendarIcon sx={{ fontSize: 16 }} />}>{formatRange(training.startDate, training.endDate)}</MetaRow>
+        <MetaRow icon={<LocationIcon sx={{ fontSize: 16 }} />}><LocationText location={training.location} /></MetaRow>
+        <MetaRow icon={<PeopleIcon sx={{ fontSize: 16 }} />}>{[training.department, ...groups].filter(Boolean).join(' · ') || 'Audience not specified'}</MetaRow>
+      </Stack>
+      {registration && registration.totalModules > 0 ? (
+        <Box sx={{ mt: 'auto' }}>
+          <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+            <Typography variant="caption" color="text.secondary">Progress</Typography>
+            <Typography variant="caption" sx={{ color: PURPLE, fontWeight: 700 }}>{registration.completedModules}/{registration.totalModules} modules</Typography>
+          </Stack>
+          <LinearProgress variant="determinate" value={registration.progressPercentage || 0} sx={{ height: 6, borderRadius: 3, bgcolor: alpha(PURPLE, 0.12), '& .MuiLinearProgress-bar': { bgcolor: PURPLE } }} />
+          {registration.hasCertificate ? <Chip icon={<CertificateIcon sx={{ fontSize: 16 }} />} label="Certificate ready" size="small" sx={{ mt: 1.25, bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} /> : null}
+        </Box>
+      ) : !registration ? (
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 'auto' }}>
+          <Chip size="small" label={`${training.moduleCount ?? training.modules?.length ?? 0} modules`} sx={{ bgcolor: alpha(PURPLE, 0.08), color: PURPLE, fontWeight: 700 }} />
+          <Typography variant="caption" sx={{ fontWeight: 700, color: !full ? '#166534' : training.waitlistEnabled ? '#92400e' : '#b91c1c' }}>
+            {!full ? `${training.remainingSlots} seats left` : training.waitlistEnabled ? `Full · waiting list${training.waitlistCount ? ` (${training.waitlistCount})` : ''}` : 'Full'}
+          </Typography>
+        </Stack>
+      ) : <Box sx={{ mt: 'auto' }} />}
+      <Button size="small" startIcon={registration ? <MaterialsIcon /> : <ScheduleIcon />} sx={{ mt: 1.5, color: PURPLE, ...btn, alignSelf: 'flex-start', px: 0 }}>
+        {registration ? 'Open training' : 'View details and register'}
+      </Button>
+    </Paper>
+  );
+}
+
+function Overview({ dashboard, loading, onOpen, router }) {
+  if (loading && !dashboard) return <Box sx={{ py: 8, display: 'flex', justifyContent: 'center' }}><CircularProgress sx={{ color: PURPLE }} /></Box>;
+  if (!dashboard) return null;
+  const { todos, nextSessions, cpd, counts } = dashboard;
+  const go = (todo) => {
+    if (todo.external) window.open(todo.href, '_blank', 'noopener');
+    else router.push(todo.href);
+  };
+  return (
+    <Stack spacing={2}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+        <StatCard label="In progress" value={counts.active} caption="Trainings you're enrolled in" />
+        <StatCard label="Completed" value={counts.completed} caption="All time" />
+        <StatCard label={`CPD ${cpd.year}`} value={`${cpd.hours} h`} caption={cpd.points ? `${cpd.points} points` : 'From completed trainings'} />
+        <StatCard label="Waiting" value={counts.waiting} caption="Approval or waiting list" />
+      </Stack>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '3fr 2fr' }, gap: 2, alignItems: 'start' }}>
+        <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1.5 }}>To do</Typography>
+          {todos.length ? (
+            <Stack spacing={1}>
+              {todos.map((todo) => (
+                <Stack
+                  key={`${todo.kind}-${todo.href}-${todo.title}`}
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1}
+                  alignItems={{ sm: 'center' }}
+                  sx={{ p: 1.25, borderRadius: 1.5, border: '1px solid', borderColor: 'divider', borderLeft: `4px solid ${TODO_TONE[todo.kind] || PURPLE}` }}
+                >
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{todo.title}</Typography>
+                    <Typography variant="caption" color="text.secondary">{todo.detail}</Typography>
+                  </Box>
+                  <Button size="small" variant={todo.kind === 'WAITING' ? 'text' : 'outlined'} onClick={() => go(todo)} sx={{ ...btn, color: TODO_TONE[todo.kind] || PURPLE, borderColor: TODO_TONE[todo.kind] || PURPLE, whiteSpace: 'nowrap' }}>
+                    {TODO_ACTION[todo.kind] || 'Open'}
+                  </Button>
+                </Stack>
+              ))}
+            </Stack>
+          ) : (
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ py: 2, color: '#166534' }}>
+              <AllDoneIcon />
+              <Typography variant="body2">You&apos;re all caught up.</Typography>
+            </Stack>
+          )}
+        </Paper>
+        <Stack spacing={2}>
+          <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1.5 }}>Next sessions</Typography>
+            {nextSessions.length ? (
+              <Stack spacing={1}>
+                {nextSessions.map((s) => (
+                  <Stack key={s.id} direction="row" spacing={1.25} alignItems="center" onClick={() => onOpen(s.trainingId)} sx={{ cursor: 'pointer', p: 1, borderRadius: 1.5, '&:hover': { bgcolor: alpha(PURPLE, 0.05) } }}>
+                    <TimeIcon sx={{ color: PURPLE }} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>{s.title}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }} noWrap>{formatSessionTime(s.startsAt, s.endsAt)} · {s.trainingTitle}</Typography>
+                    </Box>
+                    {s.checkInOpen ? <Chip size="small" label="Check in" sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} /> : null}
+                    {s.joinOpen ? <Chip size="small" label="Live" sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} /> : null}
+                  </Stack>
+                ))}
+              </Stack>
+            ) : <Typography variant="body2" color="text.secondary">No upcoming sessions.</Typography>}
+          </Paper>
+          <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+              <CpdIcon sx={{ color: PURPLE }} />
+              <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>CPD in {cpd.year}</Typography>
+            </Stack>
+            {cpd.trainings.length ? (
+              <Stack spacing={0.5}>
+                {cpd.trainings.map((t) => (
+                  <Stack key={t.id} direction="row" justifyContent="space-between" spacing={1}>
+                    <Typography variant="body2" noWrap sx={{ minWidth: 0 }}>{t.title}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{[t.hours ? `${t.hours} h` : null, t.points ? `${t.points} pts` : null].filter(Boolean).join(' · ')}</Typography>
+                  </Stack>
+                ))}
+              </Stack>
+            ) : <Typography variant="body2" color="text.secondary">Complete trainings with CPD hours to build up your total.</Typography>}
+          </Paper>
+        </Stack>
+      </Box>
     </Stack>
   );
 }
 
-function DeadlineLabel({ startDate, endDate }) {
-  const untilEnd = daysUntil(endDate);
-  const untilStart = daysUntil(startDate);
-  if (untilEnd == null) return null;
-  if (untilEnd < 0) return <Chip size="small" label="Ended" sx={{ bgcolor: '#f1f5f9', color: '#64748b', fontWeight: 700 }} />;
-  if (untilStart > 0) return <Chip size="small" label={`Starts in ${untilStart} day${untilStart === 1 ? '' : 's'}`} sx={{ bgcolor: '#dbeafe', color: '#1d4ed8', fontWeight: 700 }} />;
-  return <Chip size="small" label={`${untilEnd} day${untilEnd === 1 ? '' : 's'} left`} sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} />;
-}
-
-const checkInOpenNow = (session) => {
-  const start = new Date(session.startsAt).getTime();
-  const now = Date.now();
-  return now >= start - (session.checkInOpensMinutesBefore ?? 15) * 60000
-    && now <= start + (session.checkInClosesMinutesAfter ?? 30) * 60000;
-};
-
-// Same window as the server's join link (lib/training-virtual-attendance.js).
-const joinOpenNow = (session) => {
-  if (session.status !== 'SCHEDULED') return false;
-  const now = Date.now();
-  return now >= new Date(session.startsAt).getTime() - (session.checkInOpensMinutesBefore ?? 15) * 60000
-    && now <= new Date(session.endsAt).getTime();
-};
-
-const formatSessionTime = (start, end) => {
-  const s = new Date(start);
-  const e = new Date(end);
-  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return '';
-  const day = s.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  const time = (d) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  return `${day} · ${time(s)} – ${time(e)}`;
-};
-
+/**
+ * Researcher learning hub (#107): overview (to-do, next sessions, CPD), my trainings,
+ * and the catalogue with filters. Each training opens its own page.
+ */
 export default function TrainingPage() {
   const router = useRouter();
+  const [tab, setTab] = useState('overview');
   const [loading, setLoading] = useState(true);
-  const [myTrainings, setMyTrainings] = useState([]);
-  const [availableTrainings, setAvailableTrainings] = useState([]);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const [selectedTraining, setSelectedTraining] = useState(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [registering, setRegistering] = useState(false);
-  const [confirmCancel, setConfirmCancel] = useState(false);
-  const [myAssessments, setMyAssessments] = useState([]);
-  const [search, setSearch] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState('all');
-  const [tab, setTab] = useState(0);
+  const [myTrainings, setMyTrainings] = useState([]);
+  const [catalogue, setCatalogue] = useState([]);
+  const [dashboard, setDashboard] = useState(null);
+  const [mySearch, setMySearch] = useState('');
+  const [filters, setFilters] = useState({ search: '', department: 'all', category: 'all', mode: 'all', date: 'any', cpdOnly: false, eligibleOnly: false, openOnly: false });
 
-  const loadTrainings = async () => {
+  const open = useCallback((id) => router.push(`/researcher/training/${id}`), [router]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true);
-      setError('');
-      const [myResponse, allResponse] = await Promise.all([
-        fetch('/api/training/my'),
-        fetch('/api/training'),
+      const [myRes, allRes, dashRes] = await Promise.all([
+        fetch('/api/training/my', { cache: 'no-store' }),
+        fetch('/api/training', { cache: 'no-store' }),
+        fetch('/api/training/my/dashboard', { cache: 'no-store' }),
       ]);
-      const myData = await myResponse.json();
-      const allData = await allResponse.json();
-
-      const registrations = myData.success ? (myData.registrations || []) : [];
+      const [my, all, dash] = await Promise.all([myRes.json().catch(() => ({})), allRes.json().catch(() => ({})), dashRes.json().catch(() => ({}))]);
+      const registrations = my.success ? my.registrations || [] : [];
       setMyTrainings(registrations);
-
-      if (allData.success) {
-        const registeredIds = new Set(registrations.map((item) => item.training.id));
-        setAvailableTrainings((allData.trainings || []).filter((item) => !registeredIds.has(item.id)));
-      }
+      const mine = new Set(registrations.filter((r) => r.status !== 'CANCELLED').map((r) => r.training.id));
+      setCatalogue(all.success ? (all.trainings || []).filter((t) => !mine.has(t.id)) : []);
+      setDashboard(dash.success ? dash : null);
+      if (!my.success || !all.success) setError(my.error || all.error || 'Some trainings could not be loaded');
     } catch (err) {
       setError(err.message || 'Failed to load trainings');
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadTrainings();
   }, []);
 
-  // Links from training emails (#97): /researcher/training?training=<id> opens its details.
+  useEffect(() => { load(); }, [load]);
+
+  // Old links: ?training=<id> (emails, other pages) open the training's page;
+  // ?tab= and #available pick a tab.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const linked = params.get('training');
     if (linked) {
-      openDetails(linked);
-      params.delete('training');
-      params.delete('join');
-      const rest = params.toString();
-      window.history.replaceState(null, '', `${window.location.pathname}${rest ? `?${rest}` : ''}${window.location.hash}`);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.location.hash === '#available') {
-      setTab(1);
-      requestAnimationFrame(() => {
-        document.getElementById('available')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
-  }, [loading]);
-
-  const departments = useMemo(() => {
-    const values = [...myTrainings.map((item) => item.training.department), ...availableTrainings.map((item) => item.department)];
-    return [...new Set(values.filter(Boolean))].sort();
-  }, [myTrainings, availableTrainings]);
-
-  const matchesSearch = (training) => {
-    const haystack = `${training.title} ${training.description || ''} ${training.department || ''} ${asList(training.targetGroup).join(' ')}`.toLowerCase();
-    return !search || haystack.includes(search.toLowerCase());
-  };
-
-  // Overdue and due-soon assigned trainings first (#103).
-  const urgency = (item) => ({ OVERDUE: 0, RETRAINING_DUE: 1, DUE_SOON: 2, EXPIRING: 3 }[item.compliance?.state] ?? 9);
-  const filteredMine = myTrainings.filter((item) => {
-    const training = item.training;
-    const matchesDept = departmentFilter === 'all' || training.department === departmentFilter;
-    return matchesSearch(training) && matchesDept;
-  }).sort((a, b) => urgency(a) - urgency(b));
-
-  const filteredAvailable = availableTrainings.filter((training) => {
-    const matchesDept = departmentFilter === 'all' || training.department === departmentFilter;
-    return matchesSearch(training) && matchesDept;
-  });
-
-  const stats = {
-    mine: myTrainings.length,
-    available: availableTrainings.length,
-    inProgress: myTrainings.filter((item) => item.status === 'REGISTERED').length,
-    completed: myTrainings.filter((item) => item.status === 'COMPLETED' || item.hasCertificate).length,
-  };
-
-  const openDetails = async (trainingId) => {
-    try {
-      const response = await fetch(`/api/training/${trainingId}`);
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to load training');
-      setSelectedTraining(data.training);
-      setConfirmCancel(false);
-      setDetailsOpen(true);
-      // Assessments (#105), for participants.
-      setMyAssessments([]);
-      if (data.training.isRegistered) {
-        fetch(`/api/training/${trainingId}/assessments/mine`)
-          .then((r) => r.json())
-          .then((json) => { if (json.success) setMyAssessments(json.assessments || []); })
-          .catch(() => {});
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to load training details');
-    }
-  };
-
-  const toggleModuleDone = async (moduleId, completed) => {
-    if (!selectedTraining) return;
-    try {
-      const response = await fetch(`/api/training/${selectedTraining.id}/modules/${moduleId}/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ completed }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.error || 'Could not update the module');
-      await openDetails(selectedTraining.id);
-    } catch (err) {
-      setError(err.message || 'Could not update the module');
-    }
-  };
-
-  const handleRegister = async () => {
-    if (!selectedTraining) return;
-    try {
-      setRegistering(true);
-      const response = await fetch(`/api/training/${selectedTraining.id}/register`, { method: 'POST' });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to register');
-      setDetailsOpen(false);
-      setSelectedTraining(null);
-      const outcome = data.registration?.status;
-      setNotice(outcome === 'WAITLISTED'
-        ? 'The training is full, so you are on the waiting list. We will email you if a place opens.'
-        : outcome === 'PENDING_APPROVAL'
-          ? 'Request sent. A place is held for you while the training team reviews it.'
-          : 'You are registered. This training now appears under My trainings.');
-      setTab(0);
-      await loadTrainings();
-    } catch (err) {
-      setError(err.message || 'Failed to register for training');
-    } finally {
-      setRegistering(false);
-    }
-  };
-
-  const handleCancelRegistration = async () => {
-    if (!selectedTraining) return;
-    if (!confirmCancel) {
-      setConfirmCancel(true);
+      router.replace(`/researcher/training/${encodeURIComponent(linked)}`);
       return;
     }
-    try {
-      setRegistering(true);
-      const response = await fetch(`/api/training/${selectedTraining.id}/register`, { method: 'DELETE' });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.error || 'Could not cancel');
-      setDetailsOpen(false);
-      setSelectedTraining(null);
-      setNotice('Done. Your place has been released.');
-      await loadTrainings();
-    } catch (err) {
-      setError(err.message || 'Could not cancel');
-    } finally {
-      setRegistering(false);
-      setConfirmCancel(false);
-    }
+    const wanted = params.get('tab');
+    if (TABS.includes(wanted)) setTab(wanted);
+    else if (window.location.hash === '#available') setTab('catalogue');
+  }, [router]);
+
+  const changeTab = (value) => {
+    setTab(value);
+    if (typeof window !== 'undefined') window.history.replaceState(null, '', value === 'overview' ? '/researcher/training' : `/researcher/training?tab=${value}`);
   };
 
-  const renderLocation = (location) => {
-    const meta = locationDisplay(location);
-    if (meta.href) {
-      return (
-        <Box
-          component="a"
-          href={meta.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(event) => event.stopPropagation()}
-          sx={{ color: PURPLE, fontWeight: 600, textDecoration: 'none' }}
-        >
-          {meta.label}
-        </Box>
-      );
-    }
-    return meta.label;
-  };
+  const urgency = (item) => ({ OVERDUE: 0, RETRAINING_DUE: 1, DUE_SOON: 2, EXPIRING: 3 }[item.compliance?.state] ?? 9);
+  const mine = useMemo(() => {
+    const q = mySearch.trim().toLowerCase();
+    return myTrainings
+      .filter((r) => !q || `${r.training.title} ${r.training.department || ''}`.toLowerCase().includes(q))
+      .sort((a, b) => urgency(a) - urgency(b) || new Date(b.registeredAt) - new Date(a.registeredAt));
+  }, [myTrainings, mySearch]);
 
-  const renderCard = ({ key, training, registration, onOpen }) => {
-    const groups = asList(training.targetGroup);
-    return (
-      <Paper
-        key={key}
-        elevation={0}
-        onClick={onOpen}
-        sx={{
-          p: 2.25,
-          borderRadius: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-          cursor: 'pointer',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 240,
-          '&:hover': { borderColor: alpha(PURPLE, 0.45), boxShadow: `0 8px 24px ${alpha(PURPLE, 0.12)}` },
-        }}
-      >
-        <Stack direction="row" justifyContent="space-between" spacing={1} sx={{ mb: 1 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1e293b' }}>{training.title}</Typography>
-          {registration ? <StatusChip status={registration.status} /> : <DeadlineLabel startDate={training.startDate} endDate={training.endDate} />}
-        </Stack>
-        {training.isMandatory || registration?.source === 'ASSIGNED' || DUE_CHIP[registration?.compliance?.state] ? (
-          <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
-            {training.isMandatory ? <Chip size="small" label="Mandatory" sx={{ height: 22, fontWeight: 700, bgcolor: alpha(PURPLE, 0.12), color: PURPLE }} /> : null}
-            {registration?.source === 'ASSIGNED' ? (
-              <Chip size="small" label={registration.dueDate ? `Assigned · due ${formatDate(registration.dueDate)}` : 'Assigned to you'} sx={{ height: 22, fontWeight: 700, bgcolor: '#f1f5f9', color: '#334155' }} />
-            ) : null}
-            {DUE_CHIP[registration?.compliance?.state] ? (
-              <Chip size="small" label={DUE_CHIP[registration.compliance.state].label} sx={{ height: 22, fontWeight: 700, ...DUE_CHIP[registration.compliance.state].sx }} />
-            ) : null}
-          </Stack>
-        ) : null}
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-          {training.description || 'No description provided.'}
-        </Typography>
-        <Stack spacing={0.75} sx={{ mb: 1.5 }}>
-          <MetaRow icon={<CalendarIcon sx={{ fontSize: 16 }} />}>{formatRange(training.startDate, training.endDate)}</MetaRow>
-          <MetaRow icon={<LocationIcon sx={{ fontSize: 16 }} />}>{renderLocation(training.location)}</MetaRow>
-          <MetaRow icon={<PeopleIcon sx={{ fontSize: 16 }} />}>
-            {[training.department, ...groups].filter(Boolean).join(' · ') || 'Audience not specified'}
-          </MetaRow>
-        </Stack>
-        {registration && registration.totalModules > 0 ? (
-          <Box sx={{ mt: 'auto' }}>
-            <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">Progress</Typography>
-              <Typography variant="caption" sx={{ color: PURPLE, fontWeight: 700 }}>
-                {registration.completedModules}/{registration.totalModules} modules
-              </Typography>
-            </Stack>
-            <LinearProgress
-              variant="determinate"
-              value={registration.progressPercentage || 0}
-              sx={{ height: 6, borderRadius: 3, bgcolor: alpha(PURPLE, 0.12), '& .MuiLinearProgress-bar': { bgcolor: PURPLE } }}
-            />
-            {registration.hasCertificate ? (
-              <Chip icon={<CertificateIcon sx={{ fontSize: 16 }} />} label="Certificate ready" size="small" sx={{ mt: 1.25, bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} />
-            ) : null}
-          </Box>
-        ) : (
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 'auto' }}>
-            <Chip size="small" label={`${training.moduleCount ?? training.modules?.length ?? 0} modules`} sx={{ bgcolor: alpha(PURPLE, 0.08), color: PURPLE, fontWeight: 700 }} />
-            <Typography variant="caption" sx={{ fontWeight: 700, color: (training.remainingSlots ?? 0) > 0 ? '#166534' : '#b91c1c' }}>
-              {(training.remainingSlots ?? 0) > 0
-                ? `${training.remainingSlots} seats left`
-                : training.waitlistEnabled ? 'Full · waiting list open' : 'Full'}
-            </Typography>
-          </Stack>
-        )}
-        <Button
-          size="small"
-          startIcon={registration ? <MaterialsIcon /> : <ScheduleIcon />}
-          sx={{ mt: 1.5, color: PURPLE, textTransform: 'none', fontWeight: 700, alignSelf: 'flex-start', px: 0 }}
-        >
-          {registration ? (registration.hasCertificate ? 'View materials and certificate' : 'View materials') : 'View details and register'}
-        </Button>
-      </Paper>
-    );
-  };
-
-  const fieldSx = {
-    '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: PURPLE },
-    '& .MuiInputLabel-root.Mui-focused': { color: PURPLE },
-  };
+  const options = useMemo(() => ({
+    departments: [...new Set(catalogue.flatMap((t) => String(t.department || '').split(',').map((d) => d.trim())).filter(Boolean))].sort(),
+    categories: [...new Set(catalogue.map((t) => t.category).filter(Boolean))].sort(),
+  }), [catalogue]);
+  const filtered = useMemo(() => filterCatalogue(catalogue, filters), [catalogue, filters]);
+  const setF = (patch) => setFilters((f) => ({ ...f, ...patch }));
+  const filtersOn = filters.search || filters.department !== 'all' || filters.category !== 'all' || filters.mode !== 'all' || filters.date !== 'any' || filters.cpdOnly || filters.eligibleOnly || filters.openOnly;
 
   return (
     <Box>
       <PageHeader
         title="Training"
-        description="Browse published sessions, register, and track module progress."
+        description="Your learning: what to do next, your trainings, and courses open to you."
         icon={<TrainingIcon sx={{ fontSize: 32 }} />}
         breadcrumbs={[
           { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/researcher' },
           { label: 'Training' },
         ]}
-        actionButton={
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="contained"
-              startIcon={<CheckInIcon />}
-              onClick={() => router.push('/researcher/training/check-in')}
-              sx={{ bgcolor: '#166534', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#14532d' } }}
-            >
+        actionButton={(
+          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+            <Button variant="contained" startIcon={<CheckInIcon />} onClick={() => router.push('/researcher/training/check-in')} sx={{ bgcolor: '#166534', color: 'white', ...btn, '&:hover': { bgcolor: '#14532d' } }}>
               Session check-in
             </Button>
-            <Button
-              variant="contained"
-              onClick={() => router.push('/researcher/training/certificates')}
-              sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}
-            >
+            <Button variant="contained" startIcon={<CertificateIcon />} onClick={() => router.push('/researcher/training/certificates')} sx={{ bgcolor: 'white', color: PURPLE, ...btn, '&:hover': { bgcolor: '#f5f5f5' } }}>
               Certificates
             </Button>
-            <Button
-              variant="contained"
-              startIcon={<RefreshIcon />}
-              onClick={loadTrainings}
-              sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}
-            >
+            <Button variant="contained" startIcon={<FacilitatingIcon />} onClick={() => router.push('/researcher/training/facilitating')} sx={{ bgcolor: 'white', color: PURPLE, ...btn, '&:hover': { bgcolor: '#f5f5f5' } }}>
+              Facilitating
+            </Button>
+            <Button variant="contained" startIcon={<RefreshIcon />} onClick={load} disabled={loading} sx={{ bgcolor: 'white', color: PURPLE, ...btn, '&:hover': { bgcolor: '#f5f5f5' } }}>
               Refresh
             </Button>
           </Stack>
-        }
+        )}
       />
 
       <Container maxWidth={false} sx={{ py: 3, maxWidth: '1600px', mx: 'auto' }}>
         {error ? <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert> : null}
 
-        {loading ? (
-          <Box sx={{ py: 10, display: 'flex', justifyContent: 'center' }}>
-            <CircularProgress sx={{ color: PURPLE }} />
-          </Box>
-        ) : (
-          <>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2.5 }}>
-              <StatCard label="My trainings" value={stats.mine} caption="Sessions you have joined" />
-              <StatCard label="Available" value={stats.available} caption="Open for registration" />
-              <StatCard label="In progress" value={stats.inProgress} caption="Registered and underway" />
-              <StatCard label="Completed" value={stats.completed} caption="Finished or certified" />
-            </Stack>
+        <Paper id="available" sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', scrollMarginTop: 96 }}>
+          <Tabs
+            value={tab}
+            onChange={(_, value) => changeTab(value)}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              '& .MuiTab-root': { ...btn, minHeight: 52, color: '#64748b' },
+              '& .Mui-selected': { color: `${PURPLE} !important` },
+              '& .MuiTabs-indicator': { backgroundColor: PURPLE, height: 3 },
+            }}
+          >
+            <Tab value="overview" icon={<OverviewIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Overview${dashboard?.todos?.length ? ` (${dashboard.todos.length} to do)` : ''}`} />
+            <Tab value="mine" icon={<TrainingIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`My trainings (${myTrainings.length})`} />
+            <Tab value="catalogue" icon={<SearchIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Catalogue (${catalogue.length})`} />
+          </Tabs>
+        </Paper>
 
-            <Paper sx={{ p: 2, mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="Search by title, department, or audience"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-                  sx={fieldSx}
+        {tab === 'overview' ? <Overview dashboard={dashboard} loading={loading} onOpen={open} router={router} /> : null}
+
+        {tab === 'mine' ? (
+          loading ? <Box sx={{ py: 8, display: 'flex', justifyContent: 'center' }}><CircularProgress sx={{ color: PURPLE }} /></Box> : (
+            <Stack spacing={2}>
+              {myTrainings.length ? (
+                <TextField size="small" placeholder="Search my trainings" value={mySearch} onChange={(e) => setMySearch(e.target.value)} InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} sx={{ maxWidth: 420, ...fieldSx }} />
+              ) : null}
+              {mine.length ? (
+                <Box sx={grid}>
+                  {mine.map((r) => <TrainingCard key={r.id} training={r.training} registration={r} onOpen={() => open(r.training.id)} />)}
+                </Box>
+              ) : (
+                <EmptyState
+                  icon={<TrainingIcon />}
+                  title={myTrainings.length ? 'Nothing matches' : 'No trainings yet'}
+                  text={myTrainings.length ? 'Try another search.' : 'Browse the catalogue and register to start tracking your progress.'}
+                  action={!myTrainings.length ? <Button variant="contained" onClick={() => changeTab('catalogue')} sx={{ bgcolor: PURPLE, ...btn }}>Browse the catalogue</Button> : null}
                 />
-                <TextField
-                  select
-                  size="small"
-                  label="Department"
-                  value={departmentFilter}
-                  onChange={(event) => setDepartmentFilter(event.target.value)}
-                  SelectProps={{ native: true }}
-                  sx={{ minWidth: 220, ...fieldSx }}
-                >
-                  <option value="all">All departments</option>
-                  {departments.map((department) => (
-                    <option key={department} value={department}>{department}</option>
-                  ))}
-                </TextField>
-              </Stack>
-            </Paper>
-
-            <Paper id="available" sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', scrollMarginTop: 96 }}>
-              <Tabs
-                value={tab}
-                onChange={(_, value) => {
-                  setTab(value);
-                  if (typeof window !== 'undefined') {
-                    window.history.replaceState(null, '', value === 1 ? '#available' : '/researcher/training');
-                  }
-                }}
-                sx={{
-                  '& .MuiTab-root': { textTransform: 'none', fontWeight: 700, minHeight: 52, color: '#64748b' },
-                  '& .Mui-selected': { color: `${PURPLE} !important` },
-                  '& .MuiTabs-indicator': { backgroundColor: PURPLE, height: 3 },
-                }}
-              >
-                <Tab icon={<TrainingIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`My trainings (${filteredMine.length})`} />
-                <Tab icon={<ScheduleIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Available (${filteredAvailable.length})`} />
-              </Tabs>
-            </Paper>
-
-            {tab === 0 && (
-              filteredMine.length ? (
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(3, 1fr)' }, gap: 2 }}>
-                  {filteredMine.map((registration) => renderCard({
-                    key: registration.id,
-                    training: registration.training,
-                    registration,
-                    onOpen: () => openDetails(registration.training.id),
-                  }))}
-                </Box>
-              ) : (
-                <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 2, border: '1px dashed', borderColor: alpha(PURPLE, 0.3) }}>
-                  <TrainingIcon sx={{ fontSize: 42, color: '#cbd5e1', mb: 1 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>No registered trainings</Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Browse available sessions and register to start tracking progress.
-                  </Typography>
-                  <Button variant="contained" onClick={() => setTab(1)} sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 }}>
-                    View available trainings
-                  </Button>
-                </Paper>
-              )
-            )}
-
-            {tab === 1 && (
-              filteredAvailable.length ? (
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(3, 1fr)' }, gap: 2 }}>
-                  {filteredAvailable.map((training) => renderCard({
-                    key: training.id,
-                    training,
-                    onOpen: () => openDetails(training.id),
-                  }))}
-                </Box>
-              ) : (
-                <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 2, border: '1px dashed', borderColor: alpha(PURPLE, 0.3) }}>
-                  <ScheduleIcon sx={{ fontSize: 42, color: '#cbd5e1', mb: 1 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>No available trainings</Typography>
-                  <Typography variant="body2" color="text.secondary">Nothing is open for registration right now, or your filters hid the current list.</Typography>
-                </Paper>
-              )
-            )}
-          </>
-        )}
-      </Container>
-
-      <Dialog
-        open={detailsOpen}
-        onClose={() => !registering && setDetailsOpen(false)}
-        maxWidth="md"
-        fullWidth
-        {...dialogLock}
-        PaperProps={{ sx: { borderRadius: 2 } }}
-      >
-        {selectedTraining ? (
-          <>
-            <DialogTitle sx={{ bgcolor: PURPLE, color: 'white', fontWeight: 800, pr: 1 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                <Box>
-                  {selectedTraining.title}
-                  <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
-                    {selectedTraining.department || 'Department not set'}
-                  </Typography>
-                </Box>
-                <IconButton size="small" onClick={() => setDetailsOpen(false)} sx={{ color: 'white' }}>
-                  <CloseIcon />
-                </IconButton>
-              </Stack>
-            </DialogTitle>
-            <DialogContent sx={{ pt: 3 }}>
-              <Stack spacing={2.5} sx={{ mt: 1 }}>
-                <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.7 }}>
-                  {selectedTraining.description || 'No description available.'}
-                </Typography>
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                  <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderRadius: 2 }}>
-                    <Typography variant="caption" color="text.secondary">Schedule</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{formatRange(selectedTraining.startDate, selectedTraining.endDate)}</Typography>
-                  </Paper>
-                  <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderRadius: 2 }}>
-                    <Typography variant="caption" color="text.secondary">Location</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{renderLocation(selectedTraining.location)}</Typography>
-                  </Paper>
-                  <Paper variant="outlined" sx={{ flex: 1, p: 1.5, borderRadius: 2 }}>
-                    <Typography variant="caption" color="text.secondary">Capacity</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                      {selectedTraining.remainingSlots} of {selectedTraining.maxParticipants} seats left
-                      {selectedTraining.waitlistCount ? ` · ${selectedTraining.waitlistCount} waiting` : ''}
-                    </Typography>
-                  </Paper>
-                </Stack>
-                {selectedTraining.userRegistration?.source === 'ASSIGNED' && selectedTraining.userRegistration?.status !== 'COMPLETED' ? (
-                  <Alert severity={selectedTraining.userRegistration.dueDate && new Date(selectedTraining.userRegistration.dueDate) < new Date() ? 'error' : 'info'}>
-                    This training was assigned to you{selectedTraining.userRegistration.dueDate ? `. Complete it by ${formatDate(selectedTraining.userRegistration.dueDate)}.` : '.'}
-                  </Alert>
-                ) : null}
-                {selectedTraining.userRegistration?.status === 'WAITLISTED' ? (
-                  <Alert severity="info">
-                    You are on the waiting list{selectedTraining.myWaitlistPosition ? ` (position ${selectedTraining.myWaitlistPosition})` : ''}. We will email you if a place opens.
-                  </Alert>
-                ) : selectedTraining.userRegistration?.status === 'PENDING_APPROVAL' ? (
-                  <Alert severity="warning">Your request is waiting for the training team to approve it. A place is held for you meanwhile.</Alert>
-                ) : selectedTraining.userRegistration?.status === 'REJECTED' ? (
-                  <Alert severity="error">
-                    Your request was not approved{selectedTraining.userRegistration.rejectedReason ? `: ${selectedTraining.userRegistration.rejectedReason}` : '.'}
-                  </Alert>
-                ) : null}
-                {selectedTraining.eligibility && !selectedTraining.eligibility.ok && !selectedTraining.isRegistered ? (
-                  <Alert severity="warning">{selectedTraining.eligibility.reasons.join(' · ')}</Alert>
-                ) : null}
-                {(selectedTraining.requiresApproval || selectedTraining.waitlistEnabled || selectedTraining.registrationClosesAt
-                  || selectedTraining.registrationOpensAt || selectedTraining.cancellationDeadline || selectedTraining.prerequisites?.length) ? (
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>Enrolment</Typography>
-                    <Stack spacing={0.4}>
-                      {selectedTraining.registrationOpensAt ? <Typography variant="body2">Registration opens {formatDateTime(selectedTraining.registrationOpensAt)}</Typography> : null}
-                      {selectedTraining.registrationClosesAt ? <Typography variant="body2">Registration closes {formatDateTime(selectedTraining.registrationClosesAt)}</Typography> : null}
-                      {selectedTraining.requiresApproval ? <Typography variant="body2">Places are confirmed by the training team</Typography> : null}
-                      {selectedTraining.waitlistEnabled ? (
-                        <Typography variant="body2">
-                          Waiting list when full{selectedTraining.waitlistCount ? ` (${selectedTraining.waitlistCount} waiting)` : ''}
-                        </Typography>
-                      ) : null}
-                      {selectedTraining.cancellationDeadline ? <Typography variant="body2">Cancel by {formatDateTime(selectedTraining.cancellationDeadline)}</Typography> : null}
-                      {selectedTraining.prerequisites?.length ? (
-                        <Typography variant="body2">Requires: {selectedTraining.prerequisites.map((t) => t.title).join(', ')}</Typography>
-                      ) : null}
-                    </Stack>
-                  </Paper>
-                ) : null}
-                {asList(selectedTraining.targetGroup).length ? (
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {asList(selectedTraining.targetGroup).map((group) => (
-                      <Chip key={group} size="small" label={group} sx={{ bgcolor: alpha(PURPLE, 0.08), color: PURPLE, fontWeight: 700 }} />
-                    ))}
-                  </Stack>
-                ) : null}
-
-                {selectedTraining.myFeedback?.available && (selectedTraining.myFeedback.unlocked || selectedTraining.myFeedback.submittedAt) ? (
-                  <Alert
-                    severity={selectedTraining.myFeedback.submittedAt ? 'success' : 'info'}
-                    action={(
-                      <Button size="small" onClick={() => router.push(`/researcher/training/feedback/${selectedTraining.id}`)} sx={{ textTransform: 'none', fontWeight: 700 }}>
-                        {selectedTraining.myFeedback.submittedAt ? 'View' : 'Give feedback'}
-                      </Button>
-                    )}
-                  >
-                    {selectedTraining.myFeedback.submittedAt ? 'Thanks for your feedback.' : 'Tell us how this training went: it takes about two minutes.'}
-                  </Alert>
-                ) : null}
-                                {myAssessments.length ? (
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>Assessments</Typography>
-                    <Stack spacing={1}>
-                      {myAssessments.map((a) => (
-                        <Stack key={a.id} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                              {a.title}{a.isRequiredForCompletion ? ' · required' : ''}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {a.questionCount} questions · pass {a.passMark}%{a.timeLimitMinutes ? ` · ${a.timeLimitMinutes} min` : ''}
-                              {a.attemptsLeft !== null ? ` · ${a.attemptsLeft} attempt(s) left` : ''}
-                              {a.best ? ` · best ${a.best.percent}%` : ''}
-                            </Typography>
-                          </Box>
-                          {a.passed ? <Chip size="small" label="Passed" sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} /> : null}
-                          {a.awaitingGrading && !a.passed ? <Chip size="small" label="Being graded" sx={{ bgcolor: '#fef3c7', color: '#92400e', fontWeight: 700 }} /> : null}
-                          <Button
-                            size="small"
-                            variant={a.canStart && !a.passed ? 'contained' : 'text'}
-                            onClick={() => router.push(`/researcher/training/assessment/${selectedTraining.id}/${a.id}`)}
-                            sx={a.canStart && !a.passed ? { bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 } : { color: PURPLE, textTransform: 'none', fontWeight: 700 }}
-                          >
-                            {a.openAttemptId ? 'Resume' : a.canStart && !a.attemptsUsed ? 'Start' : a.canStart && !a.passed ? 'Try again' : 'View'}
-                          </Button>
-                        </Stack>
-                      ))}
-                    </Stack>
-                  </Paper>
-                ) : null}
-
-                {selectedTraining.myCompletion?.hasRules ? (
-                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, borderColor: selectedTraining.myCompletion.eligible ? '#86efac' : 'divider', bgcolor: selectedTraining.myCompletion.eligible ? '#f0fdf4' : 'transparent' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>
-                      {selectedTraining.userRegistration?.status === 'COMPLETED'
-                        ? 'Completed'
-                        : selectedTraining.userRegistration?.status === 'NOT_COMPLETED'
-                          ? 'Not completed'
-                          : selectedTraining.myCompletion.eligible ? 'On track to complete' : 'To complete this training'}
-                    </Typography>
-                    <Stack spacing={0.5}>
-                      {selectedTraining.myCompletion.checks.map((c) => (
-                        <Typography key={c.rule} variant="body2" sx={{ color: c.met ? '#166534' : 'text.primary' }}>
-                          {c.met ? '✓' : '○'} {c.label} <Box component="span" sx={{ color: 'text.secondary' }}>· {c.detail}</Box>
-                        </Typography>
-                      ))}
-                    </Stack>
-                  </Paper>
-                ) : null}
-
-                {(selectedTraining.sessions || []).length ? (
-                  <Box>
-                    <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 1 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                        Sessions ({selectedTraining.sessions.length})
-                      </Typography>
-                      {selectedTraining.myAttendanceSummary?.percent !== null && selectedTraining.myAttendanceSummary?.percent !== undefined ? (
-                        <Typography variant="caption" sx={{ fontWeight: 700, color: PURPLE }}>
-                          Your attendance: {selectedTraining.myAttendanceSummary.percent}% ({selectedTraining.myAttendanceSummary.attended} of {selectedTraining.myAttendanceSummary.counted} sessions held)
-                        </Typography>
-                      ) : null}
-                    </Stack>
-                    <Stack spacing={1}>
-                      {selectedTraining.sessions.map((session) => (
-                        <Paper key={session.id} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
-                          <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={1}>
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 700 }}>{session.title}</Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {formatSessionTime(session.startsAt, session.endsAt)}
-                              </Typography>
-                              {session.facilitators?.length ? (
-                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                                  With {session.facilitators.map((f) => (f.title ? `${f.name} (${f.title})` : f.name)).join(', ')}
-                                </Typography>
-                              ) : null}
-                              {selectedTraining.myFacilitatedSessionIds?.includes(session.id) ? (
-                                <Button size="small" onClick={() => router.push('/researcher/training/facilitating')} sx={{ px: 0, color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
-                                  You facilitate this session
-                                </Button>
-                              ) : null}
-                            </Box>
-                            <Box sx={{ textAlign: { sm: 'right' } }}>
-                              {selectedTraining.isRegistered && session.effective?.hasOnlineLink && session.effective?.deliveryMode !== 'IN_PERSON' && joinOpenNow(session) ? (
-                                <Button
-                                  size="small"
-                                  variant="contained"
-                                  component="a"
-                                  href={`/api/training/sessions/${session.id}/join`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  sx={{ mr: 0.75, bgcolor: '#166534', textTransform: 'none', fontWeight: 700, py: 0.25, '&:hover': { bgcolor: '#14532d' } }}
-                                >
-                                  Join session
-                                </Button>
-                              ) : null}
-                              {!session.myAttendance && selectedTraining.isRegistered && session.effective?.deliveryMode !== 'ONLINE' && checkInOpenNow(session) ? (
-                                <Button size="small" variant="contained" onClick={() => router.push('/researcher/training/check-in')} sx={{ mr: 0.75, bgcolor: PURPLE, textTransform: 'none', fontWeight: 700, py: 0.25 }}>
-                                  Check in
-                                </Button>
-                              ) : null}
-                              {session.myAttendance ? (
-                                <Chip size="small" label={ATTENDANCE_LABELS[session.myAttendance.status]} sx={{ mr: 0.75, fontWeight: 700, ...ATTENDANCE_CHIP_SX[session.myAttendance.status] }} />
-                              ) : null}
-                              <Chip size="small" label={DELIVERY_MODE_LABELS[session.effective?.deliveryMode] || 'In person'} sx={{ bgcolor: alpha(PURPLE, 0.08), color: PURPLE, fontWeight: 700 }} />
-                              {session.effective?.venue ? (
-                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{session.effective.venue}</Typography>
-                              ) : null}
-                              {session.effective?.hasOnlineLink && !session.effective?.onlineLink ? (
-                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>Meeting link shown after you register</Typography>
-                              ) : null}
-                            </Box>
-                          </Stack>
-                        </Paper>
-                      ))}
-                    </Stack>
-                  </Box>
-                ) : null}
-
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Modules</Typography>
-                  {(selectedTraining.modules || []).length ? (
-                    <Stack spacing={1}>
-                      {selectedTraining.modules.map((module, index) => {
-                        const moduleMaterials = (selectedTraining.materials || []).filter((item) => item.moduleId === module.id);
-                        return (
-                          <Paper key={module.id} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-                              <Typography variant="body2" sx={{ fontWeight: 700 }}>Module {index + 1}: {module.title}</Typography>
-                              {(() => {
-                                const done = (selectedTraining.userRegistration?.moduleProgress || []).some((p) => p.moduleId === module.id && p.status === 'COMPLETED');
-                                if (selectedTraining.isRegistered && module.completionMode === 'SELF') {
-                                  return (
-                                    <Button size="small" variant={done ? 'outlined' : 'contained'} onClick={() => toggleModuleDone(module.id, !done)} sx={{ textTransform: 'none', fontWeight: 700, py: 0.25, ...(done ? { color: '#166534', borderColor: '#166534' } : { bgcolor: PURPLE }) }}>
-                                      {done ? 'Done ✓' : 'Mark as done'}
-                                    </Button>
-                                  );
-                                }
-                                return done ? <Chip size="small" label="Done" sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} /> : null;
-                              })()}
-                            </Stack>
-                            {module.description ? <Typography variant="caption" color="text.secondary">{module.description}</Typography> : null}
-                            {moduleMaterials.map((material) => (
-                              <Stack key={material.id} direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1 }}>
-                                <Typography variant="body2">{material.name}</Typography>
-                                {material.fileUrl ? (
-                                  <Button size="small" onClick={() => window.open(material.fileUrl, '_blank', 'noopener')} sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
-                                    Open
-                                  </Button>
-                                ) : null}
-                              </Stack>
-                            ))}
-                          </Paper>
-                        );
-                      })}
-                    </Stack>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">No modules have been published yet.</Typography>
-                  )}
-                </Box>
-
-                {(selectedTraining.materials || []).filter((item) => !item.moduleId).length ? (
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>General materials</Typography>
-                    <Stack spacing={1}>
-                      {(selectedTraining.materials || []).filter((item) => !item.moduleId).map((material) => (
-                        <Stack key={material.id} direction="row" justifyContent="space-between" sx={{ p: 1.25, border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
-                          <Typography variant="body2">{material.name}</Typography>
-                          {material.fileUrl ? (
-                            <Button size="small" onClick={() => window.open(material.fileUrl, '_blank', 'noopener')} sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
-                              Open
-                            </Button>
-                          ) : null}
-                        </Stack>
-                      ))}
-                    </Stack>
-                  </Box>
-                ) : null}
-              </Stack>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2 }}>
-              {CANCEL_LABELS[selectedTraining.userRegistration?.status] && selectedTraining.userRegistration?.source !== 'ASSIGNED' && new Date(selectedTraining.startDate) > new Date() ? (
-                <Button
-                  color="error"
-                  onClick={handleCancelRegistration}
-                  disabled={registering}
-                  sx={{ textTransform: 'none', mr: 'auto' }}
-                >
-                  {confirmCancel ? 'Tap again to confirm' : CANCEL_LABELS[selectedTraining.userRegistration.status]}
-                </Button>
-              ) : null}
-              <Button onClick={() => setDetailsOpen(false)} disabled={registering} sx={{ textTransform: 'none' }}>Close</Button>
-              {!selectedTraining.isRegistered ? (() => {
-                const action = enrolmentAction(selectedTraining);
-                if (!action.show) return null;
-                return (
-                  <Button
-                    variant="contained"
-                    onClick={handleRegister}
-                    disabled={registering || action.disabled}
-                    sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 }}
-                  >
-                    {registering ? 'Sending...' : action.label}
-                  </Button>
-                );
-              })() : selectedTraining.userRegistration?.certificate?.certificateUrl ? (
-                <Button
-                  variant="contained"
-                  startIcon={<CertificateIcon />}
-                  onClick={() => window.open(selectedTraining.userRegistration.certificate.certificateUrl, '_blank', 'noopener')}
-                  sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 }}
-                >
-                  Download certificate
-                </Button>
-              ) : null}
-            </DialogActions>
-          </>
+              )}
+            </Stack>
+          )
         ) : null}
-      </Dialog>
 
-      <Snackbar open={Boolean(notice)} autoHideDuration={4000} onClose={() => setNotice('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert onClose={() => setNotice('')} severity="success" sx={{ width: '100%' }}>{notice}</Alert>
-      </Snackbar>
+        {tab === 'catalogue' ? (
+          <Stack spacing={2}>
+            <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+              <Stack spacing={1.5}>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+                  <TextField fullWidth size="small" placeholder="Search title, code, department or audience" value={filters.search} onChange={(e) => setF({ search: e.target.value })} InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} sx={fieldSx} />
+                  <TextField select size="small" label="Department" value={filters.department} onChange={(e) => setF({ department: e.target.value })} sx={{ minWidth: 180, ...fieldSx }}>
+                    <MenuItem value="all">All departments</MenuItem>
+                    {options.departments.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                  </TextField>
+                  <TextField select size="small" label="Category" value={filters.category} onChange={(e) => setF({ category: e.target.value })} sx={{ minWidth: 160, ...fieldSx }}>
+                    <MenuItem value="all">All categories</MenuItem>
+                    {options.categories.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+                  </TextField>
+                  <TextField select size="small" label="Format" value={filters.mode} onChange={(e) => setF({ mode: e.target.value })} sx={{ minWidth: 140, ...fieldSx }}>
+                    <MenuItem value="all">Any format</MenuItem>
+                    {Object.entries(DELIVERY_MODE_LABELS).map(([k, v]) => <MenuItem key={k} value={k}>{v}</MenuItem>)}
+                  </TextField>
+                  <TextField select size="small" label="When" value={filters.date} onChange={(e) => setF({ date: e.target.value })} sx={{ minWidth: 170, ...fieldSx }}>
+                    {Object.entries(DATE_FILTERS).map(([k, v]) => <MenuItem key={k} value={k}>{v}</MenuItem>)}
+                  </TextField>
+                </Stack>
+                <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', rowGap: 0.5 }} alignItems="center">
+                  <FormControlLabel control={<Switch size="small" checked={filters.cpdOnly} onChange={(e) => setF({ cpdOnly: e.target.checked })} />} label="With CPD" />
+                  <FormControlLabel control={<Switch size="small" checked={filters.eligibleOnly} onChange={(e) => setF({ eligibleOnly: e.target.checked })} />} label="I'm eligible" />
+                  <FormControlLabel control={<Switch size="small" checked={filters.openOnly} onChange={(e) => setF({ openOnly: e.target.checked })} />} label="Places or waiting list" />
+                  {filtersOn ? (
+                    <Button size="small" onClick={() => setFilters({ search: '', department: 'all', category: 'all', mode: 'all', date: 'any', cpdOnly: false, eligibleOnly: false, openOnly: false })} sx={{ color: PURPLE, ...btn }}>
+                      Clear filters
+                    </Button>
+                  ) : null}
+                  <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>{filtered.length} of {catalogue.length}</Typography>
+                </Stack>
+              </Stack>
+            </Paper>
+            {loading ? <Box sx={{ py: 8, display: 'flex', justifyContent: 'center' }}><CircularProgress sx={{ color: PURPLE }} /></Box> : filtered.length ? (
+              <Box sx={grid}>
+                {filtered.map((t) => <TrainingCard key={t.id} training={t} catalogue onOpen={() => open(t.id)} />)}
+              </Box>
+            ) : (
+              <EmptyState
+                icon={<ScheduleIcon />}
+                title={catalogue.length ? 'No trainings match these filters' : 'Nothing open right now'}
+                text={catalogue.length ? 'Clear a filter or two to see more.' : 'New trainings appear here as soon as they are published.'}
+              />
+            )}
+          </Stack>
+        ) : null}
+      </Container>
     </Box>
   );
 }

@@ -245,7 +245,7 @@ export default function TakeAssessmentPage() {
       <Container maxWidth="md">
         <Stack spacing={2}>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Button startIcon={<BackIcon />} onClick={() => router.push(`/researcher/training?training=${trainingId}`)} disabled={Boolean(attempt)} sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
+            <Button startIcon={<BackIcon />} onClick={() => router.push(`/researcher/training/${trainingId}`)} disabled={Boolean(attempt)} sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
               Back to training
             </Button>
           </Stack>

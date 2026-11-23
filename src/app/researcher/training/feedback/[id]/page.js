@@ -117,7 +117,7 @@ export default function TrainingFeedbackPage() {
     <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc', py: 3 }}>
       <Container maxWidth="md">
         <Stack spacing={2}>
-          <Button startIcon={<BackIcon />} onClick={() => router.push(`/researcher/training?training=${id}`)} sx={{ alignSelf: 'flex-start', color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
+          <Button startIcon={<BackIcon />} onClick={() => router.push(`/researcher/training/${id}`)} sx={{ alignSelf: 'flex-start', color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
             Back to training
           </Button>
           {!data && !error ? <Box sx={{ py: 8, textAlign: 'center' }}><CircularProgress sx={{ color: PURPLE }} /></Box> : null}

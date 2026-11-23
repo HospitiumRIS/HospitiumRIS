@@ -120,6 +120,10 @@ export async function GET(request) {
         userRegistrationStatus: userRegistration?.status || null,
         modules: training.modules,
         isMandatory: training.isMandatory,
+        // Learning hub catalogue (#107).
+        cpdHours: training.cpdHours,
+        cpdPoints: training.cpdPoints,
+        fromOtherInstitution: Boolean(scopeCtx.institutionId) && training.institutionId !== scopeCtx.institutionId,
         // Enrolment controls (#102).
         waitlistCount: enrolment.waitlistCount,
         myWaitlistPosition: enrolment.myWaitlistPosition,
