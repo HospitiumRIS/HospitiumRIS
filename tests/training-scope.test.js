@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   NO_TRAININGS_WHERE,
   canRegisterForTraining,
+  canSeeMaterial,
+  shapeTrainingForViewer,
   canViewTraining,
   isOwningTrainingAdmin,
   trainingAdminListWhere,
@@ -136,5 +138,69 @@ describe('registrants keep access', () => {
   it('a registration never unlocks drafts or new registrations', () => {
     assert.equal(canViewTraining(researcherA, draftA, { hasRegistration: true }), false);
     assert.equal(canRegisterForTraining(researcherA, privateB, { hasRegistration: true }), false);
+  });
+});
+
+describe('canSeeMaterial (#89)', () => {
+  const pub = { accessLevel: 'PUBLIC' };
+  const reg = { accessLevel: 'REGISTERED_ONLY' };
+
+  it('public materials are visible to any viewer of the training', () => {
+    assert.equal(canSeeMaterial(pub, { isAdmin: false, registration: null }), true);
+  });
+
+  it('registered-only needs an active registration', () => {
+    assert.equal(canSeeMaterial(reg, { isAdmin: false, registration: null }), false);
+    assert.equal(canSeeMaterial(reg, { isAdmin: false, registration: { status: 'CANCELLED' } }), false);
+    assert.equal(canSeeMaterial(reg, { isAdmin: false, registration: { status: 'REGISTERED' } }), true);
+    assert.equal(canSeeMaterial(reg, { isAdmin: false, registration: { status: 'COMPLETED' } }), true);
+  });
+
+  it('owning admins see everything', () => {
+    assert.equal(canSeeMaterial(reg, { isAdmin: true, registration: null }), true);
+  });
+});
+
+describe('shapeTrainingForViewer (#89)', () => {
+  const training = {
+    id: 't', institutionId: A, status: 'PUBLISHED', maxParticipants: 10,
+    materials: [{ id: 'm1', accessLevel: 'PUBLIC' }, { id: 'm2', accessLevel: 'REGISTERED_ONLY' }],
+    registrations: [
+      { id: 'r1', userId: 'ra', status: 'REGISTERED', user: { email: 'ra@a.ac.ke' } },
+      { id: 'r2', userId: 'other', status: 'COMPLETED', user: { email: 'other@a.ac.ke' } },
+      { id: 'r3', userId: 'gone', status: 'CANCELLED', user: { email: 'gone@a.ac.ke' } },
+    ],
+    _count: { registrations: 3, modules: 0, materials: 2 },
+  };
+
+  it("a researcher never receives other participants' data", () => {
+    const shaped = shapeTrainingForViewer(training, researcherA, { isAdmin: false });
+    assert.equal(shaped.registrations, undefined);
+    assert.equal(JSON.stringify(shaped).includes('other@a.ac.ke'), false);
+    assert.equal(shaped.userRegistration.id, 'r1');
+    assert.equal(shaped.isRegistered, true);
+    assert.equal(shaped.registrationCount, 2);
+    assert.equal(shaped.remainingSlots, 8);
+    assert.equal(shaped._count.registrations, 2);
+    assert.deepEqual(shaped.materials.map((m) => m.id), ['m1', 'm2']);
+  });
+
+  it('a non-registrant sees public materials only', () => {
+    const shaped = shapeTrainingForViewer(training, researcherB, { isAdmin: false });
+    assert.equal(shaped.userRegistration, null);
+    assert.equal(shaped.isRegistered, false);
+    assert.deepEqual(shaped.materials.map((m) => m.id), ['m1']);
+  });
+
+  it('a cancelled registrant is not registered and loses registered-only materials', () => {
+    const shaped = shapeTrainingForViewer(training, { id: 'gone', accountType: 'RESEARCHER', secondaryInstitutionId: A }, { isAdmin: false });
+    assert.equal(shaped.isRegistered, false);
+    assert.deepEqual(shaped.materials.map((m) => m.id), ['m1']);
+  });
+
+  it('the owning admin gets the roster and all materials', () => {
+    const shaped = shapeTrainingForViewer(training, adminA, { isAdmin: true });
+    assert.equal(shaped.registrations.length, 3);
+    assert.equal(shaped.materials.length, 2);
   });
 });

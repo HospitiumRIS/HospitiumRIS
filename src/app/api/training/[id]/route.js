@@ -7,7 +7,7 @@ import {
   TRAINING_ADMIN_TYPES,
 } from '@/lib/training-admin';
 import { resolveTrainingInstitution, resolveTrainingScopeContext } from '@/lib/training-admin-server';
-import { canViewTraining } from '@/lib/training-scope';
+import { canViewTraining, isOwningTrainingAdmin, shapeTrainingForViewer } from '@/lib/training-scope';
 
 /**
  * GET /api/training/[id]
@@ -86,29 +86,14 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Filter materials based on access level and user registration
-    const userRegistration = training.registrations.find(r => r.userId === user.id);
-    const filteredMaterials = training.materials.filter(material => {
-      if (material.accessLevel === 'PUBLIC') return true;
-      if (material.accessLevel === 'REGISTERED_ONLY' && userRegistration) return true;
-      if (user.accountType === 'RESEARCH_ADMIN') return true; // Admin sees all
-      return false;
-    });
-
-    const activeRegistrations = training.registrations.filter(
-      r => r.status === 'REGISTERED' || r.status === 'COMPLETED'
-    ).length;
+    // Role-shaped response (#89): only the owning institution's training admins get
+    // the participant roster and all materials. Everyone else gets counts plus their
+    // own registration, and registered-only materials need an active registration.
+    const isAdmin = isOwningTrainingAdmin(user, training, scopeCtx);
 
     return NextResponse.json({
       success: true,
-      training: {
-        ...training,
-        materials: filteredMaterials,
-        registrationCount: activeRegistrations,
-        remainingSlots: training.maxParticipants - activeRegistrations,
-        isRegistered: !!userRegistration,
-        userRegistration,
-      },
+      training: shapeTrainingForViewer(training, user, { isAdmin }),
     });
   } catch (error) {
     console.error('Error fetching training:', error);

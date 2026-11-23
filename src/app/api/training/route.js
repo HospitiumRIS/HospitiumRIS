@@ -3,7 +3,7 @@ import prisma from '../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../lib/auth-server';
 import { normalizeTargetGroups, TRAINING_ADMIN_TYPES } from '@/lib/training-admin';
 import { resolveTrainingInstitution, resolveTrainingScopeContext } from '@/lib/training-admin-server';
-import { trainingAdminListWhere, trainingVisibilityWhere } from '@/lib/training-scope';
+import { isActiveRegistration, trainingAdminListWhere, trainingVisibilityWhere } from '@/lib/training-scope';
 
 /**
  * GET /api/training
@@ -93,7 +93,8 @@ export async function GET(request) {
         moduleCount: training._count.modules,
         registrationCount: activeRegistrations,
         remainingSlots,
-        isRegistered: !!userRegistration,
+        // A cancelled registration no longer counts as registered (#89).
+        isRegistered: isActiveRegistration(userRegistration),
         userRegistrationStatus: userRegistration?.status || null,
         modules: training.modules,
       };

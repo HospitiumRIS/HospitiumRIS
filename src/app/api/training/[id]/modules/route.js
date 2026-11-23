@@ -3,8 +3,9 @@ import prisma from '../../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../../lib/auth-server';
 import {
   requireTrainingAdminAccess,
-  userHasTrainingInstitutionAccess,
+  resolveTrainingViewer,
 } from '@/lib/training-admin-server';
+import { canSeeMaterial } from '@/lib/training-scope';
 
 /**
  * GET /api/training/[id]/modules
@@ -35,12 +36,13 @@ export async function GET(request, { params }) {
       );
     }
 
-    const hasAccess = await userHasTrainingInstitutionAccess(user, training.institutionId);
-
-    if (!hasAccess) {
+    // Same visibility as the training itself (#88), including shared-catalogue
+    // trainings and the caller's own registrations.
+    const viewer = await resolveTrainingViewer(user, training);
+    if (!viewer.canView) {
       return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
+        { error: 'Training not found' },
+        { status: 404 }
       );
     }
 
@@ -60,9 +62,16 @@ export async function GET(request, { params }) {
       },
     });
 
+    // Registered-only materials are hidden unless the caller administers the
+    // training or holds an active registration (#89).
+    const visibleModules = modules.map((module) => ({
+      ...module,
+      materials: module.materials.filter((material) => canSeeMaterial(material, viewer)),
+    }));
+
     return NextResponse.json({
       success: true,
-      modules,
+      modules: visibleModules,
     });
   } catch (error) {
     console.error('Error fetching modules:', error);
