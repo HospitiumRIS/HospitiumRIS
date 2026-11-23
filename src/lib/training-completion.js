@@ -129,10 +129,10 @@ export function decideCompletionStatus(training, registration, evaluation, now =
 export function modulesCompletedByAttendance(modules, sessions, attendance, now = new Date()) {
   const attended = new Set((attendance || []).filter((a) => a.status === 'PRESENT' || a.status === 'LATE').map((a) => a.sessionId));
   const out = [];
-  for (const module of modules || []) {
-    if (module.completionMode !== 'ON_SESSION_ATTENDANCE') continue;
-    const linked = (sessions || []).filter((s) => s.moduleId === module.id && s.status === 'SCHEDULED' && new Date(s.startsAt) <= now);
-    if (linked.length && linked.every((s) => attended.has(s.id))) out.push(module.id);
+  for (const mod of modules || []) {
+    if (mod.completionMode !== 'ON_SESSION_ATTENDANCE') continue;
+    const linked = (sessions || []).filter((s) => s.moduleId === mod.id && s.status === 'SCHEDULED' && new Date(s.startsAt) <= now);
+    if (linked.length && linked.every((s) => attended.has(s.id))) out.push(mod.id);
   }
   return out;
 }

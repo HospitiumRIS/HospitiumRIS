@@ -16,6 +16,8 @@ import { computeAttendance } from '@/lib/training-attendance';
 import { validateCompletionRules } from '@/lib/training-completion';
 import { validateCertificateSettings } from '@/lib/certificate-template';
 import { findInstitutionTemplate } from '@/lib/certificate-templates-server';
+import { validateEnrolmentSettings } from '@/lib/training-enrolment';
+import { eligibilityFor, enrolmentSummary, promoteWaitlist } from '@/lib/training-enrolment-server';
 import { loadOwnCompletion, refreshTrainingProgress } from '@/lib/training-progress-server';
 
 /**
@@ -108,6 +110,16 @@ export async function GET(request, { params }) {
     const isAdmin = isOwningTrainingAdmin(user, training, scopeCtx);
 
     const shaped = shapeTrainingForViewer(training, user, { isAdmin });
+    // Enrolment controls (#102): places held, waiting list, the caller's position and
+    // whether they meet the eligibility rules; prerequisite titles for display.
+    Object.assign(shaped, enrolmentSummary(training, training.registrations, user.id));
+    shaped.eligibility = (await eligibilityFor(user, [training])).get(training.id);
+    shaped.prerequisites = training.prerequisiteTrainingIds?.length
+      ? await prisma.training.findMany({
+          where: { id: { in: training.prerequisiteTrainingIds } },
+          select: { id: true, title: true, code: true },
+        })
+      : [];
     // Sessions (#91): non-admins only see scheduled ones; meeting links only go to
     // admins and active registrants.
     const canSeeLink = isAdmin || shaped.isRegistered;
@@ -245,6 +257,19 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Certificate template not found' }, { status: 400 });
     }
     Object.assign(updateData, certificate.data);
+    const enrolment = validateEnrolmentSettings(body, existingTraining);
+    if (!enrolment.ok) {
+      return NextResponse.json({ error: enrolment.error }, { status: 400 });
+    }
+    if (enrolment.data.prerequisiteTrainingIds?.length) {
+      const own = await prisma.training.count({
+        where: { id: { in: enrolment.data.prerequisiteTrainingIds }, institutionId: existingTraining.institutionId },
+      });
+      if (own !== enrolment.data.prerequisiteTrainingIds.length) {
+        return NextResponse.json({ error: 'Prerequisites must be trainings of your institution' }, { status: 400 });
+      }
+    }
+    Object.assign(updateData, enrolment.data);
 
     const training = await prisma.training.update({
       where: { id },
@@ -273,6 +298,12 @@ export async function PUT(request, { params }) {
       before: { status: existingTraining.status, startDate: existingTraining.startDate, endDate: existingTraining.endDate },
       after: { status: training.status, startDate: training.startDate, endDate: training.endDate, fields: Object.keys(updateData) },
     });
+
+    // More places, or a waiting list switched on: move people up (#102).
+    if ((updateData.maxParticipants !== undefined && updateData.maxParticipants > existingTraining.maxParticipants)
+      || updateData.waitlistEnabled === true) {
+      await promoteWaitlist(id, { actorId: user.id });
+    }
 
     const rulesChanged = ['minAttendancePercent', 'requireAllModules', 'requireAssessmentPass', 'requireFeedback', 'completionGraceDays', 'endDate']
       .some((key) => updateData[key] !== undefined && String(updateData[key]) !== String(existingTraining[key]));

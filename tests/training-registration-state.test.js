@@ -6,6 +6,7 @@ import {
   checkRegistrationWindow,
   hasCapacity,
   isValidModuleProgressStatus,
+  transitionFreesSeat,
   transitionTakesSeat,
 } from '../src/lib/training-registration-state.js';
 
@@ -46,10 +47,15 @@ describe('transitionTakesSeat / allowedAdminStatuses', () => {
     assert.equal(transitionTakesSeat('CANCELLED', 'REGISTERED'), true);
     assert.equal(transitionTakesSeat('REGISTERED', 'COMPLETED'), false);
     assert.equal(transitionTakesSeat('COMPLETED', 'REGISTERED'), false);
+    assert.equal(transitionTakesSeat('WAITLISTED', 'REGISTERED'), true);
+    assert.equal(transitionTakesSeat('PENDING_APPROVAL', 'REGISTERED'), false);
+    assert.equal(transitionFreesSeat('PENDING_APPROVAL', 'REJECTED'), true);
+    assert.equal(transitionFreesSeat('WAITLISTED', 'CANCELLED'), false);
   });
 
   it('lists the current status plus allowed next ones', () => {
     assert.deepEqual(allowedAdminStatuses('CANCELLED'), ['CANCELLED', 'REGISTERED']);
+    assert.deepEqual(allowedAdminStatuses('PENDING_APPROVAL'), ['PENDING_APPROVAL', 'REGISTERED', 'REJECTED', 'CANCELLED']);
     assert.deepEqual(allowedAdminStatuses('REGISTERED'), ['REGISTERED', 'COMPLETED', 'NOT_COMPLETED', 'CANCELLED']);
     assert.deepEqual(allowedAdminStatuses('NOT_COMPLETED'), ['NOT_COMPLETED', 'COMPLETED', 'REGISTERED']);
   });
@@ -87,4 +93,12 @@ describe('hasCapacity / module statuses', () => {
     assert.equal(isValidModuleProgressStatus('COMPLETED'), true);
     assert.equal(isValidModuleProgressStatus('DONE'), false);
   });
+});
+
+it('registration closes at the earlier of the close date and the start (#102)', () => {
+  const now = new Date('2026-12-05T10:00:00Z');
+  const training = { startDate: '2026-12-10T08:00:00Z', registrationClosesAt: '2026-12-20T00:00:00Z' };
+  assert.equal(checkRegistrationWindow(training, now).ok, true);
+  assert.equal(checkRegistrationWindow({ ...training, registrationClosesAt: '2026-12-01T00:00:00Z' }, now).ok, false);
+  assert.equal(checkRegistrationWindow({ ...training, startDate: '2026-12-01T00:00:00Z' }, now).ok, false);
 });

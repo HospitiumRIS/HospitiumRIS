@@ -1,3 +1,4 @@
+import { eligibilityFor, enrolmentSummary } from '@/lib/training-enrolment-server';
 import { NextResponse } from 'next/server';
 import prisma from '../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../lib/auth-server';
@@ -55,6 +56,7 @@ export async function GET(request) {
             id: true,
             userId: true,
             status: true,
+            registeredAt: true,
           },
         },
         _count: {
@@ -67,13 +69,18 @@ export async function GET(request) {
       orderBy: { startDate: 'desc' },
     });
 
+    // Eligibility for the caller, in one pass over all listed trainings (#102).
+    const eligibility = await eligibilityFor(user, trainings);
+
     // Transform data to include computed fields
     const transformedTrainings = trainings.map(training => {
+      const enrolment = enrolmentSummary(training, training.registrations, user.id);
       const activeRegistrations = training.registrations.filter(
         r => isActiveRegistration(r)
       ).length;
 
-      const remainingSlots = training.maxParticipants - activeRegistrations;
+      // Pending approvals hold a place too (#102).
+      const remainingSlots = enrolment.remainingSlots;
       const userRegistration = training.registrations.find(r => r.userId === user.id);
 
       const ownsIt = includeAll && isTrainingAdmin;
@@ -112,6 +119,16 @@ export async function GET(request) {
         isRegistered: isActiveRegistration(userRegistration),
         userRegistrationStatus: userRegistration?.status || null,
         modules: training.modules,
+        // Enrolment controls (#102).
+        waitlistCount: enrolment.waitlistCount,
+        myWaitlistPosition: enrolment.myWaitlistPosition,
+        requiresApproval: training.requiresApproval,
+        waitlistEnabled: training.waitlistEnabled,
+        registrationOpensAt: training.registrationOpensAt,
+        registrationClosesAt: training.registrationClosesAt,
+        cancellationDeadline: training.cancellationDeadline,
+        eligibilityMode: training.eligibilityMode,
+        eligibility: eligibility.get(training.id),
       };
     });
 

@@ -1913,6 +1913,14 @@ enum TrainingRegistrationStatus {
   COMPLETED
   CANCELLED
   NOT_COMPLETED
+  PENDING_APPROVAL
+  WAITLISTED
+  REJECTED
+}
+
+enum TrainingEligibilityMode {
+  OPEN
+  DEPARTMENT_ONLY
 }
 
 enum TrainingCertificateMode {
@@ -2004,6 +2012,15 @@ model Training {
 
   // Attendance (#92, decision D5): excused sessions leave the attendance denominator.
   excludeExcusedSessions Boolean @default(true)
+
+  // Enrolment controls (#102)
+  registrationOpensAt     DateTime?
+  registrationClosesAt    DateTime?
+  cancellationDeadline    DateTime?
+  requiresApproval        Boolean                 @default(false)
+  waitlistEnabled         Boolean                 @default(false)
+  eligibilityMode         TrainingEligibilityMode @default(OPEN)
+  prerequisiteTrainingIds String[]                @default([])
 
   // Completion rules (#96). All off = manual completion.
   minAttendancePercent  Int?
@@ -2105,6 +2122,13 @@ model TrainingRegistration {
   // Cached attendance % (#92), recomputed whenever attendance changes. Null until a
   // counted session has been held.
   attendancePercent Float?
+
+  // Enrolment (#102)
+  approvedBy     String?
+  approvedAt     DateTime?
+  rejectedReason String?
+  cancelledAt    DateTime?
+  cancelReason   String?
 
   // Completion (#96)
   completedAt        DateTime?

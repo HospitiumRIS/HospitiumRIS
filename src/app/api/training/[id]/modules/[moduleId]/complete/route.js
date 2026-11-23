@@ -16,11 +16,11 @@ export async function POST(request, { params }) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { id, moduleId } = await params;
-    const module = await prisma.trainingModule.findUnique({ where: { id: moduleId } });
-    if (!module || module.trainingId !== id || module.status !== 'ACTIVE') {
+    const trainingModule = await prisma.trainingModule.findUnique({ where: { id: moduleId } });
+    if (!trainingModule || trainingModule.trainingId !== id || trainingModule.status !== 'ACTIVE') {
       return NextResponse.json({ error: 'Module not found' }, { status: 404 });
     }
-    if (module.completionMode !== 'SELF') {
+    if (trainingModule.completionMode !== 'SELF') {
       return NextResponse.json({ error: 'This module is completed by the training team, not by participants' }, { status: 400 });
     }
 

@@ -14,24 +14,15 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  LinearProgress,
   MenuItem,
   Paper,
-  Select,
   Snackbar,
   Stack,
   Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Tabs,
   TextField,
   FormControlLabel,
   Switch,
-  Tooltip,
   Typography,
   alpha,
 } from '@mui/material';
@@ -40,19 +31,19 @@ import {
   ArrowBack as BackIcon,
   CloudUpload as UploadIcon,
   Delete as DeleteIcon,
-  Download as DownloadIcon,
   Home as HomeIcon,
   School as TrainingIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
 import { formatTargetGroupLabel } from '@/lib/training-admin';
-import { allowedAdminStatuses } from '@/lib/training-registration-state';
 import { DELIVERY_MODE_LABELS } from '@/lib/training-sessions';
 import TrainingScheduleTab from '@/components/Training/admin/TrainingScheduleTab';
 import TrainingAttendanceTab from '@/components/Training/admin/TrainingAttendanceTab';
 import TrainingCompletionTab from '@/components/Training/admin/TrainingCompletionTab';
 import TrainingCertificateSettings from '@/components/Training/admin/TrainingCertificateSettings';
 import TrainingCertificatesTab from '@/components/Training/admin/TrainingCertificatesTab';
+import TrainingRegistrationsTab from '@/components/Training/admin/TrainingRegistrationsTab';
+import TrainingEnrolmentSettings from '@/components/Training/admin/TrainingEnrolmentSettings';
 import { MODULE_COMPLETION_LABELS, MODULE_COMPLETION_MODES } from '@/lib/training-completion';
 
 const PURPLE = '#8b6cbc';
@@ -204,22 +195,6 @@ export default function TrainingDetailPage() {
     }
   };
 
-  const handleUpdateRegistrationStatus = async (registrationId, newStatus) => {
-    try {
-      const response = await fetch(`/api/training/${trainingId}/registrations/${registrationId}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to update status');
-      await load();
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
   const handleUploadCertificate = async () => {
     if (!certificateFile || !selectedRegistration) return;
     setSubmitting(true);
@@ -325,13 +300,18 @@ export default function TrainingDetailPage() {
               {!training.venue && !training.onlineLink ? <Typography variant="body2"><strong>Location:</strong> {training.location || 'Not set'}</Typography> : null}
               <Typography variant="body2"><strong>Sessions:</strong> {(training.sessions || []).filter((s) => s.status === 'SCHEDULED').length}</Typography>
               <Typography variant="body2"><strong>Catalogue:</strong> {training.openToOtherInstitutions ? 'Open to other institutions' : 'Own institution only'}</Typography>
-              <Typography variant="body2"><strong>Capacity:</strong> {training.registrationCount || 0}/{training.maxParticipants} seats</Typography>
+              <Typography variant="body2"><strong>Capacity:</strong> {training.seatsTaken ?? training.registrationCount ?? 0}/{training.maxParticipants} places held{training.waitlistCount ? ` · ${training.waitlistCount} waiting` : ''}</Typography>
             </Paper>
             <Paper sx={{ width: { xs: '100%', md: 280 }, p: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
               <Chip size="small" label={training.status} sx={{ bgcolor: statusTone.bg, color: statusTone.color, fontWeight: 700, mb: 1.5 }} />
               <Typography variant="body2">{modules.length} modules</Typography>
               <Typography variant="body2">{materials.length} materials</Typography>
               <Typography variant="body2">{registrations.length} registrations</Typography>
+              {registrations.some((r) => r.status === 'PENDING_APPROVAL') ? (
+                <Button size="small" onClick={() => setActiveTab(3)} sx={{ mt: 1, color: '#92400e', textTransform: 'none', fontWeight: 700, px: 0 }}>
+                  {registrations.filter((r) => r.status === 'PENDING_APPROVAL').length} awaiting approval
+                </Button>
+              ) : null}
               <Button onClick={() => setActiveTab(2)} sx={{ mt: 2, color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
                 Manage curriculum
               </Button>
@@ -342,6 +322,12 @@ export default function TrainingDetailPage() {
         {activeTab === 0 && (
           <Box sx={{ mt: 2 }}>
             <TrainingCertificateSettings training={training} onSaved={load} />
+          </Box>
+        )}
+
+        {activeTab === 0 && (
+          <Box sx={{ mt: 2 }}>
+            <TrainingEnrolmentSettings training={training} onSaved={load} />
           </Box>
         )}
 
@@ -467,69 +453,13 @@ export default function TrainingDetailPage() {
         )}
 
         {activeTab === 3 && (
-          <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ bgcolor: alpha(PURPLE, 0.06) }}>
-                    {['Participant', 'Email', 'Registered', 'Progress', 'Attendance', 'Status', 'Certificate'].map((label) => (
-                      <TableCell key={label} sx={{ fontWeight: 700 }}>{label}</TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {registrations.length ? registrations.map((reg) => {
-                    const completed = (reg.moduleProgress || []).filter((item) => item.status === 'COMPLETED').length;
-                    const total = (reg.moduleProgress || []).length;
-                    const percent = total ? Math.round((completed / total) * 100) : 0;
-                    return (
-                      <TableRow key={reg.id} hover>
-                        <TableCell sx={{ fontWeight: 700 }}>{reg.user?.givenName} {reg.user?.familyName}</TableCell>
-                        <TableCell>{reg.user?.email}</TableCell>
-                        <TableCell>{formatDate(reg.registeredAt)}</TableCell>
-                        <TableCell sx={{ minWidth: 140 }}>
-                          <Typography variant="caption">{completed}/{total}</Typography>
-                          <LinearProgress variant="determinate" value={percent} sx={{ height: 6, borderRadius: 3, bgcolor: alpha(PURPLE, 0.12), '& .MuiLinearProgress-bar': { bgcolor: PURPLE } }} />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                            {reg.attendancePercent === null || reg.attendancePercent === undefined ? '—' : `${reg.attendancePercent}%`}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Select size="small" value={reg.status} onChange={(e) => handleUpdateRegistrationStatus(reg.id, e.target.value)}>
-                            <MenuItem value="REGISTERED" disabled={!allowedAdminStatuses(reg.status).includes('REGISTERED')}>Registered</MenuItem>
-                            <MenuItem value="COMPLETED" disabled={!allowedAdminStatuses(reg.status).includes('COMPLETED')}>Completed</MenuItem>
-                            <MenuItem value="NOT_COMPLETED" disabled={!allowedAdminStatuses(reg.status).includes('NOT_COMPLETED')}>Not completed</MenuItem>
-                            <MenuItem value="CANCELLED" disabled={!allowedAdminStatuses(reg.status).includes('CANCELLED')}>Cancelled</MenuItem>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          {reg.certificate ? (
-                            <Tooltip title="Download certificate">
-                              <IconButton size="small" onClick={() => window.open(reg.certificate.certificateUrl, '_blank', 'noopener')}><DownloadIcon fontSize="small" /></IconButton>
-                            </Tooltip>
-                          ) : reg.status === 'COMPLETED' ? (
-                            <Button size="small" startIcon={<UploadIcon />} onClick={() => { setSelectedRegistration(reg); setCertificateDialogOpen(true); }} sx={{ color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
-                              Upload
-                            </Button>
-                          ) : (
-                            <Typography variant="caption" color="text.secondary">Not ready</Typography>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  }) : (
-                    <TableRow>
-                      <TableCell colSpan={7} sx={{ py: 4, textAlign: 'center' }}>
-                        <Typography color="text.secondary">No registrations yet.</Typography>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
+          <TrainingRegistrationsTab
+            trainingId={trainingId}
+            training={training}
+            registrations={registrations}
+            onChanged={load}
+            onUploadCertificate={(reg) => { setSelectedRegistration(reg); setCertificateDialogOpen(true); }}
+          />
         )}
       </Container>
 
