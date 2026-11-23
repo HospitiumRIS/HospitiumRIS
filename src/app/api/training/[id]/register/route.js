@@ -5,6 +5,7 @@ import { resolveTrainingScopeContext } from '@/lib/training-admin-server';
 import { ACTIVE_REGISTRATION_STATUSES, canRegisterForTraining, canViewTraining } from '@/lib/training-scope';
 import { checkRegistrationTransition, checkRegistrationWindow, hasCapacity } from '@/lib/training-registration-state';
 import { auditTraining } from '@/lib/training-audit';
+import { notifyTraining } from '@/lib/training-notify';
 
 /**
  * POST /api/training/[id]/register
@@ -128,6 +129,8 @@ export async function POST(request, { params }) {
     }
     const { registration } = outcome;
 
+    await notifyTraining('REGISTRATION_CONFIRMED', { userId: user.id, trainingId: id });
+
     await auditTraining({
       trainingId: id,
       actorId: user.id,
@@ -226,6 +229,8 @@ export async function DELETE(request, { params }) {
         status: 'CANCELLED',
       },
     });
+
+    await notifyTraining('REGISTRATION_CANCELLED', { userId: user.id, trainingId: id, extra: { reason: 'You cancelled your registration.' } });
 
     await auditTraining({
       trainingId: id,

@@ -18,6 +18,7 @@
     "db:seed": "node prisma/seed.js",
     "db:studio": "prisma studio",
     "test:email": "node scripts/test-email.js",
+    "preview:training-emails": "node scripts/preview-training-emails.mjs",
     "seed:network": "node scripts/seed-sample-network.js",
     "check:admin": "node scripts/check-global-admin.js",
     "docker:dev": "docker compose -f docker-compose.dev.yml up --build",

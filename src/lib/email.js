@@ -960,3 +960,28 @@ export async function sendTestEmail(to) {
     return { success: false, error: message };
   }
 }
+
+/**
+ * Send an email already rendered with the shared branded layout (src/lib/email-layout.js).
+ * Used by the training notifications (#97). Never throws.
+ * @param {{ to: string, subject: string, html: string, text: string }} message
+ */
+export async function sendBrandedEmail({ to, subject, html, text }) {
+  if (!process.env.SMTP_HOST) {
+    return { success: false, skipped: true, error: 'SMTP is not configured' };
+  }
+  try {
+    const transporter = createTransporter();
+    const result = await transporter.sendMail({
+      from: await getEmailFromAddress(),
+      to,
+      subject,
+      html,
+      text,
+    });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Branded email send failed:', error);
+    return { success: false, error: error.message };
+  }
+}

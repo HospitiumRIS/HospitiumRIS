@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { auditTraining } from '@/lib/training-audit';
+import { notifyTraining } from '@/lib/training-notify';
 import { ACTIVE_REGISTRATION_STATUSES } from '@/lib/training-scope';
 import { computeAttendance } from '@/lib/training-attendance';
 import {
@@ -77,6 +78,7 @@ export async function refreshTrainingProgress(trainingId, registrationIds = null
     },
     select: {
       id: true,
+      userId: true,
       status: true,
       attendancePercent: true,
       completionOverride: true,
@@ -113,6 +115,14 @@ export async function refreshTrainingProgress(trainingId, registrationIds = null
 
     if (Object.keys(data).length) {
       await prisma.trainingRegistration.update({ where: { id: registration.id }, data });
+    }
+    if (next === 'COMPLETED' || next === 'NOT_COMPLETED') {
+      await notifyTraining(next === 'COMPLETED' ? 'TRAINING_COMPLETED' : 'TRAINING_NOT_COMPLETED', {
+        userId: registration.userId,
+        trainingId,
+        dedupeKey: `${next === 'COMPLETED' ? 'completed' : 'not-completed'}:${registration.id}`,
+        extra: { checks: evaluation.checks },
+      });
     }
     if (next) {
       await auditTraining({

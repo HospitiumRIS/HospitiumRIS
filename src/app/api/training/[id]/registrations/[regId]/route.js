@@ -12,6 +12,7 @@ import {
   transitionTakesSeat,
 } from '@/lib/training-registration-state';
 import { auditTraining } from '@/lib/training-audit';
+import { notifyTraining } from '@/lib/training-notify';
 import { recomputeAttendancePercent } from '@/lib/training-attendance-server';
 
 /**
@@ -140,6 +141,16 @@ export async function PUT(request, { params }) {
 
     if (changeStatus) {
       await recomputeAttendancePercent(id, [regId]);
+      const note = typeof reason === 'string' && reason.trim() ? reason.trim().slice(0, 500) : null;
+      if (status === 'CANCELLED') {
+        await notifyTraining('REGISTRATION_CANCELLED', { userId: registration.userId, trainingId: id, extra: { reason: note } });
+      } else if (registration.status === 'CANCELLED' && status === 'REGISTERED') {
+        await notifyTraining('REGISTRATION_CONFIRMED', { userId: registration.userId, trainingId: id });
+      } else if (status === 'COMPLETED') {
+        await notifyTraining('TRAINING_COMPLETED', { userId: registration.userId, trainingId: id, dedupeKey: `completed:${regId}` });
+      } else if (status === 'NOT_COMPLETED') {
+        await notifyTraining('TRAINING_NOT_COMPLETED', { userId: registration.userId, trainingId: id, dedupeKey: `not-completed:${regId}` });
+      }
       await auditTraining({
         trainingId: id,
         actorId: user.id,

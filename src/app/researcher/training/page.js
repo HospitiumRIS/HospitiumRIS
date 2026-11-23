@@ -195,6 +195,20 @@ export default function TrainingPage() {
     loadTrainings();
   }, []);
 
+  // Links from training emails (#97): /researcher/training?training=<id> opens its details.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const linked = params.get('training');
+    if (linked) {
+      openDetails(linked);
+      params.delete('training');
+      params.delete('join');
+      const rest = params.toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${rest ? `?${rest}` : ''}${window.location.hash}`);
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (window.location.hash === '#available') {
