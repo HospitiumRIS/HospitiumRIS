@@ -206,6 +206,7 @@ export default function TrainingPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [registering, setRegistering] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [myAssessments, setMyAssessments] = useState([]);
   const [search, setSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [tab, setTab] = useState(0);
@@ -301,6 +302,14 @@ export default function TrainingPage() {
       setSelectedTraining(data.training);
       setConfirmCancel(false);
       setDetailsOpen(true);
+      // Assessments (#105), for participants.
+      setMyAssessments([]);
+      if (data.training.isRegistered) {
+        fetch(`/api/training/${trainingId}/assessments/mine`)
+          .then((r) => r.json())
+          .then((json) => { if (json.success) setMyAssessments(json.assessments || []); })
+          .catch(() => {});
+      }
     } catch (err) {
       setError(err.message || 'Failed to load training details');
     }
@@ -713,6 +722,38 @@ export default function TrainingPage() {
                       <Chip key={group} size="small" label={group} sx={{ bgcolor: alpha(PURPLE, 0.08), color: PURPLE, fontWeight: 700 }} />
                     ))}
                   </Stack>
+                ) : null}
+
+                {myAssessments.length ? (
+                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>Assessments</Typography>
+                    <Stack spacing={1}>
+                      {myAssessments.map((a) => (
+                        <Stack key={a.id} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                              {a.title}{a.isRequiredForCompletion ? ' · required' : ''}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {a.questionCount} questions · pass {a.passMark}%{a.timeLimitMinutes ? ` · ${a.timeLimitMinutes} min` : ''}
+                              {a.attemptsLeft !== null ? ` · ${a.attemptsLeft} attempt(s) left` : ''}
+                              {a.best ? ` · best ${a.best.percent}%` : ''}
+                            </Typography>
+                          </Box>
+                          {a.passed ? <Chip size="small" label="Passed" sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} /> : null}
+                          {a.awaitingGrading && !a.passed ? <Chip size="small" label="Being graded" sx={{ bgcolor: '#fef3c7', color: '#92400e', fontWeight: 700 }} /> : null}
+                          <Button
+                            size="small"
+                            variant={a.canStart && !a.passed ? 'contained' : 'text'}
+                            onClick={() => router.push(`/researcher/training/assessment/${selectedTraining.id}/${a.id}`)}
+                            sx={a.canStart && !a.passed ? { bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 } : { color: PURPLE, textTransform: 'none', fontWeight: 700 }}
+                          >
+                            {a.openAttemptId ? 'Resume' : a.canStart && !a.attemptsUsed ? 'Start' : a.canStart && !a.passed ? 'Try again' : 'View'}
+                          </Button>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  </Paper>
                 ) : null}
 
                 {selectedTraining.myCompletion?.hasRules ? (

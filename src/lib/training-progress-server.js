@@ -10,6 +10,7 @@ import {
   hasCompletionRules,
   modulesCompletedByAttendance,
 } from '@/lib/training-completion';
+import { assessmentCompletionFacts, modulesCompletedByAssessment } from '@/lib/training-assessment';
 
 const TRAINING_FIELDS = {
   id: true,
@@ -23,7 +24,7 @@ const TRAINING_FIELDS = {
 };
 
 async function loadTrainingFacts(trainingId) {
-  const [training, sessions, modules] = await Promise.all([
+  const [training, sessions, modules, assessments] = await Promise.all([
     prisma.training.findUnique({ where: { id: trainingId }, select: TRAINING_FIELDS }),
     prisma.trainingSession.findMany({
       where: { trainingId },
@@ -34,26 +35,36 @@ async function loadTrainingFacts(trainingId) {
       select: { id: true, title: true, status: true, isRequired: true, completionMode: true, order: true },
       orderBy: { order: 'asc' },
     }),
+    prisma.trainingAssessment.findMany({
+      where: { trainingId },
+      select: { id: true, moduleId: true, isPublished: true, isRequiredForCompletion: true },
+    }),
   ]);
-  return { training, sessions, modules };
+  return { training, sessions, modules, assessments };
 }
 
 /** Evaluate one registration from already-loaded facts (no writes). */
-export function evaluateRegistration({ training, sessions, modules }, registration, now = new Date()) {
+export function evaluateRegistration({ training, sessions, modules, assessments = [] }, registration, now = new Date()) {
   const attendance = computeAttendance(sessions, registration.attendance || [], {
     excludeExcused: training.excludeExcusedSessions !== false,
     now,
   });
   const progress = new Map((registration.moduleProgress || []).map((p) => [p.moduleId, p.status]));
-  const autoModules = modulesCompletedByAttendance(modules, sessions, registration.attendance || [], now)
-    .filter((id) => progress.get(id) !== 'COMPLETED');
+  // Passed assessments (#105): required ones count for completion, and modules set to
+  // ON_ASSESSMENT_PASS complete once every linked assessment is passed.
+  const passedIds = [...new Set((registration.assessmentAttempts || []).filter((a) => a.passed).map((a) => a.assessmentId))];
+  const autoModules = [...new Set([
+    ...modulesCompletedByAttendance(modules, sessions, registration.attendance || [], now),
+    ...modulesCompletedByAssessment(modules, assessments, passedIds),
+  ])].filter((id) => progress.get(id) !== 'COMPLETED');
   for (const id of autoModules) progress.set(id, 'COMPLETED');
 
-  // Assessment (#105) and feedback (#106) facts are added when those features exist.
+  // Feedback (#106) facts are added when that feature exists.
   const evaluation = evaluateCompletion(training, {
     attendancePercent: attendance.percent,
     modules,
     progress,
+    assessments: assessmentCompletionFacts(assessments, passedIds),
   });
   return { attendance, progress, autoModules, evaluation };
 }
@@ -85,6 +96,7 @@ export async function refreshTrainingProgress(trainingId, registrationIds = null
       completionOverride: true,
       attendance: { select: { sessionId: true, status: true } },
       moduleProgress: { select: { moduleId: true, status: true } },
+      assessmentAttempts: { where: { passed: true }, select: { assessmentId: true, passed: true } },
     },
   });
 
@@ -161,6 +173,7 @@ export async function loadCompletionReport(trainingId, now = new Date()) {
       user: { select: { id: true, givenName: true, familyName: true, email: true } },
       attendance: { select: { sessionId: true, status: true } },
       moduleProgress: { select: { moduleId: true, status: true } },
+      assessmentAttempts: { where: { passed: true }, select: { assessmentId: true, passed: true } },
     },
   });
   return {
@@ -199,6 +212,7 @@ export async function loadOwnCompletion(trainingId, registrationId, now = new Da
       status: true,
       attendance: { select: { sessionId: true, status: true } },
       moduleProgress: { select: { moduleId: true, status: true } },
+      assessmentAttempts: { where: { passed: true }, select: { assessmentId: true, passed: true } },
     },
   });
   if (!registration) return null;

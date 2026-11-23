@@ -27,6 +27,7 @@ export const TRAINING_EMAIL_KINDS = [
   'CERTIFICATE_EXPIRING',
   'RETRAINING_DUE',
   'FACILITATOR_ASSIGNED',
+  'ASSESSMENT_GRADED',
 ];
 
 /** In-app notification type (existing NotificationType enum values). */
@@ -52,6 +53,7 @@ const NOTIFICATION_TYPE = {
   CERTIFICATE_EXPIRING: 'SYSTEM_NOTIFICATION',
   RETRAINING_DUE: 'SYSTEM_NOTIFICATION',
   FACILITATOR_ASSIGNED: 'TRAINING_AVAILABLE',
+  ASSESSMENT_GRADED: 'SYSTEM_NOTIFICATION',
 };
 
 const HIGH_PRIORITY = new Set(['SESSION_CANCELLED', 'TRAINING_OVERDUE', 'CERTIFICATE_REVOKED', 'REGISTRATION_REJECTED', 'RETRAINING_DUE']);
@@ -218,6 +220,17 @@ export function buildTrainingEmail(kind, data) {
       note = 'From Training › Facilitating you can show the check-in screen and take the register for your sessions.';
       action = { url: `${base}/researcher/training/facilitating`, label: 'Open my sessions' };
       message = `You are ${roleLabel} for ${s ? `"${s.title}"` : `"${title}"`}.`;
+      break;
+    }
+    case 'ASSESSMENT_GRADED': {
+      const a = data.assessment || {};
+      subject = `Results: ${a.title || title}`;
+      heading = a.passed ? 'You passed' : 'Your assessment has been graded';
+      paragraphs = [`Your answers to "${a.title || 'the assessment'}" for "${title}" have been graded.`];
+      const pct = a.percent !== undefined && a.percent !== null ? `${a.percent}%` : null;
+      details.push(['Score', pct], ['Result', a.passed ? 'Passed' : 'Not passed']);
+      note = a.passed ? null : 'Open the training to see whether you have attempts left.';
+      message = `"${a.title || 'Your assessment'}" graded${pct ? `: ${pct}` : ''}${a.passed ? ', passed' : ''}.`;
       break;
     }
     case 'CERTIFICATE_EXPIRING':
