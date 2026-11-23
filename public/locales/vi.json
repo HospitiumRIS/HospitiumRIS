@@ -2158,6 +2158,8 @@
     "manage_researchers_desc": "Thêm, sửa và quản lý nhà nghiên cứu",
     "manage_trainings": "Quản lý đào tạo",
     "manage_trainings_desc": "Tạo và quản lý khóa đào tạo của tổ chức",
+    "certificate_templates": "Certificate Templates",
+    "certificate_templates_desc": "Design the certificates your trainings issue",
     "performance_review": "Đánh giá hiệu suất",
     "performance_review_desc": "Đánh giá hiệu suất nhà nghiên cứu",
     "results_reporting": "Kết quả & Báo cáo",

@@ -2158,6 +2158,8 @@
     "manage_researchers_desc": "Ajouter, modifier et gérer les chercheurs",
     "manage_trainings": "Gérer les formations",
     "manage_trainings_desc": "Créer et gérer les formations institutionnelles",
+    "certificate_templates": "Modèles de certificats",
+    "certificate_templates_desc": "Concevez les certificats délivrés par vos formations",
     "performance_review": "Évaluation des performances",
     "performance_review_desc": "Évaluer les performances des chercheurs",
     "results_reporting": "Résultats et rapports",

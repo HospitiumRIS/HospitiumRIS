@@ -2158,6 +2158,8 @@
     "manage_researchers_desc": "إضافة الباحثين وتعديلهم وإدارتهم",
     "manage_trainings": "إدارة التدريبات",
     "manage_trainings_desc": "إنشاء وإدارة التدريبات المؤسسية",
+    "certificate_templates": "Certificate Templates",
+    "certificate_templates_desc": "Design the certificates your trainings issue",
     "performance_review": "مراجعة الأداء",
     "performance_review_desc": "مراجعة أداء الباحثين",
     "results_reporting": "النتائج والتقارير",

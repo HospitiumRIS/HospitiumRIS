@@ -1915,6 +1915,17 @@ enum TrainingRegistrationStatus {
   NOT_COMPLETED
 }
 
+enum TrainingCertificateMode {
+  AUTO
+  REVIEW
+  MANUAL_UPLOAD
+}
+
+enum CertificateOrientation {
+  LANDSCAPE
+  PORTRAIT
+}
+
 enum TrainingModuleCompletionMode {
   ADMIN
   SELF
@@ -1991,6 +2002,17 @@ model Training {
   requireFeedback       Boolean @default(false)
   completionGraceDays   Int     @default(7)
 
+  // Certificates (#98, decision D1) and CPD (decision D6)
+  certificateMode           TrainingCertificateMode @default(REVIEW)
+  certificatePrefix         String                  @default("HRIS")
+  certificateTemplateId     String?
+  certificateValidityMonths Int?
+  cpdHours                  Float?
+  cpdPoints                 Float?
+  accreditationBody         String?
+  accreditationNumber       String?
+  accreditationLogoDataUrl  String?                 @db.Text
+
   // Shared catalogue: when true (and PUBLISHED), researchers of other institutions
   // can see and register for this training. Rosters never cross tenants.
   openToOtherInstitutions Boolean @default(false)
@@ -2011,6 +2033,7 @@ model Training {
   notifications Notification[]
   auditLogs     TrainingAuditLog[]
   sessions      TrainingSession[]
+  certificateTemplate TrainingCertificateTemplate? @relation(fields: [certificateTemplateId], references: [id], onDelete: SetNull)
 
   @@index([institutionId, status])
   @@index([status, openToOtherInstitutions])
@@ -2190,6 +2213,32 @@ model TrainingAttendance {
   @@unique([sessionId, registrationId])
   @@index([registrationId])
   @@map("training_attendance")
+}
+
+// Certificate design for an institution (#98). Images are small data URLs.
+model TrainingCertificateTemplate {
+  id                String                 @id @default(cuid())
+  institutionId     String
+  name              String
+  orientation       CertificateOrientation @default(LANDSCAPE)
+  primaryColor      String                 @default("#8b6cbc")
+  titleText         String
+  bodyTemplate      String                 @db.Text
+  footerText        String?
+  logoDataUrl       String?                @db.Text
+  backgroundDataUrl String?                @db.Text
+  signatories       Json                   @default("[]") // [{ name, title, signatureDataUrl }]
+  showQr            Boolean                @default(true)
+  isDefault         Boolean                @default(false)
+  createdBy         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trainings Training[]
+
+  @@index([institutionId])
+  @@map("training_certificate_templates")
 }
 
 // Training activity log (#90): who changed what on a training, with before/after.

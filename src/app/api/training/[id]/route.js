@@ -14,6 +14,8 @@ import { serializeSession } from '@/lib/training-sessions-server';
 import { recomputeAttendancePercent } from '@/lib/training-attendance-server';
 import { computeAttendance } from '@/lib/training-attendance';
 import { validateCompletionRules } from '@/lib/training-completion';
+import { validateCertificateSettings } from '@/lib/certificate-template';
+import { findInstitutionTemplate } from '@/lib/certificate-templates-server';
 import { loadOwnCompletion, refreshTrainingProgress } from '@/lib/training-progress-server';
 
 /**
@@ -234,6 +236,15 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: rules.error }, { status: 400 });
     }
     Object.assign(updateData, rules.data);
+    const certificate = validateCertificateSettings(body);
+    if (!certificate.ok) {
+      return NextResponse.json({ error: certificate.error }, { status: 400 });
+    }
+    if (certificate.data.certificateTemplateId
+      && !(await findInstitutionTemplate(certificate.data.certificateTemplateId, existingTraining.institutionId))) {
+      return NextResponse.json({ error: 'Certificate template not found' }, { status: 400 });
+    }
+    Object.assign(updateData, certificate.data);
 
     const training = await prisma.training.update({
       where: { id },

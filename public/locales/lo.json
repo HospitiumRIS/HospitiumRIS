@@ -2158,6 +2158,8 @@
     "manage_researchers_desc": "ເພີ່ມ, ແກ້ໄຂ ແລະ ຈັດການນັກຄົ້ນຄວ້າ",
     "manage_trainings": "ຈັດການການຝຶກອົບຮົມ",
     "manage_trainings_desc": "ສ້າງ ແລະ ຈັດການການຝຶກອົບຮົມຂອງສະຖາບັນ",
+    "certificate_templates": "Certificate Templates",
+    "certificate_templates_desc": "Design the certificates your trainings issue",
     "performance_review": "ການປະເມີນຜົນງານ",
     "performance_review_desc": "ປະເມີນຜົນງານນັກຄົ້ນຄວ້າ",
     "results_reporting": "ຜົນ ແລະ ລາຍງານ",

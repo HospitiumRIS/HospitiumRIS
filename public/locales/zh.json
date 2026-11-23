@@ -2158,6 +2158,8 @@
     "manage_researchers_desc": "添加、编辑并管理研究者",
     "manage_trainings": "管理培训",
     "manage_trainings_desc": "创建并管理机构培训",
+    "certificate_templates": "Certificate Templates",
+    "certificate_templates_desc": "Design the certificates your trainings issue",
     "performance_review": "绩效评估",
     "performance_review_desc": "评估研究者绩效",
     "results_reporting": "结果与报告",
