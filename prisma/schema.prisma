@@ -1936,6 +1936,21 @@ enum TrainingSessionStatus {
   CANCELLED
 }
 
+enum TrainingAttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  EXCUSED
+}
+
+enum TrainingAttendanceMethod {
+  MANUAL
+  QR
+  CODE
+  VIRTUAL_JOIN
+  IMPORT
+}
+
 enum MaterialAccessLevel {
   PUBLIC
   REGISTERED_ONLY
@@ -1957,6 +1972,9 @@ model Training {
   endDate         DateTime
   maxParticipants Int
   status          TrainingStatus @default(DRAFT)
+
+  // Attendance (#92, decision D5): excused sessions leave the attendance denominator.
+  excludeExcusedSessions Boolean @default(true)
 
   // Shared catalogue: when true (and PUBLISHED), researchers of other institutions
   // can see and register for this training. Rosters never cross tenants.
@@ -2033,6 +2051,10 @@ model TrainingRegistration {
   status       TrainingRegistrationStatus @default(REGISTERED)
   registeredAt DateTime                   @default(now())
 
+  // Cached attendance % (#92), recomputed whenever attendance changes. Null until a
+  // counted session has been held.
+  attendancePercent Float?
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2042,6 +2064,7 @@ model TrainingRegistration {
   user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   moduleProgress TrainingModuleProgress[]
   certificate    TrainingCertificate?
+  attendance     TrainingAttendance[]
 
   @@unique([trainingId, userId])
   @@map("training_registrations")
@@ -2111,12 +2134,39 @@ model TrainingSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  training Training        @relation(fields: [trainingId], references: [id], onDelete: Cascade)
-  module   TrainingModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  training   Training             @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  module     TrainingModule?      @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  attendance TrainingAttendance[]
 
   @@index([trainingId, startsAt])
   @@index([moduleId])
   @@map("training_sessions")
+}
+
+// One participant's attendance at one session (#92).
+model TrainingAttendance {
+  id              String                   @id @default(cuid())
+  sessionId       String
+  registrationId  String
+  status          TrainingAttendanceStatus
+  method          TrainingAttendanceMethod @default(MANUAL)
+  checkedInAt     DateTime?
+  checkedOutAt    DateTime?
+  durationMinutes Int?
+  markedBy        String? // User ID of the admin/facilitator; null for self check-in
+  note            String?
+  ip              String?
+  userAgent       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session      TrainingSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  registration TrainingRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, registrationId])
+  @@index([registrationId])
+  @@map("training_attendance")
 }
 
 // Training activity log (#90): who changed what on a training, with before/after.

@@ -11,6 +11,7 @@ import {
   transitionTakesSeat,
 } from '@/lib/training-registration-state';
 import { auditTraining } from '@/lib/training-audit';
+import { recomputeAttendancePercent } from '@/lib/training-attendance-server';
 
 /**
  * PUT /api/training/[id]/registrations/[regId]
@@ -122,6 +123,7 @@ export async function PUT(request, { params }) {
     }
 
     if (changeStatus) {
+      await recomputeAttendancePercent(id, [regId]);
       await auditTraining({
         trainingId: id,
         actorId: user.id,

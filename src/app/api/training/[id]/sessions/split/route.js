@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { auditTraining } from '@/lib/training-audit';
 import { buildDailySessions } from '@/lib/training-sessions';
 import { requireSessionAdmin, serializeSession } from '@/lib/training-sessions-server';
+import { sessionHasAttendance } from '@/lib/training-attendance-server';
 
 /**
  * POST /api/training/[id]/sessions/split
@@ -31,6 +32,13 @@ export async function POST(request, { params }) {
       where: { trainingId: id },
       select: { id: true, title: true },
     });
+
+    if (await sessionHasAttendance(existing.map((s) => s.id))) {
+      return NextResponse.json(
+        { error: 'Attendance has already been taken, so the schedule cannot be replaced. Edit or add sessions instead.' },
+        { status: 400 }
+      );
+    }
 
     const created = await prisma.$transaction(async (tx) => {
       await tx.trainingSession.deleteMany({ where: { trainingId: id } });
