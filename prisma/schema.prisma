@@ -1925,6 +1925,17 @@ enum ModuleProgressStatus {
   COMPLETED
 }
 
+enum TrainingDeliveryMode {
+  IN_PERSON
+  ONLINE
+  HYBRID
+}
+
+enum TrainingSessionStatus {
+  SCHEDULED
+  CANCELLED
+}
+
 enum MaterialAccessLevel {
   PUBLIC
   REGISTERED_ONLY
@@ -1936,7 +1947,12 @@ model Training {
   description     String?        @db.Text
   department      String
   targetGroup     String[]
-  location        String?
+  location        String? // Legacy "address | link" string; kept in sync for one release (#91)
+  code            String?
+  category        String?
+  deliveryMode    TrainingDeliveryMode @default(IN_PERSON)
+  venue           String?
+  onlineLink      String?
   startDate       DateTime
   endDate         DateTime
   maxParticipants Int
@@ -1961,6 +1977,7 @@ model Training {
   certificates  TrainingCertificate[]
   notifications Notification[]
   auditLogs     TrainingAuditLog[]
+  sessions      TrainingSession[]
 
   @@index([institutionId, status])
   @@index([status, openToOtherInstitutions])
@@ -1983,6 +2000,7 @@ model TrainingModule {
   training  Training                 @relation(fields: [trainingId], references: [id], onDelete: Cascade)
   materials TrainingMaterial[]
   progress  TrainingModuleProgress[]
+  sessions  TrainingSession[]
 
   @@map("training_modules")
 }
@@ -2067,6 +2085,38 @@ model TrainingCertificate {
   registration TrainingRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
 
   @@map("training_certificates")
+}
+
+// A dated session of a training: the unit attendance is taken against (#91).
+// Empty venue/onlineLink inherit the training's.
+model TrainingSession {
+  id                        String                @id @default(cuid())
+  trainingId                String
+  moduleId                  String?
+  title                     String
+  description               String?               @db.Text
+  startsAt                  DateTime
+  endsAt                    DateTime
+  deliveryMode              TrainingDeliveryMode  @default(IN_PERSON)
+  venue                     String?
+  onlineLink                String?
+  isAttendanceRequired      Boolean               @default(true)
+  checkInOpensMinutesBefore Int                   @default(15)
+  checkInClosesMinutesAfter Int                   @default(30)
+  lateAfterMinutes          Int                   @default(10)
+  status                    TrainingSessionStatus @default(SCHEDULED)
+  order                     Int                   @default(0)
+  createdBy                 String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  training Training        @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  module   TrainingModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+
+  @@index([trainingId, startsAt])
+  @@index([moduleId])
+  @@map("training_sessions")
 }
 
 // Training activity log (#90): who changed what on a training, with before/after.

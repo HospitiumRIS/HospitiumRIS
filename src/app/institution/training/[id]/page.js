@@ -45,6 +45,8 @@ import {
 import PageHeader from '@/components/common/PageHeader';
 import { formatTargetGroupLabel } from '@/lib/training-admin';
 import { allowedAdminStatuses } from '@/lib/training-registration-state';
+import { DELIVERY_MODE_LABELS } from '@/lib/training-sessions';
+import TrainingScheduleTab from '@/components/Training/admin/TrainingScheduleTab';
 
 const PURPLE = '#8b6cbc';
 const dialogLock = { disableScrollLock: true };
@@ -77,6 +79,7 @@ export default function TrainingDetailPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [activeTab, setActiveTab] = useState(1);
+  const [tabCounts, setTabCounts] = useState({ sessions: null });
   const [submitting, setSubmitting] = useState(false);
   const [moduleDraft, setModuleDraft] = useState({ title: '', description: '' });
   const [materialDraft, setMaterialDraft] = useState({ name: '', moduleId: '', accessLevel: 'PUBLIC', file: null });
@@ -278,6 +281,7 @@ export default function TrainingDetailPage() {
             }}
           >
             <Tab label="Overview" />
+            <Tab label={`Schedule (${tabCounts.sessions ?? (training.sessions || []).filter((s) => s.status === 'SCHEDULED').length})`} />
             <Tab label={`Curriculum (${modules.length})`} />
             <Tab label={`Registrations (${registrations.length})`} />
           </Tabs>
@@ -289,7 +293,12 @@ export default function TrainingDetailPage() {
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>Session details</Typography>
               <Typography variant="body2" sx={{ mb: 2, color: '#334155' }}>{training.description || 'No description provided.'}</Typography>
               <Typography variant="body2"><strong>Schedule:</strong> {formatDate(training.startDate)} - {formatDate(training.endDate)}</Typography>
-              <Typography variant="body2"><strong>Location:</strong> {training.location || 'Not set'}</Typography>
+              <Typography variant="body2"><strong>Delivery:</strong> {DELIVERY_MODE_LABELS[training.deliveryMode] || 'In person'}</Typography>
+              {training.venue ? <Typography variant="body2"><strong>Venue:</strong> {training.venue}</Typography> : null}
+              {training.onlineLink ? <Typography variant="body2"><strong>Online link:</strong> {training.onlineLink}</Typography> : null}
+              {!training.venue && !training.onlineLink ? <Typography variant="body2"><strong>Location:</strong> {training.location || 'Not set'}</Typography> : null}
+              <Typography variant="body2"><strong>Sessions:</strong> {(training.sessions || []).filter((s) => s.status === 'SCHEDULED').length}</Typography>
+              <Typography variant="body2"><strong>Catalogue:</strong> {training.openToOtherInstitutions ? 'Open to other institutions' : 'Own institution only'}</Typography>
               <Typography variant="body2"><strong>Capacity:</strong> {training.registrationCount || 0}/{training.maxParticipants} seats</Typography>
             </Paper>
             <Paper sx={{ width: { xs: '100%', md: 280 }, p: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
@@ -297,7 +306,7 @@ export default function TrainingDetailPage() {
               <Typography variant="body2">{modules.length} modules</Typography>
               <Typography variant="body2">{materials.length} materials</Typography>
               <Typography variant="body2">{registrations.length} registrations</Typography>
-              <Button onClick={() => setActiveTab(1)} sx={{ mt: 2, color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
+              <Button onClick={() => setActiveTab(2)} sx={{ mt: 2, color: PURPLE, textTransform: 'none', fontWeight: 700 }}>
                 Manage curriculum
               </Button>
             </Paper>
@@ -305,6 +314,19 @@ export default function TrainingDetailPage() {
         )}
 
         {activeTab === 1 && (
+          <TrainingScheduleTab
+            trainingId={trainingId}
+            training={training}
+            modules={modules}
+            onChanged={async () => {
+              const res = await fetch(`/api/training/${trainingId}/sessions`, { credentials: 'include' });
+              const data = await res.json().catch(() => ({}));
+              if (data.success) setTabCounts({ sessions: (data.sessions || []).filter((s) => s.status === 'SCHEDULED').length });
+            }}
+          />
+        )}
+
+        {activeTab === 2 && (
           <Stack spacing={2}>
             <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.25 }}>Add a module</Typography>
@@ -382,7 +404,7 @@ export default function TrainingDetailPage() {
           </Stack>
         )}
 
-        {activeTab === 2 && (
+        {activeTab === 3 && (
           <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
             <TableContainer>
               <Table size="small">

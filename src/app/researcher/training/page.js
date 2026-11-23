@@ -39,6 +39,7 @@ import {
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
+import { DELIVERY_MODE_LABELS } from '@/lib/training-sessions';
 
 const PURPLE = '#8b6cbc';
 const dialogLock = { disableScrollLock: true };
@@ -116,6 +117,15 @@ function DeadlineLabel({ startDate, endDate }) {
   if (untilStart > 0) return <Chip size="small" label={`Starts in ${untilStart} day${untilStart === 1 ? '' : 's'}`} sx={{ bgcolor: '#dbeafe', color: '#1d4ed8', fontWeight: 700 }} />;
   return <Chip size="small" label={`${untilEnd} day${untilEnd === 1 ? '' : 's'} left`} sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} />;
 }
+
+const formatSessionTime = (start, end) => {
+  const s = new Date(start);
+  const e = new Date(end);
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return '';
+  const day = s.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const time = (d) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return `${day} · ${time(s)} – ${time(e)}`;
+};
 
 export default function TrainingPage() {
   const router = useRouter();
@@ -512,6 +522,37 @@ export default function TrainingPage() {
                       <Chip key={group} size="small" label={group} sx={{ bgcolor: alpha(PURPLE, 0.08), color: PURPLE, fontWeight: 700 }} />
                     ))}
                   </Stack>
+                ) : null}
+
+                {(selectedTraining.sessions || []).length ? (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                      Sessions ({selectedTraining.sessions.length})
+                    </Typography>
+                    <Stack spacing={1}>
+                      {selectedTraining.sessions.map((session) => (
+                        <Paper key={session.id} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                          <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={1}>
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 700 }}>{session.title}</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {formatSessionTime(session.startsAt, session.endsAt)}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ textAlign: { sm: 'right' } }}>
+                              <Chip size="small" label={DELIVERY_MODE_LABELS[session.effective?.deliveryMode] || 'In person'} sx={{ bgcolor: alpha(PURPLE, 0.08), color: PURPLE, fontWeight: 700 }} />
+                              {session.effective?.venue ? (
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{session.effective.venue}</Typography>
+                              ) : null}
+                              {session.effective?.hasOnlineLink && !session.effective?.onlineLink ? (
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>Meeting link shown after you register</Typography>
+                              ) : null}
+                            </Box>
+                          </Stack>
+                        </Paper>
+                      ))}
+                    </Stack>
+                  </Box>
                 ) : null}
 
                 <Box>

@@ -58,7 +58,16 @@ export function hydrateTrainingForm(initialTraining) {
 
   const start = splitDateTime(initialTraining.startDate);
   const end = splitDateTime(initialTraining.endDate);
-  const locationFields = parseLocationFields(initialTraining.location);
+  // Prefer the structured delivery fields (#91); fall back to the legacy string.
+  const locationFields = initialTraining.deliveryMode
+    ? {
+        locationType: initialTraining.deliveryMode === 'ONLINE'
+          ? 'online'
+          : initialTraining.deliveryMode === 'HYBRID' ? 'hybrid' : 'in_person',
+        locationAddress: initialTraining.venue || '',
+        onlineLink: initialTraining.onlineLink || '',
+      }
+    : parseLocationFields(initialTraining.location);
   const hasEndDate = Boolean(end.date);
   const sameDay = hasEndDate && start.date === end.date;
   const scheduleType = hasEndDate && !sameDay ? 'multi' : 'single';

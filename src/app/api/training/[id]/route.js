@@ -8,6 +8,9 @@ import {
 } from '@/lib/training-admin';
 import { resolveTrainingInstitution, resolveTrainingScopeContext } from '@/lib/training-admin-server';
 import { canViewTraining, isOwningTrainingAdmin, shapeTrainingForViewer } from '@/lib/training-scope';
+import { resolveTrainingDeliveryUpdate, sessionsOutsideTraining } from '@/lib/training-sessions';
+import { auditTraining } from '@/lib/training-audit';
+import { serializeSession } from '@/lib/training-sessions-server';
 
 /**
  * GET /api/training/[id]
@@ -35,6 +38,10 @@ export async function GET(request, { params }) {
         },
         materials: {
           orderBy: { createdAt: 'desc' },
+        },
+        sessions: {
+          orderBy: [{ startsAt: 'asc' }, { order: 'asc' }],
+          include: { module: { select: { id: true, title: true } } },
         },
         registrations: {
           include: {
@@ -91,9 +98,17 @@ export async function GET(request, { params }) {
     // own registration, and registered-only materials need an active registration.
     const isAdmin = isOwningTrainingAdmin(user, training, scopeCtx);
 
+    const shaped = shapeTrainingForViewer(training, user, { isAdmin });
+    // Sessions (#91): non-admins only see scheduled ones; meeting links only go to
+    // admins and active registrants.
+    const canSeeLink = isAdmin || shaped.isRegistered;
+    shaped.sessions = training.sessions
+      .filter((session) => isAdmin || session.status === 'SCHEDULED')
+      .map((session) => serializeSession(session, training, { canSeeLink }));
+
     return NextResponse.json({
       success: true,
-      training: shapeTrainingForViewer(training, user, { isAdmin }),
+      training: shaped,
     });
   } catch (error) {
     console.error('Error fetching training:', error);
@@ -170,7 +185,14 @@ export async function PUT(request, { params }) {
       }
       updateData.targetGroup = normalized;
     }
-    if (location !== undefined) updateData.location = location;
+    const delivery = resolveTrainingDeliveryUpdate(body, existingTraining);
+    if (delivery.error) {
+      return NextResponse.json({ error: delivery.error }, { status: 400 });
+    }
+    Object.assign(updateData, delivery);
+    if (location !== undefined && delivery.location === undefined) updateData.location = location;
+    if (body.code !== undefined) updateData.code = typeof body.code === 'string' ? body.code.trim() || null : null;
+    if (body.category !== undefined) updateData.category = typeof body.category === 'string' ? body.category.trim() || null : null;
     if (startDate !== undefined) updateData.startDate = new Date(startDate);
     if (endDate !== undefined) updateData.endDate = new Date(endDate);
     if (maxParticipants !== undefined) updateData.maxParticipants = parseInt(maxParticipants);
@@ -185,6 +207,7 @@ export async function PUT(request, { params }) {
           where: { status: 'ACTIVE' },
           orderBy: { order: 'asc' },
         },
+        sessions: { select: { id: true, startsAt: true, endsAt: true } },
         _count: {
           select: {
             registrations: true,
@@ -194,9 +217,24 @@ export async function PUT(request, { params }) {
       },
     });
 
+    await auditTraining({
+      trainingId: id,
+      actorId: user.id,
+      action: 'TRAINING_UPDATED',
+      entityType: 'Training',
+      entityId: id,
+      before: { status: existingTraining.status, startDate: existingTraining.startDate, endDate: existingTraining.endDate },
+      after: { status: training.status, startDate: training.startDate, endDate: training.endDate, fields: Object.keys(updateData) },
+    });
+
+    // Sessions are not moved automatically when the dates change; tell the admin
+    // which ones now fall outside the training (#91).
+    const sessionsOutside = sessionsOutsideTraining(training.sessions || [], training).length;
+
     return NextResponse.json({
       success: true,
       training,
+      sessionsOutside,
     });
   } catch (error) {
     console.error('Error updating training:', error);

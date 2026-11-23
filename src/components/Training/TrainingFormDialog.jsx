@@ -31,6 +31,7 @@ import {
   School as TrainingIcon,
 } from '@mui/icons-material';
 import { DEPARTMENTS } from '@/lib/departments';
+import { buildDeliveryFields } from '@/lib/training-sessions';
 import {
   buildLocationPayload,
   buildSchedulePayload,
@@ -111,6 +112,13 @@ function buildDetailsPayload(form) {
   });
   if (location.error) return { error: location.error };
 
+  const delivery = buildDeliveryFields({
+    locationType: form.locationType,
+    locationAddress: form.locationAddress,
+    onlineLink: form.onlineLink,
+  });
+  if (delivery.error) return { error: delivery.error };
+
   return {
     payload: {
       title: form.title.trim(),
@@ -118,6 +126,9 @@ function buildDetailsPayload(form) {
       department: form.departments.join(', '),
       targetGroup: form.targetGroups,
       location: location.location,
+      deliveryMode: delivery.deliveryMode,
+      venue: delivery.venue,
+      onlineLink: delivery.onlineLink,
       startDate: schedule.startDate.toISOString(),
       endDate: schedule.endDate.toISOString(),
       maxParticipants: Number(form.maxParticipants) || 30,
