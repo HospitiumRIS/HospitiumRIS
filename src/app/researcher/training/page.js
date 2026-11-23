@@ -58,6 +58,41 @@ const STATUS_TONE = {
   COMPLETED: { bg: '#dcfce7', color: '#166534', label: 'Completed' },
   NOT_COMPLETED: { bg: '#fef3c7', color: '#92400e', label: 'Not completed' },
   CANCELLED: { bg: '#fee2e2', color: '#b91c1c', label: 'Cancelled' },
+  PENDING_APPROVAL: { bg: '#fef3c7', color: '#92400e', label: 'Awaiting approval' },
+  WAITLISTED: { bg: '#e0f2fe', color: '#075985', label: 'Waiting list' },
+  REJECTED: { bg: '#fee2e2', color: '#b91c1c', label: 'Not approved' },
+};
+
+const formatDateTime = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+};
+
+// What the main button does for someone not yet holding a place (#102).
+function enrolmentAction(training) {
+  const status = training.userRegistration?.status;
+  if (status === 'PENDING_APPROVAL' || status === 'WAITLISTED' || status === 'REJECTED') return { show: false };
+  const now = Date.now();
+  if (training.eligibility && !training.eligibility.ok) return { show: true, disabled: true, label: 'Not eligible' };
+  if (training.registrationOpensAt && new Date(training.registrationOpensAt).getTime() > now) {
+    return { show: true, disabled: true, label: 'Registration not open yet' };
+  }
+  const closes = [training.registrationClosesAt, training.startDate].filter(Boolean).map((d) => new Date(d).getTime());
+  if (closes.length && Math.min(...closes) <= now) return { show: true, disabled: true, label: 'Registration closed' };
+  if ((training.remainingSlots ?? 0) <= 0) {
+    return training.waitlistEnabled
+      ? { show: true, label: 'Join waiting list' }
+      : { show: true, disabled: true, label: 'Training is full' };
+  }
+  return { show: true, label: training.requiresApproval ? 'Request a place' : 'Register' };
+}
+
+const CANCEL_LABELS = {
+  REGISTERED: 'Cancel registration',
+  PENDING_APPROVAL: 'Withdraw request',
+  WAITLISTED: 'Leave waiting list',
 };
 
 const formatDate = (value) => {
@@ -162,6 +197,7 @@ export default function TrainingPage() {
   const [selectedTraining, setSelectedTraining] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [registering, setRegistering] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [search, setSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [tab, setTab] = useState(0);
@@ -253,6 +289,7 @@ export default function TrainingPage() {
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || 'Failed to load training');
       setSelectedTraining(data.training);
+      setConfirmCancel(false);
       setDetailsOpen(true);
     } catch (err) {
       setError(err.message || 'Failed to load training details');
@@ -284,13 +321,41 @@ export default function TrainingPage() {
       if (!response.ok || !data.success) throw new Error(data.error || 'Failed to register');
       setDetailsOpen(false);
       setSelectedTraining(null);
-      setNotice('You are registered. This training now appears under My trainings.');
+      const outcome = data.registration?.status;
+      setNotice(outcome === 'WAITLISTED'
+        ? 'The training is full, so you are on the waiting list. We will email you if a place opens.'
+        : outcome === 'PENDING_APPROVAL'
+          ? 'Request sent. A place is held for you while the training team reviews it.'
+          : 'You are registered. This training now appears under My trainings.');
       setTab(0);
       await loadTrainings();
     } catch (err) {
       setError(err.message || 'Failed to register for training');
     } finally {
       setRegistering(false);
+    }
+  };
+
+  const handleCancelRegistration = async () => {
+    if (!selectedTraining) return;
+    if (!confirmCancel) {
+      setConfirmCancel(true);
+      return;
+    }
+    try {
+      setRegistering(true);
+      const response = await fetch(`/api/training/${selectedTraining.id}/register`, { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Could not cancel');
+      setDetailsOpen(false);
+      setSelectedTraining(null);
+      setNotice('Done. Your place has been released.');
+      await loadTrainings();
+    } catch (err) {
+      setError(err.message || 'Could not cancel');
+    } finally {
+      setRegistering(false);
+      setConfirmCancel(false);
     }
   };
 
@@ -367,7 +432,9 @@ export default function TrainingPage() {
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 'auto' }}>
             <Chip size="small" label={`${training.moduleCount ?? training.modules?.length ?? 0} modules`} sx={{ bgcolor: alpha(PURPLE, 0.08), color: PURPLE, fontWeight: 700 }} />
             <Typography variant="caption" sx={{ fontWeight: 700, color: (training.remainingSlots ?? 0) > 0 ? '#166534' : '#b91c1c' }}>
-              {(training.remainingSlots ?? 0) > 0 ? `${training.remainingSlots} seats left` : 'Full'}
+              {(training.remainingSlots ?? 0) > 0
+                ? `${training.remainingSlots} seats left`
+                : training.waitlistEnabled ? 'Full · waiting list open' : 'Full'}
             </Typography>
           </Stack>
         )}
@@ -576,9 +643,44 @@ export default function TrainingPage() {
                     <Typography variant="caption" color="text.secondary">Capacity</Typography>
                     <Typography variant="body2" sx={{ fontWeight: 700 }}>
                       {selectedTraining.remainingSlots} of {selectedTraining.maxParticipants} seats left
+                      {selectedTraining.waitlistCount ? ` · ${selectedTraining.waitlistCount} waiting` : ''}
                     </Typography>
                   </Paper>
                 </Stack>
+                {selectedTraining.userRegistration?.status === 'WAITLISTED' ? (
+                  <Alert severity="info">
+                    You are on the waiting list{selectedTraining.myWaitlistPosition ? ` (position ${selectedTraining.myWaitlistPosition})` : ''}. We will email you if a place opens.
+                  </Alert>
+                ) : selectedTraining.userRegistration?.status === 'PENDING_APPROVAL' ? (
+                  <Alert severity="warning">Your request is waiting for the training team to approve it. A place is held for you meanwhile.</Alert>
+                ) : selectedTraining.userRegistration?.status === 'REJECTED' ? (
+                  <Alert severity="error">
+                    Your request was not approved{selectedTraining.userRegistration.rejectedReason ? `: ${selectedTraining.userRegistration.rejectedReason}` : '.'}
+                  </Alert>
+                ) : null}
+                {selectedTraining.eligibility && !selectedTraining.eligibility.ok && !selectedTraining.isRegistered ? (
+                  <Alert severity="warning">{selectedTraining.eligibility.reasons.join(' · ')}</Alert>
+                ) : null}
+                {(selectedTraining.requiresApproval || selectedTraining.waitlistEnabled || selectedTraining.registrationClosesAt
+                  || selectedTraining.registrationOpensAt || selectedTraining.cancellationDeadline || selectedTraining.prerequisites?.length) ? (
+                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>Enrolment</Typography>
+                    <Stack spacing={0.4}>
+                      {selectedTraining.registrationOpensAt ? <Typography variant="body2">Registration opens {formatDateTime(selectedTraining.registrationOpensAt)}</Typography> : null}
+                      {selectedTraining.registrationClosesAt ? <Typography variant="body2">Registration closes {formatDateTime(selectedTraining.registrationClosesAt)}</Typography> : null}
+                      {selectedTraining.requiresApproval ? <Typography variant="body2">Places are confirmed by the training team</Typography> : null}
+                      {selectedTraining.waitlistEnabled ? (
+                        <Typography variant="body2">
+                          Waiting list when full{selectedTraining.waitlistCount ? ` (${selectedTraining.waitlistCount} waiting)` : ''}
+                        </Typography>
+                      ) : null}
+                      {selectedTraining.cancellationDeadline ? <Typography variant="body2">Cancel by {formatDateTime(selectedTraining.cancellationDeadline)}</Typography> : null}
+                      {selectedTraining.prerequisites?.length ? (
+                        <Typography variant="body2">Requires: {selectedTraining.prerequisites.map((t) => t.title).join(', ')}</Typography>
+                      ) : null}
+                    </Stack>
+                  </Paper>
+                ) : null}
                 {asList(selectedTraining.targetGroup).length ? (
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                     {asList(selectedTraining.targetGroup).map((group) => (
@@ -727,17 +829,31 @@ export default function TrainingPage() {
               </Stack>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>
-              <Button onClick={() => setDetailsOpen(false)} disabled={registering} sx={{ textTransform: 'none' }}>Close</Button>
-              {!selectedTraining.isRegistered ? (
+              {CANCEL_LABELS[selectedTraining.userRegistration?.status] && new Date(selectedTraining.startDate) > new Date() ? (
                 <Button
-                  variant="contained"
-                  onClick={handleRegister}
-                  disabled={registering || selectedTraining.remainingSlots <= 0}
-                  sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 }}
+                  color="error"
+                  onClick={handleCancelRegistration}
+                  disabled={registering}
+                  sx={{ textTransform: 'none', mr: 'auto' }}
                 >
-                  {registering ? 'Registering...' : selectedTraining.remainingSlots <= 0 ? 'Session is full' : 'Register'}
+                  {confirmCancel ? 'Tap again to confirm' : CANCEL_LABELS[selectedTraining.userRegistration.status]}
                 </Button>
-              ) : selectedTraining.userRegistration?.certificate?.certificateUrl ? (
+              ) : null}
+              <Button onClick={() => setDetailsOpen(false)} disabled={registering} sx={{ textTransform: 'none' }}>Close</Button>
+              {!selectedTraining.isRegistered ? (() => {
+                const action = enrolmentAction(selectedTraining);
+                if (!action.show) return null;
+                return (
+                  <Button
+                    variant="contained"
+                    onClick={handleRegister}
+                    disabled={registering || action.disabled}
+                    sx={{ bgcolor: PURPLE, textTransform: 'none', fontWeight: 700 }}
+                  >
+                    {registering ? 'Sending...' : action.label}
+                  </Button>
+                );
+              })() : selectedTraining.userRegistration?.certificate?.certificateUrl ? (
                 <Button
                   variant="contained"
                   startIcon={<CertificateIcon />}

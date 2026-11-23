@@ -7,6 +7,7 @@ import { renderBrandedEmail } from './email-layout.js';
 
 export const TRAINING_EMAIL_KINDS = [
   'REGISTRATION_CONFIRMED',
+  'REGISTRATION_PENDING',
   'WAITLISTED',
   'PROMOTED_FROM_WAITLIST',
   'REGISTRATION_APPROVED',
@@ -28,6 +29,7 @@ export const TRAINING_EMAIL_KINDS = [
 /** In-app notification type (existing NotificationType enum values). */
 const NOTIFICATION_TYPE = {
   REGISTRATION_CONFIRMED: 'TRAINING_REGISTERED',
+  REGISTRATION_PENDING: 'TRAINING_REGISTERED',
   WAITLISTED: 'TRAINING_REGISTERED',
   PROMOTED_FROM_WAITLIST: 'TRAINING_REGISTERED',
   REGISTRATION_APPROVED: 'TRAINING_REGISTERED',
@@ -111,6 +113,14 @@ export function buildTrainingEmail(kind, data) {
       note = 'You will get a reminder before each session. You can cancel from My trainings until the training starts.';
       message = `Your place on "${title}" is confirmed.`;
       break;
+    case 'REGISTRATION_PENDING':
+      subject = `Request received: ${title}`;
+      heading = 'Your request is awaiting approval';
+      paragraphs = [`Your request to join "${title}" has been received. A place is held for you while the training team reviews it.`];
+      details.push(['Dates', trainingDates(t, tz)]);
+      note = 'You will get an email when it is approved or declined.';
+      message = `Your request to join "${title}" is awaiting approval.`;
+      break;
     case 'WAITLISTED':
       subject = `You're on the waiting list: ${title}`;
       heading = "You're on the waiting list";
@@ -120,8 +130,10 @@ export function buildTrainingEmail(kind, data) {
       break;
     case 'PROMOTED_FROM_WAITLIST':
       subject = `A place opened up: ${title}`;
-      heading = 'You have a place';
-      paragraphs = [`A place opened up on "${title}" and it is now yours.`];
+      heading = data.awaitingApproval ? 'You moved up from the waiting list' : 'You have a place';
+      paragraphs = [data.awaitingApproval
+        ? `A place opened up on "${title}". It is held for you while the training team approves your request.`
+        : `A place opened up on "${title}" and it is now yours.`];
       details.push(['Dates', trainingDates(t, tz)]);
       message = `A place opened up on "${title}"; you are now registered.`;
       break;

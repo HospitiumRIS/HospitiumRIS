@@ -1,20 +1,15 @@
 import { NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
 import prisma from '../../../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../../../lib/auth-server';
 import { requireTrainingAdminAccess } from '@/lib/training-admin-server';
-import { ACTIVE_REGISTRATION_STATUSES } from '@/lib/training-scope';
 import {
   MODULE_PROGRESS_STATUSES,
   checkRegistrationTransition,
-  hasCapacity,
   isValidModuleProgressStatus,
-  transitionTakesSeat,
 } from '@/lib/training-registration-state';
 import { auditTraining } from '@/lib/training-audit';
-import { notifyTraining } from '@/lib/training-notify';
-import { autoIssueCertificates } from '@/lib/training-certificates-server';
 import { recomputeAttendancePercent } from '@/lib/training-attendance-server';
+import { applyRegistrationStatus } from '@/lib/training-registration-server';
 
 /**
  * PUT /api/training/[id]/registrations/[regId]
@@ -83,87 +78,26 @@ export async function PUT(request, { params }) {
       progressUpdates = moduleProgress;
     }
 
-    const changeStatus = transition && !transition.noop;
-    const outcome = await prisma.$transaction(async (tx) => {
-      if (changeStatus) {
-        // Reinstating a cancelled registration takes a seat: check capacity under a
-        // row lock on the training.
-        if (transitionTakesSeat(registration.status, status)) {
-          await tx.$queryRaw`SELECT "id" FROM "trainings" WHERE "id" = ${id} FOR UPDATE`;
-          const activeCount = await tx.trainingRegistration.count({
-            where: { trainingId: id, status: { in: ACTIVE_REGISTRATION_STATUSES }, id: { not: regId } },
+    // Status: one shared path for the menu and bulk actions (#102).
+    if (status !== undefined) {
+      const applied = await applyRegistrationStatus(registration, status, { actor: user, reason });
+      if (!applied.ok) return NextResponse.json({ error: applied.error }, { status: 400 });
+    }
+
+    if (progressUpdates.length) {
+      const now = new Date();
+      await prisma.$transaction(async (tx) => {
+        for (const { moduleId, status: progressStatus } of progressUpdates) {
+          await tx.trainingModuleProgress.upsert({
+            where: { registrationId_moduleId: { registrationId: regId, moduleId } },
+            update: { status: progressStatus, completedAt: progressStatus === 'COMPLETED' ? now : null },
+            create: { registrationId: regId, moduleId, status: progressStatus, completedAt: progressStatus === 'COMPLETED' ? now : null },
           });
-          if (!hasCapacity(registration.training, activeCount)) {
-            return { error: 'Training is full', status: 400 };
-          }
         }
-        // Completing or failing someone by hand is an override (#96): the completion
-        // engine leaves it alone. Back to REGISTERED hands it back to the engine.
-        const data = { status };
-        if (status === 'COMPLETED' || status === 'NOT_COMPLETED') {
-          data.completionOverride = {
-            type: status === 'COMPLETED' ? 'COMPLETE' : 'INCOMPLETE',
-            reason: typeof reason === 'string' && reason.trim() ? reason.trim().slice(0, 500) : 'Set manually',
-            by: user.id,
-            at: new Date().toISOString(),
-          };
-          data.completedAt = status === 'COMPLETED' ? new Date() : null;
-        } else if (status === 'REGISTERED') {
-          data.completionOverride = Prisma.DbNull;
-          data.completedAt = null;
-        }
-        await tx.trainingRegistration.update({
-          where: { id: regId },
-          data,
-        });
-      }
-
-      for (const { moduleId, status: progressStatus } of progressUpdates) {
-        await tx.trainingModuleProgress.upsert({
-          where: { registrationId_moduleId: { registrationId: regId, moduleId } },
-          update: {
-            status: progressStatus,
-            completedAt: progressStatus === 'COMPLETED' ? new Date() : null,
-          },
-          create: {
-            registrationId: regId,
-            moduleId,
-            status: progressStatus,
-            completedAt: progressStatus === 'COMPLETED' ? new Date() : null,
-          },
-        });
-      }
-      return {};
-    });
-
-    if (outcome.error) {
-      return NextResponse.json({ error: outcome.error }, { status: outcome.status });
-    }
-
-    if (changeStatus) {
-      await recomputeAttendancePercent(id, [regId]);
-      const note = typeof reason === 'string' && reason.trim() ? reason.trim().slice(0, 500) : null;
-      if (status === 'CANCELLED') {
-        await notifyTraining('REGISTRATION_CANCELLED', { userId: registration.userId, trainingId: id, extra: { reason: note } });
-      } else if (registration.status === 'CANCELLED' && status === 'REGISTERED') {
-        await notifyTraining('REGISTRATION_CONFIRMED', { userId: registration.userId, trainingId: id });
-      } else if (status === 'COMPLETED') {
-        await notifyTraining('TRAINING_COMPLETED', { userId: registration.userId, trainingId: id, dedupeKey: `completed:${regId}` });
-        await autoIssueCertificates(id, [regId]);
-      } else if (status === 'NOT_COMPLETED') {
-        await notifyTraining('TRAINING_NOT_COMPLETED', { userId: registration.userId, trainingId: id, dedupeKey: `not-completed:${regId}` });
-      }
-      await auditTraining({
-        trainingId: id,
-        actorId: user.id,
-        action: 'REGISTRATION_STATUS_CHANGED',
-        entityType: 'TrainingRegistration',
-        entityId: regId,
-        before: { status: registration.status },
-        after: { status },
-        reason: typeof reason === 'string' ? reason.slice(0, 500) : null,
       });
+      await recomputeAttendancePercent(id, [regId], { actorId: user.id });
     }
+
     if (progressUpdates.length) {
       await auditTraining({
         trainingId: id,
