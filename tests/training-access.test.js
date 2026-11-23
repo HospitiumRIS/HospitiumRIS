@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { canReadTrainingMaterial, canReadTrainingCertificate } from '../src/lib/training-access.js';
 
 describe('canReadTrainingMaterial', () => {
-  const training = { id: 't1', institutionId: 'inst-a' };
+  const training = { id: 't1', institutionId: 'inst-a', status: 'PUBLISHED', openToOtherInstitutions: false };
 
   it('allows public materials for same-tenant researchers', async () => {
     const user = { id: 'u1', accountType: 'RESEARCHER', secondaryInstitutionId: 'inst-a' };
@@ -19,7 +19,7 @@ describe('canReadTrainingMaterial', () => {
 });
 
 describe('canReadTrainingCertificate', () => {
-  const training = { id: 't1', institutionId: 'inst-a' };
+  const training = { id: 't1', institutionId: 'inst-a', status: 'PUBLISHED', openToOtherInstitutions: false };
 
   it('allows certificate owner', async () => {
     const user = { id: 'u1', accountType: 'RESEARCHER', secondaryInstitutionId: 'inst-a' };

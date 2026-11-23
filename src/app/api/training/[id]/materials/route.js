@@ -6,10 +6,10 @@ import {
   saveTrainingMaterial,
 } from '../../../../../lib/training-files';
 import {
-  isTrainingAdmin,
   requireTrainingAdminAccess,
-  userHasTrainingInstitutionAccess,
+  resolveTrainingViewer,
 } from '@/lib/training-admin-server';
+import { canSeeMaterial } from '@/lib/training-scope';
 
 /**
  * GET /api/training/[id]/materials
@@ -39,23 +39,15 @@ export async function GET(request, { params }) {
       );
     }
 
-    const hasAccess = await userHasTrainingInstitutionAccess(user, training.institutionId);
-
-    if (!hasAccess) {
+    // Same visibility as the training itself (#88), including shared-catalogue
+    // trainings and the caller's own registrations.
+    const viewer = await resolveTrainingViewer(user, training);
+    if (!viewer.canView) {
       return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
+        { error: 'Training not found' },
+        { status: 404 }
       );
     }
-
-    const userRegistration = await prisma.trainingRegistration.findUnique({
-      where: {
-        trainingId_userId: {
-          trainingId: id,
-          userId: user.id,
-        },
-      },
-    });
 
     const materials = await prisma.trainingMaterial.findMany({
       where: { trainingId: id },
@@ -67,12 +59,9 @@ export async function GET(request, { params }) {
       orderBy: { createdAt: 'desc' },
     });
 
-    const filteredMaterials = materials.filter((material) => {
-      if (isTrainingAdmin(user)) return true;
-      if (material.accessLevel === 'PUBLIC') return true;
-      if (material.accessLevel === 'REGISTERED_ONLY' && userRegistration) return true;
-      return false;
-    });
+    // Admins of other institutions are no longer treated as admins here, and a
+    // cancelled registration no longer unlocks registered-only materials (#89).
+    const filteredMaterials = materials.filter((material) => canSeeMaterial(material, viewer));
 
     return NextResponse.json({
       success: true,

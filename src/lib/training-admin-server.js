@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getOwnedInstitution } from '@/lib/institution-admin';
 import { TRAINING_ADMIN_TYPES, trainingBelongsToInstitution } from '@/lib/training-admin';
-import { trainingUserInstitutionId } from '@/lib/training-scope';
+import prisma from '@/lib/prisma';
+import { canViewTraining, isOwningTrainingAdmin, trainingUserInstitutionId } from '@/lib/training-scope';
 
 export async function resolveTrainingInstitution(user) {
   const institution = await getOwnedInstitution(user);
@@ -51,4 +52,19 @@ export async function requireTrainingAdminAccess(user, training) {
   }
 
   return { institution };
+}
+/**
+ * Everything a route needs to decide what this user may see of one training (#89):
+ * scope context, own registration, whether they administer it, whether they can view it.
+ */
+export async function resolveTrainingViewer(user, training) {
+  const scopeCtx = await resolveTrainingScopeContext(user);
+  const registration = user && training
+    ? await prisma.trainingRegistration.findUnique({
+        where: { trainingId_userId: { trainingId: training.id, userId: user.id } },
+      })
+    : null;
+  const isAdmin = isOwningTrainingAdmin(user, training, scopeCtx);
+  const canView = isAdmin || canViewTraining(user, training, { ...scopeCtx, hasRegistration: Boolean(registration) });
+  return { scopeCtx, registration, isAdmin, canView };
 }

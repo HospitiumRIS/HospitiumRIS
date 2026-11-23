@@ -1,55 +1,65 @@
 import prisma from './prisma.js';
-import { resolveTenantId } from './tenant.js';
+import {
+  canSeeMaterial,
+  canViewTraining,
+  isGlobalAdmin,
+  isOwningTrainingAdmin,
+  isTrainingAdminUser,
+  trainingUserInstitutionId,
+} from './training-scope.js';
 
-async function userHasTrainingAccess(user, training) {
-  if (!user || !training) return false;
-
-  const userTenant = resolveTenantId(user);
-  if (user.accountType === 'GLOBAL_ADMIN') return true;
-
-  if (userTenant && training.institutionId === userTenant) return true;
-
-  if (user.accountType === 'RESEARCH_ADMIN' || user.accountType === 'INSTITUTION_ADMIN') {
+/**
+ * Institution context for training rules. Admins resolve to the institution they own
+ * (or their verified link); everyone else to their verified link.
+ */
+async function trainingScopeContext(user) {
+  let institutionId = trainingUserInstitutionId(user);
+  if (isTrainingAdminUser(user)) {
     const owned = await prisma.institution.findUnique({
       where: { userId: user.id },
       select: { id: true },
     });
-    return training.institutionId === owned?.id;
+    institutionId = owned?.id || institutionId;
   }
+  return { institutionId };
+}
 
-  return userTenant === training.institutionId;
+async function findOwnRegistration(user, trainingId) {
+  return prisma.trainingRegistration.findUnique({
+    where: { trainingId_userId: { trainingId, userId: user.id } },
+  });
 }
 
 /**
- * Mirror listing rules from GET /api/training/[id]/materials.
+ * Same rules as GET /api/training/[id] and its materials list (#88, #89):
+ * the training must be visible to the caller; registered-only materials need an
+ * active registration unless the caller administers the owning institution.
  */
 export async function canReadTrainingMaterial(user, material) {
   if (!user || !material?.training) return false;
-  if (!(await userHasTrainingAccess(user, material.training))) return false;
+  const training = material.training;
+  if (isGlobalAdmin(user)) return true;
 
-  if (user.accountType === 'RESEARCH_ADMIN') return true;
-  if (material.accessLevel === 'PUBLIC') return true;
+  const ctx = await trainingScopeContext(user);
+  const isAdmin = isOwningTrainingAdmin(user, training, ctx);
+  if (isAdmin) return true;
 
-  if (material.accessLevel === 'REGISTERED_ONLY') {
-    const registration = await prisma.trainingRegistration.findUnique({
-      where: {
-        trainingId_userId: {
-          trainingId: material.trainingId,
-          userId: user.id,
-        },
-      },
-    });
-    return Boolean(registration);
+  const needsRegistration = material.accessLevel !== 'PUBLIC' || !canViewTraining(user, training, ctx);
+  const registration = needsRegistration ? await findOwnRegistration(user, training.id) : null;
+
+  if (!canViewTraining(user, training, { ...ctx, hasRegistration: Boolean(registration) })) {
+    return false;
   }
-
-  return false;
+  return canSeeMaterial(material, { isAdmin: false, registration });
 }
 
+/** Own certificate, or an admin of the institution that owns the training. */
 export async function canReadTrainingCertificate(user, certificate) {
   if (!user || !certificate?.training) return false;
   if (certificate.userId === user.id) return true;
-  if (!(await userHasTrainingAccess(user, certificate.training))) return false;
-  return ['RESEARCH_ADMIN', 'INSTITUTION_ADMIN', 'GLOBAL_ADMIN'].includes(user.accountType);
+  if (isGlobalAdmin(user)) return true;
+  const ctx = await trainingScopeContext(user);
+  return isOwningTrainingAdmin(user, certificate.training, ctx);
 }
 
 export async function canAccessTrainingStoredFile(user, row) {

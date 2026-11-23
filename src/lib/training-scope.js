@@ -92,3 +92,53 @@ export function isOwningTrainingAdmin(user, training, ctx = {}) {
   const institutionId = ctx.institutionId ?? null;
   return Boolean(institutionId) && training.institutionId === institutionId;
 }
+
+/** Registration statuses that grant access to registered-only content (#89). */
+export const ACTIVE_REGISTRATION_STATUSES = ['REGISTERED', 'COMPLETED'];
+
+export function isActiveRegistration(registration) {
+  return Boolean(registration) && ACTIVE_REGISTRATION_STATUSES.includes(registration.status);
+}
+
+/**
+ * Can this viewer read this material?
+ * @param {object} material  needs accessLevel
+ * @param {{ isAdmin: boolean, registration: object|null }} viewer
+ *   isAdmin: owning institution's training admin (or global admin)
+ */
+export function canSeeMaterial(material, viewer) {
+  if (!material) return false;
+  if (viewer?.isAdmin) return true;
+  if (material.accessLevel === 'PUBLIC') return true;
+  if (material.accessLevel === 'REGISTERED_ONLY') return isActiveRegistration(viewer?.registration);
+  return false;
+}
+
+/**
+ * Shape a training (loaded with registrations) for the viewer. Only the owning
+ * institution's admins get the roster; everyone else gets counts and their own
+ * registration (#89).
+ */
+export function shapeTrainingForViewer(training, user, { isAdmin }) {
+  const registrations = training.registrations || [];
+  const userRegistration = registrations.find((r) => r.userId === user?.id) || null;
+  const activeCount = registrations.filter(isActiveRegistration).length;
+  const materials = (training.materials || []).filter((material) =>
+    canSeeMaterial(material, { isAdmin, registration: userRegistration })
+  );
+
+  const shaped = {
+    ...training,
+    materials,
+    registrationCount: activeCount,
+    remainingSlots: training.maxParticipants - activeCount,
+    isRegistered: isActiveRegistration(userRegistration),
+    userRegistration,
+  };
+
+  if (!isAdmin) {
+    delete shaped.registrations;
+    if (shaped._count) shaped._count = { ...shaped._count, registrations: activeCount };
+  }
+  return shaped;
+}
