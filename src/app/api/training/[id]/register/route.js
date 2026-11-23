@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../../lib/auth-server';
+import { resolveTrainingScopeContext } from '@/lib/training-admin-server';
+import { canRegisterForTraining, canViewTraining } from '@/lib/training-scope';
 
 /**
  * POST /api/training/[id]/register
@@ -44,11 +46,20 @@ export async function POST(request, { params }) {
       );
     }
 
-    // TODO(institution-filtering): Institution match is temporarily disabled
-    // so any authenticated researcher can register for any published training
-    // regardless of institution. Re-enable by restoring the check here once
-    // institution assignment is reliable — keep this in sync with
-    // /api/training, /api/training/my, and /api/training/[id].
+    // Tenant scoping (#88): only trainings the caller can see can be registered for.
+    const scopeCtx = await resolveTrainingScopeContext(user);
+    if (training.status === 'PUBLISHED' && !canRegisterForTraining(user, training, scopeCtx)) {
+      return NextResponse.json(
+        { error: 'Training not found' },
+        { status: 404 }
+      );
+    }
+    if (training.status !== 'PUBLISHED' && !canViewTraining(user, training, scopeCtx)) {
+      return NextResponse.json(
+        { error: 'Training not found' },
+        { status: 404 }
+      );
+    }
 
     // Check if training is published
     if (training.status !== 'PUBLISHED') {

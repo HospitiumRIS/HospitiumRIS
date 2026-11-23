@@ -87,6 +87,7 @@ export function hydrateTrainingForm(initialTraining) {
       ? Number(initialTraining.maxParticipants)
       : 30,
     status: initialTraining.status || 'PUBLISHED',
+    openToOtherInstitutions: initialTraining.openToOtherInstitutions === true,
   };
 }
 
