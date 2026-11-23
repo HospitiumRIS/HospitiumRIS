@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { auditTraining } from '@/lib/training-audit';
 import { ACTIVE_REGISTRATION_STATUSES } from '@/lib/training-scope';
 import { recomputeAttendancePercent } from '@/lib/training-attendance-server';
-import { requireSessionAdmin } from '@/lib/training-sessions-server';
+import { requireSessionStaff } from '@/lib/training-sessions-server';
 import {
   defaultMinMinutes,
   parseAttendanceReport,
@@ -26,7 +26,7 @@ const MAX_TEXT = 2 * 1024 * 1024;
 export async function POST(request, { params }) {
   try {
     const { id, sid } = await params;
-    const access = await requireSessionAdmin(request, id);
+    const access = await requireSessionStaff(request, id, sid);
     if (access.error) return access.error;
     const { user } = access;
 

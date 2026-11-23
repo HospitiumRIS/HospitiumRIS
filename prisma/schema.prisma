@@ -137,6 +137,7 @@ model User {
   // Notification Preferences
   notificationPreferences NotificationPreference?
 
+  trainingFacilitations TrainingFacilitator[] @relation("TrainingFacilitatorUser")
   @@index([status, deletedAt])
   @@map("users")
 }
@@ -2070,6 +2071,7 @@ model Training {
   sessions      TrainingSession[]
   certificateTemplate TrainingCertificateTemplate? @relation(fields: [certificateTemplateId], references: [id], onDelete: SetNull)
 
+  facilitators TrainingFacilitator[]
   @@index([institutionId, status])
   @@index([status, openToOtherInstitutions])
   @@map("trainings")
@@ -2248,6 +2250,7 @@ model TrainingSession {
   module     TrainingModule?      @relation(fields: [moduleId], references: [id], onDelete: SetNull)
   attendance TrainingAttendance[]
 
+  facilitators TrainingFacilitator[]
   @@index([trainingId, startsAt])
   @@index([moduleId])
   @@map("training_sessions")
@@ -3081,4 +3084,36 @@ model Session {
   @@index([userId])
   @@index([expiresAt])
   @@map("sessions")
+}
+
+// Facilitators of a training or one of its sessions (#104). Internal (userId) or an
+// external guest (name/email). sessionId null = every session of the training.
+enum TrainingFacilitatorRole {
+  LEAD
+  CO_FACILITATOR
+  GUEST
+}
+
+model TrainingFacilitator {
+  id                String                  @id @default(cuid())
+  trainingId        String
+  sessionId         String?
+  userId            String?
+  name              String?
+  email             String?
+  title             String?
+  role              TrainingFacilitatorRole @default(CO_FACILITATOR)
+  showOnCertificate Boolean                 @default(true)
+  createdBy         String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  training Training         @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  session  TrainingSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user     User?            @relation("TrainingFacilitatorUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([trainingId])
+  @@index([sessionId])
+  @@index([userId])
+  @@map("training_facilitators")
 }

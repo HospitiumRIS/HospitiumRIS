@@ -4,11 +4,11 @@ import { auditTraining } from '@/lib/training-audit';
 import { ACTIVE_REGISTRATION_STATUSES } from '@/lib/training-scope';
 import { bulkMarkRecords, validateAttendanceUpdate } from '@/lib/training-attendance';
 import { recomputeAttendancePercent } from '@/lib/training-attendance-server';
-import { requireSessionAdmin } from '@/lib/training-sessions-server';
+import { requireSessionStaff } from '@/lib/training-sessions-server';
 
 /**
  * PUT /api/training/[id]/sessions/[sid]/attendance
- * Mark attendance for one session (training admin only, #92).
+ * Mark attendance for one session (training admin, or a facilitator of this session #104; #92).
  *
  * Body, either:
  *   { records: [{ registrationId, status: PRESENT|LATE|ABSENT|EXCUSED|null, note? }] }
@@ -18,7 +18,7 @@ import { requireSessionAdmin } from '@/lib/training-sessions-server';
 export async function PUT(request, { params }) {
   try {
     const { id, sid } = await params;
-    const access = await requireSessionAdmin(request, id);
+    const access = await requireSessionStaff(request, id, sid);
     if (access.error) return access.error;
     const { user } = access;
 

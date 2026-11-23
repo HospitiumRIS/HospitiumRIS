@@ -2677,6 +2677,8 @@
     "training_browse_desc": "报名培训并跟踪进度",
     "training_certificates": "我的证书",
     "training_certificates_desc": "下载已获得的证书",
+    "training_facilitating": "Facilitating",
+    "training_facilitating_desc": "Your sessions: check-in screen and register",
     "training_mine": "我的培训",
     "training_mine_desc": "查看已报名培训及进度",
     "training_checkin": "Session Check-in",

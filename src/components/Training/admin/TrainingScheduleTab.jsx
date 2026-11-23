@@ -43,6 +43,8 @@ import {
   InstitutionModalHeader,
   InstitutionModalSection,
 } from '@/components/GlobalAdmin/InstitutionModalShell';
+import TrainingFacilitatorsPanel from './TrainingFacilitatorsPanel';
+import { sortFacilitators } from '@/lib/training-facilitators';
 import {
   DELIVERY_MODES,
   DELIVERY_MODE_LABELS,
@@ -109,7 +111,7 @@ function draftFromSession(session) {
   };
 }
 
-function SessionRow({ session, onEdit, onToggleCancel, onDelete, onPresent, busy }) {
+function SessionRow({ session, facilitators = [], onEdit, onToggleCancel, onDelete, onPresent, busy }) {
   const cancelled = session.status === 'CANCELLED';
   const where = session.effective?.deliveryMode === 'ONLINE'
     ? (session.effective?.onlineLink ? 'Online meeting' : 'Online (no link yet)')
@@ -137,6 +139,11 @@ function SessionRow({ session, onEdit, onToggleCancel, onDelete, onPresent, busy
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography variant="body2" sx={{ fontWeight: 700 }}>{session.title}</Typography>
         <Typography variant="caption" color="text.secondary">{where}</Typography>
+        {facilitators.length ? (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+            Facilitated by {facilitators.map((f) => f.name).join(', ')}
+          </Typography>
+        ) : null}
         <Stack direction="row" spacing={0.75} sx={{ mt: 0.75, flexWrap: 'wrap', rowGap: 0.75 }}>
           <Chip size="small" label={DELIVERY_MODE_LABELS[session.deliveryMode] || session.deliveryMode} sx={{ bgcolor: alpha(PURPLE, 0.08), color: PURPLE, fontWeight: 700 }} />
           {session.module ? <Chip size="small" variant="outlined" label={`Module: ${session.module.title}`} /> : null}
@@ -247,6 +254,15 @@ export default function TrainingScheduleTab({ trainingId, training, modules = []
   const [confirm, setConfirm] = useState(null); // { type: 'delete'|'split', session? }
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState('');
+  const [facilitators, setFacilitators] = useState([]);
+
+  const loadFacilitators = useCallback(async () => {
+    const res = await fetch(`/api/training/${trainingId}/facilitators`, { credentials: 'include' });
+    const json = await res.json().catch(() => ({}));
+    if (json.success) setFacilitators(json.facilitators || []);
+  }, [trainingId]);
+
+  useEffect(() => { loadFacilitators(); }, [loadFacilitators]);
 
   const load = useCallback(async () => {
     try {
@@ -380,6 +396,8 @@ export default function TrainingScheduleTab({ trainingId, training, modules = []
         </Stack>
       </Paper>
 
+      <TrainingFacilitatorsPanel trainingId={trainingId} training={training} sessions={sessions} facilitators={facilitators} onChanged={loadFacilitators} />
+
       {outside.length ? (
         <Alert severity="warning" icon={<WarningIcon />} sx={{ borderRadius: 2 }}>
           {outside.length} session{outside.length === 1 ? '' : 's'} fall{outside.length === 1 ? 's' : ''} outside the training dates. Edit {outside.length === 1 ? 'it' : 'them'}, or change the training dates.
@@ -399,6 +417,7 @@ export default function TrainingScheduleTab({ trainingId, training, modules = []
                 <SessionRow
                   key={session.id}
                   session={session}
+                  facilitators={sortFacilitators(facilitators.filter((f) => !f.sessionId || f.sessionId === session.id))}
                   busy={busy}
                   onEdit={openEdit}
                   onToggleCancel={toggleCancel}

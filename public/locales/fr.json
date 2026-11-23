@@ -2677,6 +2677,8 @@
     "training_browse_desc": "S’inscrire aux formations et suivre votre progression",
     "training_certificates": "Mes certificats",
     "training_certificates_desc": "Télécharger les certificats obtenus",
+    "training_facilitating": "Animation",
+    "training_facilitating_desc": "Vos séances : écran d’enregistrement et liste de présence",
     "training_mine": "Mes formations",
     "training_mine_desc": "Voir les formations inscrites et la progression",
     "training_checkin": "Pointage de session",

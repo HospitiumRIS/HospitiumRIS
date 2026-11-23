@@ -2677,6 +2677,8 @@
     "training_browse_desc": "ลงทะเบียนอบรมและติดตามความคืบหน้า",
     "training_certificates": "ใบรับรองของฉัน",
     "training_certificates_desc": "ดาวน์โหลดใบรับรองที่ได้รับ",
+    "training_facilitating": "Facilitating",
+    "training_facilitating_desc": "Your sessions: check-in screen and register",
     "training_mine": "การอบรมของฉัน",
     "training_mine_desc": "ดูการอบรมที่ลงทะเบียนและความคืบหน้า",
     "training_checkin": "Session Check-in",

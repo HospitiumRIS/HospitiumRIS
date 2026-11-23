@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-server';
-import { requireTrainingAdminAccess, resolveTrainingViewer } from '@/lib/training-admin-server';
+import { isTrainingAdmin, requireTrainingAdminAccess, resolveTrainingViewer } from '@/lib/training-admin-server';
+import { facilitatesSession } from '@/lib/training-facilitators';
 import { isActiveRegistration } from '@/lib/training-scope';
 import { effectiveSessionDelivery } from '@/lib/training-sessions';
 
@@ -21,6 +22,36 @@ export async function requireSessionAdmin(request, trainingId) {
   const access = await requireTrainingAdminAccess(user, training);
   if (access.error) return { error: access.error };
   return { user, training };
+}
+
+/**
+ * Load a training and check the caller may run one of its sessions (#104): its admins,
+ * or an internal facilitator assigned to that session (or to the whole training).
+ * Anyone else gets a 404, so unassigned sessions don't reveal themselves.
+ * @returns {{ user, training, session, role: 'admin'|'facilitator' } | { error: NextResponse }}
+ */
+export async function requireSessionStaff(request, trainingId, sessionId) {
+  const user = await getAuthenticatedUser(request);
+  if (!user) {
+    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
+  const notFound = { error: NextResponse.json({ error: 'Session not found' }, { status: 404 }) };
+  const [training, session] = await Promise.all([
+    prisma.training.findUnique({ where: { id: trainingId } }),
+    prisma.trainingSession.findUnique({ where: { id: sessionId } }),
+  ]);
+  if (!training || !session || session.trainingId !== trainingId) return notFound;
+
+  if (isTrainingAdmin(user)) {
+    const access = await requireTrainingAdminAccess(user, training);
+    if (!access.error) return { user, training, session, role: 'admin' };
+  }
+  const facilitators = await prisma.trainingFacilitator.findMany({
+    where: { trainingId, userId: user.id },
+    select: { userId: true, sessionId: true },
+  });
+  if (facilitatesSession(facilitators, user.id, sessionId)) return { user, training, session, role: 'facilitator' };
+  return notFound;
 }
 
 /**

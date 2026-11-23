@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auditTraining } from '@/lib/training-audit';
 import { ACTIVE_REGISTRATION_STATUSES } from '@/lib/training-scope';
-import { requireSessionAdmin } from '@/lib/training-sessions-server';
+import { requireSessionStaff } from '@/lib/training-sessions-server';
 import {
   TOKEN_WINDOW_SECONDS,
   checkInSecret,
@@ -83,7 +83,7 @@ async function presentPayload(request, training, session) {
 export async function GET(request, { params }) {
   try {
     const { id, sid } = await params;
-    const access = await requireSessionAdmin(request, id);
+    const access = await requireSessionStaff(request, id, sid);
     if (access.error) return access.error;
 
     let session = await loadSession(id, sid);
@@ -115,7 +115,7 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
   try {
     const { id, sid } = await params;
-    const access = await requireSessionAdmin(request, id);
+    const access = await requireSessionStaff(request, id, sid);
     if (access.error) return access.error;
 
     const body = await request.json().catch(() => null);

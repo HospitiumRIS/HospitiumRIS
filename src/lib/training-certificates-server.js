@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { auditTraining } from '@/lib/training-audit';
 import { notifyTraining } from '@/lib/training-notify';
 import { saveTrainingCertificate, deleteTrainingFile } from '@/lib/training-files';
+import { certificateFacilitatorNames } from '@/lib/training-facilitators';
 import { buildCertificateValues, formatCertificateNumber, normalizeCertificatePrefix } from '@/lib/certificate-template';
 import { buildCertificatePdf } from '@/lib/certificate-pdf';
 import { templateForTraining } from '@/lib/certificate-templates-server';
@@ -82,6 +83,11 @@ export async function issueCertificate(registrationId, { actor = null, reissue =
 
   const owner = await storageOwner(actor, training);
   const institution = await prisma.institution.findUnique({ where: { id: training.institutionId }, select: { id: true, name: true } });
+  // {{facilitators}} merge field (#104).
+  const facilitators = await prisma.trainingFacilitator.findMany({
+    where: { trainingId: training.id },
+    include: { user: { select: { givenName: true, familyName: true, email: true } } },
+  });
   const template = await templateForTraining(training);
   const now = new Date();
 
@@ -104,6 +110,7 @@ export async function issueCertificate(registrationId, { actor = null, reissue =
     institution,
     completedAt: registration.completedAt || training.endDate,
     certificateNumber: cert.certificateNumber,
+    facilitators: certificateFacilitatorNames(facilitators),
   });
   const link = verifyUrl(appBaseUrl(), cert.verificationCode);
   const pdf = await buildCertificatePdf({
