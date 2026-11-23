@@ -4,6 +4,8 @@ import { getAuthenticatedUser } from '../../../lib/auth-server';
 import { normalizeTargetGroups, TRAINING_ADMIN_TYPES } from '@/lib/training-admin';
 import { resolveTrainingInstitution, resolveTrainingScopeContext } from '@/lib/training-admin-server';
 import { isActiveRegistration, trainingAdminListWhere, trainingVisibilityWhere } from '@/lib/training-scope';
+import { buildDailySessions, resolveTrainingDeliveryUpdate } from '@/lib/training-sessions';
+import { auditTraining } from '@/lib/training-audit';
 
 /**
  * GET /api/training
@@ -81,6 +83,11 @@ export async function GET(request) {
         department: training.department,
         targetGroup: training.targetGroup,
         location: training.location,
+        deliveryMode: training.deliveryMode,
+        venue: training.venue,
+        onlineLink: training.onlineLink,
+        code: training.code,
+        category: training.category,
         startDate: training.startDate,
         endDate: training.endDate,
         maxParticipants: training.maxParticipants,
@@ -159,6 +166,11 @@ export async function POST(request) {
       );
     }
 
+    const delivery = resolveTrainingDeliveryUpdate(body);
+    if (delivery.error) {
+      return NextResponse.json({ error: delivery.error }, { status: 400 });
+    }
+
     const ownInstitution = await resolveTrainingInstitution(user);
 
     if (!ownInstitution) {
@@ -175,7 +187,12 @@ export async function POST(request) {
         description,
         department,
         targetGroup: targetGroupArray,
-        location,
+        location: delivery.location ?? location ?? null,
+        deliveryMode: delivery.deliveryMode || 'IN_PERSON',
+        venue: delivery.venue ?? null,
+        onlineLink: delivery.onlineLink ?? null,
+        code: typeof body.code === 'string' ? body.code.trim() || null : null,
+        category: typeof body.category === 'string' ? body.category.trim() || null : null,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         maxParticipants: parseInt(maxParticipants),
@@ -193,6 +210,23 @@ export async function POST(request) {
           },
         },
       },
+    });
+
+    // Default schedule (#91): one session per day of the training. Admins can edit,
+    // add or split sessions afterwards in the Schedule tab.
+    const sessions = buildDailySessions(training);
+    if (sessions.length) {
+      await prisma.trainingSession.createMany({
+        data: sessions.map((session) => ({ ...session, trainingId: training.id, createdBy: user.id })),
+      });
+    }
+    await auditTraining({
+      trainingId: training.id,
+      actorId: user.id,
+      action: 'TRAINING_CREATED',
+      entityType: 'Training',
+      entityId: training.id,
+      after: { title: training.title, status: training.status, sessions: sessions.length },
     });
 
     return NextResponse.json({
