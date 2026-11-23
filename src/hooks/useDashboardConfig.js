@@ -38,6 +38,7 @@ import {
   NoteAdd as InternalGrantIcon,
   Shield as EthicsIcon,
   Gavel as EthicsReviewIcon,
+  QrCodeScanner as CheckInIcon,
   Science as TrialIcon,
   AppRegistration as RegistrationIcon,
   VerifiedUser as ComplianceIcon,
@@ -265,6 +266,7 @@ function buildResearcherConfig(t) {
           ]),
           category(t, 'nav_categories.my_training', [
             item(t, 'researcher.training_mine', 'researcher.training_mine_desc', '/researcher/training', <SchoolIcon sx={ICON_SM} />),
+            item(t, 'researcher.training_checkin', 'researcher.training_checkin_desc', '/researcher/training/check-in', <CheckInIcon sx={ICON_SM} />),
             item(t, 'researcher.training_certificates', 'researcher.training_certificates_desc', '/researcher/training/certificates', <AwardIcon sx={ICON_SM} />),
           ]),
         ],

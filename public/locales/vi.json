@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "Tải chứng chỉ đã đạt",
     "training_mine": "Đào tạo của tôi",
     "training_mine_desc": "Xem khóa đã đăng ký và tiến độ",
+    "training_checkin": "Session Check-in",
+    "training_checkin_desc": "Check in to a training session with the code on screen",
     "trial_approvals": "Phê duyệt quy định & đạo đức",
     "trial_approvals_desc": "Theo dõi phê duyệt IRB/đạo đức và hồ sơ quy định",
     "trial_intake": "Tiếp nhận & Đăng ký thử nghiệm",

@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "अर्जित प्रमाणपत्र डाउनलोड करें",
     "training_mine": "मेरे प्रशिक्षण",
     "training_mine_desc": "पंजीकृत प्रशिक्षण और प्रगति देखें",
+    "training_checkin": "Session Check-in",
+    "training_checkin_desc": "Check in to a training session with the code on screen",
     "trial_approvals": "नियामक और नैतिक स्वीकृतियाँ",
     "trial_approvals_desc": "IRB/नैतिकता स्वीकृतियाँ और नियामक प्रस्तुतियाँ ट्रैक करें",
     "trial_intake": "परीक्षण प्रवेश और पंजीकरण",

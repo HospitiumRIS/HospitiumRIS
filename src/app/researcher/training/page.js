@@ -37,6 +37,7 @@ import {
   School as TrainingIcon,
   Search as SearchIcon,
   Schedule as ScheduleIcon,
+  QrCodeScanner as CheckInIcon,
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
 import { DELIVERY_MODE_LABELS } from '@/lib/training-sessions';
@@ -367,6 +368,14 @@ export default function TrainingPage() {
         ]}
         actionButton={
           <Stack direction="row" spacing={1}>
+            <Button
+              variant="contained"
+              startIcon={<CheckInIcon />}
+              onClick={() => router.push('/researcher/training/check-in')}
+              sx={{ bgcolor: '#166534', color: 'white', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#14532d' } }}
+            >
+              Session check-in
+            </Button>
             <Button
               variant="contained"
               onClick={() => router.push('/researcher/training/certificates')}

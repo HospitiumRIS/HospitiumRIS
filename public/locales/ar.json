@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "تنزيل الشهادات المكتسبة",
     "training_mine": "تدريباتي",
     "training_mine_desc": "عرض التدريبات المسجلة والتقدم",
+    "training_checkin": "Session Check-in",
+    "training_checkin_desc": "Check in to a training session with the code on screen",
     "trial_approvals": "الموافقات التنظيمية والأخلاقية",
     "trial_approvals_desc": "تتبع موافقات IRB/الأخلاقيات والتقديمات التنظيمية",
     "trial_intake": "استقبال التجربة والتسجيل",

@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "ดาวน์โหลดใบรับรองที่ได้รับ",
     "training_mine": "การอบรมของฉัน",
     "training_mine_desc": "ดูการอบรมที่ลงทะเบียนและความคืบหน้า",
+    "training_checkin": "Session Check-in",
+    "training_checkin_desc": "Check in to a training session with the code on screen",
     "trial_approvals": "การอนุมัติด้านกฎระเบียบและจริยธรรม",
     "trial_approvals_desc": "ติดตามการอนุมัติ IRB/จริยธรรมและการยื่นด้านกฎระเบียบ",
     "trial_intake": "การรับและขึ้นทะเบียนการทดลอง",

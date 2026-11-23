@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "ទាញយកវិញ្ញាបនបត្រដែលទទួលបាន",
     "training_mine": "ការបណ្តុះបណ្តាលរបស់ខ្ញុំ",
     "training_mine_desc": "មើលការបណ្តុះបណ្តាលដែលបានចុះឈ្មោះ និងវឌ្ឍនភាព",
+    "training_checkin": "Session Check-in",
+    "training_checkin_desc": "Check in to a training session with the code on screen",
     "trial_approvals": "ការអនុម័តបទប្បញ្ញត្តិ និងសីលធម៌",
     "trial_approvals_desc": "តាមដានការអនុម័ត IRB/សីលធម៌ និងការដាក់ស្នើបទប្បញ្ញត្តិ",
     "trial_intake": "ការទទួល និងចុះឈ្មោះសាកល្បង",

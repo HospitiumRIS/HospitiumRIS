@@ -2675,6 +2675,8 @@
     "training_certificates_desc": "Pakua vyeti vilivyopatikana",
     "training_mine": "Mafunzo Yangu",
     "training_mine_desc": "Tazama mafunzo uliyosajiliwa na maendeleo",
+    "training_checkin": "Kujisajili Kwenye Kipindi",
+    "training_checkin_desc": "Jisajili kwenye kipindi cha mafunzo kwa msimbo ulio kwenye skrini",
     "trial_approvals": "Idhini za Kisheria na Maadili",
     "trial_approvals_desc": "Fuatilia idhini za IRB/Maadili na mawasilisho ya kisheria",
     "trial_intake": "Usajili wa Jaribio",
