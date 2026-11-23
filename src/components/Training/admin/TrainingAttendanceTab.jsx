@@ -38,6 +38,7 @@ import {
   Search as SearchIcon,
   VerifiedUser as ExcusedIcon,
   PersonOff as RemainingAbsentIcon,
+  QrCode2 as QrIcon,
 } from '@mui/icons-material';
 import {
   InstitutionModal,
@@ -389,6 +390,17 @@ export default function TrainingAttendanceTab({ trainingId, training, onTraining
         <MenuItem onClick={() => bulk('remaining-absent')}>
           <ListItemIcon><RemainingAbsentIcon fontSize="small" /></ListItemIcon>
           <ListItemText>Mark remaining absent</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem
+          onClick={() => {
+            const { session } = sessionMenu;
+            setSessionMenu(null);
+            window.open(`/institution/training/${trainingId}/sessions/${session.id}/present`, '_blank', 'noopener');
+          }}
+        >
+          <ListItemIcon><QrIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Open check-in screen</ListItemText>
         </MenuItem>
       </Menu>
 

@@ -126,6 +126,13 @@ function DeadlineLabel({ startDate, endDate }) {
   return <Chip size="small" label={`${untilEnd} day${untilEnd === 1 ? '' : 's'} left`} sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} />;
 }
 
+const checkInOpenNow = (session) => {
+  const start = new Date(session.startsAt).getTime();
+  const now = Date.now();
+  return now >= start - (session.checkInOpensMinutesBefore ?? 15) * 60000
+    && now <= start + (session.checkInClosesMinutesAfter ?? 30) * 60000;
+};
+
 const formatSessionTime = (start, end) => {
   const s = new Date(start);
   const e = new Date(end);
@@ -555,6 +562,11 @@ export default function TrainingPage() {
                               </Typography>
                             </Box>
                             <Box sx={{ textAlign: { sm: 'right' } }}>
+                              {!session.myAttendance && selectedTraining.isRegistered && checkInOpenNow(session) ? (
+                                <Button size="small" variant="contained" onClick={() => router.push('/researcher/training/check-in')} sx={{ mr: 0.75, bgcolor: PURPLE, textTransform: 'none', fontWeight: 700, py: 0.25 }}>
+                                  Check in
+                                </Button>
+                              ) : null}
                               {session.myAttendance ? (
                                 <Chip size="small" label={ATTENDANCE_LABELS[session.myAttendance.status]} sx={{ mr: 0.75, fontWeight: 700, ...ATTENDANCE_CHIP_SX[session.myAttendance.status] }} />
                               ) : null}
