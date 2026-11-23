@@ -55,6 +55,24 @@ async function runAnonymizeDeletedUsers() {
   };
 }
 
+async function runTrainingCompletion() {
+  // Imported lazily: keeps the ops module light for the other jobs.
+  const { refreshTrainingProgress, trainingsDueForCompletion } = await import('@/lib/training-progress-server');
+  const trainings = await trainingsDueForCompletion();
+  const totals = { trainings: trainings.length, evaluated: 0, completed: 0, notCompleted: 0, reopened: 0 };
+  for (const { id } of trainings) {
+    const r = await refreshTrainingProgress(id);
+    totals.evaluated += r.evaluated;
+    totals.completed += r.completed;
+    totals.notCompleted += r.notCompleted;
+    totals.reopened += r.reopened;
+  }
+  return {
+    summary: `Checked ${totals.trainings} training(s): ${totals.completed} completed, ${totals.notCompleted} not completed`,
+    metadata: totals,
+  };
+}
+
 export const OPS_JOBS = {
   ops_retention: {
     key: 'ops_retention',
@@ -63,6 +81,14 @@ export const OPS_JOBS = {
     cronPath: '/api/cron/ops-retention',
     expectedEveryHours: 24,
     run: runOpsRetention,
+  },
+  training_completion: {
+    key: 'training_completion',
+    label: 'Training completion',
+    description: 'Marks participants of ended trainings with completion rules as completed, or not completed once the grace period is over.',
+    cronPath: '/api/cron/training-completion',
+    expectedEveryHours: 1,
+    run: runTrainingCompletion,
   },
   anonymize_deleted_users: {
     key: 'anonymize_deleted_users',

@@ -20,6 +20,7 @@ describe('checkRegistrationTransition (admin)', () => {
   it('rejects jumps and unknown statuses instead of erroring in Prisma', () => {
     assert.equal(checkRegistrationTransition('CANCELLED', 'COMPLETED').ok, false);
     assert.equal(checkRegistrationTransition('COMPLETED', 'CANCELLED').ok, false);
+    assert.equal(checkRegistrationTransition('NOT_COMPLETED', 'CANCELLED').ok, false);
     const bad = checkRegistrationTransition('REGISTERED', 'DONE');
     assert.equal(bad.ok, false);
     assert.match(bad.error, /Invalid status/);
@@ -49,7 +50,8 @@ describe('transitionTakesSeat / allowedAdminStatuses', () => {
 
   it('lists the current status plus allowed next ones', () => {
     assert.deepEqual(allowedAdminStatuses('CANCELLED'), ['CANCELLED', 'REGISTERED']);
-    assert.deepEqual(allowedAdminStatuses('REGISTERED'), ['REGISTERED', 'COMPLETED', 'CANCELLED']);
+    assert.deepEqual(allowedAdminStatuses('REGISTERED'), ['REGISTERED', 'COMPLETED', 'NOT_COMPLETED', 'CANCELLED']);
+    assert.deepEqual(allowedAdminStatuses('NOT_COMPLETED'), ['NOT_COMPLETED', 'COMPLETED', 'REGISTERED']);
   });
 });
 

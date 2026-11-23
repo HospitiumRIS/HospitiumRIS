@@ -56,6 +56,7 @@ const dialogLock = { disableScrollLock: true };
 const STATUS_TONE = {
   REGISTERED: { bg: alpha(PURPLE, 0.12), color: PURPLE, label: 'Registered' },
   COMPLETED: { bg: '#dcfce7', color: '#166534', label: 'Completed' },
+  NOT_COMPLETED: { bg: '#fef3c7', color: '#92400e', label: 'Not completed' },
   CANCELLED: { bg: '#fee2e2', color: '#b91c1c', label: 'Cancelled' },
 };
 
@@ -241,6 +242,22 @@ export default function TrainingPage() {
       setDetailsOpen(true);
     } catch (err) {
       setError(err.message || 'Failed to load training details');
+    }
+  };
+
+  const toggleModuleDone = async (moduleId, completed) => {
+    if (!selectedTraining) return;
+    try {
+      const response = await fetch(`/api/training/${selectedTraining.id}/modules/${moduleId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Could not update the module');
+      await openDetails(selectedTraining.id);
+    } catch (err) {
+      setError(err.message || 'Could not update the module');
     }
   };
 
@@ -556,6 +573,25 @@ export default function TrainingPage() {
                   </Stack>
                 ) : null}
 
+                {selectedTraining.myCompletion?.hasRules ? (
+                  <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2, borderColor: selectedTraining.myCompletion.eligible ? '#86efac' : 'divider', bgcolor: selectedTraining.myCompletion.eligible ? '#f0fdf4' : 'transparent' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>
+                      {selectedTraining.userRegistration?.status === 'COMPLETED'
+                        ? 'Completed'
+                        : selectedTraining.userRegistration?.status === 'NOT_COMPLETED'
+                          ? 'Not completed'
+                          : selectedTraining.myCompletion.eligible ? 'On track to complete' : 'To complete this training'}
+                    </Typography>
+                    <Stack spacing={0.5}>
+                      {selectedTraining.myCompletion.checks.map((c) => (
+                        <Typography key={c.rule} variant="body2" sx={{ color: c.met ? '#166534' : 'text.primary' }}>
+                          {c.met ? '✓' : '○'} {c.label} <Box component="span" sx={{ color: 'text.secondary' }}>· {c.detail}</Box>
+                        </Typography>
+                      ))}
+                    </Stack>
+                  </Paper>
+                ) : null}
+
                 {(selectedTraining.sessions || []).length ? (
                   <Box>
                     <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 1 }}>
@@ -623,7 +659,20 @@ export default function TrainingPage() {
                         const moduleMaterials = (selectedTraining.materials || []).filter((item) => item.moduleId === module.id);
                         return (
                           <Paper key={module.id} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 700 }}>Module {index + 1}: {module.title}</Typography>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                              <Typography variant="body2" sx={{ fontWeight: 700 }}>Module {index + 1}: {module.title}</Typography>
+                              {(() => {
+                                const done = (selectedTraining.userRegistration?.moduleProgress || []).some((p) => p.moduleId === module.id && p.status === 'COMPLETED');
+                                if (selectedTraining.isRegistered && module.completionMode === 'SELF') {
+                                  return (
+                                    <Button size="small" variant={done ? 'outlined' : 'contained'} onClick={() => toggleModuleDone(module.id, !done)} sx={{ textTransform: 'none', fontWeight: 700, py: 0.25, ...(done ? { color: '#166534', borderColor: '#166534' } : { bgcolor: PURPLE }) }}>
+                                      {done ? 'Done ✓' : 'Mark as done'}
+                                    </Button>
+                                  );
+                                }
+                                return done ? <Chip size="small" label="Done" sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 700 }} /> : null;
+                              })()}
+                            </Stack>
                             {module.description ? <Typography variant="caption" color="text.secondary">{module.description}</Typography> : null}
                             {moduleMaterials.map((material) => (
                               <Stack key={material.id} direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1 }}>

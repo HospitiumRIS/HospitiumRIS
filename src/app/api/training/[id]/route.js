@@ -7,12 +7,14 @@ import {
   TRAINING_ADMIN_TYPES,
 } from '@/lib/training-admin';
 import { resolveTrainingInstitution, resolveTrainingScopeContext } from '@/lib/training-admin-server';
-import { canViewTraining, isOwningTrainingAdmin, shapeTrainingForViewer } from '@/lib/training-scope';
+import { ACTIVE_REGISTRATION_STATUSES, canViewTraining, isOwningTrainingAdmin, shapeTrainingForViewer } from '@/lib/training-scope';
 import { resolveTrainingDeliveryUpdate, sessionsOutsideTraining } from '@/lib/training-sessions';
 import { auditTraining } from '@/lib/training-audit';
 import { serializeSession } from '@/lib/training-sessions-server';
 import { recomputeAttendancePercent } from '@/lib/training-attendance-server';
 import { computeAttendance } from '@/lib/training-attendance';
+import { validateCompletionRules } from '@/lib/training-completion';
+import { loadOwnCompletion, refreshTrainingProgress } from '@/lib/training-progress-server';
 
 /**
  * GET /api/training/[id]
@@ -114,6 +116,19 @@ export async function GET(request, { params }) {
         ...serializeSession(session, training, { canSeeLink }),
         myAttendance: myAttendance.get(session.id) || null,
       }));
+    // The caller's own completion checklist (#96). Once the training has ended, bring
+    // their status up to date first.
+    if (shaped.userRegistration && shaped.isRegistered) {
+      if (training.endDate && new Date(training.endDate) <= new Date()) {
+        await refreshTrainingProgress(training.id, [shaped.userRegistration.id]);
+        const fresh = await prisma.trainingRegistration.findUnique({
+          where: { id: shaped.userRegistration.id },
+          select: { status: true, completedAt: true },
+        });
+        if (fresh) Object.assign(shaped.userRegistration, fresh);
+      }
+      shaped.myCompletion = await loadOwnCompletion(training.id, shaped.userRegistration.id);
+    }
     // The caller's own attendance (#92).
     shaped.myAttendanceSummary = shaped.userRegistration
       ? computeAttendance(training.sessions, shaped.userRegistration.attendance || [], {
@@ -214,6 +229,11 @@ export async function PUT(request, { params }) {
     if (status !== undefined) updateData.status = status;
     if (openToOtherInstitutions !== undefined) updateData.openToOtherInstitutions = openToOtherInstitutions === true;
     if (body.excludeExcusedSessions !== undefined) updateData.excludeExcusedSessions = body.excludeExcusedSessions === true;
+    const rules = validateCompletionRules(body);
+    if (!rules.ok) {
+      return NextResponse.json({ error: rules.error }, { status: 400 });
+    }
+    Object.assign(updateData, rules.data);
 
     const training = await prisma.training.update({
       where: { id },
@@ -243,9 +263,11 @@ export async function PUT(request, { params }) {
       after: { status: training.status, startDate: training.startDate, endDate: training.endDate, fields: Object.keys(updateData) },
     });
 
-    if (updateData.excludeExcusedSessions !== undefined
-      && updateData.excludeExcusedSessions !== existingTraining.excludeExcusedSessions) {
-      await recomputeAttendancePercent(id);
+    const rulesChanged = ['minAttendancePercent', 'requireAllModules', 'requireAssessmentPass', 'requireFeedback', 'completionGraceDays', 'endDate']
+      .some((key) => updateData[key] !== undefined && String(updateData[key]) !== String(existingTraining[key]));
+    if (rulesChanged || (updateData.excludeExcusedSessions !== undefined
+      && updateData.excludeExcusedSessions !== existingTraining.excludeExcusedSessions)) {
+      await recomputeAttendancePercent(id, null, { actorId: user.id });
     }
 
     // Sessions are not moved automatically when the dates change; tell the admin
@@ -308,7 +330,7 @@ export async function DELETE(request, { params }) {
 
     // Check if there are active registrations
     const activeRegistrations = existingTraining.registrations.filter(
-      r => r.status === 'REGISTERED' || r.status === 'COMPLETED'
+      r => ACTIVE_REGISTRATION_STATUSES.includes(r.status)
     );
 
     if (activeRegistrations.length > 0) {

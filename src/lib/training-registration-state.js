@@ -3,13 +3,14 @@
  * Pure: no database access.
  */
 
-export const REGISTRATION_STATUSES = ['REGISTERED', 'COMPLETED', 'CANCELLED'];
+export const REGISTRATION_STATUSES = ['REGISTERED', 'COMPLETED', 'NOT_COMPLETED', 'CANCELLED'];
 export const MODULE_PROGRESS_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED'];
 
 /** Allowed admin transitions: from -> [to]. */
 const ADMIN_TRANSITIONS = {
-  REGISTERED: ['COMPLETED', 'CANCELLED'],
-  COMPLETED: ['REGISTERED'], // reopen, e.g. completion marked by mistake
+  REGISTERED: ['COMPLETED', 'NOT_COMPLETED', 'CANCELLED'],
+  COMPLETED: ['REGISTERED', 'NOT_COMPLETED'], // reopen, e.g. completion marked by mistake
+  NOT_COMPLETED: ['COMPLETED', 'REGISTERED'], // #96
   CANCELLED: ['REGISTERED'], // reinstate (capacity is checked by the caller)
 };
 
