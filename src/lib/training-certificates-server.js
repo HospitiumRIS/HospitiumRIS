@@ -245,3 +245,71 @@ export async function resendCertificate(certificateId, { actor }) {
   });
   return { ok: true, certificate: updated };
 }
+
+/**
+ * Store a certificate file an admin uploaded for a completed registration (#99, #100):
+ * new version, numbered, valid, participant notified. Shared by the single and bulk
+ * upload routes. The caller has checked access and that the file is acceptable.
+ * @param {object} registration  with .training
+ * @param {File} file
+ * @param {object} actor
+ * @param {{ bulk?: boolean }} [options]
+ */
+export async function storeUploadedCertificate(registration, file, actor, { bulk = false } = {}) {
+  const { training } = registration;
+  const existing = await prisma.trainingCertificate.findUnique({ where: { registrationId: registration.id } });
+  let certificate = existing || await prisma.trainingCertificate.create({
+    data: {
+      trainingId: training.id,
+      userId: registration.userId,
+      registrationId: registration.id,
+      certificateUrl: '',
+      uploadedBy: actor.id,
+    },
+  });
+
+  const { fileUrl } = await saveTrainingCertificate(certificate.id, file, {
+    user: actor,
+    entityTenantId: training.institutionId,
+    registrationUserId: registration.userId,
+  });
+  if (existing?.certificateUrl && existing.certificateUrl !== fileUrl) {
+    await deleteTrainingFile(existing.certificateUrl, actor).catch(() => {});
+  }
+
+  const issuedAt = new Date();
+  certificate = await prisma.trainingCertificate.update({
+    where: { id: certificate.id },
+    data: {
+      certificateUrl: fileUrl,
+      uploadedBy: actor.id,
+      issuedAt,
+      source: 'UPLOADED',
+      status: 'ISSUED',
+      version: existing?.certificateUrl ? (existing.version || 1) + 1 : existing?.version || 1,
+      expiresAt: certificateExpiry(issuedAt, training.certificateValidityMonths),
+      revokedAt: null,
+      revokedBy: null,
+      revokedReason: null,
+    },
+  });
+  certificate = await ensureCertificateIdentity(certificate, training);
+
+  await auditTraining({
+    trainingId: training.id,
+    actorId: actor.id,
+    action: existing?.certificateUrl ? 'CERTIFICATE_REPLACED' : 'CERTIFICATE_UPLOADED',
+    entityType: 'TrainingCertificate',
+    entityId: certificate.id,
+    before: existing ? { certificateUrl: existing.certificateUrl, version: existing.version, status: existing.status } : null,
+    after: { certificateNumber: certificate.certificateNumber, version: certificate.version, registrationId: registration.id, file: file.name, bulk },
+  });
+
+  await notifyTraining('CERTIFICATE_ISSUED', {
+    userId: registration.userId,
+    trainingId: training.id,
+    dedupeKey: `certificate:${certificate.id}:v${certificate.version}:upload`,
+    extra: { certificate: { number: certificate.certificateNumber, verifyUrl: verifyUrl(appBaseUrl(), certificate.verificationCode) } },
+  });
+  return prisma.trainingCertificate.update({ where: { id: certificate.id }, data: { emailedAt: new Date() } });
+}

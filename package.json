@@ -73,6 +73,7 @@
     "geist": "^1.7.2",
     "i18next": "^26.3.2",
     "jspdf": "^4.0.0",
+    "jszip": "^3.10.1",
     "next": "16.0.10",
     "next-swagger-doc": "^0.4.1",
     "nodemailer": "^7.0.5",
