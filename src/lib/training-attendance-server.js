@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { ACTIVE_REGISTRATION_STATUSES } from '@/lib/training-scope';
 import { computeAttendance, sessionAttendanceSummary } from '@/lib/training-attendance';
+import { refreshTrainingProgress } from '@/lib/training-progress-server';
 
 const SESSION_FIELDS = {
   id: true,
@@ -14,41 +15,12 @@ const SESSION_FIELDS = {
 };
 
 /**
- * Recompute and store `attendancePercent` for registrations of a training (#92).
- * @param {string} trainingId
- * @param {string[]} [registrationIds] limit to these; default all active registrations
+ * Recompute everything derived from attendance for these registrations: cached
+ * attendance %, modules completed by attendance and completion status (#92, #96).
+ * Kept under this name for the attendance routes; see refreshTrainingProgress.
  */
-export async function recomputeAttendancePercent(trainingId, registrationIds = null, db = prisma) {
-  const training = await db.training.findUnique({
-    where: { id: trainingId },
-    select: { excludeExcusedSessions: true },
-  });
-  if (!training) return;
-
-  const [sessions, registrations] = await Promise.all([
-    db.trainingSession.findMany({ where: { trainingId }, select: SESSION_FIELDS }),
-    db.trainingRegistration.findMany({
-      where: {
-        trainingId,
-        ...(registrationIds ? { id: { in: registrationIds } } : { status: { in: ACTIVE_REGISTRATION_STATUSES } }),
-      },
-      select: { id: true, attendancePercent: true, attendance: { select: { sessionId: true, status: true } } },
-    }),
-  ]);
-
-  const now = new Date();
-  for (const registration of registrations) {
-    const { percent } = computeAttendance(sessions, registration.attendance, {
-      excludeExcused: training.excludeExcusedSessions,
-      now,
-    });
-    if (percent !== registration.attendancePercent) {
-      await db.trainingRegistration.update({
-        where: { id: registration.id },
-        data: { attendancePercent: percent },
-      });
-    }
-  }
+export async function recomputeAttendancePercent(trainingId, registrationIds = null, options = {}) {
+  return refreshTrainingProgress(trainingId, registrationIds, options);
 }
 
 /** The register: sessions × active participants, with per-row and per-column totals. */

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import prisma from '../../../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../../../lib/auth-server';
 import { requireTrainingAdminAccess } from '@/lib/training-admin-server';
@@ -94,9 +95,24 @@ export async function PUT(request, { params }) {
             return { error: 'Training is full', status: 400 };
           }
         }
+        // Completing or failing someone by hand is an override (#96): the completion
+        // engine leaves it alone. Back to REGISTERED hands it back to the engine.
+        const data = { status };
+        if (status === 'COMPLETED' || status === 'NOT_COMPLETED') {
+          data.completionOverride = {
+            type: status === 'COMPLETED' ? 'COMPLETE' : 'INCOMPLETE',
+            reason: typeof reason === 'string' && reason.trim() ? reason.trim().slice(0, 500) : 'Set manually',
+            by: user.id,
+            at: new Date().toISOString(),
+          };
+          data.completedAt = status === 'COMPLETED' ? new Date() : null;
+        } else if (status === 'REGISTERED') {
+          data.completionOverride = Prisma.DbNull;
+          data.completedAt = null;
+        }
         await tx.trainingRegistration.update({
           where: { id: regId },
-          data: { status },
+          data,
         });
       }
 

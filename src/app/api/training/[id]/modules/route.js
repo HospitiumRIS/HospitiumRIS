@@ -5,7 +5,8 @@ import {
   requireTrainingAdminAccess,
   resolveTrainingViewer,
 } from '@/lib/training-admin-server';
-import { canSeeMaterial } from '@/lib/training-scope';
+import { ACTIVE_REGISTRATION_STATUSES, canSeeMaterial } from '@/lib/training-scope';
+import { MODULE_COMPLETION_MODES } from '@/lib/training-completion';
 
 /**
  * GET /api/training/[id]/modules
@@ -133,6 +134,8 @@ export async function POST(request, { params }) {
         description,
         order: moduleOrder,
         status: 'ACTIVE',
+        ...(MODULE_COMPLETION_MODES.includes(body.completionMode) ? { completionMode: body.completionMode } : {}),
+        ...(body.isRequired !== undefined ? { isRequired: body.isRequired === true } : {}),
       },
     });
 
@@ -141,7 +144,7 @@ export async function POST(request, { params }) {
       where: {
         trainingId: id,
         status: {
-          in: ['REGISTERED', 'COMPLETED'],
+          in: ACTIVE_REGISTRATION_STATUSES,
         },
       },
     });

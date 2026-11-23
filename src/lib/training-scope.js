@@ -95,7 +95,8 @@ export function isOwningTrainingAdmin(user, training, ctx = {}) {
 }
 
 /** Registration statuses that grant access to registered-only content (#89). */
-export const ACTIVE_REGISTRATION_STATUSES = ['REGISTERED', 'COMPLETED'];
+// NOT_COMPLETED (#96) keeps the participant's access and place: the training is over.
+export const ACTIVE_REGISTRATION_STATUSES = ['REGISTERED', 'COMPLETED', 'NOT_COMPLETED'];
 
 export function isActiveRegistration(registration) {
   return Boolean(registration) && ACTIVE_REGISTRATION_STATUSES.includes(registration.status);

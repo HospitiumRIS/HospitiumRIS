@@ -61,18 +61,20 @@ export const PATCH = withAdminAudit(handlePATCH, {
 
 ## Scheduled jobs
 
-Both jobs are shown on **Operations › Jobs**. They are marked overdue after 1.5× their interval, and an admin can run them from there.
+The jobs are shown on **Operations › Jobs**. They are marked overdue after 1.5× their interval, and an admin can run them from there.
 
 | Job | URL | Schedule |
 | --- | --- | --- |
 | Audit & usage retention | `/api/cron/ops-retention` | daily |
 | Anonymise deleted accounts | `/api/cron/anonymize-deleted-users` | daily |
+| Training completion | `/api/cron/training-completion` | hourly |
 
 Example crontab entry for the server:
 
 ```cron
 15 2 * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://hospitium.hospitiumris.org/api/cron/ops-retention
 30 2 * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://hospitium.hospitiumris.org/api/cron/anonymize-deleted-users
+5 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://hospitium.hospitiumris.org/api/cron/training-completion
 ```
 
 ## Environment

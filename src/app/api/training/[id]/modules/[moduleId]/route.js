@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import prisma from '../../../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../../../lib/auth-server';
 import { requireTrainingAdminAccess } from '@/lib/training-admin-server';
+import { MODULE_COMPLETION_MODES } from '@/lib/training-completion';
+import { refreshTrainingProgress } from '@/lib/training-progress-server';
 
 /**
  * PUT /api/training/[id]/modules/[moduleId]
@@ -37,12 +39,29 @@ export async function PUT(request, { params }) {
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
     if (order !== undefined) updateData.order = order;
-    if (status !== undefined) updateData.status = status;
+    if (status !== undefined) {
+      if (!['ACTIVE', 'INACTIVE'].includes(status)) {
+        return NextResponse.json({ error: 'status must be ACTIVE or INACTIVE' }, { status: 400 });
+      }
+      updateData.status = status;
+    }
+    if (body.completionMode !== undefined) {
+      if (!MODULE_COMPLETION_MODES.includes(body.completionMode)) {
+        return NextResponse.json({ error: `completionMode must be one of ${MODULE_COMPLETION_MODES.join(', ')}` }, { status: 400 });
+      }
+      updateData.completionMode = body.completionMode;
+    }
+    if (body.isRequired !== undefined) updateData.isRequired = body.isRequired === true;
 
     const updatedModule = await prisma.trainingModule.update({
       where: { id: moduleId },
       data: updateData,
     });
+
+    // How modules complete affects every participant's checklist (#96).
+    if (['completionMode', 'isRequired', 'status'].some((k) => updateData[k] !== undefined)) {
+      await refreshTrainingProgress(module.trainingId, null, { actorId: user.id });
+    }
 
     return NextResponse.json({
       success: true,

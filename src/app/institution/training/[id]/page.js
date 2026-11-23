@@ -29,6 +29,8 @@ import {
   TableRow,
   Tabs,
   TextField,
+  FormControlLabel,
+  Switch,
   Tooltip,
   Typography,
   alpha,
@@ -48,6 +50,8 @@ import { allowedAdminStatuses } from '@/lib/training-registration-state';
 import { DELIVERY_MODE_LABELS } from '@/lib/training-sessions';
 import TrainingScheduleTab from '@/components/Training/admin/TrainingScheduleTab';
 import TrainingAttendanceTab from '@/components/Training/admin/TrainingAttendanceTab';
+import TrainingCompletionTab from '@/components/Training/admin/TrainingCompletionTab';
+import { MODULE_COMPLETION_LABELS, MODULE_COMPLETION_MODES } from '@/lib/training-completion';
 
 const PURPLE = '#8b6cbc';
 const dialogLock = { disableScrollLock: true };
@@ -182,6 +186,22 @@ export default function TrainingDetailPage() {
     }
   };
 
+  const updateModule = async (moduleId, patch) => {
+    try {
+      const response = await fetch(`/api/training/${trainingId}/modules/${moduleId}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to update module');
+      setModules((prev) => prev.map((m) => (m.id === moduleId ? { ...m, ...data.module } : m)));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const handleUpdateRegistrationStatus = async (registrationId, newStatus) => {
     try {
       const response = await fetch(`/api/training/${trainingId}/registrations/${registrationId}`, {
@@ -286,6 +306,7 @@ export default function TrainingDetailPage() {
             <Tab label={`Curriculum (${modules.length})`} />
             <Tab label={`Registrations (${registrations.length})`} />
             <Tab label="Attendance" />
+            <Tab label="Completion" />
           </Tabs>
         </Paper>
 
@@ -313,6 +334,10 @@ export default function TrainingDetailPage() {
               </Button>
             </Paper>
           </Stack>
+        )}
+
+        {activeTab === 5 && (
+          <TrainingCompletionTab trainingId={trainingId} training={training} onChanged={load} />
         )}
 
         {activeTab === 4 && (
@@ -375,6 +400,24 @@ export default function TrainingDetailPage() {
                   <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Module {index + 1}: {module.title}</Typography>
                     {module.description ? <Typography variant="body2" color="text.secondary">{module.description}</Typography> : null}
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }} sx={{ mt: 1 }}>
+                      <TextField
+                        select
+                        size="small"
+                        label="Completed by"
+                        value={module.completionMode || 'ADMIN'}
+                        onChange={(e) => updateModule(module.id, { completionMode: e.target.value })}
+                        sx={{ minWidth: 240 }}
+                      >
+                        {MODULE_COMPLETION_MODES.filter((mode) => mode !== 'ON_ASSESSMENT_PASS').map((mode) => (
+                          <MenuItem key={mode} value={mode}>{MODULE_COMPLETION_LABELS[mode]}</MenuItem>
+                        ))}
+                      </TextField>
+                      <FormControlLabel
+                        control={<Switch size="small" checked={module.isRequired !== false} onChange={(e) => updateModule(module.id, { isRequired: e.target.checked })} />}
+                        label={<Typography variant="body2">Required</Typography>}
+                      />
+                    </Stack>
                   </Box>
                   <IconButton size="small" color="error" onClick={() => deleteModule(module.id)}><DeleteIcon fontSize="small" /></IconButton>
                 </Stack>
@@ -444,6 +487,7 @@ export default function TrainingDetailPage() {
                           <Select size="small" value={reg.status} onChange={(e) => handleUpdateRegistrationStatus(reg.id, e.target.value)}>
                             <MenuItem value="REGISTERED" disabled={!allowedAdminStatuses(reg.status).includes('REGISTERED')}>Registered</MenuItem>
                             <MenuItem value="COMPLETED" disabled={!allowedAdminStatuses(reg.status).includes('COMPLETED')}>Completed</MenuItem>
+                            <MenuItem value="NOT_COMPLETED" disabled={!allowedAdminStatuses(reg.status).includes('NOT_COMPLETED')}>Not completed</MenuItem>
                             <MenuItem value="CANCELLED" disabled={!allowedAdminStatuses(reg.status).includes('CANCELLED')}>Cancelled</MenuItem>
                           </Select>
                         </TableCell>

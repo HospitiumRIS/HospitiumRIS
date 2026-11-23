@@ -1912,6 +1912,14 @@ enum TrainingRegistrationStatus {
   REGISTERED
   COMPLETED
   CANCELLED
+  NOT_COMPLETED
+}
+
+enum TrainingModuleCompletionMode {
+  ADMIN
+  SELF
+  ON_SESSION_ATTENDANCE
+  ON_ASSESSMENT_PASS
 }
 
 enum ModuleStatus {
@@ -1976,6 +1984,13 @@ model Training {
   // Attendance (#92, decision D5): excused sessions leave the attendance denominator.
   excludeExcusedSessions Boolean @default(true)
 
+  // Completion rules (#96). All off = manual completion.
+  minAttendancePercent  Int?
+  requireAllModules     Boolean @default(false)
+  requireAssessmentPass Boolean @default(false)
+  requireFeedback       Boolean @default(false)
+  completionGraceDays   Int     @default(7)
+
   // Shared catalogue: when true (and PUBLISHED), researchers of other institutions
   // can see and register for this training. Rosters never cross tenants.
   openToOtherInstitutions Boolean @default(false)
@@ -2009,6 +2024,9 @@ model TrainingModule {
   description String?      @db.Text
   order       Int // Display order
   status      ModuleStatus @default(ACTIVE)
+  // How the module gets completed (#96), and whether it counts for "all modules".
+  completionMode TrainingModuleCompletionMode @default(ADMIN)
+  isRequired     Boolean                      @default(true)
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -2054,6 +2072,10 @@ model TrainingRegistration {
   // Cached attendance % (#92), recomputed whenever attendance changes. Null until a
   // counted session has been held.
   attendancePercent Float?
+
+  // Completion (#96)
+  completedAt        DateTime?
+  completionOverride Json? // { type: 'COMPLETE'|'INCOMPLETE', reason, by, at }
 
   // Timestamps
   createdAt DateTime @default(now())

@@ -70,7 +70,7 @@ export async function GET(request) {
     // Transform data to include computed fields
     const transformedTrainings = trainings.map(training => {
       const activeRegistrations = training.registrations.filter(
-        r => r.status === 'REGISTERED' || r.status === 'COMPLETED'
+        r => isActiveRegistration(r)
       ).length;
 
       const remainingSlots = training.maxParticipants - activeRegistrations;
