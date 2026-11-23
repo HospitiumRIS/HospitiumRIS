@@ -47,6 +47,7 @@ import { formatTargetGroupLabel } from '@/lib/training-admin';
 import { allowedAdminStatuses } from '@/lib/training-registration-state';
 import { DELIVERY_MODE_LABELS } from '@/lib/training-sessions';
 import TrainingScheduleTab from '@/components/Training/admin/TrainingScheduleTab';
+import TrainingAttendanceTab from '@/components/Training/admin/TrainingAttendanceTab';
 
 const PURPLE = '#8b6cbc';
 const dialogLock = { disableScrollLock: true };
@@ -284,6 +285,7 @@ export default function TrainingDetailPage() {
             <Tab label={`Schedule (${tabCounts.sessions ?? (training.sessions || []).filter((s) => s.status === 'SCHEDULED').length})`} />
             <Tab label={`Curriculum (${modules.length})`} />
             <Tab label={`Registrations (${registrations.length})`} />
+            <Tab label="Attendance" />
           </Tabs>
         </Paper>
 
@@ -311,6 +313,10 @@ export default function TrainingDetailPage() {
               </Button>
             </Paper>
           </Stack>
+        )}
+
+        {activeTab === 4 && (
+          <TrainingAttendanceTab trainingId={trainingId} training={training} onTrainingChanged={load} />
         )}
 
         {activeTab === 1 && (
@@ -410,7 +416,7 @@ export default function TrainingDetailPage() {
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ bgcolor: alpha(PURPLE, 0.06) }}>
-                    {['Participant', 'Email', 'Registered', 'Progress', 'Status', 'Certificate'].map((label) => (
+                    {['Participant', 'Email', 'Registered', 'Progress', 'Attendance', 'Status', 'Certificate'].map((label) => (
                       <TableCell key={label} sx={{ fontWeight: 700 }}>{label}</TableCell>
                     ))}
                   </TableRow>
@@ -428,6 +434,11 @@ export default function TrainingDetailPage() {
                         <TableCell sx={{ minWidth: 140 }}>
                           <Typography variant="caption">{completed}/{total}</Typography>
                           <LinearProgress variant="determinate" value={percent} sx={{ height: 6, borderRadius: 3, bgcolor: alpha(PURPLE, 0.12), '& .MuiLinearProgress-bar': { bgcolor: PURPLE } }} />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                            {reg.attendancePercent === null || reg.attendancePercent === undefined ? '—' : `${reg.attendancePercent}%`}
+                          </Typography>
                         </TableCell>
                         <TableCell>
                           <Select size="small" value={reg.status} onChange={(e) => handleUpdateRegistrationStatus(reg.id, e.target.value)}>
@@ -453,7 +464,7 @@ export default function TrainingDetailPage() {
                     );
                   }) : (
                     <TableRow>
-                      <TableCell colSpan={6} sx={{ py: 4, textAlign: 'center' }}>
+                      <TableCell colSpan={7} sx={{ py: 4, textAlign: 'center' }}>
                         <Typography color="text.secondary">No registrations yet.</Typography>
                       </TableCell>
                     </TableRow>

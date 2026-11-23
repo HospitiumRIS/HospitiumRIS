@@ -11,6 +11,8 @@ import { canViewTraining, isOwningTrainingAdmin, shapeTrainingForViewer } from '
 import { resolveTrainingDeliveryUpdate, sessionsOutsideTraining } from '@/lib/training-sessions';
 import { auditTraining } from '@/lib/training-audit';
 import { serializeSession } from '@/lib/training-sessions-server';
+import { recomputeAttendancePercent } from '@/lib/training-attendance-server';
+import { computeAttendance } from '@/lib/training-attendance';
 
 /**
  * GET /api/training/[id]
@@ -64,6 +66,9 @@ export async function GET(request, { params }) {
               },
             },
             certificate: true,
+            attendance: {
+              select: { sessionId: true, status: true, method: true, checkedInAt: true },
+            },
           },
         },
         _count: {
@@ -102,9 +107,19 @@ export async function GET(request, { params }) {
     // Sessions (#91): non-admins only see scheduled ones; meeting links only go to
     // admins and active registrants.
     const canSeeLink = isAdmin || shaped.isRegistered;
+    const myAttendance = new Map((shaped.userRegistration?.attendance || []).map((a) => [a.sessionId, a]));
     shaped.sessions = training.sessions
       .filter((session) => isAdmin || session.status === 'SCHEDULED')
-      .map((session) => serializeSession(session, training, { canSeeLink }));
+      .map((session) => ({
+        ...serializeSession(session, training, { canSeeLink }),
+        myAttendance: myAttendance.get(session.id) || null,
+      }));
+    // The caller's own attendance (#92).
+    shaped.myAttendanceSummary = shaped.userRegistration
+      ? computeAttendance(training.sessions, shaped.userRegistration.attendance || [], {
+          excludeExcused: training.excludeExcusedSessions !== false,
+        })
+      : null;
 
     return NextResponse.json({
       success: true,
@@ -198,6 +213,7 @@ export async function PUT(request, { params }) {
     if (maxParticipants !== undefined) updateData.maxParticipants = parseInt(maxParticipants);
     if (status !== undefined) updateData.status = status;
     if (openToOtherInstitutions !== undefined) updateData.openToOtherInstitutions = openToOtherInstitutions === true;
+    if (body.excludeExcusedSessions !== undefined) updateData.excludeExcusedSessions = body.excludeExcusedSessions === true;
 
     const training = await prisma.training.update({
       where: { id },
@@ -226,6 +242,11 @@ export async function PUT(request, { params }) {
       before: { status: existingTraining.status, startDate: existingTraining.startDate, endDate: existingTraining.endDate },
       after: { status: training.status, startDate: training.startDate, endDate: training.endDate, fields: Object.keys(updateData) },
     });
+
+    if (updateData.excludeExcusedSessions !== undefined
+      && updateData.excludeExcusedSessions !== existingTraining.excludeExcusedSessions) {
+      await recomputeAttendancePercent(id);
+    }
 
     // Sessions are not moved automatically when the dates change; tell the admin
     // which ones now fall outside the training (#91).

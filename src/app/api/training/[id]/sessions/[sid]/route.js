@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auditTraining } from '@/lib/training-audit';
+import { recomputeAttendancePercent, sessionHasAttendance } from '@/lib/training-attendance-server';
 import { validateSessionInput } from '@/lib/training-sessions';
 import {
   requireSessionAdmin,
@@ -41,6 +42,15 @@ export async function PUT(request, { params }) {
       include: { module: { select: { id: true, title: true } } },
     });
 
+    // Cancelling, restoring, moving or making a session optional changes everyone's %.
+    if (
+      existing.status !== session.status
+      || existing.isAttendanceRequired !== session.isAttendanceRequired
+      || +existing.startsAt !== +session.startsAt
+    ) {
+      await recomputeAttendancePercent(id);
+    }
+
     await auditTraining({
       trainingId: id,
       actorId: user.id,
@@ -73,6 +83,14 @@ export async function DELETE(request, { params }) {
 
     const existing = await loadSession(id, sid);
     if (!existing) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+
+    // Attendance is recorded against sessions: keep it, cancel the session instead (#92).
+    if (await sessionHasAttendance(sid)) {
+      return NextResponse.json(
+        { error: 'Attendance has been taken for this session. Cancel it instead of deleting it.' },
+        { status: 400 }
+      );
+    }
 
     const remaining = await prisma.trainingSession.count({ where: { trainingId: id, id: { not: sid } } });
     if (remaining === 0) {

@@ -40,6 +40,14 @@ import {
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
 import { DELIVERY_MODE_LABELS } from '@/lib/training-sessions';
+import { ATTENDANCE_LABELS } from '@/lib/training-attendance';
+
+const ATTENDANCE_CHIP_SX = {
+  PRESENT: { bgcolor: '#dcfce7', color: '#166534' },
+  LATE: { bgcolor: '#fef3c7', color: '#92400e' },
+  ABSENT: { bgcolor: '#fee2e2', color: '#b91c1c' },
+  EXCUSED: { bgcolor: '#e0f2fe', color: '#075985' },
+};
 
 const PURPLE = '#8b6cbc';
 const dialogLock = { disableScrollLock: true };
@@ -526,9 +534,16 @@ export default function TrainingPage() {
 
                 {(selectedTraining.sessions || []).length ? (
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                      Sessions ({selectedTraining.sessions.length})
-                    </Typography>
+                    <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                        Sessions ({selectedTraining.sessions.length})
+                      </Typography>
+                      {selectedTraining.myAttendanceSummary?.percent !== null && selectedTraining.myAttendanceSummary?.percent !== undefined ? (
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: PURPLE }}>
+                          Your attendance: {selectedTraining.myAttendanceSummary.percent}% ({selectedTraining.myAttendanceSummary.attended} of {selectedTraining.myAttendanceSummary.counted} sessions held)
+                        </Typography>
+                      ) : null}
+                    </Stack>
                     <Stack spacing={1}>
                       {selectedTraining.sessions.map((session) => (
                         <Paper key={session.id} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
@@ -540,6 +555,9 @@ export default function TrainingPage() {
                               </Typography>
                             </Box>
                             <Box sx={{ textAlign: { sm: 'right' } }}>
+                              {session.myAttendance ? (
+                                <Chip size="small" label={ATTENDANCE_LABELS[session.myAttendance.status]} sx={{ mr: 0.75, fontWeight: 700, ...ATTENDANCE_CHIP_SX[session.myAttendance.status] }} />
+                              ) : null}
                               <Chip size="small" label={DELIVERY_MODE_LABELS[session.effective?.deliveryMode] || 'In person'} sx={{ bgcolor: alpha(PURPLE, 0.08), color: PURPLE, fontWeight: 700 }} />
                               {session.effective?.venue ? (
                                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{session.effective.venue}</Typography>
