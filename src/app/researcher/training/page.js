@@ -89,6 +89,14 @@ function enrolmentAction(training) {
   return { show: true, label: training.requiresApproval ? 'Request a place' : 'Register' };
 }
 
+// Assigned trainings and certificate expiry (#103).
+const DUE_CHIP = {
+  OVERDUE: { label: 'Overdue', sx: { bgcolor: '#fee2e2', color: '#b91c1c' } },
+  DUE_SOON: { label: 'Due soon', sx: { bgcolor: '#fef3c7', color: '#92400e' } },
+  RETRAINING_DUE: { label: 'Certificate expired: re-training due', sx: { bgcolor: '#fee2e2', color: '#b91c1c' } },
+  EXPIRING: { label: 'Certificate expiring soon', sx: { bgcolor: '#fef3c7', color: '#92400e' } },
+};
+
 const CANCEL_LABELS = {
   REGISTERED: 'Cancel registration',
   PENDING_APPROVAL: 'Withdraw request',
@@ -265,11 +273,13 @@ export default function TrainingPage() {
     return !search || haystack.includes(search.toLowerCase());
   };
 
+  // Overdue and due-soon assigned trainings first (#103).
+  const urgency = (item) => ({ OVERDUE: 0, RETRAINING_DUE: 1, DUE_SOON: 2, EXPIRING: 3 }[item.compliance?.state] ?? 9);
   const filteredMine = myTrainings.filter((item) => {
     const training = item.training;
     const matchesDept = departmentFilter === 'all' || training.department === departmentFilter;
     return matchesSearch(training) && matchesDept;
-  });
+  }).sort((a, b) => urgency(a) - urgency(b));
 
   const filteredAvailable = availableTrainings.filter((training) => {
     const matchesDept = departmentFilter === 'all' || training.department === departmentFilter;
@@ -401,6 +411,17 @@ export default function TrainingPage() {
           <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1e293b' }}>{training.title}</Typography>
           {registration ? <StatusChip status={registration.status} /> : <DeadlineLabel startDate={training.startDate} endDate={training.endDate} />}
         </Stack>
+        {training.isMandatory || registration?.source === 'ASSIGNED' || DUE_CHIP[registration?.compliance?.state] ? (
+          <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
+            {training.isMandatory ? <Chip size="small" label="Mandatory" sx={{ height: 22, fontWeight: 700, bgcolor: alpha(PURPLE, 0.12), color: PURPLE }} /> : null}
+            {registration?.source === 'ASSIGNED' ? (
+              <Chip size="small" label={registration.dueDate ? `Assigned · due ${formatDate(registration.dueDate)}` : 'Assigned to you'} sx={{ height: 22, fontWeight: 700, bgcolor: '#f1f5f9', color: '#334155' }} />
+            ) : null}
+            {DUE_CHIP[registration?.compliance?.state] ? (
+              <Chip size="small" label={DUE_CHIP[registration.compliance.state].label} sx={{ height: 22, fontWeight: 700, ...DUE_CHIP[registration.compliance.state].sx }} />
+            ) : null}
+          </Stack>
+        ) : null}
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {training.description || 'No description provided.'}
         </Typography>
@@ -647,6 +668,11 @@ export default function TrainingPage() {
                     </Typography>
                   </Paper>
                 </Stack>
+                {selectedTraining.userRegistration?.source === 'ASSIGNED' && selectedTraining.userRegistration?.status !== 'COMPLETED' ? (
+                  <Alert severity={selectedTraining.userRegistration.dueDate && new Date(selectedTraining.userRegistration.dueDate) < new Date() ? 'error' : 'info'}>
+                    This training was assigned to you{selectedTraining.userRegistration.dueDate ? `. Complete it by ${formatDate(selectedTraining.userRegistration.dueDate)}.` : '.'}
+                  </Alert>
+                ) : null}
                 {selectedTraining.userRegistration?.status === 'WAITLISTED' ? (
                   <Alert severity="info">
                     You are on the waiting list{selectedTraining.myWaitlistPosition ? ` (position ${selectedTraining.myWaitlistPosition})` : ''}. We will email you if a place opens.
@@ -829,7 +855,7 @@ export default function TrainingPage() {
               </Stack>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>
-              {CANCEL_LABELS[selectedTraining.userRegistration?.status] && new Date(selectedTraining.startDate) > new Date() ? (
+              {CANCEL_LABELS[selectedTraining.userRegistration?.status] && selectedTraining.userRegistration?.source !== 'ASSIGNED' && new Date(selectedTraining.startDate) > new Date() ? (
                 <Button
                   color="error"
                   onClick={handleCancelRegistration}

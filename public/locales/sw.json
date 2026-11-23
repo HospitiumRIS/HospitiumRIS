@@ -2160,6 +2160,8 @@
     "manage_trainings_desc": "Unda na simamia mafunzo ya taasisi",
     "certificate_templates": "Violezo vya Vyeti",
     "certificate_templates_desc": "Buni vyeti vinavyotolewa na mafunzo yako",
+    "training_compliance": "Uzingatiaji wa Mafunzo",
+    "training_compliance_desc": "Mafunzo ya lazima: yaliyopangiwa, yaliyokamilika, yaliyochelewa",
     "performance_review": "Ukaguzi wa Utendaji",
     "performance_review_desc": "Kagua utendaji wa watafiti",
     "results_reporting": "Matokeo na Ripoti",

@@ -43,6 +43,7 @@ const fromTraining = (t) => ({
   cancellationDeadline: toLocalInput(t?.cancellationDeadline),
   requiresApproval: Boolean(t?.requiresApproval),
   waitlistEnabled: Boolean(t?.waitlistEnabled),
+  isMandatory: Boolean(t?.isMandatory),
   eligibilityMode: t?.eligibilityMode || 'OPEN',
   prerequisiteTrainingIds: t?.prerequisiteTrainingIds || [],
 });
@@ -117,6 +118,7 @@ export default function TrainingEnrolmentSettings({ training, onSaved }) {
             {[show(training?.registrationOpensAt) && `opens ${show(training.registrationOpensAt)}`,
               `closes ${show(training?.registrationClosesAt) || 'when the training starts'}`].filter(Boolean).join(', ')}
           </Typography>
+          <Typography variant="body2"><strong>Mandatory:</strong> {training?.isMandatory ? 'Yes (tracked under Compliance)' : 'No'}</Typography>
           <Typography variant="body2"><strong>Approval:</strong> {training?.requiresApproval ? 'Required (requests hold a place)' : 'Not required'}</Typography>
           <Typography variant="body2"><strong>Waiting list:</strong> {training?.waitlistEnabled ? `On${training?.waitlistCount ? ` · ${training.waitlistCount} waiting` : ''}` : 'Off'}</Typography>
           <Typography variant="body2"><strong>Who can enrol:</strong> {ELIGIBILITY_LABELS[training?.eligibilityMode || 'OPEN']}</Typography>
@@ -141,6 +143,7 @@ export default function TrainingEnrolmentSettings({ training, onSaved }) {
           </InstitutionModalSection>
           <InstitutionModalSection title="Places">
             <Stack>
+              <FormControlLabel control={<Switch checked={draft.isMandatory} onChange={(e) => set({ isMandatory: e.target.checked })} />} label="Mandatory training (shown as mandatory, tracked under Compliance)" />
               <FormControlLabel control={<Switch checked={draft.requiresApproval} onChange={(e) => set({ requiresApproval: e.target.checked })} />} label="Training admin approves each request" />
               <FormControlLabel control={<Switch checked={draft.waitlistEnabled} onChange={(e) => set({ waitlistEnabled: e.target.checked })} />} label="Waiting list when full (freed places are offered in order)" />
             </Stack>

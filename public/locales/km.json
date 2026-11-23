@@ -2160,6 +2160,8 @@
     "manage_trainings_desc": "បង្កើត និងគ្រប់គ្រងការបណ្តុះបណ្តាលស្ថាប័ន",
     "certificate_templates": "Certificate Templates",
     "certificate_templates_desc": "Design the certificates your trainings issue",
+    "training_compliance": "Training Compliance",
+    "training_compliance_desc": "Mandatory training: assigned, completed, overdue",
     "performance_review": "ការពិនិត្យការអនុវត្ត",
     "performance_review_desc": "ពិនិត្យការអនុវត្តអ្នកស្រាវជ្រាវ",
     "results_reporting": "លទ្ធផល និងរបាយការណ៍",

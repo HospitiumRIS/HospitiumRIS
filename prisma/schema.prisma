@@ -1923,6 +1923,13 @@ enum TrainingEligibilityMode {
   DEPARTMENT_ONLY
 }
 
+// How a registration came about (#103).
+enum TrainingRegistrationSource {
+  SELF
+  ASSIGNED
+  IMPORT
+}
+
 enum TrainingCertificateMode {
   AUTO
   REVIEW
@@ -2021,6 +2028,7 @@ model Training {
   waitlistEnabled         Boolean                 @default(false)
   eligibilityMode         TrainingEligibilityMode @default(OPEN)
   prerequisiteTrainingIds String[]                @default([])
+  isMandatory             Boolean                 @default(false) // #103: shown as mandatory, used in compliance
 
   // Completion rules (#96). All off = manual completion.
   minAttendancePercent  Int?
@@ -2130,6 +2138,12 @@ model TrainingRegistration {
   cancelledAt    DateTime?
   cancelReason   String?
 
+  // Assigned / mandatory trainings (#103)
+  source     TrainingRegistrationSource @default(SELF)
+  assignedBy String?
+  assignedAt DateTime?
+  dueDate    DateTime?
+
   // Completion (#96)
   completedAt        DateTime?
   completionOverride Json? // { type: 'COMPLETE'|'INCOMPLETE', reason, by, at }
@@ -2146,6 +2160,7 @@ model TrainingRegistration {
   attendance     TrainingAttendance[]
 
   @@unique([trainingId, userId])
+  @@index([source, dueDate])
   @@map("training_registrations")
 }
 

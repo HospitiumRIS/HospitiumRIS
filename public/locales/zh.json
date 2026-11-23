@@ -2160,6 +2160,8 @@
     "manage_trainings_desc": "创建并管理机构培训",
     "certificate_templates": "Certificate Templates",
     "certificate_templates_desc": "Design the certificates your trainings issue",
+    "training_compliance": "Training Compliance",
+    "training_compliance_desc": "Mandatory training: assigned, completed, overdue",
     "performance_review": "绩效评估",
     "performance_review_desc": "评估研究者绩效",
     "results_reporting": "结果与报告",

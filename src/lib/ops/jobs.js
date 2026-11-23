@@ -73,6 +73,15 @@ async function runTrainingCompletion() {
   };
 }
 
+async function runTrainingReminders() {
+  const { sendComplianceReminders } = await import('@/lib/training-assignment-server');
+  const r = await sendComplianceReminders();
+  return {
+    summary: `Checked ${r.checked} registration(s): ${r.sent} reminder(s) sent`,
+    metadata: r,
+  };
+}
+
 export const OPS_JOBS = {
   ops_retention: {
     key: 'ops_retention',
@@ -89,6 +98,14 @@ export const OPS_JOBS = {
     cronPath: '/api/cron/training-completion',
     expectedEveryHours: 1,
     run: runTrainingCompletion,
+  },
+  training_reminders: {
+    key: 'training_reminders',
+    label: 'Training reminders',
+    description: 'Due-soon and overdue reminders for assigned trainings, and certificate expiring / re-training due notices.',
+    cronPath: '/api/cron/training-reminders',
+    expectedEveryHours: 24,
+    run: runTrainingReminders,
   },
   anonymize_deleted_users: {
     key: 'anonymize_deleted_users',

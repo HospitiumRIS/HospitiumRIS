@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
 import { getAuthenticatedUser } from '../../../../lib/auth-server';
+import { complianceState } from '@/lib/training-assignment';
+import { sendComplianceReminders } from '@/lib/training-assignment-server';
 
 /**
  * GET /api/training/my
@@ -17,6 +19,11 @@ export async function GET(request) {
       );
     }
 
+    // Due / overdue / re-training reminders for this person (#103): sent when they open
+    // their trainings, so they arrive even without a scheduler. Each goes out once.
+    await sendComplianceReminders({ userId: user.id }).catch((err) => console.error('Training reminders failed:', err));
+
+    const now = new Date();
     const registrations = await prisma.trainingRegistration.findMany({
       where: {
         userId: user.id,
@@ -71,6 +78,10 @@ export async function GET(request) {
           id: reg.id,
           status: reg.status,
           registeredAt: reg.registeredAt,
+          // Assigned trainings (#103)
+          source: reg.source,
+          dueDate: reg.dueDate,
+          compliance: complianceState(reg, now),
           training: {
             id: reg.training.id,
             title: reg.training.title,
@@ -81,6 +92,7 @@ export async function GET(request) {
             startDate: reg.training.startDate,
             endDate: reg.training.endDate,
             status: reg.training.status,
+            isMandatory: reg.training.isMandatory,
             modules: reg.training.modules,
           },
           moduleProgress: reg.moduleProgress,

@@ -2160,6 +2160,8 @@
     "manage_trainings_desc": "ສ້າງ ແລະ ຈັດການການຝຶກອົບຮົມຂອງສະຖາບັນ",
     "certificate_templates": "Certificate Templates",
     "certificate_templates_desc": "Design the certificates your trainings issue",
+    "training_compliance": "Training Compliance",
+    "training_compliance_desc": "Mandatory training: assigned, completed, overdue",
     "performance_review": "ການປະເມີນຜົນງານ",
     "performance_review_desc": "ປະເມີນຜົນງານນັກຄົ້ນຄວ້າ",
     "results_reporting": "ຜົນ ແລະ ລາຍງານ",
