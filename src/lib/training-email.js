@@ -100,7 +100,7 @@ export function buildTrainingEmail(kind, data) {
   const name = data.recipient?.givenName || 'there';
   const t = data.training || {};
   const title = t.title || 'your training';
-  const trainingUrl = `${base}/researcher/training?training=${encodeURIComponent(t.id || '')}`;
+  const trainingUrl = `${base}/researcher/training/${encodeURIComponent(t.id || '')}`;
   const s = data.session;
   const when = sessionWhen(s, tz);
 
