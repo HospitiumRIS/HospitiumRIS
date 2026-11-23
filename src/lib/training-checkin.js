@@ -7,15 +7,24 @@
  * - Each session also has a 6-digit code shown under the QR for people who can't scan.
  */
 
-import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomInt, timingSafeEqual } from 'node:crypto';
 
 export const TOKEN_WINDOW_SECONDS = 30;
 const TOKEN_LENGTH = 22;
 
-export function checkInSecret() {
-  const secret = process.env.TRAINING_CHECKIN_SECRET || process.env.JWT_SECRET;
-  if (!secret) throw new Error('TRAINING_CHECKIN_SECRET (or JWT_SECRET) must be set for training check-in');
-  return secret;
+/**
+ * Secret for check-in tokens. Prefer a dedicated TRAINING_CHECKIN_SECRET; otherwise use
+ * another server-only secret the deployment already has. As a last resort derive one
+ * from DATABASE_URL (it contains the database password and never leaves the server), so
+ * check-in works on deployments that set none of the others instead of failing with 500.
+ */
+export function checkInSecret(env = process.env) {
+  const direct = env.TRAINING_CHECKIN_SECRET || env.SESSION_SECRET || env.NEXTAUTH_SECRET || env.JWT_SECRET;
+  if (direct) return direct;
+  if (env.DATABASE_URL) {
+    return createHash('sha256').update(`hospitiumris-training-checkin:${env.DATABASE_URL}`).digest('base64url');
+  }
+  throw new Error('No secret available for training check-in: set TRAINING_CHECKIN_SECRET');
 }
 
 export function tokenWindow(now = new Date()) {
