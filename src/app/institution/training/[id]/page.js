@@ -44,6 +44,7 @@ import {
 } from '@mui/icons-material';
 import PageHeader from '@/components/common/PageHeader';
 import { formatTargetGroupLabel } from '@/lib/training-admin';
+import { allowedAdminStatuses } from '@/lib/training-registration-state';
 
 const PURPLE = '#8b6cbc';
 const dialogLock = { disableScrollLock: true };
@@ -408,9 +409,9 @@ export default function TrainingDetailPage() {
                         </TableCell>
                         <TableCell>
                           <Select size="small" value={reg.status} onChange={(e) => handleUpdateRegistrationStatus(reg.id, e.target.value)}>
-                            <MenuItem value="REGISTERED">Registered</MenuItem>
-                            <MenuItem value="COMPLETED">Completed</MenuItem>
-                            <MenuItem value="CANCELLED">Cancelled</MenuItem>
+                            <MenuItem value="REGISTERED" disabled={!allowedAdminStatuses(reg.status).includes('REGISTERED')}>Registered</MenuItem>
+                            <MenuItem value="COMPLETED" disabled={!allowedAdminStatuses(reg.status).includes('COMPLETED')}>Completed</MenuItem>
+                            <MenuItem value="CANCELLED" disabled={!allowedAdminStatuses(reg.status).includes('CANCELLED')}>Cancelled</MenuItem>
                           </Select>
                         </TableCell>
                         <TableCell>

@@ -7,6 +7,7 @@ import {
   deleteTrainingFile,
 } from '../../../../../../lib/training-files';
 import { requireTrainingAdminAccess } from '@/lib/training-admin-server';
+import { auditTraining } from '@/lib/training-audit';
 
 /**
  * POST /api/training/[id]/certificates/[regId]
@@ -35,6 +36,11 @@ export async function POST(request, { params }) {
 
     const access = await requireTrainingAdminAccess(user, registration.training);
     if (access.error) return access.error;
+
+    // The certificate is stored against the training in the URL: it must match.
+    if (registration.trainingId !== id) {
+      return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
+    }
 
     if (registration.status !== 'COMPLETED') {
       return NextResponse.json(
@@ -94,6 +100,16 @@ export async function POST(request, { params }) {
         uploadedBy: user.id,
         issuedAt: new Date(),
       },
+    });
+
+    await auditTraining({
+      trainingId: id,
+      actorId: user.id,
+      action: existingCertificate ? 'CERTIFICATE_REPLACED' : 'CERTIFICATE_UPLOADED',
+      entityType: 'TrainingCertificate',
+      entityId: certificate.id,
+      before: existingCertificate ? { certificateUrl: existingCertificate.certificateUrl, issuedAt: existingCertificate.issuedAt } : null,
+      after: { certificateUrl: certificate.certificateUrl, registrationId: regId },
     });
 
     return NextResponse.json({
