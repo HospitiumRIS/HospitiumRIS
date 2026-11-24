@@ -43,3 +43,17 @@ test('trial ID lookup', async () => {
   assert.match(lookupTrialRecord('NCT00000001').error, /No record found/);
   assert.match(lookupTrialRecord('abc').error, /PACTR number/);
 });
+
+test('approvals, registry and team rows', async () => {
+  const { approvalRows, registryRows, teamRows, gcpState } = await import('../src/lib/clinical-trials.js');
+  const NOW2 = new Date('2026-11-25T10:00:00Z');
+  const a = approvalRows(SAMPLE_TRIALS, NOW2);
+  assert.equal(a[0].state, 'EXPIRED'); // ct-004 ethics expired
+  assert.ok(!a.some((r) => r.kind === 'Regulatory' && r.trial.regulatory?.status === 'NOT_REQUIRED'));
+  const r = registryRows(SAMPLE_TRIALS, NOW2);
+  assert.ok(r.find((x) => x.id === 'ct-005').urgent);
+  assert.equal(gcpState(null, NOW2), 'MISSING');
+  assert.equal(gcpState('2026-12-15', NOW2), 'EXPIRING');
+  const t = teamRows(SAMPLE_TRIALS, NOW2);
+  assert.equal(t[0].gcp, 'MISSING');
+});
