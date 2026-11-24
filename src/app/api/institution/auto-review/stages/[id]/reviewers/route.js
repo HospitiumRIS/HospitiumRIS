@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import { autoReviewAccess, ownStage, isMember } from '@/lib/auto-review-access';
 
 export async function POST(request, { params }) {
   try {
     const { id: stageId } = await params;
+    const ctx = await autoReviewAccess();
+    if (ctx.error) return ctx.error;
+    const own = await ownStage(ctx, stageId);
+    if (own.error) return own.error;
     const body = await request.json();
     const {
       userId,
@@ -19,6 +22,14 @@ export async function POST(request, { params }) {
     if (!roleId) {
       return NextResponse.json(
         { success: false, error: 'Role is required' },
+        { status: 400 }
+      );
+    }
+
+    // Internal reviewers must be members of the institution (#9).
+    if (userId && !(await isMember(ctx, userId))) {
+      return NextResponse.json(
+        { success: false, error: 'Reviewer must be a member of your institution' },
         { status: 400 }
       );
     }
@@ -62,6 +73,10 @@ export async function POST(request, { params }) {
 export async function GET(request, { params }) {
   try {
     const { id: stageId } = await params;
+    const ctx = await autoReviewAccess();
+    if (ctx.error) return ctx.error;
+    const own = await ownStage(ctx, stageId);
+    if (own.error) return own.error;
 
     const reviewers = await prisma.stageReviewer.findMany({
       where: { stageId },

@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import { autoReviewAccess, ownStage } from '@/lib/auto-review-access';
 
 export async function POST(request, { params }) {
   try {
     const { id: stageId } = await params;
+    const ctx = await autoReviewAccess();
+    if (ctx.error) return ctx.error;
+    const own = await ownStage(ctx, stageId);
+    if (own.error) return own.error;
     const body = await request.json();
     const {
       name,

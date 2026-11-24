@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
+import { autoReviewAccess, canManageReviewerRoles } from '@/lib/auto-review-access';
 
-const prisma = new PrismaClient();
-
+/** GET: reviewer roles (shared by all institutions). Portal users only (#9). */
 export async function GET(request) {
   try {
+    const ctx = await autoReviewAccess();
+    if (ctx.error) return ctx.error;
     const roles = await prisma.reviewerRole.findMany({
       orderBy: { name: 'asc' }
     });
@@ -22,9 +24,15 @@ export async function GET(request) {
   }
 }
 
+/** POST: create a reviewer role. Roles are shared by all institutions, so global admins only (#9). */
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const ctx = await autoReviewAccess();
+    if (ctx.error) return ctx.error;
+    if (!canManageReviewerRoles(ctx.user)) {
+      return NextResponse.json({ success: false, error: 'Reviewer roles are shared by all institutions and can only be changed by a platform administrator' }, { status: 403 });
+    }
+    const body = await request.json().catch(() => ({}));
     const {
       name,
       type,

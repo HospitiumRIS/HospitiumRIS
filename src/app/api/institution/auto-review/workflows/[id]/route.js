@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import { autoReviewAccess, ownWorkflow } from '@/lib/auto-review-access';
 
 export async function GET(request, { params }) {
   try {
     const { id } = await params;
+    const ctx = await autoReviewAccess();
+    if (ctx.error) return ctx.error;
+    const own = await ownWorkflow(ctx, id);
+    if (own.error) return own.error;
 
     const workflow = await prisma.autoReviewWorkflow.findUnique({
       where: { id },
@@ -59,6 +62,10 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     const { id } = await params;
+    const ctx = await autoReviewAccess();
+    if (ctx.error) return ctx.error;
+    const own = await ownWorkflow(ctx, id);
+    if (own.error) return own.error;
     const body = await request.json();
     const {
       name,
@@ -77,7 +84,7 @@ export async function PUT(request, { params }) {
 
       if (workflow) {
         await prisma.autoReviewWorkflow.updateMany({
-          where: { type: workflow.type, isDefault: true, id: { not: id } },
+          where: { ...ctx.workflowWhere, type: workflow.type, isDefault: true, id: { not: id } },
           data: { isDefault: false }
         });
       }
@@ -120,6 +127,10 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
+    const ctx = await autoReviewAccess();
+    if (ctx.error) return ctx.error;
+    const own = await ownWorkflow(ctx, id);
+    if (own.error) return own.error;
 
     const executionCount = await prisma.workflowExecution.count({
       where: { workflowId: id }

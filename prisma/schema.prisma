@@ -198,6 +198,7 @@ model Institution {
   verifiedDomains        VerifiedDomain[]
   imageIntegrityLabUnits ImageIntegrityLabUnit[]
 
+  autoReviewWorkflows AutoReviewWorkflow[]
   @@map("institutions")
 }
 
@@ -2587,6 +2588,10 @@ model AutoReviewWorkflow {
   createdBy String? // User ID
   version   Int     @default(1)
 
+  // Owning institution (#9). Workflows without one are visible to no institution.
+  institutionId String?
+  institution   Institution? @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2595,6 +2600,7 @@ model AutoReviewWorkflow {
   stages     AutoReviewStage[]
   executions WorkflowExecution[]
 
+  @@index([institutionId])
   @@map("auto_review_workflows")
 }
 
