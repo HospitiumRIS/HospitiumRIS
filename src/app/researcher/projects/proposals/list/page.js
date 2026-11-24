@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import {
+  Tab,
+  Tabs,
   Box,
   Container,
   Typography,
@@ -59,6 +61,16 @@ import ProposalStatusCell from '../../../../../components/Proposals/ProposalStat
 import RowActions from '../../../../../components/common/RowActions';
 import { PurpleTableHead, TablePaper, paginationSx, zebraRowSx } from '../../../../../components/common/ListPage';
 
+// Tabs follow the proposal status (#researcher proposals list).
+const STATUS_TABS = [
+  { key: 'all', label: 'All', match: () => true },
+  { key: 'draft', label: 'Draft', match: (s) => s === 'DRAFT' },
+  { key: 'review', label: 'In review', match: (s) => s === 'SUBMITTED' || s === 'UNDER_REVIEW' },
+  { key: 'revision', label: 'Needs revision', match: (s) => s === 'REVISION_REQUESTED' },
+  { key: 'approved', label: 'Approved', match: (s) => s === 'APPROVED' },
+  { key: 'rejected', label: 'Rejected', match: (s) => s === 'REJECTED' },
+];
+
 const ProposalsListPage = () => {
   const { t } = useTranslation();
   const router = useRouter();
@@ -67,7 +79,7 @@ const ProposalsListPage = () => {
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All Statuses');
+  const [statusTab, setStatusTab] = useState('all');
   const [timeFilter, setTimeFilter] = useState('All Time');
   const [sortBy, setSortBy] = useState('Recent');
   const [menuAnchor, setMenuAnchor] = useState(null);
@@ -103,9 +115,6 @@ const ProposalsListPage = () => {
       const params = new URLSearchParams();
       if (searchQuery) {
         params.append('search', searchQuery);
-      }
-      if (statusFilter && statusFilter !== 'All Statuses') {
-        params.append('status', statusFilter);
       }
       params.append('limit', '500');
       params.append('include', 'review');
@@ -143,7 +152,7 @@ const ProposalsListPage = () => {
   // Load proposals on component mount and when filters change
   useEffect(() => {
     fetchProposals();
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery]);
 
   // Initial load
   useEffect(() => {
@@ -156,7 +165,7 @@ const ProposalsListPage = () => {
                          proposal.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          proposal.fields.some(field => field.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    const matchesStatus = statusFilter === 'All Statuses' || proposal.status === statusFilter;
+    const matchesStatus = (STATUS_TABS.find((tab) => tab.key === statusTab) || STATUS_TABS[0]).match(proposal.status);
     
     return matchesSearch && matchesStatus;
   });
@@ -556,29 +565,6 @@ const ProposalsListPage = () => {
 
             <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
               <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  sx={{ 
-                    borderRadius: 3,
-                    backgroundColor: 'rgba(255,255,255,0.8)',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255,255,255,1)'
-                    }
-                  }}
-                >
-                  <MenuItem value="All Statuses">All Statuses</MenuItem>
-                  <MenuItem value="DRAFT">Draft</MenuItem>
-                  <MenuItem value="UNDER_REVIEW">Under Review</MenuItem>
-                  <MenuItem value="APPROVED">Approved</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-
-            <Box sx={{ flex: '1 1 150px', minWidth: '150px' }}>
-              <FormControl fullWidth>
                 <InputLabel>Timeframe</InputLabel>
                 <Select
                   value={timeFilter}
@@ -629,7 +615,7 @@ const ProposalsListPage = () => {
                 startIcon={<ClearIcon />}
                 onClick={() => {
                   setSearchQuery('');
-                  setStatusFilter('All Statuses');
+                  setStatusTab('all');
                   setTimeFilter('All Time');
                   setSortBy('Recent');
                 }}
@@ -653,6 +639,36 @@ const ProposalsListPage = () => {
               </Button>
             </Box>
           </Box>
+        </Paper>
+
+        {/* Status tabs */}
+        <Paper sx={{ mb: 2, borderRadius: 3, border: '1px solid rgba(139, 108, 188, 0.12)', boxShadow: '0 4px 16px rgba(139, 108, 188, 0.06)', overflow: 'hidden' }}>
+          <Tabs
+            value={statusTab}
+            onChange={(_, value) => { setStatusTab(value); setPage(0); }}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{ px: 1, '& .MuiTab-root': { textTransform: 'none', fontWeight: 600, minHeight: 52 }, '& .Mui-selected': { color: '#8b6cbc !important' }, '& .MuiTabs-indicator': { bgcolor: '#8b6cbc' } }}
+          >
+            {STATUS_TABS.map((tab) => {
+              const count = proposals.filter((p) => tab.match(p.status)).length;
+              const active = statusTab === tab.key;
+              return (
+                <Tab
+                  key={tab.key}
+                  value={tab.key}
+                  label={(
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {tab.label}
+                      <Box component="span" sx={{ px: 0.75, borderRadius: 999, fontSize: '0.7rem', fontWeight: 700, minWidth: 20, textAlign: 'center', bgcolor: active ? '#8b6cbc' : tab.key === 'revision' && count ? '#fef3c7' : '#f3f4f6', color: active ? 'white' : tab.key === 'revision' && count ? '#92400e' : '#6b7280' }}>
+                        {count}
+                      </Box>
+                    </Box>
+                  )}
+                />
+              );
+            })}
+          </Tabs>
         </Paper>
 
         {/* Proposals Grid */}
@@ -709,7 +725,7 @@ const ProposalsListPage = () => {
               No proposals found
             </Typography>
             <Typography variant="body1" color="textSecondary" sx={{ mb: 4, maxWidth: 400, mx: 'auto', lineHeight: 1.6 }}>
-              {searchQuery || statusFilter !== 'All Statuses' 
+              {searchQuery || statusTab !== 'all' 
                 ? 'Try adjusting your search criteria or clear all filters to see more results'
                 : 'Create your first research proposal to get started on your research journey'
               }
