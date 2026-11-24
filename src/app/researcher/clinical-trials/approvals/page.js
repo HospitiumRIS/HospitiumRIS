@@ -182,6 +182,19 @@ export default function ApprovalsEthicsPage() {
       />
 
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        {/* Ethics clearance lives in the Ethics module (one place for all studies). */}
+        <Alert
+          severity="info"
+          sx={{ mb: 3, borderRadius: 2 }}
+          action={(
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button size="small" onClick={() => router.push('/researcher/ethics/applications')} sx={{ textTransform: 'none', fontWeight: 700 }}>My ethics applications</Button>
+              <Button size="small" variant="contained" onClick={() => router.push('/researcher/ethics/applications/create')} sx={{ textTransform: 'none', fontWeight: 700, bgcolor: '#8b6cbc', boxShadow: 'none' }}>Apply or upload clearance</Button>
+            </Box>
+          )}
+        >
+          Ethics clearance for trials is managed in Ethics: apply there or upload an existing clearance certificate. Regulatory submissions are tracked here.
+        </Alert>
         {/* Statistics Cards */}
         <Box sx={{ display: 'flex', gap: 2.5, mb: 4, flexWrap: 'wrap' }}>
           <Paper sx={{ 
