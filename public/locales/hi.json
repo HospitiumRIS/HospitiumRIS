@@ -2175,7 +2175,19 @@
     "team_gcp": "टीम और GCP प्रमाणन",
     "team_gcp_desc": "संस्था-व्यापी GCP प्रमाणन स्थिति, प्रतिनिधिमंडल लॉग",
     "user_accounts": "उपयोगकर्ता खाते",
-    "user_accounts_desc": "उपयोगकर्ता खाते और पहुँच प्रबंधित करें"
+    "user_accounts_desc": "उपयोगकर्ता खाते और पहुँच प्रबंधित करें",
+    "proposal_review": "Proposal review",
+    "proposal_review_desc": "Assign reviewers and decide submitted proposals",
+    "proposals_pipeline": "Proposals pipeline",
+    "proposals_pipeline_desc": "Every proposal from draft to award, by stage",
+    "ethics_review": "Ethics review",
+    "ethics_review_desc": "Review and decide submitted ethics applications",
+    "ethics_register": "Ethics register",
+    "ethics_register_desc": "All ethics applications and approvals, with expiry dates",
+    "project_tracking": "Project tracking",
+    "project_tracking_desc": "Progress and milestones of approved projects",
+    "budget_expenses": "Budget & expenses",
+    "budget_expenses_desc": "Budgets, spending, expense claims and funding analytics"
   },
   "logs_page": {
     "date_range": "तिथि सीमा",
@@ -2245,7 +2257,9 @@
     "trial_setup": "परीक्षण सेटअप और स्थल आरंभ",
     "user_management": "उपयोगकर्ता प्रबंधन",
     "writing_phase": "लेखन चरण",
-    "writing_tracker": "लेखन ट्रैकर"
+    "writing_tracker": "लेखन ट्रैकर",
+    "ethics": "ETHICS",
+    "projects_finance": "PROJECTS & FINANCE"
   },
   "news_page": {
     "article_tcc": {

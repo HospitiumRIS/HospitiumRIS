@@ -2175,7 +2175,19 @@
     "team_gcp": "ทีมและใบรับรอง GCP",
     "team_gcp_desc": "สถานะใบรับรอง GCP ทั้งสถาบันและบันทึกการมอบอำนาจ",
     "user_accounts": "บัญชีผู้ใช้",
-    "user_accounts_desc": "จัดการบัญชีผู้ใช้และการเข้าถึง"
+    "user_accounts_desc": "จัดการบัญชีผู้ใช้และการเข้าถึง",
+    "proposal_review": "Proposal review",
+    "proposal_review_desc": "Assign reviewers and decide submitted proposals",
+    "proposals_pipeline": "Proposals pipeline",
+    "proposals_pipeline_desc": "Every proposal from draft to award, by stage",
+    "ethics_review": "Ethics review",
+    "ethics_review_desc": "Review and decide submitted ethics applications",
+    "ethics_register": "Ethics register",
+    "ethics_register_desc": "All ethics applications and approvals, with expiry dates",
+    "project_tracking": "Project tracking",
+    "project_tracking_desc": "Progress and milestones of approved projects",
+    "budget_expenses": "Budget & expenses",
+    "budget_expenses_desc": "Budgets, spending, expense claims and funding analytics"
   },
   "logs_page": {
     "date_range": "ช่วงวันที่",
@@ -2245,7 +2257,9 @@
     "trial_setup": "การจัดตั้งการทดลองและการเริ่มสถานที่",
     "user_management": "การจัดการผู้ใช้",
     "writing_phase": "ขั้นการเขียน",
-    "writing_tracker": "ตัวติดตามการเขียน"
+    "writing_tracker": "ตัวติดตามการเขียน",
+    "ethics": "ETHICS",
+    "projects_finance": "PROJECTS & FINANCE"
   },
   "news_page": {
     "article_tcc": {

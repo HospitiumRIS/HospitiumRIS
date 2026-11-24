@@ -90,7 +90,6 @@ function buildInstitutionConfig(t) {
         categories: [
           category(t, 'nav_categories.writing_tracker', [
             item(t, 'institution.manuscripts', 'institution.manuscripts_desc', '/institution/publications/manuscripts', <ArticleIcon sx={ICON_SM} />),
-            item(t, 'institution.proposals', 'institution.proposals_desc', '/institution/publications/proposals', <SubmitIcon sx={ICON_SM} />),
           ]),
         ],
       },
@@ -98,14 +97,18 @@ function buildInstitutionConfig(t) {
         key: 'projects',
         label: t('institution.projects'),
         categories: [
-          category(t, 'nav_categories.proposal_review', [
-            item(t, 'institution.review_proposals', 'institution.review_proposals_desc', '/institution/proposals/review', <ReviewIcon sx={ICON_SM} />),
+          // By lifecycle: proposal → ethics → funded project and its money.
+          category(t, 'nav_categories.proposals', [
+            item(t, 'institution_nav.proposal_review', 'institution_nav.proposal_review_desc', '/institution/proposals/review', <ReviewIcon sx={ICON_SM} />),
+            item(t, 'institution_nav.proposals_pipeline', 'institution_nav.proposals_pipeline_desc', '/institution/publications/proposals', <SubmitIcon sx={ICON_SM} />),
           ]),
-          category(t, 'nav_categories.ethics_review', [
-            item(t, 'institution.review_ethics', 'institution.review_ethics_desc', '/institution/ethics/review', <EthicsReviewIcon sx={ICON_SM} />),
+          category(t, 'nav_categories.ethics', [
+            item(t, 'institution_nav.ethics_review', 'institution_nav.ethics_review_desc', '/institution/ethics/review', <EthicsReviewIcon sx={ICON_SM} />),
+            item(t, 'institution_nav.ethics_register', 'institution_nav.ethics_register_desc', '/institution/ethics/applications', <IntegrityReportIcon sx={ICON_SM} />),
           ]),
-          category(t, 'nav_categories.project_tracking', [
-            item(t, 'institution.track_projects', 'institution.track_projects_desc', '/institution/projects', <AssessmentIcon sx={ICON_SM} />),
+          category(t, 'nav_categories.projects_finance', [
+            item(t, 'institution_nav.project_tracking', 'institution_nav.project_tracking_desc', '/institution/projects', <AssessmentIcon sx={ICON_SM} />),
+            item(t, 'institution_nav.budget_expenses', 'institution_nav.budget_expenses_desc', '/institution/projects/budget', <FundingIcon sx={ICON_SM} />),
           ]),
         ],
       },
@@ -176,7 +179,6 @@ function buildInstitutionConfig(t) {
         categories: [
           category(t, 'nav_categories.institutional_analytics', [
             item(t, 'institution_nav.institution_metrics', 'institution_nav.institution_metrics_desc', '/institution/analytics', <ReportsIcon sx={ICON_SM} />),
-            item(t, 'institution_nav.funding_reports', 'institution_nav.funding_reports_desc', '/institution/analytics/funding', <FundingIcon sx={ICON_SM} />),
             item(t, 'institution_nav.compliance_reports', 'institution_nav.compliance_reports_desc', '/institution/analytics/compliance', <AssignmentIcon sx={ICON_SM} />),
           ]),
         ],

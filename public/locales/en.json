@@ -2225,7 +2225,19 @@
     "team_gcp": "Team & GCP Certification",
     "team_gcp_desc": "Institution-wide GCP certification status, delegation logs",
     "user_accounts": "User Accounts",
-    "user_accounts_desc": "Manage user accounts and access"
+    "user_accounts_desc": "Manage user accounts and access",
+    "proposal_review": "Proposal review",
+    "proposal_review_desc": "Assign reviewers and decide submitted proposals",
+    "proposals_pipeline": "Proposals pipeline",
+    "proposals_pipeline_desc": "Every proposal from draft to award, by stage",
+    "ethics_review": "Ethics review",
+    "ethics_review_desc": "Review and decide submitted ethics applications",
+    "ethics_register": "Ethics register",
+    "ethics_register_desc": "All ethics applications and approvals, with expiry dates",
+    "project_tracking": "Project tracking",
+    "project_tracking_desc": "Progress and milestones of approved projects",
+    "budget_expenses": "Budget & expenses",
+    "budget_expenses_desc": "Budgets, spending, expense claims and funding analytics"
   },
   "logs_page": {
     "date_range": "Date Range",
@@ -2299,7 +2311,9 @@
     "trial_setup": "TRIAL SETUP & SITE INITIATION",
     "user_management": "USER MANAGEMENT",
     "writing_phase": "WRITING PHASE",
-    "writing_tracker": "WRITING TRACKER"
+    "writing_tracker": "WRITING TRACKER",
+    "ethics": "ETHICS",
+    "projects_finance": "PROJECTS & FINANCE"
   },
   "news_page": {
     "article_tcc": {

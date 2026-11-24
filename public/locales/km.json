@@ -2175,7 +2175,19 @@
     "team_gcp": "ក្រុម និងវិញ្ញាបនបត្រ GCP",
     "team_gcp_desc": "ស្ថានភាពវិញ្ញាបនបត្រ GCP ទូទាំងស្ថាប័ន និងកំណត់ហេតុផ្ទេរសិទ្ធិ",
     "user_accounts": "គណនីអ្នកប្រើ",
-    "user_accounts_desc": "គ្រប់គ្រងគណនីអ្នកប្រើ និងសិទ្ធិចូល"
+    "user_accounts_desc": "គ្រប់គ្រងគណនីអ្នកប្រើ និងសិទ្ធិចូល",
+    "proposal_review": "Proposal review",
+    "proposal_review_desc": "Assign reviewers and decide submitted proposals",
+    "proposals_pipeline": "Proposals pipeline",
+    "proposals_pipeline_desc": "Every proposal from draft to award, by stage",
+    "ethics_review": "Ethics review",
+    "ethics_review_desc": "Review and decide submitted ethics applications",
+    "ethics_register": "Ethics register",
+    "ethics_register_desc": "All ethics applications and approvals, with expiry dates",
+    "project_tracking": "Project tracking",
+    "project_tracking_desc": "Progress and milestones of approved projects",
+    "budget_expenses": "Budget & expenses",
+    "budget_expenses_desc": "Budgets, spending, expense claims and funding analytics"
   },
   "logs_page": {
     "date_range": "ជួរកាលបរិច្ឆេទ",
@@ -2245,7 +2257,9 @@
     "trial_setup": "ការរៀបចំសាកល្បង និងចាប់ផ្តើមទីតាំង",
     "user_management": "ការគ្រប់គ្រងអ្នកប្រើ",
     "writing_phase": "ដំណាក់កាលសរសេរ",
-    "writing_tracker": "អ្នកតាមដានការសរសេរ"
+    "writing_tracker": "អ្នកតាមដានការសរសេរ",
+    "ethics": "ETHICS",
+    "projects_finance": "PROJECTS & FINANCE"
   },
   "news_page": {
     "article_tcc": {

@@ -2175,7 +2175,19 @@
     "team_gcp": "团队与 GCP 认证",
     "team_gcp_desc": "全机构 GCP 认证状态与授权记录",
     "user_accounts": "用户账户",
-    "user_accounts_desc": "管理用户账户与访问权限"
+    "user_accounts_desc": "管理用户账户与访问权限",
+    "proposal_review": "申请评审",
+    "proposal_review_desc": "分配评审人并对已提交的申请作出决定",
+    "proposals_pipeline": "申请进度",
+    "proposals_pipeline_desc": "从草稿到资助的所有申请，按阶段查看",
+    "ethics_review": "伦理审查",
+    "ethics_review_desc": "审查并决定已提交的伦理申请",
+    "ethics_register": "伦理登记",
+    "ethics_register_desc": "所有伦理申请和批准及其到期日期",
+    "project_tracking": "项目跟踪",
+    "project_tracking_desc": "已批准项目的进展和里程碑",
+    "budget_expenses": "预算与支出",
+    "budget_expenses_desc": "预算、支出、报销申请和资助分析"
   },
   "logs_page": {
     "date_range": "日期范围",
@@ -2245,7 +2257,9 @@
     "trial_setup": "试验设置与中心启动",
     "user_management": "用户管理",
     "writing_phase": "写作阶段",
-    "writing_tracker": "写作跟踪"
+    "writing_tracker": "写作跟踪",
+    "ethics": "伦理",
+    "projects_finance": "项目与财务"
   },
   "news_page": {
     "article_tcc": {

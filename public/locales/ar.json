@@ -2175,7 +2175,19 @@
     "team_gcp": "الفريق وشهادة GCP",
     "team_gcp_desc": "حالة شهادة GCP على مستوى المؤسسة وسجلات التفويض",
     "user_accounts": "حسابات المستخدمين",
-    "user_accounts_desc": "إدارة حسابات المستخدمين والوصول"
+    "user_accounts_desc": "إدارة حسابات المستخدمين والوصول",
+    "proposal_review": "مراجعة المقترحات",
+    "proposal_review_desc": "تعيين المراجعين واتخاذ القرار بشأن المقترحات المقدمة",
+    "proposals_pipeline": "مسار المقترحات",
+    "proposals_pipeline_desc": "جميع المقترحات من المسودة إلى المنحة، حسب المرحلة",
+    "ethics_review": "المراجعة الأخلاقية",
+    "ethics_review_desc": "مراجعة طلبات الأخلاقيات المقدمة والبت فيها",
+    "ethics_register": "سجل الأخلاقيات",
+    "ethics_register_desc": "جميع طلبات وموافقات الأخلاقيات مع تواريخ انتهائها",
+    "project_tracking": "متابعة المشاريع",
+    "project_tracking_desc": "تقدم المشاريع المعتمدة ومراحلها",
+    "budget_expenses": "الميزانية والمصروفات",
+    "budget_expenses_desc": "الميزانيات والإنفاق ومطالبات المصروفات وتحليلات التمويل"
   },
   "logs_page": {
     "date_range": "النطاق الزمني",
@@ -2245,7 +2257,9 @@
     "trial_setup": "إعداد التجربة وبدء الموقع",
     "user_management": "إدارة المستخدمين",
     "writing_phase": "مرحلة الكتابة",
-    "writing_tracker": "متتبع الكتابة"
+    "writing_tracker": "متتبع الكتابة",
+    "ethics": "الأخلاقيات",
+    "projects_finance": "المشاريع والمالية"
   },
   "news_page": {
     "article_tcc": {

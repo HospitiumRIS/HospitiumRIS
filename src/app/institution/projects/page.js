@@ -223,14 +223,10 @@ const ProjectsTracking = () => {
   return (
     <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
       <PageHeader
-        title="Project Tracking"
-        description="Monitor all ongoing projects and their progress"
+        title="Project tracking"
+        description="Progress and milestones of your institution's approved projects"
         icon={<AssessmentIcon sx={{ fontSize: 32 }} />}
-        breadcrumbs={[
-          { label: 'Institution', path: '/institution' },
-          { label: 'Administration', path: '/institution' },
-          { label: 'Project Tracking' }
-        ]}
+        breadcrumbs={[{ label: 'Home', path: '/institution' }]}
         gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
         actionButton={
           <Button
