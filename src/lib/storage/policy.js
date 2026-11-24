@@ -1,4 +1,4 @@
-/** @typedef {'ETHICS_DOCUMENT'|'ETHICS_CERTIFICATE'|'PROPOSAL_DOCUMENT'|'PROPOSAL_DELIVERABLE'|'PROPOSAL_MILESTONE'|'IMAGE_INTEGRITY'|'TRAINING_MATERIAL'|'TRAINING_CERTIFICATE'|'INSTITUTION_LOGO'|'PROFILE_PHOTO'} StoredFileModule */
+/** @typedef {'ETHICS_DOCUMENT'|'ETHICS_CERTIFICATE'|'PROPOSAL_DOCUMENT'|'PROPOSAL_DELIVERABLE'|'PROPOSAL_MILESTONE'|'IMAGE_INTEGRITY'|'TRAINING_MATERIAL'|'TRAINING_CERTIFICATE'|'INSTITUTION_LOGO'|'PROFILE_PHOTO'|'PROJECT_EXPENSE_RECEIPT'} StoredFileModule */
 
 /** @type {Record<string, { visibility: 'PRIVATE'|'PUBLIC', maxBytes: number, extensions: string[], maxFiles?: number }>} */
 export const MODULE_POLICIES = {
@@ -47,6 +47,12 @@ export const MODULE_POLICIES = {
     visibility: 'PUBLIC',
     maxBytes: 2 * 1024 * 1024,
     extensions: ['png', 'jpg', 'jpeg', 'webp'],
+  },
+  PROJECT_EXPENSE_RECEIPT: {
+    // Receipts for project expenses (#179); read through the budget API's access check
+    visibility: 'PRIVATE',
+    maxBytes: 10 * 1024 * 1024,
+    extensions: ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'heic'],
   },
   PROFILE_PHOTO: {
     // PUBLIC = readable by any signed-in user (colleagues, co-authors, admins)
