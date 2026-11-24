@@ -131,6 +131,7 @@ export default function InstitutionProposalReviewDetailPage() {
                 {reviewers.length ? `${reviewers.length} invited` : 'No reviewers invited yet'}
               </Typography>
             </Box>
+            {alreadyDecided ? null : (
             <Button
               variant="outlined"
               startIcon={<InviteIcon />}
@@ -139,6 +140,7 @@ export default function InstitutionProposalReviewDetailPage() {
             >
               Invite reviewers
             </Button>
+            )}
           </Stack>
           {reviewers.length ? (
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -148,7 +150,7 @@ export default function InstitutionProposalReviewDetailPage() {
             </Stack>
           ) : (
             <Typography variant="body2" color="text.secondary">
-              Invite external or internal reviewers by email. They receive a secure link to this proposal.
+              {alreadyDecided ? 'The proposal has been decided, so no more reviewers can be invited.' : 'Invite external or internal reviewers by email. They receive a secure link to this proposal.'}
             </Typography>
           )}
         </Paper>
@@ -258,6 +260,7 @@ export default function InstitutionProposalReviewDetailPage() {
             >
               Back to list
             </Button>
+            {alreadyDecided ? null : (
             <Button
               variant="outlined"
               startIcon={<InviteIcon />}
@@ -266,6 +269,7 @@ export default function InstitutionProposalReviewDetailPage() {
             >
               Invite reviewers
             </Button>
+            )}
             <Button
               variant="outlined"
               startIcon={<DecisionIcon />}
