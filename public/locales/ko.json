@@ -2162,6 +2162,8 @@
     "certificate_templates_desc": "Design the certificates your trainings issue",
     "training_compliance": "Training Compliance",
     "training_compliance_desc": "Mandatory training: assigned, completed, overdue",
+    "training_analytics": "Training Analytics",
+    "training_analytics_desc": "Attendance, completion, certificates, CPD and feedback",
     "performance_review": "성과 평가",
     "performance_review_desc": "연구자 성과를 검토합니다",
     "results_reporting": "결과 및 보고",

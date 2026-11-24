@@ -2162,6 +2162,8 @@
     "certificate_templates_desc": "Crie os certificados emitidos pelas suas formações",
     "training_compliance": "Conformidade de formação",
     "training_compliance_desc": "Formações obrigatórias: atribuídas, concluídas, em atraso",
+    "training_analytics": "Análise de formação",
+    "training_analytics_desc": "Presenças, conclusão, certificados, CPD e feedback",
     "performance_review": "Avaliação de desempenho",
     "performance_review_desc": "Rever o desempenho dos investigadores",
     "results_reporting": "Resultados e relatórios",
