@@ -1,459 +1,192 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  Alert,
   Box,
+  Button,
+  Chip,
+  CircularProgress,
   Container,
-  Typography,
+  InputAdornment,
+  MenuItem,
   Paper,
+  Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
-  Chip,
-  IconButton,
-  Tooltip,
-  TextField,
-  InputAdornment,
-  Button,
-  Stack,
-  Avatar,
-  LinearProgress,
-  Alert,
   Tabs,
-  Tab,
-  Badge,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText
+  TextField,
+  Tooltip,
+  Typography,
+  alpha,
 } from '@mui/material';
 import {
-  Search as SearchIcon,
-  Visibility as ViewIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  FilterList as FilterIcon,
-  FileDownload as ExportIcon,
+  Download as DownloadIcon,
+  Gavel as EthicsIcon,
+  Home as HomeIcon,
   Refresh as RefreshIcon,
-  Add as AddIcon,
-  Assignment as ApplicationIcon,
-  CheckCircle as ApprovedIcon,
-  Cancel as RejectedIcon,
-  Schedule as PendingIcon,
-  RateReview as ReviewIcon,
-  MoreVert as MoreVertIcon,
-  Person as PersonIcon
+  Search as SearchIcon,
 } from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
 import PageHeader from '@/components/common/PageHeader';
-import { useAuth } from '@/components/AuthProvider';
-import { useTranslation } from 'react-i18next';
+import { KpiCard, PURPLE, btn } from '@/components/Training/admin/analytics/AnalyticsParts';
+import { ETHICS_TABS, filterEthicsRows } from '@/lib/institution-ethics';
 
-const EthicsApplicationsPage = () => {
-  const { t } = useTranslation();
+const whiteBtn = { ...btn, bgcolor: 'white', color: PURPLE, '&:hover': { bgcolor: '#f5f5f5' } };
+const STATUS_SX = {
+  APPROVED: { bgcolor: '#dcfce7', color: '#166534' },
+  CONDITIONAL_APPROVAL: { bgcolor: '#dcfce7', color: '#166534' },
+  SUBMITTED: { bgcolor: '#e0e7ff', color: '#3730a3' },
+  UNDER_REVIEW: { bgcolor: '#ede9fe', color: '#6d28d9' },
+  REVISION_REQUESTED: { bgcolor: '#fef3c7', color: '#92400e' },
+  DRAFT: { bgcolor: '#f1f5f9', color: '#475569' },
+  REJECTED: { bgcolor: '#fee2e2', color: '#b91c1c' },
+  EXPIRED: { bgcolor: '#fee2e2', color: '#b91c1c' },
+  WITHDRAWN: { bgcolor: '#f1f5f9', color: '#64748b' },
+};
+const fmt = (v) => (v ? new Date(v).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+
+/**
+ * Ethics applications register for the research office (#21): every application of the
+ * institution's members, with status tabs, expiring approvals, search, department filter
+ * and Excel/CSV export. Opening a row goes to the ethics review page.
+ */
+export default function EthicsApplicationsPage() {
   const router = useRouter();
-  const theme = useTheme();
-  const { user, isLoading: authLoading } = useAuth();
-  
-  const [mounted, setMounted] = useState(false);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [applications, setApplications] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedApplication, setSelectedApplication] = useState(null);
-  const [alert, setAlert] = useState({ show: false, message: '', severity: 'info' });
+  const [error, setError] = useState('');
+  const [tab, setTab] = useState('all');
+  const [search, setSearch] = useState('');
+  const [department, setDepartment] = useState('all');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (mounted && !authLoading) {
-      loadApplications();
-    }
-  }, [mounted, authLoading]);
-
-  const loadApplications = async () => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await fetch('/api/institution/ethics/applications');
-      
-      if (response.ok) {
-        const data = await response.json();
-        setApplications(data.applications || []);
-      } else {
-        showAlert('Failed to load ethics applications', 'error');
-      }
-    } catch (error) {
-      console.error('Error loading applications:', error);
-      showAlert('Error loading ethics applications', 'error');
+      const res = await fetch('/api/institution/ethics/applications', { credentials: 'include', cache: 'no-store' });
+      if (res.status === 401) { router.replace('/login'); return; }
+      const json = await res.json().catch(() => ({}));
+      if (res.status === 403) throw new Error('You do not have access to the institution ethics register.');
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load ethics applications');
+      setData(json);
+      setError('');
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
+  }, [router]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const rows = useMemo(() => data?.applications || [], [data]);
+  const departments = useMemo(() => [...new Set(rows.map((r) => r.department).filter(Boolean))].sort(), [rows]);
+  const filtered = useMemo(() => filterEthicsRows(rows, { tab, search, department }), [rows, tab, search, department]);
+  useEffect(() => { setPage(0); }, [tab, search, department]);
+  const s = data?.summary;
+
+  const exportList = (format) => {
+    const p = new URLSearchParams({ format, tab, search, department });
+    window.location.assign(`/api/institution/ethics/applications?${p.toString()}`);
   };
-
-  const showAlert = (message, severity = 'info') => {
-    setAlert({ show: true, message, severity });
-    setTimeout(() => setAlert({ show: false, message: '', severity: 'info' }), 5000);
-  };
-
-  const handleTabChange = (event, newValue) => {
-    setSelectedTab(newValue);
-  };
-
-  const handleMenuOpen = (event, application) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedApplication(application);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedApplication(null);
-  };
-
-  const handleView = (application) => {
-    router.push(`/institution/ethics/review/${application.id}`);
-    handleMenuClose();
-  };
-
-  const handleEdit = (application) => {
-    router.push(`/institution/ethics/applications/${application.id}/edit`);
-    handleMenuClose();
-  };
-
-  const handleDelete = async (application) => {
-    if (confirm(`Are you sure you want to delete the application "${application.title}"?`)) {
-      try {
-        const response = await fetch(`/api/institution/ethics/applications/${application.id}`, {
-          method: 'DELETE'
-        });
-
-        if (response.ok) {
-          showAlert('Application deleted successfully', 'success');
-          loadApplications();
-        } else {
-          showAlert('Failed to delete application', 'error');
-        }
-      } catch (error) {
-        console.error('Error deleting application:', error);
-        showAlert('Error deleting application', 'error');
-      }
-    }
-    handleMenuClose();
-  };
-
-  const getStatusColor = (status) => {
-    switch (status?.toUpperCase()) {
-      case 'APPROVED':
-        return 'success';
-      case 'REJECTED':
-        return 'error';
-      case 'UNDER_REVIEW':
-        return 'warning';
-      case 'PENDING':
-        return 'default';
-      case 'REVISION_REQUIRED':
-        return 'info';
-      default:
-        return 'default';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status?.toUpperCase()) {
-      case 'APPROVED':
-        return <ApprovedIcon fontSize="small" />;
-      case 'REJECTED':
-        return <RejectedIcon fontSize="small" />;
-      case 'UNDER_REVIEW':
-        return <ReviewIcon fontSize="small" />;
-      case 'PENDING':
-        return <PendingIcon fontSize="small" />;
-      default:
-        return <ApplicationIcon fontSize="small" />;
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!mounted || !dateString) return '';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const filterApplications = () => {
-    let filtered = applications;
-
-    // Filter by tab
-    if (selectedTab === 1) {
-      filtered = filtered.filter(app => app.status === 'PENDING');
-    } else if (selectedTab === 2) {
-      filtered = filtered.filter(app => app.status === 'UNDER_REVIEW');
-    } else if (selectedTab === 3) {
-      filtered = filtered.filter(app => app.status === 'APPROVED');
-    } else if (selectedTab === 4) {
-      filtered = filtered.filter(app => app.status === 'REJECTED' || app.status === 'REVISION_REQUIRED');
-    }
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(app =>
-        app.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.principalInvestigator?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.applicationNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    return filtered;
-  };
-
-  const getTabCounts = () => {
-    return {
-      all: applications.length,
-      pending: applications.filter(app => app.status === 'PENDING').length,
-      underReview: applications.filter(app => app.status === 'UNDER_REVIEW').length,
-      approved: applications.filter(app => app.status === 'APPROVED').length,
-      other: applications.filter(app => app.status === 'REJECTED' || app.status === 'REVISION_REQUIRED').length
-    };
-  };
-
-  const filteredApplications = filterApplications();
-  const tabCounts = getTabCounts();
-
-  if (!mounted || authLoading) {
-    return null;
-  }
 
   return (
-    <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+    <Box sx={{ bgcolor: '#f8fafc', minHeight: '100vh' }}>
       <PageHeader
-        title={t('institution.review_ethics')}
-        description={t('institution.review_ethics_desc')}
-        gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
-      />
-
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Alert */}
-        {alert.show && (
-          <Alert severity={alert.severity} sx={{ mb: 3, borderRadius: 2 }} onClose={() => setAlert({ ...alert, show: false })}>
-            {alert.message}
-          </Alert>
-        )}
-
-        {/* Stats Cards */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
-          <Paper sx={{ flex: '1 1 200px', p: 2.5, borderRadius: 2, bgcolor: '#667eea', color: 'white' }}>
-            <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>Total Applications</Typography>
-            <Typography variant="h3" sx={{ fontWeight: 700 }}>{applications.length}</Typography>
-          </Paper>
-          <Paper sx={{ flex: '1 1 200px', p: 2.5, borderRadius: 2, bgcolor: '#f59e0b', color: 'white' }}>
-            <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>Under Review</Typography>
-            <Typography variant="h3" sx={{ fontWeight: 700 }}>{tabCounts.underReview}</Typography>
-          </Paper>
-          <Paper sx={{ flex: '1 1 200px', p: 2.5, borderRadius: 2, bgcolor: '#10b981', color: 'white' }}>
-            <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>{t('common.approved')}</Typography>
-            <Typography variant="h3" sx={{ fontWeight: 700 }}>{tabCounts.approved}</Typography>
-          </Paper>
-          <Paper sx={{ flex: '1 1 200px', p: 2.5, borderRadius: 2, bgcolor: '#6b7280', color: 'white' }}>
-            <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>{t('common.pending')}</Typography>
-            <Typography variant="h3" sx={{ fontWeight: 700 }}>{tabCounts.pending}</Typography>
-          </Paper>
-        </Box>
-
-        {/* Actions Bar */}
-        <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-            <TextField
-              placeholder={t('common.search') + ' applications...'}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              size="small"
-              sx={{ flex: '1 1 300px' }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <Button
-              variant="outlined"
-              startIcon={<RefreshIcon />}
-              onClick={loadApplications}
-            >
-              {t('common.refresh')}
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<ExportIcon />}
-            >
-              {t('common.export')}
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => router.push('/researcher/ethics/new')}
-            >
-              New Application
-            </Button>
+        title="Ethics applications"
+        description="Every ethics application and approval held by your institution's researchers."
+        icon={<EthicsIcon sx={{ fontSize: 32 }} />}
+        breadcrumbs={[
+          { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/institution' },
+          { label: 'Ethics review', path: '/institution/ethics/review' },
+        ]}
+        actionButton={(
+          <Stack direction="row" spacing={1}>
+            <Button variant="contained" startIcon={<DownloadIcon />} onClick={() => exportList('xlsx')} disabled={!rows.length} sx={whiteBtn}>Excel</Button>
+            <Button variant="contained" startIcon={<RefreshIcon />} onClick={load} sx={whiteBtn}>Refresh</Button>
           </Stack>
-        </Paper>
+        )}
+      />
+      <Container maxWidth={false} sx={{ py: 3, maxWidth: '1600px', mx: 'auto' }}>
+        <Stack spacing={2}>
+          {error ? <Alert severity="error" action={<Button size="small" onClick={load}>Retry</Button>}>{error}</Alert> : null}
+          {loading && !data ? <Box sx={{ py: 8, textAlign: 'center' }}><CircularProgress sx={{ color: PURPLE }} /></Box> : null}
 
-        {/* Tabs */}
-        <Paper sx={{ mb: 3, borderRadius: 2 }}>
-          <Tabs value={selectedTab} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tab label={
-              <Badge badgeContent={tabCounts.all} color="primary">
-                <span style={{ marginRight: 8 }}>{t('common.all')}</span>
-              </Badge>
-            } />
-            <Tab label={
-              <Badge badgeContent={tabCounts.pending} color="default">
-                <span style={{ marginRight: 8 }}>{t('common.pending')}</span>
-              </Badge>
-            } />
-            <Tab label={
-              <Badge badgeContent={tabCounts.underReview} color="warning">
-                <span style={{ marginRight: 8 }}>Under Review</span>
-              </Badge>
-            } />
-            <Tab label={
-              <Badge badgeContent={tabCounts.approved} color="success">
-                <span style={{ marginRight: 8 }}>{t('common.approved')}</span>
-              </Badge>
-            } />
-            <Tab label={
-              <Badge badgeContent={tabCounts.other} color="error">
-                <span style={{ marginRight: 8 }}>Other</span>
-              </Badge>
-            } />
-          </Tabs>
-        </Paper>
+          {s ? (
+            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(3, 1fr)', lg: 'repeat(5, 1fr)' } }}>
+              <KpiCard label="All applications" value={s.total} hint={s.external ? `${s.external} external certificate(s)` : 'Held by your researchers'} onClick={() => setTab('all')} />
+              <KpiCard label="To review" value={s.toReview} hint="Submitted or under review" onClick={() => setTab('to_review')} />
+              <KpiCard label="Approved" value={s.approved} hint="Valid approvals" onClick={() => setTab('approved')} />
+              <KpiCard label="Expiring in 60 days" value={s.expiring} hint={s.expired ? `${s.expired} already expired` : 'Renew before they lapse'} onClick={() => setTab('expiring')} />
+              <KpiCard label="With researcher" value={s.withResearcher} hint="Drafts and revisions" onClick={() => setTab('with_researcher')} />
+            </Box>
+          ) : null}
 
-        {/* Applications Table */}
-        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
-          {loading && <LinearProgress />}
-          <TableContainer>
-            <Table>
-              <TableHead sx={{ bgcolor: '#8b6cbc' }}>
-                <TableRow>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Application #</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Title</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Principal Investigator</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>Submitted</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }}>{t('common.status')}</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 600 }} align="right">{t('common.actions')}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {!loading && filteredApplications.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        {t('common.no_results')}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredApplications.map((application) => (
-                    <TableRow key={application.id} hover>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={600} color="primary">
-                          {application.applicationNumber || application.id.slice(0, 8).toUpperCase()}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={500}>
-                          {application.title}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                            <PersonIcon fontSize="small" />
-                          </Avatar>
-                          <Typography variant="body2">
-                            {application.principalInvestigator || 'N/A'}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDate(application.submittedDate || application.createdAt)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          icon={getStatusIcon(application.status)}
-                          label={application.status?.replace(/_/g, ' ')}
-                          color={getStatusColor(application.status)}
-                          size="small"
-                          sx={{ fontWeight: 600 }}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Tooltip title={t('common.view')}>
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() => handleView(application)}
-                          >
-                            <ViewIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title={t('common.more')}>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleMenuOpen(e, application)}
-                          >
-                            <MoreVertIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
+          {data ? (
+            <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+              <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" sx={{ px: 1, borderBottom: '1px solid', borderColor: 'divider', '& .MuiTab-root': { ...btn, minHeight: 50 }, '& .Mui-selected': { color: `${PURPLE} !important` }, '& .MuiTabs-indicator': { bgcolor: PURPLE, height: 3 } }}>
+                {ETHICS_TABS.map((t) => <Tab key={t.key} value={t.key} label={`${t.label} (${data.counts?.[t.key] ?? 0})`} />)}
+              </Tabs>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ p: 2 }}>
+                <TextField size="small" placeholder="Search title, reference, investigator, committee" value={search} onChange={(e) => setSearch(e.target.value)} sx={{ flex: 1 }} InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} />
+                <TextField select size="small" label="Department" value={department} onChange={(e) => setDepartment(e.target.value)} sx={{ minWidth: 200 }}>
+                  <MenuItem value="all">All departments</MenuItem>
+                  {departments.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                </TextField>
+                <Button size="small" startIcon={<DownloadIcon />} onClick={() => exportList('csv')} disabled={!filtered.length} sx={{ ...btn, color: PURPLE }}>CSV</Button>
+              </Stack>
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: alpha(PURPLE, 0.06) }}>
+                      {['Application', 'Principal investigator', 'Submitted', 'Approval', 'Status'].map((h) => <TableCell key={h} sx={{ fontWeight: 700, py: 1.25 }}>{h}</TableCell>)}
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-
-        {/* Context Menu */}
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleMenuClose}
-        >
-          <MenuItem onClick={() => handleView(selectedApplication)}>
-            <ListItemIcon>
-              <ViewIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>View Details</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleEdit(selectedApplication)}>
-            <ListItemIcon>
-              <EditIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>{t('common.edit')}</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleDelete(selectedApplication)}>
-            <ListItemIcon>
-              <DeleteIcon fontSize="small" color="error" />
-            </ListItemIcon>
-            <ListItemText>{t('common.delete')}</ListItemText>
-          </MenuItem>
-        </Menu>
+                  </TableHead>
+                  <TableBody>
+                    {filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((r) => (
+                      <TableRow key={r.id} hover onClick={() => router.push(`/institution/ethics/review/${r.id}`)} sx={{ cursor: 'pointer' }}>
+                        <TableCell sx={{ maxWidth: 440 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 800 }}>{r.title}</Typography>
+                          <Typography variant="caption" color="text.secondary">{[r.referenceNumber, r.department, r.committeeName].filter(Boolean).join(' · ') || '—'}</Typography>
+                          {r.external ? <Chip size="small" label="External certificate" sx={{ ml: 1, height: 20, fontWeight: 700, bgcolor: alpha(PURPLE, 0.1), color: PURPLE }} /> : null}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{r.principalInvestigator}</Typography>
+                          {r.linkedProposals ? <Typography variant="caption" color="text.secondary">{r.linkedProposals} linked proposal(s)</Typography> : null}
+                        </TableCell>
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{fmt(r.submittedDate || r.createdAt)}</TableCell>
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                          <Typography variant="body2">{r.approvalDate ? fmt(r.approvalDate) : '—'}</Typography>
+                          {r.expiryDate ? (
+                            <Typography variant="caption" sx={{ color: r.status === 'EXPIRED' ? '#b91c1c' : r.expiringSoon ? '#b45309' : 'text.secondary', fontWeight: r.expiringSoon || r.status === 'EXPIRED' ? 700 : 400 }}>
+                              {r.status === 'EXPIRED' ? 'Expired ' : 'Expires '}{fmt(r.expiryDate)}{r.daysToExpiry !== null ? ` (${r.daysToExpiry} days)` : ''}
+                            </Typography>
+                          ) : null}
+                        </TableCell>
+                        <TableCell><Tooltip title={r.source === 'EXTERNAL_CERTIFICATE' ? 'Approved by an external committee; uploaded certificate' : ''}><Chip size="small" label={r.statusLabel} sx={{ fontWeight: 700, ...(STATUS_SX[r.status] || {}) }} /></Tooltip></TableCell>
+                      </TableRow>
+                    ))}
+                    {!filtered.length ? (
+                      <TableRow><TableCell colSpan={5} sx={{ py: 5, textAlign: 'center', color: 'text.secondary' }}>{rows.length ? 'No applications match these filters.' : 'Your researchers have no ethics applications yet.'}</TableCell></TableRow>
+                    ) : null}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              {filtered.length > 10 ? (
+                <TablePagination component="div" count={filtered.length} page={page} onPageChange={(_, p) => setPage(p)} rowsPerPage={rowsPerPage} onRowsPerPageChange={(e) => { setRowsPerPage(Number(e.target.value)); setPage(0); }} rowsPerPageOptions={[10, 25, 50, 100]} />
+              ) : null}
+            </Paper>
+          ) : null}
+        </Stack>
       </Container>
     </Box>
   );
-};
-
-export default EthicsApplicationsPage;
+}
