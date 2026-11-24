@@ -61,6 +61,7 @@ import {
 } from '@mui/icons-material';
 import ProposalReviewStatus from './ProposalReviewStatus';
 import ProposalDocumentPreviewModal from './ProposalDocumentPreviewModal';
+import { sanitizeHtml } from '@/lib/safe-html';
 
 export const PURPLE = '#8b6cbc';
 
@@ -108,7 +109,7 @@ export function HtmlContent({ value, empty = 'Not provided' }) {
       </Typography>
     );
   }
-  return <Box sx={htmlSx} dangerouslySetInnerHTML={{ __html: value }} />;
+  return <Box sx={htmlSx} dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }} />;
 }
 
 export function FieldLabel({ children }) {
