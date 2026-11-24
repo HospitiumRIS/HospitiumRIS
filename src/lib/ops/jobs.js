@@ -73,6 +73,16 @@ async function runTrainingCompletion() {
   };
 }
 
+async function runTrainingAutomationJob() {
+  const { runTrainingAutomation } = await import('@/lib/training-automation-server');
+  const r = await runTrainingAutomation();
+  if (r.busy) return { summary: 'Already running', metadata: r };
+  return {
+    summary: `${r.sessionNotices} session notice(s), ${r.reminders} reminder(s), ${r.feedbackRequests} feedback request(s); ${r.closed} training(s) closed; ${r.completed} completed`,
+    metadata: r,
+  };
+}
+
 async function runTrainingReminders() {
   const { sendComplianceReminders } = await import('@/lib/training-assignment-server');
   const r = await sendComplianceReminders();
@@ -93,6 +103,14 @@ export const OPS_JOBS = {
     cronPath: '/api/cron/ops-retention',
     expectedEveryHours: 24,
     run: runOpsRetention,
+  },
+  training_automation: {
+    key: 'training_automation',
+    label: 'Training automation',
+    description: 'Hourly: 24h and 1h session reminders, check-in open notices, closes ended trainings, decides completion, due / overdue / certificate expiry notices and feedback requests. Safe to repeat.',
+    cronPath: '/api/cron/training',
+    expectedEveryHours: 1,
+    run: runTrainingAutomationJob,
   },
   training_completion: {
     key: 'training_completion',

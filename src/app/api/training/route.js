@@ -1,3 +1,4 @@
+import { maybeRunTrainingAutomation } from '@/lib/training-automation-server';
 import { eligibilityFor, enrolmentSummary } from '@/lib/training-enrolment-server';
 import { NextResponse } from 'next/server';
 import prisma from '../../../lib/prisma';
@@ -28,6 +29,9 @@ export async function GET(request) {
     const includeAll = searchParams.get('includeAll') === 'true'; // For admin to see all statuses
 
     const isTrainingAdmin = TRAINING_ADMIN_TYPES.includes(user.accountType);
+    // Keeps reminders and status changes going without a scheduler (#110): at most
+    // every 15 minutes per server, in the background.
+    maybeRunTrainingAutomation();
     const scopeCtx = await resolveTrainingScopeContext(user);
 
     // Tenant scoping (#88): admins managing trainings (includeAll) only see their own

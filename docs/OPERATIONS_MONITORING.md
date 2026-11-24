@@ -67,15 +67,19 @@ The jobs are shown on **Operations › Jobs**. They are marked overdue after 1.5
 | --- | --- | --- |
 | Audit & usage retention | `/api/cron/ops-retention` | daily |
 | Anonymise deleted accounts | `/api/cron/anonymize-deleted-users` | daily |
-| Training completion | `/api/cron/training-completion` | hourly |
+| Training automation (reminders, check-in notices, status, completion, expiry, feedback) | `/api/cron/training` | hourly |
+| Training completion (also part of training automation) | `/api/cron/training-completion` | hourly, optional |
+| Training reminders (also part of training automation) | `/api/cron/training-reminders` | daily, optional |
 
 Example crontab entry for the server:
 
 ```cron
 15 2 * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://hospitium.hospitiumris.org/api/cron/ops-retention
 30 2 * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://hospitium.hospitiumris.org/api/cron/anonymize-deleted-users
-5 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://hospitium.hospitiumris.org/api/cron/training-completion
+5 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://hospitium.hospitiumris.org/api/cron/training
 ```
+
+See [TRAINING_AUTOMATION.md](./TRAINING_AUTOMATION.md) for what the training job does and how it avoids duplicates.
 
 ## Environment
 

@@ -1,3 +1,4 @@
+import { maybeRunTrainingAutomation } from '@/lib/training-automation-server';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-server';
@@ -16,6 +17,9 @@ export async function GET(request) {
   try {
     const user = await getAuthenticatedUser(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Keeps reminders and status changes going without a scheduler (#110): at most
+    // every 15 minutes per server, in the background.
+    maybeRunTrainingAutomation();
     const now = new Date();
 
     const registrations = await prisma.trainingRegistration.findMany({
