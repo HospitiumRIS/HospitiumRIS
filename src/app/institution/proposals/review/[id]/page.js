@@ -198,9 +198,16 @@ export default function InstitutionProposalReviewDetailPage() {
                   {latest.overallComments ? <Typography variant="body2" sx={{ mt: 0.75, color: '#334155', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 3, overflow: 'hidden' }}>{latest.overallComments}</Typography> : null}
                 </Box>
               ) : <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>No decision recorded yet.</Typography>}
-              <Button fullWidth variant="contained" startIcon={<DecisionIcon />} onClick={() => setDecisionOpen(true)} sx={{ textTransform: 'none', fontWeight: 700, bgcolor: PURPLE, boxShadow: 'none', '&:hover': { bgcolor: '#7a5cb0', boxShadow: 'none' } }}>
-                {decided ? 'Record a new decision' : 'Record decision'}
-              </Button>
+              {/* Approved and Rejected are final: no further decisions. */}
+              {decided ? (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  This decision is final, so no further decisions can be recorded.
+                </Typography>
+              ) : (
+                <Button fullWidth variant="contained" startIcon={<DecisionIcon />} onClick={() => setDecisionOpen(true)} sx={{ textTransform: 'none', fontWeight: 700, bgcolor: PURPLE, boxShadow: 'none', '&:hover': { bgcolor: '#7a5cb0', boxShadow: 'none' } }}>
+                  Record decision
+                </Button>
+              )}
             </Paper>
 
             <Paper sx={cardSx}>
@@ -294,7 +301,7 @@ export default function InstitutionProposalReviewDetailPage() {
         }}
       />
       <RecordDecisionPanel
-        open={decisionOpen}
+        open={decisionOpen && !decided}
         onClose={() => setDecisionOpen(false)}
         proposalId={params.id}
         proposalTitle={proposal.title}

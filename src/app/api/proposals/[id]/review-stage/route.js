@@ -16,6 +16,9 @@ export async function POST(request, { params }) {
     const { id: proposalId } = await params;
     const ctx = await proposalReviewContext(request, proposalId);
     if (ctx.error) return ctx.error;
+    if (['APPROVED', 'REJECTED'].includes(ctx.proposal.status)) {
+      return NextResponse.json({ error: 'This proposal has a final decision; review stages can no longer change.' }, { status: 409 });
+    }
     const body = await request.json().catch(() => ({}));
     const { stageId, decision, comments, conditions, reviewerRole } = body;
 

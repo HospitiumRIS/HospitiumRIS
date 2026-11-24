@@ -22,6 +22,10 @@ export async function POST(request, { params }) {
         if (!ctx.perms.decide) {
             return forbidden('Only the research office of this proposal\'s institution can record a decision, and not on its own proposal');
         }
+        // Approved and Rejected are final.
+        if (['APPROVED', 'REJECTED'].includes(ctx.proposal.status)) {
+            return NextResponse.json({ error: 'This proposal has a final decision; no further decisions can be recorded.' }, { status: 409 });
+        }
         const body = await request.json().catch(() => ({}));
 
         const {
