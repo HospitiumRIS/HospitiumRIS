@@ -10,13 +10,19 @@ import {
   Chip,
   CircularProgress,
   Container,
+  Drawer,
+  IconButton,
   Paper,
   Stack,
+  Tooltip,
   Typography,
   alpha,
+  useMediaQuery,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
+  Close as CloseIcon,
+  ViewSidebar as PanelIcon,
   Assignment as ProjectIcon,
   Gavel as DecisionIcon,
   History as HistoryIcon,
@@ -105,6 +111,11 @@ export default function InstitutionProposalReviewDetailPage() {
   const [notice, setNotice] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
   const [decisionOpen, setDecisionOpen] = useState(false);
+  // Review panel: a sticky right rail on wide screens, a drawer on smaller ones.
+  const wide = useMediaQuery('(min-width:1400px)', { noSsr: true });
+  const [panelChoice, setPanelChoice] = useState(null);
+  const panelOpen = panelChoice ?? wide;
+  const setPanelOpen = (next) => setPanelChoice((prev) => (typeof next === 'function' ? next(prev ?? wide) : next));
 
   const load = useCallback(async () => {
     try {
@@ -159,6 +170,106 @@ export default function InstitutionProposalReviewDetailPage() {
         ? 'Next: invite reviewers, or record a decision directly.'
         : 'Next: wait for reviewers, then record a decision.';
 
+  // Decision, pipeline, reviewers and history live in a side panel so the proposal
+  // stays in view however long the review gets.
+  const reviewPanel = (
+    <Stack spacing={2}>
+          <Stack spacing={2}>
+        <Paper sx={{ ...cardSx, borderTop: `4px solid ${decided ? (proposal.status === 'APPROVED' ? '#10b981' : '#ef4444') : PURPLE}` }}>
+          <CardHead icon={<DecisionIcon />} title="Decision" subtitle={nextStep} />
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+            <Typography variant="body2" color="text.secondary">Status</Typography>
+            <StatusPill label={humanizeStatus(proposal.status)} tone={PROPOSAL_STATUS_TONE[proposal.status] || 'neutral'} />
+          </Stack>
+          {latest ? (
+            <Box sx={{ p: 1.5, borderRadius: 1.5, bgcolor: meta(latest.decision)?.bg || '#f8fafc', border: '1px solid', borderColor: 'divider', mb: 1.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 800, color: meta(latest.decision)?.color || INK }}>{decisionLabel(latest.decision)}</Typography>
+              <Typography variant="caption" color="text.secondary">{latest.reviewerName || 'Research administrator'} · {fmt(latest.reviewDate)}</Typography>
+              {latest.overallComments ? <Typography variant="body2" sx={{ mt: 0.75, color: '#334155', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 3, overflow: 'hidden' }}>{latest.overallComments}</Typography> : null}
+            </Box>
+          ) : <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>No decision recorded yet.</Typography>}
+          {/* Approved and Rejected are final: no further decisions. */}
+          {decided ? (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              This decision is final, so no further decisions can be recorded.
+            </Typography>
+          ) : (
+            <Button fullWidth variant="contained" startIcon={<DecisionIcon />} onClick={() => setDecisionOpen(true)} sx={{ textTransform: 'none', fontWeight: 700, bgcolor: PURPLE, boxShadow: 'none', '&:hover': { bgcolor: '#7a5cb0', boxShadow: 'none' } }}>
+              Record decision
+            </Button>
+          )}
+        </Paper>
+
+        <Paper sx={cardSx}>
+          <CardHead icon={<ReviewIcon />} title="Review pipeline" subtitle={tracking?.pipeline?.name || 'Stages this proposal goes through'} />
+          {tracking?.pipeline ? <PipelineStages tracking={tracking} /> : <Typography variant="body2" color="text.secondary">No review pipeline assigned. You can still invite reviewers and record a decision.</Typography>}
+        </Paper>
+
+        <Paper sx={cardSx}>
+          <CardHead
+            icon={<InvitedIcon />}
+            title="Reviewers"
+            subtitle={reviewers.length ? `${reviewers.length} invited` : 'None invited yet'}
+            action={decided ? null : <Button size="small" startIcon={<InviteIcon />} onClick={() => setInviteOpen(true)} sx={{ textTransform: 'none', fontWeight: 700, color: PURPLE }}>Invite</Button>}
+          />
+          {reviewers.length ? (
+            <Stack spacing={0.75}>
+              {reviewers.map((email) => (
+                <Stack key={email} direction="row" spacing={1} alignItems="center" sx={{ p: 0.75, borderRadius: 1.5, bgcolor: '#f8fafc' }}>
+                  <Avatar sx={{ width: 26, height: 26, fontSize: '0.7rem', bgcolor: alpha(PURPLE, 0.15), color: PURPLE, fontWeight: 700 }}>{email.slice(0, 1).toUpperCase()}</Avatar>
+                  <Typography variant="body2" noWrap sx={{ flex: 1, minWidth: 0 }}>{email}</Typography>
+                  {reviews.some((r) => String(r.reviewerEmail || '').toLowerCase() === email.toLowerCase())
+                    ? <Chip size="small" label="Reviewed" sx={{ height: 20, fontWeight: 700, bgcolor: '#dcfce7', color: '#166534' }} />
+                    : <Chip size="small" label="Invited" sx={{ height: 20, fontWeight: 700 }} />}
+                </Stack>
+              ))}
+            </Stack>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              {decided ? 'The proposal has been decided, so no more reviewers can be invited.' : 'Invite internal or external reviewers by email. They get a secure link to this proposal.'}
+            </Typography>
+          )}
+        </Paper>
+      </Stack>
+
+      {sorted.length ? (
+        <Paper sx={cardSx}>
+          <CardHead icon={<HistoryIcon />} title="Review history" subtitle={`${sorted.length} review${sorted.length === 1 ? '' : 's'} and decisions, newest first`} />
+          <Stack spacing={1.25}>
+            {sorted.map((r) => {
+              const m = meta(r.decision);
+              return (
+                <Box key={r.id} sx={{ p: 1.75, border: '1px solid', borderColor: 'divider', borderLeft: `4px solid ${m?.color || PURPLE}`, borderRadius: 1.5 }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2} flexWrap="wrap" useFlexGap>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip size="small" label={decisionLabel(r.decision)} sx={{ fontWeight: 700, bgcolor: m?.bg || alpha(PURPLE, 0.1), color: m?.color || PURPLE }} />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{r.reviewerName || 'Reviewer'}</Typography>
+                    </Stack>
+                    <Typography variant="caption" color="text.secondary">{fmt(r.reviewDate)}</Typography>
+                  </Stack>
+                  {r.overallComments ? <Typography variant="body2" sx={{ mt: 1, color: '#334155', whiteSpace: 'pre-wrap' }}>{r.overallComments}</Typography> : null}
+                  {r.revisionRequirements ? (
+                    <Box sx={{ mt: 1, p: 1.25, borderRadius: 1, bgcolor: '#fffbeb' }}>
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: '#92400e' }}>Changes requested</Typography>
+                      <Typography variant="body2" sx={{ color: '#334155', whiteSpace: 'pre-wrap' }}>{r.revisionRequirements}</Typography>
+                    </Box>
+                  ) : null}
+                  {r.rejectionReason ? (
+                    <Box sx={{ mt: 1, p: 1.25, borderRadius: 1, bgcolor: '#fef2f2' }}>
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: '#991b1b' }}>Reason for rejection</Typography>
+                      <Typography variant="body2" sx={{ color: '#334155', whiteSpace: 'pre-wrap' }}>{r.rejectionReason}</Typography>
+                    </Box>
+                  ) : null}
+                </Box>
+              );
+            })}
+          </Stack>
+        </Paper>
+      ) : null}
+
+    </Stack>
+  );
+
   return (
     <Box sx={{ bgcolor: '#f8fafc', minHeight: '100vh' }}>
       <PageHeader
@@ -173,111 +284,27 @@ export default function InstitutionProposalReviewDetailPage() {
         actionButton={(
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             <Button variant="contained" startIcon={<BackIcon />} onClick={back} sx={whiteBtn}>Back</Button>
+            <Button variant="outlined" startIcon={<PanelIcon />} onClick={() => setPanelOpen((o) => !o)} sx={ghostBtn}>{panelOpen ? 'Hide review panel' : 'Review panel'}</Button>
             <Button variant="outlined" startIcon={<ProjectIcon />} onClick={() => router.push(`/institution/projects/${proposal.id}`)} sx={ghostBtn}>Project page</Button>
           </Stack>
         )}
       />
 
-      <Container maxWidth={false} sx={{ py: 3, maxWidth: '1600px', mx: 'auto' }}>
-        <Stack spacing={2.5}>
+      <Container maxWidth={false} sx={{ py: 3, maxWidth: '1800px', mx: 'auto' }}>
+        <Box sx={{ display: 'grid', gap: 2.5, alignItems: 'start', gridTemplateColumns: wide && panelOpen ? 'minmax(0, 1fr) 420px' : '1fr' }}>
+        <Stack spacing={2.5} sx={{ minWidth: 0 }}>
           {error ? <Alert severity="error" onClose={() => setError('')}>{error}</Alert> : null}
           {notice ? <Alert severity="success" onClose={() => setNotice('')}>{notice}</Alert> : null}
 
-          {/* Review workspace */}
-          <Box sx={{ display: 'grid', gap: 2.5, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr', xl: '1.1fr 1.2fr 1fr' } }}>
-            <Paper sx={{ ...cardSx, borderTop: `4px solid ${decided ? (proposal.status === 'APPROVED' ? '#10b981' : '#ef4444') : PURPLE}` }}>
-              <CardHead icon={<DecisionIcon />} title="Decision" subtitle={nextStep} />
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-                <Typography variant="body2" color="text.secondary">Status</Typography>
-                <StatusPill label={humanizeStatus(proposal.status)} tone={PROPOSAL_STATUS_TONE[proposal.status] || 'neutral'} />
-              </Stack>
-              {latest ? (
-                <Box sx={{ p: 1.5, borderRadius: 1.5, bgcolor: meta(latest.decision)?.bg || '#f8fafc', border: '1px solid', borderColor: 'divider', mb: 1.5 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 800, color: meta(latest.decision)?.color || INK }}>{decisionLabel(latest.decision)}</Typography>
-                  <Typography variant="caption" color="text.secondary">{latest.reviewerName || 'Research administrator'} · {fmt(latest.reviewDate)}</Typography>
-                  {latest.overallComments ? <Typography variant="body2" sx={{ mt: 0.75, color: '#334155', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 3, overflow: 'hidden' }}>{latest.overallComments}</Typography> : null}
-                </Box>
-              ) : <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>No decision recorded yet.</Typography>}
-              {/* Approved and Rejected are final: no further decisions. */}
-              {decided ? (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                  This decision is final, so no further decisions can be recorded.
-                </Typography>
-              ) : (
-                <Button fullWidth variant="contained" startIcon={<DecisionIcon />} onClick={() => setDecisionOpen(true)} sx={{ textTransform: 'none', fontWeight: 700, bgcolor: PURPLE, boxShadow: 'none', '&:hover': { bgcolor: '#7a5cb0', boxShadow: 'none' } }}>
-                  Record decision
-                </Button>
-              )}
-            </Paper>
-
-            <Paper sx={cardSx}>
-              <CardHead icon={<ReviewIcon />} title="Review pipeline" subtitle={tracking?.pipeline?.name || 'Stages this proposal goes through'} />
-              {tracking?.pipeline ? <PipelineStages tracking={tracking} /> : <Typography variant="body2" color="text.secondary">No review pipeline assigned. You can still invite reviewers and record a decision.</Typography>}
-            </Paper>
-
-            <Paper sx={cardSx}>
-              <CardHead
-                icon={<InvitedIcon />}
-                title="Reviewers"
-                subtitle={reviewers.length ? `${reviewers.length} invited` : 'None invited yet'}
-                action={decided ? null : <Button size="small" startIcon={<InviteIcon />} onClick={() => setInviteOpen(true)} sx={{ textTransform: 'none', fontWeight: 700, color: PURPLE }}>Invite</Button>}
-              />
-              {reviewers.length ? (
-                <Stack spacing={0.75}>
-                  {reviewers.map((email) => (
-                    <Stack key={email} direction="row" spacing={1} alignItems="center" sx={{ p: 0.75, borderRadius: 1.5, bgcolor: '#f8fafc' }}>
-                      <Avatar sx={{ width: 26, height: 26, fontSize: '0.7rem', bgcolor: alpha(PURPLE, 0.15), color: PURPLE, fontWeight: 700 }}>{email.slice(0, 1).toUpperCase()}</Avatar>
-                      <Typography variant="body2" noWrap sx={{ flex: 1, minWidth: 0 }}>{email}</Typography>
-                      {reviews.some((r) => String(r.reviewerEmail || '').toLowerCase() === email.toLowerCase())
-                        ? <Chip size="small" label="Reviewed" sx={{ height: 20, fontWeight: 700, bgcolor: '#dcfce7', color: '#166534' }} />
-                        : <Chip size="small" label="Invited" sx={{ height: 20, fontWeight: 700 }} />}
-                    </Stack>
-                  ))}
-                </Stack>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  {decided ? 'The proposal has been decided, so no more reviewers can be invited.' : 'Invite internal or external reviewers by email. They get a secure link to this proposal.'}
-                </Typography>
-              )}
-            </Paper>
-          </Box>
-
-          {sorted.length ? (
-            <Paper sx={cardSx}>
-              <CardHead icon={<HistoryIcon />} title="Review history" subtitle={`${sorted.length} review${sorted.length === 1 ? '' : 's'} and decisions, newest first`} />
-              <Stack spacing={1.25}>
-                {sorted.map((r) => {
-                  const m = meta(r.decision);
-                  return (
-                    <Box key={r.id} sx={{ p: 1.75, border: '1px solid', borderColor: 'divider', borderLeft: `4px solid ${m?.color || PURPLE}`, borderRadius: 1.5 }}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2} flexWrap="wrap" useFlexGap>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Chip size="small" label={decisionLabel(r.decision)} sx={{ fontWeight: 700, bgcolor: m?.bg || alpha(PURPLE, 0.1), color: m?.color || PURPLE }} />
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{r.reviewerName || 'Reviewer'}</Typography>
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary">{fmt(r.reviewDate)}</Typography>
-                      </Stack>
-                      {r.overallComments ? <Typography variant="body2" sx={{ mt: 1, color: '#334155', whiteSpace: 'pre-wrap' }}>{r.overallComments}</Typography> : null}
-                      {r.revisionRequirements ? (
-                        <Box sx={{ mt: 1, p: 1.25, borderRadius: 1, bgcolor: '#fffbeb' }}>
-                          <Typography variant="caption" sx={{ fontWeight: 800, color: '#92400e' }}>Changes requested</Typography>
-                          <Typography variant="body2" sx={{ color: '#334155', whiteSpace: 'pre-wrap' }}>{r.revisionRequirements}</Typography>
-                        </Box>
-                      ) : null}
-                      {r.rejectionReason ? (
-                        <Box sx={{ mt: 1, p: 1.25, borderRadius: 1, bgcolor: '#fef2f2' }}>
-                          <Typography variant="caption" sx={{ fontWeight: 800, color: '#991b1b' }}>Reason for rejection</Typography>
-                          <Typography variant="body2" sx={{ color: '#334155', whiteSpace: 'pre-wrap' }}>{r.rejectionReason}</Typography>
-                        </Box>
-                      ) : null}
-                    </Box>
-                  );
-                })}
-              </Stack>
+          {!(wide && panelOpen) ? (
+            <Paper sx={{ ...cardSx, p: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <DecisionIcon sx={{ color: PURPLE }} />
+              <StatusPill label={humanizeStatus(proposal.status)} tone={PROPOSAL_STATUS_TONE[proposal.status] || 'neutral'} />
+              <Typography variant="body2" color="text.secondary" sx={{ flex: 1, minWidth: 200 }}>{nextStep}</Typography>
+              <Button size="small" variant="contained" startIcon={<PanelIcon />} onClick={() => setPanelOpen(true)} sx={{ textTransform: 'none', fontWeight: 700, bgcolor: PURPLE, boxShadow: 'none' }}>Open review panel</Button>
             </Paper>
           ) : null}
 
-          <Typography variant="overline" sx={{ color: '#64748b', fontWeight: 800, letterSpacing: '0.08em', pt: 1 }}>The proposal</Typography>
           <ProposalOverview
             proposal={proposal}
             audience="institution"
@@ -287,7 +314,27 @@ export default function InstitutionProposalReviewDetailPage() {
             profileSummaryUrl={(userId) => `/api/institution/researchers/${userId}?summary=1`}
           />
         </Stack>
+
+        {wide && panelOpen ? (
+          <Box component="aside" aria-label="Review panel" sx={{ position: 'sticky', top: 16, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', pr: 0.5, '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-thumb': { bgcolor: alpha(PURPLE, 0.25), borderRadius: 3 } }}>
+            <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
+              <Typography variant="overline" sx={{ flex: 1, color: '#64748b', fontWeight: 800, letterSpacing: '0.08em' }}>Review</Typography>
+              <Tooltip title="Hide review panel"><IconButton size="small" onClick={() => setPanelOpen(false)}><CloseIcon fontSize="small" /></IconButton></Tooltip>
+            </Stack>
+            {reviewPanel}
+          </Box>
+        ) : null}
+        </Box>
       </Container>
+
+      <Drawer anchor="right" open={!wide && panelOpen} onClose={() => setPanelOpen(false)} PaperProps={{ sx: { width: { xs: '100%', sm: 440 }, bgcolor: '#f8fafc' } }}>
+        <Stack direction="row" alignItems="center" sx={{ px: 2, py: 1.5, bgcolor: 'white', borderBottom: '1px solid', borderColor: 'divider', position: 'sticky', top: 0, zIndex: 1 }}>
+          <ReviewIcon sx={{ color: PURPLE, mr: 1 }} />
+          <Typography sx={{ fontWeight: 800, flex: 1 }}>Review</Typography>
+          <IconButton size="small" onClick={() => setPanelOpen(false)} aria-label="Close review panel"><CloseIcon /></IconButton>
+        </Stack>
+        <Box sx={{ p: 2 }}>{reviewPanel}</Box>
+      </Drawer>
 
       <InviteReviewersPanel
         open={inviteOpen}
