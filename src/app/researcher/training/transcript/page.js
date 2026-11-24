@@ -75,7 +75,6 @@ export default function TrainingTranscriptPage() {
         breadcrumbs={[
           { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/researcher' },
           { label: 'Training', path: '/researcher/training' },
-          { label: 'Transcript' },
         ]}
         actionButton={(
           <Button variant="contained" startIcon={<DownloadIcon />} component="a" href={pdfHref} disabled={!data?.rows?.length} sx={{ bgcolor: 'white', color: PURPLE, ...btn, '&:hover': { bgcolor: '#f5f5f5' } }}>

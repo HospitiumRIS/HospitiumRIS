@@ -232,7 +232,6 @@ export default function CertificateTemplatesPage() {
         breadcrumbs={[
           { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/institution' },
           { label: 'Training', path: '/institution/training' },
-          { label: 'Certificate templates' },
         ]}
         actionButton={(
           <Button variant="contained" startIcon={<BackIcon />} onClick={() => router.push('/institution/training')} sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}>

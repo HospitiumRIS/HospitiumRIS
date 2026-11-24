@@ -139,6 +139,7 @@ model User {
 
   trainingFacilitations TrainingFacilitator[] @relation("TrainingFacilitatorUser")
   trainingCalendarFeed TrainingCalendarFeed?
+  trainingReportSubscription TrainingReportSubscription?
   @@index([status, deletedAt])
   @@map("users")
 }
@@ -3278,4 +3279,20 @@ model TrainingCalendarFeed {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("training_calendar_feeds")
+}
+
+// Monthly training analytics email (#138). One row per admin who opted in;
+// lastSentPeriod (YYYY-MM of the month reported) makes the send once per month.
+model TrainingReportSubscription {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  institutionId  String
+  lastSentPeriod String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId])
+  @@map("training_report_subscriptions")
 }
