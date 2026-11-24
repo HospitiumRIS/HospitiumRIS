@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { snippet } from '@/lib/safe-html';
 import {
   requireInstitutionPortalAccess,
   getInstitutionProposalScopeWhere,
@@ -26,7 +27,12 @@ export async function GET() {
       departments: p.departments || [],
       researchAreas: p.researchAreas || [],
       fundingSource: p.fundingSource,
+      fundingInstitution: p.fundingInstitution,
       totalBudgetAmount: p.totalBudgetAmount,
+      budgetCurrency: p.budgetCurrency,
+      summary: snippet(p.abstract || p.researchObjectives, 320),
+      startDate: p.startDate,
+      endDate: p.endDate,
       milestoneCount: (p.milestones || []).length,
       coInvestigatorCount: (p.coInvestigators || []).length,
       createdAt: p.createdAt,

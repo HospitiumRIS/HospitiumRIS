@@ -97,6 +97,15 @@ function ProjectBudgets() {
 
   useEffect(() => { load(); }, [load]);
 
+  // ?project=<id> (from a project page) opens that project's budget panel.
+  const projectParam = params.get('project');
+  useEffect(() => {
+    if (!projectParam || !data) return;
+    const found = data.projects.find((p) => p.id === projectParam);
+    if (found) setPanel(found);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectParam, data]);
+
   const q = search.trim().toLowerCase();
   const projects = useMemo(() => (data?.projects || []).filter((p) => (burn === 'all' || p.figures.burn === burn) && (!q || has(p.title, q) || has(p.pi, q) || has(p.funder, q) || has(p.department, q))), [data, burn, q]);
   const expenses = useMemo(() => (data?.expenses || []).filter((e) => (status === 'all' || e.status === status) && (!q || has(e.description, q) || has(e.projectTitle, q) || has(e.payee, q) || has(e.submittedByName, q))), [data, status, q]);

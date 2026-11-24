@@ -17,6 +17,12 @@ const PageHeader = ({
   breadcrumbs = [],
   actionButton = null,
   gradient = 'linear-gradient(135deg, #8b6cbc 0%, #a084d1 100%)',
+  // Optional: short text for the last breadcrumb (long titles), a row of chips or
+  // facts under the description, a 2-line clamp for long titles, and a compact height.
+  crumbLabel = null,
+  meta = null,
+  clampTitle = false,
+  compact = false,
 }) => {
   const router = useRouter();
 
@@ -31,7 +37,7 @@ const PageHeader = ({
       sx={{
         background: gradient,
         color: 'white',
-        py: 4,
+        py: compact ? 2.5 : 4,
         px: { xs: 2, md: 4 },
         position: 'relative',
         overflow: 'hidden',
@@ -72,7 +78,7 @@ const PageHeader = ({
         {breadcrumbs.length > 0 && (
           <Breadcrumbs
             sx={{
-              mb: 3,
+              mb: compact ? 1.5 : 3,
               '& .MuiBreadcrumbs-separator': { color: 'rgba(255,255,255,0.7)' },
               '& .MuiLink-root': { color: 'rgba(255,255,255,0.9)' },
             }}
@@ -98,7 +104,7 @@ const PageHeader = ({
               </Link>
             ))}
             <Typography sx={{ color: 'white', fontWeight: 500 }}>
-              {title}
+              {crumbLabel || title}
             </Typography>
           </Breadcrumbs>
         )}
@@ -112,27 +118,31 @@ const PageHeader = ({
             gap: 2,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0, flex: '1 1 480px' }}>
             {icon && (
               <Avatar
                 sx={{
                   bgcolor: 'rgba(255,255,255,0.2)',
-                  width: 64,
-                  height: 64,
+                  width: compact ? 52 : 64,
+                  height: compact ? 52 : 64,
+                  flexShrink: 0,
                   backdropFilter: 'blur(10px)',
                 }}
               >
                 {icon}
               </Avatar>
             )}
-            <Box>
+            <Box sx={{ minWidth: 0 }}>
               <Typography
                 variant="h4"
+                title={clampTitle && typeof title === 'string' ? title : undefined}
                 sx={{
                   fontWeight: 700,
-                  fontSize: { xs: '1.25rem', md: '1.5rem' },
+                  fontSize: { xs: '1.25rem', md: clampTitle ? '1.35rem' : '1.5rem' },
+                  lineHeight: clampTitle ? 1.3 : undefined,
                   textShadow: '0 2px 4px rgba(0,0,0,0.1)',
                   mb: 1,
+                  ...(clampTitle ? { display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' } : {}),
                 }}
               >
                 {title}
@@ -142,6 +152,7 @@ const PageHeader = ({
                   {description}
                 </Typography>
               )}
+              {meta ? <Box sx={{ mt: 1.25 }}>{meta}</Box> : null}
             </Box>
           </Box>
 
