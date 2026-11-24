@@ -7,7 +7,6 @@ import {
   Box,
   Button,
   Chip,
-  Link,
   Paper,
   Stack,
   Tab,
@@ -37,6 +36,7 @@ import StatusPill, { humanizeStatus } from '@/components/common/StatusPill';
 import ProgressFlow from './ProgressFlow';
 import ProposalDocumentPreviewModal from './ProposalDocumentPreviewModal';
 import ProposalReviewStatus from './ProposalReviewStatus';
+import ResearcherPanel from './ResearcherPanel';
 import { PROPOSAL_STATUS_TONE } from './ProposalStatusCell';
 import { deliverableFlow, durationMonths, flowSummary, lifecycle, milestoneFlow, timeElapsed } from '@/lib/proposal-progress';
 import { isEmptyHtml } from '@/lib/safe-html';
@@ -216,11 +216,13 @@ export default function ProposalOverview({
   ethicsHref,
   budgetHref,
   profileHref,
+  profileSummaryUrl,
   canMarkDeliverables = false,
   onDeliverablesChange,
 }) {
   const [tab, setTab] = useState('abstract');
   const [preview, setPreview] = useState(null);
+  const [personOpen, setPersonOpen] = useState(null);
   const now = useMemo(() => new Date(), []);
   const milestones = useMemo(() => milestoneFlow(proposal.milestones, now), [proposal.milestones, now]);
   const deliverables = useMemo(() => deliverableFlow(proposal.deliverables, proposal.milestones, now), [proposal.deliverables, proposal.milestones, now]);
@@ -237,18 +239,27 @@ export default function ProposalOverview({
     { id: 'objectives', label: 'Objectives', value: proposal.researchObjectives },
     { id: 'methodology', label: 'Methodology', value: proposal.methodology },
     { id: 'impact', label: 'Impact', value: proposal.impactStatement },
+    { id: 'ethics', label: 'Ethical considerations', value: proposal.ethicalConsiderationsOverview },
+    { id: 'publications', label: 'Publication plans', value: proposal.publicationRelevance },
   ].filter((s) => !isEmptyHtml(s.value));
   const activeTab = sections.some((s) => s.id === tab) ? tab : sections[0]?.id;
 
   const docs = useMemo(() => {
     const seen = new Set();
-    return (proposal.documents || []).filter((d) => {
+    const all = [
+      ...(proposal.documents || []),
+      ...(proposal.ethicsDocuments || []).map((f) => ({ ...f, category: f.category || 'Ethics documents' })),
+      ...(proposal.dataManagementPlan || []).map((f) => ({ ...f, category: f.category || 'Data management plan' })),
+      ...(proposal.budgetDocuments || []).map((f) => ({ ...f, category: f.category || 'Budget documents' })),
+      ...(proposal.otherRelatedFiles || []).map((f) => ({ ...f, category: f.category || 'Supporting files' })),
+    ];
+    return all.filter((d) => {
       const key = fileHref(d, linkedEthicsId) || fileName(d);
       if (!key || seen.has(key)) return false;
       seen.add(key);
       return true;
     });
-  }, [proposal.documents, linkedEthicsId]);
+  }, [proposal.documents, proposal.ethicsDocuments, proposal.dataManagementPlan, proposal.budgetDocuments, proposal.otherRelatedFiles, linkedEthicsId]);
 
   const markDeliverable = async (item, delivered, note) => {
     const res = await fetch(`/api/proposals/${proposal.id}/deliverables`, {
@@ -263,7 +274,14 @@ export default function ProposalOverview({
   };
 
   const coInvestigators = Array.isArray(proposal.coInvestigators) ? proposal.coInvestigators : [];
-  const person = (p) => (typeof p === 'string' ? { name: p } : { name: p?.name || p?.fullName || [p?.givenName, p?.familyName].filter(Boolean).join(' ') || p?.email || 'Unknown', role: p?.role || p?.affiliation || p?.institution || '', userId: p?.userId });
+  const person = (p) => (typeof p === 'string' ? { name: p } : {
+    name: p?.name || p?.fullName || [p?.givenName, p?.familyName].filter(Boolean).join(' ') || p?.email || 'Unknown',
+    role: p?.role || p?.affiliation || p?.institution || '',
+    affiliation: p?.affiliation || p?.institution || '',
+    userId: p?.userId,
+    orcidId: p?.orcidId || p?.orcid,
+    email: p?.email,
+  });
 
   return (
     <Stack spacing={2.5}>
@@ -343,20 +361,27 @@ export default function ProposalOverview({
           </Paper>
 
           <Paper sx={cardSx}>
-            <CardTitle icon={<TeamIcon />} title="Research team" subtitle={`${1 + coInvestigators.length} ${coInvestigators.length ? 'people' : 'person'}`} />
+            <CardTitle icon={<TeamIcon />} title="Research team" subtitle={`${1 + coInvestigators.length} ${coInvestigators.length ? 'people' : 'person'} · click a name for their profile`} />
             <Stack spacing={1}>
-              {[{ name: proposal.principalInvestigator || 'Not set', role: 'Principal investigator', userId: proposal.principalInvestigatorUserId, pi: true }, ...coInvestigators.map(person)].map((p, i) => {
-                const href = p.userId && profileHref ? profileHref(p.userId) : null;
-                return (
-                  <Stack key={`${p.name}-${i}`} direction="row" spacing={1.25} alignItems="center" sx={{ p: 1, borderRadius: 1.5, bgcolor: p.pi ? alpha(PURPLE, 0.06) : '#f8fafc' }}>
-                    <Avatar sx={{ width: 32, height: 32, fontSize: '0.75rem', fontWeight: 700, bgcolor: p.pi ? PURPLE : '#e0e7ff', color: p.pi ? 'white' : '#4338ca' }}>{initials(p.name)}</Avatar>
-                    <Box sx={{ minWidth: 0, flex: 1 }}>
-                      {href ? <Link href={href} underline="hover" sx={{ fontWeight: 700, color: INK, fontSize: '0.85rem' }}>{p.name}</Link> : <Typography sx={{ fontWeight: 700, color: INK, fontSize: '0.85rem' }} noWrap>{p.name}</Typography>}
-                      <Typography variant="caption" color="text.secondary" noWrap component="div">{p.pi ? 'Principal investigator' : p.role || 'Co-investigator'}</Typography>
-                    </Box>
-                  </Stack>
-                );
-              })}
+              {[{ name: proposal.principalInvestigator || 'Not set', role: 'Principal investigator', userId: proposal.principalInvestigatorUserId, orcidId: proposal.principalInvestigatorOrcid, pi: true }, ...coInvestigators.map(person)].map((p, i) => (
+                <Stack
+                  key={`${p.name}-${i}`}
+                  component="button"
+                  type="button"
+                  direction="row"
+                  spacing={1.25}
+                  alignItems="center"
+                  onClick={() => setPersonOpen({ ...p, role: p.pi ? 'Principal investigator' : p.role || 'Co-investigator' })}
+                  sx={{ p: 1, borderRadius: 1.5, border: '1px solid transparent', bgcolor: p.pi ? alpha(PURPLE, 0.06) : '#f8fafc', textAlign: 'left', cursor: 'pointer', font: 'inherit', width: '100%', '&:hover, &:focus-visible': { borderColor: alpha(PURPLE, 0.4), bgcolor: alpha(PURPLE, 0.08), outline: 'none' } }}
+                >
+                  <Avatar sx={{ width: 32, height: 32, fontSize: '0.75rem', fontWeight: 700, bgcolor: p.pi ? PURPLE : '#e0e7ff', color: p.pi ? 'white' : '#4338ca' }}>{initials(p.name)}</Avatar>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography sx={{ fontWeight: 700, color: INK, fontSize: '0.85rem' }} noWrap>{p.name}</Typography>
+                    <Typography variant="caption" color="text.secondary" noWrap component="div">{p.pi ? 'Principal investigator' : p.role || 'Co-investigator'}</Typography>
+                  </Box>
+                  <OpenIcon sx={{ fontSize: 15, color: '#94a3b8' }} />
+                </Stack>
+              ))}
             </Stack>
           </Paper>
 
@@ -400,6 +425,7 @@ export default function ProposalOverview({
 
       {proposal.status === 'DRAFT' && audience === 'researcher' ? <Alert severity="info">This proposal is a draft. Submit it for review when it is ready.</Alert> : null}
 
+      <ResearcherPanel open={Boolean(personOpen)} person={personOpen} onClose={() => setPersonOpen(null)} summaryUrl={profileSummaryUrl} profileHref={profileHref} />
       <ProposalDocumentPreviewModal open={Boolean(preview)} file={preview} onClose={() => setPreview(null)} title={preview ? fileName(preview) : 'Document preview'} />
     </Stack>
   );
