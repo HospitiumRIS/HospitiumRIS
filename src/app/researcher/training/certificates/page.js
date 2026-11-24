@@ -104,7 +104,6 @@ export default function CertificatesPage() {
         breadcrumbs={[
           { label: 'Home', path: '/researcher', icon: <HomeIcon /> },
           { label: 'Training', path: '/researcher/training' },
-          { label: 'Certificates' }
         ]}
       />
       <Container maxWidth="xl" sx={{ py: 4 }}>

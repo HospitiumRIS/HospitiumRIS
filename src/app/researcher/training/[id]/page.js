@@ -21,7 +21,6 @@ export default function ResearcherTrainingDetailPage() {
         breadcrumbs={[
           { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/researcher' },
           { label: 'Training', path: '/researcher/training' },
-          { label: 'Details' },
         ]}
         actionButton={(
           <Button variant="contained" startIcon={<BackIcon />} onClick={() => router.push('/researcher/training')} sx={{ bgcolor: 'white', color: '#8b6cbc', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}>

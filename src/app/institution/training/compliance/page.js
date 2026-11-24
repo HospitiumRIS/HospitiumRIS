@@ -154,7 +154,6 @@ export default function TrainingCompliancePage() {
         breadcrumbs={[
           { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/institution' },
           { label: 'Training', path: '/institution/training' },
-          { label: 'Compliance' },
         ]}
         actionButton={(
           <Stack direction="row" spacing={1}>

@@ -67,6 +67,8 @@ const formatDate = (value) => {
 
 const asGroups = (value) => (Array.isArray(value) ? value : [value]).filter(Boolean);
 
+const TAB_NAMES = ['overview', 'schedule', 'curriculum', 'registrations', 'attendance', 'completion', 'certificates', 'assessments', 'feedback', 'activity'];
+
 export default function TrainingDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -79,7 +81,12 @@ export default function TrainingDetailPage() {
   const [materials, setMaterials] = useState([]);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  // ?tab=<name> opens a tab directly (links from analytics "needs attention", #analytics-v2).
   const [activeTab, setActiveTab] = useState(1);
+  useEffect(() => {
+    const index = TAB_NAMES.indexOf(new URLSearchParams(window.location.search).get('tab'));
+    if (index >= 0) setActiveTab(index);
+  }, []);
   const [tabCounts, setTabCounts] = useState({ sessions: null });
   const [submitting, setSubmitting] = useState(false);
   const [moduleDraft, setModuleDraft] = useState({ title: '', description: '' });

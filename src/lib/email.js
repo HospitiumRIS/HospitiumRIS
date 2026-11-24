@@ -966,7 +966,7 @@ export async function sendTestEmail(to) {
  * Used by the training notifications (#97). Never throws.
  * @param {{ to: string, subject: string, html: string, text: string }} message
  */
-export async function sendBrandedEmail({ to, subject, html, text }) {
+export async function sendBrandedEmail({ to, subject, html, text, attachments = undefined }) {
   if (!process.env.SMTP_HOST) {
     return { success: false, skipped: true, error: 'SMTP is not configured' };
   }
@@ -978,6 +978,7 @@ export async function sendBrandedEmail({ to, subject, html, text }) {
       subject,
       html,
       text,
+      ...(attachments?.length ? { attachments } : {}),
     });
     return { success: true, data: result };
   } catch (error) {

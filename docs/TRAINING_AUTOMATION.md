@@ -19,6 +19,7 @@ One hourly job keeps trainings moving without anyone pressing buttons (#110).
    - Cancelled sessions, and sessions of draft or cancelled trainings, get nothing.
 4. **Compliance notices** (#103): due in 7 days and weekly overdue reminders for assigned trainings; certificate expiring (30 days before) and re-training due (on the day it expires).
 5. **Feedback requests** (#106) for trainings that ended in the last 14 days, to people who haven't answered.
+6. **Monthly analytics email** (#138) to training admins who turned on *Email me monthly* on the analytics page: last month's report as a PDF attachment, once per person per month (the month is claimed before sending and released if the send fails).
 
 ## Never twice
 

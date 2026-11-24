@@ -211,7 +211,6 @@ export default function FacilitatingPage() {
         breadcrumbs={[
           { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/researcher' },
           { label: 'Training', path: '/researcher/training' },
-          { label: 'Facilitating' },
         ]}
       />
       <Container maxWidth="lg" sx={{ py: 3 }}>
