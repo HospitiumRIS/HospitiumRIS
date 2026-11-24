@@ -129,9 +129,9 @@ const SEVERITY = {
 };
 
 /** Needs-attention list: each item explains itself and links to the fix. */
-export function AttentionList({ items, onOpen, limit = null }) {
+export function AttentionList({ items, onOpen, limit = null, emptyText = null, moreText = 'in Operations' }) {
   if (!items.length) {
-    return <Typography variant="body2" sx={{ color: '#166534', py: 1 }}>Nothing needs attention in this period.</Typography>;
+    return <Typography variant="body2" sx={{ color: '#166534', py: 1 }}>{emptyText || 'Nothing needs attention in this period.'}</Typography>;
   }
   return (
     <Stack spacing={1}>
@@ -139,20 +139,20 @@ export function AttentionList({ items, onOpen, limit = null }) {
         const s = SEVERITY[a.severity] || SEVERITY.low;
         const Icon = s.icon;
         return (
-          <Stack key={`${a.kind}-${a.trainingId}`} direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ sm: 'center' }} sx={{ p: 1.25, borderRadius: 1.5, bgcolor: s.bg, borderLeft: `4px solid ${s.color}` }}>
+          <Stack key={a.key || `${a.kind}-${a.trainingId}`} direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ sm: 'center' }} sx={{ p: 1.25, borderRadius: 1.5, bgcolor: s.bg, borderLeft: `4px solid ${s.color}` }}>
             <Icon sx={{ color: s.color, display: { xs: 'none', sm: 'block' } }} />
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography variant="body2" sx={{ fontWeight: 700 }}>{a.title}</Typography>
               <Typography variant="caption" color="text.secondary">{a.detail}</Typography>
             </Box>
             <Chip size="small" label={s.label} sx={{ bgcolor: 'white', color: s.color, fontWeight: 700, display: { xs: 'none', md: 'flex' } }} />
-            <Button size="small" variant="outlined" onClick={() => onOpen(a.href)} sx={{ ...btn, color: s.color, borderColor: s.color, whiteSpace: 'nowrap', bgcolor: 'white' }}>
+            <Button size="small" variant="outlined" onClick={() => onOpen(a.href, a)} sx={{ ...btn, color: s.color, borderColor: s.color, whiteSpace: 'nowrap', bgcolor: 'white' }}>
               {a.action}
             </Button>
           </Stack>
         );
       })}
-      {limit && items.length > limit ? <Typography variant="caption" color="text.secondary">and {items.length - limit} more in Operations</Typography> : null}
+      {limit && items.length > limit ? <Typography variant="caption" color="text.secondary">and {items.length - limit} more {moreText}</Typography> : null}
     </Stack>
   );
 }

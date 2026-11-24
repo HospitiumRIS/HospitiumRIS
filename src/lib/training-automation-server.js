@@ -11,6 +11,7 @@ import { deliverOnce, sessionNotices, trainingsToClose } from '@/lib/training-au
  *   4. due / overdue / certificate expiring / re-training notices (#103, dedupe keys)
  *   5. feedback requests for trainings that ended in the last 14 days (#106, dedupe keys)
  *   6. the monthly analytics email to admins who opted in (#138, once per month)
+ *   7. requirement rules with auto-assign enrol people who need them (#140, idempotent)
  * A run in progress makes a second start in the same process wait for nothing: it
  * returns { busy: true }.
  */
@@ -20,7 +21,7 @@ let lastRunAt = 0;
 export async function runTrainingAutomation({ now = new Date() } = {}) {
   if (running) return { busy: true };
   running = (async () => {
-    const totals = { closed: 0, completionTrainings: 0, completed: 0, notCompleted: 0, sessionNotices: 0, reminders: 0, feedbackRequests: 0, monthlyReports: 0 };
+    const totals = { closed: 0, completionTrainings: 0, completed: 0, notCompleted: 0, sessionNotices: 0, reminders: 0, feedbackRequests: 0, monthlyReports: 0, requirementAssigned: 0 };
 
     // 1. Close trainings that have ended.
     const open = await prisma.training.findMany({ where: { status: 'PUBLISHED', endDate: { lt: now } }, select: { id: true, status: true, endDate: true } });
@@ -86,6 +87,10 @@ export async function runTrainingAutomation({ now = new Date() } = {}) {
     // 6. Monthly analytics email to admins who opted in (#138), once per month each.
     const { sendMonthlyAnalyticsReports } = await import('@/lib/training-analytics-server');
     totals.monthlyReports = (await sendMonthlyAnalyticsReports({ now })).sent;
+
+    // 7. Requirement rules (#140): enrol people who need a requirement into its next cohort.
+    const { applyRequirements } = await import('@/lib/training-compliance-server');
+    totals.requirementAssigned = (await applyRequirements({ now })).assigned;
 
     lastRunAt = Date.now();
     return totals;
