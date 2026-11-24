@@ -2175,7 +2175,19 @@
     "team_gcp": "Ekipa no Sertifikasaun GCP",
     "team_gcp_desc": "Estatutu sertifikasaun GCP instituisaun no rejistu delegasaun",
     "user_accounts": "Konta Uzuáriu",
-    "user_accounts_desc": "Jere konta uzuáriu no asesu"
+    "user_accounts_desc": "Jere konta uzuáriu no asesu",
+    "proposal_review": "Proposal review",
+    "proposal_review_desc": "Assign reviewers and decide submitted proposals",
+    "proposals_pipeline": "Proposals pipeline",
+    "proposals_pipeline_desc": "Every proposal from draft to award, by stage",
+    "ethics_review": "Ethics review",
+    "ethics_review_desc": "Review and decide submitted ethics applications",
+    "ethics_register": "Ethics register",
+    "ethics_register_desc": "All ethics applications and approvals, with expiry dates",
+    "project_tracking": "Project tracking",
+    "project_tracking_desc": "Progress and milestones of approved projects",
+    "budget_expenses": "Budget & expenses",
+    "budget_expenses_desc": "Budgets, spending, expense claims and funding analytics"
   },
   "logs_page": {
     "date_range": "Intervalu Data",
@@ -2245,7 +2257,9 @@
     "trial_setup": "PREPARASAUN ENSAIA NO INÍSIU FATIN",
     "user_management": "JESTAUN UZUÁRIU",
     "writing_phase": "FAZE ESKRITA",
-    "writing_tracker": "AKOMPAÑAMENTU ESKRITA"
+    "writing_tracker": "AKOMPAÑAMENTU ESKRITA",
+    "ethics": "ETHICS",
+    "projects_finance": "PROJECTS & FINANCE"
   },
   "news_page": {
     "article_tcc": {

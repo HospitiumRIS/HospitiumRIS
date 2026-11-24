@@ -2175,7 +2175,19 @@
     "team_gcp": "Team & GCP-Zertifizierung",
     "team_gcp_desc": "Institutioneller GCP-Status und Delegationsprotokolle",
     "user_accounts": "Benutzerkonten",
-    "user_accounts_desc": "Konten und Zugriffe verwalten"
+    "user_accounts_desc": "Konten und Zugriffe verwalten",
+    "proposal_review": "Antragsprüfung",
+    "proposal_review_desc": "Gutachter zuweisen und über eingereichte Anträge entscheiden",
+    "proposals_pipeline": "Antragspipeline",
+    "proposals_pipeline_desc": "Alle Anträge vom Entwurf bis zur Bewilligung, nach Phase",
+    "ethics_review": "Ethikprüfung",
+    "ethics_review_desc": "Eingereichte Ethikanträge prüfen und entscheiden",
+    "ethics_register": "Ethikregister",
+    "ethics_register_desc": "Alle Ethikanträge und Genehmigungen mit Ablaufdaten",
+    "project_tracking": "Projektverfolgung",
+    "project_tracking_desc": "Fortschritt und Meilensteine genehmigter Projekte",
+    "budget_expenses": "Budget & Ausgaben",
+    "budget_expenses_desc": "Budgets, Ausgaben, Kostenerstattungen und Förderanalysen"
   },
   "logs_page": {
     "date_range": "Zeitraum",
@@ -2245,7 +2257,9 @@
     "trial_setup": "STUDIENAUFBAU & STANDORTSTART",
     "user_management": "BENUTZERVERWALTUNG",
     "writing_phase": "SCHREIBPHASE",
-    "writing_tracker": "SCHREIBVERFOLGUNG"
+    "writing_tracker": "SCHREIBVERFOLGUNG",
+    "ethics": "ETHIK",
+    "projects_finance": "PROJEKTE & FINANZEN"
   },
   "news_page": {
     "article_tcc": {

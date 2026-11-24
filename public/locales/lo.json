@@ -2175,7 +2175,19 @@
     "team_gcp": "ທີມ ແລະ ໃບຢັ້ງຢືນ GCP",
     "team_gcp_desc": "ສະຖານະໃບຢັ້ງຢືນ GCP ທົ່ວສະຖາບັນ ແລະ ບັນທຶກການມອບສິດ",
     "user_accounts": "ບັນຊີຜູ້ໃຊ້",
-    "user_accounts_desc": "ຈັດການບັນຊີຜູ້ໃຊ້ ແລະ ການເຂົ້າເຖິງ"
+    "user_accounts_desc": "ຈັດການບັນຊີຜູ້ໃຊ້ ແລະ ການເຂົ້າເຖິງ",
+    "proposal_review": "Proposal review",
+    "proposal_review_desc": "Assign reviewers and decide submitted proposals",
+    "proposals_pipeline": "Proposals pipeline",
+    "proposals_pipeline_desc": "Every proposal from draft to award, by stage",
+    "ethics_review": "Ethics review",
+    "ethics_review_desc": "Review and decide submitted ethics applications",
+    "ethics_register": "Ethics register",
+    "ethics_register_desc": "All ethics applications and approvals, with expiry dates",
+    "project_tracking": "Project tracking",
+    "project_tracking_desc": "Progress and milestones of approved projects",
+    "budget_expenses": "Budget & expenses",
+    "budget_expenses_desc": "Budgets, spending, expense claims and funding analytics"
   },
   "logs_page": {
     "date_range": "ຊ່ວງວັນທີ",
@@ -2245,7 +2257,9 @@
     "trial_setup": "ການຕັ້ງການທົດລອງ ແລະ ເປີດສະຖານທີ່",
     "user_management": "ການຈັດການຜູ້ໃຊ້",
     "writing_phase": "ໄລຍະການຂຽນ",
-    "writing_tracker": "ຕົວຕິດຕາມການຂຽນ"
+    "writing_tracker": "ຕົວຕິດຕາມການຂຽນ",
+    "ethics": "ETHICS",
+    "projects_finance": "PROJECTS & FINANCE"
   },
   "news_page": {
     "article_tcc": {

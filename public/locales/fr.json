@@ -2175,7 +2175,19 @@
     "team_gcp": "Équipe et certification BPC",
     "team_gcp_desc": "Statut BPC institutionnel et journaux de délégation",
     "user_accounts": "Comptes utilisateurs",
-    "user_accounts_desc": "Gérer les comptes et les accès"
+    "user_accounts_desc": "Gérer les comptes et les accès",
+    "proposal_review": "Évaluation des propositions",
+    "proposal_review_desc": "Assigner des évaluateurs et statuer sur les propositions soumises",
+    "proposals_pipeline": "Suivi des propositions",
+    "proposals_pipeline_desc": "Toutes les propositions, du brouillon au financement, par étape",
+    "ethics_review": "Évaluation éthique",
+    "ethics_review_desc": "Examiner les demandes éthiques soumises et statuer",
+    "ethics_register": "Registre éthique",
+    "ethics_register_desc": "Toutes les demandes et approbations éthiques, avec dates d’expiration",
+    "project_tracking": "Suivi des projets",
+    "project_tracking_desc": "Avancement et jalons des projets approuvés",
+    "budget_expenses": "Budget et dépenses",
+    "budget_expenses_desc": "Budgets, dépenses, demandes de remboursement et analyse du financement"
   },
   "logs_page": {
     "date_range": "Période",
@@ -2245,7 +2257,9 @@
     "trial_setup": "MISE EN PLACE DE L’ESSAI",
     "user_management": "GESTION DES UTILISATEURS",
     "writing_phase": "PHASE DE RÉDACTION",
-    "writing_tracker": "SUIVI DE RÉDACTION"
+    "writing_tracker": "SUIVI DE RÉDACTION",
+    "ethics": "ÉTHIQUE",
+    "projects_finance": "PROJETS ET FINANCES"
   },
   "news_page": {
     "article_tcc": {

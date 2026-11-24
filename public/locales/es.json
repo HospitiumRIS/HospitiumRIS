@@ -2175,7 +2175,19 @@
     "team_gcp": "Equipo y certificación BPC",
     "team_gcp_desc": "Estado BPC institucional y registros de delegación",
     "user_accounts": "Cuentas de usuario",
-    "user_accounts_desc": "Gestionar cuentas y accesos"
+    "user_accounts_desc": "Gestionar cuentas y accesos",
+    "proposal_review": "Revisión de propuestas",
+    "proposal_review_desc": "Asignar revisores y decidir sobre las propuestas enviadas",
+    "proposals_pipeline": "Cartera de propuestas",
+    "proposals_pipeline_desc": "Todas las propuestas, del borrador a la adjudicación, por etapa",
+    "ethics_review": "Revisión ética",
+    "ethics_review_desc": "Revisar y decidir las solicitudes éticas enviadas",
+    "ethics_register": "Registro ético",
+    "ethics_register_desc": "Todas las solicitudes y aprobaciones éticas, con fechas de vencimiento",
+    "project_tracking": "Seguimiento de proyectos",
+    "project_tracking_desc": "Avance e hitos de los proyectos aprobados",
+    "budget_expenses": "Presupuesto y gastos",
+    "budget_expenses_desc": "Presupuestos, gastos, reembolsos y análisis de financiación"
   },
   "logs_page": {
     "date_range": "Rango de fechas",
@@ -2245,7 +2257,9 @@
     "trial_setup": "PUESTA EN MARCHA DEL ENSAYO",
     "user_management": "GESTIÓN DE USUARIOS",
     "writing_phase": "FASE DE REDACCIÓN",
-    "writing_tracker": "SEGUIMIENTO DE REDACCIÓN"
+    "writing_tracker": "SEGUIMIENTO DE REDACCIÓN",
+    "ethics": "ÉTICA",
+    "projects_finance": "PROYECTOS Y FINANZAS"
   },
   "news_page": {
     "article_tcc": {

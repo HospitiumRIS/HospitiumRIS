@@ -2175,7 +2175,19 @@
     "team_gcp": "Koponan at Sertipikasyon ng GCP",
     "team_gcp_desc": "Katayuan ng sertipikasyon ng GCP sa buong institusyon, mga talaan ng delegasyon",
     "user_accounts": "Mga Account ng Gumagamit",
-    "user_accounts_desc": "Pamahalaan ang mga account at access ng gumagamit"
+    "user_accounts_desc": "Pamahalaan ang mga account at access ng gumagamit",
+    "proposal_review": "Proposal review",
+    "proposal_review_desc": "Assign reviewers and decide submitted proposals",
+    "proposals_pipeline": "Proposals pipeline",
+    "proposals_pipeline_desc": "Every proposal from draft to award, by stage",
+    "ethics_review": "Ethics review",
+    "ethics_review_desc": "Review and decide submitted ethics applications",
+    "ethics_register": "Ethics register",
+    "ethics_register_desc": "All ethics applications and approvals, with expiry dates",
+    "project_tracking": "Project tracking",
+    "project_tracking_desc": "Progress and milestones of approved projects",
+    "budget_expenses": "Budget & expenses",
+    "budget_expenses_desc": "Budgets, spending, expense claims and funding analytics"
   },
   "logs_page": {
     "date_range": "Saklaw ng Petsa",
@@ -2245,7 +2257,9 @@
     "trial_setup": "PAG-SETUP NG PAGSUBOK AT PAGSISIMULA NG SITE",
     "user_management": "PAMAMAHALA NG GUMAGAMIT",
     "writing_phase": "YUGTO NG PAGSULAT",
-    "writing_tracker": "TAGASUBAYBAY NG PAGSULAT"
+    "writing_tracker": "TAGASUBAYBAY NG PAGSULAT",
+    "ethics": "ETHICS",
+    "projects_finance": "PROJECTS & FINANCE"
   },
   "news_page": {
     "article_tcc": {

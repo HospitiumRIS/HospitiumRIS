@@ -2175,7 +2175,19 @@
     "team_gcp": "အဖွဲ့နှင့် GCP အသိအမှတ်ပြုလက်မှတ်",
     "team_gcp_desc": "အဖွဲ့အစည်းတဝှမ်း GCP အသိအမှတ်ပြု အခြေအနေ၊ လွှဲအပ်မှု မှတ်တမ်းများ",
     "user_accounts": "အသုံးပြုသူ အကောင့်များ",
-    "user_accounts_desc": "အသုံးပြုသူ အကောင့်များနှင့် ဝင်ရောက်ခွင့်ကို စီမံပါ"
+    "user_accounts_desc": "အသုံးပြုသူ အကောင့်များနှင့် ဝင်ရောက်ခွင့်ကို စီမံပါ",
+    "proposal_review": "Proposal review",
+    "proposal_review_desc": "Assign reviewers and decide submitted proposals",
+    "proposals_pipeline": "Proposals pipeline",
+    "proposals_pipeline_desc": "Every proposal from draft to award, by stage",
+    "ethics_review": "Ethics review",
+    "ethics_review_desc": "Review and decide submitted ethics applications",
+    "ethics_register": "Ethics register",
+    "ethics_register_desc": "All ethics applications and approvals, with expiry dates",
+    "project_tracking": "Project tracking",
+    "project_tracking_desc": "Progress and milestones of approved projects",
+    "budget_expenses": "Budget & expenses",
+    "budget_expenses_desc": "Budgets, spending, expense claims and funding analytics"
   },
   "logs_page": {
     "date_range": "ရက်စွဲအပိုင်းအခြား",
@@ -2245,7 +2257,9 @@
     "trial_setup": "စမ်းသပ်မှု စီစဉ်ခြင်းနှင့် ဆိုက် စတင်ခြင်း",
     "user_management": "အသုံးပြုသူ စီမံခန့်ခွဲမှု",
     "writing_phase": "ရေးသားမှု အဆင့်",
-    "writing_tracker": "ရေးသားမှု ခြေရာခံကိရိယာ"
+    "writing_tracker": "ရေးသားမှု ခြေရာခံကိရိယာ",
+    "ethics": "ETHICS",
+    "projects_finance": "PROJECTS & FINANCE"
   },
   "news_page": {
     "article_tcc": {

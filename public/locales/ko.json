@@ -2175,7 +2175,19 @@
     "team_gcp": "팀 및 GCP 인증",
     "team_gcp_desc": "기관 전체 GCP 인증 상태 및 위임 기록",
     "user_accounts": "사용자 계정",
-    "user_accounts_desc": "사용자 계정과 접근을 관리합니다"
+    "user_accounts_desc": "사용자 계정과 접근을 관리합니다",
+    "proposal_review": "Proposal review",
+    "proposal_review_desc": "Assign reviewers and decide submitted proposals",
+    "proposals_pipeline": "Proposals pipeline",
+    "proposals_pipeline_desc": "Every proposal from draft to award, by stage",
+    "ethics_review": "Ethics review",
+    "ethics_review_desc": "Review and decide submitted ethics applications",
+    "ethics_register": "Ethics register",
+    "ethics_register_desc": "All ethics applications and approvals, with expiry dates",
+    "project_tracking": "Project tracking",
+    "project_tracking_desc": "Progress and milestones of approved projects",
+    "budget_expenses": "Budget & expenses",
+    "budget_expenses_desc": "Budgets, spending, expense claims and funding analytics"
   },
   "logs_page": {
     "date_range": "날짜 범위",
@@ -2245,7 +2257,9 @@
     "trial_setup": "시험 설정 및 사이트 개시",
     "user_management": "사용자 관리",
     "writing_phase": "작성 단계",
-    "writing_tracker": "작성 추적"
+    "writing_tracker": "작성 추적",
+    "ethics": "ETHICS",
+    "projects_finance": "PROJECTS & FINANCE"
   },
   "news_page": {
     "article_tcc": {

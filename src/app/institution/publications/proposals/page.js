@@ -196,13 +196,12 @@ export default function InstitutionProposalsPage() {
     <>
       <Box sx={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
         <PageHeader
-          title="Research Proposals"
-          description="Institutional overview of all research proposals and their submission stages"
+          title="Proposals pipeline"
+          description="Every research proposal of your institution, from draft to award, by stage"
           icon={<DescriptionIcon sx={{ fontSize: 32 }} />}
           breadcrumbs={[
-            { label: 'Institution', path: '/institution' },
-            { label: 'Publications', path: '/institution/publications/proposals' },
-            { label: 'Proposals' }
+            { label: 'Home', path: '/institution' },
+            { label: 'Proposal review', path: '/institution/proposals/review' },
           ]}
           gradient="linear-gradient(135deg, #8b6cbc 0%, #a084d1 50%, #b794f4 100%)"
         />

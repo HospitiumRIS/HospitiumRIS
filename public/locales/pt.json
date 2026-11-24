@@ -2175,7 +2175,19 @@
     "team_gcp": "Equipa e certificação BPC",
     "team_gcp_desc": "Estado BPC institucional e registos de delegação",
     "user_accounts": "Contas de utilizador",
-    "user_accounts_desc": "Gerir contas e acessos"
+    "user_accounts_desc": "Gerir contas e acessos",
+    "proposal_review": "Revisão de propostas",
+    "proposal_review_desc": "Atribuir revisores e decidir sobre as propostas submetidas",
+    "proposals_pipeline": "Pipeline de propostas",
+    "proposals_pipeline_desc": "Todas as propostas, do rascunho ao financiamento, por etapa",
+    "ethics_review": "Revisão ética",
+    "ethics_review_desc": "Rever e decidir os pedidos éticos submetidos",
+    "ethics_register": "Registo ético",
+    "ethics_register_desc": "Todos os pedidos e aprovações éticas, com datas de validade",
+    "project_tracking": "Acompanhamento de projetos",
+    "project_tracking_desc": "Progresso e marcos dos projetos aprovados",
+    "budget_expenses": "Orçamento e despesas",
+    "budget_expenses_desc": "Orçamentos, despesas, reembolsos e análise de financiamento"
   },
   "logs_page": {
     "date_range": "Período",
@@ -2245,7 +2257,9 @@
     "trial_setup": "PREPARAÇÃO DO ENSAIO",
     "user_management": "GESTÃO DE UTILIZADORES",
     "writing_phase": "FASE DE REDAÇÃO",
-    "writing_tracker": "ACOMPANHAMENTO DA REDAÇÃO"
+    "writing_tracker": "ACOMPANHAMENTO DA REDAÇÃO",
+    "ethics": "ÉTICA",
+    "projects_finance": "PROJETOS E FINANÇAS"
   },
   "news_page": {
     "article_tcc": {

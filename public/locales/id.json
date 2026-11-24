@@ -2175,7 +2175,19 @@
     "team_gcp": "Tim & Sertifikasi GCP",
     "team_gcp_desc": "Status sertifikasi GCP institusi dan log delegasi",
     "user_accounts": "Akun Pengguna",
-    "user_accounts_desc": "Kelola akun pengguna dan akses"
+    "user_accounts_desc": "Kelola akun pengguna dan akses",
+    "proposal_review": "Proposal review",
+    "proposal_review_desc": "Assign reviewers and decide submitted proposals",
+    "proposals_pipeline": "Proposals pipeline",
+    "proposals_pipeline_desc": "Every proposal from draft to award, by stage",
+    "ethics_review": "Ethics review",
+    "ethics_review_desc": "Review and decide submitted ethics applications",
+    "ethics_register": "Ethics register",
+    "ethics_register_desc": "All ethics applications and approvals, with expiry dates",
+    "project_tracking": "Project tracking",
+    "project_tracking_desc": "Progress and milestones of approved projects",
+    "budget_expenses": "Budget & expenses",
+    "budget_expenses_desc": "Budgets, spending, expense claims and funding analytics"
   },
   "logs_page": {
     "date_range": "Rentang Tanggal",
@@ -2245,7 +2257,9 @@
     "trial_setup": "PERSIAPAN UJI & INISIASI SITUS",
     "user_management": "PENGELOLAAN PENGGUNA",
     "writing_phase": "TAHAP PENULISAN",
-    "writing_tracker": "PELACAK PENULISAN"
+    "writing_tracker": "PELACAK PENULISAN",
+    "ethics": "ETHICS",
+    "projects_finance": "PROJECTS & FINANCE"
   },
   "news_page": {
     "article_tcc": {

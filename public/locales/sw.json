@@ -2175,7 +2175,19 @@
     "team_gcp": "Timu na Cheti cha GCP",
     "team_gcp_desc": "Hali ya cheti cha GCP ya taasisi, kumbukumbu za ugawaji",
     "user_accounts": "Akaunti za Watumiaji",
-    "user_accounts_desc": "Simamia akaunti za watumiaji na ufikiaji"
+    "user_accounts_desc": "Simamia akaunti za watumiaji na ufikiaji",
+    "proposal_review": "Mapitio ya mapendekezo",
+    "proposal_review_desc": "Teua wakaguzi na uamue mapendekezo yaliyowasilishwa",
+    "proposals_pipeline": "Mfululizo wa mapendekezo",
+    "proposals_pipeline_desc": "Kila pendekezo kutoka rasimu hadi ufadhili, kwa hatua",
+    "ethics_review": "Mapitio ya maadili",
+    "ethics_review_desc": "Kagua na uamue maombi ya maadili yaliyowasilishwa",
+    "ethics_register": "Rejista ya maadili",
+    "ethics_register_desc": "Maombi na idhini zote za maadili, pamoja na tarehe za kuisha",
+    "project_tracking": "Ufuatiliaji wa miradi",
+    "project_tracking_desc": "Maendeleo na hatua za miradi iliyoidhinishwa",
+    "budget_expenses": "Bajeti na matumizi",
+    "budget_expenses_desc": "Bajeti, matumizi, madai ya gharama na uchambuzi wa ufadhili"
   },
   "logs_page": {
     "date_range": "Kipindi cha Tarehe",
@@ -2245,7 +2257,9 @@
     "trial_setup": "USANIDI WA JARIBIO NA TOVUTI",
     "user_management": "USIMAMIZI WA WATUMIAJI",
     "writing_phase": "HATUA YA UANDISHI",
-    "writing_tracker": "UFUATILIAJI WA UANDISHI"
+    "writing_tracker": "UFUATILIAJI WA UANDISHI",
+    "ethics": "MAADILI",
+    "projects_finance": "MIRADI NA FEDHA"
   },
   "news_page": {
     "article_tcc": {
