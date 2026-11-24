@@ -6,6 +6,9 @@ import {
   Avatar,
   Box,
   Button,
+  Chip,
+  CircularProgress,
+  InputAdornment,
   LinearProgress,
   MenuItem,
   Stack,
@@ -16,6 +19,8 @@ import {
 } from '@mui/material';
 import {
   AddCircleOutline as RegisterIcon,
+  CloudDownload as FetchIcon,
+  Search as SearchIcon,
   ErrorOutline as HighIcon,
   OpenInNew as OpenIcon,
   ReportProblemOutlined as MediumIcon,
@@ -24,7 +29,7 @@ import {
 } from '@mui/icons-material';
 import StatusPill from '@/components/common/StatusPill';
 import { InstitutionModal, InstitutionModalBody, InstitutionModalFooter, InstitutionModalHeader, InstitutionModalSection } from '@/components/GlobalAdmin/InstitutionModalShell';
-import { APPROVAL_STATUS, PHASES, REGISTRY_STATUS, STUDY_TYPES, TRIAL_STATUS, approvalState, enrolment, expectedEnrolmentPct, trialFlags, validateTrialDraft } from '@/lib/clinical-trials';
+import { APPROVAL_STATUS, PHASES, REGISTRY_STATUS, SAMPLE_REGISTRY_RECORDS, STUDY_TYPES, TRIAL_STATUS, approvalState, enrolment, expectedEnrolmentPct, lookupTrialRecord, normaliseTrialId, trialFlags, trialIdSource, validateTrialDraft } from '@/lib/clinical-trials';
 
 export const PURPLE = '#8b6cbc';
 const INK = '#1e293b';
@@ -205,44 +210,102 @@ export function TrialPanel({ trial, open, onClose, audience = 'researcher', onNa
   );
 }
 
-const EMPTY = { title: '', shortTitle: '', phase: '', studyType: '', condition: '', intervention: '', sponsor: '', targetEnrollment: '', startDate: '', endDate: '' };
+const EMPTY = { trialId: '', title: '', shortTitle: '', phase: '', studyType: '', condition: '', intervention: '', sponsor: '', targetEnrollment: '', startDate: '', endDate: '' };
+const IMPORTABLE = ['title', 'shortTitle', 'phase', 'studyType', 'condition', 'intervention', 'sponsor', 'targetEnrollment', 'startDate', 'endDate'];
 
-/** Register a new trial (side panel). Sample mode: the trial lives in this session only. */
+/**
+ * Register a new trial (side panel). Entering a PACTR / NCT / CTMS ID fetches the
+ * trial's metadata and fills the form (sample records for now). Sample mode: the trial
+ * lives in this session only.
+ */
 export function RegisterTrialPanel({ open, onClose, onSave, pi }) {
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState({});
-  useEffect(() => { if (open) { setForm(EMPTY); setErrors({}); } }, [open]);
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const [lookup, setLookup] = useState({ state: 'idle', message: '', source: '', registryStatus: null });
+  const [imported, setImported] = useState([]);
+  useEffect(() => { if (open) { setForm(EMPTY); setErrors({}); setLookup({ state: 'idle', message: '', source: '', registryStatus: null }); setImported([]); } }, [open]);
+  const set = (k) => (e) => {
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+    if (imported.includes(k)) setImported((list) => list.filter((x) => x !== k));
+  };
+  const fetchRecord = async (value = form.trialId) => {
+    const id = normaliseTrialId(value);
+    setForm((f) => ({ ...f, trialId: id }));
+    const source = trialIdSource(id);
+    setLookup({ state: 'loading', message: source ? `Fetching from ${source}…` : 'Checking…', source: source || '', registryStatus: null });
+    // Stands in for the registry / CTMS API call.
+    await new Promise((r) => setTimeout(r, 900));
+    const res = lookupTrialRecord(id);
+    if (!res.ok) {
+      setLookup({ state: 'error', message: res.error, source: source || '', registryStatus: null });
+      return;
+    }
+    const r = res.record;
+    setForm((f) => ({ ...f, trialId: res.id, ...Object.fromEntries(IMPORTABLE.map((k) => [k, r[k] === undefined || r[k] === null ? '' : String(r[k])])) }));
+    setImported(IMPORTABLE.filter((k) => r[k] !== undefined && r[k] !== null && r[k] !== ''));
+    setErrors({});
+    setLookup({ state: 'done', message: `Details pulled from ${r.source}. Check them before saving.`, source: r.source, registryStatus: r.registryStatus || null });
+  };
   const save = () => {
     const v = validateTrialDraft(form);
     setErrors(v.errors);
-    if (v.ok) onSave(form);
+    if (v.ok) onSave({ ...form, lookupSource: lookup.state === 'done' ? lookup.source : null, registryStatus: lookup.registryStatus });
   };
+  const mark = (k) => (imported.includes(k) ? { InputProps: { sx: { bgcolor: '#f5f3ff' } }, helperText: errors[k] || 'Imported', FormHelperTextProps: { sx: { color: errors[k] ? undefined : PURPLE } } } : { helperText: errors[k] });
   return (
     <InstitutionModal open={open} onClose={onClose} variant="panel" maxWidth="sm">
-      <InstitutionModalHeader icon={RegisterIcon} title="Register a trial" subtitle="Starts as a draft. Add approvals and the registry number as you go." onClose={onClose} />
+      <InstitutionModalHeader icon={RegisterIcon} title="Register a trial" subtitle="Start from the trial ID to pull its details, or fill them in yourself." onClose={onClose} />
       <InstitutionModalBody>
         <Alert severity="info" sx={{ mb: 2 }}>Clinical trials are in preview: a trial you register here is kept for this session only.</Alert>
+        <Box sx={{ p: 2, mb: 2.5, borderRadius: 2, bgcolor: alpha(PURPLE, 0.05), border: `1px solid ${alpha(PURPLE, 0.2)}` }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1 }}>Trial ID</Typography>
+          <Stack direction="row" spacing={1}>
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="PACTR…, NCT… or CT-YYYY-NN"
+              value={form.trialId}
+              onChange={(e) => { setForm((f) => ({ ...f, trialId: e.target.value })); if (lookup.state !== 'loading') setLookup({ state: 'idle', message: '', source: '', registryStatus: null }); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && form.trialId.trim()) { e.preventDefault(); fetchRecord(); } }}
+              InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>, sx: { bgcolor: 'white', fontFamily: 'monospace' } }}
+              disabled={lookup.state === 'loading'}
+            />
+            <Button variant="contained" onClick={() => fetchRecord()} disabled={!form.trialId.trim() || lookup.state === 'loading'} startIcon={lookup.state === 'loading' ? <CircularProgress size={16} color="inherit" /> : <FetchIcon />} sx={{ textTransform: 'none', fontWeight: 700, bgcolor: PURPLE, boxShadow: 'none', whiteSpace: 'nowrap', minWidth: 130 }}>
+              {lookup.state === 'loading' ? 'Fetching' : 'Fetch details'}
+            </Button>
+          </Stack>
+          {lookup.state === 'loading' ? <LinearProgress sx={{ mt: 1, height: 3, borderRadius: 2, bgcolor: alpha(PURPLE, 0.12), '& .MuiLinearProgress-bar': { bgcolor: PURPLE } }} /> : null}
+          {lookup.message && lookup.state !== 'loading' ? (
+            <Alert severity={lookup.state === 'done' ? 'success' : 'warning'} sx={{ mt: 1.25, py: 0 }}>{lookup.message}</Alert>
+          ) : null}
+          {lookup.state === 'loading' ? <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{lookup.message}</Typography> : null}
+          <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mt: 1.25 }}>
+            <Typography variant="caption" color="text.secondary">Try a sample ID:</Typography>
+            {Object.keys(SAMPLE_REGISTRY_RECORDS).map((id) => (
+              <Chip key={id} size="small" label={id} onClick={() => fetchRecord(id)} disabled={lookup.state === 'loading'} sx={{ fontFamily: 'monospace', fontWeight: 600, bgcolor: 'white', border: `1px solid ${alpha(PURPLE, 0.3)}`, cursor: 'pointer' }} />
+            ))}
+          </Stack>
+        </Box>
         <Stack spacing={2}>
-          <TextField size="small" label="Full title" required multiline minRows={2} value={form.title} onChange={set('title')} error={Boolean(errors.title)} helperText={errors.title} />
-          <TextField size="small" label="Short title" value={form.shortTitle} onChange={set('shortTitle')} placeholder="e.g. XYZ-401 malaria trial" />
+          <TextField size="small" label="Full title" required multiline minRows={2} value={form.title} onChange={set('title')} error={Boolean(errors.title)} {...mark('title')} />
+          <TextField size="small" label="Short title" value={form.shortTitle} onChange={set('shortTitle')} placeholder="e.g. XYZ-401 malaria trial" {...mark('shortTitle')} />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField select size="small" fullWidth label="Phase" required value={form.phase} onChange={set('phase')} error={Boolean(errors.phase)} helperText={errors.phase}>
+            <TextField select size="small" fullWidth label="Phase" required value={form.phase} onChange={set('phase')} error={Boolean(errors.phase)} {...mark('phase')}>
               {PHASES.map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
             </TextField>
-            <TextField select size="small" fullWidth label="Study type" required value={form.studyType} onChange={set('studyType')} error={Boolean(errors.studyType)} helperText={errors.studyType}>
+            <TextField select size="small" fullWidth label="Study type" required value={form.studyType} onChange={set('studyType')} error={Boolean(errors.studyType)} {...mark('studyType')}>
               {STUDY_TYPES.map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
             </TextField>
           </Stack>
-          <TextField size="small" label="Condition studied" value={form.condition} onChange={set('condition')} />
-          <TextField size="small" label="Intervention" value={form.intervention} onChange={set('intervention')} />
+          <TextField size="small" label="Condition studied" value={form.condition} onChange={set('condition')} {...mark('condition')} />
+          <TextField size="small" label="Intervention" value={form.intervention} onChange={set('intervention')} {...mark('intervention')} />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField size="small" fullWidth label="Sponsor" value={form.sponsor} onChange={set('sponsor')} />
-            <TextField size="small" fullWidth type="number" label="Target enrolment" value={form.targetEnrollment} onChange={set('targetEnrollment')} error={Boolean(errors.targetEnrollment)} helperText={errors.targetEnrollment} />
+            <TextField size="small" fullWidth label="Sponsor" value={form.sponsor} onChange={set('sponsor')} {...mark('sponsor')} />
+            <TextField size="small" fullWidth type="number" label="Target enrolment" value={form.targetEnrollment} onChange={set('targetEnrollment')} error={Boolean(errors.targetEnrollment)} {...mark('targetEnrollment')} />
           </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField size="small" fullWidth type="date" label="Planned start" InputLabelProps={{ shrink: true }} value={form.startDate} onChange={set('startDate')} />
-            <TextField size="small" fullWidth type="date" label="Planned end" InputLabelProps={{ shrink: true }} value={form.endDate} onChange={set('endDate')} error={Boolean(errors.endDate)} helperText={errors.endDate} />
+            <TextField size="small" fullWidth type="date" label="Planned start" InputLabelProps={{ shrink: true }} value={form.startDate} onChange={set('startDate')} {...mark('startDate')} />
+            <TextField size="small" fullWidth type="date" label="Planned end" InputLabelProps={{ shrink: true }} value={form.endDate} onChange={set('endDate')} error={Boolean(errors.endDate)} {...mark('endDate')} />
           </Stack>
           <Typography variant="caption" color="text.secondary">Principal investigator: {pi || 'you'}. Next steps: ethics clearance (in Ethics), regulatory approval, then registration on PACTR or ClinicalTrials.gov.</Typography>
         </Stack>
