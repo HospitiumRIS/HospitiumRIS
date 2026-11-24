@@ -15,6 +15,7 @@ export const TRAINING_EMAIL_KINDS = [
   'REGISTRATION_CANCELLED',
   'SESSION_REMINDER',
   'SESSION_CANCELLED',
+  'TRAINING_CANCELLED',
   'CHECKIN_OPEN',
   'TRAINING_ASSIGNED',
   'TRAINING_DUE',
@@ -41,6 +42,7 @@ const NOTIFICATION_TYPE = {
   REGISTRATION_CANCELLED: 'TRAINING_CANCELLED',
   SESSION_REMINDER: 'TRAINING_STARTING_SOON',
   SESSION_CANCELLED: 'TRAINING_CANCELLED',
+  TRAINING_CANCELLED: 'TRAINING_CANCELLED',
   CHECKIN_OPEN: 'TRAINING_STARTING_SOON',
   TRAINING_ASSIGNED: 'TRAINING_AVAILABLE',
   TRAINING_DUE: 'TRAINING_STARTING_SOON',
@@ -56,7 +58,7 @@ const NOTIFICATION_TYPE = {
   ASSESSMENT_GRADED: 'SYSTEM_NOTIFICATION',
 };
 
-const HIGH_PRIORITY = new Set(['SESSION_CANCELLED', 'TRAINING_OVERDUE', 'CERTIFICATE_REVOKED', 'REGISTRATION_REJECTED', 'RETRAINING_DUE']);
+const HIGH_PRIORITY = new Set(['SESSION_CANCELLED', 'TRAINING_CANCELLED', 'TRAINING_OVERDUE', 'CERTIFICATE_REVOKED', 'REGISTRATION_REJECTED', 'RETRAINING_DUE']);
 
 function fmt(date, timeZone, options) {
   if (!date) return '';
@@ -181,6 +183,13 @@ export function buildTrainingEmail(kind, data) {
       paragraphs = [`The following session of "${title}" has been cancelled.`];
       details.push(['Session', s?.title], ['Was scheduled', when], ['Reason', data.reason]);
       message = `${s?.title || 'A session'} of "${title}" on ${when} was cancelled.`;
+      break;
+    case 'TRAINING_CANCELLED':
+      subject = `Training cancelled: ${title}`;
+      heading = 'A training has been cancelled';
+      paragraphs = [`"${title}" has been cancelled. Your place is released and nothing more is needed from you.`];
+      details.push(['Training', title], ['Reason', data.reason]);
+      message = `"${title}" has been cancelled.`;
       break;
     case 'CHECKIN_OPEN':
       subject = `Check-in is open: ${s?.title || title}`;
