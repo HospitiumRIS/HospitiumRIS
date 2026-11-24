@@ -164,3 +164,24 @@ export async function PUT(request, { params }) {
     );
   }
 }
+
+/**
+ * GET /api/training/[id]/registrations/[regId]
+ * One participant in full for the admin person panel: attendance, modules, assessments,
+ * feedback, certificate, completion checklist and timeline. Training admins only.
+ */
+export async function GET(request, { params }) {
+  try {
+    const { id, regId } = await params;
+    const { requireSessionAdmin } = await import('@/lib/training-sessions-server');
+    const access = await requireSessionAdmin(request, id);
+    if (access.error) return access.error;
+    const { loadParticipant } = await import('@/lib/training-workspace-server');
+    const participant = await loadParticipant(id, regId);
+    if (!participant) return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
+    return NextResponse.json({ success: true, ...participant });
+  } catch (error) {
+    console.error('Error loading participant:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
