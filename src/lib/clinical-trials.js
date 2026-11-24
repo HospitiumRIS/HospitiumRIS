@@ -1,0 +1,221 @@
+/**
+ * Clinical trials: shared statuses, rules and (for now) sample data.
+ *
+ * The module has no database tables yet, so every clinical-trials page reads the same
+ * SAMPLE_TRIALS. When trials are stored for real, replace `sampleTrials()` with an API
+ * call; the helpers below stay the same. Pure (no DB).
+ */
+
+export const TRIAL_STATUS = {
+  DRAFT: { label: 'Draft', tone: 'neutral', open: true },
+  IN_APPROVAL: { label: 'In approval', tone: 'info', open: true },
+  APPROVED: { label: 'Approved, not started', tone: 'progress', open: true },
+  RECRUITING: { label: 'Recruiting', tone: 'success', open: true },
+  FOLLOW_UP: { label: 'Follow-up', tone: 'success', open: true },
+  SUSPENDED: { label: 'Suspended', tone: 'danger', open: true },
+  COMPLETED: { label: 'Completed', tone: 'neutral', open: false },
+  TERMINATED: { label: 'Terminated early', tone: 'danger', open: false },
+  WITHDRAWN: { label: 'Withdrawn', tone: 'neutral', open: false },
+};
+
+export const APPROVAL_STATUS = {
+  NOT_STARTED: { label: 'Not started', tone: 'neutral' },
+  PENDING: { label: 'Pending', tone: 'info' },
+  APPROVED: { label: 'Approved', tone: 'success' },
+  EXPIRING: { label: 'Expiring', tone: 'warning' },
+  EXPIRED: { label: 'Expired', tone: 'danger' },
+  REJECTED: { label: 'Rejected', tone: 'danger' },
+  NOT_REQUIRED: { label: 'Not required', tone: 'neutral' },
+};
+
+export const REGISTRY_STATUS = {
+  NOT_REGISTERED: { label: 'Not registered', tone: 'neutral' },
+  SUBMITTED: { label: 'Submitted', tone: 'info' },
+  REGISTERED: { label: 'Registered', tone: 'success' },
+  RESULTS_DUE: { label: 'Results due', tone: 'warning' },
+  RESULTS_POSTED: { label: 'Results posted', tone: 'success' },
+};
+
+export const PHASES = ['Phase I', 'Phase I/II', 'Phase II', 'Phase III', 'Phase IV', 'Not applicable'];
+export const STUDY_TYPES = ['Interventional', 'Observational'];
+
+const DAY = 86400000;
+const day = (d) => (d ? new Date(d) : null);
+export const daysUntil = (d, now = new Date()) => (d ? Math.ceil((day(d) - now) / DAY) : null);
+
+/** Ethics or regulatory approval state, taking the expiry date into account. */
+export function approvalState(approval, now = new Date()) {
+  if (!approval) return 'NOT_STARTED';
+  const left = daysUntil(approval.expiry, now);
+  if (approval.status === 'APPROVED' && left !== null) {
+    if (left < 0) return 'EXPIRED';
+    if (left <= 60) return 'EXPIRING';
+  }
+  return approval.status || 'NOT_STARTED';
+}
+
+export function enrolment(trial) {
+  const target = Number(trial?.targetEnrollment) || 0;
+  const enrolled = Number(trial?.enrolled) || 0;
+  return { target, enrolled, pct: target ? Math.min(100, Math.round((enrolled / target) * 100)) : 0 };
+}
+
+/** Expected % enrolled by now if recruitment ran evenly between its dates. */
+export function expectedEnrolmentPct(trial, now = new Date()) {
+  const s = day(trial?.recruitmentStart || trial?.startDate);
+  const e = day(trial?.recruitmentEnd || trial?.endDate);
+  if (!s || !e || e <= s) return null;
+  return Math.max(0, Math.min(100, Math.round(((now - s) / (e - s)) * 100)));
+}
+
+/**
+ * What needs attention on a trial, most urgent first.
+ * @returns {{ key, severity: 'high'|'medium'|'low', text }[]}
+ */
+export function trialFlags(trial, now = new Date()) {
+  const flags = [];
+  const open = TRIAL_STATUS[trial.status]?.open;
+  if (!open) return flags;
+  const ethics = approvalState(trial.ethics, now);
+  const reg = approvalState(trial.regulatory, now);
+  const running = ['RECRUITING', 'FOLLOW_UP'].includes(trial.status);
+  if (ethics === 'EXPIRED' && running) flags.push({ key: 'ethics_expired', severity: 'high', text: 'Ethics approval expired while the trial is running' });
+  else if (ethics === 'EXPIRING') flags.push({ key: 'ethics_expiring', severity: 'medium', text: `Ethics approval expires in ${daysUntil(trial.ethics.expiry, now)} days` });
+  if (reg === 'EXPIRED' && running) flags.push({ key: 'reg_expired', severity: 'high', text: 'Regulatory approval expired' });
+  if ((trial.saesOverdue || 0) > 0) flags.push({ key: 'sae_overdue', severity: 'high', text: `${trial.saesOverdue} SAE report${trial.saesOverdue === 1 ? '' : 's'} past the reporting deadline` });
+  if (running && trial.registry?.status === 'NOT_REGISTERED') flags.push({ key: 'not_registered', severity: 'high', text: 'Recruiting but not registered on PACTR / ClinicalTrials.gov' });
+  if ((trial.deviationsOpen || 0) > 0) flags.push({ key: 'deviations', severity: 'medium', text: `${trial.deviationsOpen} open protocol deviation${trial.deviationsOpen === 1 ? '' : 's'}` });
+  if ((trial.gcpExpiring || 0) > 0) flags.push({ key: 'gcp', severity: 'low', text: `${trial.gcpExpiring} team GCP certificate${trial.gcpExpiring === 1 ? '' : 's'} expiring` });
+  if (trial.status === 'RECRUITING') {
+    const exp = expectedEnrolmentPct(trial, now);
+    const { pct } = enrolment(trial);
+    if (exp !== null && exp - pct > 20) flags.push({ key: 'slow', severity: 'medium', text: `Recruitment behind plan (${pct}% enrolled, ${exp}% expected)` });
+  }
+  const rank = { high: 0, medium: 1, low: 2 };
+  return flags.sort((a, b) => rank[a.severity] - rank[b.severity]);
+}
+
+export function portfolioSummary(trials, now = new Date()) {
+  const open = trials.filter((t) => TRIAL_STATUS[t.status]?.open);
+  const flagged = open.filter((t) => trialFlags(t, now).length);
+  const target = open.reduce((a, t) => a + enrolment(t).target, 0);
+  const enrolled = open.reduce((a, t) => a + enrolment(t).enrolled, 0);
+  return {
+    total: trials.length,
+    open: open.length,
+    recruiting: trials.filter((t) => t.status === 'RECRUITING').length,
+    inApproval: trials.filter((t) => t.status === 'IN_APPROVAL' || t.status === 'DRAFT').length,
+    closed: trials.length - open.length,
+    flagged: flagged.length,
+    urgent: open.filter((t) => trialFlags(t, now).some((f) => f.severity === 'high')).length,
+    enrolled,
+    target,
+    enrolledPct: target ? Math.round((enrolled / target) * 100) : 0,
+  };
+}
+
+export function validateTrialDraft(d) {
+  const errors = {};
+  if (!String(d.title || '').trim()) errors.title = 'Give the trial a title';
+  if (!d.phase) errors.phase = 'Choose a phase';
+  if (!d.studyType) errors.studyType = 'Choose a study type';
+  if (d.targetEnrollment !== '' && d.targetEnrollment !== undefined && !(Number(d.targetEnrollment) > 0)) errors.targetEnrollment = 'Enter a number above 0';
+  if (d.startDate && d.endDate && new Date(d.endDate) <= new Date(d.startDate)) errors.endDate = 'End date must be after the start date';
+  return { ok: !Object.keys(errors).length, errors };
+}
+
+const T = (o) => ({ sites: [], team: [], saesOpen: 0, saesOverdue: 0, deviationsOpen: 0, gcpExpiring: 0, mine: true, ...o });
+
+/** Sample trials shown until trials are stored in the database. */
+export const SAMPLE_TRIALS = [
+  T({
+    id: 'ct-001', code: 'CT-2026-001', title: 'Efficacy and safety of XYZ-401 for uncomplicated P. falciparum malaria in adults', shortTitle: 'XYZ-401 malaria trial',
+    pi: 'Dr. Amina Okonkwo', department: 'Infectious Diseases', phase: 'Phase III', studyType: 'Interventional', status: 'RECRUITING',
+    condition: 'Uncomplicated P. falciparum malaria', intervention: 'XYZ-401, oral 400 mg daily for 3 days', sponsor: 'Global Health Research Fund',
+    startDate: '2026-02-01', endDate: '2027-12-31', recruitmentStart: '2026-03-01', recruitmentEnd: '2027-03-01', targetEnrollment: 500, enrolled: 182,
+    sites: [{ name: 'Kisumu County Referral Hospital', target: 250, enrolled: 104 }, { name: 'Kakamega County Referral Hospital', target: 250, enrolled: 78 }],
+    ethics: { status: 'APPROVED', committee: 'KNH-UoN ERC', reference: 'P412/06/2025', expiry: '2027-01-10' },
+    regulatory: { status: 'APPROVED', authority: 'Pharmacy and Poisons Board', reference: 'PPB/ECCT/25/012', expiry: '2027-02-01' },
+    registry: { status: 'REGISTERED', pactr: 'PACTR202602001234', nct: null },
+    saesOpen: 2, saesOverdue: 1, deviationsOpen: 1, gcpExpiring: 1,
+    team: [{ name: 'Dr. Amina Okonkwo', role: 'Principal investigator' }, { name: 'Peter Otieno', role: 'Study coordinator' }, { name: 'Faith Achieng', role: 'Research nurse' }],
+  }),
+  T({
+    id: 'ct-002', code: 'CT-2026-002', title: 'Short-course regimen for drug-resistant tuberculosis: a pragmatic randomised trial', shortTitle: 'DR-TB short course',
+    pi: 'Dr. Samuel Mwangi', department: 'Respiratory Medicine', phase: 'Phase II', studyType: 'Interventional', status: 'RECRUITING',
+    condition: 'Rifampicin-resistant tuberculosis', intervention: '6-month BPaLM regimen', sponsor: 'National TB Programme',
+    startDate: '2025-09-01', endDate: '2027-08-31', recruitmentStart: '2025-10-01', recruitmentEnd: '2026-10-01', targetEnrollment: 200, enrolled: 96,
+    sites: [{ name: 'Kenyatta National Hospital', target: 200, enrolled: 96 }],
+    ethics: { status: 'APPROVED', committee: 'KNH-UoN ERC', reference: 'P210/03/2025', expiry: '2026-12-20' },
+    regulatory: { status: 'APPROVED', authority: 'Pharmacy and Poisons Board', reference: 'PPB/ECCT/25/004', expiry: '2027-03-01' },
+    registry: { status: 'REGISTERED', pactr: null, nct: 'NCT06123456' },
+    deviationsOpen: 2, mine: true,
+    team: [{ name: 'Dr. Samuel Mwangi', role: 'Principal investigator' }, { name: 'Grace Njeri', role: 'Pharmacist' }],
+  }),
+  T({
+    id: 'ct-003', code: 'CT-2026-003', title: 'Single-dose HPV vaccination in adolescent girls: immunogenicity at 24 months', shortTitle: 'Single-dose HPV',
+    pi: 'Dr. Mary Wanjiru', department: 'Paediatrics', phase: 'Phase IV', studyType: 'Interventional', status: 'IN_APPROVAL',
+    condition: 'HPV infection prevention', intervention: 'Single dose 9-valent HPV vaccine', sponsor: 'Ministry of Health',
+    startDate: '2027-01-15', endDate: '2029-01-15', targetEnrollment: 300, enrolled: 0,
+    ethics: { status: 'PENDING', committee: 'KNH-UoN ERC', reference: null, expiry: null },
+    regulatory: { status: 'NOT_STARTED', authority: 'Pharmacy and Poisons Board' },
+    registry: { status: 'NOT_REGISTERED' },
+    team: [{ name: 'Dr. Mary Wanjiru', role: 'Principal investigator' }],
+  }),
+  T({
+    id: 'ct-004', code: 'CT-2025-014', title: 'Community-based hypertension management with task sharing', shortTitle: 'Task-sharing hypertension',
+    pi: 'Dr. John Kamau', department: 'Internal Medicine', phase: 'Not applicable', studyType: 'Interventional', status: 'SUSPENDED',
+    condition: 'Hypertension', intervention: 'Nurse-led titration protocol', sponsor: 'County Government',
+    startDate: '2025-03-01', endDate: '2026-12-31', recruitmentStart: '2025-04-01', recruitmentEnd: '2026-04-01', targetEnrollment: 300, enrolled: 90,
+    ethics: { status: 'APPROVED', committee: 'Moi University IREC', reference: '0004512', expiry: '2026-10-30' },
+    regulatory: { status: 'NOT_REQUIRED' },
+    registry: { status: 'REGISTERED', pactr: 'PACTR202503004567' },
+    gcpExpiring: 2, mine: false,
+    team: [{ name: 'Dr. John Kamau', role: 'Principal investigator' }],
+  }),
+  T({
+    id: 'ct-005', code: 'CT-2026-007', title: 'AI-assisted triage in emergency departments: stepped-wedge evaluation', shortTitle: 'AI triage (TRIAGE-KE)',
+    pi: 'Joy Owango', department: 'Emergency Medicine', phase: 'Not applicable', studyType: 'Interventional', status: 'RECRUITING',
+    condition: 'Emergency triage accuracy', intervention: 'AI-assisted triage decision support', sponsor: 'Private Industry Sponsor',
+    startDate: '2026-10-25', endDate: '2028-04-24', recruitmentStart: '2026-12-01', recruitmentEnd: '2027-08-31', targetEnrollment: 3600, enrolled: 0,
+    ethics: { status: 'APPROVED', committee: 'NACOSTI / NREIB', reference: 'NREIB/ERC/2026/0417', expiry: '2028-10-05' },
+    regulatory: { status: 'NOT_REQUIRED' },
+    registry: { status: 'NOT_REGISTERED' },
+    mine: false,
+    team: [{ name: 'Joy Owango', role: 'Principal investigator' }, { name: 'Stephen Gaikia', role: 'Co-investigator' }],
+  }),
+  T({
+    id: 'ct-006', code: 'CT-2026-011', title: 'Probiotic supplementation to prevent necrotising enterocolitis in preterm infants', shortTitle: 'Probiotics for NEC',
+    pi: 'Dr. Grace Akinyi', department: 'Neonatology', phase: 'Phase III', studyType: 'Interventional', status: 'DRAFT',
+    condition: 'Necrotising enterocolitis', intervention: 'Multi-strain probiotic', sponsor: null,
+    startDate: '2027-03-01', endDate: '2029-03-01', targetEnrollment: 420, enrolled: 0,
+    ethics: null, regulatory: null, registry: { status: 'NOT_REGISTERED' },
+    team: [{ name: 'Dr. Grace Akinyi', role: 'Principal investigator' }],
+  }),
+  T({
+    id: 'ct-007', code: 'CT-2024-003', title: 'Maternal iron supplementation and infant neurodevelopment', shortTitle: 'Maternal iron',
+    pi: 'Dr. Grace Akinyi', department: 'Obstetrics', phase: 'Phase III', studyType: 'Interventional', status: 'COMPLETED',
+    condition: 'Maternal anaemia', intervention: 'Daily iron 60 mg', sponsor: 'Wellcome Trust',
+    startDate: '2023-01-10', endDate: '2025-12-15', targetEnrollment: 600, enrolled: 600,
+    ethics: { status: 'APPROVED', committee: 'KNH-UoN ERC', reference: 'P101/01/2023', expiry: '2026-01-10' },
+    regulatory: { status: 'APPROVED', authority: 'Pharmacy and Poisons Board', reference: 'PPB/ECCT/23/002', expiry: '2026-01-10' },
+    registry: { status: 'RESULTS_DUE', pactr: 'PACTR202301009876', resultsDue: '2026-12-15' },
+    closure: { reason: 'Completed as planned', date: '2025-12-15', lesson: 'Community health volunteers doubled retention at 12 months.' },
+    team: [{ name: 'Dr. Grace Akinyi', role: 'Principal investigator' }],
+  }),
+  T({
+    id: 'ct-008', code: 'CT-2024-009', title: 'Zinc adjunct therapy for severe pneumonia in children under five', shortTitle: 'Zinc for pneumonia',
+    pi: 'Dr. Samuel Mwangi', department: 'Paediatrics', phase: 'Phase III', studyType: 'Interventional', status: 'TERMINATED',
+    condition: 'Severe pneumonia', intervention: 'Zinc 20 mg daily', sponsor: 'NIH',
+    startDate: '2024-02-01', endDate: '2025-06-30', targetEnrollment: 400, enrolled: 152,
+    ethics: { status: 'APPROVED', committee: 'KNH-UoN ERC', reference: 'P330/11/2023', expiry: '2025-11-30' },
+    regulatory: { status: 'APPROVED', authority: 'Pharmacy and Poisons Board', reference: 'PPB/ECCT/24/001', expiry: '2025-11-30' },
+    registry: { status: 'RESULTS_POSTED', nct: 'NCT05987654' },
+    closure: { reason: 'Futility at interim analysis', date: '2025-01-20', lesson: 'Set the interim analysis earlier for adjunct therapies.' },
+    team: [{ name: 'Dr. Samuel Mwangi', role: 'Principal investigator' }],
+  }),
+];
+
+export function sampleTrials({ mine = false } = {}) {
+  return SAMPLE_TRIALS.filter((t) => !mine || t.mine).map((t) => ({ ...t }));
+}
