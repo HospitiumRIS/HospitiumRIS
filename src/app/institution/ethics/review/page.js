@@ -164,9 +164,13 @@ export default function InstitutionEthicsReviewPage() {
         description={t('institution.review_ethics_desc')}
         icon={<EthicsIcon sx={{ fontSize: 32 }} />}
         breadcrumbs={[
-          { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/institution' },
-          { label: 'Ethics', path: '/institution/ethics' }
+          { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/institution' }
         ]}
+        actionButton={(
+          <Button variant="contained" onClick={() => router.push('/institution/ethics/applications')} sx={{ textTransform: 'none', fontWeight: 700, bgcolor: 'white', color: '#8b6cbc', '&:hover': { bgcolor: '#f5f5f5' } }}>
+            All applications and approvals
+          </Button>
+        )}
       />
 
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
