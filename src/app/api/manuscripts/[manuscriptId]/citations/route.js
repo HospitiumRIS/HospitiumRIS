@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { manuscriptMember } from '@/lib/review-access-server';
 
 
 // GET - Fetch all citations for a specific manuscript
@@ -20,8 +21,9 @@ export async function GET(request, { params }) {
             );
         }
 
-        // TODO: Add proper authentication and check if user has access to this manuscript
-        const session = { user: { id: 'dev-user-id' } };
+        // Creator or collaborator only (#6)
+        const access = await manuscriptMember(request, manuscriptId);
+        if (access.error) return access.error;
 
         // Fetch manuscript citations with publication details
         const manuscriptCitations = await prisma.manuscriptCitation.findMany({
@@ -128,8 +130,9 @@ export async function POST(request, { params }) {
             );
         }
 
-        // TODO: Add proper authentication and check if user has access to this manuscript
-        const session = { user: { id: 'dev-user-id' } };
+        // Creator or collaborator only (#6)
+        const access = await manuscriptMember(request, manuscriptId);
+        if (access.error) return access.error;
 
         // Check if citation already exists
         const existingCitation = await prisma.manuscriptCitation.findUnique({
@@ -213,8 +216,9 @@ export async function DELETE(request, { params }) {
             );
         }
 
-        // TODO: Add proper authentication and check if user has access to this manuscript
-        const session = { user: { id: 'dev-user-id' } };
+        // Creator or collaborator only (#6)
+        const access = await manuscriptMember(request, manuscriptId);
+        if (access.error) return access.error;
 
         // Delete manuscript citation
         await prisma.manuscriptCitation.delete({

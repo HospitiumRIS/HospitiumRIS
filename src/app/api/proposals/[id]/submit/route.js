@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
+import { forbidden, proposalReviewContext } from '@/lib/review-access-server';
 import { ensureProposalInReviewPipeline } from '../../../../../lib/proposal-review-pipeline.js';
 
-const prisma = new PrismaClient();
-
+/** POST: submit a proposal for review. Only the people on the proposal (#6). */
 export async function POST(request, { params }) {
   try {
     const { id } = await params;
+    const ctx = await proposalReviewContext(request, id);
+    if (ctx.error) return ctx.error;
+    if (!ctx.perms.submit) return forbidden('Only the people on this proposal can submit it');
 
     const proposal = await prisma.proposal.findUnique({
       where: { id },
@@ -46,7 +49,5 @@ export async function POST(request, { params }) {
       { error: 'Failed to submit proposal' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

@@ -1,23 +1,36 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
+import { sessionUser } from '@/lib/review-access-server';
+import { ethicsListScope } from '@/lib/review-access';
+import { getInstitutionMembers } from '@/lib/proposals/visibility';
+import { userInstitutionId } from '@/lib/proposals/scope';
 
-const prisma = new PrismaClient();
-
-// GET - List ethics applications
+/**
+ * GET - List ethics applications (#6). Researchers get their own; research admins get
+ * their institution's (or their own with `?mine=1` / `?userId=<own id>`); global admins
+ * get all. A `userId` for someone else is never honoured.
+ */
 export async function GET(request) {
   try {
+    const auth = await sessionUser(request);
+    if (auth.error) return auth.error;
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    const userId = searchParams.get('userId');
+    const scope = ethicsListScope(auth.user, { userId: searchParams.get('userId'), mine: searchParams.get('mine') === '1' });
 
     const where = {};
-    
+
     if (status) {
       where.status = status;
     }
-    
-    if (userId) {
-      where.userId = userId;
+
+    if (scope.mode === 'own') {
+      where.userId = auth.user.id;
+    } else if (scope.mode === 'institution') {
+      const { memberIds } = await getInstitutionMembers(userInstitutionId(auth.user));
+      where.userId = { in: memberIds.length ? memberIds : ['__none__'] };
+    } else if (scope.mode !== 'all') {
+      return NextResponse.json({ success: true, applications: [] });
     }
 
     const applications = await prisma.ethicsApplication.findMany({
@@ -74,15 +87,17 @@ export async function GET(request) {
   }
 }
 
-// POST - Create new ethics application
+// POST - Create new ethics application for the signed-in user (#6: never for a userId from the body)
 export async function POST(request) {
   try {
-    const data = await request.json();
+    const auth = await sessionUser(request);
+    if (auth.error) return auth.error;
+    const data = await request.json().catch(() => ({}));
 
     // Map form data to database schema
     const application = await prisma.ethicsApplication.create({
       data: {
-        userId: data.userId,
+        userId: auth.user.id,
         title: data.title || '',
         principalInvestigator: data.principalInvestigator || data.piOption === 'useProfile' ? 'Current User' : '',
         principalInvestigatorId: data.principalInvestigatorId,

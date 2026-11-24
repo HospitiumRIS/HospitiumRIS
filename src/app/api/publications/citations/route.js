@@ -1,21 +1,28 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
+import { sessionUser } from '@/lib/review-access-server';
 import { getCitationCount } from '../../../../services/citationService.js';
 
-const prisma = new PrismaClient();
+// Each id triggers outbound citation lookups; keep one request bounded (#6).
+const MAX_IDS = 100;
 
 /**
  * Fetch and cache citation data for publications
  */
 export async function POST(request) {
     try {
-        const { publicationIds } = await request.json();
+        const auth = await sessionUser(request);
+        if (auth.error) return auth.error;
+        const { publicationIds } = await request.json().catch(() => ({}));
         
         if (!publicationIds || !Array.isArray(publicationIds)) {
             return NextResponse.json(
                 { error: 'publicationIds array is required' },
                 { status: 400 }
             );
+        }
+        if (publicationIds.length > MAX_IDS) {
+            return NextResponse.json({ error: `At most ${MAX_IDS} publications per request` }, { status: 400 });
         }
 
         // Fetch publications from database
@@ -47,11 +54,9 @@ export async function POST(request) {
     } catch (error) {
         console.error('Error fetching citations:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch citations', details: error.message },
+            { error: 'Failed to fetch citations' },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
@@ -60,6 +65,8 @@ export async function POST(request) {
  */
 export async function GET(request) {
     try {
+        const auth = await sessionUser(request);
+        if (auth.error) return auth.error;
         const { searchParams } = new URL(request.url);
         const publicationId = searchParams.get('id');
         const doi = searchParams.get('doi');
@@ -113,11 +120,9 @@ export async function GET(request) {
     } catch (error) {
         console.error('Error fetching citation:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch citation', details: error.message },
+            { error: 'Failed to fetch citation' },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }
 

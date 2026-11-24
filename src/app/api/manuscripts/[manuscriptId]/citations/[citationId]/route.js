@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { manuscriptMember } from '@/lib/review-access-server';
 
 
 // DELETE - Remove or decrement citation from manuscript
@@ -14,6 +15,10 @@ export async function DELETE(request, { params }) {
                 { status: 400 }
             );
         }
+
+        // Creator or collaborator only (#6)
+        const access = await manuscriptMember(request, manuscriptId);
+        if (access.error) return access.error;
 
         // Find the manuscript citation
         const manuscriptCitation = await prisma.manuscriptCitation.findFirst({

@@ -708,7 +708,7 @@ const CreateProposalPage = () => {
     
     setLoadingEthicsApps(true);
     try {
-      const response = await fetch(`/api/ethics/applications?userId=${user.id}`);
+      const response = await fetch('/api/ethics/applications?mine=1');
       const data = await response.json();
       
       if (data.success) {
