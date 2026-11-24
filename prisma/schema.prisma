@@ -138,6 +138,7 @@ model User {
   notificationPreferences NotificationPreference?
 
   trainingFacilitations TrainingFacilitator[] @relation("TrainingFacilitatorUser")
+  trainingCalendarFeed TrainingCalendarFeed?
   @@index([status, deletedAt])
   @@map("users")
 }
@@ -3262,4 +3263,19 @@ model TrainingFeedbackResponse {
 
   @@index([trainingId])
   @@map("training_feedback_responses")
+}
+
+// Private calendar feed of a person's training sessions (#108). The token in the URL is
+// the only credential; rotating it replaces the row's token so old URLs stop working.
+model TrainingCalendarFeed {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  token     String   @unique
+  createdAt DateTime @default(now())
+  rotatedAt DateTime @default(now())
+  lastUsedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("training_calendar_feeds")
 }
