@@ -2912,6 +2912,14 @@
     "registry": "Usajili wa umma",
     "registry_desc": "Usajili wa PACTR na ClinicalTrials.gov",
     "results": "Matokeo na machapisho",
-    "results_desc": "Matokeo, machapisho na data za majaribio yako"
+    "results_desc": "Matokeo, machapisho na data za majaribio yako",
+    "cat_conduct_reporting": "UTEKELEZAJI NA RIPOTI",
+    "my_trials_hub_desc": "Sajili majaribio; yanayoendelea na yaliyofungwa; nyaraka",
+    "approvals_team": "Idhini na timu",
+    "approvals_team_desc": "Idhini za maadili na udhibiti, timu na GCP",
+    "recruitment_safety": "Uandikishaji na usalama",
+    "recruitment_safety_desc": "Uandikishaji, matukio mabaya na ukiukaji",
+    "registry_results": "Usajili na matokeo",
+    "registry_results_desc": "PACTR / ClinicalTrials.gov, matokeo na machapisho"
   }
 }

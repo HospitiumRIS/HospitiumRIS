@@ -9,7 +9,7 @@ import PageHeader from '@/components/common/PageHeader';
 const PURPLE = '#8b6cbc';
 const ghostBtn = { color: 'white', borderColor: 'rgba(255,255,255,0.6)', textTransform: 'none', fontWeight: 700, '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' } };
 
-function Hub({ path, title, description, icon, tabs, links = [] }) {
+function Hub({ path, title, description, icon, tabs, links = [], home = '/institution', root = '/institution/clinical-trials' }) {
   const router = useRouter();
   const params = useSearchParams();
   const tab = tabs.some((t) => t.id === params.get('tab')) ? params.get('tab') : tabs[0].id;
@@ -21,8 +21,8 @@ function Hub({ path, title, description, icon, tabs, links = [] }) {
         description={description}
         icon={icon}
         breadcrumbs={[
-          { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: '/institution' },
-          ...(path === '/institution/clinical-trials' ? [] : [{ label: 'Clinical trials', path: '/institution/clinical-trials' }]),
+          { label: 'Home', icon: <HomeIcon sx={{ fontSize: 16 }} />, path: home },
+          ...(path === root ? [] : [{ label: 'Clinical trials', path: root }]),
         ]}
         actionButton={links.length ? (
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>

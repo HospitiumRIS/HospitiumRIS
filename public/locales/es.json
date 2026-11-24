@@ -2912,6 +2912,14 @@
     "registry": "Registros",
     "registry_desc": "Registro en PACTR y ClinicalTrials.gov",
     "results": "Resultados y productos",
-    "results_desc": "Resultados, publicaciones y datos de sus ensayos"
+    "results_desc": "Resultados, publicaciones y datos de sus ensayos",
+    "cat_conduct_reporting": "EJECUCIÓN E INFORMES",
+    "my_trials_hub_desc": "Registrar ensayos; activos y cerrados; documentos",
+    "approvals_team": "Aprobaciones y equipo",
+    "approvals_team_desc": "Aprobaciones éticas y regulatorias, equipo y BPC",
+    "recruitment_safety": "Reclutamiento y seguridad",
+    "recruitment_safety_desc": "Inclusión, eventos adversos y desviaciones",
+    "registry_results": "Registro y resultados",
+    "registry_results_desc": "PACTR / ClinicalTrials.gov, resultados y productos"
   }
 }

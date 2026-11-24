@@ -51,7 +51,6 @@ import {
   PeopleAlt as RecruitmentIcon,
   HealthAndSafety as SafetyIcon,
   CloudSync as RegistryIcon,
-  Inventory2 as ArchiveIcon,
   Insights as ResultsIcon,
   Settings as SettingsIcon,
   ImageSearch as ImageIntegrityIcon,
@@ -233,24 +232,15 @@ function buildResearcherConfig(t) {
       {
         key: 'clinical_trials',
         label: t('researcher.clinical_trials'),
-        // Grouped by what the researcher is doing; one entry per page.
+        // Four places, related views as tabs inside each.
         categories: [
           category(t, 'ct_nav.cat_my_trials', [
-            item(t, 'ct_nav.my_trials', 'ct_nav.my_trials_desc', '/researcher/clinical-trials/intake', <RegistrationIcon sx={ICON_SM} />),
-            item(t, 'ct_nav.documents', 'ct_nav.documents_desc', '/researcher/clinical-trials/documents', <DocumentIcon sx={ICON_SM} />),
-            item(t, 'ct_nav.archive', 'ct_nav.archive_desc', '/researcher/clinical-trials/archive', <ArchiveIcon sx={ICON_SM} />),
+            item(t, 'ct_nav.my_trials', 'ct_nav.my_trials_hub_desc', '/researcher/clinical-trials/intake', <RegistrationIcon sx={ICON_SM} />),
+            item(t, 'ct_nav.approvals_team', 'ct_nav.approvals_team_desc', '/researcher/clinical-trials/approvals', <EthicsReviewIcon sx={ICON_SM} />),
           ]),
-          category(t, 'ct_nav.cat_setup', [
-            item(t, 'ct_nav.approvals', 'ct_nav.approvals_desc', '/researcher/clinical-trials/approvals', <EthicsReviewIcon sx={ICON_SM} />),
-            item(t, 'ct_nav.team_gcp', 'ct_nav.team_gcp_desc', '/researcher/clinical-trials/team', <TeamIcon sx={ICON_SM} />),
-          ]),
-          category(t, 'ct_nav.cat_conduct', [
-            item(t, 'ct_nav.recruitment', 'ct_nav.recruitment_desc', '/researcher/clinical-trials/recruitment', <RecruitmentIcon sx={ICON_SM} />),
-            item(t, 'ct_nav.safety', 'ct_nav.safety_desc', '/researcher/clinical-trials/safety', <SafetyIcon sx={ICON_SM} />),
-          ]),
-          category(t, 'ct_nav.cat_reporting', [
-            item(t, 'ct_nav.registry', 'ct_nav.registry_desc', '/researcher/clinical-trials/registry', <RegistryIcon sx={ICON_SM} />),
-            item(t, 'ct_nav.results', 'ct_nav.results_desc', '/researcher/clinical-trials/results', <ResultsIcon sx={ICON_SM} />),
+          category(t, 'ct_nav.cat_conduct_reporting', [
+            item(t, 'ct_nav.recruitment_safety', 'ct_nav.recruitment_safety_desc', '/researcher/clinical-trials/recruitment', <RecruitmentIcon sx={ICON_SM} />),
+            item(t, 'ct_nav.registry_results', 'ct_nav.registry_results_desc', '/researcher/clinical-trials/registry', <ResultsIcon sx={ICON_SM} />),
           ]),
         ],
       },

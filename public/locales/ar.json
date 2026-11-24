@@ -2912,6 +2912,14 @@
     "registry": "التسجيل العام",
     "registry_desc": "PACTR and ClinicalTrials.gov registration",
     "results": "النتائج والمخرجات",
-    "results_desc": "Results, publications and datasets from your trials"
+    "results_desc": "Results, publications and datasets from your trials",
+    "cat_conduct_reporting": "التنفيذ والتقارير",
+    "my_trials_hub_desc": "Register trials; active and closed trials; documents",
+    "approvals_team": "الموافقات والفريق",
+    "approvals_team_desc": "Ethics and regulatory approvals, study team and GCP",
+    "recruitment_safety": "التجنيد والسلامة",
+    "recruitment_safety_desc": "Enrolment, adverse events and protocol deviations",
+    "registry_results": "التسجيل والنتائج",
+    "registry_results_desc": "PACTR / ClinicalTrials.gov, results and outputs"
   }
 }
