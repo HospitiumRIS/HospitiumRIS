@@ -2912,6 +2912,14 @@
     "registry": "Enregistrements",
     "registry_desc": "Enregistrement PACTR et ClinicalTrials.gov",
     "results": "Résultats et productions",
-    "results_desc": "Résultats, publications et jeux de données de vos essais"
+    "results_desc": "Résultats, publications et jeux de données de vos essais",
+    "cat_conduct_reporting": "CONDUITE ET RAPPORTS",
+    "my_trials_hub_desc": "Enregistrer des essais ; essais actifs et clôturés ; documents",
+    "approvals_team": "Approbations et équipe",
+    "approvals_team_desc": "Approbations éthiques et réglementaires, équipe et BPC",
+    "recruitment_safety": "Recrutement et sécurité",
+    "recruitment_safety_desc": "Inclusions, événements indésirables et déviations",
+    "registry_results": "Registre et résultats",
+    "registry_results_desc": "PACTR / ClinicalTrials.gov, résultats et productions"
   }
 }

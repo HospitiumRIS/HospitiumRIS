@@ -3063,6 +3063,14 @@
     "registry": "Registry submissions",
     "registry_desc": "PACTR and ClinicalTrials.gov registration",
     "results": "Results & outputs",
-    "results_desc": "Results, publications and datasets from your trials"
+    "results_desc": "Results, publications and datasets from your trials",
+    "cat_conduct_reporting": "CONDUCT & REPORTING",
+    "my_trials_hub_desc": "Register trials; active and closed trials; documents",
+    "approvals_team": "Approvals & team",
+    "approvals_team_desc": "Ethics and regulatory approvals, study team and GCP",
+    "recruitment_safety": "Recruitment & safety",
+    "recruitment_safety_desc": "Enrolment, adverse events and protocol deviations",
+    "registry_results": "Registry & results",
+    "registry_results_desc": "PACTR / ClinicalTrials.gov, results and outputs"
   }
 }

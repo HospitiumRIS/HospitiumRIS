@@ -2912,6 +2912,14 @@
     "registry": "公开注册",
     "registry_desc": "PACTR and ClinicalTrials.gov registration",
     "results": "结果与产出",
-    "results_desc": "Results, publications and datasets from your trials"
+    "results_desc": "Results, publications and datasets from your trials",
+    "cat_conduct_reporting": "实施与报告",
+    "my_trials_hub_desc": "Register trials; active and closed trials; documents",
+    "approvals_team": "审批与团队",
+    "approvals_team_desc": "Ethics and regulatory approvals, study team and GCP",
+    "recruitment_safety": "招募与安全",
+    "recruitment_safety_desc": "Enrolment, adverse events and protocol deviations",
+    "registry_results": "注册与结果",
+    "registry_results_desc": "PACTR / ClinicalTrials.gov, results and outputs"
   }
 }
