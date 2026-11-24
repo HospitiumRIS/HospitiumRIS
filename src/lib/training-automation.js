@@ -72,6 +72,7 @@ export const AUDIT_ACTION_LABELS = {
   WAITLIST_PROMOTED: 'Moved up from the waiting list',
   TRAINING_ASSIGNED: 'Training assigned',
   DUE_DATE_CHANGED: 'Due date changed',
+  COMPLIANCE_EXEMPTED: 'Exempted from compliance',
   MODULE_PROGRESS_UPDATED: 'Module progress updated',
   ATTENDANCE_MARKED: 'Attendance marked',
   ATTENDANCE_IMPORTED: 'Attendance imported',

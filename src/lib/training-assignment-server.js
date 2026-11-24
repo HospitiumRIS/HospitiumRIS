@@ -210,11 +210,14 @@ export async function complianceReport(institutionId, now = new Date()) {
           completedAt: true,
           user: { select: { id: true, givenName: true, familyName: true, email: true, researchProfile: { select: { department: true } } } },
           certificate: { select: { id: true, status: true, expiresAt: true, certificateNumber: true } },
+          complianceExemptions: { select: { reason: true }, take: 1 },
         },
       },
     },
     orderBy: { startDate: 'desc' },
   });
+  // Exempted registrations (compliance v2) are shown as Exempt and left out of totals.
+  for (const t of trainings) for (const r of t.registrations) r.exempt = r.complianceExemptions.length > 0;
 
   const people = [];
   const rows = trainings.map((t) => {
@@ -223,6 +226,8 @@ export async function complianceReport(institutionId, now = new Date()) {
       const { state, daysLeft } = complianceState(r, now);
       people.push({
         registrationId: r.id,
+        userId: r.user.id,
+        exemptReason: r.complianceExemptions[0]?.reason || null,
         trainingId: t.id,
         trainingTitle: t.title,
         name: `${r.user.givenName} ${r.user.familyName}`.trim(),

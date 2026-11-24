@@ -9,7 +9,7 @@ export const DUE_SOON_DAYS = 7;
 export const EXPIRING_SOON_DAYS = 30;
 const DAY = 24 * 60 * 60 * 1000;
 
-export const COMPLIANCE_STATES = ['OVERDUE', 'DUE_SOON', 'ON_TRACK', 'IN_PROGRESS', 'RETRAINING_DUE', 'EXPIRING', 'COMPLETED', 'WITHDRAWN'];
+export const COMPLIANCE_STATES = ['OVERDUE', 'DUE_SOON', 'ON_TRACK', 'IN_PROGRESS', 'RETRAINING_DUE', 'EXPIRING', 'COMPLETED', 'EXEMPT', 'WITHDRAWN'];
 export const COMPLIANCE_LABELS = {
   OVERDUE: 'Overdue',
   DUE_SOON: 'Due soon',
@@ -18,6 +18,7 @@ export const COMPLIANCE_LABELS = {
   RETRAINING_DUE: 'Re-training due',
   EXPIRING: 'Certificate expiring',
   COMPLETED: 'Completed',
+  EXEMPT: 'Exempt',
   WITHDRAWN: 'Withdrawn',
 };
 
@@ -110,6 +111,7 @@ export function actionTakesSeat(action) {
  */
 export function complianceState(registration, now = new Date()) {
   const r = registration || {};
+  if (r.exempt) return { state: 'EXEMPT', daysLeft: null }; // exempted by an admin (compliance v2)
   if (r.status === 'CANCELLED' || r.status === 'REJECTED') return { state: 'WITHDRAWN', daysLeft: null };
   if (r.status === 'COMPLETED') {
     const cert = r.certificate;
@@ -162,7 +164,7 @@ export function summarizeCompliance(registrations, now = new Date()) {
   for (const r of registrations || []) {
     const { state } = complianceState(r, now);
     counts[state] += 1;
-    if (state !== 'WITHDRAWN') assigned += 1;
+    if (state !== 'WITHDRAWN' && state !== 'EXEMPT') assigned += 1;
   }
   const done = counts.COMPLETED + counts.EXPIRING;
   return {

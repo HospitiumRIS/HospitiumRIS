@@ -140,6 +140,7 @@ model User {
   trainingFacilitations TrainingFacilitator[] @relation("TrainingFacilitatorUser")
   trainingCalendarFeed TrainingCalendarFeed?
   trainingReportSubscription TrainingReportSubscription?
+  trainingComplianceExemptions TrainingComplianceExemption[] @relation("TrainingExemptionUser")
   @@index([status, deletedAt])
   @@map("users")
 }
@@ -2077,6 +2078,9 @@ model Training {
   assessments TrainingAssessment[]
   feedbackForm      TrainingFeedbackForm?
   feedbackResponses TrainingFeedbackResponse[]
+  // Compliance v2: this cohort satisfies a standing requirement
+  requirementId String?
+  requirement   TrainingRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
   @@index([institutionId, status])
   @@index([status, openToOtherInstitutions])
   @@map("trainings")
@@ -2169,6 +2173,7 @@ model TrainingRegistration {
 
   assessmentAttempts TrainingAssessmentAttempt[]
   feedbackResponse TrainingFeedbackResponse?
+  complianceExemptions TrainingComplianceExemption[]
   @@unique([trainingId, userId])
   @@index([source, dueDate])
   @@map("training_registrations")
@@ -3295,4 +3300,47 @@ model TrainingReportSubscription {
 
   @@index([institutionId])
   @@map("training_report_subscriptions")
+}
+
+// Standing training requirements (compliance v2), e.g. "Nursing: BLS every 24 months".
+// Met by completing any training linked through Training.requirementId.
+model TrainingRequirement {
+  id             String   @id @default(cuid())
+  institutionId  String
+  title          String
+  description    String?  @db.Text
+  departments    String[] @default([]) // empty = everyone in the institution
+  validityMonths Int? // null = never expires
+  dueWithinDays  Int      @default(30)
+  autoAssign     Boolean  @default(true)
+  isActive       Boolean  @default(true)
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  trainings  Training[]
+  exemptions TrainingComplianceExemption[]
+
+  @@index([institutionId])
+  @@map("training_requirements")
+}
+
+// An admin's exemption from a requirement, or from one assigned training (compliance v2).
+model TrainingComplianceExemption {
+  id             String   @id @default(cuid())
+  institutionId  String
+  userId         String
+  requirementId  String?
+  registrationId String?
+  reason         String
+  createdBy      String?
+  createdAt      DateTime @default(now())
+
+  user         User                  @relation("TrainingExemptionUser", fields: [userId], references: [id], onDelete: Cascade)
+  requirement  TrainingRequirement?  @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  registration TrainingRegistration? @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@index([institutionId])
+  @@index([userId])
+  @@map("training_compliance_exemptions")
 }

@@ -114,9 +114,21 @@ export async function sendMonthlyAnalyticsReports({ now = new Date() } = {}) {
         prisma.institution.findUnique({ where: { id: sub.institutionId }, select: { name: true } }),
       ]);
       const pdf = renderAnalyticsPdf({ report, institution: institution?.name, filtersLabel: 'All trainings', generatedAt: now });
-      cache.set(key, { report, pdf, institution: institution?.name });
+      // Compliance as of now (#140); a failure here must not stop the analytics report.
+      let compliance = null;
+      try {
+        const { loadCompliance } = await import('@/lib/training-compliance-server');
+        const { renderCompliancePdf } = await import('@/lib/training-compliance-pdf');
+        const data = await loadCompliance(sub.institutionId, now);
+        compliance = { data, pdf: renderCompliancePdf({ data, institution: institution?.name, generatedAt: now }) };
+      } catch (error) {
+        console.error('Monthly compliance section failed:', error);
+      }
+      cache.set(key, { report, pdf, institution: institution?.name, compliance });
     }
-    const { report, pdf, institution } = cache.get(key);
+    const { report, pdf, institution, compliance } = cache.get(key);
+    const ct = compliance?.data.matrix.totals;
+    const assignedOverdue = compliance?.data.assigned?.totals?.overdue || 0;
     const k = report.kpis;
     const monthName = due.from.toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
     const base = appBaseUrl().replace(/\/$/, '');
@@ -124,7 +136,7 @@ export async function sendMonthlyAnalyticsReports({ now = new Date() } = {}) {
       title: `Training report: ${monthName}`,
       preheader: `${k.trainings} trainings, ${k.enrolments} enrolments, ${k.completionRate ?? '-'}% completion`,
       greeting: `Hello ${sub.user.givenName || ''}`.trim(),
-      paragraphs: [`Here is the training summary for ${institution || 'your institution'} for ${monthName}. The full report is attached as a PDF.`],
+      paragraphs: [`Here is the training summary for ${institution || 'your institution'} for ${monthName}. The full report${compliance ? ' and the compliance report are' : ' is'} attached as PDF.`],
       details: [
         ['Trainings run', String(k.trainings)],
         ['Enrolments', String(k.enrolments)],
@@ -132,6 +144,12 @@ export async function sendMonthlyAnalyticsReports({ now = new Date() } = {}) {
         ['Completion', k.completionRate === null ? '-' : `${k.completionRate}%`],
         ['Certificates issued', String(k.certificates)],
         ['Needs attention', String(report.attention.length)],
+        ...(compliance ? [
+          ['Compliant (requirements)', ct.percent === null ? '-' : `${ct.percent}%`],
+          ['Overdue', String(ct.OVERDUE + assignedOverdue)],
+          ['Not done or expired', String(ct.MISSING + ct.EXPIRED)],
+          ['Expiring within 30 days', String(ct.EXPIRING)],
+        ] : []),
       ],
       action: { url: `${base}/institution/training/analytics`, label: 'Open training analytics' },
       note: 'You get this because you turned on the monthly report on the training analytics page. Turn it off there at any time.',
@@ -142,7 +160,10 @@ export async function sendMonthlyAnalyticsReports({ now = new Date() } = {}) {
       subject: `Training report: ${monthName}`,
       html,
       text,
-      attachments: [{ filename: `training-report-${due.period}.pdf`, content: pdf, contentType: 'application/pdf' }],
+      attachments: [
+        { filename: `training-report-${due.period}.pdf`, content: pdf, contentType: 'application/pdf' },
+        ...(compliance ? [{ filename: `training-compliance-${now.toISOString().slice(0, 10)}.pdf`, content: compliance.pdf, contentType: 'application/pdf' }] : []),
+      ],
     });
     if (result.success) sent += 1;
     else {
