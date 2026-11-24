@@ -1,12 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-
-export default function ClinicalTrialsDashboardPage() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace('/institution/clinical-trials/reports');
-  }, [router]);
-  return null;
+/** Moved into a tab (/institution/clinical-trials/results?tab=reports). */
+export default function Moved() {
+  redirect('/institution/clinical-trials/results?tab=reports');
 }

@@ -51,6 +51,7 @@ import {
   PeopleAlt as RecruitmentIcon,
   HealthAndSafety as SafetyIcon,
   CloudSync as RegistryIcon,
+  Inventory2 as ArchiveIcon,
   Insights as ResultsIcon,
   Settings as SettingsIcon,
   ImageSearch as ImageIntegrityIcon,
@@ -115,23 +116,18 @@ function buildInstitutionConfig(t) {
       {
         key: 'clinical_trials',
         label: t('institution.clinical_trials'),
+        // Trial-centred: one page per oversight area, related views as tabs.
         categories: [
-          category(t, 'nav_categories.portfolio_oversight', [
-            item(t, 'institution.trial_portfolio', 'institution.trial_portfolio_desc', '/institution/clinical-trials', <TrialIcon sx={ICON_SM} />),
+          category(t, 'ct_nav.cat_portfolio', [
+            item(t, 'ct_nav.portfolio', 'ct_nav.portfolio_desc', '/institution/clinical-trials', <TrialIcon sx={ICON_SM} />),
           ]),
-          category(t, 'nav_categories.governance_compliance', [
-            item(t, 'institution.ethics_approvals', 'institution.ethics_approvals_desc', '/institution/clinical-trials/approvals', <EthicsReviewIcon sx={ICON_SM} />),
-            item(t, 'institution.compliance_dashboard', 'institution.compliance_dashboard_desc', '/institution/clinical-trials/compliance', <ComplianceIcon sx={ICON_SM} />),
-            item(t, 'institution.registry_oversight', 'institution.registry_oversight_desc', '/institution/clinical-trials/registry', <RegistryIcon sx={ICON_SM} />),
+          category(t, 'ct_nav.cat_oversight', [
+            item(t, 'ct_nav.approvals_registry', 'ct_nav.approvals_registry_desc', '/institution/clinical-trials/approvals', <EthicsReviewIcon sx={ICON_SM} />),
+            item(t, 'ct_nav.safety_compliance', 'ct_nav.safety_compliance_desc', '/institution/clinical-trials/safety', <SafetyIcon sx={ICON_SM} />),
+            item(t, 'ct_nav.recruitment', 'ct_nav.recruitment_office_desc', '/institution/clinical-trials/recruitment', <RecruitmentIcon sx={ICON_SM} />),
           ]),
-          category(t, 'nav_categories.operations_oversight', [
-            item(t, 'institution.recruitment_performance', 'institution.recruitment_performance_desc', '/institution/clinical-trials/recruitment', <RecruitmentIcon sx={ICON_SM} />),
-            item(t, 'institution_nav.safety_deviations', 'institution_nav.safety_deviations_desc', '/institution/clinical-trials/safety', <SafetyIcon sx={ICON_SM} />),
-            item(t, 'institution_nav.document_repository', 'institution_nav.document_repository_desc', '/institution/clinical-trials/documents', <DocumentIcon sx={ICON_SM} />),
-          ]),
-          category(t, 'nav_categories.reporting_outputs', [
-            item(t, 'institution_nav.results_reporting', 'institution_nav.results_reporting_desc', '/institution/clinical-trials/results', <ResultsIcon sx={ICON_SM} />),
-            item(t, 'institution_nav.team_gcp', 'institution_nav.team_gcp_desc', '/institution/clinical-trials/team', <TeamIcon sx={ICON_SM} />),
+          category(t, 'ct_nav.cat_reporting', [
+            item(t, 'ct_nav.results_reporting', 'ct_nav.results_reporting_desc', '/institution/clinical-trials/results', <ResultsIcon sx={ICON_SM} />),
           ]),
         ],
       },
@@ -237,19 +233,24 @@ function buildResearcherConfig(t) {
       {
         key: 'clinical_trials',
         label: t('researcher.clinical_trials'),
+        // Grouped by what the researcher is doing; one entry per page.
         categories: [
-          category(t, 'nav_categories.trial_setup', [
-            item(t, 'researcher.trial_intake', 'researcher.trial_intake_desc', '/researcher/clinical-trials/intake', <RegistrationIcon sx={ICON_SM} />),
-            item(t, 'researcher.trial_approvals', 'researcher.trial_approvals_desc', '/researcher/clinical-trials/approvals', <EthicsReviewIcon sx={ICON_SM} />),
-            item(t, 'researcher.trial_team', 'researcher.trial_team_desc', '/researcher/clinical-trials/team', <TeamIcon sx={ICON_SM} />),
+          category(t, 'ct_nav.cat_my_trials', [
+            item(t, 'ct_nav.my_trials', 'ct_nav.my_trials_desc', '/researcher/clinical-trials/intake', <RegistrationIcon sx={ICON_SM} />),
+            item(t, 'ct_nav.documents', 'ct_nav.documents_desc', '/researcher/clinical-trials/documents', <DocumentIcon sx={ICON_SM} />),
+            item(t, 'ct_nav.archive', 'ct_nav.archive_desc', '/researcher/clinical-trials/archive', <ArchiveIcon sx={ICON_SM} />),
           ]),
-          category(t, 'nav_categories.trial_execution', [
-            item(t, 'researcher.trial_recruitment', 'researcher.trial_recruitment_desc', '/researcher/clinical-trials/recruitment', <RecruitmentIcon sx={ICON_SM} />),
-            item(t, 'researcher.trial_safety', 'researcher.trial_safety_desc', '/researcher/clinical-trials/safety', <SafetyIcon sx={ICON_SM} />),
-            item(t, 'researcher.trial_registry', 'researcher.trial_registry_desc', '/researcher/clinical-trials/registry', <RegistryIcon sx={ICON_SM} />),
+          category(t, 'ct_nav.cat_setup', [
+            item(t, 'ct_nav.approvals', 'ct_nav.approvals_desc', '/researcher/clinical-trials/approvals', <EthicsReviewIcon sx={ICON_SM} />),
+            item(t, 'ct_nav.team_gcp', 'ct_nav.team_gcp_desc', '/researcher/clinical-trials/team', <TeamIcon sx={ICON_SM} />),
           ]),
-          category(t, 'nav_categories.impact_memory', [
-            item(t, 'researcher.trial_results', 'researcher.trial_results_desc', '/researcher/clinical-trials/results', <ResultsIcon sx={ICON_SM} />),
+          category(t, 'ct_nav.cat_conduct', [
+            item(t, 'ct_nav.recruitment', 'ct_nav.recruitment_desc', '/researcher/clinical-trials/recruitment', <RecruitmentIcon sx={ICON_SM} />),
+            item(t, 'ct_nav.safety', 'ct_nav.safety_desc', '/researcher/clinical-trials/safety', <SafetyIcon sx={ICON_SM} />),
+          ]),
+          category(t, 'ct_nav.cat_reporting', [
+            item(t, 'ct_nav.registry', 'ct_nav.registry_desc', '/researcher/clinical-trials/registry', <RegistryIcon sx={ICON_SM} />),
+            item(t, 'ct_nav.results', 'ct_nav.results_desc', '/researcher/clinical-trials/results', <ResultsIcon sx={ICON_SM} />),
           ]),
         ],
       },
