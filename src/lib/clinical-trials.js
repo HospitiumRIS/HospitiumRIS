@@ -85,7 +85,8 @@ export function trialFlags(trial, now = new Date()) {
   if ((trial.saesOverdue || 0) > 0) flags.push({ key: 'sae_overdue', severity: 'high', text: `${trial.saesOverdue} SAE report${trial.saesOverdue === 1 ? '' : 's'} past the reporting deadline` });
   if (running && trial.registry?.status === 'NOT_REGISTERED') flags.push({ key: 'not_registered', severity: 'high', text: 'Recruiting but not registered on PACTR / ClinicalTrials.gov' });
   if ((trial.deviationsOpen || 0) > 0) flags.push({ key: 'deviations', severity: 'medium', text: `${trial.deviationsOpen} open protocol deviation${trial.deviationsOpen === 1 ? '' : 's'}` });
-  if ((trial.gcpExpiring || 0) > 0) flags.push({ key: 'gcp', severity: 'low', text: `${trial.gcpExpiring} team GCP certificate${trial.gcpExpiring === 1 ? '' : 's'} expiring` });
+  const gcpIssues = (trial.team || []).filter((m) => ['EXPIRED', 'MISSING'].includes(gcpState(m.gcpExpiry, now))).length;
+  if (gcpIssues) flags.push({ key: 'gcp', severity: 'medium', text: `${gcpIssues} team member${gcpIssues === 1 ? '' : 's'} without valid GCP` });
   if (trial.status === 'RECRUITING') {
     const exp = expectedEnrolmentPct(trial, now);
     const { pct } = enrolment(trial);
@@ -138,7 +139,7 @@ export const SAMPLE_TRIALS = [
     regulatory: { status: 'APPROVED', authority: 'Pharmacy and Poisons Board', reference: 'PPB/ECCT/25/012', expiry: '2027-02-01' },
     registry: { status: 'REGISTERED', pactr: 'PACTR202602001234', nct: null },
     saesOpen: 2, saesOverdue: 1, deviationsOpen: 1, gcpExpiring: 1,
-    team: [{ name: 'Dr. Amina Okonkwo', role: 'Principal investigator' }, { name: 'Peter Otieno', role: 'Study coordinator' }, { name: 'Faith Achieng', role: 'Research nurse' }],
+    team: [{ name: 'Dr. Amina Okonkwo', role: 'Principal investigator', duties: ['Overall responsibility', 'Informed consent', 'Eligibility', 'SAE assessment'], gcpExpiry: '2027-08-01', email: 'a.okonkwo@example.org' }, { name: 'Peter Otieno', role: 'Study coordinator', duties: ['Data entry', 'Regulatory files', 'Drug accountability'], gcpExpiry: '2026-12-15', email: 'p.otieno@example.org' }, { name: 'Faith Achieng', role: 'Research nurse', duties: ['Informed consent', 'Sample collection', 'Vital signs'], gcpExpiry: '2027-05-20', email: 'f.achieng@example.org' }],
   }),
   T({
     id: 'ct-002', code: 'CT-2026-002', title: 'Short-course regimen for drug-resistant tuberculosis: a pragmatic randomised trial', shortTitle: 'DR-TB short course',
@@ -150,7 +151,7 @@ export const SAMPLE_TRIALS = [
     regulatory: { status: 'APPROVED', authority: 'Pharmacy and Poisons Board', reference: 'PPB/ECCT/25/004', expiry: '2027-03-01' },
     registry: { status: 'REGISTERED', pactr: null, nct: 'NCT06123456' },
     deviationsOpen: 2, mine: true,
-    team: [{ name: 'Dr. Samuel Mwangi', role: 'Principal investigator' }, { name: 'Grace Njeri', role: 'Pharmacist' }],
+    team: [{ name: 'Dr. Samuel Mwangi', role: 'Principal investigator', duties: ['Overall responsibility', 'Eligibility', 'SAE assessment'], gcpExpiry: '2027-02-10' }, { name: 'Grace Njeri', role: 'Pharmacist', duties: ['Drug dispensing', 'Drug accountability'], gcpExpiry: '2026-09-30' }],
   }),
   T({
     id: 'ct-003', code: 'CT-2026-003', title: 'Single-dose HPV vaccination in adolescent girls: immunogenicity at 24 months', shortTitle: 'Single-dose HPV',
@@ -160,7 +161,7 @@ export const SAMPLE_TRIALS = [
     ethics: { status: 'PENDING', committee: 'KNH-UoN ERC', reference: null, expiry: null },
     regulatory: { status: 'NOT_STARTED', authority: 'Pharmacy and Poisons Board' },
     registry: { status: 'NOT_REGISTERED' },
-    team: [{ name: 'Dr. Mary Wanjiru', role: 'Principal investigator' }],
+    team: [{ name: 'Dr. Mary Wanjiru', role: 'Principal investigator', duties: ['Overall responsibility'], gcpExpiry: '2028-01-12' }],
   }),
   T({
     id: 'ct-004', code: 'CT-2025-014', title: 'Community-based hypertension management with task sharing', shortTitle: 'Task-sharing hypertension',
@@ -171,7 +172,7 @@ export const SAMPLE_TRIALS = [
     regulatory: { status: 'NOT_REQUIRED' },
     registry: { status: 'REGISTERED', pactr: 'PACTR202503004567' },
     gcpExpiring: 2, mine: false,
-    team: [{ name: 'Dr. John Kamau', role: 'Principal investigator' }],
+    team: [{ name: 'Dr. John Kamau', role: 'Principal investigator', duties: ['Overall responsibility'], gcpExpiry: '2026-11-01' }, { name: 'Lucy Wambui', role: 'Clinical officer', duties: ['Blood pressure titration'], gcpExpiry: null }],
   }),
   T({
     id: 'ct-005', code: 'CT-2026-007', title: 'AI-assisted triage in emergency departments: stepped-wedge evaluation', shortTitle: 'AI triage (TRIAGE-KE)',
@@ -182,7 +183,7 @@ export const SAMPLE_TRIALS = [
     regulatory: { status: 'NOT_REQUIRED' },
     registry: { status: 'NOT_REGISTERED' },
     mine: false,
-    team: [{ name: 'Joy Owango', role: 'Principal investigator' }, { name: 'Stephen Gaikia', role: 'Co-investigator' }],
+    team: [{ name: 'Joy Owango', role: 'Principal investigator', duties: ['Overall responsibility', 'Data management plan'], gcpExpiry: '2027-10-01' }, { name: 'Stephen Gaikia', role: 'Co-investigator', duties: ['Site liaison'], gcpExpiry: '2026-12-31' }],
   }),
   T({
     id: 'ct-006', code: 'CT-2026-011', title: 'Probiotic supplementation to prevent necrotising enterocolitis in preterm infants', shortTitle: 'Probiotics for NEC',
@@ -190,7 +191,7 @@ export const SAMPLE_TRIALS = [
     condition: 'Necrotising enterocolitis', intervention: 'Multi-strain probiotic', sponsor: null,
     startDate: '2027-03-01', endDate: '2029-03-01', targetEnrollment: 420, enrolled: 0,
     ethics: null, regulatory: null, registry: { status: 'NOT_REGISTERED' },
-    team: [{ name: 'Dr. Grace Akinyi', role: 'Principal investigator' }],
+    team: [{ name: 'Dr. Grace Akinyi', role: 'Principal investigator', duties: ['Overall responsibility'], gcpExpiry: '2027-04-04' }],
   }),
   T({
     id: 'ct-007', code: 'CT-2024-003', title: 'Maternal iron supplementation and infant neurodevelopment', shortTitle: 'Maternal iron',
@@ -263,4 +264,73 @@ export function lookupTrialRecord(id) {
   const record = SAMPLE_REGISTRY_RECORDS[v];
   if (!record) return { ok: false, error: `No record found for ${v} on ${source}. Fill in the details yourself.` };
   return { ok: true, id: v, record: { ...record, source } };
+}
+
+// ---- approvals, registry and team views ---------------------------------------------
+
+export const GCP_STATUS = {
+  VALID: { label: 'Valid', tone: 'success' },
+  EXPIRING: { label: 'Expiring', tone: 'warning' },
+  EXPIRED: { label: 'Expired', tone: 'danger' },
+  MISSING: { label: 'No certificate', tone: 'danger' },
+};
+
+export function gcpState(expiry, now = new Date()) {
+  if (!expiry) return 'MISSING';
+  const left = daysUntil(expiry, now);
+  if (left < 0) return 'EXPIRED';
+  if (left <= 90) return 'EXPIRING';
+  return 'VALID';
+}
+
+/** One row per approval (ethics and regulatory) of each open trial. */
+export function approvalRows(trials, now = new Date()) {
+  const rows = [];
+  for (const t of trials) {
+    if (!TRIAL_STATUS[t.status]?.open) continue;
+    for (const [kind, a] of [['Ethics', t.ethics], ['Regulatory', t.regulatory]]) {
+      if (kind === 'Regulatory' && a?.status === 'NOT_REQUIRED') continue;
+      const state = approvalState(a, now);
+      rows.push({
+        id: `${t.id}-${kind}`, trial: t, kind, state,
+        body: a?.committee || a?.authority || (kind === 'Ethics' ? 'Ethics committee not chosen' : 'Pharmacy and Poisons Board'),
+        reference: a?.reference || null, expiry: a?.expiry || null, daysLeft: daysUntil(a?.expiry, now),
+      });
+    }
+  }
+  const rank = { EXPIRED: 0, EXPIRING: 1, NOT_STARTED: 2, PENDING: 3, REJECTED: 4, APPROVED: 5 };
+  return rows.sort((a, b) => (rank[a.state] ?? 9) - (rank[b.state] ?? 9) || (a.daysLeft ?? 1e9) - (b.daysLeft ?? 1e9));
+}
+
+/** Registry position of each trial, with what to do next. */
+export function registryRows(trials, now = new Date()) {
+  return trials.map((t) => {
+    const r = t.registry || { status: 'NOT_REGISTERED' };
+    const running = ['RECRUITING', 'FOLLOW_UP'].includes(t.status);
+    let action = null;
+    let urgent = false;
+    if (r.status === 'NOT_REGISTERED') {
+      action = running ? 'Register now: recruitment has started' : 'Register before the first participant is enrolled';
+      urgent = running;
+    } else if (r.status === 'SUBMITTED') action = 'Waiting for the registry to issue a number';
+    else if (r.status === 'RESULTS_DUE') {
+      const left = daysUntil(r.resultsDue, now);
+      action = left !== null && left < 0 ? `Results ${-left} days overdue` : `Post results by ${new Date(r.resultsDue).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+      urgent = left !== null && left < 30;
+    }
+    return { id: t.id, trial: t, status: r.status, number: r.pactr || r.nct || null, registry: r.pactr ? 'PACTR' : r.nct ? 'ClinicalTrials.gov' : null, action, urgent };
+  });
+}
+
+/** One row per person per trial, with GCP state. */
+export function teamRows(trials, now = new Date()) {
+  const rows = [];
+  for (const t of trials) {
+    if (!TRIAL_STATUS[t.status]?.open) continue;
+    for (const m of t.team || []) {
+      rows.push({ id: `${t.id}-${m.name}`, trial: t, ...m, duties: m.duties || [], gcp: gcpState(m.gcpExpiry, now), gcpDaysLeft: daysUntil(m.gcpExpiry, now) });
+    }
+  }
+  const rank = { MISSING: 0, EXPIRED: 1, EXPIRING: 2, VALID: 3 };
+  return rows.sort((a, b) => rank[a.gcp] - rank[b.gcp] || a.name.localeCompare(b.name));
 }
