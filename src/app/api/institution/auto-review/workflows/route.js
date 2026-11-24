@@ -1,15 +1,17 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
+import { autoReviewAccess } from '@/lib/auto-review-access';
 
-const prisma = new PrismaClient();
-
+/** GET: the institution's auto-review workflows (#9). */
 export async function GET(request) {
   try {
+    const ctx = await autoReviewAccess();
+    if (ctx.error) return ctx.error;
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const isActive = searchParams.get('isActive');
 
-    const where = {};
+    const where = { ...ctx.workflowWhere };
     if (type) where.type = type;
     if (isActive !== null) where.isActive = isActive === 'true';
 
@@ -49,9 +51,12 @@ export async function GET(request) {
   }
 }
 
+/** POST: create a workflow for the caller's institution; creator from the session (#9). */
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const ctx = await autoReviewAccess();
+    if (ctx.error) return ctx.error;
+    const body = await request.json().catch(() => ({}));
     const {
       name,
       description,
@@ -59,8 +64,7 @@ export async function POST(request) {
       isActive = true,
       isDefault = false,
       autoRouteOnPass = false,
-      requireHumanReview = true,
-      createdBy
+      requireHumanReview = true
     } = body;
 
     if (!name || !type) {
@@ -72,7 +76,7 @@ export async function POST(request) {
 
     if (isDefault) {
       await prisma.autoReviewWorkflow.updateMany({
-        where: { type, isDefault: true },
+        where: { ...ctx.workflowWhere, type, isDefault: true },
         data: { isDefault: false }
       });
     }
@@ -86,7 +90,8 @@ export async function POST(request) {
         isDefault,
         autoRouteOnPass,
         requireHumanReview,
-        createdBy
+        createdBy: ctx.user.id,
+        institutionId: ctx.institution.id
       },
       include: {
         stages: true

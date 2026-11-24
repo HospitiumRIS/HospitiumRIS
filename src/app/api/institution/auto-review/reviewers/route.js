@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
+import { autoReviewAccess } from '@/lib/auto-review-access';
 
-const prisma = new PrismaClient();
-
+/**
+ * GET: people who can be assigned as stage reviewers: active members of the caller's
+ * institution only (#9; previously every user on the platform, and a 500 from a
+ * non-existent `researchProfile.position` field).
+ */
 export async function GET(request) {
   try {
+    const ctx = await autoReviewAccess();
+    if (ctx.error) return ctx.error;
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
 
     const where = {
+      AND: [ctx.memberWhere],
       status: 'ACTIVE',
       accountType: {
         in: ['RESEARCHER', 'RESEARCH_ADMIN', 'INSTITUTION_ADMIN']
@@ -34,7 +41,7 @@ export async function GET(request) {
         researchProfile: {
           select: {
             department: true,
-            position: true
+            academicTitle: true
           }
         }
       },

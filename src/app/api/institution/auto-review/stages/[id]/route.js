@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import { autoReviewAccess, ownStage } from '@/lib/auto-review-access';
 
 export async function PUT(request, { params }) {
   try {
     const { id } = await params;
+    const ctx = await autoReviewAccess();
+    if (ctx.error) return ctx.error;
+    const own = await ownStage(ctx, id);
+    if (own.error) return own.error;
     const body = await request.json();
     const {
       name,
@@ -58,6 +61,10 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
+    const ctx = await autoReviewAccess();
+    if (ctx.error) return ctx.error;
+    const own = await ownStage(ctx, id);
+    if (own.error) return own.error;
 
     const executionCount = await prisma.stageExecution.count({
       where: { stageId: id }

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 /**
  * Smoke tests for every /api/institution route (#21):
- *  1. each exported handler calls an access guard (auto-review is the known gap, #9);
+ *  1. each exported handler calls an access guard;
  *  2. the top-level keys of every `where`, `select` and `include` passed to
  *     `prisma.<model>.<method>(...)` exist on that model in schema.prisma, the class of
  *     mistake that broke the ethics register (`user`, `applicationNumber`) and caused the
@@ -13,8 +13,7 @@ import { join } from 'node:path';
  */
 
 const ROOT = 'src/app/api/institution';
-const KNOWN_UNGUARDED = /\/auto-review\//; // #9
-const GUARDS = /require[A-Z][A-Za-z]+\(|getAuthenticatedUser\(/;
+const GUARDS = /require[A-Z][A-Za-z]+\(|getAuthenticatedUser\(|autoReviewAccess\(/;
 
 const walk = (dir) => readdirSync(dir).flatMap((f) => {
   const p = join(dir, f);
@@ -80,11 +79,12 @@ function prismaClauses(src) {
 
 describe('every /api/institution route has an access guard', () => {
   for (const file of files) {
-    it(file.replace(`${ROOT}/`, ''), { skip: KNOWN_UNGUARDED.test(file) ? 'auto-review: no guard yet (#9)' : false }, () => {
+    it(file.replace(`${ROOT}/`, ""), () => {
       const src = readFileSync(file, 'utf8');
       const handlers = (src.match(/export async function (GET|POST|PUT|PATCH|DELETE)\b/g) || []).length;
       assert.ok(handlers > 0, 'no handlers');
-      assert.match(src, GUARDS, 'no access guard');
+      const guards = (src.match(new RegExp(GUARDS.source, 'g')) || []).length;
+      assert.ok(guards >= handlers, `${handlers} handler(s) but ${guards} guard call(s)`);
     });
   }
 });
