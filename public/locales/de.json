@@ -2162,6 +2162,8 @@
     "certificate_templates_desc": "Gestalten Sie die Zertifikate Ihrer Schulungen",
     "training_compliance": "Schulungs-Compliance",
     "training_compliance_desc": "Pflichtschulungen: zugewiesen, abgeschlossen, überfällig",
+    "training_analytics": "Schulungsanalysen",
+    "training_analytics_desc": "Teilnahme, Abschluss, Zertifikate, CPD und Feedback",
     "performance_review": "Leistungsbeurteilung",
     "performance_review_desc": "Leistung der Forscher prüfen",
     "results_reporting": "Ergebnisse & Berichte",

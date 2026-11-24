@@ -2162,6 +2162,8 @@
     "certificate_templates_desc": "Design the certificates your trainings issue",
     "training_compliance": "Training Compliance",
     "training_compliance_desc": "Mandatory training: assigned, completed, overdue",
+    "training_analytics": "Training Analytics",
+    "training_analytics_desc": "Attendance, completion, certificates, CPD and feedback",
     "performance_review": "Pagsusuri ng Pagganap",
     "performance_review_desc": "Suriin ang pagganap ng mananaliksik",
     "results_reporting": "Mga Resulta at Pag-uulat",

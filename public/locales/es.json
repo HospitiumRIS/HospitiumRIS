@@ -2162,6 +2162,8 @@
     "certificate_templates_desc": "Diseñe los certificados que emiten sus capacitaciones",
     "training_compliance": "Cumplimiento de capacitación",
     "training_compliance_desc": "Capacitaciones obligatorias: asignadas, completadas, vencidas",
+    "training_analytics": "Analítica de formación",
+    "training_analytics_desc": "Asistencia, finalización, certificados, CPD y opiniones",
     "performance_review": "Evaluación del desempeño",
     "performance_review_desc": "Revisar el desempeño de los investigadores",
     "results_reporting": "Resultados e informes",

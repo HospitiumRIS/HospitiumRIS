@@ -346,6 +346,13 @@ export default function InstitutionTrainingPage() {
             </Button>
             <Button
               variant="contained"
+              onClick={() => router.push('/institution/training/analytics')}
+              sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}
+            >
+              Analytics
+            </Button>
+            <Button
+              variant="contained"
               startIcon={<RefreshIcon />}
               onClick={fetchTrainings}
               sx={{ bgcolor: 'white', color: PURPLE, textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#f5f5f5' } }}

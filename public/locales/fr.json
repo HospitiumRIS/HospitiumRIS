@@ -2162,6 +2162,8 @@
     "certificate_templates_desc": "Concevez les certificats délivrés par vos formations",
     "training_compliance": "Conformité des formations",
     "training_compliance_desc": "Formations obligatoires : assignées, terminées, en retard",
+    "training_analytics": "Analyse des formations",
+    "training_analytics_desc": "Présence, achèvement, certificats, DPC et avis",
     "performance_review": "Évaluation des performances",
     "performance_review_desc": "Évaluer les performances des chercheurs",
     "results_reporting": "Résultats et rapports",
