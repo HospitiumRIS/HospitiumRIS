@@ -76,7 +76,7 @@ function Checklist({ evaluation }) {
 /**
  * Completion rules and every participant's progress against them (#96).
  */
-export default function TrainingCompletionTab({ trainingId, training, onChanged }) {
+export default function TrainingCompletionTab({ trainingId, training, onChanged, onOpenPerson }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -242,7 +242,7 @@ export default function TrainingCompletionTab({ trainingId, training, onChanged 
                   return (
                     <TableRow key={p.registrationId} hover>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 700 }}>{fullName(p.user)}</Typography>
+                        <Typography variant="body2" role={onOpenPerson ? 'button' : undefined} onClick={onOpenPerson ? () => onOpenPerson(p.registrationId) : undefined} sx={{ fontWeight: 700, ...(onOpenPerson ? { cursor: 'pointer', color: '#5b3f8c', '&:hover': { textDecoration: 'underline' } } : {}) }}>{fullName(p.user)}</Typography>
                         <Typography variant="caption" color="text.secondary">{p.user?.email}</Typography>
                       </TableCell>
                       <TableCell>

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { createContext, forwardRef, useContext } from 'react';
 import {
   Box,
   Dialog,
@@ -9,6 +9,7 @@ import {
   Divider,
   IconButton,
   Paper,
+  Slide,
   Stack,
   Typography,
   alpha,
@@ -67,22 +68,69 @@ export const institutionDialogPaperSx = {
   boxShadow: '0 24px 48px rgba(15, 23, 42, 0.18)',
 };
 
+/**
+ * How InstitutionModal opens below a provider: 'modal' (centred, the default) or 'panel'
+ * (slides in from the right, full height). Pages that want side panels wrap their content in
+ * <InstitutionModalVariant.Provider value="panel">. Small confirmations (maxWidth="xs")
+ * stay centred unless they ask for variant="panel" themselves.
+ */
+export const InstitutionModalVariant = createContext('modal');
+
+const PANEL_WIDTH = { xs: 420, sm: 540, md: 760, lg: 960, xl: 1100 };
+
+const SlideLeft = forwardRef(function SlideLeft(props, ref) {
+  return <Slide direction="left" ref={ref} {...props} />;
+});
+
 export function InstitutionModal({
   open,
   onClose,
   maxWidth = 'sm',
   fullWidth = true,
   disableClose = false,
+  variant,
   children,
 }) {
+  const inherited = useContext(InstitutionModalVariant);
+  const panel = variant ? variant === 'panel' : inherited === 'panel' && maxWidth !== 'xs';
+  const handleClose = (event, reason) => {
+    // Never close on outside (backdrop) clicks; Escape and explicit buttons still work.
+    if (reason === 'backdropClick' || disableClose) return;
+    onClose?.(event, reason);
+  };
+
+  if (panel) {
+    return (
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        fullWidth
+        maxWidth={false}
+        disableScrollLock
+        slots={{ transition: SlideLeft }}
+        sx={{ '& .MuiDialog-container': { justifyContent: 'flex-end', alignItems: 'stretch' } }}
+        PaperProps={{
+          sx: {
+            m: 0,
+            height: '100%',
+            maxHeight: '100%',
+            width: { xs: '100%', sm: `min(${PANEL_WIDTH[maxWidth] || PANEL_WIDTH.sm}px, 100vw)` },
+            maxWidth: '100vw',
+            borderRadius: { xs: 0, sm: '16px 0 0 16px' },
+            overflow: 'hidden',
+            boxShadow: '-16px 0 40px rgba(15, 23, 42, 0.18)',
+          },
+        }}
+      >
+        {children}
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog
       open={open}
-      onClose={(event, reason) => {
-        // Never close on outside (backdrop) clicks; Escape and explicit buttons still work.
-        if (reason === 'backdropClick' || disableClose) return;
-        onClose?.(event, reason);
-      }}
+      onClose={handleClose}
       maxWidth={maxWidth}
       fullWidth={fullWidth}
       disableScrollLock

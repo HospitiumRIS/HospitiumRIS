@@ -25,7 +25,7 @@ const TRAINING_FIELDS = {
   institutionId: true,
 };
 
-async function loadTrainingFacts(trainingId) {
+export async function loadTrainingFacts(trainingId) {
   const [training, sessions, modules, assessments] = await Promise.all([
     prisma.training.findUnique({ where: { id: trainingId }, select: TRAINING_FIELDS }),
     prisma.trainingSession.findMany({

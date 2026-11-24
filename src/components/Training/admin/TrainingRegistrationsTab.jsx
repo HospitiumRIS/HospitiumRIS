@@ -79,7 +79,7 @@ const formatDate = (value) => (value ? new Date(value).toLocaleDateString('en-US
  * Registrations tab (#102): status views with counts, waiting-list order, per-person
  * status menu, and bulk approve / reject / promote / cancel.
  */
-export default function TrainingRegistrationsTab({ trainingId, training, registrations, onChanged, onUploadCertificate }) {
+export default function TrainingRegistrationsTab({ trainingId, training, registrations, onChanged, onUploadCertificate, onOpenPerson }) {
   const [view, setView] = useState(() => (registrations.some((r) => r.status === 'PENDING_APPROVAL') ? 'PENDING_APPROVAL' : 'all'));
   const [selected, setSelected] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -231,7 +231,9 @@ export default function TrainingRegistrationsTab({ trainingId, training, registr
                       <Checkbox size="small" checked={selected.includes(reg.id)} onChange={() => toggle(reg.id)} />
                     </TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>
-                      {reg.user?.givenName} {reg.user?.familyName}
+                      <Box component="span" role={onOpenPerson ? 'button' : undefined} tabIndex={onOpenPerson ? 0 : undefined} onClick={onOpenPerson ? () => onOpenPerson(reg.id) : undefined} onKeyDown={(e) => { if (onOpenPerson && e.key === 'Enter') onOpenPerson(reg.id); }} sx={onOpenPerson ? { cursor: 'pointer', color: '#5b3f8c', '&:hover': { textDecoration: 'underline' } } : undefined}>
+                        {reg.user?.givenName} {reg.user?.familyName}
+                      </Box>
                       {reg.user?.researchProfile?.department ? (
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>{reg.user.researchProfile.department}</Typography>
                       ) : null}
@@ -313,7 +315,7 @@ export default function TrainingRegistrationsTab({ trainingId, training, registr
 
       <AssignTrainingDialog open={assignOpen} onClose={() => setAssignOpen(false)} training={training} onAssigned={onChanged} />
 
-      <InstitutionModal open={Boolean(reasonDialog)} onClose={() => setReasonDialog(null)} maxWidth="sm" disableClose={busy}>
+      <InstitutionModal open={Boolean(reasonDialog)} onClose={() => setReasonDialog(null)} maxWidth="sm" disableClose={busy} variant="modal">
         <InstitutionModalHeader
           icon={RejectIcon}
           title={reasonDialog?.title || ''}
