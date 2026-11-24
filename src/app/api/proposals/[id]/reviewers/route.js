@@ -52,6 +52,10 @@ export async function POST(request, { params }) {
     const { id } = await params;
     const auth = await authorizeReviewerAdmin(request, id);
     if (auth.error) return auth.error;
+    const current = await prisma.proposal.findUnique({ where: { id }, select: { status: true } });
+    if (['APPROVED', 'REJECTED'].includes(current?.status)) {
+      return NextResponse.json({ error: 'This proposal has already been decided; reviewers can no longer be invited.' }, { status: 409 });
+    }
     const body = await request.json();
     const emails = Array.isArray(body.emails) ? body.emails : String(body.emails || '').split(/[,\s]+/);
     const invitedByName = `${auth.user.givenName || ''} ${auth.user.familyName || ''}`.trim()

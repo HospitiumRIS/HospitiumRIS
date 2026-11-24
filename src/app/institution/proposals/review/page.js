@@ -409,7 +409,8 @@ export default function InstitutionProposalReviewPage() {
                                   icon: <ViewIcon fontSize="small" />,
                                   onClick: () => router.push(`/institution/proposals/review/${proposal.id}`),
                                 },
-                                {
+                                // No new reviewers once a decision is recorded.
+                                ...(queueOf(proposal) === 'decided' ? [] : [{
                                   key: 'invite',
                                   label: 'Invite reviewers',
                                   icon: (
@@ -418,7 +419,7 @@ export default function InstitutionProposalReviewPage() {
                                     </Badge>
                                   ),
                                   onClick: () => openAssign(proposal),
-                                },
+                                }]),
                               ]}
                             />
                           </TableCell>
