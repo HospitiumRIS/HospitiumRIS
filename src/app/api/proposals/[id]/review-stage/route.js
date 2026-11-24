@@ -1,23 +1,23 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
+import { forbidden, proposalReviewContext } from '@/lib/review-access-server';
+import { isAssignedStageReviewer, isReviewAdmin, reviewerIdentity } from '@/lib/review-access';
 import { notifyProposalOwner } from '../../../../../lib/proposal-review-comms.js';
 
-const prisma = new PrismaClient();
+const STAGE_DECISIONS = ['APPROVED', 'APPROVED_WITH_CONTINGENCIES', 'DEFERRED', 'DISAPPROVED'];
 
+/**
+ * POST /api/proposals/[id]/review-stage: one reviewer's review of a pipeline stage (#6).
+ * Only reviewers assigned to that stage, or the institution's research office, may review,
+ * never on their own proposal; the reviewer is the signed-in user, once per stage.
+ */
 export async function POST(request, { params }) {
   try {
     const { id: proposalId } = await params;
-    const body = await request.json();
-    const {
-      stageId,
-      decision,
-      comments,
-      conditions,
-      reviewerId,
-      reviewerName,
-      reviewerEmail,
-      reviewerRole,
-    } = body;
+    const ctx = await proposalReviewContext(request, proposalId);
+    if (ctx.error) return ctx.error;
+    const body = await request.json().catch(() => ({}));
+    const { stageId, decision, comments, conditions, reviewerRole } = body;
 
     if (!stageId || !decision) {
       return NextResponse.json(
@@ -65,15 +65,32 @@ export async function POST(request, { params }) {
 
     const stage = stageProgress.stage;
 
+    const assignedHere = isAssignedStageReviewer(ctx.user, stageProgress, stage);
+    const officeHere = isReviewAdmin(ctx.user) && ctx.perms.decide;
+    if (!ctx.perms.reviewStage || !(assignedHere || officeHere)) {
+      return forbidden('Only reviewers assigned to this stage can review it');
+    }
+    if (!STAGE_DECISIONS.includes(decision)) {
+      return NextResponse.json({ error: `Decision must be one of ${STAGE_DECISIONS.join(', ')}` }, { status: 400 });
+    }
+    if (stageProgress.status && !['NOT_STARTED', 'IN_PROGRESS'].includes(stageProgress.status)) {
+      return NextResponse.json({ error: 'This stage is already closed' }, { status: 409 });
+    }
+    const identity = reviewerIdentity(ctx.user);
+    const already = await prisma.proposalStageReview.findFirst({ where: { stageProgressId: stageProgress.id, reviewerId: identity.reviewerId }, select: { id: true } });
+    if (already) {
+      return NextResponse.json({ error: 'You have already reviewed this stage' }, { status: 409 });
+    }
+
     // Create review record
     const review = await prisma.proposalStageReview.create({
       data: {
         stageProgressId: stageProgress.id,
         stageId,
-        reviewerId: reviewerId || 'unknown',
-        reviewerName: reviewerName || 'Unknown Reviewer',
-        reviewerEmail: reviewerEmail || '',
-        reviewerRole,
+        reviewerId: identity.reviewerId,
+        reviewerName: identity.reviewerName,
+        reviewerEmail: identity.reviewerEmail,
+        reviewerRole: typeof reviewerRole === 'string' ? reviewerRole.slice(0, 100) : (assignedHere ? 'Reviewer' : 'Research office'),
         decision,
         comments,
         conditions,

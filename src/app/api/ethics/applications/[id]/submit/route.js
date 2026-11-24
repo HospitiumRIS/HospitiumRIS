@@ -1,18 +1,21 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import { canModifyEthicsApplication } from '@/lib/ethics-access';
+import { sessionUser } from '@/lib/review-access-server';
 
 // POST - Submit ethics application for review
 export async function POST(request, { params }) {
   try {
+    const auth = await sessionUser(request);
+    if (auth.error) return auth.error;
     const { id } = await params;
 
     const application = await prisma.ethicsApplication.findUnique({
       where: { id }
     });
 
-    if (!application) {
+    // Only the applicant submits; other people's applications are not revealed (#6).
+    if (!application || !(await canModifyEthicsApplication(prisma, auth.user, application))) {
       return NextResponse.json(
         { success: false, error: 'Ethics application not found' },
         { status: 404 }

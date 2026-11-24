@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
+import { notFound, proposalReviewContext } from '@/lib/review-access-server';
 import { ensureProposalInReviewPipeline, isProposalInReview, syncReviewPipelineWithDecision } from '../../../../../lib/proposal-review-pipeline.js';
-
-const prisma = new PrismaClient();
 
 const trackingInclude = {
         pipeline: {
@@ -31,9 +30,13 @@ const trackingInclude = {
         },
 };
 
+/** GET: review pipeline progress. The research office, assigned reviewers and the people on the proposal (#6). */
 export async function GET(request, { params }) {
   try {
     const { id } = await params;
+    const ctx = await proposalReviewContext(request, id);
+    if (ctx.error) return ctx.error;
+    if (!ctx.perms.read) return notFound('Proposal not found');
 
     const proposal = await prisma.proposal.findUnique({
       where: { id },
@@ -96,7 +99,5 @@ export async function GET(request, { params }) {
       { error: 'Failed to fetch review status' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

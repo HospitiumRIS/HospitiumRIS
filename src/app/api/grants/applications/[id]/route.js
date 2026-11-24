@@ -1,12 +1,26 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
+import { sessionUser } from '@/lib/review-access-server';
+import { canUseGrantApplication } from '@/lib/review-access';
 
-const prisma = new PrismaClient();
+/** The signed-in owner's grant application, or a 401/404 response (#6). */
+async function ownApplication(request, params) {
+  const auth = await sessionUser(request);
+  if (auth.error) return { error: auth.error };
+  const { id } = await params;
+  const row = id ? await prisma.grantApplication.findUnique({ where: { id }, select: { id: true, userId: true } }) : null;
+  if (!canUseGrantApplication(auth.user, row)) {
+    return { error: NextResponse.json({ success: false, error: 'Grant application not found' }, { status: 404 }) };
+  }
+  return { id, user: auth.user };
+}
 
 // GET - Get specific grant application
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const own = await ownApplication(request, params);
+    if (own.error) return own.error;
+    const { id } = own;
 
     const application = await prisma.grantApplication.findUnique({
       where: { id },
@@ -69,7 +83,9 @@ export async function GET(request, { params }) {
 // PUT - Update grant application
 export async function PUT(request, { params }) {
   try {
-    const { id } = params;
+    const own = await ownApplication(request, params);
+    if (own.error) return own.error;
+    const { id } = own;
     const data = await request.json();
 
     const application = await prisma.grantApplication.update({
@@ -110,7 +126,9 @@ export async function PUT(request, { params }) {
 // DELETE - Delete grant application (only if PREPARING)
 export async function DELETE(request, { params }) {
   try {
-    const { id } = params;
+    const own = await ownApplication(request, params);
+    if (own.error) return own.error;
+    const { id } = own;
 
     const application = await prisma.grantApplication.findUnique({
       where: { id }

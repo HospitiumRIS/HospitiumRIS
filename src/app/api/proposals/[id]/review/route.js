@@ -1,27 +1,28 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
+import { forbidden, proposalReviewContext } from '@/lib/review-access-server';
+import { reviewerIdentity } from '@/lib/review-access';
 import { logApiActivity, getRequestMetadata } from '../../../../../utils/activityLogger.js';
 import { notifyProposalOwner } from '../../../../../lib/proposal-review-comms.js';
 import { syncReviewPipelineWithDecision } from '../../../../../lib/proposal-review-pipeline.js';
 
-const prisma = new PrismaClient();
-
+/**
+ * POST /api/proposals/[id]/review: the institution's decision (approve, reject, ask for
+ * revision). Research office of the proposal's institution only (#6); the reviewer is the
+ * signed-in user, never a name from the request body.
+ */
 export async function POST(request, { params }) {
     const requestMetadata = getRequestMetadata(request);
     
     try {
         const resolvedParams = await params;
         const { id } = resolvedParams;
-        const body = await request.json();
-        
-        await logApiActivity('POST', `/api/proposals/${id}/review`, 200, requestMetadata);
-        
-        if (!id) {
-            return NextResponse.json(
-                { error: 'Proposal ID is required' },
-                { status: 400 }
-            );
+        const ctx = await proposalReviewContext(request, id);
+        if (ctx.error) return ctx.error;
+        if (!ctx.perms.decide) {
+            return forbidden('Only the research office of this proposal\'s institution can record a decision, and not on its own proposal');
         }
+        const body = await request.json().catch(() => ({}));
 
         const {
             decision,
@@ -30,7 +31,6 @@ export async function POST(request, { params }) {
             revisionRequirements,
             sectionReviews,
             recommendation,
-            reviewer,
             reviewDate,
             complianceScore
         } = body;
@@ -70,20 +70,25 @@ export async function POST(request, { params }) {
             );
         }
 
+        if (!['approved', 'rejected', 'requires_revision'].includes(decision)) {
+            return NextResponse.json({ error: 'Decision must be approved, rejected or requires_revision' }, { status: 400 });
+        }
+
         // Determine new status based on decision
         const statusMap = {
             'approved': 'APPROVED',
             'rejected': 'REJECTED',
             'requires_revision': 'REVISION_REQUESTED'
         };
-        const newStatus = statusMap[decision] || 'UNDER_REVIEW';
+        const newStatus = statusMap[decision];
+        const identity = reviewerIdentity(ctx.user);
 
         // Create the review record
         const review = await prisma.proposalReview.create({
             data: {
                 proposalId: id,
-                reviewerId: requestMetadata.userId || 'system',
-                reviewerName: reviewer || 'Research Administrator',
+                reviewerId: identity.reviewerId,
+                reviewerName: identity.reviewerName,
                 decision: decision.toUpperCase(),
                 overallComments,
                 rejectionReason: rejectionReason || null,
@@ -169,29 +174,20 @@ export async function POST(request, { params }) {
         );
 
         return NextResponse.json(
-            { 
-                error: 'Failed to submit review',
-                details: error.message 
-            },
+            { error: 'Failed to submit review' },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }
 
-// GET endpoint to retrieve reviews for a proposal
+/** GET: decisions recorded on a proposal. The research office, assigned reviewers and the people on the proposal. */
 export async function GET(request, { params }) {
     try {
         const resolvedParams = await params;
         const { id } = resolvedParams;
-        
-        if (!id) {
-            return NextResponse.json(
-                { error: 'Proposal ID is required' },
-                { status: 400 }
-            );
-        }
+        const ctx = await proposalReviewContext(request, id);
+        if (ctx.error) return ctx.error;
+        if (!ctx.perms.read) return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
 
         const reviews = await prisma.proposalReview.findMany({
             where: { proposalId: id },
@@ -209,7 +205,5 @@ export async function GET(request, { params }) {
             { error: 'Failed to fetch reviews' },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }

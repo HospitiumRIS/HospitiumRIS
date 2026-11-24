@@ -91,8 +91,7 @@ export default function EthicsApplicationsPage() {
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      const query = user?.id ? `?userId=${encodeURIComponent(user.id)}` : '';
-      const response = await fetch(`/api/ethics/applications${query}`);
+      const response = await fetch('/api/ethics/applications?mine=1');
       const data = await response.json();
       
       if (data.success) {

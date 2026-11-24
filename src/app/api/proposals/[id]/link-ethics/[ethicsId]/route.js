@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
+import { forbidden, proposalReviewContext } from '@/lib/review-access-server';
 
 // DELETE - Unlink ethics application from proposal
 export async function DELETE(request, { params }) {
   try {
     const { id, ethicsId } = await params;
+    const ctx = await proposalReviewContext(request, id);
+    if (ctx.error) return ctx.error;
+    if (!ctx.perms.linkEthics) return forbidden('Only the people on this proposal or its research office can unlink ethics approvals');
 
     const link = await prisma.proposalEthicsLink.findUnique({
       where: {

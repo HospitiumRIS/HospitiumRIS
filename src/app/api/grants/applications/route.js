@@ -1,24 +1,22 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
+import { sessionUser } from '@/lib/review-access-server';
+import { findAccessibleProposal } from '@/lib/proposals/visibility';
+import { isPersonallyInvolved } from '@/lib/proposals/scope';
 
-const prisma = new PrismaClient();
-
-// GET - List grant applications
+// GET - The signed-in user's grant applications (#6: no `userId` lookup of other people)
 export async function GET(request) {
   try {
+    const auth = await sessionUser(request);
+    if (auth.error) return auth.error;
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    const userId = searchParams.get('userId');
     const proposalId = searchParams.get('proposalId');
 
-    const where = {};
+    const where = { userId: auth.user.id };
     
     if (status) {
       where.status = status;
-    }
-    
-    if (userId) {
-      where.userId = userId;
     }
 
     if (proposalId) {
@@ -68,15 +66,18 @@ export async function GET(request) {
   }
 }
 
-// POST - Create new grant application
+// POST - Create a grant application for one of the user's own approved proposals (#6)
 export async function POST(request) {
   try {
-    const data = await request.json();
+    const auth = await sessionUser(request);
+    if (auth.error) return auth.error;
+    const data = await request.json().catch(() => ({}));
 
-    // Verify proposal exists and is APPROVED
-    const proposal = await prisma.proposal.findUnique({
-      where: { id: data.proposalId }
-    });
+    // Verify the proposal is visible to the user, they are on it, and it is APPROVED
+    const visible = data.proposalId ? await findAccessibleProposal(auth.user, data.proposalId) : null;
+    const proposal = visible && isPersonallyInvolved(auth.user, visible)
+      ? await prisma.proposal.findUnique({ where: { id: data.proposalId } })
+      : null;
 
     if (!proposal) {
       return NextResponse.json(
@@ -95,7 +96,7 @@ export async function POST(request) {
     const application = await prisma.grantApplication.create({
       data: {
         proposalId: data.proposalId,
-        userId: data.userId,
+        userId: auth.user.id,
         grantorName: data.grantorName,
         grantorEmail: data.grantorEmail,
         grantorContactPerson: data.grantorContactPerson,
