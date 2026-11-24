@@ -1232,6 +1232,9 @@ model Proposal {
   institutionId String?
   institution   Institution? @relation("InstitutionProposals", fields: [institutionId], references: [id], onDelete: SetNull)
 
+  // Project budget and expenses (#179)
+  budgetLines ProjectBudgetLine[]
+  expenses    ProjectExpense[]
   @@index([grantFollowUpUserId])
   @@index([grantTrackingStatus])
   @@index([createdById])
@@ -2966,6 +2969,7 @@ enum StoredFileModule {
   TRAINING_CERTIFICATE
   INSTITUTION_LOGO
   PROFILE_PHOTO
+  PROJECT_EXPENSE_RECEIPT
 }
 
 enum FileVisibility {
@@ -3349,4 +3353,59 @@ model TrainingComplianceExemption {
   @@index([institutionId])
   @@index([userId])
   @@map("training_compliance_exemptions")
+}
+
+enum ProjectExpenseStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  VOID
+}
+
+// A line of an approved project's budget (#179). Edited by the research office.
+model ProjectBudgetLine {
+  id          String   @id @default(cuid())
+  proposalId  String
+  category    String
+  description String?
+  amount      Decimal  @db.Decimal(15, 2)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  proposal Proposal         @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  expenses ProjectExpense[]
+
+  @@index([proposalId])
+  @@map("project_budget_lines")
+}
+
+// Money spent on a project (#179): recorded by the research office (APPROVED on entry)
+// or claimed by a researcher on the project (SUBMITTED, then APPROVED or REJECTED).
+model ProjectExpense {
+  id            String               @id @default(cuid())
+  proposalId    String
+  budgetLineId  String?
+  spentOn       DateTime
+  description   String
+  amount        Decimal              @db.Decimal(15, 2)
+  currency      String
+  payee         String?
+  reference     String?
+  receiptFileId String?
+  status        ProjectExpenseStatus @default(SUBMITTED)
+  source        String               @default("OFFICE") // OFFICE | CLAIM
+  submittedById String
+  decidedById   String?
+  decidedAt     DateTime?
+  decisionNote  String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  proposal   Proposal           @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  budgetLine ProjectBudgetLine? @relation(fields: [budgetLineId], references: [id], onDelete: SetNull)
+
+  @@index([proposalId, status])
+  @@index([status])
+  @@map("project_expenses")
 }
