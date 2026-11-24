@@ -85,6 +85,8 @@ export default function InstitutionProjectDetailPage() {
           audience="institution"
           ethicsHref={(id) => `/institution/ethics/review/${id}`}
           budgetHref={`/institution/projects/budget?project=${proposal.id}`}
+          profileHref={(userId) => `/institution/researcher/${userId}`}
+          profileSummaryUrl={(userId) => `/api/institution/researchers/${userId}?summary=1`}
           canMarkDeliverables
           onDeliverablesChange={(deliverables) => setProposal((p) => ({ ...p, deliverables }))}
         />

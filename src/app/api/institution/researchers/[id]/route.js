@@ -13,6 +13,7 @@ import { readResearcherIds } from '@/lib/researcher-ids';
  *  - platform output: publications (lead/co-author), manuscripts (lead/collaborator),
  *    proposals (PI/co-investigator), with items
  * Only researchers who belong to the caller's institution can be viewed.
+ * ?summary=1 skips ORCID and works lookups (fast, for the profile side panel).
  */
 export async function GET(request, { params }) {
   try {
@@ -60,6 +61,17 @@ export async function GET(request, { params }) {
         researcherIds: readResearcherIds(rp),
       } : null,
     };
+
+    // ?summary=1: profile + output counts only (no ORCID/OpenAlex calls), for side panels.
+    if (new URL(request.url).searchParams.get('summary') === '1') {
+      const summaryOutputs = await computeResearcherOutputs([{ id: user.id, orcidId: user.orcidId, email: user.email }]);
+      const out = summaryOutputs.get(user.id);
+      return NextResponse.json({
+        success: true,
+        profile,
+        output: out ? { publications: out.publications, manuscripts: out.manuscripts, proposals: out.proposals, totals: out.totals } : null,
+      });
+    }
 
     const [orcidData, works, outputs] = await Promise.all([
       fetchOrcidRecord(user.orcidId),
