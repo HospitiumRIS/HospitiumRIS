@@ -34,3 +34,12 @@ test('draft validation', () => {
   assert.equal(validateTrialDraft({ title: 'X', phase: 'Phase II', studyType: 'Interventional', targetEnrollment: '50', startDate: '2027-01-01', endDate: '2026-01-01' }).errors.endDate, 'End date must be after the start date');
   assert.equal(validateTrialDraft({ title: 'X', phase: 'Phase II', studyType: 'Interventional', targetEnrollment: '50' }).ok, true);
 });
+
+test('trial ID lookup', async () => {
+  const { lookupTrialRecord, trialIdSource } = await import('../src/lib/clinical-trials.js');
+  assert.equal(trialIdSource('nct06654321'), 'ClinicalTrials.gov');
+  assert.equal(trialIdSource('PACTR202611000123456'), 'PACTR');
+  assert.equal(lookupTrialRecord(' ct-2025-28 ').record.phase, 'Phase II');
+  assert.match(lookupTrialRecord('NCT00000001').error, /No record found/);
+  assert.match(lookupTrialRecord('abc').error, /PACTR number/);
+});

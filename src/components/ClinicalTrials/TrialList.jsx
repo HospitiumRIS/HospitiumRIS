@@ -93,6 +93,12 @@ export default function TrialList({ trials: initial, audience = 'researcher', cl
       ethics: null, regulatory: null, registry: { status: 'NOT_REGISTERED' }, saesOpen: 0, saesOverdue: 0, deviationsOpen: 0, gcpExpiring: 0, mine: true,
       pi: pi || 'You', ...form, targetEnrollment: Number(form.targetEnrollment) || 0, shortTitle: form.shortTitle || form.title,
     };
+    // A trial pulled by its registry / CTMS ID keeps that ID.
+    const id = form.trialId;
+    if (/^PACTR/.test(id || '')) trial.registry = { status: form.registryStatus || 'REGISTERED', pactr: id };
+    else if (/^NCT/.test(id || '')) trial.registry = { status: form.registryStatus || 'REGISTERED', nct: id };
+    else if (/^CT-/.test(id || '')) trial.code = id;
+    delete trial.trialId; delete trial.registryStatus; delete trial.lookupSource;
     setTrials((list) => [trial, ...list]);
     setRegistering(false);
     setTab('setup');

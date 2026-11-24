@@ -219,3 +219,48 @@ export const SAMPLE_TRIALS = [
 export function sampleTrials({ mine = false } = {}) {
   return SAMPLE_TRIALS.filter((t) => !mine || t.mine).map((t) => ({ ...t }));
 }
+
+/**
+ * Sample registry / CTMS records, keyed by trial ID, used by "Register a trial" to
+ * mimic pulling a trial's metadata from PACTR, ClinicalTrials.gov or the CTMS.
+ * Replace `lookupTrialRecord` with a real API call later.
+ */
+export const SAMPLE_REGISTRY_RECORDS = {
+  'CT-2025-28': {
+    source: 'Institution CTMS', title: 'Efficacy and safety of novel antimalarial compound XYZ-401 in adults with uncomplicated Plasmodium falciparum malaria', shortTitle: 'XYZ-401 adult malaria',
+    phase: 'Phase II', studyType: 'Interventional', condition: 'Uncomplicated P. falciparum malaria', intervention: 'XYZ-401, oral 400 mg daily for 3 days',
+    sponsor: 'Global Health Research Fund', targetEnrollment: 240, startDate: '2027-02-01', endDate: '2028-07-31', registryStatus: 'NOT_REGISTERED',
+  },
+  PACTR202611000123456: {
+    source: 'PACTR', title: 'Heat-stable carbetocin versus oxytocin for preventing postpartum haemorrhage after vaginal birth in Kenyan county hospitals', shortTitle: 'Carbetocin for PPH',
+    phase: 'Phase IV', studyType: 'Interventional', condition: 'Postpartum haemorrhage', intervention: 'Heat-stable carbetocin 100 µg IM',
+    sponsor: 'Ministry of Health, Kenya', targetEnrollment: 1200, startDate: '2027-01-10', endDate: '2028-12-20', registryStatus: 'REGISTERED',
+  },
+  NCT06654321: {
+    source: 'ClinicalTrials.gov', title: 'Point-of-care HbA1c testing to improve glycaemic control in type 2 diabetes in primary care: a cluster randomised trial', shortTitle: 'POC HbA1c in primary care',
+    phase: 'Not applicable', studyType: 'Interventional', condition: 'Type 2 diabetes', intervention: 'Point-of-care HbA1c testing with same-day review',
+    sponsor: 'University of Nairobi', targetEnrollment: 900, startDate: '2027-03-01', endDate: '2029-02-28', registryStatus: 'REGISTERED',
+  },
+};
+
+export const normaliseTrialId = (id) => String(id || '').trim().toUpperCase().replace(/\s+/g, '');
+
+/** Where an ID would be looked up, from its shape. */
+export function trialIdSource(id) {
+  const v = normaliseTrialId(id);
+  if (/^PACTR\d{15}$/.test(v)) return 'PACTR';
+  if (/^NCT\d{8}$/.test(v)) return 'ClinicalTrials.gov';
+  if (/^CT-\d{4}-\d+$/.test(v)) return 'Institution CTMS';
+  return null;
+}
+
+/** Look a trial up by ID. Returns { ok, record } or { ok:false, error }. */
+export function lookupTrialRecord(id) {
+  const v = normaliseTrialId(id);
+  if (!v) return { ok: false, error: 'Enter a trial ID' };
+  const source = trialIdSource(v);
+  if (!source) return { ok: false, error: 'Use a PACTR number (PACTR + 15 digits), an NCT number (NCT + 8 digits) or a CTMS ID (CT-YYYY-NN)' };
+  const record = SAMPLE_REGISTRY_RECORDS[v];
+  if (!record) return { ok: false, error: `No record found for ${v} on ${source}. Fill in the details yourself.` };
+  return { ok: true, id: v, record: { ...record, source } };
+}
