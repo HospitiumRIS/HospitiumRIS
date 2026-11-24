@@ -218,7 +218,10 @@ function Overview({ dashboard, loading, onOpen, router }) {
         </Paper>
         <Stack spacing={2}>
           <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1.5 }}>Next sessions</Typography>
+            <Stack direction="row" alignItems="center" sx={{ mb: 1.5 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, flex: 1 }}>Next sessions</Typography>
+              <Button size="small" onClick={() => router.push('/researcher/training/calendar')} sx={{ color: PURPLE, ...btn }}>Calendar</Button>
+            </Stack>
             {nextSessions.length ? (
               <Stack spacing={1}>
                 {nextSessions.map((s) => (
@@ -238,7 +241,8 @@ function Overview({ dashboard, loading, onOpen, router }) {
           <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
               <CpdIcon sx={{ color: PURPLE }} />
-              <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>CPD in {cpd.year}</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, flex: 1 }}>CPD in {cpd.year}</Typography>
+              <Button size="small" onClick={() => router.push('/researcher/training/transcript')} sx={{ color: PURPLE, ...btn }}>Transcript</Button>
             </Stack>
             {cpd.trainings.length ? (
               <Stack spacing={0.5}>
