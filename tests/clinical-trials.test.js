@@ -57,3 +57,19 @@ test('approvals, registry and team rows', async () => {
   const t = teamRows(SAMPLE_TRIALS, NOW2);
   assert.equal(t[0].gcp, 'MISSING');
 });
+
+test('safety deadlines, recruitment pace, compliance rows', async () => {
+  const L = await import('../src/lib/clinical-trials.js');
+  const NOW2 = new Date('2026-11-25T10:00:00Z');
+  assert.equal(L.eventDeadline({ type: 'SAE', severity: 'Life-threatening', awareOn: '2026-11-21' }), '2026-11-28');
+  assert.equal(L.eventDeadline({ type: 'SAE', severity: 'Serious', awareOn: '2026-11-09' }), '2026-11-24');
+  assert.equal(L.eventDeadline({ type: 'DEVIATION', severity: 'Minor', awareOn: '2026-11-01' }), null);
+  assert.equal(L.eventState({ type: 'SAE', severity: 'Serious', awareOn: '2026-11-09', status: 'OPEN' }, NOW2), 'OVERDUE');
+  assert.equal(L.eventState({ type: 'SAE', severity: 'Life-threatening', awareOn: '2026-11-21', status: 'OPEN' }, NOW2), 'DUE_SOON');
+  const ct1 = SAMPLE_TRIALS.find((t) => t.id === 'ct-001');
+  assert.equal(L.safetyCounts(ct1, NOW2).overdue, 1);
+  assert.equal(L.trialFlags(ct1, NOW2)[0].key, 'sae_overdue');
+  const rec = L.recruitmentRows(SAMPLE_TRIALS, NOW2);
+  assert.equal(rec.find((r) => r.trial.id === 'ct-004').pace, 'PAUSED');
+  assert.ok(L.complianceRows(SAMPLE_TRIALS, NOW2).length >= 5);
+});
