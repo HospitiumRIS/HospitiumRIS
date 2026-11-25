@@ -73,3 +73,18 @@ test('safety deadlines, recruitment pace, compliance rows', async () => {
   assert.equal(rec.find((r) => r.trial.id === 'ct-004').pace, 'PAUSED');
   assert.ok(L.complianceRows(SAMPLE_TRIALS, NOW2).length >= 5);
 });
+
+test('results rows and documents', async () => {
+  const L = await import('../src/lib/clinical-trials.js');
+  const NOW2 = new Date('2026-11-25T10:00:00Z');
+  const rows = L.resultsRows(SAMPLE_TRIALS, L.SAMPLE_OUTPUTS, NOW2);
+  const ct7 = rows.find((r) => r.id === 'ct-007');
+  assert.equal(ct7.publications, 1);
+  assert.match(ct7.next, /Post registry results/);
+  assert.equal(rows.find((r) => r.id === 'ct-008').next, 'Done');
+  const docs = L.sampleDocuments();
+  assert.ok(docs.some((d) => d.type === 'Protocol' && d.status === 'SUPERSEDED'));
+  assert.ok(!docs.some((d) => d.trialId === 'ct-006'));
+  const exp = docs.find((d) => d.trialId === 'ct-004' && d.type === 'Ethics approval letter');
+  assert.equal(L.documentState(exp, NOW2), 'EXPIRED');
+});
