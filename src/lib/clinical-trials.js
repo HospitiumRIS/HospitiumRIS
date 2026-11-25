@@ -438,3 +438,72 @@ export function complianceRows(trials, now = new Date()) {
   const rank = { high: 0, medium: 1, low: 2 };
   return trials.flatMap((t) => trialFlags(t, now).map((f) => ({ ...f, id: `${t.id}-${f.key}`, trial: t }))).sort((a, b) => rank[a.severity] - rank[b.severity]);
 }
+
+// ---- results, outputs and documents ------------------------------------------------
+
+export const OUTPUT_TYPES = ['Publication', 'Dataset', 'Results summary', 'Policy brief', 'Conference abstract'];
+
+/** Sample outputs linked to trials. */
+export const SAMPLE_OUTPUTS = [
+  { id: 'out-1', trialId: 'ct-007', type: 'Publication', title: 'Maternal iron supplementation and infant neurodevelopment at 12 months: a randomised trial', venue: 'The Lancet Global Health', date: '2026-06-02', doi: '10.1016/S2214-109X(26)00123-4' },
+  { id: 'out-2', trialId: 'ct-007', type: 'Dataset', title: 'Maternal iron trial: de-identified participant data', venue: 'Zenodo', date: '2026-07-15', doi: '10.5281/zenodo.1234567' },
+  { id: 'out-3', trialId: 'ct-008', type: 'Results summary', title: 'Zinc adjunct for severe pneumonia: summary results', venue: 'ClinicalTrials.gov', date: '2025-12-01', url: 'https://clinicaltrials.gov/study/NCT05987654' },
+  { id: 'out-4', trialId: 'ct-008', type: 'Publication', title: 'Futility of zinc adjunct therapy in childhood severe pneumonia: interim analysis', venue: 'BMJ Global Health', date: '2026-03-20', doi: '10.1136/bmjgh-2026-012345' },
+  { id: 'out-5', trialId: 'ct-001', type: 'Conference abstract', title: 'Early safety of XYZ-401 in adults with malaria', venue: 'ASTMH 2026', date: '2026-10-30' },
+];
+
+export function outputsFor(trialId, outputs = SAMPLE_OUTPUTS) {
+  return outputs.filter((o) => o.trialId === trialId);
+}
+
+/**
+ * Results position of each trial: what has been produced and what's still owed
+ * (registry summary results within 12 months of completion; a publication).
+ */
+export function resultsRows(trials, outputs = SAMPLE_OUTPUTS, now = new Date()) {
+  return trials.map((t) => {
+    const outs = outputsFor(t.id, outputs);
+    const closed = !TRIAL_STATUS[t.status]?.open;
+    const r = t.registry || {};
+    const resultsDue = r.status === 'RESULTS_DUE' ? r.resultsDue : null;
+    const left = daysUntil(resultsDue, now);
+    let next = null;
+    let tone = 'neutral';
+    if (resultsDue) { next = left < 0 ? `Registry results ${-left} days overdue` : `Post registry results by ${new Date(resultsDue).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`; tone = left < 30 ? 'danger' : 'warning'; }
+    else if (closed && !outs.some((o) => o.type === 'Publication')) { next = 'Publish the main results'; tone = 'warning'; }
+    else if (closed) { next = 'Done'; tone = 'success'; }
+    else next = outs.length ? 'Interim outputs only' : 'Trial still running';
+    return { id: t.id, trial: t, outputs: outs, publications: outs.filter((o) => o.type === 'Publication').length, datasets: outs.filter((o) => o.type === 'Dataset').length, closed, next, tone };
+  });
+}
+
+export const DOC_TYPES = ['Protocol', 'Informed consent form', 'Participant information sheet', "Investigator's brochure", 'Ethics approval letter', 'Regulatory approval', 'Case report form', 'Monitoring report', 'Delegation log'];
+
+/** Sample trial master file documents, built from the sample trials. */
+export function sampleDocuments(trials = SAMPLE_TRIALS) {
+  const docs = [];
+  for (const t of trials) {
+    if (t.status === 'DRAFT') continue;
+    const base = t.startDate || '2026-01-01';
+    const add = (type, version, status, date, extra = {}) => docs.push({ id: `${t.id}-${type}-${version}`, trialId: t.id, trial: t, type, name: `${t.code} ${type} v${version}`, version, status, date, ...extra });
+    add('Protocol', '1.0', 'SUPERSEDED', base);
+    add('Protocol', '2.0', t.status === 'IN_APPROVAL' ? 'AWAITING_APPROVAL' : 'CURRENT', t.ethics?.expiry ? base : null);
+    add('Informed consent form', '3.0', t.status === 'IN_APPROVAL' ? 'AWAITING_APPROVAL' : 'CURRENT', base, { language: 'English, Kiswahili' });
+    if (t.ethics?.status === 'APPROVED') add('Ethics approval letter', '1', 'CURRENT', base, { expiry: t.ethics.expiry });
+    if (t.regulatory?.status === 'APPROVED') add('Regulatory approval', '1', 'CURRENT', base, { expiry: t.regulatory.expiry });
+    if (['RECRUITING', 'FOLLOW_UP', 'SUSPENDED'].includes(t.status)) add('Delegation log', '4', 'CURRENT', '2026-11-01');
+  }
+  return docs;
+}
+
+export const DOC_STATUS = {
+  CURRENT: { label: 'Current', tone: 'success' },
+  AWAITING_APPROVAL: { label: 'Awaiting approval', tone: 'info' },
+  SUPERSEDED: { label: 'Superseded', tone: 'neutral' },
+  EXPIRED: { label: 'Expired', tone: 'danger' },
+};
+
+export function documentState(doc, now = new Date()) {
+  if (doc.status === 'CURRENT' && doc.expiry && daysUntil(doc.expiry, now) < 0) return 'EXPIRED';
+  return doc.status;
+}
