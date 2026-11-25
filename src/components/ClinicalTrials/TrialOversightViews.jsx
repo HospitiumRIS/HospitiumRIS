@@ -47,7 +47,7 @@ const initials = (n) => String(n || '?').replace(/^Dr\.\s*/, '').split(' ').filt
 const tabSx = { px: 1, borderBottom: '1px solid rgba(139,108,188,0.12)', '& .MuiTab-root': { textTransform: 'none', fontWeight: 600, minHeight: 52 }, '& .Mui-selected': { color: `${PURPLE} !important` }, '& .MuiTabs-indicator': { bgcolor: PURPLE } };
 const btn = { textTransform: 'none', fontWeight: 700 };
 
-function CountTabs({ tabs, value, onChange, counts, alertKeys = [] }) {
+export function CountTabs({ tabs, value, onChange, counts, alertKeys = [] }) {
   return (
     <Tabs value={value} onChange={(_, v) => onChange(v)} variant="scrollable" scrollButtons="auto" sx={tabSx}>
       {tabs.map((t) => {
@@ -65,7 +65,7 @@ function CountTabs({ tabs, value, onChange, counts, alertKeys = [] }) {
   );
 }
 
-function usePaging(rows) {
+export function usePaging(rows) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const current = Math.min(page, Math.max(0, Math.ceil(rows.length / rowsPerPage) - 1));
@@ -76,7 +76,7 @@ function usePaging(rows) {
   };
 }
 
-function TrialCell({ trial, onOpen }) {
+export function TrialCell({ trial, onOpen }) {
   return (
     <Box sx={{ minWidth: 0 }}>
       <Typography variant="body2" onClick={() => onOpen(trial)} sx={{ fontWeight: 700, color: '#2D3748', cursor: 'pointer', '&:hover': { color: PURPLE, textDecoration: 'underline' } }}>{trial.shortTitle || trial.title}</Typography>
@@ -85,8 +85,8 @@ function TrialCell({ trial, onOpen }) {
   );
 }
 
-const trialOptions = (trials) => trials.filter((t) => TRIAL_STATUS[t.status]?.open);
-const useTrials = (audience) => useState(() => sampleTrials({ mine: audience === 'researcher' }));
+export const trialOptions = (trials) => trials.filter((t) => TRIAL_STATUS[t.status]?.open);
+export const useTrials = (audience) => useState(() => sampleTrials({ mine: audience === 'researcher' }));
 
 // ---------------------------------------------------------------------------------- //
 // Approvals

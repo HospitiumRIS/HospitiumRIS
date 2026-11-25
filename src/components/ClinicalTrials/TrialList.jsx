@@ -90,7 +90,7 @@ export default function TrialList({ trials: initial, audience = 'researcher', cl
     const n = trials.length + 1;
     const trial = {
       id: `draft-${Date.now()}`, code: `CT-DRAFT-${String(n).padStart(3, '0')}`, status: 'DRAFT', enrolled: 0, sites: [], team: [{ name: pi || 'You', role: 'Principal investigator' }],
-      ethics: null, regulatory: null, registry: { status: 'NOT_REGISTERED' }, saesOpen: 0, saesOverdue: 0, deviationsOpen: 0, gcpExpiring: 0, mine: true,
+      ethics: null, regulatory: null, registry: { status: 'NOT_REGISTERED' }, events: [], mine: true,
       pi: pi || 'You', ...form, targetEnrollment: Number(form.targetEnrollment) || 0, shortTitle: form.shortTitle || form.title,
     };
     // A trial pulled by its registry / CTMS ID keeps that ID.

@@ -82,9 +82,10 @@ export function trialFlags(trial, now = new Date()) {
   if (ethics === 'EXPIRED' && running) flags.push({ key: 'ethics_expired', severity: 'high', text: 'Ethics approval expired while the trial is running' });
   else if (ethics === 'EXPIRING') flags.push({ key: 'ethics_expiring', severity: 'medium', text: `Ethics approval expires in ${daysUntil(trial.ethics.expiry, now)} days` });
   if (reg === 'EXPIRED' && running) flags.push({ key: 'reg_expired', severity: 'high', text: 'Regulatory approval expired' });
-  if ((trial.saesOverdue || 0) > 0) flags.push({ key: 'sae_overdue', severity: 'high', text: `${trial.saesOverdue} SAE report${trial.saesOverdue === 1 ? '' : 's'} past the reporting deadline` });
+  const sc = safetyCounts(trial, now);
+  if (sc.overdue > 0) flags.push({ key: 'sae_overdue', severity: 'high', text: `${sc.overdue} SAE report${sc.overdue === 1 ? '' : 's'} past the reporting deadline` });
   if (running && trial.registry?.status === 'NOT_REGISTERED') flags.push({ key: 'not_registered', severity: 'high', text: 'Recruiting but not registered on PACTR / ClinicalTrials.gov' });
-  if ((trial.deviationsOpen || 0) > 0) flags.push({ key: 'deviations', severity: 'medium', text: `${trial.deviationsOpen} open protocol deviation${trial.deviationsOpen === 1 ? '' : 's'}` });
+  if (sc.deviationsOpen > 0) flags.push({ key: 'deviations', severity: sc.majorDeviations ? 'high' : 'medium', text: `${sc.deviationsOpen} open protocol deviation${sc.deviationsOpen === 1 ? '' : 's'}${sc.majorDeviations ? ` (${sc.majorDeviations} major)` : ''}` });
   const gcpIssues = (trial.team || []).filter((m) => ['EXPIRED', 'MISSING'].includes(gcpState(m.gcpExpiry, now))).length;
   if (gcpIssues) flags.push({ key: 'gcp', severity: 'medium', text: `${gcpIssues} team member${gcpIssues === 1 ? '' : 's'} without valid GCP` });
   if (trial.status === 'RECRUITING') {
@@ -125,7 +126,7 @@ export function validateTrialDraft(d) {
   return { ok: !Object.keys(errors).length, errors };
 }
 
-const T = (o) => ({ sites: [], team: [], saesOpen: 0, saesOverdue: 0, deviationsOpen: 0, gcpExpiring: 0, mine: true, ...o });
+const T = (o) => ({ sites: [], team: [], events: [], mine: true, ...o });
 
 /** Sample trials shown until trials are stored in the database. */
 export const SAMPLE_TRIALS = [
@@ -138,7 +139,12 @@ export const SAMPLE_TRIALS = [
     ethics: { status: 'APPROVED', committee: 'KNH-UoN ERC', reference: 'P412/06/2025', expiry: '2027-01-10' },
     regulatory: { status: 'APPROVED', authority: 'Pharmacy and Poisons Board', reference: 'PPB/ECCT/25/012', expiry: '2027-02-01' },
     registry: { status: 'REGISTERED', pactr: 'PACTR202602001234', nct: null },
-    saesOpen: 2, saesOverdue: 1, deviationsOpen: 1, gcpExpiring: 1,
+    events: [
+      { id: 'ev-101', type: 'SAE', title: 'Hospitalisation for severe anaemia', participant: 'KIS-0042', site: 'Kisumu County Referral Hospital', onset: '2026-11-08', awareOn: '2026-11-09', severity: 'Serious', related: 'Possibly related', expected: false, status: 'OPEN' },
+      { id: 'ev-102', type: 'SAE', title: 'Seizure (febrile) in participant', participant: 'KAK-0017', site: 'Kakamega County Referral Hospital', onset: '2026-11-20', awareOn: '2026-11-21', severity: 'Life-threatening', related: 'Unlikely related', expected: false, status: 'OPEN' },
+      { id: 'ev-103', type: 'SAE', title: 'Pneumonia requiring admission', participant: 'KIS-0011', site: 'Kisumu County Referral Hospital', onset: '2026-09-02', awareOn: '2026-09-02', severity: 'Serious', related: 'Not related', expected: true, status: 'CLOSED', reportedOn: '2026-09-08' },
+      { id: 'ev-104', type: 'DEVIATION', title: 'Day-7 visit done outside the ±2-day window', participant: 'KAK-0009', site: 'Kakamega County Referral Hospital', onset: '2026-10-28', awareOn: '2026-10-30', severity: 'Minor', status: 'OPEN', capa: 'Visit reminders by SMS two days before' },
+    ],
     team: [{ name: 'Dr. Amina Okonkwo', role: 'Principal investigator', duties: ['Overall responsibility', 'Informed consent', 'Eligibility', 'SAE assessment'], gcpExpiry: '2027-08-01', email: 'a.okonkwo@example.org' }, { name: 'Peter Otieno', role: 'Study coordinator', duties: ['Data entry', 'Regulatory files', 'Drug accountability'], gcpExpiry: '2026-12-15', email: 'p.otieno@example.org' }, { name: 'Faith Achieng', role: 'Research nurse', duties: ['Informed consent', 'Sample collection', 'Vital signs'], gcpExpiry: '2027-05-20', email: 'f.achieng@example.org' }],
   }),
   T({
@@ -150,7 +156,12 @@ export const SAMPLE_TRIALS = [
     ethics: { status: 'APPROVED', committee: 'KNH-UoN ERC', reference: 'P210/03/2025', expiry: '2026-12-20' },
     regulatory: { status: 'APPROVED', authority: 'Pharmacy and Poisons Board', reference: 'PPB/ECCT/25/004', expiry: '2027-03-01' },
     registry: { status: 'REGISTERED', pactr: null, nct: 'NCT06123456' },
-    deviationsOpen: 2, mine: true,
+    events: [
+      { id: 'ev-201', type: 'DEVIATION', title: 'Consent form version 2.0 used after 3.0 approval', participant: 'KNH-0058', site: 'Kenyatta National Hospital', onset: '2026-10-14', awareOn: '2026-10-20', severity: 'Major', status: 'OPEN', capa: 'Re-consent with v3.0; retrain staff' },
+      { id: 'ev-202', type: 'DEVIATION', title: 'Missed ECG at week 4', participant: 'KNH-0061', site: 'Kenyatta National Hospital', onset: '2026-11-03', awareOn: '2026-11-05', severity: 'Minor', status: 'OPEN' },
+      { id: 'ev-203', type: 'SAE', title: 'QT prolongation > 500 ms', participant: 'KNH-0044', site: 'Kenyatta National Hospital', onset: '2026-08-12', awareOn: '2026-08-12', severity: 'Serious', related: 'Probably related', expected: true, status: 'REPORTED', reportedOn: '2026-08-18' },
+    ],
+    mine: true,
     team: [{ name: 'Dr. Samuel Mwangi', role: 'Principal investigator', duties: ['Overall responsibility', 'Eligibility', 'SAE assessment'], gcpExpiry: '2027-02-10' }, { name: 'Grace Njeri', role: 'Pharmacist', duties: ['Drug dispensing', 'Drug accountability'], gcpExpiry: '2026-09-30' }],
   }),
   T({
@@ -171,7 +182,10 @@ export const SAMPLE_TRIALS = [
     ethics: { status: 'APPROVED', committee: 'Moi University IREC', reference: '0004512', expiry: '2026-10-30' },
     regulatory: { status: 'NOT_REQUIRED' },
     registry: { status: 'REGISTERED', pactr: 'PACTR202503004567' },
-    gcpExpiring: 2, mine: false,
+    events: [
+      { id: 'ev-401', type: 'DEVIATION', title: 'Participants enrolled after ethics approval expired', participant: '—', site: 'Eldoret', onset: '2026-11-02', awareOn: '2026-11-04', severity: 'Major', status: 'OPEN', capa: 'Enrolment paused; renewal submitted' },
+    ],
+    mine: false,
     team: [{ name: 'Dr. John Kamau', role: 'Principal investigator', duties: ['Overall responsibility'], gcpExpiry: '2026-11-01' }, { name: 'Lucy Wambui', role: 'Clinical officer', duties: ['Blood pressure titration'], gcpExpiry: null }],
   }),
   T({
@@ -333,4 +347,94 @@ export function teamRows(trials, now = new Date()) {
   }
   const rank = { MISSING: 0, EXPIRED: 1, EXPIRING: 2, VALID: 3 };
   return rows.sort((a, b) => rank[a.gcp] - rank[b.gcp] || a.name.localeCompare(b.name));
+}
+
+// ---- safety and recruitment --------------------------------------------------------
+
+/**
+ * SAE reporting deadline to the ethics committee / regulator, counted from the day the
+ * team became aware: 7 days for fatal or life-threatening events, 15 days otherwise.
+ * Protocol deviations: report major ones within 7 days; minor ones go in the log.
+ */
+export function eventDeadline(ev) {
+  if (!ev?.awareOn) return null;
+  const days = ev.type === 'SAE' ? (['Fatal', 'Life-threatening'].includes(ev.severity) ? 7 : 15) : ev.severity === 'Major' ? 7 : null;
+  if (days === null) return null;
+  const d = new Date(ev.awareOn);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+export function eventState(ev, now = new Date()) {
+  if (ev.status === 'CLOSED') return 'CLOSED';
+  if (ev.status === 'REPORTED') return 'REPORTED';
+  const due = eventDeadline(ev);
+  if (!due) return 'OPEN';
+  const left = daysUntil(due, now);
+  if (left < 0) return 'OVERDUE';
+  if (left <= 3) return 'DUE_SOON';
+  return 'TO_REPORT';
+}
+
+export const EVENT_STATE = {
+  OVERDUE: { label: 'Report overdue', tone: 'danger' },
+  DUE_SOON: { label: 'Report due soon', tone: 'warning' },
+  TO_REPORT: { label: 'To report', tone: 'info' },
+  OPEN: { label: 'Open', tone: 'progress' },
+  REPORTED: { label: 'Reported', tone: 'success' },
+  CLOSED: { label: 'Closed', tone: 'neutral' },
+};
+
+export function safetyCounts(trial, now = new Date()) {
+  const evs = trial?.events || [];
+  const states = evs.map((e) => [e, eventState(e, now)]);
+  return {
+    saesOpen: states.filter(([e, st]) => e.type === 'SAE' && st !== 'CLOSED').length,
+    overdue: states.filter(([, st]) => st === 'OVERDUE').length,
+    deviationsOpen: states.filter(([e, st]) => e.type === 'DEVIATION' && st !== 'CLOSED').length,
+    majorDeviations: states.filter(([e, st]) => e.type === 'DEVIATION' && e.severity === 'Major' && st !== 'CLOSED').length,
+  };
+}
+
+export function eventRows(trials, now = new Date()) {
+  const rank = { OVERDUE: 0, DUE_SOON: 1, TO_REPORT: 2, OPEN: 3, REPORTED: 4, CLOSED: 5 };
+  return trials.flatMap((t) => (t.events || []).map((e) => ({ ...e, trial: t, state: eventState(e, now), deadline: eventDeadline(e), daysLeft: daysUntil(eventDeadline(e), now) })))
+    .sort((a, b) => rank[a.state] - rank[b.state] || (a.daysLeft ?? 1e9) - (b.daysLeft ?? 1e9));
+}
+
+/** Recruitment position: on track / behind / ahead, and what's needed per month. */
+export function recruitmentRow(trial, now = new Date()) {
+  const { target, enrolled, pct } = enrolment(trial);
+  const expected = expectedEnrolmentPct(trial, now);
+  const end = trial.recruitmentEnd || trial.endDate;
+  const monthsLeft = end ? Math.max(0, (new Date(end) - now) / (DAY * 30.44)) : null;
+  const remaining = Math.max(0, target - enrolled);
+  let pace = 'NOT_STARTED';
+  if (trial.status === 'SUSPENDED') pace = 'PAUSED';
+  else if (enrolled >= target && target) pace = 'COMPLETE';
+  else if (expected === null || expected === 0) pace = enrolled ? 'ON_TRACK' : 'NOT_STARTED';
+  else if (expected - pct > 20) pace = 'BEHIND';
+  else if (pct - expected > 10) pace = 'AHEAD';
+  else pace = 'ON_TRACK';
+  return { trial, target, enrolled, pct, expected, remaining, perMonth: monthsLeft && remaining ? Math.ceil(remaining / Math.max(monthsLeft, 0.5)) : null, pace };
+}
+
+export const PACE = {
+  BEHIND: { label: 'Behind plan', tone: 'danger' },
+  ON_TRACK: { label: 'On track', tone: 'success' },
+  AHEAD: { label: 'Ahead of plan', tone: 'success' },
+  NOT_STARTED: { label: 'Not started', tone: 'neutral' },
+  PAUSED: { label: 'Paused', tone: 'warning' },
+  COMPLETE: { label: 'Target reached', tone: 'success' },
+};
+
+export function recruitmentRows(trials, now = new Date()) {
+  const rank = { BEHIND: 0, PAUSED: 1, ON_TRACK: 2, AHEAD: 3, NOT_STARTED: 4, COMPLETE: 5 };
+  return trials.filter((t) => ['RECRUITING', 'FOLLOW_UP', 'SUSPENDED', 'APPROVED'].includes(t.status)).map((t) => recruitmentRow(t, now)).sort((a, b) => rank[a.pace] - rank[b.pace]);
+}
+
+/** Every attention flag across trials, for the research office's compliance view. */
+export function complianceRows(trials, now = new Date()) {
+  const rank = { high: 0, medium: 1, low: 2 };
+  return trials.flatMap((t) => trialFlags(t, now).map((f) => ({ ...f, id: `${t.id}-${f.key}`, trial: t }))).sort((a, b) => rank[a.severity] - rank[b.severity]);
 }
